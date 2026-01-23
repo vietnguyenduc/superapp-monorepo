@@ -1,6 +1,6 @@
-# Turborepo starter
+# Superapp Monorepo
 
-This Turborepo starter is maintained by the Turborepo core team.
+A comprehensive monorepo for F&B management applications built with Turborepo, featuring shared components and standardized data migration capabilities.
 
 ## Using this example
 
@@ -12,15 +12,37 @@ npx create-turbo@latest
 
 ## What's inside?
 
-This Turborepo includes the following packages/apps:
+This monorepo includes the following applications and packages:
 
-### Apps and Packages
+### Applications
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+- `apps/cashflow`: Cash flow management application
+- `apps/inventory-operation`: Inventory management system for F&B operations
+- `apps/docs`: Documentation site (planned)
+
+### Shared Packages
+
+- `@repo/ui`: Shared React component library with Apple-like design system
+  - Basic UI components (Button, Card, etc.)
+  - **Data Migration Components**: EditableDataGrid, ClipboardPasteInput, GoogleSheetsIntegration
+- `@repo/hooks`: Shared React hooks
+- `@repo/theme`: Apple-like design tokens and themes
+- `@repo/eslint-config`: ESLint configurations
+- `@repo/typescript-config`: TypeScript configurations
+
+### Data Migration Hub
+
+🚀 **NEW**: Comprehensive data migration system for seamless transition from manual/legacy workflows:
+
+- **Excel-like Interface**: Familiar grid editing experience
+- **Multi-source Import**: Excel, Google Sheets, CSV, manual input
+- **Smart Validation**: Real-time data validation with user-friendly messages
+- **Smooth UX**: Designed for users transitioning from manual processes
+
+📚 **Documentation**:
+- [Data Migration Hub Architecture](./docs/DATA-MIGRATION-HUB.md)
+- [Development Rules & Standards](./docs/DATA-MIGRATION-RULES.md)
+- [Task Breakdown & Collaboration](./docs/DATA-MIGRATION-TASKS.md)
 
 Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
 
