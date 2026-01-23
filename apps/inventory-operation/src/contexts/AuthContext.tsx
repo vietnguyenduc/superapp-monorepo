@@ -86,26 +86,56 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Load user from localStorage on mount
   useEffect(() => {
-    const savedUser = localStorage.getItem('inventory_user');
-    if (savedUser) {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Error parsing saved user:', error);
-        localStorage.removeItem('inventory_user');
+    try {
+      const savedUser = localStorage.getItem('inventory_user');
+      if (savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          setUser(parsedUser);
+          setIsAuthenticated(true);
+          console.log('Logged in as saved user:', parsedUser.fullName);
+        } catch (error) {
+          console.error('Error parsing saved user:', error);
+          localStorage.removeItem('inventory_user');
+          // Fall back to admin login
+          loginAsAdmin();
+        }
+      } else {
+        // Auto-login as admin for demo
+        loginAsAdmin();
       }
-    } else {
-      // Auto-login as admin for demo
+    } catch (error) {
+      console.error('Error in auth initialization:', error);
+      // Even if localStorage fails, still set a user to prevent blank screens
+      const fallbackUser = MOCK_USERS[0];
+      setUser(fallbackUser);
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  // Helper function to login as admin
+  const loginAsAdmin = () => {
+    try {
       const adminUser = MOCK_USERS.find(u => u.role === UserRole.ADMIN);
       if (adminUser) {
         setUser(adminUser);
         setIsAuthenticated(true);
-        localStorage.setItem('inventory_user', JSON.stringify(adminUser));
+        try {
+          localStorage.setItem('inventory_user', JSON.stringify(adminUser));
+        } catch (e) {
+          console.warn('Could not save user to localStorage:', e);
+        }
+        console.log('Auto-logged in as admin for demo');
+      } else {
+        // Fallback to first user if admin not found
+        const fallbackUser = MOCK_USERS[0];
+        setUser(fallbackUser);
+        setIsAuthenticated(true);
       }
+    } catch (error) {
+      console.error('Error in admin login:', error);
     }
-  }, []);
+  };
 
   const login = async (username: string, password: string): Promise<boolean> => {
     // Mock authentication - in real app, this would call an API

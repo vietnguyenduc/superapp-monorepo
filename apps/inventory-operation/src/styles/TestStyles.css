@@ -1,0 +1,17 @@
+.test-box {
+  padding: 1rem;
+  background-color: #eff6ff;
+  border-radius: 0.5rem;
+  border: 1px solid #bfdbfe;
+}
+
+.test-heading {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: #1e40af;
+}
+
+.test-text {
+  color: #3b82f6;
+}
