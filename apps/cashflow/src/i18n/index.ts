@@ -25,34 +25,45 @@ i18n
     resources,
     fallbackLng: "en",
     debug: process.env.NODE_ENV === "development",
+    
+    // Force language detection on every page load
+    load: 'currentOnly',
+    
+    // Ensure translations are always applied
+    react: {
+      useSuspense: false,
+      bindI18n: 'languageChanged loaded',
+      bindI18nStore: 'added removed',
+      nsMode: 'default'
+    },
 
     interpolation: {
       escapeValue: false, // React already safes from XSS
     },
 
     detection: {
-      // Order and from where user language should be detected
-      order: ["localStorage", "navigator", "htmlTag"],
+    // Order and from where user language should be detected
+    order: ["localStorage", "navigator", "htmlTag"],
 
-      // Keys or params to lookup language from
-      lookupLocalStorage: "i18nextLng",
-      lookupFromPathIndex: 0,
-      lookupFromSubdomainIndex: 0,
+    // Keys or params to lookup language from
+    lookupLocalStorage: "i18nextLng",
+    lookupFromPathIndex: 0,
+    lookupFromSubdomainIndex: 0,
 
-      // Cache user language on
-      caches: ["localStorage"],
-      excludeCacheFor: ["cimode"], // Languages to not persist (cookie, localStorage)
+    // Cache user language on
+    caches: ["localStorage"],
+    excludeCacheFor: ["cimode"], // Languages to not persist (cookie, localStorage)
 
-      // Optional expire and domain for set cookie
-      cookieMinutes: 10,
-      cookieDomain: "myDomain",
+    // Optional expire and domain for set cookie
+    cookieMinutes: 10,
+    cookieDomain: "myDomain",
 
-      // Optional htmlTag with lang attribute, the default is:
-      htmlTag: document.documentElement,
+    // Optional htmlTag with lang attribute, the default is:
+    htmlTag: document.documentElement as HTMLElement,
 
-      // Optional set cookie options, reference:[MDN Set-Cookie docs](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie)
-      cookieOptions: { path: "/", sameSite: "strict" },
-    },
+    // Optional set cookie options, reference:[MDN Set-Cookie docs](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie)
+    cookieOptions: { path: "/", sameSite: "strict" as "strict" },
+  },
   });
 
 export default i18n;

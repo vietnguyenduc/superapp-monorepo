@@ -145,6 +145,32 @@ yarn exec turbo link
 pnpm exec turbo link
 ```
 
+## 🤖 AI-Assisted Development (Vibe Coding)
+
+This project is optimized for AI-assisted development. Each app contains an `AI_CONTEXT.md` file that helps AI assistants understand the project quickly.
+
+### Quick Start for AI Sessions
+```
+I'm working on the [app-name] app in the superapp-monorepo. 
+Please read AI_CONTEXT.md in apps/[app-name]/ for project context.
+```
+
+### Key Documentation
+| Document | Purpose |
+|----------|---------|
+| `apps/*/AI_CONTEXT.md` | AI assistant context (read first!) |
+| `docs/ARCHITECTURE.md` | System architecture |
+| `docs/CODING_STANDARDS.md` | Code guidelines |
+| `CONTRIBUTING.md` | How to contribute |
+
+### After Each AI Session
+Update the `AI_CONTEXT.md` file with:
+- What was completed
+- Current issues
+- Next steps
+
+---
+
 ## Useful Links
 
 Learn more about the power of Turborepo:

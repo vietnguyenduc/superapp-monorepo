@@ -2,6 +2,107 @@
 import { generateSampleCashFlowData } from "./sampleData";
 import { dashboardMockData } from "./mockData";
 
+// Dashboard service
+const dashboardService = {
+  async getDashboardMetrics(
+    _branchId?: string,
+    timeRange: "day" | "week" | "month" | "quarter" | "year" = "month",
+  ) {
+    // Get sample data for cash flow
+    const sampleData = generateSampleCashFlowData();
+    
+    // Get the appropriate cash flow data based on the time range
+    let cashFlowData;
+    switch (timeRange) {
+      case "day":
+        cashFlowData = sampleData.dailyData.slice(-30); // Last 30 days
+        break;
+      case "week":
+        cashFlowData = sampleData.weeklyData;
+        break;
+      case "quarter":
+        cashFlowData = sampleData.quarterlyData;
+        break;
+      case "year":
+        cashFlowData = sampleData.yearlyData;
+        break;
+      case "month":
+      default:
+        cashFlowData = sampleData.dailyData.slice(-30); // Default to last 30 days
+        break;
+    }
+
+    // Calculate changes based on previous period
+    const transactionChanges = {
+      day: dashboardMockData.transactionCounts.day - dashboardMockData.previousTransactionCounts.day,
+      week: dashboardMockData.transactionCounts.week - dashboardMockData.previousTransactionCounts.week,
+      month: dashboardMockData.transactionCounts.month - dashboardMockData.previousTransactionCounts.month,
+      quarter: dashboardMockData.transactionCounts.quarter - dashboardMockData.previousTransactionCounts.quarter,
+      year: dashboardMockData.transactionCounts.year - dashboardMockData.previousTransactionCounts.year,
+    };
+
+    // Calculate income changes based on previous period
+    const incomeChanges = {
+      day: dashboardMockData.incomeAmounts.day - dashboardMockData.previousIncomeAmounts.day,
+      week: dashboardMockData.incomeAmounts.week - dashboardMockData.previousIncomeAmounts.week,
+      month: dashboardMockData.incomeAmounts.month - dashboardMockData.previousIncomeAmounts.month,
+      quarter: dashboardMockData.incomeAmounts.quarter - dashboardMockData.previousIncomeAmounts.quarter,
+      year: dashboardMockData.incomeAmounts.year - dashboardMockData.previousIncomeAmounts.year,
+    };
+
+    // Calculate debt changes based on previous period
+    const debtChanges = {
+      day: dashboardMockData.debtAmounts.day - dashboardMockData.previousDebtAmounts.day,
+      week: dashboardMockData.debtAmounts.week - dashboardMockData.previousDebtAmounts.week,
+      month: dashboardMockData.debtAmounts.month - dashboardMockData.previousDebtAmounts.month,
+      quarter: dashboardMockData.debtAmounts.quarter - dashboardMockData.previousDebtAmounts.quarter,
+      year: dashboardMockData.debtAmounts.year - dashboardMockData.previousDebtAmounts.year,
+    };
+
+    // Calculate outstanding changes based on previous period
+    const outstandingChanges = {
+      day: dashboardMockData.outstandingBalances.day - dashboardMockData.previousOutstandingBalances.day,
+      week: dashboardMockData.outstandingBalances.week - dashboardMockData.previousOutstandingBalances.week,
+      month: dashboardMockData.outstandingBalances.month - dashboardMockData.previousOutstandingBalances.month,
+      quarter: dashboardMockData.outstandingBalances.quarter - dashboardMockData.previousOutstandingBalances.quarter,
+      year: dashboardMockData.outstandingBalances.year - dashboardMockData.previousOutstandingBalances.year,
+    };
+
+    // Calculate active customers changes based on previous period
+    const activeCustomersChanges = {
+      day: dashboardMockData.activeCustomers.day - dashboardMockData.previousActiveCustomers.day,
+      week: dashboardMockData.activeCustomers.week - dashboardMockData.previousActiveCustomers.week,
+      month: dashboardMockData.activeCustomers.month - dashboardMockData.previousActiveCustomers.month,
+      quarter: dashboardMockData.activeCustomers.quarter - dashboardMockData.previousActiveCustomers.quarter,
+      year: dashboardMockData.activeCustomers.year - dashboardMockData.previousActiveCustomers.year,
+    };
+
+    // Return the dashboard metrics
+    return {
+      data: {
+        totalOutstanding: dashboardMockData.outstandingBalances[timeRange],
+        totalOutstandingChange: outstandingChanges[timeRange],
+        activeCustomers: dashboardMockData.activeCustomers[timeRange],
+        activeCustomersChange: activeCustomersChanges[timeRange],
+        transactionPaymentCount: Math.floor(dashboardMockData.transactionCounts[timeRange] / 2),
+        transactionChargeCount: Math.ceil(dashboardMockData.transactionCounts[timeRange] / 2),
+        transactionPaymentChange: Math.floor(transactionChanges[timeRange] / 2),
+        transactionChargeChange: Math.ceil(transactionChanges[timeRange] / 2),
+        transactionIncomeInPeriod: dashboardMockData.incomeAmounts[timeRange],
+        transactionDebtInPeriod: dashboardMockData.debtAmounts[timeRange],
+        transactionIncomeChange: incomeChanges[timeRange],
+        transactionDebtChange: debtChanges[timeRange],
+        balanceByBankAccount: dashboardMockData.bankAccounts,
+        cashFlowData: cashFlowData,
+        transactionAmountsByBranch: dashboardMockData.transactionAmountsByBranch[timeRange],
+        recentTransactions: dashboardMockData.recentTransactions,
+        topCustomers: dashboardMockData.topCustomers,
+      },
+      error: null,
+    };
+  }
+};
+
 // Customer service
 const customerService = {
   async getCustomers(_filters?: any) {
@@ -233,107 +334,6 @@ const branchService = {
       error: null,
     };
   },
-};
-
-// Dashboard service
-const dashboardService = {
-  async getDashboardMetrics(
-    _branchId?: string,
-    timeRange: "day" | "week" | "month" | "quarter" | "year" = "month",
-  ) {
-    // Get sample data for cash flow
-    const sampleData = generateSampleCashFlowData();
-    
-    // Get the appropriate cash flow data based on the time range
-    let cashFlowData;
-    switch (timeRange) {
-      case "day":
-        cashFlowData = sampleData.dailyData.slice(-30); // Last 30 days
-        break;
-      case "week":
-        cashFlowData = sampleData.weeklyData;
-        break;
-      case "quarter":
-        cashFlowData = sampleData.quarterlyData;
-        break;
-      case "year":
-        cashFlowData = sampleData.yearlyData;
-        break;
-      case "month":
-      default:
-        cashFlowData = sampleData.dailyData.slice(-30); // Default to last 30 days
-        break;
-    }
-
-    // Calculate changes based on previous period
-    const transactionChanges = {
-      day: dashboardMockData.transactionCounts.day - dashboardMockData.previousTransactionCounts.day,
-      week: dashboardMockData.transactionCounts.week - dashboardMockData.previousTransactionCounts.week,
-      month: dashboardMockData.transactionCounts.month - dashboardMockData.previousTransactionCounts.month,
-      quarter: dashboardMockData.transactionCounts.quarter - dashboardMockData.previousTransactionCounts.quarter,
-      year: dashboardMockData.transactionCounts.year - dashboardMockData.previousTransactionCounts.year,
-    };
-
-    // Calculate income changes based on previous period
-    const incomeChanges = {
-      day: dashboardMockData.incomeAmounts.day - dashboardMockData.previousIncomeAmounts.day,
-      week: dashboardMockData.incomeAmounts.week - dashboardMockData.previousIncomeAmounts.week,
-      month: dashboardMockData.incomeAmounts.month - dashboardMockData.previousIncomeAmounts.month,
-      quarter: dashboardMockData.incomeAmounts.quarter - dashboardMockData.previousIncomeAmounts.quarter,
-      year: dashboardMockData.incomeAmounts.year - dashboardMockData.previousIncomeAmounts.year,
-    };
-
-    // Calculate debt changes based on previous period
-    const debtChanges = {
-      day: dashboardMockData.debtAmounts.day - dashboardMockData.previousDebtAmounts.day,
-      week: dashboardMockData.debtAmounts.week - dashboardMockData.previousDebtAmounts.week,
-      month: dashboardMockData.debtAmounts.month - dashboardMockData.previousDebtAmounts.month,
-      quarter: dashboardMockData.debtAmounts.quarter - dashboardMockData.previousDebtAmounts.quarter,
-      year: dashboardMockData.debtAmounts.year - dashboardMockData.previousDebtAmounts.year,
-    };
-
-    // Calculate outstanding changes based on previous period
-    const outstandingChanges = {
-      day: dashboardMockData.outstandingBalances.day - dashboardMockData.previousOutstandingBalances.day,
-      week: dashboardMockData.outstandingBalances.week - dashboardMockData.previousOutstandingBalances.week,
-      month: dashboardMockData.outstandingBalances.month - dashboardMockData.previousOutstandingBalances.month,
-      quarter: dashboardMockData.outstandingBalances.quarter - dashboardMockData.previousOutstandingBalances.quarter,
-      year: dashboardMockData.outstandingBalances.year - dashboardMockData.previousOutstandingBalances.year,
-    };
-
-    // Calculate active customers changes based on previous period
-    const activeCustomersChanges = {
-      day: dashboardMockData.activeCustomers.day - dashboardMockData.previousActiveCustomers.day,
-      week: dashboardMockData.activeCustomers.week - dashboardMockData.previousActiveCustomers.week,
-      month: dashboardMockData.activeCustomers.month - dashboardMockData.previousActiveCustomers.month,
-      quarter: dashboardMockData.activeCustomers.quarter - dashboardMockData.previousActiveCustomers.quarter,
-      year: dashboardMockData.activeCustomers.year - dashboardMockData.previousActiveCustomers.year,
-    };
-
-    // Return the dashboard metrics
-    return {
-      data: {
-        totalOutstanding: dashboardMockData.outstandingBalances[timeRange],
-        totalOutstandingChange: outstandingChanges[timeRange],
-        activeCustomers: dashboardMockData.activeCustomers[timeRange],
-        activeCustomersChange: activeCustomersChanges[timeRange],
-        transactionPaymentCount: Math.floor(dashboardMockData.transactionCounts[timeRange] / 2),
-        transactionChargeCount: Math.ceil(dashboardMockData.transactionCounts[timeRange] / 2),
-        transactionPaymentChange: Math.floor(transactionChanges[timeRange] / 2),
-        transactionChargeChange: Math.ceil(transactionChanges[timeRange] / 2),
-        transactionIncomeInPeriod: dashboardMockData.incomeAmounts[timeRange],
-        transactionDebtInPeriod: dashboardMockData.debtAmounts[timeRange],
-        transactionIncomeChange: incomeChanges[timeRange],
-        transactionDebtChange: debtChanges[timeRange],
-        balanceByBankAccount: dashboardMockData.bankAccounts,
-        cashFlowData: cashFlowData,
-        transactionAmountsByBranch: dashboardMockData.transactionAmountsByBranch[timeRange],
-        recentTransactions: dashboardMockData.recentTransactions,
-        topCustomers: dashboardMockData.topCustomers,
-      },
-      error: null,
-    };
-  }
 };
 
 // Export all services as a single object to match the import in Dashboard.tsx

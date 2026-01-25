@@ -1,27 +1,69 @@
-// Mock services for cashflow app
+// REMOVE all original Supabase-based service exports above this line
+// Only export the mocked services below for testing
+
 import { generateSampleCashFlowData } from "./sampleData";
 import { dashboardMockData } from "./mockData";
 
-// Customer service
-const customerService = {
+export const customerService = {
   async getCustomers(_filters?: any) {
     return {
-      data: dashboardMockData.topCustomers.map(customer => ({
-        ...customer,
+      data: [
+        {
+          id: "1",
+          customer_code: "CUST0001",
+          full_name: "Công ty TNHH ABC",
+          phone: "0123456789",
+          email: "info@abc.com.vn",
+          address: "123 Đường Nguyễn Huệ, Quận 1, TP.HCM",
+          branch_id: null,
+          total_balance: -85000000, // Nợ 85 triệu VND
+          last_transaction_date: "2024-01-28T14:30:00Z",
+          is_active: true,
+          created_at: "2024-01-01T00:00:00Z",
+          updated_at: "2024-01-01T00:00:00Z",
+        },
+        {
+          id: "2",
+          customer_code: "CUST0002",
+          full_name: "Công ty CP XYZ",
+          phone: "0987654321",
+          email: "contact@xyz.com.vn",
+          address: "456 Đường Lê Lợi, Quận 3, TP.HCM",
+          branch_id: null,
+          total_balance: -72000000, // Nợ 72 triệu VND
+          last_transaction_date: "2024-01-28T10:15:00Z",
+          is_active: true,
+          created_at: "2024-01-02T00:00:00Z",
+          updated_at: "2024-01-02T00:00:00Z",
+        },
+        // Additional customers omitted for brevity
+      ],
+      error: null,
+      count: 8,
+    };
+  },
+  async getCustomerById(id: string) {
+    // Mock data for different customers
+    const customers = {
+      "1": {
+        id: "1",
+        customer_code: "CUST0001",
+        full_name: "Công ty TNHH ABC",
+        phone: "0123456789",
+        email: "info@abc.com.vn",
         address: "123 Đường Nguyễn Huệ, Quận 1, TP.HCM",
         branch_id: null,
+        total_balance: -85000000, // Nợ 85 triệu VND
+        last_transaction_date: "2024-01-28T14:30:00Z",
         is_active: true,
         created_at: "2024-01-01T00:00:00Z",
         updated_at: "2024-01-01T00:00:00Z",
-      })),
-      error: null,
-      count: dashboardMockData.topCustomers.length,
+      },
+      // Additional customers omitted for brevity
     };
-  },
-  
-  async getCustomerById(id: string) {
-    const customer = dashboardMockData.topCustomers.find(c => c.id === id);
-    
+
+    const customer = customers[id as keyof typeof customers];
+
     if (!customer) {
       return {
         data: null,
@@ -30,37 +72,25 @@ const customerService = {
     }
 
     return {
-      data: {
-        ...customer,
-        address: "123 Đường Nguyễn Huệ, Quận 1, TP.HCM",
-        branch_id: null,
-        is_active: true,
-        created_at: "2024-01-01T00:00:00Z",
-        updated_at: "2024-01-01T00:00:00Z",
-      },
+      data: customer,
       error: null,
     };
   },
-  
   async createCustomer(_customerData?: any) {
     return { data: null, error: null };
   },
-  
   async updateCustomer(_id: string, _updates?: any) {
     return { data: null, error: null };
   },
-  
   async deleteCustomer(_id: string) {
     return { error: null };
   },
-  
   async bulkCreateCustomers(_customers?: any[]) {
     return { data: [], errors: [] };
   },
 };
 
-// Transaction service
-const transactionService = {
+export const transactionService = {
   async getTransactions(_filters?: any) {
     return {
       data: dashboardMockData.recentTransactions,
@@ -68,49 +98,35 @@ const transactionService = {
       count: dashboardMockData.recentTransactions.length,
     };
   },
-  
-  async getTransactionById(id: string) {
-    const transaction = dashboardMockData.recentTransactions.find(t => t.id === id);
-    
-    if (!transaction) {
-      return {
-        data: {
-          id: "1",
-          transaction_code: "TXN0001",
-          customer_id: "1",
-          bank_account_id: "1",
-          branch_id: "1",
-          transaction_type: "payment" as const,
-          amount: 500,
-          description: "Test payment",
-          reference_number: "REF123",
-          transaction_date: "2024-01-01T00:00:00Z",
-          created_by: "test-user",
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-        },
-        error: null,
-      };
-    }
-    
+  async getTransactionById(_id: string) {
     return {
-      data: transaction,
+      data: {
+        id: "1",
+        transaction_code: "TXN0001",
+        customer_id: "1",
+        bank_account_id: "1",
+        branch_id: "1",
+        transaction_type: "payment" as const,
+        amount: 500,
+        description: "Test payment",
+        reference_number: "REF123",
+        transaction_date: "2024-01-01T00:00:00Z",
+        created_by: "test-user",
+        created_at: "2024-01-01T00:00:00Z",
+        updated_at: "2024-01-01T00:00:00Z",
+      },
       error: null,
     };
   },
-  
   async createTransaction(_transactionData?: any) {
     return { data: null, error: null };
   },
-  
   async updateTransaction(_id: string, _updates?: any) {
     return { data: null, error: null };
   },
-  
   async deleteTransaction(_id: string) {
     return { error: null };
   },
-  
   async bulkImportTransactions(
     _rawData?: any[],
     _branchId?: string,
@@ -120,53 +136,35 @@ const transactionService = {
   },
 };
 
-// Bank account service
-const bankAccountService = {
+export const bankAccountService = {
   async getBankAccounts(_filters?: any) {
     return {
-      data: dashboardMockData.bankAccounts.map(account => ({
-        id: account.id,
-        account_number: `ACCT${account.id}`,
-        account_name: account.name,
-        bank_name: account.name.split(' - ')[0],
-        branch_id: "1",
-        balance: account.balance,
-        is_active: true,
-        created_at: "2024-01-01T00:00:00Z",
-        updated_at: "2024-01-01T00:00:00Z",
-      })),
-      error: null,
-    };
-  },
-  
-  async getBankAccountById(id: string) {
-    const account = dashboardMockData.bankAccounts.find(a => a.id === id);
-    
-    if (!account) {
-      return {
-        data: {
+      data: [
+        {
           id: "1",
-          account_number: "123456",
-          account_name: "Test Bank",
-          bank_name: "Test Bank",
+          account_number: "1234567890",
+          account_name: "Tài khoản chính",
+          bank_name: "Vietcombank",
           branch_id: "1",
-          balance: 1000,
+          balance: 150000000, // 150 triệu VND
           is_active: true,
           created_at: "2024-01-01T00:00:00Z",
           updated_at: "2024-01-01T00:00:00Z",
         },
-        error: null,
-      };
-    }
-    
+        // Additional accounts omitted for brevity
+      ],
+      error: null,
+    };
+  },
+  async getBankAccountById(_id: string) {
     return {
       data: {
-        id: account.id,
-        account_number: `ACCT${account.id}`,
-        account_name: account.name,
-        bank_name: account.name.split(' - ')[0],
+        id: "1",
+        account_number: "123456",
+        account_name: "Test Bank",
+        bank_name: "Test Bank",
         branch_id: "1",
-        balance: account.balance,
+        balance: 1000,
         is_active: true,
         created_at: "2024-01-01T00:00:00Z",
         updated_at: "2024-01-01T00:00:00Z",
@@ -176,36 +174,15 @@ const bankAccountService = {
   },
 };
 
-// Branch service
-const branchService = {
+export const branchService = {
   async getBranches() {
     return {
-      data: dashboardMockData.transactionAmountsByBranch.day.map(branch => ({
-        id: branch.branch_id,
-        name: branch.branch_name,
-        code: `BR${branch.branch_id}`,
-        address: `${branch.branch_id}23 Đường chính, Quận 1, TP.HCM`,
-        phone: `01234${branch.branch_id}789`,
-        email: `${branch.branch_name.toLowerCase().replace(/\s+/g, '')}@branch.com`,
-        manager_id: "test-user",
-        is_active: true,
-        created_at: "2024-01-01T00:00:00Z",
-        updated_at: "2024-01-01T00:00:00Z",
-      })),
-      error: null,
-    };
-  },
-  
-  async getBranchById(id: string) {
-    const branch = dashboardMockData.transactionAmountsByBranch.day.find(b => b.branch_id === id);
-    
-    if (!branch) {
-      return {
-        data: {
+      data: [
+        {
           id: "1",
-          name: "Main Branch",
+          name: "Chi nhánh chính",
           code: "MB001",
-          address: "123 Main St",
+          address: "123 Đường chính, Quận 1, TP.HCM",
           phone: "0123456789",
           email: "main@branch.com",
           manager_id: "test-user",
@@ -213,18 +190,20 @@ const branchService = {
           created_at: "2024-01-01T00:00:00Z",
           updated_at: "2024-01-01T00:00:00Z",
         },
-        error: null,
-      };
-    }
-    
+        // Additional branches omitted for brevity
+      ],
+      error: null,
+    };
+  },
+  async getBranchById(_id: string) {
     return {
       data: {
-        id: branch.branch_id,
-        name: branch.branch_name,
-        code: `BR${branch.branch_id}`,
-        address: `${branch.branch_id}23 Đường chính, Quận 1, TP.HCM`,
-        phone: `01234${branch.branch_id}789`,
-        email: `${branch.branch_name.toLowerCase().replace(/\s+/g, '')}@branch.com`,
+        id: "1",
+        name: "Main Branch",
+        code: "MB001",
+        address: "123 Main St",
+        phone: "0123456789",
+        email: "main@branch.com",
         manager_id: "test-user",
         is_active: true,
         created_at: "2024-01-01T00:00:00Z",
@@ -235,8 +214,7 @@ const branchService = {
   },
 };
 
-// Dashboard service
-const dashboardService = {
+export const dashboardService = {
   async getDashboardMetrics(
     _branchId?: string,
     timeRange: "day" | "week" | "month" | "quarter" | "year" = "month",
@@ -276,20 +254,20 @@ const dashboardService = {
 
     // Calculate income changes based on previous period
     const incomeChanges = {
-      day: dashboardMockData.incomeAmounts.day - dashboardMockData.previousIncomeAmounts.day,
-      week: dashboardMockData.incomeAmounts.week - dashboardMockData.previousIncomeAmounts.week,
-      month: dashboardMockData.incomeAmounts.month - dashboardMockData.previousIncomeAmounts.month,
-      quarter: dashboardMockData.incomeAmounts.quarter - dashboardMockData.previousIncomeAmounts.quarter,
-      year: dashboardMockData.incomeAmounts.year - dashboardMockData.previousIncomeAmounts.year,
+      day: dashboardMockData.incomeAmounts.day - dashboardMockData.previousIncomeAmounts?.day || 0,
+      week: dashboardMockData.incomeAmounts.week - dashboardMockData.previousIncomeAmounts?.week || 0,
+      month: dashboardMockData.incomeAmounts.month - dashboardMockData.previousIncomeAmounts?.month || 0,
+      quarter: dashboardMockData.incomeAmounts.quarter - dashboardMockData.previousIncomeAmounts?.quarter || 0,
+      year: dashboardMockData.incomeAmounts.year - dashboardMockData.previousIncomeAmounts?.year || 0,
     };
 
     // Calculate debt changes based on previous period
     const debtChanges = {
-      day: dashboardMockData.debtAmounts.day - dashboardMockData.previousDebtAmounts.day,
-      week: dashboardMockData.debtAmounts.week - dashboardMockData.previousDebtAmounts.week,
-      month: dashboardMockData.debtAmounts.month - dashboardMockData.previousDebtAmounts.month,
-      quarter: dashboardMockData.debtAmounts.quarter - dashboardMockData.previousDebtAmounts.quarter,
-      year: dashboardMockData.debtAmounts.year - dashboardMockData.previousDebtAmounts.year,
+      day: dashboardMockData.debtAmounts.day - dashboardMockData.previousDebtAmounts?.day || 0,
+      week: dashboardMockData.debtAmounts.week - dashboardMockData.previousDebtAmounts?.week || 0,
+      month: dashboardMockData.debtAmounts.month - dashboardMockData.previousDebtAmounts?.month || 0,
+      quarter: dashboardMockData.debtAmounts.quarter - dashboardMockData.previousDebtAmounts?.quarter || 0,
+      year: dashboardMockData.debtAmounts.year - dashboardMockData.previousDebtAmounts?.year || 0,
     };
 
     // Calculate outstanding changes based on previous period
@@ -333,14 +311,5 @@ const dashboardService = {
       },
       error: null,
     };
-  }
-};
-
-// Export all services as a single object to match the import in Dashboard.tsx
-export const databaseService = {
-  dashboard: dashboardService,
-  customers: customerService,
-  transactions: transactionService,
-  bankAccounts: bankAccountService,
-  branches: branchService
+  },
 };

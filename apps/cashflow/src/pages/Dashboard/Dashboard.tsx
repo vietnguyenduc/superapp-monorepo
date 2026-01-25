@@ -26,6 +26,15 @@ const Dashboard: React.FC = () => {
   const [metrics, setMetrics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // State for Range and Export menus
+  const [showRangeMenu, setShowRangeMenu] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [rangeCount, setRangeCount] = useState({
+    day: 7,
+    week: 8,
+    month: 7
+  });
 
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
@@ -35,6 +44,7 @@ const Dashboard: React.FC = () => {
     setError(null);
 
     try {
+      // Get the appropriate data based on time range
       const result = await databaseService.dashboard.getDashboardMetrics(
         user.branch_id,
         timeRange,
@@ -130,7 +140,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
         {/* Key Metrics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-4 w-full min-w-0 overflow-hidden">
           <MetricsCard
             title={t("dashboard.totalOutstanding")}
             value={formatCurrency(metrics.totalOutstanding)}
@@ -199,12 +209,123 @@ const Dashboard: React.FC = () => {
           {/* Cash Flow Chart */}
           <div className="bg-white rounded-lg shadow w-full">
             <div className="px-4 py-3 border-b border-gray-200">
-              <h3 className="text-base font-medium text-gray-900">
-                {t("dashboard.cashFlow")}
-              </h3>
-              <p className="mt-1 text-xs text-gray-500">
-                {t("dashboard.cashFlowDescription")}
-              </p>
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-base font-medium text-gray-900">
+                    {t("dashboard.cashFlow")}
+                  </h3>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {t("dashboard.cashFlowDescription")}
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {/* Range button */}
+                  {(timeRange === "day" || timeRange === "week" || timeRange === "month") && (
+                    <div className="relative">
+                      <button 
+                        className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 py-1 px-3 rounded border border-blue-200"
+                        onClick={() => setShowRangeMenu(!showRangeMenu)}
+                      >
+                        Range: {rangeCount[timeRange as keyof typeof rangeCount]}
+                      </button>
+                      
+                      {showRangeMenu && (
+                        <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-10">
+                          {[5, 7, 10, 15, 20].map(count => (
+                            <button 
+                              key={count}
+                              className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                              onClick={() => {
+                                setRangeCount(prev => ({
+                                  ...prev,
+                                  [timeRange]: count
+                                }));
+                                setShowRangeMenu(false);
+                                
+                                // Refresh data with new range count
+                                fetchDashboardData();
+                              }}
+                            >
+                              {count}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Export button */}
+                  <div className="relative">
+                    <button 
+                      className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 py-1 px-3 rounded border border-blue-200"
+                      onClick={() => setShowExportMenu(!showExportMenu)}
+                    >
+                      Export
+                    </button>
+                    
+                    {showExportMenu && (
+                      <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-10">
+                        <button 
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                          onClick={() => {
+                            // Export to CSV
+                            const headers = ['Date', 'Inflow', 'Outflow', 'Net Flow'];
+                            const csvContent = [
+                              headers.join(','),
+                              ...metrics.cashFlowData.map((item: any) => [
+                                new Date(item.date).toLocaleDateString(),
+                                item.inflow,
+                                item.outflow,
+                                item.netFlow
+                              ].join(','))
+                            ].join('\n');
+                            
+                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.setAttribute('href', url);
+                            link.setAttribute('download', `cashflow_${timeRange}_${new Date().toISOString().split('T')[0]}.csv`);
+                            link.style.visibility = 'hidden';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            
+                            setShowExportMenu(false);
+                          }}
+                        >
+                          Export as CSV
+                        </button>
+                        <button 
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                          onClick={() => {
+                            // Export to JSON
+                            const jsonData = metrics.cashFlowData.map((item: any) => ({
+                              date: new Date(item.date).toLocaleDateString(),
+                              inflow: item.inflow,
+                              outflow: item.outflow,
+                              netFlow: item.netFlow
+                            }));
+                            
+                            const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.setAttribute('href', url);
+                            link.setAttribute('download', `cashflow_${timeRange}_${new Date().toISOString().split('T')[0]}.json`);
+                            link.style.visibility = 'hidden';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            
+                            setShowExportMenu(false);
+                          }}
+                        >
+                          Export as JSON
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="p-4">
               <CashFlowChart

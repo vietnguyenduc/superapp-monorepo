@@ -1,9 +1,10 @@
-// Mock services for cashflow app
-import { generateSampleCashFlowData } from "./sampleData";
-import { dashboardMockData } from "./mockData";
+// REMOVE all original Supabase-based service exports above this line
+// Only export the mocked services below for testing
 
-// Customer service
-const customerService = {
+import { generateSampleCashFlowData } from "./sampleData";
+import { dashboardMockData } from "./mockDataUpdated";
+
+export const customerService = {
   async getCustomers(_filters?: any) {
     return {
       data: dashboardMockData.topCustomers.map(customer => ({
@@ -59,8 +60,7 @@ const customerService = {
   },
 };
 
-// Transaction service
-const transactionService = {
+export const transactionService = {
   async getTransactions(_filters?: any) {
     return {
       data: dashboardMockData.recentTransactions,
@@ -120,8 +120,7 @@ const transactionService = {
   },
 };
 
-// Bank account service
-const bankAccountService = {
+export const bankAccountService = {
   async getBankAccounts(_filters?: any) {
     return {
       data: dashboardMockData.bankAccounts.map(account => ({
@@ -176,8 +175,7 @@ const bankAccountService = {
   },
 };
 
-// Branch service
-const branchService = {
+export const branchService = {
   async getBranches() {
     return {
       data: dashboardMockData.transactionAmountsByBranch.day.map(branch => ({
@@ -235,8 +233,7 @@ const branchService = {
   },
 };
 
-// Dashboard service
-const dashboardService = {
+export const dashboardService = {
   async getDashboardMetrics(
     _branchId?: string,
     timeRange: "day" | "week" | "month" | "quarter" | "year" = "month",
@@ -333,14 +330,5 @@ const dashboardService = {
       },
       error: null,
     };
-  }
-};
-
-// Export all services as a single object to match the import in Dashboard.tsx
-export const databaseService = {
-  dashboard: dashboardService,
-  customers: customerService,
-  transactions: transactionService,
-  bankAccounts: bankAccountService,
-  branches: branchService
+  },
 };

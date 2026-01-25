@@ -31,7 +31,7 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
       case "currency":
         return (
           <svg
-            className="w-7 h-7"
+            className="w-5 h-5 sm:w-6 sm:h-6"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -47,7 +47,7 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
       case "users":
         return (
           <svg
-            className="w-7 h-7"
+            className="w-5 h-5 sm:w-6 sm:h-6"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -63,7 +63,7 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
       case "chart":
         return (
           <svg
-            className="w-7 h-7"
+            className="w-5 h-5 sm:w-6 sm:h-6"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -79,7 +79,7 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
       case "database":
         return (
           <svg
-            className="w-7 h-7"
+            className="w-5 h-5 sm:w-6 sm:h-6"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -136,26 +136,31 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
 
   return (
     <div
-      className={`${colorClasses.bg} rounded-xl p-4 shadow-sm border border-white/50 backdrop-blur-sm`}
+      className={`${colorClasses.bg} rounded-xl p-3 sm:p-4 shadow-sm border border-white/50 backdrop-blur-sm h-full flex flex-col overflow-hidden`}
     >
       <div className="flex items-center">
         <div
-          className={`${colorClasses.icon} p-3 rounded-lg bg-white/80 shadow-sm border border-white/50`}
+          className={`${colorClasses.icon} p-2 rounded-lg bg-white/80 shadow-sm border border-white/50`}
         >
           {getIcon()}
         </div>
-        <div className="ml-3 flex-1">
-          <p className="text-base font-medium text-gray-700 tracking-normal">
+        <div className="ml-2 flex-1 min-w-0">
+          <p className="text-sm sm:text-base font-medium text-gray-700 tracking-normal truncate">
             {title}
           </p>
           {dualValues ? (
-            <div className="space-y-1">
+            <div className="mt-1 flex flex-col h-full">
               <div className="flex items-center justify-between">
-                <p className="text-base font-bold text-green-600">
-                  Thu: {dualValues.income}
-                </p>
+                <div className="flex items-center">
+                  <span className="text-xs sm:text-sm font-bold text-green-600 whitespace-nowrap">
+                    Thu:
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold text-green-600 ml-1 truncate">
+                    {dualValues.income}
+                  </span>
+                </div>
                 {dualValues.incomeChange !== undefined && (
-                  <div className="flex items-center">
+                  <div className="flex items-center ml-1">
                     <span
                       className={`text-xs font-medium ${
                         dualValues.incomeChange >= 0
@@ -193,14 +198,17 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
                 )}
               </div>
 
-              <div className="border-t border-gray-200"></div>
-
-              <div className="flex items-center justify-between">
-                <p className="text-base font-bold text-red-600">
-                  Cho nợ: {dualValues.debt}
-                </p>
+              <div className="flex items-center justify-between mt-1">
+                <div className="flex items-center">
+                  <span className="text-xs sm:text-sm font-bold text-red-600 whitespace-nowrap">
+                    Cho nợ:
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold text-red-600 ml-1 truncate">
+                    {dualValues.debt}
+                  </span>
+                </div>
                 {dualValues.debtChange !== undefined && (
-                  <div className="flex items-center">
+                  <div className="flex items-center ml-1">
                     <span
                       className={`text-xs font-medium ${
                         dualValues.debtChange >= 0
@@ -240,7 +248,7 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
             </div>
           ) : (
             <p
-              className={`text-xl font-semibold ${colorClasses.value} tracking-normal`}
+              className={`text-lg sm:text-xl font-semibold ${colorClasses.value} tracking-normal truncate`}
             >
               {value}
             </p>

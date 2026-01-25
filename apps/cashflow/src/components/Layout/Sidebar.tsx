@@ -1,5 +1,6 @@
 import React from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import AddButton from "../UI/AddButton";
 
 interface MenuItem {
@@ -16,11 +17,13 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { t } = useTranslation();
 
   const menuItems: MenuItem[] = [
     {
       path: "/dashboard",
-      name: "Bảng điều khiển",
+      name: t("navigation.dashboard"),
       icon: (
         <svg
           className="w-5 h-5"
@@ -45,7 +48,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     },
     {
       path: "/customers",
-      name: "Khách hàng",
+      name: t("navigation.customers"),
       icon: (
         <svg
           className="w-5 h-5"
@@ -66,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     },
     {
       path: "/transactions",
-      name: "Giao dịch",
+      name: t("navigation.transactions"),
       icon: (
         <svg
           className="w-5 h-5"
@@ -87,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     },
     {
       path: "/settings",
-      name: "Cài đặt",
+      name: t("navigation.settings"),
       icon: (
         <svg
           className="w-5 h-5"
@@ -148,27 +151,29 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
               key={item.path}
               className="flex items-center justify-between group"
             >
-              <NavLink
-                to={item.path}
-                onClick={onClose} // Close mobile menu when item is clicked
-                className={({ isActive }) =>
-                  `flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors flex-1 ${
-                    isActive
-                      ? "bg-primary-100 text-primary-700"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  }`
-                }
+              <a
+                href={item.path}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate(item.path);
+                  if (onClose) onClose();
+                }}
+                className={`flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors flex-1 ${
+                  location.pathname === item.path
+                    ? "bg-primary-100 text-primary-700"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                }`}
               >
                 {item.icon}
                 <span>{item.name}</span>
-              </NavLink>
+              </a>
               {item.hasAddButton && (
                 <div className="ml-2">
                   <AddButton
                     onClick={() => item.addAction?.()}
-                    title="Thêm"
-                    showShine={item.name === "Giao dịch"}
-                    variant={item.name === "Khách hàng" ? "plain" : "default"}
+                    title={t("common.add")}
+                    showShine={item.path === "/transactions"}
+                    variant={item.path === "/customers" ? "plain" : "default"}
                   />
                 </div>
               )}

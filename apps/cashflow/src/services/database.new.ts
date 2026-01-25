@@ -2,7 +2,7 @@
 import { generateSampleCashFlowData } from "./sampleData";
 import { dashboardMockData } from "./mockData";
 
-// Customer service
+// Customer service functions
 const customerService = {
   async getCustomers(_filters?: any) {
     return {
@@ -59,7 +59,7 @@ const customerService = {
   },
 };
 
-// Transaction service
+// Transaction service functions
 const transactionService = {
   async getTransactions(_filters?: any) {
     return {
@@ -120,7 +120,7 @@ const transactionService = {
   },
 };
 
-// Bank account service
+// Bank account service functions
 const bankAccountService = {
   async getBankAccounts(_filters?: any) {
     return {
@@ -176,7 +176,7 @@ const bankAccountService = {
   },
 };
 
-// Branch service
+// Branch service functions
 const branchService = {
   async getBranches() {
     return {
@@ -235,7 +235,7 @@ const branchService = {
   },
 };
 
-// Dashboard service
+// Dashboard service functions
 const dashboardService = {
   async getDashboardMetrics(
     _branchId?: string,

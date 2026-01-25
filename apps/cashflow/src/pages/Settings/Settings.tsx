@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ErrorFallback } from "../../components/UI/FallbackUI";
 import ToggleSwitch from "../../components/UI/ToggleSwitch";
 import Button from "../../components/UI/Button";
-import { bankAccountService, branchService } from "../../services/database";
+import { databaseService } from "../../services/database";
 import { formatCurrency } from "../../utils/formatting";
 
 interface TransactionType {
@@ -64,7 +64,7 @@ const Settings: React.FC = () => {
       setLoading(true);
       try {
         // Load bank accounts
-        const bankAccountsResponse = await bankAccountService.getBankAccounts();
+        const bankAccountsResponse = await databaseService.bankAccounts.getBankAccounts();
         if (bankAccountsResponse.error) {
           throw new Error(bankAccountsResponse.error);
         }
@@ -83,7 +83,7 @@ const Settings: React.FC = () => {
         setBankAccounts(formattedBankAccounts);
 
         // Load branches
-        const branchesResponse = await branchService.getBranches();
+        const branchesResponse = await databaseService.branches.getBranches();
         if (branchesResponse.error) {
           throw new Error(branchesResponse.error);
         }

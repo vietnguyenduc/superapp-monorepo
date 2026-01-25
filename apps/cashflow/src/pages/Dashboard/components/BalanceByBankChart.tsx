@@ -35,27 +35,57 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
   }
 
   // Prepare data for chart
-  const chartData = data.map((account) => ({
-    name: account.account_name,
-    balance: account.balance,
-    accountNumber: account.account_number,
-  }));
+  const chartData = data.map((account) => {
+    // Ensure account_name exists before using it
+    const accountName = account.account_name || '';
+    
+    // Extract bank name from account_name if it contains a separator
+    const bankName = accountName && accountName.includes(' - ') 
+      ? accountName.split(' - ')[0] 
+      : '';
+      
+    return {
+      name: accountName,
+      displayName: bankName || accountName,
+      balance: account.balance || 0,
+      accountNumber: account.account_number || '',
+      bankName: bankName,
+    };
+  });
+
+  interface TooltipProps {
+    active?: boolean;
+    payload?: Array<{
+      value: number;
+      payload: {
+        name: string;
+        displayName: string;
+        balance: number;
+        accountNumber: string;
+        bankName: string;
+      };
+    }>;
+    label?: string;
+  }
 
   // Custom tooltip
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
+  const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
+    if (active && payload && payload.length && payload[0] && payload[0].payload) {
+      const tooltipData = payload[0].payload;
+      const value = payload[0].value || 0;
+      
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="text-sm font-medium text-gray-900">{label}</p>
+          <p className="text-sm font-medium text-gray-900">{label || ''}</p>
           <p className="text-xs text-gray-500">
-            {t("dashboard.accountNumber")}: {payload[0].payload.accountNumber}
+            {t("dashboard.accountNumber")}: {tooltipData.accountNumber || ''}
           </p>
           <p
             className={`text-sm font-bold ${
-              payload[0].value >= 0 ? "text-green-600" : "text-red-600"
+              value >= 0 ? "text-green-600" : "text-red-600"
             }`}
           >
-            {t("dashboard.balance")}: {formatCurrency(payload[0].value)}
+            {t("dashboard.balance")}: {formatCurrency(value)}
           </p>
         </div>
       );
@@ -63,9 +93,18 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
     return null;
   };
 
+  interface CustomBarProps {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    value?: number;
+  }
+
   // Custom bar component with conditional colors
-  const CustomBar = (props: any) => {
-    const { x, y, width, height, value } = props;
+  const CustomBar = (props: CustomBarProps) => {
+    // Add null checks and default values
+    const { x = 0, y = 0, width = 0, height = 0, value = 0 } = props || {};
     const isPositive = value >= 0;
 
     return (
@@ -89,7 +128,7 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
           <XAxis
-            dataKey="name"
+            dataKey="displayName"
             tick={{ fontSize: 11 }}
             angle={-45}
             textAnchor="end"
