@@ -12,6 +12,39 @@ export const formatCurrency = (amount: number, currency = "VND"): string => {
   }).format(amount);
 };
 
+// Compact currency formatting (for small spaces)
+export const formatCompactCurrency = (amount: number): string => {
+  // For large numbers, use compact notation
+  if (Math.abs(amount) >= 1000000) {
+    const millions = amount / 1000000;
+    return `${millions.toFixed(1)}M đ`;
+  } else if (Math.abs(amount) >= 1000) {
+    const thousands = amount / 1000;
+    return `${thousands.toFixed(1)}K đ`;
+  }
+  
+  // For smaller numbers, use regular formatting but more compact
+  return new Intl.NumberFormat("vi-VN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount) + " đ";
+};
+
+// Format number changes compactly (for +/- indicators)
+export const formatCompactChange = (amount: number): string => {
+  // For large numbers, use compact notation
+  if (Math.abs(amount) >= 1000000) {
+    const millions = amount / 1000000;
+    return `${millions.toFixed(1)}M`;
+  } else if (Math.abs(amount) >= 1000) {
+    const thousands = amount / 1000;
+    return `${thousands.toFixed(1)}K`;
+  }
+  
+  // For smaller numbers, use regular formatting but more compact
+  return amount.toString();
+};
+
 // Date formatting
 export const formatDate = (
   date: string | Date,

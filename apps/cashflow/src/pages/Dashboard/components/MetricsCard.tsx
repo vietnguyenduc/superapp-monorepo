@@ -1,5 +1,5 @@
 import React from "react";
-import { formatNumber } from "../../../utils/formatting";
+import { formatNumber, formatCompactCurrency, formatCompactChange } from "../../../utils/formatting";
 
 interface MetricsCardProps {
   title: string;
@@ -10,8 +10,8 @@ interface MetricsCardProps {
   color: "primary" | "success" | "warning" | "info";
   // New props for dual value cards
   dualValues?: {
-    income: string;
-    debt: string;
+    income: number | string;
+    debt: number | string;
     incomeChange?: number;
     debtChange?: number;
   };
@@ -155,8 +155,11 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
                   <span className="text-xs sm:text-sm font-bold text-green-600 whitespace-nowrap">
                     Thu:
                   </span>
-                  <span className="text-xs sm:text-sm font-bold text-green-600 ml-1 truncate">
-                    {dualValues.income}
+                  <span className="text-xs sm:text-sm font-bold text-green-600 ml-1">
+                    {/* Format raw numbers directly */}
+                    {typeof dualValues.income === 'number' ? 
+                      formatCompactCurrency(dualValues.income) : 
+                      dualValues.income}
                   </span>
                 </div>
                 {dualValues.incomeChange !== undefined && (
@@ -169,7 +172,7 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
                       }`}
                     >
                       {dualValues.incomeChange >= 0 ? "+" : ""}
-                      {formatNumber(dualValues.incomeChange)}
+                      {formatCompactChange(dualValues.incomeChange)}
                     </span>
                     <svg
                       className={`ml-1 w-3 h-3 ${
@@ -203,8 +206,11 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
                   <span className="text-xs sm:text-sm font-bold text-red-600 whitespace-nowrap">
                     Cho nợ:
                   </span>
-                  <span className="text-xs sm:text-sm font-bold text-red-600 ml-1 truncate">
-                    {dualValues.debt}
+                  <span className="text-xs sm:text-sm font-bold text-red-600 ml-1">
+                    {/* Format raw numbers directly */}
+                    {typeof dualValues.debt === 'number' ? 
+                      formatCompactCurrency(dualValues.debt) : 
+                      dualValues.debt}
                   </span>
                 </div>
                 {dualValues.debtChange !== undefined && (
@@ -217,7 +223,7 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
                       }`}
                     >
                       {dualValues.debtChange >= 0 ? "+" : ""}
-                      {formatNumber(dualValues.debtChange)}
+                      {formatCompactChange(dualValues.debtChange)}
                     </span>
                     <svg
                       className={`ml-1 w-3 h-3 ${

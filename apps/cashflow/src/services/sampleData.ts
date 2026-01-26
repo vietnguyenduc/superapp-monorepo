@@ -1,16 +1,45 @@
-// Sample data for cash flow with configurable ranges (7 days, 8 weeks, 7 months)
+// Sample data for cash flow with configurable ranges (30 days, 24 weeks, 24 months)
 export const generateSampleCashFlowData = () => {
   const today = new Date();
   const dailyData = [];
   
-  // Generate data for past 7 days
-  for (let dayOffset = 6; dayOffset >= 0; dayOffset--) {
+  // Generate data for past 90 days with more distinct values (3 months of daily data)
+  for (let dayOffset = 89; dayOffset >= 0; dayOffset--) {
     const date = new Date();
     date.setDate(today.getDate() - dayOffset);
     
-    // Generate random inflow and outflow values
-    const inflow = Math.floor(Math.random() * 5000000) + 500000; // 500k to 5.5M
-    const outflow = Math.floor(Math.random() * 6000000) + 1000000; // 1M to 7M
+    // Generate more distinct inflow and outflow values
+    // Use a pattern to create more visual difference between days
+    let inflow, outflow;
+    
+    // Create seasonal patterns
+    const month = date.getMonth();
+    const dayOfMonth = date.getDate();
+    
+    // Beginning of month has higher inflows (payments coming in)
+    if (dayOfMonth <= 5) {
+      inflow = Math.floor(Math.random() * 5000000) + 8000000; // 8M to 13M
+      outflow = Math.floor(Math.random() * 2000000) + 1000000; // 1M to 3M
+    } 
+    // Middle of month has balanced flows
+    else if (dayOfMonth > 5 && dayOfMonth <= 20) {
+      inflow = Math.floor(Math.random() * 3000000) + 3000000; // 3M to 6M
+      outflow = Math.floor(Math.random() * 3000000) + 3000000; // 3M to 6M
+    } 
+    // End of month has higher outflows (paying suppliers)
+    else {
+      inflow = Math.floor(Math.random() * 2000000) + 1000000; // 1M to 3M
+      outflow = Math.floor(Math.random() * 5000000) + 7000000; // 7M to 12M
+    }
+    
+    // Add seasonal variations
+    if (month === 0 || month === 11) { // January and December (holiday season)
+      inflow = Math.floor(inflow * 1.3); // 30% more income
+      outflow = Math.floor(outflow * 1.2); // 20% more expenses
+    } else if (month === 6 || month === 7) { // July and August (summer season)
+      inflow = Math.floor(inflow * 0.8); // 20% less income
+      outflow = Math.floor(outflow * 0.9); // 10% less expenses
+    }
     
     dailyData.push({
       date: date.toISOString(),
@@ -20,44 +49,86 @@ export const generateSampleCashFlowData = () => {
     });
   }
   
-  // Generate weekly data for past 8 weeks
+  // Generate weekly data for past 104 weeks (2 years)
   const weeklyData = [];
-  for (let week = 7; week >= 0; week--) {
+  for (let week = 103; week >= 0; week--) {
     const weekDate = new Date();
     weekDate.setDate(weekDate.getDate() - (week * 7));
     
-    const inflow = Math.floor(Math.random() * 10000000) + 2000000; // 2M to 12M
-    const outflow = Math.floor(Math.random() * 15000000) + 5000000; // 5M to 20M
+    // Create seasonal patterns
+    const month = weekDate.getMonth();
+    
+    // Base values
+    let baseInflow = Math.floor(Math.random() * 10000000) + 15000000; // 15M to 25M
+    let baseOutflow = Math.floor(Math.random() * 8000000) + 12000000; // 12M to 20M
+    
+    // Add seasonal variations
+    if (month === 0 || month === 11) { // January and December (holiday season)
+      baseInflow = Math.floor(baseInflow * 1.3); // 30% more income
+      baseOutflow = Math.floor(baseOutflow * 1.2); // 20% more expenses
+    } else if (month === 6 || month === 7) { // July and August (summer season)
+      baseInflow = Math.floor(baseInflow * 0.8); // 20% less income
+      baseOutflow = Math.floor(baseOutflow * 0.9); // 10% less expenses
+    }
+    
+    // Add year-over-year growth
+    if (week >= 52) { // First year data
+      baseInflow = Math.floor(baseInflow * 0.85); // 15% less income in previous year
+      baseOutflow = Math.floor(baseOutflow * 0.9); // 10% less expenses in previous year
+    }
     
     weeklyData.push({
       date: weekDate.toISOString(),
-      inflow,
-      outflow,
-      netFlow: inflow - outflow
+      inflow: baseInflow,
+      outflow: baseOutflow,
+      netFlow: baseInflow - baseOutflow
     });
   }
   
-  // Generate monthly data for past 7 months with consistent values
+  // Generate monthly data for past 24 months (2 years)
   const monthlyData = [];
   
-  // Define specific values for each month to ensure consistency and visual interest
-  const monthlyValues = [
-    { inflow: 52000000, outflow: 35000000 },  // Jul 2025 (6 months ago)
-    { inflow: 38000000, outflow: 42000000 },  // Aug 2025 (5 months ago)
-    { inflow: 45000000, outflow: 39000000 },  // Sep 2025 (4 months ago)
-    { inflow: 42000000, outflow: 48000000 },  // Oct 2025 (3 months ago)
-    { inflow: 39000000, outflow: 36000000 },  // Nov 2025 (2 months ago)
-    { inflow: 41000000, outflow: 37000000 },  // Dec 2025 (1 month ago)
-    { inflow: 40000000, outflow: 39322274 }   // Jan 2026 (Current month)
-  ];
-  
-  for (let month = 6; month >= 0; month--) {
+  // Generate data for 24 months with realistic patterns
+  for (let month = 23; month >= 0; month--) {
     const monthDate = new Date();
     monthDate.setMonth(monthDate.getMonth() - month);
     
-    // Use the predefined values for consistency
-    const inflow = monthlyValues[6-month].inflow;
-    const outflow = monthlyValues[6-month].outflow;
+    const currentMonth = monthDate.getMonth();
+    const currentYear = monthDate.getFullYear();
+    
+    // Base values with seasonal patterns
+    let baseInflow, baseOutflow;
+    
+    // Seasonal patterns
+    if (currentMonth === 0) { // January - slow start
+      baseInflow = 38000000 + Math.floor(Math.random() * 5000000);
+      baseOutflow = 36000000 + Math.floor(Math.random() * 4000000);
+    } else if (currentMonth === 11) { // December - year-end rush
+      baseInflow = 58000000 + Math.floor(Math.random() * 7000000);
+      baseOutflow = 52000000 + Math.floor(Math.random() * 6000000);
+    } else if (currentMonth >= 5 && currentMonth <= 7) { // Summer months
+      baseInflow = 45000000 + Math.floor(Math.random() * 8000000);
+      baseOutflow = 42000000 + Math.floor(Math.random() * 7000000);
+    } else if (currentMonth >= 2 && currentMonth <= 4) { // Spring months
+      baseInflow = 48000000 + Math.floor(Math.random() * 6000000);
+      baseOutflow = 44000000 + Math.floor(Math.random() * 5000000);
+    } else if (currentMonth >= 8 && currentMonth <= 10) { // Fall months
+      baseInflow = 50000000 + Math.floor(Math.random() * 7000000);
+      baseOutflow = 46000000 + Math.floor(Math.random() * 6000000);
+    } else {
+      baseInflow = 42000000 + Math.floor(Math.random() * 6000000);
+      baseOutflow = 40000000 + Math.floor(Math.random() * 5000000);
+    }
+    
+    // Year-over-year growth
+    if (month >= 12) { // First year data
+      baseInflow = Math.floor(baseInflow * 0.85); // 15% less income in previous year
+      baseOutflow = Math.floor(baseOutflow * 0.9); // 10% less expenses in previous year
+    }
+    
+    // Add some randomness for realistic variation
+    const inflow = Math.floor(baseInflow * (0.95 + Math.random() * 0.1)); // ±5% variation
+    const outflow = Math.floor(baseOutflow * (0.95 + Math.random() * 0.1)); // ±5% variation
     
     monthlyData.push({
       date: monthDate.toISOString(),
@@ -67,36 +138,62 @@ export const generateSampleCashFlowData = () => {
     });
   }
   
-  // Generate quarterly data for past 4 quarters with consistent values
+  // Generate quarterly data for past 8 quarters (2 years)
   const quarterlyData = [];
   
-  // Define specific values for each quarter to ensure consistency with monthly data
-  const quarterlyValues = [
-    { // Q2 2025 (Apr-Jun 2025)
-      inflow: 135000000, 
-      outflow: 114500000
-    },
-    { // Q3 2025 (Jul-Sep 2025)
-      inflow: 135000000, // Sum of Jul-Sep monthly inflows
-      outflow: 116000000  // Sum of Jul-Sep monthly outflows
-    },
-    { // Q4 2025 (Oct-Dec 2025)
-      inflow: 122000000, // Sum of Oct-Dec monthly inflows
-      outflow: 121000000  // Sum of Oct-Dec monthly outflows
-    },
-    { // Q1 2026 (Jan-Mar 2026, though we only have Jan data)
-      inflow: 40000000,  // Jan inflow
-      outflow: 39322274  // Jan outflow
-    }
-  ];
-  
-  for (let quarter = 3; quarter >= 0; quarter--) {
+  // Generate data for 8 quarters with realistic patterns
+  for (let quarter = 7; quarter >= 0; quarter--) {
     const quarterDate = new Date();
     quarterDate.setMonth(quarterDate.getMonth() - (quarter * 3));
     
-    // Use the predefined values for consistency
-    const inflow = quarterlyValues[3-quarter].inflow;
-    const outflow = quarterlyValues[3-quarter].outflow;
+    const currentMonth = quarterDate.getMonth();
+    const currentQuarter = Math.floor(currentMonth / 3);
+    
+    // Base values with seasonal patterns
+    let baseInflow, baseOutflow;
+    
+    // Quarterly patterns
+    if (currentQuarter === 0) { // Q1 (Jan-Mar)
+      baseInflow = 130000000 + Math.floor(Math.random() * 10000000);
+      baseOutflow = 120000000 + Math.floor(Math.random() * 8000000);
+    } else if (currentQuarter === 1) { // Q2 (Apr-Jun)
+      baseInflow = 140000000 + Math.floor(Math.random() * 12000000);
+      baseOutflow = 125000000 + Math.floor(Math.random() * 10000000);
+    } else if (currentQuarter === 2) { // Q3 (Jul-Sep)
+      baseInflow = 135000000 + Math.floor(Math.random() * 15000000);
+      baseOutflow = 122000000 + Math.floor(Math.random() * 12000000);
+    } else { // Q4 (Oct-Dec)
+      baseInflow = 150000000 + Math.floor(Math.random() * 20000000);
+      baseOutflow = 135000000 + Math.floor(Math.random() * 15000000);
+    }
+    
+    // Year-over-year growth
+    if (quarter >= 4) { // First year data
+      baseInflow = Math.floor(baseInflow * 0.85); // 15% less income in previous year
+      baseOutflow = Math.floor(baseOutflow * 0.9); // 10% less expenses in previous year
+    }
+    
+    // Calculate quarter total from monthly data for consistency
+    // Find the 3 months that correspond to this quarter
+    const monthsInQuarter = monthlyData.filter((item) => {
+      const itemDate = new Date(item.date);
+      const itemQuarter = Math.floor(itemDate.getMonth() / 3);
+      const itemYear = itemDate.getFullYear();
+      const quarterYear = quarterDate.getFullYear();
+      
+      return itemQuarter === currentQuarter && itemYear === quarterYear;
+    });
+    
+    // If we have monthly data for this quarter, use the sum
+    let inflow, outflow;
+    if (monthsInQuarter.length > 0) {
+      inflow = monthsInQuarter.reduce((sum, item) => sum + item.inflow, 0);
+      outflow = monthsInQuarter.reduce((sum, item) => sum + item.outflow, 0);
+    } else {
+      // Otherwise use the base values
+      inflow = baseInflow;
+      outflow = baseOutflow;
+    }
     
     quarterlyData.push({
       date: quarterDate.toISOString(),
@@ -106,40 +203,38 @@ export const generateSampleCashFlowData = () => {
     });
   }
   
-  // Generate yearly data for past 3 years with consistent values
+  // Generate yearly data based on actual transaction dates (2024 only)
   const yearlyData = [];
   
-  // Define specific values for each year to ensure consistency with quarterly data
-  const yearlyValues = [
-    { // 2024
-      inflow: 520000000,
-      outflow: 480000000
-    },
-    { // 2025
-      inflow: 432000000, // Sum of Q2-Q4 2025 inflows
-      outflow: 391500000  // Sum of Q2-Q4 2025 outflows
-    },
-    { // 2026 (only Q1 data so far)
-      inflow: 40000000,  // Q1 2026 inflow
-      outflow: 39322274  // Q1 2026 outflow
-    }
-  ];
+  // Only use 2024 data to match actual transactions
+  const yearDate = new Date();
+  yearDate.setFullYear(2024);
   
-  for (let year = 2; year >= 0; year--) {
-    const yearDate = new Date();
-    yearDate.setFullYear(yearDate.getFullYear() - year);
-    
-    // Use the predefined values for consistency
-    const inflow = yearlyValues[2-year].inflow;
-    const outflow = yearlyValues[2-year].outflow;
-    
-    yearlyData.push({
-      date: yearDate.toISOString(),
-      inflow,
-      outflow,
-      netFlow: inflow - outflow
-    });
+  // Calculate year total from quarterly data for consistency
+  // Find the quarters that correspond to 2024
+  const quartersIn2024 = quarterlyData.filter((item) => {
+    const itemDate = new Date(item.date);
+    return itemDate.getFullYear() === 2024;
+  });
+  
+  // Calculate inflow and outflow for 2024
+  let inflow, outflow;
+  if (quartersIn2024.length > 0) {
+    inflow = quartersIn2024.reduce((sum, item) => sum + item.inflow, 0);
+    outflow = quartersIn2024.reduce((sum, item) => sum + item.outflow, 0);
+  } else {
+    // Fallback values if no quarterly data for 2024
+    inflow = 40000000; // 40M
+    outflow = 35000000; // 35M
   }
+  
+  // Add only 2024 data
+  yearlyData.push({
+    date: yearDate.toISOString(),
+    inflow,
+    outflow,
+    netFlow: inflow - outflow
+  });
   
   return {
     dailyData,

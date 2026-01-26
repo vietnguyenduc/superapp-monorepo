@@ -28,12 +28,12 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   // State for Range and Export menus
-  const [showRangeMenu, setShowRangeMenu] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [rangeCount, setRangeCount] = useState({
     day: 7,
     week: 8,
-    month: 7
+    month: 7,
+    quarter: 4
   });
 
   // Fetch dashboard data
@@ -44,10 +44,11 @@ const Dashboard: React.FC = () => {
     setError(null);
 
     try {
-      // Get the appropriate data based on time range
+      // Get the appropriate data based on time range and rangeCount
       const result = await databaseService.dashboard.getDashboardMetrics(
         user.branch_id,
         timeRange,
+        rangeCount, // Pass rangeCount to control the number of data points
       );
 
       if (result.error) {
@@ -62,7 +63,7 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.branch_id, timeRange]);
+  }, [user?.branch_id, timeRange, rangeCount]); // Add rangeCount as dependency
 
   // Load data on component mount and when time range changes
   useEffect(() => {
@@ -73,6 +74,25 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
     return () => clearInterval(interval);
+  }, [fetchDashboardData]);
+  
+  // Listen for range changes from the CashFlowChart component
+  useEffect(() => {
+    const handleRangeChange = (event: any) => {
+      const { timeRange: eventTimeRange, count } = event.detail;
+      
+      // Update range count
+      setRangeCount(prev => ({
+        ...prev,
+        [eventTimeRange]: count
+      }));
+      
+      // Refetch data with new range
+      fetchDashboardData();
+    };
+    
+    window.addEventListener('rangeChange', handleRangeChange);
+    return () => window.removeEventListener('rangeChange', handleRangeChange);
   }, [fetchDashboardData]);
 
   if (loading) {
@@ -175,20 +195,23 @@ const Dashboard: React.FC = () => {
               debtChange: metrics.transactionChargeChange,
             }}
           />
-          <MetricsCard
-            title={t("dashboard.transactionAmountsInPeriod", {
-              period: t(`dashboard.timeRange.${timeRange}`),
-            })}
-            value=""
-            icon="currency"
-            color="info"
-            dualValues={{
-              income: formatCurrency(metrics.transactionIncomeInPeriod),
-              debt: formatCurrency(metrics.transactionDebtInPeriod),
-              incomeChange: metrics.transactionIncomeChange,
-              debtChange: metrics.transactionDebtChange,
-            }}
-          />
+          <div className="overflow-visible">
+            <MetricsCard
+              title={t("dashboard.transactionAmountsInPeriod", {
+                period: t(`dashboard.timeRange.${timeRange}`),
+              })}
+              value=""
+              icon="currency"
+              color="info"
+              dualValues={{
+                // Pass raw numbers directly to component for processing
+                income: metrics.transactionIncomeInPeriod,
+                debt: metrics.transactionDebtInPeriod,
+                incomeChange: metrics.transactionIncomeChange,
+                debtChange: metrics.transactionDebtChange,
+              }}
+            />
+          </div>
         </div>
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4 w-full">
@@ -215,42 +238,46 @@ const Dashboard: React.FC = () => {
                     {t("dashboard.cashFlow")}
                   </h3>
                   <p className="mt-1 text-xs text-gray-500">
-                    {t("dashboard.cashFlowDescription")}
+                    {timeRange === "day" ? `Cash flow chart ${rangeCount.day} days` :
+                     timeRange === "week" ? `Cash flow chart ${rangeCount.week} weeks` :
+                     timeRange === "month" ? `Cash flow chart ${rangeCount.month} months` :
+                     timeRange === "quarter" ? `Cash flow chart by quarter` :
+                     `Cash flow chart by year`}
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {/* Range button */}
+                  {/* Free text input for range */}
                   {(timeRange === "day" || timeRange === "week" || timeRange === "month") && (
-                    <div className="relative">
-                      <button 
-                        className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 py-1 px-3 rounded border border-blue-200"
-                        onClick={() => setShowRangeMenu(!showRangeMenu)}
-                      >
-                        Range: {rangeCount[timeRange as keyof typeof rangeCount]}
-                      </button>
-                      
-                      {showRangeMenu && (
-                        <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-10">
-                          {[5, 7, 10, 15, 20].map(count => (
-                            <button 
-                              key={count}
-                              className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                              onClick={() => {
-                                setRangeCount(prev => ({
-                                  ...prev,
-                                  [timeRange]: count
-                                }));
-                                setShowRangeMenu(false);
-                                
-                                // Refresh data with new range count
-                                fetchDashboardData();
-                              }}
-                            >
-                              {count}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                    <div className="flex items-center">
+                      <input 
+                        type="number" 
+                        min="1"
+                        max="100"
+                        className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 py-1 px-3 rounded border border-blue-200 w-16"
+                        value={rangeCount[timeRange as keyof typeof rangeCount]}
+                        onChange={(e) => {
+                          const newValue = e.target.value;
+                          const newCount = parseInt(newValue);
+                          
+                          // Validate input (between 1 and 100)
+                          if (newCount >= 1 && newCount <= 100) {
+                            setRangeCount(prev => ({
+                              ...prev,
+                              [timeRange]: newCount
+                            }));
+                          }
+                        }}
+                        onBlur={() => {
+                          // Refresh data when input loses focus
+                          fetchDashboardData();
+                        }}
+                        onKeyDown={(e) => {
+                          // Refresh data when Enter key is pressed
+                          if (e.key === 'Enter') {
+                            fetchDashboardData();
+                          }
+                        }}
+                      />
                     </div>
                   )}
                   

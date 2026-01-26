@@ -126,9 +126,9 @@ const bankAccountService = {
     return {
       data: dashboardMockData.bankAccounts.map(account => ({
         id: account.id,
-        account_number: `ACCT${account.id}`,
-        account_name: account.name,
-        bank_name: account.name.split(' - ')[0],
+        account_number: account.account_number || `ACCT${account.id}`,
+        account_name: account.account_name,
+        bank_name: account.account_name.split(' - ')[0],
         branch_id: "1",
         balance: account.balance,
         is_active: true,
@@ -162,9 +162,9 @@ const bankAccountService = {
     return {
       data: {
         id: account.id,
-        account_number: `ACCT${account.id}`,
-        account_name: account.name,
-        bank_name: account.name.split(' - ')[0],
+        account_number: account.account_number || `ACCT${account.id}`,
+        account_name: account.account_name,
+        bank_name: account.account_name.split(' - ')[0],
         branch_id: "1",
         balance: account.balance,
         is_active: true,
@@ -240,18 +240,34 @@ const dashboardService = {
   async getDashboardMetrics(
     _branchId?: string,
     timeRange: "day" | "week" | "month" | "quarter" | "year" = "month",
+    rangeCount?: { day: number; week: number; month: number; quarter: number }
   ) {
     // Get sample data for cash flow
-    const sampleData = generateSampleCashFlowData();
+    const sampleData = generateSampleCashFlowData() as {
+      dailyData: any[];
+      weeklyData: any[];
+      monthlyData: any[];
+      quarterlyData: any[];
+      yearlyData: any[];
+    };
     
     // Get the appropriate cash flow data based on the time range
     let cashFlowData;
     switch (timeRange) {
       case "day":
-        cashFlowData = sampleData.dailyData.slice(-30); // Last 30 days
+        // Use rangeCount.day if provided, otherwise default to 7
+        const dayCount = rangeCount?.day || 7;
+        cashFlowData = sampleData.dailyData.slice(-dayCount); 
         break;
       case "week":
-        cashFlowData = sampleData.weeklyData;
+        // Use rangeCount.week if provided, otherwise default to 8
+        const weekCount = rangeCount?.week || 8;
+        cashFlowData = sampleData.weeklyData.slice(-weekCount);
+        break;
+      case "month":
+        // Use rangeCount.month if provided, otherwise default to 7
+        const monthCount = rangeCount?.month || 7;
+        cashFlowData = sampleData.monthlyData.slice(-monthCount);
         break;
       case "quarter":
         cashFlowData = sampleData.quarterlyData;
@@ -259,9 +275,10 @@ const dashboardService = {
       case "year":
         cashFlowData = sampleData.yearlyData;
         break;
-      case "month":
       default:
-        cashFlowData = sampleData.dailyData.slice(-30); // Default to last 30 days
+        // Default to monthly data with rangeCount if provided
+        const defaultMonthCount = rangeCount?.month || 7;
+        cashFlowData = sampleData.monthlyData.slice(-defaultMonthCount);
         break;
     }
 
@@ -325,7 +342,24 @@ const dashboardService = {
         transactionDebtInPeriod: dashboardMockData.debtAmounts[timeRange],
         transactionIncomeChange: incomeChanges[timeRange],
         transactionDebtChange: debtChanges[timeRange],
-        balanceByBankAccount: dashboardMockData.bankAccounts,
+        balanceByBankAccount: dashboardMockData.bankAccounts.map(account => ({
+          bank_account_id: account.id,
+          account_name: account.account_name,
+          account_number: account.account_number,
+          balance: account.balance,
+          // Use historical data from the account if available
+          historical_data: Array.isArray(account.historical_data) ? 
+            account.historical_data.map((value, index) => ({
+              date: `2024-0${index+1}-01`,
+              balance: value
+            })) : 
+            [
+              { date: '2024-01-01', balance: account.balance * 0.85 },
+              { date: '2024-02-01', balance: account.balance * 0.9 },
+              { date: '2024-03-01', balance: account.balance * 0.95 },
+              { date: '2024-04-01', balance: account.balance },
+            ]
+        })),
         cashFlowData: cashFlowData,
         transactionAmountsByBranch: dashboardMockData.transactionAmountsByBranch[timeRange],
         recentTransactions: dashboardMockData.recentTransactions,

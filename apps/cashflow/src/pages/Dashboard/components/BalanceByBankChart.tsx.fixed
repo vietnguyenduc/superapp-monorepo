@@ -28,6 +28,40 @@ interface BalanceByBankChartProps {
   data: BalanceByBankAccount[];
 }
 
+interface ChartDataItem {
+  id: string;
+  name: string;
+  displayName: string;
+  accountType: string;
+  balance: number;
+  accountNumber: string;
+  bankName: string;
+  historicalData: { date: string; balance: number }[];
+  trendChange: number;
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+}
+
+interface CustomBarProps {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  value?: number;
+}
+
+interface RenderXAxisTickProps {
+  x?: number;
+  y?: number;
+  payload?: {
+    value: string;
+  };
+}
+
 const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
   const { t } = useTranslation();
 
@@ -40,7 +74,7 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
   }
 
   // Prepare data for chart using real data from database
-  const chartData = data.map((account) => {
+  const chartData: ChartDataItem[] = data.map((account) => {
     // Ensure account_name exists before using it
     const accountName = account.account_name || '';
     
@@ -69,14 +103,14 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
   });
 
   // Custom tooltip with mini chart
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label }) => {
     if (active && payload && payload.length && payload[0] && payload[0].payload) {
-      const tooltipData = payload[0].payload;
-      const value = payload[0].value || 0;
+      const tooltipData = payload[0].payload as ChartDataItem;
+      const value = payload[0].value as number || 0;
       const trendChange = tooltipData.trendChange || 0;
       const historicalData = tooltipData.historicalData || [];
       
-      const miniChartData = historicalData.map((item: any) => ({
+      const miniChartData = historicalData.map((item) => ({
         name: item.date,
         value: item.balance
       }));
@@ -117,7 +151,7 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
   };
 
   // Custom bar component with conditional colors
-  const CustomBar = (props: any) => {
+  const CustomBar: React.FC<CustomBarProps> = (props) => {
     // Add null checks and default values
     const { x = 0, y = 0, width = 0, height = 0, value = 0 } = props || {};
     const isPositive = value >= 0;
@@ -135,8 +169,9 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
   };
 
   // Responsive X-axis tick component
-  const renderXAxisTick = (props: any) => {
-    const { x, y, payload } = props;
+  const renderXAxisTick = (props: RenderXAxisTickProps) => {
+    const { x = 0, y = 0, payload } = props;
+    if (!payload) return null;
     
     // Get the data for this tick
     const tickData = chartData.find(item => item.name === payload.value) || {};
