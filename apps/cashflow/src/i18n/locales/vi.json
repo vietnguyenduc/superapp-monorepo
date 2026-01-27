@@ -43,7 +43,8 @@
     "dark": "Tối",
     "light": "Sáng",
     "system": "Hệ thống",
-    "retry": "Thử lại"
+    "retry": "Thử lại",
+    "select": "Chọn"
   },
   "app": {
     "title": "Quản lý công nợ TPL",
@@ -88,14 +89,14 @@
     "totalOutstanding": "Tổng công nợ",
     "activeCustomers": "Khách hàng hoạt động",
     "transactionsInPeriod": "Giao dịch trong {{period}}",
-    "transactionAmountsInPeriod": "Số tiền giao dịch trong {{period}}",
+    "transactionAmountsInPeriod": "Số tiền {{period}}",
     "totalTransactions": "Tổng giao dịch",
     "balanceByBank": "Số dư theo tài khoản ngân hàng",
     "balanceByBankDescription": "Phân bổ số dư theo từng tài khoản ngân hàng",
     "cashFlow": "Dòng tiền",
     "cashFlowDescription": "Biểu đồ dòng tiền ra vào theo thời gian",
-    "balanceByBranch": "Giao dịch tiền ra vào theo chi nhánh",
-    "balanceByBranchDescription": "Tổng hợp giao dịch tiền ra vào của từng chi nhánh",
+    "balanceByBranch": "Giao dịch tiền ra vào theo văn phòng",
+    "balanceByBranchDescription": "Tổng hợp giao dịch tiền ra vào của từng văn phòng",
     "recentTransactions": "Giao dịch gần đây",
     "recentTransactionsDescription": "Danh sách các giao dịch mới nhất",
     "topCustomers": "Khách hàng hàng đầu",
@@ -140,6 +141,7 @@
     "noBankData": "Không có dữ liệu ngân hàng",
     "accountNumber": "Số tài khoản",
     "balance": "Số dư",
+    "trend": "Xu hướng",
     "createTransaction": "Tạo giao dịch",
     "transactionList": "Danh sách giao dịch",
     "transactions": {
@@ -208,7 +210,7 @@
     "phone": "Số điện thoại",
     "email": "Email",
     "address": "Địa chỉ",
-    "branch": "Chi nhánh",
+    "branch": "Văn phòng",
     "totalBalance": "Tổng số tiền giao dịch",
     "lastTransaction": "Giao dịch cuối",
     "isActive": "Hoạt động",
@@ -230,9 +232,9 @@
     "searchCustomers": "Tìm kiếm khách hàng...",
     "searchPlaceholder": "Tìm kiếm theo tên, mã, email, số điện thoại...",
     "searchTip": "Nhập ít nhất 2 ký tự để tìm kiếm",
-    "filterByBranch": "Lọc theo chi nhánh",
+    "filterByBranch": "Lọc theo văn phòng",
     "filterByStatus": "Lọc theo trạng thái",
-    "allBranches": "Tất cả chi nhánh",
+    "allBranches": "Tất cả văn phòng",
     "allStatuses": "Tất cả trạng thái",
     "loading": "Đang tải khách hàng...",
     "loadingData": "Đang tải dữ liệu khách hàng...",
@@ -429,7 +431,15 @@
     "clickToEdit": "Nhấp hoặc nhấp đúp vào ô để chỉnh sửa",
     "enterToSave": "Nhấn Enter để lưu thay đổi",
     "escapeToCancel": "Nhấn Escape để hủy chỉnh sửa",
-    "requiredFields": "Các trường có dấu * là bắt buộc"
+    "requiredFields": "Các trường có dấu * là bắt buộc",
+    "customerBulkGuidelinesTitle": "Quy tắc nhập hàng loạt khách hàng",
+    "customerBulkGuidelines": {
+      "item1": "Tải lên file Excel/CSV theo đúng tiêu đề cột: full_name, phone, email, address, customer_code.",
+      "item2": "Cột bắt buộc: full_name. Các cột còn lại có thể để trống.",
+      "item3": "Mỗi dòng là 1 khách hàng. Kiểm tra trước khi nhấn 'Kiểm tra dữ liệu'."
+    },
+    "downloadTemplate": "Tải file mẫu Excel",
+    "downloadTemplateHint": "Tải file mẫu để điền đúng định dạng cột trước khi nhập hàng loạt."
   },
   "export": {
     "title": "Xuất dữ liệu",
@@ -541,7 +551,7 @@
         "type": "Loại"
       },
       "groupBy": {
-        "branch": "Chi nhánh",
+        "branch": "Văn phòng",
         "status": "Trạng thái",
         "type": "Loại",
         "customer": "Khách hàng",
@@ -602,7 +612,7 @@
     "saving": "Đang lưu...",
     "cancel": "Hủy",
     "role": "Vai trò",
-    "branch": "Chi nhánh",
+    "branch": "Văn phòng",
     "fullName": "Họ và tên",
     "fullNamePlaceholder": "Nhập họ và tên của bạn",
     "email": "Email",
@@ -725,26 +735,26 @@
   },
   "userRoles": {
     "admin": "Quản trị viên",
-    "branch_manager": "Quản lý chi nhánh",
+    "branch_manager": "Quản lý văn phòng",
     "staff": "Nhân viên"
   },
   "branches": {
-    "title": "Chi nhánh",
-    "branchList": "Danh sách chi nhánh",
-    "addBranch": "Thêm chi nhánh",
-    "editBranch": "Sửa chi nhánh",
-    "branchDetails": "Chi tiết chi nhánh",
-    "branchCode": "Mã chi nhánh",
-    "branchName": "Tên chi nhánh",
+    "title": "Văn phòng",
+    "branchList": "Danh sách văn phòng",
+    "addBranch": "Thêm văn phòng",
+    "editBranch": "Sửa văn phòng",
+    "branchDetails": "Chi tiết văn phòng",
+    "branchCode": "Mã văn phòng",
+    "branchName": "Tên văn phòng",
     "manager": "Quản lý",
     "phone": "Số điện thoại",
     "email": "Email",
     "address": "Địa chỉ",
     "isActive": "Hoạt động",
-    "branchNotFound": "Không tìm thấy chi nhánh",
-    "branchCreated": "Tạo chi nhánh thành công",
-    "branchUpdated": "Cập nhật chi nhánh thành công",
-    "branchDeleted": "Xóa chi nhánh thành công"
+    "branchNotFound": "Không tìm thấy văn phòng",
+    "branchCreated": "Tạo văn phòng thành công",
+    "branchUpdated": "Cập nhật văn phòng thành công",
+    "branchDeleted": "Xóa văn phòng thành công"
   },
   "bankAccounts": {
     "title": "Tài khoản ngân hàng",

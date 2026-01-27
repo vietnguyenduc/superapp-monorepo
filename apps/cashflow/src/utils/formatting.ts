@@ -15,7 +15,10 @@ export const formatCurrency = (amount: number, currency = "VND"): string => {
 // Compact currency formatting (for small spaces)
 export const formatCompactCurrency = (amount: number): string => {
   // For large numbers, use compact notation
-  if (Math.abs(amount) >= 1000000) {
+  if (Math.abs(amount) >= 1000000000) {
+    const billions = amount / 1000000000;
+    return `${billions.toFixed(1)}B đ`;
+  } else if (Math.abs(amount) >= 1000000) {
     const millions = amount / 1000000;
     return `${millions.toFixed(1)}M đ`;
   } else if (Math.abs(amount) >= 1000) {
@@ -30,10 +33,28 @@ export const formatCompactCurrency = (amount: number): string => {
   }).format(amount) + " đ";
 };
 
+// Compact number formatting without currency (for tight layouts)
+export const formatCompactNumber = (amount: number): string => {
+  const abs = Math.abs(amount);
+  if (abs >= 1000000000) {
+    return `${(amount / 1000000000).toFixed(0)}B`;
+  }
+  if (abs >= 1000000) {
+    return `${(amount / 1000000).toFixed(0)}M`;
+  }
+  if (abs >= 1000) {
+    return `${(amount / 1000).toFixed(0)}K`;
+  }
+  return formatNumber(amount, 0);
+};
+
 // Format number changes compactly (for +/- indicators)
 export const formatCompactChange = (amount: number): string => {
   // For large numbers, use compact notation
-  if (Math.abs(amount) >= 1000000) {
+  if (Math.abs(amount) >= 1000000000) {
+    const billions = amount / 1000000000;
+    return `${billions.toFixed(1)}B`;
+  } else if (Math.abs(amount) >= 1000000) {
     const millions = amount / 1000000;
     return `${millions.toFixed(1)}M`;
   } else if (Math.abs(amount) >= 1000) {
@@ -41,8 +62,11 @@ export const formatCompactChange = (amount: number): string => {
     return `${thousands.toFixed(1)}K`;
   }
   
-  // For smaller numbers, use regular formatting but more compact
-  return amount.toString();
+  // For smaller numbers, use regular formatting with thousand separators
+  return new Intl.NumberFormat("vi-VN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
 };
 
 // Date formatting
@@ -69,12 +93,25 @@ export const formatTime = (date: string | Date): string => {
   return formatDate(date, "HH:mm");
 };
 
-// Number formatting
+// Number formatting with thousand separators
 export const formatNumber = (number: number, decimals = 0): string => {
   return new Intl.NumberFormat("vi-VN", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(number);
+};
+
+// Smart number formatting with K/M/B suffixes based on magnitude
+export const formatSmartNumber = (number: number, decimals = 1): string => {
+  if (Math.abs(number) >= 1000000000) {
+    return `${(number / 1000000000).toFixed(decimals)}B`;
+  } else if (Math.abs(number) >= 1000000) {
+    return `${(number / 1000000).toFixed(decimals)}M`;
+  } else if (Math.abs(number) >= 1000) {
+    return `${(number / 1000).toFixed(decimals)}K`;
+  } else {
+    return formatNumber(number, decimals);
+  }
 };
 
 // Percentage formatting
@@ -179,7 +216,7 @@ export const formatTransactionType = (type: string): string => {
 export const formatUserRole = (role: string): string => {
   const roleMap: Record<string, string> = {
     admin: "Quản trị viên",
-    branch_manager: "Quản lý chi nhánh",
+    branch_manager: "Quản lý văn phòng",
     staff: "Nhân viên",
   };
   return roleMap[role] || capitalize(role.replace("_", " "));

@@ -164,19 +164,19 @@ export const dashboardMockData = {
     day: [
       {
         branch_id: "1",
-        branch_name: "Chi nhánh Hà Nội",
+        branch_name: "Văn phòng Hà Nội",
         incomeAmount: 800000, // 0.8M VND income
         debtAmount: 2200000, // 2.2M VND debt
       },
       {
         branch_id: "2",
-        branch_name: "Chi nhánh TP.HCM",
+        branch_name: "Văn phòng TP.HCM",
         incomeAmount: 1000000, // 1M VND income
         debtAmount: 2500000, // 2.5M VND debt
       },
       {
         branch_id: "3",
-        branch_name: "Chi nhánh Đà Nẵng",
+        branch_name: "Văn phòng Đà Nẵng",
         incomeAmount: 200000, // 0.2M VND income
         debtAmount: 800000, // 0.8M VND debt
       },
@@ -184,19 +184,19 @@ export const dashboardMockData = {
     week: [
       {
         branch_id: "1",
-        branch_name: "Chi nhánh Hà Nội",
+        branch_name: "Văn phòng Hà Nội",
         incomeAmount: 4000000, // 4M VND income
         debtAmount: 11000000, // 11M VND debt
       },
       {
         branch_id: "2",
-        branch_name: "Chi nhánh TP.HCM",
+        branch_name: "Văn phòng TP.HCM",
         incomeAmount: 5000000, // 5M VND income
         debtAmount: 12500000, // 12.5M VND debt
       },
       {
         branch_id: "3",
-        branch_name: "Chi nhánh Đà Nẵng",
+        branch_name: "Văn phòng Đà Nẵng",
         incomeAmount: 1000000, // 1M VND income
         debtAmount: 4000000, // 4M VND debt
       },
@@ -204,19 +204,19 @@ export const dashboardMockData = {
     month: [
       {
         branch_id: "1",
-        branch_name: "Chi nhánh Hà Nội",
+        branch_name: "Văn phòng Hà Nội",
         incomeAmount: 16000000, // 16M VND income
         debtAmount: 44000000, // 44M VND debt
       },
       {
         branch_id: "2",
-        branch_name: "Chi nhánh TP.HCM",
+        branch_name: "Văn phòng TP.HCM",
         incomeAmount: 20000000, // 20M VND income
         debtAmount: 50000000, // 50M VND debt
       },
       {
         branch_id: "3",
-        branch_name: "Chi nhánh Đà Nẵng",
+        branch_name: "Văn phòng Đà Nẵng",
         incomeAmount: 4000000, // 4M VND income
         debtAmount: 16000000, // 16M VND debt
       },
@@ -224,19 +224,19 @@ export const dashboardMockData = {
     quarter: [
       {
         branch_id: "1",
-        branch_name: "Chi nhánh Hà Nội",
+        branch_name: "Văn phòng Hà Nội",
         incomeAmount: 48000000, // 48M VND income
         debtAmount: 132000000, // 132M VND debt
       },
       {
         branch_id: "2",
-        branch_name: "Chi nhánh TP.HCM",
+        branch_name: "Văn phòng TP.HCM",
         incomeAmount: 60000000, // 60M VND income
         debtAmount: 150000000, // 150M VND debt
       },
       {
         branch_id: "3",
-        branch_name: "Chi nhánh Đà Nẵng",
+        branch_name: "Văn phòng Đà Nẵng",
         incomeAmount: 12000000, // 12M VND income
         debtAmount: 48000000, // 48M VND debt
       },
@@ -244,19 +244,19 @@ export const dashboardMockData = {
     year: [
       {
         branch_id: "1",
-        branch_name: "Chi nhánh Hà Nội",
+        branch_name: "Văn phòng Hà Nội",
         incomeAmount: 192000000, // 192M VND income
         debtAmount: 528000000, // 528M VND debt
       },
       {
         branch_id: "2",
-        branch_name: "Chi nhánh TP.HCM",
+        branch_name: "Văn phòng TP.HCM",
         incomeAmount: 240000000, // 240M VND income
         debtAmount: 600000000, // 600M VND debt
       },
       {
         branch_id: "3",
-        branch_name: "Chi nhánh Đà Nẵng",
+        branch_name: "Văn phòng Đà Nẵng",
         incomeAmount: 48000000, // 48M VND income
         debtAmount: 192000000, // 192M VND debt
       },

@@ -180,7 +180,7 @@ export const branchService = {
       data: [
         {
           id: "1",
-          name: "Chi nhánh chính",
+          name: "Văn phòng chính",
           code: "MB001",
           address: "123 Đường chính, Quận 1, TP.HCM",
           phone: "0123456789",

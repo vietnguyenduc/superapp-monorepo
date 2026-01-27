@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { databaseService } from "../../services/database";
-import { formatCurrency } from "../../utils/formatting";
+import { formatNumber } from "../../utils/formatting";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
 import Button from "../../components/UI/Button";
+import PageHeader from "../../components/UI/PageHeader";
 import {
   MetricsCard,
   BalanceBreakdown,
@@ -26,6 +28,9 @@ const Dashboard: React.FC = () => {
   const [metrics, setMetrics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [branches, setBranches] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
+  const [showBranchFilter, setShowBranchFilter] = useState(false);
   
   // State for Range and Export menus
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -73,6 +78,16 @@ const Dashboard: React.FC = () => {
     const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchDashboardData]);
+
+  useEffect(() => {
+    const loadBranches = async () => {
+      const result = await databaseService.branches.getBranches();
+      if (result.data) {
+        setBranches(result.data.map((b: any) => ({ id: String(b.id), name: String(b.name) })));
+      }
+    };
+    loadBranches();
+  }, []);
   
   // Listen for range changes from the CashFlowChart component
   useEffect(() => {
@@ -141,27 +156,22 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-4 w-full">
       <div className="px-4 sm:px-6 lg:px-8 w-full">
-        {/* Header */}
-        <div className="mb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">
-                {t("dashboard.title")}
-              </h1>
-              <p className="mt-2 text-base font-normal text-gray-600 tracking-normal">
-                {t("dashboard.subtitle")}
-              </p>
-            </div>
-            <div className="mt-2 sm:mt-0">
+        {/* Fixed Time Range Selector */}
+        <div className="fixed top-16 left-0 right-0 z-40 px-4 sm:px-6 lg:px-8 py-1.5 bg-gray-50/5 border-b border-gray-100/10 lg:left-64">
+          <div className="flex justify-end">
+            <div className="inline-flex rounded-2xl bg-white/90 p-1 shadow-[0_4px_12px_rgba(15,23,42,0.10)] border border-gray-200/80 ring-1 ring-gray-200/60">
               <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
             </div>
           </div>
         </div>
+        <div className="h-12" />
+
+        <PageHeader title={t("dashboard.title")} subtitle={t("dashboard.subtitle")} />
         {/* Key Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-4 w-full min-w-0 overflow-hidden">
           <MetricsCard
             title={t("dashboard.totalOutstanding")}
-            value={formatCurrency(metrics.totalOutstanding)}
+            value={formatNumber(metrics.totalOutstanding)}
             change={metrics.totalOutstandingChange}
             changeType={
               metrics.totalOutstandingChange >= 0 ? "increase" : "decrease"
@@ -219,9 +229,6 @@ const Dashboard: React.FC = () => {
               <h3 className="text-base font-medium text-gray-900">
                 {t("dashboard.balanceByBank")}
               </h3>
-              <p className="mt-1 text-xs text-gray-500">
-                {t("dashboard.balanceByBankDescription")}
-              </p>
             </div>
             <div className="p-4">
               <BalanceByBankChart data={metrics.balanceByBankAccount} />
@@ -290,6 +297,76 @@ const Dashboard: React.FC = () => {
                     
                     {showExportMenu && (
                       <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-10">
+                        <button 
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                          onClick={async () => {
+                            if (!user?.branch_id) return;
+                            const result = await databaseService.dashboard.getReceivableLedger(
+                              user.branch_id,
+                              timeRange,
+                              rangeCount,
+                            );
+                            if (result.error || !result.data) {
+                              setShowExportMenu(false);
+                              return;
+                            }
+
+                            const ledger = result.data;
+                            const headerRows = [
+                              ["Period Start", new Date(ledger.periodStart).toISOString()],
+                              ["Period End", new Date(ledger.periodEnd).toISOString()],
+                              ["Opening Balance", ledger.openingBalance],
+                              ["Closing Balance", ledger.closingBalance],
+                              [],
+                            ];
+
+                            const columns = [
+                              "Date",
+                              "Code",
+                              "Customer",
+                              "Branch",
+                              "Bank Account",
+                              "Type",
+                              "Increase",
+                              "Decrease",
+                              "Delta",
+                              "Running Balance",
+                              "Description",
+                              "Reference",
+                            ];
+
+                            const rows = ledger.rows.map((r: any) => [
+                              new Date(r.transaction_date).toISOString(),
+                              r.transaction_code,
+                              r.customer_name,
+                              r.branch_name,
+                              r.bank_account_name,
+                              r.transaction_type,
+                              r.increase,
+                              r.decrease,
+                              r.delta,
+                              r.running_balance,
+                              r.description,
+                              r.reference_number,
+                            ]);
+
+                            const worksheet = XLSX.utils.aoa_to_sheet([
+                              ...headerRows,
+                              columns,
+                              ...rows,
+                            ]);
+                            const workbook = XLSX.utils.book_new();
+                            XLSX.utils.book_append_sheet(workbook, worksheet, "Receivable Ledger");
+                            XLSX.writeFile(
+                              workbook,
+                              `receivable_ledger_${timeRange}_${new Date().toISOString().split("T")[0]}.xlsx`,
+                            );
+
+                            setShowExportMenu(false);
+                          }}
+                        >
+                          Export as Excel
+                        </button>
                         <button 
                           className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
                           onClick={async () => {
@@ -425,75 +502,155 @@ const Dashboard: React.FC = () => {
         {/* Balance Breakdown by Branch */}
         <div className="bg-white rounded-lg shadow mb-4 w-full">
           <div className="px-4 py-3 border-b border-gray-200">
-            <h3 className="text-base font-medium text-gray-900">
-              {t("dashboard.balanceByBranch")}
-            </h3>
-            <p className="mt-1 text-xs text-gray-500">
-              {t("dashboard.balanceByBranchDescription")}
-            </p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-base font-medium text-gray-900">
+                  {t("dashboard.balanceByBranch")}
+                </h3>
+                <p className="mt-1 text-xs text-gray-500">
+                  {t("dashboard.balanceByBranchDescription", {
+                    period: t(`dashboard.timeRange.${timeRange}`),
+                  })}
+                </p>
+              </div>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowBranchFilter((prev) => !prev)}
+                  className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                >
+                  {selectedBranchIds.length > 0
+                    ? `Đã chọn ${selectedBranchIds.length}`
+                    : "Chọn văn phòng"}
+                  <svg
+                    className="h-3 w-3 text-gray-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+                {showBranchFilter && (
+                  <div className="absolute right-0 z-10 mt-2 w-56 rounded-md border border-gray-200 bg-white shadow-lg">
+                    <div className="max-h-60 overflow-auto p-2">
+                      {branches.map((branch) => {
+                        const checked = selectedBranchIds.includes(branch.id);
+                        return (
+                          <label
+                            key={branch.id}
+                            className="flex items-center gap-2 rounded px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => {
+                                setSelectedBranchIds((prev) =>
+                                  checked
+                                    ? prev.filter((id) => id !== branch.id)
+                                    : [...prev, branch.id],
+                                );
+                              }}
+                            />
+                            <span className="truncate">{branch.name}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <div className="flex items-center justify-between border-t border-gray-100 px-3 py-2 text-xs">
+                      <button
+                        type="button"
+                        className="text-gray-500 hover:text-gray-700"
+                        onClick={() => setSelectedBranchIds([])}
+                      >
+                        Bỏ chọn
+                      </button>
+                      <button
+                        type="button"
+                        className="text-blue-600 hover:text-blue-700"
+                        onClick={() => setShowBranchFilter(false)}
+                      >
+                        Xong
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           <div className="p-4">
-            <BalanceBreakdown data={metrics.transactionAmountsByBranch} />
+            <BalanceBreakdown
+              data={
+                selectedBranchIds.length === 0
+                  ? metrics.transactionAmountsByBranch
+                  : metrics.transactionAmountsByBranch.filter((branch: any) =>
+                      selectedBranchIds.includes(String(branch.branch_id)),
+                    )
+              }
+            />
           </div>
         </div>
         {/* Lists Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
           {/* Recent Transactions */}
           <div className="bg-white rounded-lg shadow w-full">
             <div className="px-4 py-3 border-b border-gray-200">
-              <div>
-                <h3 className="text-base font-medium text-gray-900">
-                  {t("dashboard.recentTransactions")}
-                </h3>
-                <p className="mt-1 text-xs text-gray-500">
-                  {t("dashboard.recentTransactionsDescription")}
-                </p>
-              </div>
-            </div>
-            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-              <div className="flex gap-2">
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={() => navigate("/import/transactions")}
-                  className="inline-flex items-center"
-                >
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-base font-medium text-gray-900">
+                    {t("dashboard.recentTransactions")}
+                  </h3>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {t("dashboard.recentTransactionsDescription")}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => navigate("/import/transactions")}
+                    className="inline-flex items-center text-xs"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                    />
-                  </svg>
-                  {t("dashboard.createTransaction")}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="md"
-                  onClick={() => navigate("/transactions")}
-                  className="inline-flex items-center"
-                >
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                    <svg
+                      className="w-3.5 h-3.5 mr-1.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                    {t("dashboard.createTransaction")}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => navigate("/transactions")}
+                    className="inline-flex items-center text-xs"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                    />
-                  </svg>
-                  {t("dashboard.transactionList")}
-                </Button>
+                    <svg
+                      className="w-3.5 h-3.5 mr-1.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      />
+                    </svg>
+                    Danh sách
+                  </Button>
+                </div>
               </div>
             </div>
             <div className="p-4">

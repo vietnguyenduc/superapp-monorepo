@@ -8,7 +8,8 @@ import ReportFilters from "./components/ReportFilters";
 import ReportPreview from "./components/ReportPreview";
 import ExportModal from "./components/ExportModal";
 import Button from "../../components/UI/Button";
-import {
+import PageHeader from "../../components/UI/PageHeader";
+import type {
   ReportType,
   ExportFormat,
   ReportFilters as ReportFiltersType,
@@ -427,47 +428,37 @@ const Reports: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                {t("reports.title")}
-              </h1>
-              <p className="mt-2 text-sm text-gray-600">
-                {t("reports.subtitle")}
-              </p>
-            </div>
-
-            {state.reportData && (
-              <div className="flex justify-end">
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={() =>
-                    setState((prev) => ({ ...prev, showExportModal: true }))
-                  }
-                  className="inline-flex items-center"
+        <PageHeader
+          title={t("reports.title")}
+          subtitle={t("reports.subtitle")}
+          actions={
+            state.reportData ? (
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() =>
+                  setState((prev) => ({ ...prev, showExportModal: true }))
+                }
+                className="inline-flex items-center"
+              >
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  {t("reports.export")}
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                {t("reports.export")}
+              </Button>
+            ) : null
+          }
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Report Type Selector */}

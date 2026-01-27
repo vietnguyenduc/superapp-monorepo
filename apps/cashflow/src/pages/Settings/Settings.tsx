@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ErrorFallback } from "../../components/UI/FallbackUI";
 import ToggleSwitch from "../../components/UI/ToggleSwitch";
 import Button from "../../components/UI/Button";
+import PageHeader from "../../components/UI/PageHeader";
 import { databaseService } from "../../services/database";
 import { formatCurrency } from "../../utils/formatting";
 
@@ -200,7 +201,7 @@ const Settings: React.FC = () => {
   const tabs = [
     { id: "transaction-types", name: "Loại giao dịch", icon: "📊" },
     { id: "bank-accounts", name: "Tài khoản ngân hàng", icon: "🏦" },
-    { id: "branches", name: "Chi nhánh", icon: "🏢" },
+    { id: "branches", name: "Văn phòng", icon: "🏢" },
     { id: "customer-fields", name: "Trường khách hàng", icon: "👥" },
     { id: "import-fields", name: "Cài đặt trường import", icon: "📝" },
   ];
@@ -223,7 +224,7 @@ const Settings: React.FC = () => {
     },
     {
       key: "branch",
-      label: "Chi nhánh",
+      label: "Văn phòng",
       type: "branch-select",
       required: false,
       enabled: true,
@@ -410,13 +411,10 @@ const Settings: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Cài đặt hệ thống</h1>
-          <p className="mt-2 text-gray-600">
-            Quản lý cấu hình cơ bản cho hệ thống quản lý công nợ
-          </p>
-        </div>
+        <PageHeader
+          title="Cài đặt hệ thống"
+          subtitle="Quản lý cấu hình cơ bản cho hệ thống quản lý công nợ"
+        />
 
         {/* Tabs */}
         <div className="border-b border-gray-200 mb-8">
@@ -599,7 +597,7 @@ const Settings: React.FC = () => {
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Chi nhánh
+                  Văn phòng
                 </h2>
                 <Button variant="primary" size="md">
                   <svg
@@ -615,7 +613,7 @@ const Settings: React.FC = () => {
                       d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                     />
                   </svg>
-                  Thêm chi nhánh
+                  Thêm văn phòng
                 </Button>
               </div>
 
@@ -888,7 +886,7 @@ const Settings: React.FC = () => {
                                         )
                                       }
                                     />{" "}
-                                    Chi nhánh
+                                    Văn phòng
                                   </label>
                                   {(!f.optionSource ||
                                     f.optionSource === "manual") && (

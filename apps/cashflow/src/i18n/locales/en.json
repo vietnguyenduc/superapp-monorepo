@@ -41,7 +41,8 @@
     "theme": "Theme",
     "dark": "Dark",
     "light": "Light",
-    "system": "System"
+    "system": "System",
+    "select": "Select"
   },
   "app": {
     "title": "TPL Debt Management",
@@ -86,7 +87,7 @@
     "totalOutstanding": "Total Outstanding",
     "activeCustomers": "Active Customers",
     "transactionsInPeriod": "Transactions in {{period}}",
-    "transactionAmountsInPeriod": "Transaction Amounts in {{period}}",
+    "transactionAmountsInPeriod": "Amounts in {{period}}",
     "totalTransactions": "Total Transactions",
     "balanceByBank": "Balance by Bank Account",
     "balanceByBankDescription": "Balance distribution by bank account",
@@ -130,6 +131,7 @@
     "noBankData": "No bank data",
     "accountNumber": "Account Number",
     "balance": "Balance",
+    "trend": "Trend",
     "createTransaction": "Create Transaction",
     "transactionList": "Transaction List",
     "transactions": {
@@ -198,7 +200,7 @@
     "phone": "Phone",
     "email": "Email",
     "address": "Address",
-    "branch": "Branch",
+    "branch": "Office",
     "totalBalance": "Total Balance",
     "lastTransaction": "Last Transaction",
     "isActive": "Active",
@@ -213,9 +215,9 @@
     "noTransactions": "No transactions found",
     "searchCustomers": "Search customers...",
     "searchPlaceholder": "Search by name, code, email, phone...",
-    "filterByBranch": "Filter by branch",
+    "filterByBranch": "Filter by office",
     "filterByStatus": "Filter by status",
-    "allBranches": "All Branches",
+    "allBranches": "All Offices",
     "allStatuses": "All Statuses",
     "showingResults": "Showing {{start}} to {{end}} of {{total}} customers",
     "columns": {
@@ -338,8 +340,16 @@
     "editingInstructions": "Editing Instructions",
     "clickToEdit": "Click or double-click a cell to edit",
     "enterToSave": "Press Enter to save changes",
-    "escapeToCancel": "Press Escape to cancel editing",
-    "requiredFields": "Fields marked with * are required"
+    "escapeToCancel": "Press Escape to cancel",
+    "requiredFields": "Fields marked with * are required",
+    "customerBulkGuidelinesTitle": "Bulk customer import rules",
+    "customerBulkGuidelines": {
+      "item1": "Upload an Excel/CSV file with headers: full_name, phone, email, address, customer_code.",
+      "item2": "Required column: full_name. Other columns are optional.",
+      "item3": "Each row is one customer. Review before clicking 'Validate data'."
+    },
+    "downloadTemplate": "Download Excel template",
+    "downloadTemplateHint": "Download a sample file to fill in the correct columns before bulk import."
   },
   "export": {
     "title": "Export Data",

@@ -1,5 +1,5 @@
 import React from "react";
-import { formatNumber, formatCompactCurrency, formatCompactChange } from "../../../utils/formatting";
+import { formatCompactNumber } from "../../../utils/formatting";
 
 interface MetricsCardProps {
   title: string;
@@ -101,25 +101,25 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
     switch (color) {
       case "primary":
         return {
-          bg: "bg-gradient-to-br from-blue-50 to-blue-100",
-          icon: "text-blue-600",
+          bg: "bg-gradient-to-br from-rose-50 via-rose-100 to-red-100",
+          icon: "text-rose-500",
           value: "text-gray-900",
         };
       case "success":
         return {
-          bg: "bg-gradient-to-br from-green-50 to-green-100",
-          icon: "text-green-600",
+          bg: "bg-gradient-to-br from-emerald-50 via-emerald-100 to-green-100",
+          icon: "text-emerald-600",
           value: "text-green-900",
         };
       case "warning":
         return {
-          bg: "bg-gradient-to-br from-slate-50 to-slate-100",
-          icon: "text-slate-600",
-          value: "text-slate-900",
+          bg: "bg-gradient-to-br from-sky-50 via-sky-100 to-cyan-100",
+          icon: "text-sky-600",
+          value: "text-sky-900",
         };
       case "info":
         return {
-          bg: "bg-gradient-to-br from-gray-50 to-gray-100",
+          bg: "bg-gradient-to-br from-slate-50 via-slate-100 to-gray-100",
           icon: "text-gray-600",
           value: "text-gray-900",
         };
@@ -136,162 +136,164 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
 
   return (
     <div
-      className={`${colorClasses.bg} rounded-xl p-3 sm:p-4 shadow-sm border border-white/50 backdrop-blur-sm h-full flex flex-col overflow-hidden`}
+      className={`${colorClasses.bg} rounded-2xl p-3 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.04),0_8px_18px_rgba(15,23,42,0.08)] border border-gray-100/70 h-full flex flex-col justify-center overflow-hidden`}
     >
       <div className="flex items-center">
         <div
-          className={`${colorClasses.icon} p-2 rounded-lg bg-white/80 shadow-sm border border-white/50`}
+          className={`${colorClasses.icon} p-2.5 rounded-xl bg-white shadow-sm`}
         >
           {getIcon()}
         </div>
         <div className="ml-2 flex-1 min-w-0">
-          <p className="text-sm sm:text-base font-medium text-gray-700 tracking-normal truncate">
+          <p className="text-sm sm:text-base font-normal text-gray-600 tracking-normal leading-snug break-words">
             {title}
           </p>
           {dualValues ? (
-            <div className="mt-1 flex flex-col h-full">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <span className="text-xs sm:text-sm font-bold text-green-600 whitespace-nowrap">
+            <div className="mt-1 flex flex-col">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 min-w-0">
+                  <span className="text-sm sm:text-base font-medium text-green-600 whitespace-nowrap">
                     Thu:
                   </span>
-                  <span className="text-xs sm:text-sm font-bold text-green-600 ml-1">
-                    {/* Format raw numbers directly */}
-                    {typeof dualValues.income === 'number' ? 
-                      formatCompactCurrency(dualValues.income) : 
-                      dualValues.income}
+                  <span className="text-base sm:text-xl font-semibold text-green-600 break-words">
+                    {typeof dualValues.income === "number"
+                      ? formatCompactNumber(dualValues.income)
+                      : dualValues.income}
                   </span>
+                  {dualValues.incomeChange !== undefined && (
+                    <div className="flex items-center gap-0.5">
+                      <span
+                        className={`text-xs font-normal ${
+                          dualValues.incomeChange >= 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {dualValues.incomeChange >= 0 ? "+" : ""}
+                        {formatCompactNumber(dualValues.incomeChange)}
+                      </span>
+                      <svg
+                        className={`ml-0.5 w-2.5 h-2.5 ${
+                          dualValues.incomeChange >= 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        {dualValues.incomeChange >= 0 ? (
+                          <path
+                            fillRule="evenodd"
+                            d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z"
+                            clipRule="evenodd"
+                          />
+                        ) : (
+                          <path
+                            fillRule="evenodd"
+                            d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        )}
+                      </svg>
+                    </div>
+                  )}
                 </div>
-                {dualValues.incomeChange !== undefined && (
-                  <div className="flex items-center ml-1">
-                    <span
-                      className={`text-xs font-medium ${
-                        dualValues.incomeChange >= 0
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {dualValues.incomeChange >= 0 ? "+" : ""}
-                      {formatCompactChange(dualValues.incomeChange)}
-                    </span>
-                    <svg
-                      className={`ml-1 w-3 h-3 ${
-                        dualValues.incomeChange >= 0
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      {dualValues.incomeChange >= 0 ? (
-                        <path
-                          fillRule="evenodd"
-                          d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z"
-                          clipRule="evenodd"
-                        />
-                      ) : (
-                        <path
-                          fillRule="evenodd"
-                          d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      )}
-                    </svg>
-                  </div>
-                )}
               </div>
 
-              <div className="flex items-center justify-between mt-1">
-                <div className="flex items-center">
-                  <span className="text-xs sm:text-sm font-bold text-red-600 whitespace-nowrap">
+              <div className="my-1 h-px bg-gray-200/70" />
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 min-w-0">
+                  <span className="text-sm sm:text-base font-medium text-red-600 whitespace-nowrap">
                     Cho nợ:
                   </span>
-                  <span className="text-xs sm:text-sm font-bold text-red-600 ml-1">
-                    {/* Format raw numbers directly */}
-                    {typeof dualValues.debt === 'number' ? 
-                      formatCompactCurrency(dualValues.debt) : 
-                      dualValues.debt}
+                  <span className="text-base sm:text-xl font-semibold text-red-600 break-words">
+                    {typeof dualValues.debt === "number"
+                      ? formatCompactNumber(dualValues.debt)
+                      : dualValues.debt}
                   </span>
+                  {dualValues.debtChange !== undefined && (
+                    <div className="flex items-center gap-0.5">
+                      <span
+                        className={`text-xs font-normal ${
+                          dualValues.debtChange >= 0
+                            ? "text-red-600"
+                            : "text-green-600"
+                        }`}
+                      >
+                        {dualValues.debtChange >= 0 ? "+" : ""}
+                        {formatCompactNumber(dualValues.debtChange)}
+                      </span>
+                      <svg
+                        className={`ml-0.5 w-2.5 h-2.5 ${
+                          dualValues.debtChange >= 0
+                            ? "text-red-600"
+                            : "text-green-600"
+                        }`}
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        {dualValues.debtChange >= 0 ? (
+                          <path
+                            fillRule="evenodd"
+                            d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z"
+                            clipRule="evenodd"
+                          />
+                        ) : (
+                          <path
+                            fillRule="evenodd"
+                            d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        )}
+                      </svg>
+                    </div>
+                  )}
                 </div>
-                {dualValues.debtChange !== undefined && (
-                  <div className="flex items-center ml-1">
-                    <span
-                      className={`text-xs font-medium ${
-                        dualValues.debtChange >= 0
-                          ? "text-red-600"
-                          : "text-green-600"
-                      }`}
-                    >
-                      {dualValues.debtChange >= 0 ? "+" : ""}
-                      {formatCompactChange(dualValues.debtChange)}
-                    </span>
-                    <svg
-                      className={`ml-1 w-3 h-3 ${
-                        dualValues.debtChange >= 0
-                          ? "text-red-600"
-                          : "text-green-600"
-                      }`}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      {dualValues.debtChange >= 0 ? (
-                        <path
-                          fillRule="evenodd"
-                          d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z"
-                          clipRule="evenodd"
-                        />
-                      ) : (
-                        <path
-                          fillRule="evenodd"
-                          d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      )}
-                    </svg>
-                  </div>
-                )}
               </div>
             </div>
           ) : (
+            <div></div>
+          )}
+          <div className="flex items-baseline gap-x-2 gap-y-0.5">
             <p
-              className={`text-lg sm:text-xl font-semibold ${colorClasses.value} tracking-normal truncate`}
+              className={`text-xl sm:text-2xl font-semibold ${colorClasses.value} tracking-tight break-words`}
             >
               {value}
             </p>
-          )}
-          {change !== undefined && (
-            <div className="flex items-center mt-1">
-              <span
-                className={`text-xs font-medium ${
-                  changeType === "increase" ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {changeType === "increase" ? "+" : ""}
-                {formatNumber(change)}
-              </span>
-              <svg
-                className={`ml-1 w-3 h-3 ${
-                  changeType === "increase" ? "text-green-600" : "text-red-600"
-                }`}
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                {changeType === "increase" ? (
-                  <path
-                    fillRule="evenodd"
-                    d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z"
-                    clipRule="evenodd"
-                  />
-                ) : (
-                  <path
-                    fillRule="evenodd"
-                    d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                )}
-              </svg>
-            </div>
-          )}
+            {change !== undefined && (
+              <div className="flex items-center gap-0.5">
+                <span
+                  className={`text-xs font-normal ${
+                    changeType === "increase" ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {changeType === "increase" ? "+" : ""}
+                  {formatCompactNumber(change)}
+                </span>
+                <svg
+                  className={`ml-0.5 w-2.5 h-2.5 ${
+                    changeType === "increase" ? "text-green-600" : "text-red-600"
+                  }`}
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  {changeType === "increase" ? (
+                    <path
+                      fillRule="evenodd"
+                      d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z"
+                      clipRule="evenodd"
+                    />
+                  ) : (
+                    <path
+                      fillRule="evenodd"
+                      d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  )}
+                </svg>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

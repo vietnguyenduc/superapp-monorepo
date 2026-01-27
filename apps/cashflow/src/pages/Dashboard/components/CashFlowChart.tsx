@@ -63,7 +63,12 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
       case "day":
         return date.toLocaleDateString(undefined, { day: "numeric", month: "short" });
       case "week":
-        return `${date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}`;
+        {
+          const weekStart = new Date(date);
+          const day = (weekStart.getDay() + 6) % 7;
+          weekStart.setDate(weekStart.getDate() - day);
+          return weekStart.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+        }
       case "month":
         return date.toLocaleDateString(undefined, { month: "short", year: "numeric" });
       case "quarter":
@@ -87,14 +92,16 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
 
   // Pre-populate date keys based on time range to ensure all periods are represented
   const populateDateKeys = () => {
-    const today = new Date();
+    const latestDate = chartData.length
+      ? new Date(Math.max(...chartData.map((item) => new Date(item.date).getTime())))
+      : new Date();
     
     switch (timeRange) {
       case "day":
         // Populate for the number of days in chartData
         for (let i = chartData.length - 1; i >= 0; i--) {
-          const date = new Date();
-          date.setDate(today.getDate() - i);
+          const date = new Date(latestDate);
+          date.setDate(latestDate.getDate() - i);
           const dateKey = formatDateByTimeRange(date.toISOString());
           
           aggregatedData[dateKey] = {
@@ -109,9 +116,13 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
         
       case "week":
         // Populate for the number of weeks in chartData
-        for (let i = chartData.length - 1; i >= 0; i--) {
-          const date = new Date();
-          date.setDate(today.getDate() - (i * 7));
+        {
+          const weekStart = new Date(latestDate);
+          const day = (weekStart.getDay() + 6) % 7;
+          weekStart.setDate(weekStart.getDate() - day);
+          for (let i = chartData.length - 1; i >= 0; i--) {
+            const date = new Date(weekStart);
+            date.setDate(weekStart.getDate() - (i * 7));
           const dateKey = formatDateByTimeRange(date.toISOString());
           
           aggregatedData[dateKey] = {
@@ -122,13 +133,14 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
             displayDate: dateKey
           };
         }
+        }
         break;
         
       case "month":
         // Populate for the number of months in chartData
         for (let i = chartData.length - 1; i >= 0; i--) {
-          const date = new Date();
-          date.setMonth(today.getMonth() - i);
+          const date = new Date(latestDate);
+          date.setMonth(latestDate.getMonth() - i);
           const dateKey = formatDateByTimeRange(date.toISOString());
           
           aggregatedData[dateKey] = {
@@ -144,8 +156,8 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
       case "quarter":
         // Populate for 4 quarters
         for (let i = 3; i >= 0; i--) {
-          const date = new Date();
-          date.setMonth(today.getMonth() - (i * 3));
+          const date = new Date(latestDate);
+          date.setMonth(latestDate.getMonth() - (i * 3));
           const dateKey = formatDateByTimeRange(date.toISOString());
           
           aggregatedData[dateKey] = {
@@ -223,12 +235,17 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
   });
 
   // Convert aggregated data to array and sort by date
-  const aggregatedDataArray = Object.values(aggregatedData).sort((a, b) => 
+  const aggregatedDataArray = Object.values(aggregatedData).sort((a, b) =>
     new Date(a.date).getTime() - new Date(b.date).getTime()
   );
+  const expectedCount = chartData.length;
+  const trimmedAggregatedData =
+    expectedCount > 0
+      ? aggregatedDataArray.slice(-expectedCount)
+      : aggregatedDataArray;
 
   const effectiveStartBalance = typeof startBalance === "number" ? startBalance : 0;
-  const totalNetFlow = aggregatedDataArray.reduce((sum, item) => sum + item.netFlow, 0);
+  const totalNetFlow = trimmedAggregatedData.reduce((sum, item) => sum + item.netFlow, 0);
   const effectiveEndBalance = typeof endBalance === "number" ? endBalance : effectiveStartBalance + totalNetFlow;
   
   // Transform data for waterfall chart
@@ -245,7 +262,7 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
 
   // Add each aggregated data point
   let runningTotal = effectiveStartBalance;
-  aggregatedDataArray.forEach((item) => {
+  trimmedAggregatedData.forEach((item) => {
     runningTotal += item.netFlow;
 
     waterfallData.push({

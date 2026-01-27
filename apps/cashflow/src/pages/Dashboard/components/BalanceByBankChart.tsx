@@ -154,12 +154,9 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
     const accountNumber = String(tickData.accountNumber || "");
     const last4 = accountNumber.length >= 4 ? accountNumber.slice(-4) : accountNumber;
     
-    // Adjust width based on number of accounts
-    const width = chartData.length > 6 ? 70 : 100;
-    
-    // Truncate text if needed
-    const maxBankNameChars = chartData.length > 6 ? 8 : 12;
-    const maxAccountTypeChars = chartData.length > 6 ? 6 : 10;
+    // Truncate text if needed (keep more characters for readability)
+    const maxBankNameChars = chartData.length > 6 ? 14 : 18;
+    const maxAccountTypeChars = chartData.length > 6 ? 12 : 14;
     
     const displayBankName = bankName.length > maxBankNameChars ? 
       bankName.substring(0, maxBankNameChars - 2) + '...' : bankName;
@@ -167,46 +164,33 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
     const displayAccountType = accountType.length > maxAccountTypeChars ? 
       accountType.substring(0, maxAccountTypeChars - 2) + '...' : accountType;
 
-    const primaryLabel = last4 ? `${displayBankName} • ${last4}` : displayBankName;
+    const secondaryLabel = accountType ? `${displayAccountType}${last4 ? ` • ${last4}` : ""}` : last4;
     
     return (
-      <g>
-        {/* Background for better visibility */}
-        <rect 
-          x={x - width/2} 
-          y={y - 5} 
-          width={width} 
-          height={accountType ? 42 : 26} 
-          fill="#f8fafc"
-          stroke="#e2e8f0"
-          strokeWidth={1}
-          rx={4}
-          ry={4}
-        />
-        
+      <g transform={`translate(${x}, ${y + 8}) rotate(-32)`}>
         {/* Bank name */}
         <text
-          x={x}
-          y={y + 10}
-          textAnchor="middle"
-          fill="#000000"
-          fontSize={chartData.length > 6 ? 10 : 12}
-          fontWeight="bold"
+          x={0}
+          y={0}
+          textAnchor="end"
+          fill="#111827"
+          fontSize={chartData.length > 6 ? 11 : 12}
+          fontWeight={600}
         >
-          {primaryLabel}
+          {displayBankName}
         </text>
-        
-        {/* Account type (if available) */}
-        {accountType && (
+
+        {/* Account type / last4 */}
+        {secondaryLabel && (
           <text
-            x={x}
-            y={y + 28}
-            textAnchor="middle"
+            x={0}
+            y={14}
+            textAnchor="end"
             fill="#4b5563"
-            fontSize={chartData.length > 6 ? 9 : 10}
-            fontWeight="500"
+            fontSize={chartData.length > 6 ? 10 : 11}
+            fontWeight={500}
           >
-            {displayAccountType}
+            {secondaryLabel}
           </text>
         )}
       </g>
@@ -218,14 +202,14 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={chartData}
-          margin={{ top: 20, right: 10, left: 10, bottom: 40 }} // Reduce side margins to use more width
+          margin={{ top: 20, right: 10, left: 10, bottom: 24 }}
           barGap={0}
           barCategoryGap={"15%"} // Adjust space between bars to use more width for better readability
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
           <XAxis
             dataKey="name"
-            height={80} // Increase height to accommodate full bank names with background
+            height={64}
             interval={0}
             tickLine={false}
             axisLine={{ stroke: '#E5E7EB' }}

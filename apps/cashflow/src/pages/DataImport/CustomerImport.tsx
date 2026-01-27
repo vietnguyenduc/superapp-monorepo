@@ -2,7 +2,7 @@ import React, { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useAuth } from "../../hooks/useAuth";
-import { Customer, ImportData, ImportError } from "../../types";
+import type { Customer, ImportData, ImportError } from "../../types";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import { databaseService } from "../../services/database";
 import Button from "../../components/UI/Button";
@@ -197,6 +197,16 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
           {t("import.uploadCustomerData")}
         </h2>
+        <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3">
+          <p className="text-sm font-medium text-blue-900">
+            {t("import.customerBulkGuidelinesTitle")}
+          </p>
+          <ul className="mt-2 space-y-1 text-sm text-blue-800">
+            <li>• {t("import.customerBulkGuidelines.item1")}</li>
+            <li>• {t("import.customerBulkGuidelines.item2")}</li>
+            <li>• {t("import.customerBulkGuidelines.item3")}</li>
+          </ul>
+        </div>
 
         <div
           className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${

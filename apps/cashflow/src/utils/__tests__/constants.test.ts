@@ -148,7 +148,7 @@ describe("Constants", () => {
   describe("USER_ROLES", () => {
     it("has all required user roles", () => {
       expect(USER_ROLES.ADMIN).toBe("Quản trị viên");
-      expect(USER_ROLES.BRANCH_MANAGER).toBe("Quản lý chi nhánh");
+      expect(USER_ROLES.BRANCH_MANAGER).toBe("Quản lý văn phòng");
       expect(USER_ROLES.STAFF).toBe("Nhân viên");
     });
 

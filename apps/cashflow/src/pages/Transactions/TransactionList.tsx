@@ -13,6 +13,7 @@ import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
 import Pagination from "../../components/UI/Pagination";
 import TimeRangeFilter from "../../components/UI/TimeRangeFilter";
 import Button from "../../components/UI/Button";
+import PageHeader from "../../components/UI/PageHeader";
 
 interface TransactionListState {
   transactions: Transaction[];
@@ -267,74 +268,58 @@ const TransactionList: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">
-                Giao dịch
-              </h1>
-              <p className="mt-2 text-base font-normal text-gray-600 tracking-normal">
-                Quản lý và theo dõi các giao dịch công nợ
-              </p>
-              {state.customerFilter && (
-                <div className="mt-2 flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">
-                    Đang xem giao dịch của:
-                  </span>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    {state.customerFilter.name}
-                  </span>
-                  <button
-                    onClick={() => {
-                      setState((prev) => ({ ...prev, customerFilter: null }));
-                      navigate("/transactions");
-                    }}
-                    className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
-                    title="Xóa bộ lọc khách hàng"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-3">
-              <Button
-                variant="primary"
-                size="md"
-                onClick={() => setShowCreateModal(true)}
-                className="inline-flex items-center"
+        <PageHeader
+          title="Giao dịch"
+          subtitle="Quản lý và theo dõi các giao dịch công nợ"
+          actions={
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex items-center"
+            >
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
-                Thêm giao dịch mới
-              </Button>
-            </div>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
+              </svg>
+              Thêm giao dịch mới
+            </Button>
+          }
+        />
+        {state.customerFilter && (
+          <div className="mb-4 flex items-center space-x-2">
+            <span className="text-sm text-gray-500">Đang xem giao dịch của:</span>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              {state.customerFilter.name}
+            </span>
+            <button
+              onClick={() => {
+                setState((prev) => ({ ...prev, customerFilter: null }));
+                navigate("/transactions");
+              }}
+              className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+              title="Xóa bộ lọc khách hàng"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
           </div>
-        </div>
+        )}
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow mb-6">

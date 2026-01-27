@@ -49,6 +49,9 @@ apps/cashflow/
 - [x] Renamed "Chi nhánh" to "Văn phòng" throughout the application
 - [x] Reordered transaction list table to place transaction date as leftmost column
 - [x] Implemented functional "Add New Transaction" button with form modal
+- [x] Improved number formatting with flexible M/B suffixes (1.1B instead of 1001.2M)
+- [x] Added thousand separators for all numbers in UI
+- [x] Right-aligned comparison numbers in metrics cards
 
 ### In Progress
 - [ ] Refine MetricsCard component for better number formatting
@@ -131,7 +134,24 @@ npm run dev --workspace=cashflow
 
 ## 📝 Session Notes
 
-### Session 2026-01-27 (Evening)
+### Session 2026-01-27 (Evening - Update 2)
+**Goal**: Improve Number Formatting and UI Alignment
+**Changes Made**:
+- Enhanced number formatting utilities with flexible M/B suffixes
+- Added thousand separators for all numbers in UI
+- Right-aligned comparison numbers in metrics cards
+
+**Features Added**:
+1. **Smart Number Formatting**: Numbers now display with appropriate K/M/B suffixes based on magnitude (1.1B instead of 1001.2M)
+2. **Consistent Thousand Separators**: All numbers now display with thousand separators for better readability
+3. **Improved UI Alignment**: Comparison numbers in metrics cards are now right-aligned for better visual hierarchy
+
+**Next Steps**:
+1. Implement sticky columns in customer list
+2. Add debt badge to customer list
+3. Implement responsive column hiding for customer list
+
+### Session 2026-01-27 (Evening - Update 1)
 **Goal**: Enhance Customer and Transaction UI
 **Changes Made**:
 - Updated dashboard metrics to show all offices (removed branch filter)
@@ -144,11 +164,6 @@ npm run dev --workspace=cashflow
 2. **Consistent Terminology**: Changed "Chi nhánh" to "Văn phòng" throughout the application
 3. **Improved Transaction List**: Transaction date now appears as the leftmost column for better readability
 4. **Transaction Creation**: Added complete form modal for creating new transactions with validation
-
-**Next Steps**:
-1. Implement sticky columns in customer list
-2. Add debt badge to customer list
-3. Implement responsive column hiding for customer list
 
 ### Session 2026-01-26 (Evening)
 **Goal**: Fix data visualization issues and improve bank account display

@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import * as XLSX from "xlsx";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import type { Transaction, ImportData, ImportError, Customer } from "../../types";
@@ -181,11 +182,21 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
       enabled: true,
     },
     {
+      key: "branch",
+      label: "Văn phòng",
+      type: "select",
+      required: false,
+      enabled: true,
+      optionSource: "branch",
+    },
+    {
       key: "transaction_type",
       label: "Loại giao dịch",
       type: "select",
       required: true,
       enabled: true,
+      optionSource: "manual",
+      options: ["Thu", "Chi", "Điều chỉnh", "Hoàn tiền"],
     },
     {
       key: "amount",
@@ -209,6 +220,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
       enabled: true,
     },
   ];
+
   // Định nghĩa type ImportField ở đầu file nếu chưa có:
   type ImportField = {
     key: string;
@@ -551,12 +563,64 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
     );
   };
 
-  // Lấy danh sách chi nhánh và ngân hàng từ localStorage (do Settings đã load và lưu vào localStorage):
+  // Lấy danh sách văn phòng và ngân hàng từ localStorage (do Settings đã load và lưu vào localStorage):
   const branches = JSON.parse(localStorage.getItem("branches") || "[]");
-  const bankAccounts = JSON.parse(localStorage.getItem("bankAccounts") || "[]");
+
+  const normalizedFields = useMemo(() => {
+    const transactionTypeOptions = [
+      t("transactions.types.payment"),
+      t("transactions.types.charge"),
+      t("transactions.types.adjustment"),
+      t("transactions.types.refund"),
+    ];
+
+    return importFields.map((field: ImportField) => {
+      const keyLower = field.key.toLowerCase();
+      const isBranchField = keyLower.includes("branch");
+      const isTransactionType = keyLower === "transaction_type";
+      const normalizedLabel = /chi nhánh/i.test(field.label)
+        ? "Văn phòng"
+        : field.label;
+      const options =
+        field.options ||
+        (isBranchField
+          ? branches.map((b: any) => b.name)
+          : isTransactionType
+            ? transactionTypeOptions
+            : undefined);
+
+      return {
+        ...field,
+        label: normalizedLabel,
+        type: isBranchField ? "select" : field.type,
+        optionSource: field.optionSource || (isBranchField ? "branch" : undefined),
+        options,
+      };
+    });
+  }, [importFields, branches, t]);
 
   // Thay thế importFieldConfig và importSamples bằng các giá trị động dựa trên importFields:
-  const enabledFields = importFields.filter((f: ImportField) => f.enabled);
+  const enabledFields = normalizedFields.filter((f: ImportField) => f.enabled);
+  const handleDownloadTemplate = useCallback(() => {
+    const headers = enabledFields.map((field: ImportField) => field.key);
+    const sampleRow = enabledFields.map((field: ImportField) => {
+      switch (field.type) {
+        case "number":
+          return "1000000";
+        case "date":
+          return "01/07/2024";
+        case "select":
+          return "Thu";
+        default:
+          return field.label;
+      }
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
+    XLSX.writeFile(workbook, "transaction-import-template.xlsx");
+  }, [enabledFields]);
   const importSamples = [
     enabledFields
       .map((f: ImportField) => {
@@ -707,16 +771,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                     label: f.label,
                     required: f.required,
                     type: f.type,
-                    options:
-                      f.type === "select"
-                        ? f.optionSource === "manual"
-                          ? f.options || []
-                          : f.optionSource === "bank"
-                            ? bankAccounts.map((b: any) => b.bankName)
-                            : f.optionSource === "branch"
-                              ? branches.map((b: any) => b.name)
-                              : []
-                        : undefined,
+                    options: f.type === "select" ? f.options || [] : undefined,
                   }))}
                   maxRows={100}
                 />
@@ -753,6 +808,19 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                         </Button>
                       </div>
                     ))}
+                  </div>
+                  <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-dashed border-gray-200 bg-gray-50 px-3 py-2">
+                    <p className="text-sm text-gray-600">
+                      {t("import.downloadTemplateHint")}
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={handleDownloadTemplate}
+                      className="text-xs"
+                    >
+                      {t("import.downloadTemplate")}
+                    </Button>
                   </div>
                 </div>
                 <p className="mt-2 text-sm text-gray-500">

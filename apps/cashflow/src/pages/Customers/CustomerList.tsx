@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 import { databaseService } from "../../services/database";
-import { Customer } from "../../types";
+import type { Customer } from "../../types";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
 import {
   CustomerSearch,
@@ -13,6 +13,7 @@ import {
 } from "./components";
 import Pagination from "../../components/UI/Pagination";
 import Button from "../../components/UI/Button";
+import PageHeader from "../../components/UI/PageHeader";
 
 interface CustomerListState {
   customers: Customer[];
@@ -111,6 +112,31 @@ const CustomerList: React.FC = () => {
         prev.sortBy === sortBy && prev.sortOrder === "asc" ? "desc" : "asc",
     }));
   }, []);
+
+  const sortedCustomers = useMemo(() => {
+    const sorted = [...state.customers];
+    const direction = state.sortOrder === "asc" ? 1 : -1;
+    sorted.sort((a, b) => {
+      const aValue = (a as any)[state.sortBy];
+      const bValue = (b as any)[state.sortBy];
+
+      if (aValue === undefined || aValue === null) return 1 * direction;
+      if (bValue === undefined || bValue === null) return -1 * direction;
+
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        return (aValue - bValue) * direction;
+      }
+
+      if (state.sortBy === "last_transaction_date" || state.sortBy === "created_at") {
+        const aDate = new Date(aValue).getTime();
+        const bDate = new Date(bValue).getTime();
+        return (aDate - bDate) * direction;
+      }
+
+      return String(aValue).localeCompare(String(bValue)) * direction;
+    });
+    return sorted;
+  }, [state.customers, state.sortBy, state.sortOrder]);
 
   // Handle pagination
   const handlePageChange = useCallback((page: number) => {
@@ -271,32 +297,23 @@ const CustomerList: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                {t("customers.title")}
-              </h1>
-              <p className="mt-2 text-sm text-gray-600">
-                {t("customers.subtitle")}
-              </p>
-            </div>
-
-            <div className="mt-4 sm:mt-0">
-              <Button
-                variant="primary"
-                size="md"
-                onClick={() =>
-                  setState((prev) => ({
-                    ...prev,
-                    formMode: "create",
-                    selectedCustomer: null,
-                    showFormModal: true,
-                  }))
-                }
-                className="inline-flex items-center"
-              >
+        <PageHeader
+          title={t("customers.title")}
+          subtitle={t("customers.subtitle")}
+          actions={
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() =>
+                setState((prev) => ({
+                  ...prev,
+                  formMode: "create",
+                  selectedCustomer: null,
+                  showFormModal: true,
+                }))
+              }
+              className="inline-flex items-center"
+            >
                 <svg
                   className="w-4 h-4 mr-2"
                   fill="none"
@@ -311,10 +328,9 @@ const CustomerList: React.FC = () => {
                   />
                 </svg>
                 {t("customers.addNew")}
-              </Button>
-            </div>
-          </div>
-        </div>
+            </Button>
+          }
+        />
 
         {/* Filters and Search */}
         <div className="bg-white rounded-lg shadow mb-6">
@@ -354,7 +370,7 @@ const CustomerList: React.FC = () => {
           </div>
 
           <CustomerTable
-            customers={state.customers}
+            customers={sortedCustomers}
             sortBy={state.sortBy}
             sortOrder={state.sortOrder}
             onSort={handleSort}

@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Transaction } from "../../../types";
+import type { Transaction } from "../../../types";
 import { formatCurrency } from "../../../utils/formatting";
 
 interface RecentTransactionsProps {
@@ -16,14 +16,14 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  // Function to get branch name from branch_id
+  // Function to get office name from branch_id
   const getBranchName = (branchId: string) => {
     const branchMap: { [key: string]: string } = {
-      "1": "Chi nhánh chính",
-      "2": "Chi nhánh Bắc",
-      "3": "Chi nhánh Nam",
+      "1": "Văn phòng chính",
+      "2": "Văn phòng Bắc",
+      "3": "Văn phòng Nam",
     };
-    return branchMap[branchId] || "Chi nhánh không xác định";
+    return branchMap[branchId] || "Văn phòng không xác định";
   };
 
   if (!transactions || transactions.length === 0) {

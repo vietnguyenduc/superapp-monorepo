@@ -21,6 +21,17 @@ function safeParseJson<T>(value: string | null, fallback: T): T {
   }
 }
 
+function softenPositiveBalances(customers: Customer[], ratio = 0.25, cap = 2_000_000) {
+  return customers.map((customer) => {
+    if (customer.total_balance <= 0) return customer;
+    const scaled = Math.min(Math.round(customer.total_balance * ratio), cap);
+    return {
+      ...customer,
+      total_balance: scaled,
+    };
+  });
+}
+
 function getNowIso() {
   return new Date().toISOString();
 }
@@ -186,7 +197,7 @@ function ensureSeedData() {
     const refreshedCustomerMap = new Map(
       currentCustomers.map((c) => [c.id, c] as const),
     );
-    const enrichedTransactions = existingTransactions.map((t) => {
+    let enrichedTransactions = existingTransactions.map((t) => {
       if (t.customer_name) return t;
       const customer = refreshedCustomerMap.get(t.customer_id);
       if (!customer) return t;
@@ -195,6 +206,57 @@ function ensureSeedData() {
         customer_name: customer.full_name,
       };
     });
+    const hasAdjustment = enrichedTransactions.some((t) => t.transaction_type === "adjustment");
+    const hasRefund = enrichedTransactions.some((t) => t.transaction_type === "refund");
+    if (!hasAdjustment || !hasRefund) {
+      const now = new Date();
+      const fallbackCustomer = currentCustomers[0];
+      const fallbackBank = existingBankAccounts[0];
+      if (fallbackCustomer && fallbackBank) {
+        const extra: Transaction[] = [];
+        if (!hasAdjustment) {
+          extra.push({
+            id: uuid(),
+            transaction_code: padTxnCode(enrichedTransactions.length + 1),
+            customer_id: fallbackCustomer.id,
+            customer_name: fallbackCustomer.full_name,
+            bank_account_id: fallbackBank.id,
+            bank_account_name: fallbackBank.account_name,
+            branch_id: fallbackBank.branch_id,
+            transaction_type: "adjustment",
+            amount: -1_200_000,
+            description: "Điều chỉnh công nợ",
+            reference_number: "",
+            transaction_date: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            created_by: "seed",
+            created_at: now.toISOString(),
+            updated_at: now.toISOString(),
+          });
+        }
+        if (!hasRefund) {
+          extra.push({
+            id: uuid(),
+            transaction_code: padTxnCode(enrichedTransactions.length + extra.length + 1),
+            customer_id: fallbackCustomer.id,
+            customer_name: fallbackCustomer.full_name,
+            bank_account_id: fallbackBank.id,
+            bank_account_name: fallbackBank.account_name,
+            branch_id: fallbackBank.branch_id,
+            transaction_type: "refund",
+            amount: 950_000,
+            description: "Hoàn tiền",
+            reference_number: "",
+            transaction_date: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(),
+            created_by: "seed",
+            created_at: now.toISOString(),
+            updated_at: now.toISOString(),
+          });
+        }
+        if (extra.length) {
+          enrichedTransactions = [...extra, ...enrichedTransactions];
+        }
+      }
+    }
     const balanceMap = new Map<string, { balance: number; lastDate?: string }>();
     enrichedTransactions.forEach((tx) => {
       const prev = balanceMap.get(tx.customer_id) || { balance: 0 };
@@ -221,10 +283,10 @@ function ensureSeedData() {
     const hasChanges = enrichedTransactions.some(
       (t, idx) => t.customer_name !== existingTransactions[idx]?.customer_name,
     );
-    if (hasChanges) {
+    if (hasChanges || (!hasAdjustment || !hasRefund)) {
       writeTransactions(enrichedTransactions);
     }
-    writeCustomers(updatedCustomers);
+    writeCustomers(softenPositiveBalances(updatedCustomers));
     return;
   }
 
@@ -289,21 +351,57 @@ function ensureSeedData() {
       const customer = customers[Math.floor(Math.random() * customers.length)];
       const bankAccount = bankAccounts[Math.floor(Math.random() * bankAccounts.length)];
       const isInflowDay = day <= 10;
+      const roll = Math.random();
 
       const type: TransactionType = isInflowDay
-        ? Math.random() < 0.7
+        ? roll < 0.6
           ? "payment"
-          : "charge"
-        : Math.random() < 0.6
+          : roll < 0.85
+            ? "charge"
+            : roll < 0.95
+              ? "refund"
+              : "adjustment"
+        : roll < 0.6
           ? "charge"
-          : "payment";
+          : roll < 0.8
+            ? "payment"
+            : roll < 0.9
+              ? "refund"
+              : "adjustment";
 
-      const base = type === "payment" ? 3_000_000 : 4_000_000;
-      const spread = type === "payment" ? 12_000_000 : 15_000_000;
-      const amount = Math.max(100_000, Math.floor((base + Math.random() * spread) * seasonFactor));
+      const base =
+        type === "payment"
+          ? 3_000_000
+          : type === "charge"
+            ? 4_000_000
+            : type === "refund"
+              ? 1_500_000
+              : 800_000;
+      const spread =
+        type === "payment"
+          ? 12_000_000
+          : type === "charge"
+            ? 15_000_000
+            : type === "refund"
+              ? 4_000_000
+              : 2_500_000;
+      let amount = Math.max(100_000, Math.floor((base + Math.random() * spread) * seasonFactor));
+      if (type === "adjustment") {
+        amount = Math.max(50_000, Math.floor((base + Math.random() * spread) * seasonFactor));
+        amount = Math.random() < 0.5 ? -amount : amount;
+      }
 
       const date = new Date(d);
       date.setHours(9 + Math.floor(Math.random() * 9), Math.floor(Math.random() * 60), 0, 0);
+
+      const description =
+        type === "payment"
+          ? "Thu tiền"
+          : type === "charge"
+            ? "Chi tiền"
+            : type === "refund"
+              ? "Hoàn tiền"
+              : "Điều chỉnh";
 
       seeded.push({
         id: uuid(),
@@ -315,7 +413,7 @@ function ensureSeedData() {
         branch_id: bankAccount.branch_id,
         transaction_type: type,
         amount,
-        description: type === "payment" ? "Thu tiền" : "Chi tiền",
+        description,
         reference_number: "",
         transaction_date: date.toISOString(),
         created_by: "seed",
@@ -402,7 +500,10 @@ function ensureSeedData() {
   });
 
   window.localStorage.setItem(STORAGE_KEYS.bankAccounts, JSON.stringify(bankAccounts));
-  window.localStorage.setItem(STORAGE_KEYS.customers, JSON.stringify(customersWithBalances));
+  window.localStorage.setItem(
+    STORAGE_KEYS.customers,
+    JSON.stringify(softenPositiveBalances(customersWithBalances)),
+  );
   window.localStorage.setItem(STORAGE_KEYS.transactions, JSON.stringify(allTransactions));
 }
 
@@ -446,7 +547,11 @@ function readBranches(): Array<{ id: string; name: string }> {
   const saved = safeParseJson<any[]>(window.localStorage.getItem("branches"), []);
   if (Array.isArray(saved) && saved.length > 0) {
     return saved
-      .map((b: any) => ({ id: String(b.id), name: String(b.name || b.branch_name || b.code || b.id) }))
+      .map((b: any) => {
+        const rawName = String(b.name || b.branch_name || b.code || b.id);
+        const normalizedName = rawName.replace(/Chi nhánh/gi, "Văn phòng");
+        return { id: String(b.id), name: normalizedName };
+      })
       .filter((b: any) => b.id);
   }
 
@@ -514,8 +619,15 @@ function dateKeyForRange(date: Date, timeRange: TimeRange) {
   return d.toISOString().slice(0, 10);
 }
 
-function aggregateCashFlow(transactions: Transaction[], timeRange: TimeRange) {
+function aggregateCashFlow(transactions: Transaction[], timeRange: TimeRange, count: number) {
   const map = new Map<string, { date: string; inflow: number; outflow: number; netFlow: number }>();
+  const periodStarts = buildPeriodStarts(timeRange, count, new Date());
+
+  periodStarts.forEach((start) => {
+    const key = dateKeyForRange(start, timeRange);
+    map.set(key, { date: new Date(key).toISOString(), inflow: 0, outflow: 0, netFlow: 0 });
+  });
+
   for (const tx of transactions) {
     const dt = new Date(tx.transaction_date);
     const key = dateKeyForRange(dt, timeRange);
@@ -656,10 +768,22 @@ function getPeriodWindow(timeRange: TimeRange, count: number) {
 const customerService = {
   async getCustomers(_filters?: any) {
     ensureSeedData();
+    const all = readCustomers();
+    const search = String(_filters?.search || "").toLowerCase().trim();
+    const filtered = search
+      ? all.filter((c) =>
+          [c.full_name, c.customer_code, c.email, c.phone]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(search)),
+        )
+      : all;
+    const limit = Number.isFinite(_filters?.limit) ? Number(_filters.limit) : filtered.length;
+    const offset = Number.isFinite(_filters?.offset) ? Number(_filters.offset) : 0;
+    const data = filtered.slice(offset, offset + limit);
     return {
-      data: readCustomers(),
+      data,
       error: null,
-      count: readCustomers().length,
+      count: filtered.length,
     };
   },
   
@@ -1172,7 +1296,7 @@ const dashboardService = {
       transactions.filter((t) => new Date(t.transaction_date) <= prevEnd),
     );
 
-    const cashFlowData = aggregateCashFlow(currentTx, timeRange);
+    const cashFlowData = aggregateCashFlow(currentTx, timeRange, count);
 
     const bankAccounts = readBankAccounts();
     const balanceByBankAccountAll = bankAccounts.map((b) => {
@@ -1230,13 +1354,21 @@ const dashboardService = {
       else customerBalanceMap.set(tx.customer_id, prev + tx.amount);
     }
 
-    const topCustomers = customers
-      .map((c) => ({
-        ...c,
-        total_balance: customerBalanceMap.get(c.id) ?? c.total_balance,
-      }))
-      .sort((a, b) => Math.abs(b.total_balance) - Math.abs(a.total_balance))
-      .slice(0, 10);
+    const customersWithBalance = customers.map((c) => ({
+      ...c,
+      total_balance: customerBalanceMap.get(c.id) ?? c.total_balance,
+    }));
+
+    const debtCustomers = customersWithBalance
+      .filter((c) => c.total_balance < 0)
+      .sort((a, b) => a.total_balance - b.total_balance);
+
+    const positiveThreshold = 5_000_000;
+    const smallCreditCustomers = customersWithBalance
+      .filter((c) => c.total_balance >= 0 && c.total_balance <= positiveThreshold)
+      .sort((a, b) => b.total_balance - a.total_balance);
+
+    const topCustomers = [...debtCustomers, ...smallCreditCustomers].slice(0, 10);
 
     const recentTransactions = [...currentTx]
       .sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
