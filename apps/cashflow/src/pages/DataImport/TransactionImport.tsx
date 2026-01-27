@@ -1,7 +1,8 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import { Transaction, ImportData, ImportError, Customer } from "../../types";
+import type { Transaction, ImportData, ImportError, Customer } from "../../types";
 import {
   validateTransactionData,
   parseTransactionData,
@@ -143,6 +144,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
 }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [importData, setImportData] = useState<ImportData>({
     file: null,
     data: [],
@@ -236,6 +238,19 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
       .fill(null)
       .map(() => ({ ...emptyRow })),
   );
+
+  useEffect(() => {
+    const customerName = searchParams.get("customer_name");
+    if (!customerName) return;
+    setTableData((prev) => {
+      if (!prev || prev.length === 0) return prev;
+      const next = [...prev];
+      next[0] = { ...next[0], customer_name: customerName };
+      return next;
+    });
+    setShowPreview(false);
+    setCurrentStep(1);
+  }, [searchParams]);
 
   // Parse and validate data when raw data changes
   const processedData = useMemo(() => {

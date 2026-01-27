@@ -2,7 +2,7 @@
 
 > **Purpose**: This file helps AI assistants (Claude, GPT, Copilot, etc.) understand the project context quickly. Update this file after significant changes.
 > 
-> **Last Updated**: 2026-01-26
+> **Last Updated**: 2026-01-27
 > **Updated By**: Development Team
 
 ---
@@ -45,13 +45,24 @@ apps/cashflow/
 - [x] Improved responsive display of bank account names in BalanceByBankChart
 - [x] Fixed data inconsistency in yearly visualization
 - [x] Enhanced sample data to cover multiple time periods
+- [x] Dashboard metrics now show all offices (renamed from "branches")
+- [x] Renamed "Chi nhánh" to "Văn phòng" throughout the application
+- [x] Reordered transaction list table to place transaction date as leftmost column
+- [x] Implemented functional "Add New Transaction" button with form modal
 
 ### In Progress
 - [ ] Refine MetricsCard component for better number formatting
 - [ ] Improve data consistency between visualizations and actual transaction data
+- [ ] Implement sticky columns in customer list
+- [ ] Add debt badge to customer list
+- [ ] Implement responsive column hiding for customer list
 
 ### Known Issues
-- None currently
+- After updating branch/office terminology, you may need to clear localStorage to see changes:
+  ```js
+  localStorage.removeItem("cashflow_transactions")
+  localStorage.removeItem("cashflow_bank_accounts")
+  ```
 
 ---
 
@@ -66,6 +77,7 @@ apps/cashflow/
 ```typescript
 databaseService.dashboard.getDashboardMetrics(branchId?, timeRange)
 // Returns: { data: DashboardMetrics, error: null }
+// Note: branchId is now optional to show all offices
 ```
 
 ### Time Range Filters
@@ -118,6 +130,25 @@ npm run dev --workspace=cashflow
 ---
 
 ## 📝 Session Notes
+
+### Session 2026-01-27 (Evening)
+**Goal**: Enhance Customer and Transaction UI
+**Changes Made**:
+- Updated dashboard metrics to show all offices (removed branch filter)
+- Renamed "branch" terminology to "office" in UI labels and data
+- Reordered transaction list table to place transaction date as leftmost column
+- Implemented functional "Add New Transaction" button with form modal
+
+**Features Added**:
+1. **All-Office Dashboard View**: Dashboard now shows metrics for all offices instead of filtering by logged-in user's office
+2. **Consistent Terminology**: Changed "Chi nhánh" to "Văn phòng" throughout the application
+3. **Improved Transaction List**: Transaction date now appears as the leftmost column for better readability
+4. **Transaction Creation**: Added complete form modal for creating new transactions with validation
+
+**Next Steps**:
+1. Implement sticky columns in customer list
+2. Add debt badge to customer list
+3. Implement responsive column hiding for customer list
 
 ### Session 2026-01-26 (Evening)
 **Goal**: Fix data visualization issues and improve bank account display

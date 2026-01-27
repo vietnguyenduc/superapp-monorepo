@@ -188,8 +188,9 @@
   },
   "customers": {
     "title": "Customers",
+    "subtitle": "Manage customer information",
     "customerList": "Customer List",
-    "addCustomer": "Add Customer",
+    "addNew": "Add New Customer",
     "editCustomer": "Edit Customer",
     "customerDetails": "Customer Details",
     "customerCode": "Customer Code",
@@ -211,10 +212,51 @@
     "transactionHistory": "Transaction History",
     "noTransactions": "No transactions found",
     "searchCustomers": "Search customers...",
+    "searchPlaceholder": "Search by name, code, email, phone...",
     "filterByBranch": "Filter by branch",
     "filterByStatus": "Filter by status",
     "allBranches": "All Branches",
-    "allStatuses": "All Statuses"
+    "allStatuses": "All Statuses",
+    "showingResults": "Showing {{start}} to {{end}} of {{total}} customers",
+    "columns": {
+      "code": "Code",
+      "name": "Name",
+      "phone": "Phone",
+      "address": "Address",
+      "balance": "Current Balance",
+      "lastTransaction": "Last Transaction",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "form": {
+      "createTitle": "Add new customer",
+      "createSubtitle": "Enter customer details",
+      "editTitle": "Edit customer",
+      "editSubtitle": "Update customer details",
+      "customerCode": "Customer code",
+      "customerCodePlaceholder": "Enter customer code",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "Enter full name",
+      "email": "Email",
+      "emailPlaceholder": "Enter email address",
+      "phone": "Phone",
+      "phonePlaceholder": "Enter phone number",
+      "address": "Address",
+      "addressPlaceholder": "Enter address",
+      "isActive": "Active customer",
+      "create": "Create customer",
+      "save": "Save changes",
+      "createTransactions": "Continue to enter transactions for this customer",
+      "createTransactionsHint": "You'll be redirected to the transaction import with this customer prefilled.",
+      "errors": {
+        "customerCodeRequired": "Customer code is required",
+        "customerCodeMinLength": "Customer code must be at least 3 characters",
+        "fullNameRequired": "Full name is required",
+        "fullNameMinLength": "Full name must be at least 2 characters",
+        "emailInvalid": "Invalid email address",
+        "phoneInvalid": "Invalid phone number"
+      }
+    }
   },
   "transactions": {
     "title": "Transactions",

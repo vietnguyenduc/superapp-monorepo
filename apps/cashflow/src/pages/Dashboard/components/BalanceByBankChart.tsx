@@ -69,7 +69,7 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
   });
 
   // Custom tooltip with mini chart
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length && payload[0] && payload[0].payload) {
       const tooltipData = payload[0].payload;
       const value = payload[0].value || 0;
@@ -139,9 +139,20 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
     const { x, y, payload } = props;
     
     // Get the data for this tick
-    const tickData = chartData.find(item => item.name === payload.value) || {};
+    const tickData = (chartData.find((item) => item.name === payload.value) || {
+      bankName: "",
+      accountType: "",
+      accountNumber: "",
+    }) as {
+      bankName: string;
+      accountType: string;
+      accountNumber: string;
+    };
+
     const bankName = tickData.bankName || '';
     const accountType = tickData.accountType || '';
+    const accountNumber = String(tickData.accountNumber || "");
+    const last4 = accountNumber.length >= 4 ? accountNumber.slice(-4) : accountNumber;
     
     // Adjust width based on number of accounts
     const width = chartData.length > 6 ? 70 : 100;
@@ -155,6 +166,8 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
     
     const displayAccountType = accountType.length > maxAccountTypeChars ? 
       accountType.substring(0, maxAccountTypeChars - 2) + '...' : accountType;
+
+    const primaryLabel = last4 ? `${displayBankName} • ${last4}` : displayBankName;
     
     return (
       <g>
@@ -163,7 +176,7 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
           x={x - width/2} 
           y={y - 5} 
           width={width} 
-          height={accountType ? 40 : 25} 
+          height={accountType ? 42 : 26} 
           fill="#f8fafc"
           stroke="#e2e8f0"
           strokeWidth={1}
@@ -180,7 +193,7 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
           fontSize={chartData.length > 6 ? 10 : 12}
           fontWeight="bold"
         >
-          {displayBankName}
+          {primaryLabel}
         </text>
         
         {/* Account type (if available) */}
@@ -205,14 +218,14 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={chartData}
-          margin={{ top: 20, right: 10, left: 10, bottom: 70 }} // Reduce side margins to use more width
+          margin={{ top: 20, right: 10, left: 10, bottom: 40 }} // Reduce side margins to use more width
           barGap={0}
           barCategoryGap={"15%"} // Adjust space between bars to use more width for better readability
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
           <XAxis
             dataKey="name"
-            height={120} // Increase height to accommodate full bank names with background
+            height={80} // Increase height to accommodate full bank names with background
             interval={0}
             tickLine={false}
             axisLine={{ stroke: '#E5E7EB' }}

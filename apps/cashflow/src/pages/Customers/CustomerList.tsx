@@ -175,13 +175,14 @@ const CustomerList: React.FC = () => {
 
   // Handle form submission
   const handleFormSubmit = useCallback(
-    async (customerData: Partial<Customer>) => {
+    async (customerData: Partial<Customer>, options?: { createTransactions?: boolean }) => {
       try {
         let result;
 
         if (state.formMode === "create") {
           result = await databaseService.customers.createCustomer({
             ...customerData,
+            branch_id: customerData.branch_id ?? user?.branch_id ?? null,
           });
         } else {
           result = await databaseService.customers.updateCustomer(
@@ -199,6 +200,15 @@ const CustomerList: React.FC = () => {
             selectedCustomer: null,
           }));
           fetchCustomers(); // Refresh the list
+
+          if (state.formMode === "create" && options?.createTransactions) {
+            const name = customerData.full_name || result.data?.full_name;
+            if (name) {
+              window.location.href = `/import/transactions?customer_name=${encodeURIComponent(String(name))}`;
+            } else {
+              window.location.href = "/import/transactions";
+            }
+          }
         }
       } catch (error) {
         alert(t("customers.saveError"));
@@ -277,7 +287,14 @@ const CustomerList: React.FC = () => {
               <Button
                 variant="primary"
                 size="md"
-                onClick={() => alert("Tính năng đang được phát triển")}
+                onClick={() =>
+                  setState((prev) => ({
+                    ...prev,
+                    formMode: "create",
+                    selectedCustomer: null,
+                    showFormModal: true,
+                  }))
+                }
                 className="inline-flex items-center"
               >
                 <svg

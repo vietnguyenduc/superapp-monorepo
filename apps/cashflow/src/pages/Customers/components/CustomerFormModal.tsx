@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Customer } from "../../../types";
 
@@ -6,7 +6,7 @@ interface CustomerFormModalProps {
   mode: "create" | "edit";
   customer?: Customer | null;
   onClose: () => void;
-  onSubmit: (customerData: Partial<Customer>) => void;
+  onSubmit: (customerData: Partial<Customer>, options?: { createTransactions?: boolean }) => void;
 }
 
 interface FormData {
@@ -16,6 +16,7 @@ interface FormData {
   phone: string;
   address: string;
   is_active: boolean;
+  create_transactions: boolean;
 }
 
 interface FormErrors {
@@ -39,11 +40,11 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     phone: "",
     address: "",
     is_active: true,
+    create_transactions: false,
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize form data when customer changes
   useEffect(() => {
     if (customer && mode === "edit") {
       setFormData({
@@ -53,35 +54,35 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         phone: customer.phone || "",
         address: customer.address || "",
         is_active: customer.is_active,
+        create_transactions: false,
       });
+    } else if (mode === "create") {
+      setFormData((prev) => ({
+        ...prev,
+        customer_code: prev.customer_code || `CUST${String(Date.now()).slice(-6)}`,
+      }));
     }
   }, [customer, mode]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    // Customer code validation
     if (!formData.customer_code.trim()) {
       newErrors.customer_code = t("customers.form.errors.customerCodeRequired");
     } else if (formData.customer_code.length < 3) {
-      newErrors.customer_code = t(
-        "customers.form.errors.customerCodeMinLength",
-      );
+      newErrors.customer_code = t("customers.form.errors.customerCodeMinLength");
     }
 
-    // Full name validation
     if (!formData.full_name.trim()) {
       newErrors.full_name = t("customers.form.errors.fullNameRequired");
     } else if (formData.full_name.length < 2) {
       newErrors.full_name = t("customers.form.errors.fullNameMinLength");
     }
 
-    // Email validation
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = t("customers.form.errors.emailInvalid");
     }
 
-    // Phone validation
     if (
       formData.phone &&
       !/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/\s/g, ""))
@@ -93,13 +94,8 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleInputChange = (
-    field: keyof FormData,
-    value: string | boolean,
-  ) => {
+  const handleInputChange = (field: keyof FormData, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-
-    // Clear error when user starts typing
     if (errors[field as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
@@ -107,15 +103,12 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
-
     try {
-      await onSubmit(formData);
+      const { create_transactions, ...payload } = formData;
+      await onSubmit(payload, { createTransactions: create_transactions });
     } catch (error) {
       console.error("Form submission error:", error);
     } finally {
@@ -124,9 +117,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") {
-      onClose();
-    }
+    if (e.key === "Escape") onClose();
   };
 
   return (
@@ -136,11 +127,9 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
           onClick={onClose}
         />
-
         <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
             <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-              {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-lg leading-6 font-medium text-gray-900">
@@ -175,9 +164,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 </button>
               </div>
 
-              {/* Form Fields */}
               <div className="space-y-4">
-                {/* Customer Code */}
                 <div>
                   <label
                     htmlFor="customer_code"
@@ -204,7 +191,6 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                   )}
                 </div>
 
-                {/* Full Name */}
                 <div>
                   <label
                     htmlFor="full_name"
@@ -231,7 +217,6 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                   )}
                 </div>
 
-                {/* Email */}
                 <div>
                   <label
                     htmlFor="email"
@@ -254,7 +239,6 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                   )}
                 </div>
 
-                {/* Phone */}
                 <div>
                   <label
                     htmlFor="phone"
@@ -277,7 +261,6 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                   )}
                 </div>
 
-                {/* Address */}
                 <div>
                   <label
                     htmlFor="address"
@@ -297,7 +280,6 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                   />
                 </div>
 
-                {/* Active Status */}
                 <div className="flex items-center">
                   <input
                     type="checkbox"
@@ -315,52 +297,78 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     {t("customers.form.isActive")}
                   </label>
                 </div>
-              </div>
-            </div>
 
-            {/* Footer */}
-            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <>
-                    <svg
-                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
+                {mode === "create" && (
+                  <div className="rounded-md border border-dashed border-gray-200 p-3 bg-gray-50">
+                    <div className="flex items-start space-x-2">
+                      <input
+                        type="checkbox"
+                        id="create_transactions"
+                        checked={formData.create_transactions}
+                        onChange={(e) =>
+                          handleInputChange("create_transactions", e.target.checked)
+                        }
+                        className="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                       />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    {t("common.saving")}
-                  </>
-                ) : mode === "create" ? (
-                  t("customers.form.create")
-                ) : (
-                  t("customers.form.save")
+                      <label
+                        htmlFor="create_transactions"
+                        className="text-sm text-gray-900"
+                      >
+                        <span className="font-medium">
+                          {t("customers.form.createTransactions")}
+                        </span>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {t("customers.form.createTransactionsHint")}
+                        </p>
+                      </label>
+                    </div>
+                  </div>
                 )}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-              >
-                {t("common.cancel")}
-              </button>
+              </div>
+
+              <div className="flex justify-end mt-6">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:mr-3 sm:w-auto sm:text-sm"
+                >
+                  {t("common.cancel")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-0 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      {t("common.saving")}
+                    </>
+                  ) : mode === "create" ? (
+                    t("customers.form.create")
+                  ) : (
+                    t("customers.form.save")
+                  )}
+                </button>
+              </div>
             </div>
           </form>
         </div>

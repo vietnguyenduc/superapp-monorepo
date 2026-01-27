@@ -251,6 +251,7 @@
       "code": "Mã",
       "name": "Tên",
       "phone": "Điện thoại",
+      "address": "Địa chỉ",
       "balance": "Công nợ hiện tại",
       "lastTransaction": "Giao dịch cuối",
       "status": "Trạng thái",
@@ -313,6 +314,8 @@
       "isActive": "Khách hàng hoạt động",
       "create": "Tạo khách hàng",
       "save": "Lưu thay đổi",
+      "createTransactions": "Tiếp tục nhập giao dịch cho khách hàng này",
+      "createTransactionsHint": "Bạn sẽ được chuyển sang trang nhập giao dịch với khách hàng đã chọn sẵn.",
       "errors": {
         "customerCodeRequired": "Mã khách hàng là bắt buộc",
         "customerCodeMinLength": "Mã khách hàng phải có ít nhất 3 ký tự",

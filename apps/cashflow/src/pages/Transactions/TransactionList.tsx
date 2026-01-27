@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
 import { databaseService } from "../../services/database";
-import { Transaction } from "../../types";
+import type { Transaction, Customer } from "../../types";
 import {
   formatCurrency,
   formatDate,
@@ -38,7 +37,19 @@ const TransactionList: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+  const [formData, setFormData] = useState({
+    customer_id: "",
+    bank_account_id: "",
+    transaction_type: "payment",
+    amount: "",
+    description: "",
+    reference_number: "",
+    transaction_date: new Date().toISOString().slice(0, 10),
+  });
   const [state, setState] = useState<TransactionListState>({
     transactions: [],
     loading: true,
@@ -70,13 +81,11 @@ const TransactionList: React.FC = () => {
 
   // Fetch transactions
   const fetchTransactions = useCallback(async () => {
-    if (!user?.branch_id) return;
 
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
       const filters = {
-        branch_id: user.branch_id,
         search: state.searchTerm || undefined,
         dateRange: state.dateRange || undefined,
         transaction_type: state.transactionType || undefined,
@@ -107,7 +116,6 @@ const TransactionList: React.FC = () => {
       }));
     }
   }, [
-    user?.branch_id,
     state.searchTerm,
     state.dateRange,
     state.transactionType,
@@ -115,6 +123,59 @@ const TransactionList: React.FC = () => {
     state.currentPage,
     state.pageSize,
   ]);
+
+  const loadFormOptions = useCallback(async () => {
+    const [customerResult, bankResult] = await Promise.all([
+      databaseService.customers.getCustomers(),
+      databaseService.bankAccounts.getBankAccounts(),
+    ]);
+    if (customerResult.data) setCustomers(customerResult.data);
+    if (bankResult.data) setBankAccounts(bankResult.data);
+  }, []);
+
+  useEffect(() => {
+    if (!showCreateModal) return;
+    loadFormOptions();
+  }, [showCreateModal, loadFormOptions]);
+
+  const resetForm = () => {
+    setFormData({
+      customer_id: "",
+      bank_account_id: "",
+      transaction_type: "payment",
+      amount: "",
+      description: "",
+      reference_number: "",
+      transaction_date: new Date().toISOString().slice(0, 10),
+    });
+  };
+
+  const handleCreateTransaction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.customer_id || !formData.bank_account_id || !formData.amount) return;
+    setIsSaving(true);
+    try {
+      const amount = Number(formData.amount);
+      const result = await databaseService.transactions.createTransaction({
+        customer_id: formData.customer_id,
+        bank_account_id: formData.bank_account_id,
+        transaction_type: formData.transaction_type,
+        amount: Number.isFinite(amount) ? amount : 0,
+        description: formData.description,
+        reference_number: formData.reference_number,
+        transaction_date: formData.transaction_date
+          ? new Date(formData.transaction_date).toISOString()
+          : new Date().toISOString(),
+      });
+      if (!result.error) {
+        setShowCreateModal(false);
+        resetForm();
+        fetchTransactions();
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Load data on component mount and when filters change
   useEffect(() => {
@@ -168,11 +229,11 @@ const TransactionList: React.FC = () => {
   // Function to get branch name from branch_id
   const getBranchName = (branchId: string) => {
     const branchMap: { [key: string]: string } = {
-      "1": "Chi nhánh chính",
-      "2": "Chi nhánh Bắc",
-      "3": "Chi nhánh Nam",
+      "1": "Văn phòng chính",
+      "2": "Văn phòng Bắc",
+      "3": "Văn phòng Nam",
     };
-    return branchMap[branchId] || "Chi nhánh không xác định";
+    return branchMap[branchId] || "Văn phòng không xác định";
   };
 
   if (state.loading) {
@@ -253,7 +314,7 @@ const TransactionList: React.FC = () => {
               <Button
                 variant="primary"
                 size="md"
-                onClick={() => alert("Tính năng đang được phát triển")}
+                onClick={() => setShowCreateModal(true)}
                 className="inline-flex items-center"
               >
                 <svg
@@ -400,6 +461,9 @@ const TransactionList: React.FC = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ngày giao dịch
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Mã giao dịch
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -409,16 +473,13 @@ const TransactionList: React.FC = () => {
                       Tài khoản ngân hàng
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Chi nhánh
+                      Văn phòng
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Loại giao dịch
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Số tiền
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ngày giao dịch
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Mô tả
@@ -428,6 +489,9 @@ const TransactionList: React.FC = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {state.transactions.map((transaction) => (
                     <tr key={transaction.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(transaction.transaction_date)}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {transaction.transaction_code}
                       </td>
@@ -459,9 +523,6 @@ const TransactionList: React.FC = () => {
                           {formatCurrency(transaction.amount)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(transaction.transaction_date)}
-                      </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
                         <div className="max-w-xs truncate">
                           {transaction.description || "-"}
@@ -488,6 +549,221 @@ const TransactionList: React.FC = () => {
           )}
         </div>
       </div>
+
+      {showCreateModal && (
+        <div className="fixed inset-0 z-[200] overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div
+              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+              onClick={() => {
+                setShowCreateModal(false);
+                resetForm();
+              }}
+            />
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <form onSubmit={handleCreateTransaction}>
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="text-lg leading-6 font-medium text-gray-900">
+                        Thêm giao dịch mới
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Nhập thông tin giao dịch cho khách hàng
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateModal(false);
+                        resetForm();
+                      }}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Khách hàng *
+                      </label>
+                      <select
+                        value={formData.customer_id}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            customer_id: e.target.value,
+                          }))
+                        }
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                        required
+                      >
+                        <option value="">Chọn khách hàng</option>
+                        {customers.map((customer) => (
+                          <option key={customer.id} value={customer.id}>
+                            {customer.full_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Tài khoản ngân hàng *
+                      </label>
+                      <select
+                        value={formData.bank_account_id}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            bank_account_id: e.target.value,
+                          }))
+                        }
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                        required
+                      >
+                        <option value="">Chọn tài khoản</option>
+                        {bankAccounts.map((account) => (
+                          <option key={account.id} value={account.id}>
+                            {account.account_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Loại giao dịch *
+                        </label>
+                        <select
+                          value={formData.transaction_type}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              transaction_type: e.target.value,
+                            }))
+                          }
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                        >
+                          <option value="payment">Thanh toán</option>
+                          <option value="charge">Cho nợ</option>
+                          <option value="adjustment">Điều chỉnh</option>
+                          <option value="refund">Hoàn tiền</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Ngày giao dịch *
+                        </label>
+                        <input
+                          type="date"
+                          value={formData.transaction_date}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              transaction_date: e.target.value,
+                            }))
+                          }
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Số tiền *
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.amount}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            amount: e.target.value,
+                          }))
+                        }
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Mã tham chiếu
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.reference_number}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            reference_number: e.target.value,
+                          }))
+                        }
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Mô tả
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={formData.description}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            description: e.target.value,
+                          }))
+                        }
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end mt-6">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateModal(false);
+                        resetForm();
+                      }}
+                      className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:mr-3 sm:w-auto sm:text-sm"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-0 sm:w-auto sm:text-sm disabled:opacity-50"
+                    >
+                      {isSaving ? "Đang lưu..." : "Tạo giao dịch"}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

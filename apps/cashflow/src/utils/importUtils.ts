@@ -1,4 +1,4 @@
-import { Transaction, ImportError, TransactionType } from "../types";
+import type { Transaction, ImportError, TransactionType } from "../types";
 
 export interface RawTransactionData {
   customer_name: string;
@@ -118,6 +118,8 @@ export function validateTransactionData(
   const errors: ImportError[] = [];
 
   data.forEach((row, index) => {
+    const normalizedType = row.transaction_type ? row.transaction_type.toLowerCase().trim() : "";
+
     // Validate customer name
     if (!row.customer_name || row.customer_name.trim().length === 0) {
       errors.push({
@@ -160,7 +162,6 @@ export function validateTransactionData(
         "adjustment",
         "refund",
       ];
-      const normalizedType = row.transaction_type.toLowerCase().trim();
 
       if (!validTypes.includes(normalizedType as TransactionType)) {
         errors.push({
@@ -182,7 +183,18 @@ export function validateTransactionData(
       });
     } else {
       const amount = parseAmount(row.amount);
-      if (isNaN(amount) || amount <= 0) {
+      const isAdjustment = normalizedType === "adjustment";
+
+      if (isNaN(amount) || amount === 0) {
+        errors.push({
+          row: index,
+          column: "amount",
+          message: isAdjustment
+            ? "Amount must be a non-zero number for adjustment"
+            : "Amount must be a positive number",
+          value: row.amount,
+        });
+      } else if (!isAdjustment && amount < 0) {
         errors.push({
           row: index,
           column: "amount",

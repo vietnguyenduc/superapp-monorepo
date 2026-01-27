@@ -38,38 +38,23 @@ interface WaterfallDataItem {
 interface CashFlowChartProps {
   data: CashFlowData[];
   timeRange: TimeRange;
+  startBalance?: number;
+  endBalance?: number;
 }
 
-const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange }) => {
+const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBalance, endBalance }) => {
   const { t } = useTranslation();
   const [showBalance, setShowBalance] = React.useState(true);
 
-  // Generate sample data for 4 months if no data is provided
-  const generateSampleData = () => {
-    const today = new Date();
-    const sampleData = [];
-    
-    // Generate data for past 4 months
-    for (let month = 3; month >= 0; month--) {
-      const currentMonth = new Date(today.getFullYear(), today.getMonth() - month, 1);
-      
-      // Generate random inflow and outflow values
-      const inflow = Math.floor(Math.random() * 10000000) + 5000000;
-      const outflow = Math.floor(Math.random() * 8000000) + 3000000;
-      
-      sampleData.push({
-        date: currentMonth.toISOString(),
-        inflow,
-        outflow,
-        netFlow: inflow - outflow
-      });
-    }
-    
-    return sampleData;
-  };
+  if (!data || data.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">{t("dashboard.noData")}</p>
+      </div>
+    );
+  }
 
-  // Use provided data or generate sample data if empty
-  const chartData = (!data || data.length === 0) ? generateSampleData() : data;
+  const chartData = data;
 
   // Function to format date based on time range
   const formatDateByTimeRange = (dateStr: string): string => {
@@ -242,18 +227,9 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange }) => {
     new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
-  // Calculate total net flow for the period
-  let totalNetFlow = 0;
-  for (const item of aggregatedDataArray) {
-    totalNetFlow += item.netFlow;
-  }
-
-  // FIXED: The end balance is always fixed at -180,000,000 VND (negative value)
-  const fixedEndBalance = -180000000;
-  
-  // Calculate start balance by working backwards from the fixed end balance
-  // Formula: startBalance = endBalance - totalNetFlow
-  const startBalance = fixedEndBalance - totalNetFlow;
+  const effectiveStartBalance = typeof startBalance === "number" ? startBalance : 0;
+  const totalNetFlow = aggregatedDataArray.reduce((sum, item) => sum + item.netFlow, 0);
+  const effectiveEndBalance = typeof endBalance === "number" ? endBalance : effectiveStartBalance + totalNetFlow;
   
   // Transform data for waterfall chart
   const waterfallData: WaterfallDataItem[] = [];
@@ -261,14 +237,14 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange }) => {
   // Add start point with calculated initial balance
   waterfallData.push({
     name: t("dashboard.startBalance"),
-    value: startBalance,
+    value: effectiveStartBalance,
     type: "total",
-    runningTotal: startBalance,
+    runningTotal: effectiveStartBalance,
     date: "Start",
   });
 
   // Add each aggregated data point
-  let runningTotal = startBalance;
+  let runningTotal = effectiveStartBalance;
   aggregatedDataArray.forEach((item) => {
     runningTotal += item.netFlow;
 
@@ -285,15 +261,13 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange }) => {
     });
   });
 
-  // Add end point with fixed end balance
-  // FIXED: Use the exact fixed end balance value for display
+  // Add end point with actual end balance
   waterfallData.push({
     name: t("dashboard.endBalance"),
-    value: fixedEndBalance - runningTotal, // This is the adjustment value to reach the fixed end balance
     type: "total",
-    runningTotal: fixedEndBalance, // This is the actual end balance
+    value: effectiveEndBalance,
+    runningTotal: effectiveEndBalance,
     date: "End",
-    isEndBalance: true, // Flag to identify this as the end balance point
   });
 
   // Custom tooltip component
@@ -331,11 +305,6 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange }) => {
             </p>
           </div>
           
-          {data.isEndBalance && (
-            <p className="mt-1 text-xs text-red-600 font-medium">
-              {t("dashboard.fixedDebt")}
-            </p>
-          )}
         </div>
       );
     }
@@ -403,8 +372,6 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange }) => {
             height={80}
             interval={0}
             tickLine={false}
-            // For yearly view, only show 2024 to match actual transaction data
-            ticks={timeRange === "year" ? ["2024"] : undefined}
           />
           <YAxis
             tick={{ fontSize: 12, fontWeight: 500 }}
@@ -416,14 +383,7 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange }) => {
             }}
             width={50}
             tickCount={7}
-            // Dynamic domain based on whether balance is shown or not
-            domain={showBalance ? 
-              // When balance is shown, include the large negative balance
-              [-200000000, 20000000] : 
-              // When balance is hidden, optimize for transaction bars only
-              // Calculate from actual data min/max with padding
-              [(dataMin: number) => dataMin * 1.1, (dataMax: number) => dataMax * 1.1]
-            }
+            domain={[(dataMin: number) => dataMin * 1.1, (dataMax: number) => dataMax * 1.1]}
           />
           <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="3 3" />
           <Tooltip content={<CustomTooltip />} />
@@ -444,16 +404,12 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange }) => {
                 <Cell
                   key={`cell-${index}`}
                   fill={
-                    entry.isEndBalance
-                      ? "#d32f2f" // Red color for end balance
-                      : entry.type === "total"
-                        ? "#bdbdbd"
-                        : entry.value >= 0
-                          ? "#92cf9a"
-                          : "#ed6455"
+                    entry.type === "total"
+                      ? "#bdbdbd"
+                      : entry.value >= 0
+                        ? "#92cf9a"
+                        : "#ed6455"
                   }
-                  stroke={entry.isEndBalance ? "#000" : "none"}
-                  strokeWidth={entry.isEndBalance ? 1 : 0}
                 />
               );
             })}
@@ -471,34 +427,6 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange }) => {
                 // Skip labels for zero values or balance bars when hidden
                 if (value === 0) return null;
                 if (!showBalance && entry && entry.type === "total") return null;
-                
-                // Special handling for end balance
-                if (entry && entry.isEndBalance) {
-                  return (
-                    <>
-                      {/* Background rectangle for better visibility */}
-                      <rect
-                        x={Number(x) + Number(width) / 2 - 30}
-                        y={Number(y) - 25}
-                        width={60}
-                        height={20}
-                        rx={4}
-                        fill="#d32f2f"
-                      />
-                      {/* Text with enhanced visibility */}
-                      <text 
-                        x={Number(x) + Number(width) / 2} 
-                        y={Number(y) - 10}
-                        textAnchor="middle"
-                        fill="#ffffff"
-                        fontSize="14px"
-                        fontWeight="700"
-                      >
-                        {"-180M"}
-                      </text>
-                    </>
-                  );
-                }
                 
                 // Special handling for start balance
                 if (entry && entry.name === t("dashboard.startBalance")) {

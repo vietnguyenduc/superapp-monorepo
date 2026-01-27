@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Customer } from "../../../types";
+import type { Customer } from "../../../types";
 import {
   formatCurrency,
   formatDate,
@@ -189,6 +189,16 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
+              className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              onClick={() => handleSort("total_balance")}
+            >
+              <div className="flex items-center justify-end space-x-1">
+                <span>{t("customers.columns.balance")}</span>
+                {getSortIcon("total_balance")}
+              </div>
+            </th>
+            <th
+              scope="col"
               className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               onClick={() => handleSort("phone")}
             >
@@ -203,18 +213,8 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
               onClick={() => handleSort("address")}
             >
               <div className="flex items-center space-x-1">
-                <span>Địa chỉ</span>
+                <span>{t("customers.columns.address")}</span>
                 {getSortIcon("address")}
-              </div>
-            </th>
-            <th
-              scope="col"
-              className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-              onClick={() => handleSort("total_balance")}
-            >
-              <div className="flex items-center justify-end space-x-1">
-                <span>{t("customers.columns.balance")}</span>
-                {getSortIcon("total_balance")}
               </div>
             </th>
             <th
@@ -287,19 +287,19 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                   <div className="text-sm text-gray-500">{customer.email}</div>
                 )}
               </td>
+              <td className="px-4 py-4 whitespace-nowrap text-right">
+                <div
+                  className={`text-sm font-medium ${getBalanceColor(customer.total_balance)}`}
+                >
+                  {formatCurrency(customer.total_balance)}
+                </div>
+              </td>
               <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                 {customer.phone ? formatPhoneNumber(customer.phone) : "-"}
               </td>
               <td className="px-4 py-4 text-sm text-gray-900">
                 <div className="max-w-xs truncate">
                   {customer.address || "-"}
-                </div>
-              </td>
-              <td className="px-4 py-4 whitespace-nowrap text-right">
-                <div
-                  className={`text-sm font-medium ${getBalanceColor(customer.total_balance)}`}
-                >
-                  {formatCurrency(customer.total_balance)}
                 </div>
               </td>
               <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">

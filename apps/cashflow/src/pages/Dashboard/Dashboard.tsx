@@ -38,15 +38,13 @@ const Dashboard: React.FC = () => {
 
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
-    if (!user?.branch_id) return;
-
     setLoading(true);
     setError(null);
 
     try {
       // Get the appropriate data based on time range and rangeCount
       const result = await databaseService.dashboard.getDashboardMetrics(
-        user.branch_id,
+        undefined,
         timeRange,
         rangeCount, // Pass rangeCount to control the number of data points
       );
@@ -63,7 +61,7 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.branch_id, timeRange, rangeCount]); // Add rangeCount as dependency
+  }, [timeRange, rangeCount]); // Add rangeCount as dependency
 
   // Load data on component mount and when time range changes
   useEffect(() => {
@@ -294,29 +292,83 @@ const Dashboard: React.FC = () => {
                       <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-10">
                         <button 
                           className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                          onClick={() => {
-                            // Export to CSV
-                            const headers = ['Date', 'Inflow', 'Outflow', 'Net Flow'];
-                            const csvContent = [
-                              headers.join(','),
-                              ...metrics.cashFlowData.map((item: any) => [
-                                new Date(item.date).toLocaleDateString(),
-                                item.inflow,
-                                item.outflow,
-                                item.netFlow
-                              ].join(','))
-                            ].join('\n');
-                            
+                          onClick={async () => {
+                            if (!user?.branch_id) return;
+                            const result = await databaseService.dashboard.getReceivableLedger(
+                              user.branch_id,
+                              timeRange,
+                              rangeCount,
+                            );
+                            if (result.error || !result.data) {
+                              setShowExportMenu(false);
+                              return;
+                            }
+
+                            const ledger = result.data;
+                            const escapeCsv = (value: any) => {
+                              const s = value === null || value === undefined ? "" : String(value);
+                              const needsQuotes = /[",\n]/.test(s);
+                              const escaped = s.replace(/"/g, '""');
+                              return needsQuotes ? `"${escaped}"` : escaped;
+                            };
+
+                            const headerLines = [
+                              ["Period Start", new Date(ledger.periodStart).toISOString()].map(escapeCsv).join(","),
+                              ["Period End", new Date(ledger.periodEnd).toISOString()].map(escapeCsv).join(","),
+                              ["Opening Balance", ledger.openingBalance].map(escapeCsv).join(","),
+                              ["Closing Balance", ledger.closingBalance].map(escapeCsv).join(","),
+                              "",
+                            ];
+
+                            const headers = [
+                              "Date",
+                              "Code",
+                              "Customer",
+                              "Branch",
+                              "Bank Account",
+                              "Type",
+                              "Increase",
+                              "Decrease",
+                              "Delta",
+                              "Running Balance",
+                              "Description",
+                              "Reference",
+                            ];
+
+                            const rows = ledger.rows.map((r: any) =>
+                              [
+                                new Date(r.transaction_date).toISOString(),
+                                r.transaction_code,
+                                r.customer_name,
+                                r.branch_name,
+                                r.bank_account_name,
+                                r.transaction_type,
+                                r.increase,
+                                r.decrease,
+                                r.delta,
+                                r.running_balance,
+                                r.description,
+                                r.reference_number,
+                              ]
+                                .map(escapeCsv)
+                                .join(","),
+                            );
+
+                            const csvContent = [...headerLines, headers.map(escapeCsv).join(","), ...rows].join("\n");
+
                             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                             const url = URL.createObjectURL(blob);
                             const link = document.createElement('a');
                             link.setAttribute('href', url);
-                            link.setAttribute('download', `cashflow_${timeRange}_${new Date().toISOString().split('T')[0]}.csv`);
+                            link.setAttribute(
+                              'download',
+                              `receivable_ledger_${timeRange}_${new Date().toISOString().split('T')[0]}.csv`,
+                            );
                             link.style.visibility = 'hidden';
                             document.body.appendChild(link);
                             link.click();
                             document.body.removeChild(link);
-                            
+
                             setShowExportMenu(false);
                           }}
                         >
@@ -324,25 +376,31 @@ const Dashboard: React.FC = () => {
                         </button>
                         <button 
                           className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                          onClick={() => {
-                            // Export to JSON
-                            const jsonData = metrics.cashFlowData.map((item: any) => ({
-                              date: new Date(item.date).toLocaleDateString(),
-                              inflow: item.inflow,
-                              outflow: item.outflow,
-                              netFlow: item.netFlow
-                            }));
-                            
-                            const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+                          onClick={async () => {
+                            if (!user?.branch_id) return;
+                            const result = await databaseService.dashboard.getReceivableLedger(
+                              user.branch_id,
+                              timeRange,
+                              rangeCount,
+                            );
+                            if (result.error || !result.data) {
+                              setShowExportMenu(false);
+                              return;
+                            }
+
+                            const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
                             const url = URL.createObjectURL(blob);
                             const link = document.createElement('a');
                             link.setAttribute('href', url);
-                            link.setAttribute('download', `cashflow_${timeRange}_${new Date().toISOString().split('T')[0]}.json`);
+                            link.setAttribute(
+                              'download',
+                              `receivable_ledger_${timeRange}_${new Date().toISOString().split('T')[0]}.json`,
+                            );
                             link.style.visibility = 'hidden';
                             document.body.appendChild(link);
                             link.click();
                             document.body.removeChild(link);
-                            
+
                             setShowExportMenu(false);
                           }}
                         >
@@ -358,6 +416,8 @@ const Dashboard: React.FC = () => {
               <CashFlowChart
                 data={metrics.cashFlowData}
                 timeRange={timeRange}
+                startBalance={metrics.cashFlowStartBalance}
+                endBalance={metrics.cashFlowEndBalance}
               />
             </div>
           </div>
