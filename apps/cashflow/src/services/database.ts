@@ -1301,34 +1301,36 @@ const dashboardService = {
     const bankAccounts = readBankAccounts();
     const balanceByBankAccountAll = bankAccounts.map((b) => {
       const txForAccount = transactions.filter((t) => t.bank_account_id === b.id);
-      // Cash balance at period end (never negative)
-      const baseCash = Number(b.balance || 0);
+      // Compute balances purely from transaction deltas per period
+      const baseCash = 0;
       const periodStarts = buildPeriodStarts(timeRange, count, end);
-      const periodStart = periodStarts[0] ? new Date(periodStarts[0]) : start;
-      const cashBeforeStart = txForAccount
-        .filter((t) => new Date(t.transaction_date).getTime() < periodStart.getTime())
-        .reduce((s, t) => s + cashDeltaFromTransaction(t), 0);
-
-      let runningCash = Math.max(0, baseCash + cashBeforeStart);
-
-      const historical_data = periodStarts.map((ps, idx) => {
+      const periodDeltas = periodStarts.map((ps, idx) => {
         const next = idx < periodStarts.length - 1 ? periodStarts[idx + 1] : null;
         const periodEnd = next
           ? new Date(new Date(next).getTime() - 1)
           : end;
 
-        const delta = txForAccount
+        return txForAccount
           .filter((t) => {
             const ts = new Date(t.transaction_date).getTime();
             return ts >= ps.getTime() && ts <= periodEnd.getTime();
           })
           .reduce((s, t) => s + cashDeltaFromTransaction(t), 0);
-
-        runningCash = Math.max(0, runningCash + delta);
-        return { date: ps.toISOString(), balance: runningCash };
       });
 
-      const balance = historical_data.length > 0 ? historical_data[historical_data.length - 1].balance : runningCash;
+      const periodBalances: number[] = Array(periodStarts.length).fill(baseCash);
+      let runningCash = Math.max(0, baseCash);
+      for (let i = 0; i < periodDeltas.length; i++) {
+        runningCash = Math.max(0, runningCash + periodDeltas[i]);
+        periodBalances[i] = runningCash;
+      }
+
+      const historical_data = periodStarts.map((ps, idx) => ({
+        date: ps.toISOString(),
+        balance: periodBalances[idx] ?? baseCash,
+      }));
+
+      const balance = historical_data.length > 0 ? historical_data[historical_data.length - 1].balance : Math.max(0, baseCash);
       return {
         bank_account_id: b.id,
         account_name: b.account_name,

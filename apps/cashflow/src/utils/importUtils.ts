@@ -3,6 +3,7 @@ import type { Transaction, ImportError, TransactionType } from "../types";
 export interface RawTransactionData {
   customer_name: string;
   bank_account: string;
+  branch?: string;
   transaction_type: string;
   amount: string;
   transaction_date: string;
@@ -44,16 +45,43 @@ export function parseTransactionData(rawData: string): RawTransactionData[] {
       );
     }
 
+    const hasBranchColumn = columns.length >= 6 && !isTransactionTypeToken(columns[2]);
+    const branch = hasBranchColumn ? columns[2]?.trim() || "" : "";
+    const transactionTypeIndex = hasBranchColumn ? 3 : 2;
+    const amountIndex = hasBranchColumn ? 4 : 3;
+    const dateIndex = hasBranchColumn ? 5 : 4;
+    const descriptionIndex = hasBranchColumn ? 6 : 5;
+    const referenceIndex = hasBranchColumn ? 7 : 6;
+
     return {
       customer_name: columns[0]?.trim() || "",
       bank_account: columns[1]?.trim() || "",
-      transaction_type: columns[2]?.trim() || "",
-      amount: columns[3]?.trim() || "",
-      transaction_date: columns[4]?.trim() || "",
-      description: columns[5]?.trim() || "",
-      reference_number: columns[6]?.trim() || "",
+      branch,
+      transaction_type: columns[transactionTypeIndex]?.trim() || "",
+      amount: columns[amountIndex]?.trim() || "",
+      transaction_date: columns[dateIndex]?.trim() || "",
+      description: columns[descriptionIndex]?.trim() || "",
+      reference_number: columns[referenceIndex]?.trim() || "",
     };
   });
+}
+
+function isTransactionTypeToken(value?: string): boolean {
+  const normalized = normalizeTransactionTypeLabel(value || "");
+  return Boolean(normalized);
+}
+
+function normalizeTransactionTypeLabel(value: string): TransactionType | "" {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "thu" || normalized === "payment") return "payment";
+  if (normalized === "chi" || normalized === "charge") return "charge";
+  if (normalized === "điều chỉnh" || normalized === "dieu chinh" || normalized === "adjustment") {
+    return "adjustment";
+  }
+  if (normalized === "hoàn tiền" || normalized === "hoan tien" || normalized === "refund") {
+    return "refund";
+  }
+  return "";
 }
 
 /**
@@ -118,7 +146,7 @@ export function validateTransactionData(
   const errors: ImportError[] = [];
 
   data.forEach((row, index) => {
-    const normalizedType = row.transaction_type ? row.transaction_type.toLowerCase().trim() : "";
+    const normalizedType = normalizeTransactionTypeLabel(row.transaction_type || "");
 
     // Validate customer name
     if (!row.customer_name || row.customer_name.trim().length === 0) {
@@ -331,9 +359,7 @@ export function convertToTransactions(
     customer_id: "", // Will be resolved during import
     bank_account_id: "", // Will be resolved during import
     branch_id: branchId,
-    transaction_type: row.transaction_type
-      .toLowerCase()
-      .trim() as TransactionType,
+    transaction_type: (normalizeTransactionTypeLabel(row.transaction_type || "") || "payment") as TransactionType,
     amount: parseAmount(row.amount),
     description: row.description?.trim() || "",
     reference_number: row.reference_number?.trim() || "",
@@ -353,7 +379,8 @@ export function cleanTransactionData(
   return data.map((row) => ({
     customer_name: row.customer_name.trim(),
     bank_account: row.bank_account.trim(),
-    transaction_type: row.transaction_type.trim().toLowerCase(),
+    branch: row.branch?.trim() || "",
+    transaction_type: normalizeTransactionTypeLabel(row.transaction_type || "") || row.transaction_type.trim().toLowerCase(),
     amount: row.amount.trim(),
     transaction_date: row.transaction_date.trim(),
     description: row.description?.trim() || "",

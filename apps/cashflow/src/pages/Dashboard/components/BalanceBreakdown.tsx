@@ -24,28 +24,15 @@ const BalanceBreakdown: React.FC<BalanceBreakdownProps> = ({ data }) => {
     );
   }
 
-  const totalIncomeAmount = data.reduce(
-    (sum, branch) => sum + branch.incomeAmount,
-    0,
-  );
-  const totalDebtAmount = data.reduce(
-    (sum, branch) => sum + branch.debtAmount,
-    0,
-  );
-  const totalTransactionAmount = totalIncomeAmount + totalDebtAmount;
-
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {data.map((branch) => {
+          const branchTotal = branch.incomeAmount + branch.debtAmount;
           const incomePercentage =
-            totalTransactionAmount !== 0
-              ? (branch.incomeAmount / totalTransactionAmount) * 100
-              : 0;
+            branchTotal !== 0 ? (branch.incomeAmount / branchTotal) * 100 : 0;
           const debtPercentage =
-            totalTransactionAmount !== 0
-              ? (branch.debtAmount / totalTransactionAmount) * 100
-              : 0;
+            branchTotal !== 0 ? (branch.debtAmount / branchTotal) * 100 : 0;
 
           return (
             <div
@@ -56,9 +43,7 @@ const BalanceBreakdown: React.FC<BalanceBreakdownProps> = ({ data }) => {
                 <h4 className="text-sm font-medium text-gray-900 truncate">
                   {branch.branch_name}
                 </h4>
-                <span className="text-xs text-gray-500">
-                  {(incomePercentage + debtPercentage).toFixed(1)}%
-                </span>
+                <span className="text-xs text-gray-500">100%</span>
               </div>
 
               {/* Income Section */}

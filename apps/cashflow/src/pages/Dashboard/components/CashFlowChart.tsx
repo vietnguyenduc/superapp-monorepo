@@ -11,6 +11,7 @@ import {
   ReferenceLine,
   Cell,
   LabelList,
+  Customized,
 } from "recharts";
 import { formatCurrency } from "../../../utils/formatting";
 import type { TimeRange } from "../Dashboard";
@@ -27,6 +28,8 @@ interface WaterfallDataItem {
   value: number;
   type: "total" | "increase" | "decrease";
   runningTotal: number;
+  base: number;
+  delta: number;
   date: string;
   displayDate?: string;
   inflow?: number;
@@ -257,25 +260,33 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
     value: effectiveStartBalance,
     type: "total",
     runningTotal: effectiveStartBalance,
+    base: 0,
+    delta: effectiveStartBalance,
     date: "Start",
   });
 
   // Add each aggregated data point
   let runningTotal = effectiveStartBalance;
   trimmedAggregatedData.forEach((item) => {
-    runningTotal += item.netFlow;
+    const nextTotal = runningTotal + item.netFlow;
+    const base = Math.min(runningTotal, nextTotal);
+    const delta = Math.abs(item.netFlow);
 
     waterfallData.push({
       name: item.displayDate || "",
       value: item.netFlow,
       type: item.netFlow >= 0 ? "increase" : "decrease",
-      runningTotal,
+      runningTotal: nextTotal,
+      base,
+      delta,
       date: item.date,
       displayDate: item.displayDate,
       inflow: item.inflow,
       outflow: item.outflow,
       netFlow: item.netFlow,
     });
+
+    runningTotal = nextTotal;
   });
 
   // Add end point with actual end balance
@@ -284,6 +295,8 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
     type: "total",
     value: effectiveEndBalance,
     runningTotal: effectiveEndBalance,
+    base: 0,
+    delta: effectiveEndBalance,
     date: "End",
   });
 
@@ -343,6 +356,87 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
   const displayData = showBalance 
     ? waterfallData 
     : waterfallData.filter(entry => entry.type !== "total");
+
+  const renderConnectors = (props: any) => {
+    const { xAxisMap, yAxisMap, formattedGraphicalItems } = props || {};
+    const xAxis = xAxisMap?.[0];
+    const yAxis = yAxisMap?.[0];
+    if (!xAxis || !yAxis) return null;
+
+    const scaleX = xAxis.scale;
+    const scaleY = yAxis.scale;
+    if (!scaleX || !scaleY) return null;
+
+    const bandWidth = scaleX.bandwidth ? scaleX.bandwidth() : 0;
+    const barWidth = Math.min(showBalance ? 45 : 60, bandWidth || 0);
+    const barOffset = Math.max(0, (bandWidth - barWidth) / 2);
+
+    const barItem = Array.isArray(formattedGraphicalItems)
+      ? formattedGraphicalItems.find((item: any) => item?.props?.dataKey === "delta")
+      : null;
+    const barRects = Array.isArray(barItem?.props?.data) ? barItem.props.data : null;
+    const useRects = Array.isArray(barRects) && barRects.length >= displayData.length;
+
+    return (
+      <g>
+        {displayData.slice(0, -1).map((entry, index) => {
+          const next = displayData[index + 1];
+          if (!next) return null;
+
+          const startX = scaleX(entry.name);
+          const endX = scaleX(next.name);
+          if (startX === undefined || endX === undefined) return null;
+
+          if (useRects) {
+            const rect = barRects[index];
+            const nextRect = barRects[index + 1];
+            if (!rect || !nextRect) return null;
+            const x1 = Number(rect.x) + Number(rect.width);
+            const x2 = Number(nextRect.x);
+            const y = Number(entry.value) < 0
+              ? Number(rect.y) + Number(rect.height)
+              : Number(rect.y);
+            if (!Number.isFinite(x1) || !Number.isFinite(x2) || !Number.isFinite(y)) {
+              return null;
+            }
+            return (
+              <line
+                key={`connector-${entry.name}-${next.name}`}
+                x1={x1}
+                x2={x2}
+                y1={y}
+                y2={y}
+                stroke="#6B7280"
+                strokeWidth={2}
+              />
+            );
+          }
+
+          const x1 = startX + barOffset + barWidth;
+          const x2 = endX + barOffset;
+          const entryBase = Number(entry.base ?? 0);
+          const entryDelta = Number(entry.delta ?? 0);
+          const entryEnd = entry.type === "decrease" ? entryBase : entryBase + entryDelta;
+          const y = scaleY(entryEnd);
+          if (!Number.isFinite(x1) || !Number.isFinite(x2) || !Number.isFinite(y)) {
+            return null;
+          }
+
+          return (
+            <line
+              key={`connector-${entry.name}-${next.name}`}
+              x1={x1}
+              x2={x2}
+              y1={y}
+              y2={y}
+              stroke="#6B7280"
+              strokeWidth={2}
+            />
+          );
+        })}
+      </g>
+    );
+  };
 
   return (
     <div className="w-full h-96">
@@ -405,78 +499,55 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
           <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="3 3" />
           <Tooltip content={<CustomTooltip />} />
 
-          <Bar 
-            dataKey="value" 
-            radius={[6, 6, 0, 0]} 
-            barSize={showBalance ? 45 : 60} // Larger bars when balance is hidden
-            minPointSize={15}
+          <Bar dataKey="base" stackId="flow" fill="transparent" barSize={showBalance ? 45 : 60} />
+          <Bar
+            dataKey="delta"
+            stackId="flow"
+            barSize={showBalance ? 45 : 60}
           >
-            {waterfallData.map((entry, index) => {
-              // Skip balance bars if showBalance is false
-              if (!showBalance && entry.type === "total") {
-                return null;
-              }
-              
-              return (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={
-                    entry.type === "total"
-                      ? "#bdbdbd"
-                      : entry.value >= 0
-                        ? "#92cf9a"
-                        : "#ed6455"
-                  }
-                />
-              );
-            })}
+            {displayData.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={
+                  entry.type === "total"
+                    ? "#bdbdbd"
+                    : entry.value >= 0
+                      ? "#92cf9a"
+                      : "#ed6455"
+                }
+              />
+            ))}
             <LabelList
-              dataKey="value"
+              dataKey="delta"
               position="top"
               content={(props) => {
-                const { x, y, width, value, index } = props;
-                if (x === undefined || y === undefined || width === undefined || value === undefined || index === undefined) {
+                const { x, y, width, height, index } = props;
+                if (x === undefined || y === undefined || width === undefined || height === undefined || index === undefined) {
                   return null;
                 }
-                
-                const entry = waterfallData[index];
-                
-                // Skip labels for zero values or balance bars when hidden
-                if (value === 0) return null;
-                if (!showBalance && entry && entry.type === "total") return null;
-                
-                // Special handling for start balance
-                if (entry && entry.name === t("dashboard.startBalance")) {
-                  const formattedValue = formatNumberForDisplay(entry.value);
-                  return (
-                    <text 
-                      x={Number(x) + Number(width) / 2} 
-                      y={Number(y) + 15} // Position below for negative values
-                      textAnchor="middle"
-                      fill="#333"
-                      fontSize="12px"
-                      fontWeight="600"
-                    >
-                      {formattedValue}
-                    </text>
-                  );
-                }
-                
-                // Regular values
-                const absValue = Math.abs(Number(value));
-                if (absValue < 500) return null; // Skip very small values
-                
-                const displayValue = formatNumberForDisplay(Number(value));
-                const yPos = Number(value) < 0 ? Number(y) + 15 : Number(y) - 12;
-                
+
+                const entry = displayData[index];
+                if (!entry) return null;
+
+                const labelValue = entry.type === "total" ? entry.runningTotal : entry.value;
+                if (labelValue === 0) return null;
+
+                const absValue = Math.abs(Number(labelValue));
+                if (absValue < 500) return null;
+
+                const displayValue = formatNumberForDisplay(Number(labelValue));
+                const yPos = Number(labelValue) < 0
+                  ? Number(y) + Number(height) + 14
+                  : Number(y) - 10;
+
                 return (
-                  <text 
-                    x={Number(x) + Number(width) / 2} 
+                  <text
+                    x={Number(x) + Number(width) / 2}
                     y={yPos}
                     textAnchor="middle"
                     fill="#333"
                     fontSize="11px"
-                    fontWeight="500"
+                    fontWeight={entry.type === "total" ? "600" : "500"}
                   >
                     {displayValue}
                   </text>
@@ -484,6 +555,7 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
               }}
             />
           </Bar>
+          <Customized component={renderConnectors} />
         </ComposedChart>
       </ResponsiveContainer>
     </div>
