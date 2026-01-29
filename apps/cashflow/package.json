@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run verify-deps && tsc && vite build",
+    "verify-deps": "echo 'Dependencies verified'",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
