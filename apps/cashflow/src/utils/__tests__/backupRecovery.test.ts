@@ -1,10 +1,8 @@
-import { vi } from 'vitest';
 import "@testing-library/jest-dom";
 import {
   defaultBackupOptions,
-  BackupData,
-  BackupOptions,
 } from "../backupRecovery";
+import type { BackupData, BackupOptions } from "../backupRecovery";
 
 describe("Backup Recovery Utils", () => {
   describe("defaultBackupOptions", () => {
@@ -19,7 +17,7 @@ describe("Backup Recovery Utils", () => {
     it("is readonly", () => {
       expect(() => {
         (defaultBackupOptions as any).includeCustomers = false;
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 

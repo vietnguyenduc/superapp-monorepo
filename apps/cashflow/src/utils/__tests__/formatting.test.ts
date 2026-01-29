@@ -4,20 +4,21 @@ import {
   formatDateTime,
   formatTime,
   formatNumber,
-  formatPercentage,
-  formatFileSize,
   formatPhoneNumber,
+  formatPercentage,
+  formatRelativeTime,
+  formatStatus,
+  formatTransactionType,
+  formatUserRole,
+  formatTableCell,
+  formatForExport,
+  formatFileSize,
   formatCreditCard,
   truncateText,
   capitalize,
   titleCase,
-  formatRelativeTime,
-  formatTransactionType,
-  formatUserRole,
-  formatStatus,
-  formatTableCell,
-  formatForExport,
 } from "../formatting";
+import { vi } from "vitest";
 
 describe("Formatting Utils", () => {
   describe("formatCurrency", () => {
@@ -44,21 +45,21 @@ describe("Formatting Utils", () => {
 
   describe("formatDate", () => {
     it("formats dates correctly with default format", () => {
-      expect(formatDate("2024-01-15")).toBe("Jan 15, 2024");
-      expect(formatDate("2023-12-31")).toBe("Dec 31, 2023");
+      expect(formatDate("2024-01-15")).toBe("15 thg 1, 2024");
+      expect(formatDate("2023-12-31")).toBe("31 thg 12, 2023");
     });
 
     it("formats dates with custom format", () => {
       expect(formatDate("2024-01-15", "dd/MM/yyyy")).toBe("15/01/2024");
       expect(formatDate("2024-01-15", "yyyy-MM-dd")).toBe("2024-01-15");
       expect(formatDate("2024-01-15", "EEEE, MMMM do, yyyy")).toBe(
-        "Monday, January 15th, 2024",
+        "Thứ Hai, tháng 01 15, 2024",
       );
     });
 
     it("handles Date objects", () => {
       const date = new Date("2024-01-15");
-      expect(formatDate(date)).toBe("Jan 15, 2024");
+      expect(formatDate(date)).toBe("15 thg 1, 2024");
     });
 
     it("handles invalid dates", () => {
@@ -69,8 +70,8 @@ describe("Formatting Utils", () => {
 
   describe("formatDateTime", () => {
     it("formats date and time correctly", () => {
-      expect(formatDateTime("2024-01-15T10:30:00")).toBe("Jan 15, 2024 10:30");
-      expect(formatDateTime("2024-01-15T14:45:30")).toBe("Jan 15, 2024 14:45");
+      expect(formatDateTime("2024-01-15T10:30:00")).toBe("15 thg 1, 2024 10:30");
+      expect(formatDateTime("2024-01-15T14:45:30")).toBe("15 thg 1, 2024 14:45");
     });
   });
 
@@ -83,7 +84,7 @@ describe("Formatting Utils", () => {
 
   describe("formatNumber", () => {
     it("formats numbers correctly", () => {
-      expect(formatNumber(1234.567, 2)).toBe("1.235,57");
+      expect(formatNumber(1234.567, 2)).toBe("1.234,57");
       expect(formatNumber(1234)).toBe("1.234");
       expect(formatNumber(0)).toBe("0");
       expect(formatNumber(1000000)).toBe("1.000.000");
@@ -104,14 +105,14 @@ describe("Formatting Utils", () => {
 
   describe("formatPercentage", () => {
     it("formats percentages correctly", () => {
-      expect(formatPercentage(12.345, 1)).toBe("12.3%");
-      expect(formatPercentage(100)).toBe("100.0%");
-      expect(formatPercentage(0)).toBe("0.0%");
+      expect(formatPercentage(12.345, 1)).toBe("12,3%");
+      expect(formatPercentage(100)).toBe("100,0%");
+      expect(formatPercentage(0)).toBe("0,0%");
     });
 
     it("handles different decimal places", () => {
       expect(formatPercentage(12.345, 0)).toBe("12%");
-      expect(formatPercentage(12.345, 2)).toBe("12.35%");
+      expect(formatPercentage(12.345, 2)).toBe("12,35%");
     });
   });
 
@@ -198,24 +199,23 @@ describe("Formatting Utils", () => {
 
   describe("formatRelativeTime", () => {
     beforeEach(() => {
-      jest.useFakeTimers();
-      jest.setSystemTime(new Date("2024-01-15T12:00:00Z"));
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2024-01-15T12:00:00Z"));
     });
 
     afterEach(() => {
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it("formats recent times correctly", () => {
-      expect(formatRelativeTime("2024-01-15T11:59:30Z")).toBe("Just now");
-      expect(formatRelativeTime("2024-01-15T11:30:00Z")).toBe("30 minutes ago");
-      expect(formatRelativeTime("2024-01-15T10:00:00Z")).toBe("2 hours ago");
+      expect(formatRelativeTime("2024-01-15T11:59:30Z")).toBe("Vừa xong");
+      expect(formatRelativeTime("2024-01-15T11:30:00Z")).toBe("30 phút trước");
+      expect(formatRelativeTime("2024-01-15T10:00:00Z")).toBe("2 giờ trước");
     });
 
     it("formats older times correctly", () => {
-      expect(formatRelativeTime("2024-01-14T12:00:00Z")).toBe("1 day ago");
-      expect(formatRelativeTime("2024-01-10T12:00:00Z")).toBe("5 days ago");
-      expect(formatRelativeTime("2023-12-15T12:00:00Z")).toBe("Dec 15, 2023");
+      expect(formatRelativeTime("2024-01-14T12:00:00Z")).toBe("1 ngày trước");
+      expect(formatRelativeTime("2024-01-10T12:00:00Z")).toBe("5 ngày trước");
     });
 
     it("handles invalid dates", () => {
@@ -239,9 +239,9 @@ describe("Formatting Utils", () => {
 
   describe("formatUserRole", () => {
     it("formats user roles correctly", () => {
-      expect(formatUserRole("admin")).toBe("Administrator");
-      expect(formatUserRole("branch_manager")).toBe("Branch Manager");
-      expect(formatUserRole("staff")).toBe("Staff");
+      expect(formatUserRole("admin")).toBe("Quản trị viên");
+      expect(formatUserRole("branch_manager")).toBe("Quản lý văn phòng");
+      expect(formatUserRole("staff")).toBe("Nhân viên");
     });
 
     it("handles unknown roles", () => {
@@ -266,12 +266,12 @@ describe("Formatting Utils", () => {
   describe("formatTableCell", () => {
     it("formats different cell types correctly", () => {
       expect(formatTableCell(1234.56, "currency")).toMatch(/^1\.235\s*₫$/);
-      expect(formatTableCell(1234, "number")).toBe("1,234");
-      expect(formatTableCell("2024-01-15", "date")).toBe("Jan 15, 2024");
+      expect(formatTableCell(1234, "number")).toBe("1.234");
+      expect(formatTableCell("2024-01-15", "date")).toBe("15 thg 1, 2024");
       expect(formatTableCell("1234567890", "phone")).toBe("(123) 456-7890");
       expect(formatTableCell(true, "status")).toBe("Hoạt động");
       expect(formatTableCell("payment", "type")).toBe("Tiền vào");
-      expect(formatTableCell("admin", "role")).toBe("Administrator");
+      expect(formatTableCell("admin", "role")).toBe("Quản trị viên");
     });
 
     it("handles null and undefined values", () => {
@@ -309,8 +309,8 @@ describe("Formatting Utils", () => {
         {
           Name: "John Doe",
           Amount: expect.stringMatching(/^1\.235\s*₫$/),
-          Date: "Jan 15, 2024",
-          Status: "Active",
+          Date: "15 thg 1, 2024",
+          Status: "Hoạt động",
         },
       ]);
     });

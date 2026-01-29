@@ -246,7 +246,7 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
             <LabelList
               dataKey="balance"
               position="top"
-              formatter={(value: number) => formatCurrency(value)}
+              formatter={(value: number) => Math.round(value).toLocaleString("vi-VN")}
               style={{
                 fontSize: "11px",
                 fontWeight: "500",

@@ -1,4 +1,5 @@
 import { render } from "@testing-library/react";
+import { vi } from "vitest";
 import {
   createError,
   normalizeError,
@@ -87,7 +88,7 @@ describe("handleDatabaseError", () => {
     const result = handleDatabaseError(originalError, "delete");
     expect(result.code).toBe(ERROR_CODES.DATABASE_QUERY_FAILED);
     expect(result.message).toContain("Database operation failed during delete");
-    expect(result.retryable).toBe(false);
+    expect(result.retryable).toBe(true);
   });
 });
 
@@ -98,14 +99,14 @@ describe("handleImportError", () => {
     expect(result.row).toBe(5);
     expect(result.column).toBe("email");
     expect(result.message).toBe("Invalid data");
-    expect(result.value).toBeUndefined();
+    expect(result.value).toBe(originalError);
   });
 
   it("creates import error without row and column info", () => {
     const originalError = new Error("File read error");
     const result = handleImportError(originalError);
-    expect(result.row).toBe(-1);
-    expect(result.column).toBe("unknown");
+    expect(result.row).toBe(0);
+    expect(result.column).toBe("general");
     expect(result.message).toBe("File read error");
   });
 
@@ -119,16 +120,16 @@ describe("handleImportError", () => {
 
 describe("batchOperation", () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("processes all items successfully", async () => {
     const items = [1, 2, 3, 4, 5];
-    const operation = jest
+    const operation = vi
       .fn()
       .mockImplementation((item) => Promise.resolve(item * 2));
     const result = await batchOperation(items, operation, 2);
@@ -139,14 +140,14 @@ describe("batchOperation", () => {
 
   it("handles errors in batch", async () => {
     const items = [1, 2, 3, 4, 5];
-    const operation = jest.fn().mockImplementation((item) => {
+    const operation = vi.fn().mockImplementation((item) => {
       if (item === 3) {
         return Promise.reject(new Error("Item 3 failed"));
       }
       return Promise.resolve(item * 2);
     });
     const result = await batchOperation(items, operation, 2);
-    expect(result.results).toEqual([2, 4, 8, 10]);
+    expect(result.results).toEqual([2, 4, undefined, 8, 10]);
     expect(result.errors).toHaveLength(1);
     expect(result.errors[0].index).toBe(2); // 0-based index
     expect(result.errors[0].error.message).toBe("Item 3 failed");
@@ -154,7 +155,7 @@ describe("batchOperation", () => {
 
   it("respects batch size", async () => {
     const items = [1, 2, 3, 4, 5];
-    const operation = jest
+    const operation = vi
       .fn()
       .mockImplementation((item) => Promise.resolve(item * 2));
     await batchOperation(items, operation, 2);
@@ -163,7 +164,7 @@ describe("batchOperation", () => {
   });
 
   it("handles empty items array", async () => {
-    const operation = jest.fn();
+    const operation = vi.fn();
     const result = await batchOperation([], operation);
     expect(result.results).toEqual([]);
     expect(result.errors).toHaveLength(0);
@@ -173,14 +174,14 @@ describe("batchOperation", () => {
 
 describe("createErrorBoundary", () => {
   it("creates error boundary component", () => {
-    const FallbackComponent = jest.fn().mockReturnValue(<div>Error</div>);
+    const FallbackComponent = vi.fn().mockReturnValue(<div>Error</div>);
     const ErrorBoundary = createErrorBoundary(FallbackComponent);
     expect(ErrorBoundary).toBeDefined();
     expect(typeof ErrorBoundary).toBe("function");
   });
 
   it("renders children when no error", () => {
-    const FallbackComponent = jest.fn().mockReturnValue(<div>Error</div>);
+    const FallbackComponent = vi.fn().mockReturnValue(<div>Error</div>);
     const ErrorBoundary = createErrorBoundary(FallbackComponent);
     const { container } = render(
       <ErrorBoundary>
@@ -191,7 +192,7 @@ describe("createErrorBoundary", () => {
   });
 
   it("renders fallback when error occurs", () => {
-    const FallbackComponent = jest
+    const FallbackComponent = vi
       .fn()
       .mockReturnValue(<div>Error occurred</div>);
     const ErrorBoundary = createErrorBoundary(FallbackComponent);

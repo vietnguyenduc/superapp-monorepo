@@ -40,6 +40,9 @@ const Layout: React.FC = () => {
         <main className="flex-1 min-w-0 w-full overflow-x-hidden">
           <div className="p-4 sm:p-6 lg:p-8 w-full">
             <Outlet />
+            <div className="mt-10 border-t border-gray-200 pt-4 text-center text-xs text-gray-400">
+              Quản lý công nợ - TPL
+            </div>
           </div>
         </main>
       </div>

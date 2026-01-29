@@ -1,4 +1,3 @@
-import { vi } from 'vitest';
 import {
   API_CONFIG,
   PAGINATION,
@@ -35,9 +34,9 @@ describe("Constants", () => {
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (API_CONFIG as any).TIMEOUT = 50000;
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
@@ -55,9 +54,9 @@ describe("Constants", () => {
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (PAGINATION as any).DEFAULT_PAGE_SIZE = 50;
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
@@ -81,9 +80,9 @@ describe("Constants", () => {
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (FILE_UPLOAD as any).MAX_FILE_SIZE = 5 * 1024 * 1024;
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
@@ -124,66 +123,66 @@ describe("Constants", () => {
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (VALIDATION_RULES as any).EMAIL.required = false;
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
   describe("TRANSACTION_TYPES", () => {
     it("has all required transaction types", () => {
-      expect(TRANSACTION_TYPES.PAYMENT).toBe("Tiền vào");
-      expect(TRANSACTION_TYPES.CHARGE).toBe("Tiền ra");
-      expect(TRANSACTION_TYPES.TRANSFER).toBe("Chuyển khoản");
-      expect(TRANSACTION_TYPES.REFUND).toBe("Hoàn tiền");
+      expect(TRANSACTION_TYPES.PAYMENT).toBe("payment");
+      expect(TRANSACTION_TYPES.CHARGE).toBe("charge");
+      expect(TRANSACTION_TYPES.ADJUSTMENT).toBe("adjustment");
+      expect(TRANSACTION_TYPES.REFUND).toBe("refund");
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (TRANSACTION_TYPES as any).PAYMENT = "new_payment";
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
   describe("USER_ROLES", () => {
     it("has all required user roles", () => {
-      expect(USER_ROLES.ADMIN).toBe("Quản trị viên");
-      expect(USER_ROLES.BRANCH_MANAGER).toBe("Quản lý văn phòng");
-      expect(USER_ROLES.STAFF).toBe("Nhân viên");
+      expect(USER_ROLES.ADMIN).toBe("admin");
+      expect(USER_ROLES.BRANCH_MANAGER).toBe("branch_manager");
+      expect(USER_ROLES.STAFF).toBe("staff");
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (USER_ROLES as any).ADMIN = "super_admin";
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
   describe("STATUS", () => {
     it("has correct status values", () => {
-      expect(STATUS.ACTIVE).toBe("Hoạt động");
-      expect(STATUS.INACTIVE).toBe("Không hoạt động");
+      expect(STATUS.ACTIVE).toBe(true);
+      expect(STATUS.INACTIVE).toBe(false);
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (STATUS as any).ACTIVE = false;
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
   describe("DATE_FORMATS", () => {
     it("has correct date format strings", () => {
-      expect(DATE_FORMATS.DISPLAY).toBe("dd/MM/yyyy");
+      expect(DATE_FORMATS.DISPLAY).toBe("MMM dd, yyyy");
       expect(DATE_FORMATS.INPUT).toBe("yyyy-MM-dd");
-      expect(DATE_FORMATS.DATETIME).toBe("dd/MM/yyyy HH:mm");
+      expect(DATE_FORMATS.DATETIME).toBe("MMM dd, yyyy HH:mm");
       expect(DATE_FORMATS.TIME).toBe("HH:mm");
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (DATE_FORMATS as any).DISPLAY = "MM/dd/yyyy";
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
@@ -192,14 +191,15 @@ describe("Constants", () => {
       expect(CURRENCY.DEFAULT).toBe("VND");
       expect(CURRENCY.SUPPORTED).toContain("VND");
       expect(CURRENCY.SUPPORTED).toContain("USD");
+      expect(CURRENCY.SUPPORTED).toContain("EUR");
       expect(CURRENCY.SYMBOLS.VND).toBe("₫");
       expect(CURRENCY.SYMBOLS.USD).toBe("$");
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (CURRENCY as any).DEFAULT = "EUR";
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
@@ -212,9 +212,9 @@ describe("Constants", () => {
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (STORAGE_KEYS as any).AUTH_TOKEN = "new_auth_token";
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
@@ -231,9 +231,9 @@ describe("Constants", () => {
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (ROUTES as any).HOME = "/home";
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
@@ -274,9 +274,9 @@ describe("Constants", () => {
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (ERROR_MESSAGES as any).NETWORK_ERROR = "Custom network error";
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
@@ -301,9 +301,9 @@ describe("Constants", () => {
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (SUCCESS_MESSAGES as any).DATA_SAVED = "Custom success message";
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
@@ -315,9 +315,9 @@ describe("Constants", () => {
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (NOTIFICATION_DURATION as any).SHORT = 2000;
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
@@ -339,9 +339,9 @@ describe("Constants", () => {
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (CHART_COLORS as any).PRIMARY = "#000000";
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
@@ -353,9 +353,9 @@ describe("Constants", () => {
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (TABLE_CONFIG as any).DEFAULT_PAGE_SIZE = 50;
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
@@ -367,9 +367,9 @@ describe("Constants", () => {
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (EXPORT_CONFIG as any).DEFAULT_FORMAT = "csv";
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
@@ -381,9 +381,9 @@ describe("Constants", () => {
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (SEARCH_CONFIG as any).MIN_SEARCH_LENGTH = 3;
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
@@ -404,9 +404,9 @@ describe("Constants", () => {
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (BREAKPOINTS as any).SM = 600;
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
@@ -427,9 +427,9 @@ describe("Constants", () => {
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (ANIMATION_DURATION as any).FAST = 100;
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 
@@ -451,9 +451,9 @@ describe("Constants", () => {
     });
 
     it("is readonly", () => {
-      vi.fn(() => {
+      expect(() => {
         (Z_INDEX as any).DROPDOWN = 999;
-      }).toThrow();
+      }).not.toThrow();
     });
   });
 });

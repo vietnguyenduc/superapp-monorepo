@@ -2,7 +2,7 @@
 
 > **Purpose**: This file helps AI assistants (Claude, GPT, Copilot, etc.) understand the project context quickly. Update this file after significant changes.
 > 
-> **Last Updated**: 2026-01-27
+> **Last Updated**: 2026-01-28
 > **Updated By**: Development Team
 
 ---
@@ -15,9 +15,10 @@
 - **Framework**: React 18 + TypeScript
 - **Build Tool**: Vite
 - **Styling**: TailwindCSS
-- **Charts**: Recharts
+- **Charts**: Recharts (waterfall chart for cash flow visualization)
 - **i18n**: react-i18next (Vietnamese/English)
 - **State**: React hooks + Context API
+- **Data Storage**: localStorage (temporary, will migrate to Supabase)
 
 ### Key Directories
 ```
@@ -52,6 +53,10 @@ apps/cashflow/
 - [x] Improved number formatting with flexible M/B suffixes (1.1B instead of 1001.2M)
 - [x] Added thousand separators for all numbers in UI
 - [x] Right-aligned comparison numbers in metrics cards
+- [x] Optimized CashFlowChart styling in no-balance mode
+- [x] Improved connector lines with dotted style and thinner stroke
+- [x] Enhanced Y-axis scaling for better delta visualization
+- [x] Normalized branch names consistently across all components
 
 ### In Progress
 - [ ] Refine MetricsCard component for better number formatting
@@ -133,6 +138,35 @@ npm run dev --workspace=cashflow
 ---
 
 ## 📝 Session Notes
+
+### Session 2026-01-28 (Evening)
+**Goal**: Refine CashFlowChart styling and normalize branch names
+**Changes Made**:
+- Enhanced CashFlowChart styling in no-balance mode
+- Improved connector lines with dotted style and thinner stroke
+- Fixed Y-axis scaling to better visualize transaction deltas
+- Normalized branch names consistently across all components
+
+**Features Added**:
+1. **Optimized No-Balance Mode**: Adjusted bar sizing and spacing for better readability when balance bars are hidden
+2. **Improved Connector Styling**: Changed connector lines to dotted style with 1px stroke width
+3. **Enhanced Y-Axis Scaling**: Offset base and running totals to zoom Y-axis into deltas without altering outstanding balance values
+4. **Consistent Branch Naming**: Updated all components to dynamically load branch names from database service and normalize them (replacing "Chi nhánh" with "Văn phòng")
+
+**Technical Details**:
+1. **CashFlowChart.tsx**:
+   - Dynamic bar sizing based on data count
+   - Preserved connector lines in no-balance mode
+   - Offset Y-axis scaling for better visualization
+   - Maintained actual outstanding balance values while improving visual display
+2. **TransactionList.tsx & RecentTransactions.tsx**:
+   - Replaced hardcoded branch maps with dynamic loading from database service
+   - Added normalization logic to ensure consistent naming
+   - Preserved fallback to default map for backward compatibility
+
+**Next Steps**:
+1. Further optimize CashFlowChart performance with large datasets
+2. Continue improving data consistency between visualizations
 
 ### Session 2026-01-27 (Evening - Update 2)
 **Goal**: Improve Number Formatting and UI Alignment

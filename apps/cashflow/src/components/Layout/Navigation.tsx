@@ -85,7 +85,7 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
             {/* App Title */}
             <div className="flex flex-col">
               <h1 className="text-xl md:text-2xl font-bold text-gray-900 tracking-tight leading-tight">
-                Quản lý công nợ TPL ver 1.0 - Developed by Viet Nguyen
+                Quản lý công nợ - TPL
               </h1>
               <p className="text-xs md:text-sm text-gray-500 font-medium tracking-wide">
                 Hệ thống quản lý công nợ và giao dịch

@@ -1,4 +1,5 @@
 import React from "react";
+import { vi } from "vitest";
 import {
   hasPermission,
   hasAnyPermission,
@@ -12,7 +13,7 @@ import {
   PERMISSIONS,
   ROLE_HIERARCHY,
 } from "../rbac";
-import { UserRole } from "../../types";
+import type { UserRole } from "../../types";
 
 describe("RBAC Utils", () => {
   describe("hasPermission", () => {
@@ -269,15 +270,15 @@ describe("RBAC Utils", () => {
   });
 
   describe("withPermission HOC", () => {
-    const TestComponent = jest
+    const TestComponent = vi
       .fn()
       .mockReturnValue(React.createElement("div", null, "Test Component"));
-    const FallbackComponent = jest
+    const FallbackComponent = vi
       .fn()
       .mockReturnValue(React.createElement("div", null, "Access Denied"));
 
     beforeEach(() => {
-      jest.clearAllMocks();
+      vi.clearAllMocks();
     });
 
     it("renders component when user has all required permissions", () => {

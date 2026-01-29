@@ -101,31 +101,31 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
     switch (color) {
       case "primary":
         return {
-          bg: "bg-gradient-to-br from-rose-50 via-rose-100 to-red-100",
+          bg: "bg-gradient-to-br from-rose-50 via-rose-50 to-red-50",
           icon: "text-rose-500",
           value: "text-gray-900",
         };
       case "success":
         return {
-          bg: "bg-gradient-to-br from-emerald-50 via-emerald-100 to-green-100",
+          bg: "bg-gradient-to-br from-emerald-50 via-emerald-50 to-green-50",
           icon: "text-emerald-600",
           value: "text-green-900",
         };
       case "warning":
         return {
-          bg: "bg-gradient-to-br from-sky-50 via-sky-100 to-cyan-100",
+          bg: "bg-gradient-to-br from-sky-50 via-sky-50 to-cyan-50",
           icon: "text-sky-600",
           value: "text-sky-900",
         };
       case "info":
         return {
-          bg: "bg-gradient-to-br from-slate-50 via-slate-100 to-gray-100",
+          bg: "bg-gradient-to-br from-slate-50 via-slate-50 to-gray-50",
           icon: "text-gray-600",
           value: "text-gray-900",
         };
       default:
         return {
-          bg: "bg-gradient-to-br from-gray-50 to-gray-100",
+          bg: "bg-gradient-to-br from-gray-50 to-gray-50",
           icon: "text-gray-600",
           value: "text-gray-900",
         };
@@ -136,7 +136,7 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
 
   return (
     <div
-      className={`${colorClasses.bg} rounded-2xl p-3 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.04),0_8px_18px_rgba(15,23,42,0.08)] border border-gray-100/70 h-full flex flex-col justify-center overflow-hidden`}
+      className={`${colorClasses.bg} rounded-2xl p-3 sm:p-4 shadow-[0_1px_2px_rgba(15,23,42,0.03),0_4px_10px_rgba(15,23,42,0.04)] border border-gray-100/70 h-full flex flex-col justify-center overflow-hidden`}
     >
       <div className="flex items-center">
         <div
@@ -200,7 +200,7 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
                 </div>
               </div>
 
-              <div className="my-1 h-px bg-gray-200/70" />
+              <div className="my-1 h-px bg-gray-300/80" />
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                 <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 min-w-0">
                   <span className="text-sm sm:text-base font-medium text-red-600 whitespace-nowrap">
