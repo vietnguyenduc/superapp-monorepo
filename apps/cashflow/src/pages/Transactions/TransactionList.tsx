@@ -42,6 +42,12 @@ const TransactionList: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+  const defaultBranchMap: Record<string, string> = {
+    "1": "Văn phòng chính",
+    "2": "Văn phòng Bắc",
+    "3": "Văn phòng Nam",
+  };
+  const [branchMap, setBranchMap] = useState<Record<string, string>>(defaultBranchMap);
   const [formData, setFormData] = useState({
     customer_id: "",
     bank_account_id: "",
@@ -183,6 +189,27 @@ const TransactionList: React.FC = () => {
     fetchTransactions();
   }, [fetchTransactions]);
 
+  useEffect(() => {
+    let isMounted = true;
+    const loadBranches = async () => {
+      const response = await databaseService.branches.getBranches();
+      if (!response?.data || !isMounted) return;
+      const map = response.data.reduce((acc: Record<string, string>, branch: any) => {
+        const rawName = String(branch.name || branch.branch_name || branch.code || branch.id);
+        const normalizedName = rawName.replace(/Chi nhánh/gi, "Văn phòng");
+        acc[String(branch.id)] = normalizedName;
+        return acc;
+      }, {} as Record<string, string>);
+      if (Object.keys(map).length > 0) {
+        setBranchMap(map);
+      }
+    };
+    loadBranches();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Handle search
   const handleSearch = (value: string) => {
     setState((prev) => ({ ...prev, searchTerm: value, currentPage: 1 }));
@@ -229,12 +256,7 @@ const TransactionList: React.FC = () => {
 
   // Function to get branch name from branch_id
   const getBranchName = (branchId: string) => {
-    const branchMap: { [key: string]: string } = {
-      "1": "Văn phòng chính",
-      "2": "Văn phòng Bắc",
-      "3": "Văn phòng Nam",
-    };
-    return branchMap[branchId] || "Văn phòng không xác định";
+    return branchMap[String(branchId)] || defaultBranchMap[String(branchId)] || "Văn phòng không xác định";
   };
 
   if (state.loading) {

@@ -329,11 +329,13 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
             </>
           )}
           
-          <div className="mt-1 pt-1 border-t border-gray-200">
-            <p className="text-sm font-medium text-gray-900">
-              {t("dashboard.runningTotal")}: {formatCurrency(data.runningTotal)}
-            </p>
-          </div>
+          {showBalance && (
+            <div className="mt-1 pt-1 border-t border-gray-200">
+              <p className="text-sm font-medium text-gray-900">
+                {t("dashboard.runningTotal")}: {formatCurrency(data.runningTotal)}
+              </p>
+            </div>
+          )}
           
         </div>
       );
@@ -353,9 +355,20 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
   };
 
   // Filter data to exclude balance bars if showBalance is false
+  const balanceOffset = showBalance ? 0 : effectiveStartBalance;
   const displayData = showBalance 
     ? waterfallData 
-    : waterfallData.filter(entry => entry.type !== "total");
+    : waterfallData
+        .filter(entry => entry.type !== "total")
+        .map((entry) => ({
+          ...entry,
+          base: Number(entry.base ?? 0) - balanceOffset,
+        }));
+
+  const noBalanceBarSize = Math.max(32, Math.min(60, Math.round(260 / Math.max(displayData.length, 1))));
+  const barSize = showBalance ? 45 : noBalanceBarSize;
+  const barCategoryGap = showBalance ? 5 : 12;
+  const xAxisPadding = showBalance ? { left: 0, right: 0 } : { left: 12, right: 12 };
 
   const renderConnectors = (props: any) => {
     const { xAxisMap, yAxisMap, formattedGraphicalItems } = props || {};
@@ -368,7 +381,7 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
     if (!scaleX || !scaleY) return null;
 
     const bandWidth = scaleX.bandwidth ? scaleX.bandwidth() : 0;
-    const barWidth = Math.min(showBalance ? 45 : 60, bandWidth || 0);
+    const barWidth = Math.min(barSize, bandWidth || 0);
     const barOffset = Math.max(0, (bandWidth - barWidth) / 2);
 
     const barItem = Array.isArray(formattedGraphicalItems)
@@ -407,7 +420,8 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
                 y1={y}
                 y2={y}
                 stroke="#6B7280"
-                strokeWidth={2}
+                strokeWidth={1}
+                strokeDasharray="2 2"
               />
             );
           }
@@ -430,7 +444,8 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
               y1={y}
               y2={y}
               stroke="#6B7280"
-              strokeWidth={2}
+              strokeWidth={1}
+              strokeDasharray="2 2"
             />
           );
         })}
@@ -472,7 +487,7 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
           data={displayData}
           margin={{ top: 30, right: 30, left: 10, bottom: 50 }}
           barGap={0}
-          barCategoryGap={5}
+          barCategoryGap={barCategoryGap}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
           <XAxis
@@ -483,6 +498,7 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
             height={80}
             interval={0}
             tickLine={false}
+            padding={xAxisPadding}
           />
           <YAxis
             tick={{ fontSize: 12, fontWeight: 500 }}
@@ -499,11 +515,11 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
           <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="3 3" />
           <Tooltip content={<CustomTooltip />} />
 
-          <Bar dataKey="base" stackId="flow" fill="transparent" barSize={showBalance ? 45 : 60} />
+          <Bar dataKey="base" stackId="flow" fill="transparent" barSize={barSize} />
           <Bar
             dataKey="delta"
             stackId="flow"
-            barSize={showBalance ? 45 : 60}
+            barSize={barSize}
           >
             {displayData.map((entry, index) => (
               <Cell

@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import type { Transaction } from "../../../types";
 import { formatCurrency } from "../../../utils/formatting";
+import { databaseService } from "../../../services/database";
 
 interface RecentTransactionsProps {
   transactions: Transaction[];
@@ -15,15 +16,37 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   onMaxItemsChange,
 }) => {
   const { t } = useTranslation();
+  const defaultBranchMap: Record<string, string> = {
+    "1": "Văn phòng chính",
+    "2": "Văn phòng Bắc",
+    "3": "Văn phòng Nam",
+  };
+  const [branchMap, setBranchMap] = React.useState<Record<string, string>>(defaultBranchMap);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    const loadBranches = async () => {
+      const response = await databaseService.branches.getBranches();
+      if (!response?.data || !isMounted) return;
+      const map = response.data.reduce((acc: Record<string, string>, branch: any) => {
+        const rawName = String(branch.name || branch.branch_name || branch.code || branch.id);
+        const normalizedName = rawName.replace(/Chi nhánh/gi, "Văn phòng");
+        acc[String(branch.id)] = normalizedName;
+        return acc;
+      }, {} as Record<string, string>);
+      if (Object.keys(map).length > 0) {
+        setBranchMap(map);
+      }
+    };
+    loadBranches();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Function to get office name from branch_id
   const getBranchName = (branchId: string) => {
-    const branchMap: { [key: string]: string } = {
-      "1": "Văn phòng chính",
-      "2": "Văn phòng Bắc",
-      "3": "Văn phòng Nam",
-    };
-    return branchMap[branchId] || "Văn phòng không xác định";
+    return branchMap[String(branchId)] || defaultBranchMap[String(branchId)] || "Văn phòng không xác định";
   };
 
   if (!transactions || transactions.length === 0) {

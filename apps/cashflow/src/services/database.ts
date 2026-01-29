@@ -1301,9 +1301,13 @@ const dashboardService = {
     const bankAccounts = readBankAccounts();
     const balanceByBankAccountAll = bankAccounts.map((b) => {
       const txForAccount = transactions.filter((t) => t.bank_account_id === b.id);
-      // Compute balances purely from transaction deltas per period
-      const baseCash = 0;
+      // Compute balances from all history so latest balance stays stable across views
       const periodStarts = buildPeriodStarts(timeRange, count, end);
+      const periodStart = periodStarts[0] ?? start;
+      const txBeforeStart = txForAccount.filter((t) =>
+        new Date(t.transaction_date).getTime() < periodStart.getTime(),
+      );
+      const baseCash = txBeforeStart.reduce((s, t) => s + cashDeltaFromTransaction(t), 0);
       const periodDeltas = periodStarts.map((ps, idx) => {
         const next = idx < periodStarts.length - 1 ? periodStarts[idx + 1] : null;
         const periodEnd = next
@@ -1319,9 +1323,9 @@ const dashboardService = {
       });
 
       const periodBalances: number[] = Array(periodStarts.length).fill(baseCash);
-      let runningCash = Math.max(0, baseCash);
+      let runningCash = baseCash;
       for (let i = 0; i < periodDeltas.length; i++) {
-        runningCash = Math.max(0, runningCash + periodDeltas[i]);
+        runningCash += periodDeltas[i];
         periodBalances[i] = runningCash;
       }
 
@@ -1330,7 +1334,7 @@ const dashboardService = {
         balance: periodBalances[idx] ?? baseCash,
       }));
 
-      const balance = historical_data.length > 0 ? historical_data[historical_data.length - 1].balance : Math.max(0, baseCash);
+      const balance = historical_data.length > 0 ? historical_data[historical_data.length - 1].balance : baseCash;
       return {
         bank_account_id: b.id,
         account_name: b.account_name,
