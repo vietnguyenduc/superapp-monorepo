@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase';
+import { supabase } from '../lib/supabase';
 import { 
   Product, 
   InventoryRecord, 
@@ -6,6 +6,7 @@ import {
   SpecialOutboundRecord, 
   InventoryVarianceReport 
 } from '../types';
+import { fallbackService } from './fallbackService';
 
 export interface DatabaseResponse<T> {
   data: T | null;
@@ -31,33 +32,24 @@ class DatabaseService {
     search?: string;
   }): Promise<DatabaseListResponse<Product>> {
     try {
-      let query = supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      // Apply filters
-      if (filters?.category) {
-        query = query.eq('category', filters.category);
-      }
-      if (filters?.status) {
-        query = query.eq('status', filters.status);
-      }
-      if (filters?.search) {
-        query = query.or(`name.ilike.%${filters.search}%,business_code.ilike.%${filters.search}%`);
-      }
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        return { data: null, error: error.message };
-      }
-
-      return { data: data || [], error: null, count };
+      console.log('🔄 DatabaseService.getProducts called');
+      
+      // Force fallback mode for now since Supabase is not configured
+      console.warn('🔄 Using fallback mode (Supabase not configured)');
+      const fallbackResponse = await fallbackService.getProducts(filters);
+      
+      console.log('📊 Products fallback response:', fallbackResponse);
+      
+      return {
+        data: fallbackResponse.data,
+        error: fallbackResponse.error,
+        count: fallbackResponse.count
+      };
     } catch (error) {
-      return { 
-        data: null, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      console.error('Error in getProducts:', error);
+      return {
+        data: null,
+        error: 'Lỗi khi tải danh sách sản phẩm'
       };
     }
   }
@@ -205,29 +197,25 @@ class DatabaseService {
     dateTo?: string;
   }): Promise<DatabaseListResponse<InventoryRecord>> {
     try {
-      let query = supabase
-        .from('inventory_records')
-        .select('*')
-        .order('date', { ascending: false });
-
-      if (filters?.productCode) {
-        query = query.eq('product_code', filters.productCode);
-      }
-      if (filters?.dateFrom) {
-        query = query.gte('date', filters.dateFrom);
-      }
-      if (filters?.dateTo) {
-        query = query.lte('date', filters.dateTo);
-      }
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        return { data: null, error: error.message };
-      }
-
-      return { data: data || [], error: null, count };
+      console.log('🔄 DatabaseService.getInventoryRecords called');
+      
+      // Force fallback mode for now since Supabase is not configured
+      console.warn('🔄 Using fallback mode (Supabase not configured)');
+      const fallbackResponse = await fallbackService.getInventoryRecords({
+        productCode: filters?.productCode,
+        dateFrom: filters?.dateFrom ? new Date(filters.dateFrom) : undefined,
+        dateTo: filters?.dateTo ? new Date(filters.dateTo) : undefined
+      });
+      
+      console.log('📊 Inventory fallback response:', fallbackResponse);
+      
+      return {
+        data: fallbackResponse.data,
+        error: fallbackResponse.error,
+        count: fallbackResponse.count
+      };
     } catch (error) {
+      console.error('Error in getInventoryRecords:', error);
       return { 
         data: null, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -303,29 +291,25 @@ class DatabaseService {
     dateTo?: string;
   }): Promise<DatabaseListResponse<SalesRecord>> {
     try {
-      let query = supabase
-        .from('sales_records')
-        .select('*')
-        .order('date', { ascending: false });
-
-      if (filters?.productId) {
-        query = query.eq('product_id', filters.productId);
-      }
-      if (filters?.dateFrom) {
-        query = query.gte('date', filters.dateFrom);
-      }
-      if (filters?.dateTo) {
-        query = query.lte('date', filters.dateTo);
-      }
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        return { data: null, error: error.message };
-      }
-
-      return { data: data || [], error: null, count };
+      console.log('🔄 DatabaseService.getSalesRecords called');
+      
+      // Force fallback mode for now since Supabase is not configured
+      console.warn('🔄 Using fallback mode (Supabase not configured)');
+      const fallbackResponse = await fallbackService.getSalesRecords({
+        productCode: filters?.productId,
+        dateFrom: filters?.dateFrom ? new Date(filters.dateFrom) : undefined,
+        dateTo: filters?.dateTo ? new Date(filters.dateTo) : undefined
+      });
+      
+      console.log('📊 Sales fallback response:', fallbackResponse);
+      
+      return {
+        data: fallbackResponse.data,
+        error: fallbackResponse.error,
+        count: fallbackResponse.count
+      };
     } catch (error) {
+      console.error('Error in getSalesRecords:', error);
       return { 
         data: null, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -422,7 +406,7 @@ class DatabaseService {
         return { data: null, error: error.message };
       }
 
-      return { data: data || [], error: null, count };
+      return { data: data || [], error: null, count: count || undefined };
     } catch (error) {
       return { 
         data: null, 

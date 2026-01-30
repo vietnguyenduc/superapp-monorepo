@@ -34,6 +34,9 @@ export enum ProductCategory {
   DRY_GOODS = 'dry_goods', // Đồ khô
   PROCESSED = 'processed', // Sơ chế
   FINISHED = 'finished', // Thành phẩm
+  BEVERAGE = 'beverage', // Đồ uống
+  TOBACCO = 'tobacco', // Thuốc lá
+  OTHER = 'other', // Khác
 }
 
 export enum ProductStatus {

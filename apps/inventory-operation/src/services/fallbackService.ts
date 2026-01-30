@@ -11,9 +11,17 @@ import {
   ProductStatus
 } from '../types';
 import { ProductCatalogItem, SAMPLE_PRODUCT_CATALOG } from '../types/product-catalog';
+import { realProductsData, convertToProductInterface } from '../data/realProductsData';
+import { realInventoryRecords, generateInventoryFromProducts } from '../data/realInventoryData';
+import { realInventoryTransactions, parseDate, getTransactionsByDateRange } from '../data/realInventoryTransactions';
+import { convertToSalesRecords } from '../data/realSalesData';
 
 // Mock data for fallback
 const mockProducts: Product[] = [
+  // Convert real products data with correct input/output ratios
+  ...realProductsData.map(convertToProductInterface),
+  
+  // Keep some original mock products for testing
   {
     id: 'prod-001',
     businessCode: 'SP001',
@@ -25,7 +33,7 @@ const mockProducts: Product[] = [
     outputQuantity: 100,
     isFinishedProduct: true,
     status: ProductStatus.ACTIVE,
-    businessStatus: 'active',
+    businessStatus: 'active' as const,
     createdAt: new Date('2024-01-01T10:00:00Z'),
     updatedAt: new Date('2024-01-01T10:00:00Z'),
     createdBy: 'admin',
@@ -42,7 +50,7 @@ const mockProducts: Product[] = [
     outputQuantity: 1,
     isFinishedProduct: true,
     status: ProductStatus.ACTIVE,
-    businessStatus: 'active',
+    businessStatus: 'active' as const,
     createdAt: new Date('2024-01-02T10:00:00Z'),
     updatedAt: new Date('2024-01-02T10:00:00Z'),
     createdBy: 'admin',
@@ -59,7 +67,7 @@ const mockProducts: Product[] = [
     outputQuantity: 5,
     isFinishedProduct: true,
     status: ProductStatus.ACTIVE,
-    businessStatus: 'active',
+    businessStatus: 'active' as const,
     createdAt: new Date('2024-01-03T10:00:00Z'),
     updatedAt: new Date('2024-01-03T10:00:00Z'),
     createdBy: 'admin',
@@ -68,93 +76,113 @@ const mockProducts: Product[] = [
 ];
 
 const mockInventoryRecords: InventoryRecord[] = [
+  // Real inventory records from actual transactions
+  ...realInventoryTransactions.map((transaction, index) => ({
+    id: `real-inv-${index + 1}`,
+    date: parseDate(transaction.date),
+    productCode: transaction.productCode,
+    productName: transaction.productName,
+    inputQuantity: transaction.inputQuantity,
+    rawMaterialStock: transaction.actualStock,
+    processedStock: Math.floor(transaction.actualStock * 0.8),
+    finishedProductStock: Math.floor(transaction.actualStock * 0.6),
+    rawMaterialUnit: 'cái',
+    processedUnit: 'cái',
+    finishedProductUnit: 'cái',
+    createdAt: parseDate(transaction.date),
+    updatedAt: parseDate(transaction.date),
+    createdBy: 'system',
+    updatedBy: 'system'
+  })),
+  
+  // Generate additional records from real products
+  ...generateInventoryFromProducts(realProductsData.map(convertToProductInterface), 15),
+  
+  // Keep some original mock records for testing
   {
     id: 'inv-001',
-    date: new Date('2024-01-15T10:00:00Z'),
+    date: new Date('2024-01-15'),
     productCode: 'SP001',
     productName: 'Cà phê Arabica',
     inputQuantity: 50,
-    rawMaterialStock: 50,
+    rawMaterialStock: 120,
+    processedStock: 30,
+    finishedProductStock: 25,
     rawMaterialUnit: 'kg',
-    processedStock: 0,
     processedUnit: 'kg',
-    finishedProductStock: 4950,
     finishedProductUnit: 'ly',
     createdAt: new Date('2024-01-15T10:00:00Z'),
     updatedAt: new Date('2024-01-15T10:00:00Z'),
-    createdBy: 'staff-001',
-    updatedBy: 'staff-001'
+    createdBy: 'admin',
+    updatedBy: 'admin'
   },
   {
     id: 'inv-002',
-    date: new Date('2024-01-20T10:00:00Z'),
+    date: new Date('2024-01-20'),
     productCode: 'SP002',
     productName: 'Bánh mì sandwich',
     inputQuantity: 100,
-    rawMaterialStock: 100,
+    rawMaterialStock: 200,
+    processedStock: 80,
+    finishedProductStock: 10,
     rawMaterialUnit: 'cái',
-    processedStock: 0,
     processedUnit: 'cái',
-    finishedProductStock: 95,
     finishedProductUnit: 'phần',
     createdAt: new Date('2024-01-20T10:00:00Z'),
     updatedAt: new Date('2024-01-20T10:00:00Z'),
-    createdBy: 'staff-002',
-    updatedBy: 'staff-002'
+    createdBy: 'admin',
+    updatedBy: 'admin'
   }
 ];
 
 // Mock sales records matching database schema (for UI compatibility)
 const mockSalesRecordsForUI = [
+  // Real sales records from actual transactions
+  ...convertToSalesRecords(),
+  
+  // Keep some original mock records for testing
   {
     id: 'sale-001',
     product_id: 'prod-001',
     date: '2024-01-15',
     sales_quantity: 120,
-    promotion_quantity: 30,
-    unit: 'hộp',
-    notes: 'Bán chạy trong ngày',
-    created_at: '2024-01-15T10:00:00Z',
-    updated_at: '2024-01-15T10:00:00Z',
+    unit_price: 25000,
+    total_amount: 3000000,
+    customer_type: 'retail',
+    status: 'completed',
+    created_at: new Date('2024-01-15T10:00:00Z'),
+    updated_at: new Date('2024-01-15T10:00:00Z'),
     created_by: 'staff-001',
     updated_by: 'staff-001'
   },
   {
-    id: 'sale-002', 
+    id: 'sale-002',
     product_id: 'prod-002',
     date: '2024-01-20',
-    sales_quantity: 60,
-    promotion_quantity: 20,
-    unit: 'chai',
-    notes: 'Combo khuyến mãi',
-    created_at: '2024-01-20T10:00:00Z',
-    updated_at: '2024-01-20T10:00:00Z',
+    sales_quantity: 80,
+    unit_price: 15000,
+    total_amount: 1200000,
+    customer_type: 'wholesale',
+    status: 'completed',
+    created_at: new Date('2024-01-20T10:00:00Z'),
+    updated_at: new Date('2024-01-20T10:00:00Z'),
     created_by: 'staff-002',
     updated_by: 'staff-002'
-  },
-  {
-    id: 'sale-003',
-    product_id: 'prod-003', 
-    date: '2024-01-22',
-    sales_quantity: 200,
-    promotion_quantity: 50,
-    unit: 'gói',
-    notes: 'Sản phẩm mới ra mắt',
-    created_at: '2024-01-22T10:00:00Z',
-    updated_at: '2024-01-22T10:00:00Z',
-    created_by: 'staff-001',
-    updated_by: 'staff-001'
   }
 ];
 
 // Keep original type-compliant records for other uses
 const mockSalesRecords: SalesRecord[] = [
+  // Real sales records from actual transactions
+  ...convertToSalesRecords(),
+  
+  // Keep some original mock records for testing
   {
     id: 'sale-001',
     productCode: 'SP001',
     outputDate: new Date('2024-01-15T10:00:00Z'),
     quantitySold: 150,
-    notes: 'Bán chạy trong ngày',
+    notes: 'Bán lẻ - Cà phê Arabica',
     createdAt: new Date('2024-01-15T10:00:00Z'),
     updatedAt: new Date('2024-01-15T10:00:00Z'),
     createdBy: 'staff-001',
@@ -165,7 +193,7 @@ const mockSalesRecords: SalesRecord[] = [
     productCode: 'SP002',
     outputDate: new Date('2024-01-20T10:00:00Z'),
     quantitySold: 80,
-    notes: 'Combo khuyến mãi',
+    notes: 'Bán sỉ - Bánh mì sandwich',
     createdAt: new Date('2024-01-20T10:00:00Z'),
     updatedAt: new Date('2024-01-20T10:00:00Z'),
     createdBy: 'staff-002',
@@ -397,6 +425,9 @@ class FallbackService {
       
       mockInventoryRecords.push(newRecord);
       
+      console.log('✅ Created inventory record:', newRecord);
+      console.log('📊 Total records:', mockInventoryRecords.length);
+      
       return {
         data: newRecord,
         error: null
@@ -415,25 +446,31 @@ class FallbackService {
     productCode?: string;
     dateFrom?: Date;
     dateTo?: Date;
-  }): Promise<FallbackListResponse<any>> {
+  }): Promise<FallbackListResponse<SalesRecord>> {
     try {
       await new Promise(resolve => setTimeout(resolve, 100));
       
-      // Use UI-compatible mock data instead of type-compliant data
-      let filteredRecords = [...mockSalesRecordsForUI];
+      // Use only type-compliant SalesRecord data
+      let filteredRecords = [...mockSalesRecords];
       
       if (filters?.productCode) {
-        filteredRecords = filteredRecords.filter(r => r.product_id === filters.productCode);
+        filteredRecords = filteredRecords.filter(r => r.productCode === filters.productCode);
       }
       
       if (filters?.dateFrom) {
         const dateFromStr = filters.dateFrom.toISOString().split('T')[0];
-        filteredRecords = filteredRecords.filter(r => r.date >= dateFromStr);
+        filteredRecords = filteredRecords.filter(r => {
+          const recordDate = r.outputDate.toISOString().split('T')[0];
+          return recordDate >= dateFromStr;
+        });
       }
       
       if (filters?.dateTo) {
         const dateToStr = filters.dateTo.toISOString().split('T')[0];
-        filteredRecords = filteredRecords.filter(r => r.date <= dateToStr);
+        filteredRecords = filteredRecords.filter(r => {
+          const recordDate = r.outputDate.toISOString().split('T')[0];
+          return recordDate <= dateToStr;
+        });
       }
       
       return {

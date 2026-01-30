@@ -13,17 +13,17 @@ export const useProducts = () => {
       setLoading(true);
       setError(null);
       
-      // Try database service first, fallback to mock data if it fails
-      let response;
-      try {
-        response = await databaseService.getProducts();
-      } catch (dbError) {
-        console.warn('Database error, using fallback service:', dbError);
-        response = await fallbackService.getProducts();
-      }
+      console.log('🔄 Loading products...');
+      
+      // Force fallback mode for now since Supabase is not configured
+      console.warn('🔄 Using fallback mode (Supabase not configured)');
+      const response = await fallbackService.getProducts();
+      
+      console.log('📊 Products fallback response:', response);
       
       if (response.data) {
         setProducts(response.data);
+        console.log('✅ Products loaded:', response.data.length);
       } else {
         throw new Error(response.error || 'Không thể tải danh sách sản phẩm');
       }

@@ -27,28 +27,27 @@ const SalesReportTable: React.FC<SalesReportTableProps> = ({
 
   // Filter records
   const filteredRecords = salesRecords.filter(record => {
-    const product = getProductInfo(record.product_id);
+    const product = getProductInfo(record.productCode);
     const matchesSearch = !searchTerm || 
       product?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product?.business_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product?.businessCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.notes?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesDate = !dateFilter || record.date === dateFilter;
-    const matchesProduct = !productFilter || record.product_id === productFilter;
+    const matchesDate = !dateFilter || record.outputDate.toISOString().split('T')[0] === dateFilter;
+    const matchesProduct = !productFilter || record.productCode === productFilter;
 
     return matchesSearch && matchesDate && matchesProduct;
   });
 
   // Calculate totals
   const totals = filteredRecords.reduce((acc, record) => {
-    acc.sales += record.sales_quantity;
-    acc.promotion += record.promotion_quantity;
-    acc.total += record.sales_quantity + record.promotion_quantity;
+    acc.sales += record.quantitySold;
+    acc.total += record.quantitySold;
     return acc;
   }, { sales: 0, promotion: 0, total: 0 });
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN');
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('vi-VN');
   };
 
   const formatNumber = (num: number) => {
@@ -101,7 +100,7 @@ const SalesReportTable: React.FC<SalesReportTableProps> = ({
               <option value="">Tất cả sản phẩm</option>
               {products.map((product) => (
                 <option key={product.id} value={product.id}>
-                  [{product.business_code}] {product.name}
+                  [{product.businessCode}] {product.name}
                 </option>
               ))}
             </select>
@@ -188,37 +187,36 @@ const SalesReportTable: React.FC<SalesReportTableProps> = ({
             </thead>
             <tbody>
               {filteredRecords.map((record) => {
-                const product = getProductInfo(record.product_id);
-                const totalQuantity = record.sales_quantity + record.promotion_quantity;
+                const product = getProductInfo(record.productCode);
                 
                 return (
                   <tr key={record.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                     <td className="p-4">
-                      <div className="font-medium text-gray-900">{formatDate(record.date)}</div>
+                      <div className="font-medium text-gray-900">{formatDate(record.outputDate)}</div>
                     </td>
                     <td className="p-4">
                       <div className="flex flex-col">
                         <span className="font-medium text-gray-900">{product?.name || 'N/A'}</span>
-                        <span className="text-sm text-gray-500">[{product?.business_code}]</span>
+                        <span className="text-sm text-gray-500">[{product?.businessCode}]</span>
                       </div>
                     </td>
                     <td className="p-4 text-right">
                       <span className="font-medium text-blue-600">
-                        {formatNumber(record.sales_quantity)}
+                        {formatNumber(record.quantitySold)}
                       </span>
                     </td>
                     <td className="p-4 text-right">
                       <span className="font-medium text-orange-600">
-                        {formatNumber(record.promotion_quantity)}
+                        0
                       </span>
                     </td>
                     <td className="p-4 text-right">
                       <span className="font-semibold text-green-600">
-                        {formatNumber(totalQuantity)}
+                        {formatNumber(record.quantitySold)}
                       </span>
                     </td>
                     <td className="p-4">
-                      <span className="text-gray-700">{record.unit}</span>
+                      <span className="text-gray-700">{product?.outputUnit || 'cái'}</span>
                     </td>
                     <td className="p-4">
                       <span className="text-sm text-gray-600">

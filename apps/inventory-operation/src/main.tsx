@@ -1,12 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-// Comment out the regular App import
-// import App from './App';
-// import MinimalApp from './MinimalApp';
-// import FixedApp from './FixedApp';
-// import DiagnosticApp from './DiagnosticApp';
-// import CSSTestApp from './CSSTestApp';
-import SimpleRoutingApp from './SimpleRoutingApp';
+import App from './App';
 import './index.css';
 
 // Add error handling for root element
@@ -26,7 +20,7 @@ try {
   
   root.render(
     <React.StrictMode>
-      <SimpleRoutingApp />
+      <App />
     </React.StrictMode>
   );
   

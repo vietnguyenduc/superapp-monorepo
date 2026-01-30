@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Product } from '../types';
+import { Product, ProductStatus } from '../types';
 import { ProductCatalogItem } from '../types/product-catalog';
 import { fallbackService } from '../services/fallbackService';
 import { databaseService } from '../services/databaseService';
@@ -14,7 +14,7 @@ interface UseProductCatalogOptions {
 }
 
 export const useProductCatalog = (options: UseProductCatalogOptions = {}) => {
-  const [products, setProducts] = useState<ProductCatalogItem[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +39,31 @@ export const useProductCatalog = (options: UseProductCatalogOptions = {}) => {
       }
       
       if (response.data) {
-        setProducts(response.data);
+        // Convert ProductCatalogItem[] to Product[] if needed
+        const productData = Array.isArray(response.data) && response.data.length > 0 
+          ? 'businessCode' in response.data[0] 
+            ? response.data as Product[]
+            : (response.data as any[]).map(item => ({
+                id: item.id || item.productCode,
+                businessCode: item.productCode || item.businessCode,
+                promotionCode: item.promotionCode,
+                name: item.productName || item.name,
+                isFinishedProduct: item.isFinishedProduct || true,
+                category: item.category || 'OTHER',
+                inputQuantity: item.inputQuantity || 1,
+                outputQuantity: item.outputQuantity || 1,
+                finishedProductCode: item.finishedProductCode,
+                inputUnit: item.unit || item.inputUnit || 'cái',
+                outputUnit: item.unit || item.outputUnit || 'cái',
+                status: (item.isActive !== undefined ? (item.isActive ? ProductStatus.ACTIVE : ProductStatus.INACTIVE) : ProductStatus.ACTIVE) as ProductStatus,
+                businessStatus: 'active' as const,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                createdBy: 'system',
+                updatedBy: 'system'
+              }))
+          : response.data as Product[];
+        setProducts(productData);
       } else {
         setError(response.error || 'Không thể tải danh mục sản phẩm');
       }
@@ -229,9 +253,9 @@ export const useProductCatalog = (options: UseProductCatalogOptions = {}) => {
     setError(null);
 
     try {
-      const response = await ProductService.getProductsByCategory(category);
+      const response = await databaseService.getProducts();
       
-      if (response.success) {
+      if (response.data) {
         return { success: true, data: response.data };
       } else {
         setError(response.error || 'Không thể tải sản phẩm theo danh mục');

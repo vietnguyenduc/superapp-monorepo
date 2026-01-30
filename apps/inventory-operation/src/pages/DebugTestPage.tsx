@@ -211,7 +211,7 @@ const DebugTestPage: React.FC = () => {
                 <div className="text-gray-400">Chưa có kết quả test...</div>
               ) : (
                 testResults.map((result, index) => (
-                  <div key={index} className="text-green-400">
+                  <div key={`test-result-${index}-${result.slice(0, 20)}`} className="text-green-400">
                     {result}
                   </div>
                 ))
@@ -228,7 +228,7 @@ const DebugTestPage: React.FC = () => {
               <h3 className="font-medium text-gray-700 mb-2">Sample Products:</h3>
               <div className="bg-gray-50 rounded-lg p-3 text-sm">
                 {products.slice(0, 2).map(product => (
-                  <div key={product.id} className="mb-2">
+                  <div key={`product-${product.id}`} className="mb-2">
                     <span className="font-medium">[{product.businessCode}]</span> {product.name} - {product.category}
                   </div>
                 ))}
@@ -239,7 +239,7 @@ const DebugTestPage: React.FC = () => {
               <h3 className="font-medium text-gray-700 mb-2">Sample Variance Reports:</h3>
               <div className="bg-gray-50 rounded-lg p-3 text-sm">
                 {reports.slice(0, 2).map(report => (
-                  <div key={report.id} className="mb-2">
+                  <div key={`report-${report.id}`} className="mb-2">
                     <span className="font-medium">{report.date}</span> - Variance: {report.variance} ({(report.variance_percentage || 0).toFixed(2)}%)
                   </div>
                 ))}

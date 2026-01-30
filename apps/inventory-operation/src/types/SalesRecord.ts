@@ -28,7 +28,7 @@ export interface SpecialOutboundRecord {
   
   quantity: number; // Số lượng
   reason: SpecialOutboundReason; // Lý do xuất
-  status: ApprovalStatus; // Trạng thái
+  status: SpecialOutboundApprovalStatus; // Trạng thái
   
   notes?: string; // Ghi chú
   rejectionReason?: string; // Lý do từ chối (nếu có)
@@ -49,7 +49,7 @@ export enum SpecialOutboundReason {
   OTHER = 'other', // Khác
 }
 
-export enum ApprovalStatus {
+export enum SpecialOutboundApprovalStatus {
   PENDING = 'pending', // Đang chờ duyệt
   APPROVED = 'approved', // Đã duyệt
   REJECTED = 'rejected', // Từ chối
