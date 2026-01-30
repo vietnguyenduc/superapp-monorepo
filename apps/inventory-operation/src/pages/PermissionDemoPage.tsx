@@ -5,8 +5,8 @@ import PermissionGuard, {
   MultiplePermissionGuard, 
   NoPermissionMessage, 
   DisabledButton 
-} from '../components/Auth/PermissionGuard';
-import PermissionInfo from '../components/Auth/PermissionInfo';
+} from '../components/auth/PermissionGuard';
+import PermissionInfo from '../components/auth/PermissionInfo';
 
 const PermissionDemoPage: React.FC = () => {
   const { user, hasPermission } = useAuth();
