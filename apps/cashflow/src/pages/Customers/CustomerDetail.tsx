@@ -136,7 +136,7 @@ const CustomerDetail: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Customer Information */}
         <div className="lg:col-span-1">
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-white dark:bg-gray-900 shadow rounded-lg p-6">
             <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
               Thông tin khách hàng
             </h2>
@@ -268,10 +268,10 @@ const CustomerDetail: React.FC = () => {
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               transaction.transaction_type === "Thanh toán"
-                                ? "bg-green-100 text-green-800"
+                                ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200"
                                 : transaction.transaction_type === "Cho nợ"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-yellow-100 text-yellow-800"
+                                ? "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200"
+                                : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200"
                             }`}
                           >
                             {transaction.transaction_type}

@@ -52,7 +52,7 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
   if (!data || data.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">{t("dashboard.noData")}</p>
+        <p className="text-gray-500 dark:text-gray-300">{t("dashboard.noData")}</p>
       </div>
     );
   }
@@ -462,20 +462,29 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
             className="legend-item cursor-pointer flex items-center border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700" 
             onClick={() => setShowBalance(!showBalance)}
           >
-            <div className="w-4 h-4 border border-gray-400 dark:border-gray-600 rounded mr-1 flex items-center justify-center" style={{background: showBalance ? '#4f46e5' : 'white'}}>
+            <div
+              className="w-4 h-4 border border-gray-400 dark:border-gray-500 rounded mr-1 flex items-center justify-center"
+              style={{ background: showBalance ? "#4f46e5" : "#1f2937" }}
+            >
               {showBalance && <span className="text-xs text-white">✓</span>}
             </div>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("dashboard.balance")}</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-100">
+              {t("dashboard.balance")}
+            </span>
           </div>
           
           <div className="legend-item">
-            <div className="legend-color bg-green-400"></div>
-            <span>{t("dashboard.increase")} ({t("dashboard.inflow")} {">"} {t("dashboard.outflow")})</span>
+            <div className="legend-color bg-emerald-400 dark:bg-emerald-300"></div>
+            <span className="text-gray-700 dark:text-gray-100">
+              {t("dashboard.increase")} ({t("dashboard.inflow")} {">"} {t("dashboard.outflow")})
+            </span>
           </div>
           
           <div className="legend-item">
-            <div className="legend-color bg-red-400"></div>
-            <span>{t("dashboard.decrease")} ({t("dashboard.inflow")} {"<"} {t("dashboard.outflow")})</span>
+            <div className="legend-color bg-rose-400 dark:bg-rose-300"></div>
+            <span className="text-gray-700 dark:text-gray-100">
+              {t("dashboard.decrease")} ({t("dashboard.inflow")} {"<"} {t("dashboard.outflow")})
+            </span>
           </div>
         </div>
       </div>
@@ -487,19 +496,20 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
           barGap={0}
           barCategoryGap={barCategoryGap}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 9 }}
+            tick={{ fontSize: 9, fill: "#e5e7eb", fontWeight: 600 }}
             angle={-45}
             textAnchor="end"
             height={60}
             interval={0}
             tickLine={false}
             padding={xAxisPadding}
+            axisLine={{ stroke: "#4b5563" }}
           />
           <YAxis
-            tick={{ fontSize: 10, fontWeight: 500 }}
+            tick={{ fontSize: 10, fontWeight: 600, fill: "#e5e7eb" }}
             tickFormatter={(value) => {
               // Clean, rounded Y-axis labels
               const absValue = Math.abs(value / 1000000);
@@ -509,8 +519,9 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
             width={50}
             tickCount={7}
             domain={[(dataMin: number) => dataMin * 1.1, (dataMax: number) => dataMax * 1.1]}
+            axisLine={{ stroke: "#4b5563" }}
           />
-          <ReferenceLine y={0} stroke="#9CA3AF" strokeDasharray="3 3" />
+          <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="4 3" />
           <Tooltip content={<CustomTooltip />} />
 
           <Bar dataKey="base" stackId="flow" fill="transparent" barSize={barSize} />
@@ -524,10 +535,10 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
                 key={`cell-${index}`}
                 fill={
                   entry.type === "total"
-                    ? "#bdbdbd"
+                    ? "#e5e7eb"
                     : entry.value >= 0
-                      ? "#92cf9a"
-                      : "#ed6455"
+                      ? "#22c55e"
+                      : "#f97316"
                 }
               />
             ))}
@@ -559,7 +570,7 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
                     x={Number(x) + Number(width) / 2}
                     y={yPos}
                     textAnchor="middle"
-                    fill="#333"
+                    fill="#f3f4f6"
                     fontSize="11px"
                     fontWeight={entry.type === "total" ? "600" : "500"}
                   >

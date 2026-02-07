@@ -45,12 +45,12 @@ const Layout: React.FC = () => {
       )}
       <div className="flex w-full">
         {/* Desktop sidebar - sticky */}
-        <div className="hidden lg:block w-64 flex-shrink-0 sticky top-16 h-screen overflow-y-auto no-scrollbar">
+        <div className="hidden lg:block w-80 flex-shrink-0 sticky top-16 h-screen overflow-y-auto no-scrollbar">
           <Sidebar />
         </div>
         {/* Mobile sidebar */}
         <div
-          className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out lg:hidden no-scrollbar overflow-y-auto ${
+          className={`fixed inset-y-0 left-0 z-50 w-72 sm:w-80 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out lg:hidden no-scrollbar overflow-y-auto ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >

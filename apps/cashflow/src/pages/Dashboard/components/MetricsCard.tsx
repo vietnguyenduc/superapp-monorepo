@@ -101,33 +101,33 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
     switch (color) {
       case "primary":
         return {
-          bg: "bg-gradient-to-br from-rose-50 via-rose-50 to-red-50",
-          icon: "text-rose-500",
-          value: "text-gray-900",
+          bg: "bg-gradient-to-br from-rose-50 via-rose-50 to-red-50 dark:from-rose-950/40 dark:via-rose-950/30 dark:to-red-950/30",
+          icon: "text-rose-500 dark:text-rose-300",
+          value: "text-gray-900 dark:text-white",
         };
       case "success":
         return {
-          bg: "bg-gradient-to-br from-emerald-50 via-emerald-50 to-green-50",
-          icon: "text-emerald-600",
-          value: "text-green-900",
+          bg: "bg-gradient-to-br from-emerald-50 via-emerald-50 to-green-50 dark:from-emerald-950/40 dark:via-emerald-950/30 dark:to-green-950/30",
+          icon: "text-emerald-600 dark:text-emerald-300",
+          value: "text-green-900 dark:text-emerald-100",
         };
       case "warning":
         return {
-          bg: "bg-gradient-to-br from-sky-50 via-sky-50 to-cyan-50",
-          icon: "text-sky-600",
-          value: "text-sky-900",
+          bg: "bg-gradient-to-br from-sky-50 via-sky-50 to-cyan-50 dark:from-sky-950/40 dark:via-sky-950/30 dark:to-cyan-950/30",
+          icon: "text-sky-600 dark:text-sky-300",
+          value: "text-sky-900 dark:text-sky-100",
         };
       case "info":
         return {
-          bg: "bg-gradient-to-br from-slate-50 via-slate-50 to-gray-50",
-          icon: "text-gray-600",
-          value: "text-gray-900",
+          bg: "bg-gradient-to-br from-slate-50 via-slate-50 to-gray-50 dark:from-slate-950/40 dark:via-slate-950/30 dark:to-gray-950/30",
+          icon: "text-gray-600 dark:text-gray-300",
+          value: "text-gray-900 dark:text-white",
         };
       default:
         return {
-          bg: "bg-gradient-to-br from-gray-50 to-gray-50",
-          icon: "text-gray-600",
-          value: "text-gray-900",
+          bg: "bg-gradient-to-br from-gray-50 to-gray-50 dark:from-gray-900 dark:to-gray-900",
+          icon: "text-gray-600 dark:text-gray-300",
+          value: "text-gray-900 dark:text-white",
         };
     }
   };
@@ -136,7 +136,7 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
 
   return (
     <div
-      className={`${colorClasses.bg} rounded-2xl p-3 sm:p-4 shadow-[0_1px_2px_rgba(15,23,42,0.03),0_4px_10px_rgba(15,23,42,0.04)] border border-gray-100/70 h-full flex flex-col justify-center overflow-hidden`}
+      className={`${colorClasses.bg} rounded-2xl p-3 sm:p-4 shadow-[0_1px_2px_rgba(15,23,42,0.03),0_4px_10px_rgba(15,23,42,0.04)] border border-gray-100/70 dark:border-white/5 h-full flex flex-col justify-center overflow-hidden`}
     >
       <div className="flex items-center">
         <div
@@ -145,7 +145,7 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
           {getIcon()}
         </div>
         <div className="ml-2 flex-1 min-w-0">
-          <p className="text-sm sm:text-base font-normal text-gray-600 tracking-normal leading-snug break-words">
+          <p className="text-sm sm:text-base font-normal text-gray-600 dark:text-gray-300 tracking-normal leading-snug break-words">
             {title}
           </p>
           {dualValues ? (

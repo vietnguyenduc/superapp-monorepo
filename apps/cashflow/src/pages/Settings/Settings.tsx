@@ -45,11 +45,26 @@ interface CustomerField {
 }
 
 const colorOptions = [
-  { value: "blue", class: "bg-blue-100 text-blue-800" },
-  { value: "green", class: "bg-green-100 text-green-800" },
-  { value: "yellow", class: "bg-yellow-100 text-yellow-800" },
-  { value: "red", class: "bg-red-100 text-red-800" },
-  { value: "purple", class: "bg-purple-100 text-purple-800" },
+  {
+    value: "blue",
+    class: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200",
+  },
+  {
+    value: "green",
+    class: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200",
+  },
+  {
+    value: "yellow",
+    class: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200",
+  },
+  {
+    value: "red",
+    class: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
+  },
+  {
+    value: "purple",
+    class: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200",
+  },
 ];
 
 const Settings: React.FC = () => {
@@ -74,6 +89,13 @@ const Settings: React.FC = () => {
     { id: "3", name: "Số điện thoại", type: "tel", isRequired: true, isActive: true },
     { id: "4", name: "Địa chỉ", type: "text", isRequired: false, isActive: true },
   ]);
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
+  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
+  const [branchForm, setBranchForm] = useState({
+    name: "",
+    address: "",
+    phone: "",
+  });
 
   // Apply dark mode to document
   useEffect(() => {
@@ -190,6 +212,43 @@ const Settings: React.FC = () => {
         );
         break;
     }
+  };
+
+  const handleEditBranch = (branch: Branch) => {
+    setEditingBranch(branch);
+    setBranchForm({
+      name: branch.name,
+      address: branch.address,
+      phone: branch.phone,
+    });
+    setIsBranchModalOpen(true);
+  };
+
+  const handleDeleteBranch = (branchId: string) => {
+    setBranches((prev) => prev.filter((branch) => branch.id !== branchId));
+  };
+
+  const handleBranchFormChange = (
+    field: "name" | "address" | "phone",
+    value: string,
+  ) => {
+    setBranchForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveBranch = () => {
+    if (!editingBranch) {
+      return;
+    }
+
+    setBranches((prev) =>
+      prev.map((branch) =>
+        branch.id === editingBranch.id
+          ? { ...branch, ...branchForm }
+          : branch,
+      ),
+    );
+    setIsBranchModalOpen(false);
+    setEditingBranch(null);
   };
 
   if (error) {
@@ -466,11 +525,27 @@ const Settings: React.FC = () => {
                       <h3 className="text-sm font-medium text-gray-900 dark:text-white">
                         {branch.name}
                       </h3>
-                      <ToggleSwitch
-                        checked={branch.isActive}
-                        onChange={() => handleToggleActive("branch", branch.id)}
-                        size="sm"
-                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEditBranch(branch)}
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                        >
+                          Sua
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteBranch(branch.id)}
+                          className="text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                        >
+                          Xoa
+                        </button>
+                        <ToggleSwitch
+                          checked={branch.isActive}
+                          onChange={() => handleToggleActive("branch", branch.id)}
+                          size="sm"
+                        />
+                      </div>
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
                       <p>{branch.address}</p>
@@ -478,6 +553,68 @@ const Settings: React.FC = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {isBranchModalOpen && editingBranch && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+              <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Chinh sua van phong
+                  </h3>
+                </div>
+                <div className="p-4 space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Ten van phong
+                    </label>
+                    <input
+                      type="text"
+                      value={branchForm.name}
+                      onChange={(e) => handleBranchFormChange("name", e.target.value)}
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Dia chi
+                    </label>
+                    <input
+                      type="text"
+                      value={branchForm.address}
+                      onChange={(e) => handleBranchFormChange("address", e.target.value)}
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      So dien thoai
+                    </label>
+                    <input
+                      type="text"
+                      value={branchForm.phone}
+                      onChange={(e) => handleBranchFormChange("phone", e.target.value)}
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2"
+                    />
+                  </div>
+                </div>
+                <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setIsBranchModalOpen(false);
+                      setEditingBranch(null);
+                    }}
+                  >
+                    Huy
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handleSaveBranch}>
+                    Luu
+                  </Button>
+                </div>
               </div>
             </div>
           )}

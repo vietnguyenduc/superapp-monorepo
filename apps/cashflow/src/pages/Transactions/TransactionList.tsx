@@ -65,12 +65,12 @@ const TransactionList: React.FC = () => {
     const customerId = searchParams.get("customer_id");
     const customerName = searchParams.get("customer_name");
 
-    if (customerId && customerName) {
+    if (customerId) {
       setState((prev) => ({
         ...prev,
         customerFilter: {
           id: customerId,
-          name: customerName,
+          name: customerName || null,
         },
       }));
     }
@@ -194,7 +194,12 @@ const TransactionList: React.FC = () => {
   const hasCustomerFilter = Boolean(state.customerFilter?.id);
 
   if (state.loading) {
-    return <LoadingFallback />;
+    return (
+      <LoadingFallback
+        title="Đang tải giao dịch"
+        message="Vui lòng chờ trong giây lát"
+      />
+    );
   }
 
   if (state.error) {
@@ -373,14 +378,18 @@ const TransactionList: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 text-xs text-gray-600 dark:text-gray-300">
+                    <div className="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-300">
                       <span className="inline-flex items-center gap-1">
                         <span className="font-medium">Văn phòng:</span>
-                        {getBranchName(transaction.branch_id)}
+                        <span className="truncate">
+                          {getBranchName(transaction.branch_id)}
+                        </span>
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <span className="font-medium">Tài khoản:</span>
-                        {transaction.bank_account_name || `#${transaction.bank_account_id}`}
+                        <span className="truncate">
+                          {transaction.bank_account_name || `#${transaction.bank_account_id}`}
+                        </span>
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">

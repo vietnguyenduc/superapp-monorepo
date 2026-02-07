@@ -387,6 +387,7 @@
     "transactionImportDescription": "Nhập dữ liệu giao dịch từ Google Sheets hoặc tệp Excel",
     "customerImport": "Nhập khách hàng",
     "customerImportDescription": "Nhập thông tin khách hàng từ Google Sheets hoặc tệp Excel",
+    "uploadCustomerData": "Nhập dữ liệu khách hàng",
     "uploadFile": "Tải lên tệp",
     "dragAndDrop": "Kéo và thả tệp vào đây, hoặc nhấp để chọn",
     "supportedFormats": "Định dạng hỗ trợ: Excel (.xlsx, .xls), CSV",

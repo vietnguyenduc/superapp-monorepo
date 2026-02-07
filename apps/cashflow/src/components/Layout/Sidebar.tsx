@@ -26,7 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       name: t("navigation.dashboard"),
       icon: (
         <svg
-          className="w-5 h-5"
+          className="w-6 h-6"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -51,7 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       name: t("navigation.customers"),
       icon: (
         <svg
-          className="w-5 h-5"
+          className="w-6 h-6"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -72,7 +72,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       name: t("navigation.transactions"),
       icon: (
         <svg
-          className="w-5 h-5"
+          className="w-6 h-6"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -93,7 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       name: t("navigation.settings"),
       icon: (
         <svg
-          className="w-5 h-5"
+          className="w-6 h-6"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -116,14 +116,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   ];
 
   return (
-    <div className="w-64 bg-white shadow-sm border-r border-gray-200 min-h-screen no-scrollbar overflow-y-auto">
+    <div className="w-80 bg-white dark:bg-gray-900 shadow-sm border-r border-gray-200 dark:border-gray-700 min-h-screen no-scrollbar overflow-y-auto">
       {/* Mobile close button */}
       {onClose && (
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 lg:hidden">
-          <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 lg:hidden">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Menu</h2>
           <button
             onClick={onClose}
-            className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+            className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
           >
             <span className="sr-only">Close menu</span>
             <svg
@@ -144,12 +144,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
         </div>
       )}
 
-      <div className="p-4">
+      <div className="p-5">
         <nav className="space-y-2">
           {menuItems.map((item) => (
             <div
               key={item.path}
-              className="flex items-center justify-between group"
+              className="flex items-center justify-between gap-3 group"
             >
               <a
                 href={item.path}
@@ -158,7 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                   navigate(item.path);
                   if (onClose) onClose();
                 }}
-                className={`flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors flex-1 ${
+                className={`flex items-center space-x-3 px-3 py-2.5 rounded-md text-base font-semibold transition-colors flex-1 ${
                   location.pathname === item.path
                     ? "bg-blue-50 text-blue-700 dark:bg-gray-700 dark:text-white"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white"
@@ -168,9 +168,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                 <span>{item.name}</span>
               </a>
               {item.hasAddButton && (
-                <div className="ml-2">
+                <div className="ml-2 flex-shrink-0">
                   <AddButton
-                    onClick={() => item.addAction?.()}
+                    onClick={() => {
+                      item.addAction?.();
+                      if (onClose) onClose();
+                    }}
                     title={t("common.add")}
                     showShine={item.path === "/transactions"}
                     variant={item.path === "/customers" ? "plain" : "default"}

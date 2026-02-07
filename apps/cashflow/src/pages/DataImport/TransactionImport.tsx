@@ -401,7 +401,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
 
   const handleReset = useCallback(() => {
     setTableData(
-      Array(5)
+      Array(1)
         .fill(null)
         .map(() => ({ ...emptyRow })),
     );
@@ -471,20 +471,20 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
 
     return (
       <div className="mt-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
           {t("import.dataPreview")} ({importData.data.length}{" "}
           {t("import.totalRows")})
         </h3>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 border border-gray-200">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700">
             {/* Render header: */}
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 {previewColumns.map((col: ImportField) => (
                   <th
                     key={col.key}
-                    className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                   >
                     {col.label}
                   </th>
@@ -492,16 +492,23 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
               </tr>
             </thead>
             {/* Render từng dòng: */}
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
               {importData.data.slice(0, 10).map((row, index) => {
                 const rowErrors = getErrorForRow(index);
                 const hasRowError = rowErrors.length > 0;
                 return (
-                  <tr key={index} className={hasRowError ? "bg-red-50" : ""}>
+                  <tr
+                    key={index}
+                    className={hasRowError ? "bg-red-50 dark:bg-red-900/30" : ""}
+                  >
                     {previewColumns.map((col: ImportField) => (
                       <td
                         key={col.key}
-                        className={`px-3 py-2 text-sm ${getErrorForCell(index, col.key) ? "bg-red-100" : ""}`}
+                        className={`px-3 py-2 text-sm text-gray-900 dark:text-gray-100 ${
+                          getErrorForCell(index, col.key)
+                            ? "bg-red-100 dark:bg-red-900/50"
+                            : ""
+                        }`}
                       >
                         {row[col.key] ?? "-"}
                       </td>
@@ -514,7 +521,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
         </div>
 
         {importData.data.length > 10 && (
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             {t("import.showingFirst10")} {importData.data.length}{" "}
             {t("import.totalRows")}
           </p>
@@ -668,7 +675,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
 
   if (isProcessing) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <LoadingFallback
             title={t("import.importing")}
@@ -681,21 +688,21 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white shadow rounded-lg">
+        <div className="bg-white dark:bg-gray-900 shadow rounded-lg border border-gray-200 dark:border-gray-800">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               {t("import.transactionImport")}
             </h1>
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
               {t("import.transactionImportDescription")}
             </p>
           </div>
 
           {/* Progress Steps */}
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-4">
               <div
                 className={`flex items-center ${currentStep >= 1 ? "text-blue-600" : "text-gray-400"}`}
@@ -704,12 +711,12 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                   className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
                     currentStep >= 1
                       ? "border-blue-600 bg-blue-600 text-white"
-                      : "border-gray-300"
+                      : "border-gray-300 dark:border-gray-600 text-gray-500"
                   }`}
                 >
                   1
                 </div>
-                <span className="ml-2 text-sm font-medium">
+                <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                   {t("import.step1")}
                 </span>
               </div>
@@ -721,12 +728,12 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                   className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
                     currentStep >= 2
                       ? "border-blue-600 bg-blue-600 text-white"
-                      : "border-gray-300"
+                      : "border-gray-300 dark:border-gray-600 text-gray-500"
                   }`}
                 >
                   2
                 </div>
-                <span className="ml-2 text-sm font-medium">
+                <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                   {t("import.step2")}
                 </span>
               </div>
@@ -738,12 +745,12 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                   className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
                     currentStep >= 3
                       ? "border-blue-600 bg-blue-600 text-white"
-                      : "border-gray-300"
+                      : "border-gray-300 dark:border-gray-600 text-gray-500"
                   }`}
                 >
                   3
                 </div>
-                <span className="ml-2 text-sm font-medium">
+                <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                   {t("import.step3")}
                 </span>
               </div>
@@ -751,13 +758,13 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
           </div>
 
           {/* Content */}
-          <div className="px-6 py-6">
+          <div className="px-6 py-6 bg-white dark:bg-gray-900">
             {/* Step 1: Data Input */}
             <div className="space-y-6">
               <div>
                 <label
                   htmlFor="rawData"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                 >
                   {t("import.pasteData")}
                 </label>
@@ -766,17 +773,17 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                   {tableData.map((row, rowIndex) => (
                     <div
                       key={`row-${rowIndex}`}
-                      className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                      className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm"
                     >
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-semibold text-gray-900">
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white">
                           Giao dịch {rowIndex + 1}
                         </span>
                       </div>
                       <div className="space-y-3">
                         {enabledFields.map((field: ImportField) => (
                           <div key={`${field.key}-${rowIndex}`}>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                               {field.label}
                               {field.required && <span className="text-red-500"> *</span>}
                             </label>
@@ -793,7 +800,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                                     return next;
                                   })
                                 }
-                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               >
                                 <option value="">Chọn</option>
                                 {(field.options || []).map((option) => (
@@ -816,7 +823,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                                     return next;
                                   })
                                 }
-                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
                             )}
                           </div>
@@ -850,11 +857,11 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                   />
                 </div>
                 <div className="mt-4">
-                  <h4 className="font-medium mb-2">Gợi ý nhập liệu:</h4>
+                  <h4 className="font-medium mb-2 text-gray-900 dark:text-white">Gợi ý nhập liệu:</h4>
                   <div className="space-y-2">
                     {importSamples.map((sample, idx) => (
                       <div key={idx} className="flex items-center space-x-2">
-                        <code className="bg-gray-100 px-2 py-1 rounded text-sm">
+                        <code className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 px-2 py-1 rounded text-sm">
                           {sample}
                         </code>
                         <Button
@@ -883,8 +890,8 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                       </div>
                     ))}
                   </div>
-                  <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-dashed border-gray-200 bg-gray-50 px-3 py-2">
-                    <p className="text-sm text-gray-600">
+                  <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-3 py-2">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
                       {t("import.downloadTemplateHint")}
                     </p>
                     <Button
@@ -897,7 +904,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                     </Button>
                   </div>
                 </div>
-                <p className="mt-2 text-sm text-gray-500">
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                   {t("import.pasteInstructions")}
                 </p>
               </div>
@@ -929,13 +936,13 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
             {showPreview && (
               <div className="mt-8 space-y-6">
                 {/* Validation Summary */}
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="bg-gray-50 dark:bg-gray-800/60 rounded-lg p-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white">
                         {importData.data.length}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
                         {t("import.totalRows")}
                       </div>
                     </div>
@@ -943,7 +950,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                       <div className="text-2xl font-bold text-green-600">
                         {importData.data.length - importData.errors.length}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
                         {t("import.validRows")}
                       </div>
                     </div>
@@ -951,8 +958,8 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                       <div className="text-2xl font-bold text-red-600">
                         {importData.errors.length}
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {t("import.invalidRows")}
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {t("import.errorRows")}
                       </div>
                     </div>
                   </div>

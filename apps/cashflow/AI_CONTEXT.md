@@ -2,7 +2,7 @@
 
 > **Purpose**: This file helps AI assistants (Claude, GPT, Copilot, etc.) understand the project context quickly. Update this file after significant changes.
 > 
-> **Last Updated**: 2026-02-05
+> **Last Updated**: 2026-02-07
 > **Updated By**: Development Team
 
 ---
@@ -219,6 +219,28 @@ git push origin viet
 ---
 
 ## �� Session Notes
+
+### Session 2026-02-07 (Afternoon)
+**Goal**: Dark mode cleanup, dashboard UI polish, settings actions, and language consistency
+**Changes Made**:
+- Fixed remaining dark mode white blocks across import, customer, dashboard, and settings UI
+- Increased chart contrast for CashFlowChart and BalanceByBankChart
+- Improved RecentTransactions layout (date emphasis, mobile alignment, spacing, and icons)
+- Implemented edit/delete for branches (offices) in Settings
+- Corrected branch percentage calculation to use total portfolio
+- Adjusted MetricsCard gradients/borders in dark mode
+- Added missing i18n key for customer import title
+- Widened sidebar + increased icon/text sizes and add button sizing/visibility
+
+**Lessons Learned / Guidance**:
+1. **Sidebar width sync**: Keep Layout sidebar container widths in sync with Sidebar width to avoid clipped add buttons.
+2. **Dark mode audits**: Scan all cards, tables, and modals for `bg-white` without `dark:` equivalents.
+3. **i18n gaps**: Missing translation keys show raw strings; add new keys to both `vi.json` and `en.json`.
+4. **Branch % logic**: Use totals across all offices when showing portfolio share (not per-office totals).
+
+**Next Steps**:
+1. Continue checking for untranslated strings in Vietnamese mode
+2. Review duplicate translation keys in `vi.json`/`en.json`
 
 ### Session 2026-02-05 (Morning)
 **Goal**: Mobile Optimization and Dark Mode Implementation

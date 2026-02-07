@@ -86,6 +86,15 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
     return branchMap[String(branchId)] || defaultBranchMap[String(branchId)] || "Văn phòng không xác định";
   };
 
+  const getCustomerTransactionsUrl = (transaction: Transaction) => {
+    const params = new URLSearchParams();
+    params.set("customer_id", transaction.customer_id);
+    if (transaction.customer_name) {
+      params.set("customer_name", transaction.customer_name);
+    }
+    return `/transactions?${params.toString()}`;
+  };
+
   if (!transactions || transactions.length === 0) {
     return (
       <div className="text-center py-8">
@@ -273,10 +282,10 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
             </thead>
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
               {displayTransactions.map((transaction) => (
-                <tr 
+                <tr
                   key={transaction.id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-                  onClick={() => navigate(`/transactions/${transaction.id}`)}
+                  onClick={() => navigate(getCustomerTransactionsUrl(transaction))}
                 >
                   <td className="px-3 py-3">
                     <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
@@ -298,7 +307,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                     </div>
                   </td>
                   <td className="px-3 py-3">
-                    <div className="text-sm text-gray-900 dark:text-white">
+                    <div className="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700/60 text-sm font-semibold text-gray-900 dark:text-white">
                       {formatDate(transaction.transaction_date)}
                     </div>
                   </td>
@@ -329,12 +338,12 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
         </div>
 
         {/* Mobile-optimized cards for very small screens */}
-        <div className="sm:hidden divide-y divide-gray-200 dark:divide-gray-800 bg-white dark:bg-gray-800">
+        <div className="sm:hidden bg-white dark:bg-gray-800">
           {displayTransactions.map((transaction) => (
             <div
               key={transaction.id}
-              className="p-3 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
-              onClick={() => navigate(`/transactions/${transaction.id}`)}
+              className="p-3 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors mb-3 last:mb-0 rounded-lg border border-gray-200/60 dark:border-gray-700"
+              onClick={() => navigate(getCustomerTransactionsUrl(transaction))}
             >
               {/* Top row: Description and Amount (Priority) */}
               <div className="flex justify-between items-start mb-3">
@@ -343,7 +352,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                     {formatDate(transaction.transaction_date)}
                   </div>
                 </div>
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 text-right">
                   <div
                     className={`text-base font-bold ${
                       transaction.transaction_type === "payment"
@@ -365,26 +374,29 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
 
               {/* Customer and Office Info */}
               <div className="mb-3 space-y-1">
-                <div className="text-xs text-gray-600 dark:text-white">
-                  <span className="font-medium">Khách hàng:</span> {transaction.customer_name ||
-                    t("dashboard.customerId", { id: transaction.customer_id })}
+                <div className="text-xs text-gray-600 dark:text-white flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A7 7 0 0112 14a7 7 0 016.879 3.804M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span className="font-medium">Khách hàng:</span>
+                  <span className="min-w-0 truncate">{transaction.customer_name ||
+                    t("dashboard.customerId", { id: transaction.customer_id })}</span>
                 </div>
-                <div className="text-xs text-gray-600 dark:text-white flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="text-xs text-gray-600 dark:text-white flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                   <span className="font-medium">Văn phòng:</span>
-                  <span>{getBranchName(transaction.branch_id)}</span>
+                  <span className="min-w-0 truncate">{getBranchName(transaction.branch_id)}</span>
                 </div>
               </div>
 
               {/* Bottom row: Bank account + Outstanding balance */}
               <div className="flex items-center justify-between text-xs text-gray-600 dark:text-white pt-2 border-t border-gray-100 dark:border-gray-700 gap-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
-                  <span className="font-medium">Tài khoản:</span>
                   <span className="truncate">{transaction.bank_account_name ||
                     t("dashboard.accountId", { id: transaction.bank_account_id })}</span>
                 </div>

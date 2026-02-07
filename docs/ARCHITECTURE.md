@@ -1,6 +1,6 @@
 # SuperApp Monorepo - Architecture Documentation
 
-> **Last Updated**: 2026-01-24
+> **Last Updated**: 2026-02-07
 
 ---
 
@@ -164,6 +164,11 @@ const { t } = useTranslation();
 return <h1>{t("dashboard.title")}</h1>;
 ```
 
+### Consistency Rules
+- Always add new keys to **both** `vi.json` and `en.json`.
+- Missing keys will render the raw key string in UI; confirm in Vietnamese mode.
+- Avoid hardcoded Vietnamese in components; prefer `t("...")`.
+
 ---
 
 ## 📊 Dashboard Components
@@ -182,6 +187,21 @@ return <h1>{t("dashboard.title")}</h1>;
 
 ### BalanceByBankChart
 - **Purpose**: Show balance distribution across bank accounts
+
+---
+
+## 🧭 Layout & UI Guidelines
+
+### Sidebar + Layout Widths
+- Sidebar width is defined in `Layout.tsx` and `Sidebar.tsx`; keep them aligned to avoid clipped actions.
+- If updating `Sidebar` width, update:
+  - Desktop container width in `Layout.tsx`
+  - Mobile slide-over width in `Layout.tsx`
+  - Sidebar root width in `Sidebar.tsx`
+
+### Dark Mode Hygiene
+- Any `bg-white`/light background must include a `dark:` variant.
+- Check dashboard cards, tables, modals, and import pages for white blocks in dark mode.
 
 ---
 

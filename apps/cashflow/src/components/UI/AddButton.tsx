@@ -18,8 +18,8 @@ const AddButton: React.FC<AddButtonProps> = ({
 }) => {
   const baseClass =
     variant === "plain"
-      ? "w-6 h-6 rounded-full flex items-center justify-center text-lg font-bold shadow-sm hover:shadow-md transition-all duration-200 ease-in-out hover:scale-105 border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-800 focus:outline-none focus:ring-0"
-      : appleTheme.getButtonClass("icon");
+      ? "w-8 h-8 min-w-[2rem] min-h-[2rem] flex-shrink-0 rounded-full flex items-center justify-center text-base font-bold shadow-sm hover:shadow-md transition-all duration-200 ease-in-out hover:scale-105 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-0"
+      : `${appleTheme.getButtonClass("icon")} w-9 h-9 min-w-[2.25rem] min-h-[2.25rem] flex-shrink-0 text-base`;
 
   const shineClass = showShine ? "shine-effect" : "";
 

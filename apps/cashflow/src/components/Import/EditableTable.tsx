@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { ImportError } from "../../types";
+import type { ImportError } from "../../types";
 
 interface EditableTableProps {
   data: any[];
@@ -198,7 +198,9 @@ const EditableTable: React.FC<EditableTableProps> = ({
       const hasError = !!error;
 
       const cellClasses = `px-3 py-2 text-sm border ${
-        hasError ? "bg-red-100 border-red-300" : "bg-white border-gray-300"
+        hasError
+          ? "bg-red-100 dark:bg-red-900/40 border-red-300 dark:border-red-700"
+          : "bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white"
       } ${isEditing ? "ring-2 ring-blue-500" : ""}`;
 
       if (isEditing) {
@@ -295,18 +297,18 @@ const EditableTable: React.FC<EditableTableProps> = ({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto border border-gray-200 rounded-lg">
+      <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
         <table
           ref={tableRef}
-          className="min-w-full divide-y divide-gray-200"
+          className="min-w-full divide-y divide-gray-200 dark:divide-gray-700"
           onPaste={handlePaste}
         >
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                 >
                   {column.label}
                   {column.required && (
@@ -314,18 +316,21 @@ const EditableTable: React.FC<EditableTableProps> = ({
                   )}
                 </th>
               ))}
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">
                 {t("common.actions")}
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {data.map((row, rowIndex) => {
               const rowErrors = getErrorForRow(rowIndex);
               const hasRowError = rowErrors.length > 0;
 
               return (
-                <tr key={rowIndex} className={hasRowError ? "bg-red-50" : ""}>
+                <tr
+                  key={rowIndex}
+                  className={hasRowError ? "bg-red-50 dark:bg-red-900/30" : ""}
+                >
                   {columns.map((column) => (
                     <td key={column.key} className="p-0">
                       {renderCell(

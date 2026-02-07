@@ -297,6 +297,7 @@
     "transactionImport": "Import Transactions",
     "transactionImportDescription": "Import transaction data from Google Sheets or Excel files",
     "customerImport": "Import Customers",
+    "uploadCustomerData": "Upload Customer Data",
     "uploadFile": "Upload File",
     "dragAndDrop": "Drag and drop files here, or click to select",
     "supportedFormats": "Supported formats: Excel (.xlsx, .xls), CSV",
