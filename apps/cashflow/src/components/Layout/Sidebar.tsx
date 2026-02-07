@@ -160,8 +160,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                 }}
                 className={`flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors flex-1 ${
                   location.pathname === item.path
-                    ? "bg-primary-100 text-primary-700"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    ? "bg-blue-50 text-blue-700 dark:bg-gray-700 dark:text-white"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-white"
                 }`}
               >
                 {item.icon}

@@ -95,7 +95,7 @@ const CustomerDetail: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <button
               onClick={() => navigate("/customers")}
@@ -116,19 +116,12 @@ const CustomerDetail: React.FC = () => {
               </svg>
               Quay lại
             </button>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mt-4">
               {customer.full_name}
             </h1>
-            <p className="text-gray-600 mt-1">{customer.customer_code}</p>
+            <p className="text-gray-600 dark:text-gray-300 mt-1">{customer.customer_code}</p>
           </div>
           <div className="flex space-x-3">
-            <Button
-              variant="secondary"
-              size="md"
-              onClick={() => navigate("/customers")}
-            >
-              {t("common.back")}
-            </Button>
             <Button
               variant="primary"
               size="md"
@@ -144,56 +137,56 @@ const CustomerDetail: React.FC = () => {
         {/* Customer Information */}
         <div className="lg:col-span-1">
           <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
               Thông tin khách hàng
             </h2>
 
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                   Mã khách hàng
                 </label>
-                <p className="text-sm text-gray-900">
+                <p className="text-sm text-gray-900 dark:text-white">
                   {customer.customer_code}
                 </p>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-500">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                   Họ và tên
                 </label>
-                <p className="text-sm text-gray-900">{customer.full_name}</p>
+                <p className="text-sm text-gray-900 dark:text-white">{customer.full_name}</p>
               </div>
 
               {customer.phone && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     Số điện thoại
                   </label>
-                  <p className="text-sm text-gray-900">{customer.phone}</p>
+                  <p className="text-sm text-gray-900 dark:text-white">{customer.phone}</p>
                 </div>
               )}
 
               {customer.email && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     Email
                   </label>
-                  <p className="text-sm text-gray-900">{customer.email}</p>
+                  <p className="text-sm text-gray-900 dark:text-white">{customer.email}</p>
                 </div>
               )}
 
               {customer.address && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     Địa chỉ
                   </label>
-                  <p className="text-sm text-gray-900">{customer.address}</p>
+                  <p className="text-sm text-gray-900 dark:text-white">{customer.address}</p>
                 </div>
               )}
 
               <div>
-                <label className="text-sm font-medium text-gray-500">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                   Trạng thái
                 </label>
                 <span
@@ -208,95 +201,33 @@ const CustomerDetail: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-500">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                   Ngày tạo
                 </label>
-                <p className="text-sm text-gray-900">
+                <p className="text-sm text-gray-900 dark:text-white">
                   {formatDate(customer.created_at)}
                 </p>
               </div>
 
               {customer.last_transaction_date && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     Giao dịch cuối
                   </label>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-sm text-gray-900 dark:text-white">
                     {formatDate(customer.last_transaction_date)}
                   </p>
                 </div>
               )}
             </div>
           </div>
+
         </div>
-
-        {/* Financial Summary */}
+        {/* Transaction History */}
         <div className="lg:col-span-2">
-          <div className="bg-white shadow rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">
-              Tóm tắt tài chính
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="text-center">
-                <p className="text-sm font-medium text-gray-500">
-                  Công nợ hiện tại
-                </p>
-                <p
-                  className={`text-2xl font-bold ${
-                    customer.total_balance >= 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {formatCurrency(customer.total_balance)}
-                </p>
-              </div>
-
-              <div className="text-center">
-                <p className="text-sm font-medium text-gray-500">
-                  Tổng số tiền mua hàng
-                </p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(
-                    transactions
-                      .filter((t) => t.transaction_type === "charge")
-                      .reduce((sum, t) => sum + Math.abs(t.amount), 0),
-                  )}
-                </p>
-              </div>
-
-              <div className="text-center">
-                <p className="text-sm font-medium text-gray-500">
-                  Tổng giao dịch
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {transactions.length}
-                </p>
-              </div>
-
-              <div className="text-center">
-                <p className="text-sm font-medium text-gray-500">
-                  Giao dịch trung bình
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {transactions.length > 0
-                    ? formatCurrency(
-                        transactions.reduce(
-                          (sum, t) => sum + Math.abs(t.amount),
-                          0,
-                        ) / transactions.length,
-                      )
-                    : formatCurrency(0)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Transaction History */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900">
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-600">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">
                 Lịch sử giao dịch
               </h2>
             </div>
@@ -304,64 +235,56 @@ const CustomerDetail: React.FC = () => {
             <div className="overflow-x-auto">
               {transactions.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Không có giao dịch nào</p>
+                  <p className="text-gray-500 dark:text-gray-400">Không có giao dịch nào</p>
                 </div>
               ) : (
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Ngày
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Loại
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Số tiền
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Mô tả
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Số tham chiếu
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Văn phòng
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
                     {transactions.map((transaction) => (
-                      <tr key={transaction.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                           {formatDate(transaction.transaction_date)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              transaction.transaction_type === "payment"
+                              transaction.transaction_type === "Thanh toán"
                                 ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
+                                : transaction.transaction_type === "Cho nợ"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
                             }`}
                           >
-                            {transaction.transaction_type === "payment"
-                              ? "Tiền vào"
-                              : "Tiền ra"}
+                            {transaction.transaction_type}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <span
-                            className={
-                              transaction.transaction_type === "payment"
-                                ? "text-green-600"
-                                : "text-red-600"
-                            }
-                          >
-                            {formatCurrency(Math.abs(transaction.amount))}
-                          </span>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          {formatCurrency(transaction.amount)}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
+                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                           {transaction.description || "-"}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {transaction.reference_number || "-"}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          {transaction.branch_name || "-"}
                         </td>
                       </tr>
                     ))}

@@ -15,6 +15,13 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
   size = "md",
   className = "",
 }) => {
+  const handleClick = () => {
+    if (!disabled) {
+      console.log('ToggleSwitch clicked, current state:', checked, 'new state:', !checked);
+      onChange(!checked);
+    }
+  };
+
   const sizeClasses = {
     sm: "w-8 h-4",
     md: "w-11 h-6",
@@ -39,7 +46,7 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
       role="switch"
       aria-checked={checked}
       disabled={disabled}
-      onClick={() => !disabled && onChange(!checked)}
+      onClick={handleClick}
       className={`
         relative inline-flex items-center justify-center
         ${sizeClasses[size]}
@@ -48,8 +55,8 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
         ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}
         ${
           checked
-            ? "bg-green-500 hover:bg-green-600"
-            : "bg-gray-200 hover:bg-gray-300"
+            ? "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700"
+            : "bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500"
         }
         ${className}
       `}
@@ -59,7 +66,7 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
         className={`
           ${knobSizeClasses[size]}
           ${knobTranslateClasses[size]}
-          bg-white rounded-full shadow-lg
+          bg-white dark:bg-gray-200 rounded-full shadow-lg
           transition-transform duration-300 ease-in-out
           transform
         `}
@@ -67,7 +74,7 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
 
       {/* Ripple effect on click */}
       {checked && (
-        <div className="absolute inset-0 rounded-full bg-green-400 opacity-0 animate-ping" />
+        <div className="absolute inset-0 rounded-full bg-green-400 opacity-0 animate-ping dark:bg-green-300" />
       )}
     </button>
   );

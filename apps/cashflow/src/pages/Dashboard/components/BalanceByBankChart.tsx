@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   BarChart,
@@ -30,6 +30,21 @@ interface BalanceByBankChartProps {
 
 const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
   const { t } = useTranslation();
+  const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
+
+  // Update screen size on mount and resize
+  useEffect(() => {
+    const updateScreenSize = () => {
+      const width = window.innerWidth;
+      if (width < 768) setScreenSize('mobile');
+      else if (width < 1024) setScreenSize('tablet');
+      else setScreenSize('desktop');
+    };
+
+    updateScreenSize();
+    window.addEventListener('resize', updateScreenSize);
+    return () => window.removeEventListener('resize', updateScreenSize);
+  }, []);
 
   if (!data || data.length === 0) {
     return (
@@ -82,17 +97,17 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
       }));
       
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg" style={{ width: '220px' }}>
-          <p className="text-sm font-medium text-gray-900">{tooltipData.name || ''}</p>
-          <p className="text-xs text-gray-500">
+        <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg" style={{ width: '220px' }}>
+          <p className="text-sm font-medium text-gray-900 dark:text-white">{tooltipData.name || ''}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             {t("dashboard.accountNumber")}: {tooltipData.accountNumber || ''}
           </p>
-          <p className={`text-sm font-bold ${value >= 0 ? "text-green-600" : "text-red-600"}`}>
+          <p className={`text-sm font-bold ${value >= 0 ? "text-green-600 dark:text-green-300" : "text-red-600 dark:text-red-300"}`}>
             {t("dashboard.balance")}: {formatCurrency(value)}
           </p>
-          <div className="mt-2 pt-2 border-t border-gray-200">
-            <p className="text-xs font-medium text-gray-700 mb-1">
-              {t("dashboard.trend")}: <span className={trendChange >= 0 ? "text-green-600" : "text-red-600"}>
+          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+            <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {t("dashboard.trend")}: <span className={trendChange >= 0 ? "text-green-600 dark:text-green-300" : "text-red-600 dark:text-red-300"}>
                 {trendChange >= 0 ? '▲' : '▼'} {Math.abs(trendChange).toFixed(1)}%
               </span>
             </p>
@@ -154,40 +169,61 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
     const accountNumber = String(tickData.accountNumber || "");
     const last4 = accountNumber.length >= 4 ? accountNumber.slice(-4) : accountNumber;
     
-    // Truncate text if needed (keep more characters for readability)
-    const maxBankNameChars = chartData.length > 6 ? 14 : 18;
-    const maxAccountTypeChars = chartData.length > 6 ? 12 : 14;
+    // Responsive sizing based on screen size and data count
+    const hasManyBanks = chartData.length > 6;
+    
+    // Dynamic character limits based on screen size and data count
+    let maxBankNameChars, maxAccountTypeChars, fontSize;
+    
+    if (screenSize === 'mobile') {
+      maxBankNameChars = hasManyBanks ? 6 : 8;
+      maxAccountTypeChars = hasManyBanks ? 4 : 6;
+      fontSize = 10;
+    } else if (screenSize === 'tablet') {
+      maxBankNameChars = hasManyBanks ? 8 : 10;
+      maxAccountTypeChars = hasManyBanks ? 6 : 8;
+      fontSize = 9;
+    } else {
+      maxBankNameChars = hasManyBanks ? 10 : 12;
+      maxAccountTypeChars = hasManyBanks ? 8 : 10;
+      fontSize = 10;
+    }
     
     const displayBankName = bankName.length > maxBankNameChars ? 
-      bankName.substring(0, maxBankNameChars - 2) + '...' : bankName;
+      bankName.substring(0, maxBankNameChars - 1) + '.' : bankName;
     
     const displayAccountType = accountType.length > maxAccountTypeChars ? 
-      accountType.substring(0, maxAccountTypeChars - 2) + '...' : accountType;
+      accountType.substring(0, maxAccountTypeChars - 1) + '.' : accountType;
 
-    const secondaryLabel = accountType ? `${displayAccountType}${last4 ? ` • ${last4}` : ""}` : last4;
+    // Always show account type on desktop, be more selective on mobile
+    let secondaryLabel = '';
+    if (screenSize !== 'mobile' || !hasManyBanks) {
+      secondaryLabel = accountType ? `${displayAccountType}${last4 ? ` • ${last4}` : ""}` : last4;
+    } else if (screenSize === 'mobile' && !hasManyBanks) {
+      secondaryLabel = last4;
+    }
     
     return (
-      <g transform={`translate(${x}, ${y + 8}) rotate(-32)`}>
+      <g transform={`translate(${x}, ${y + 6}) rotate(-45)`}>
         {/* Bank name */}
         <text
           x={0}
           y={0}
           textAnchor="end"
           fill="#111827"
-          fontSize={chartData.length > 6 ? 11 : 12}
+          fontSize={fontSize}
           fontWeight={600}
         >
           {displayBankName}
         </text>
-
-        {/* Account type / last4 */}
+        {/* Account type and number */}
         {secondaryLabel && (
           <text
             x={0}
-            y={14}
+            y={fontSize + 2}
             textAnchor="end"
-            fill="#4b5563"
-            fontSize={chartData.length > 6 ? 10 : 11}
+            fill="#6B7280"
+            fontSize={fontSize - 1}
             fontWeight={500}
           >
             {secondaryLabel}
@@ -197,42 +233,75 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
     );
   };
 
+  // Responsive chart configuration
+  const getChartConfig = () => {
+    switch (screenSize) {
+      case 'mobile':
+        return {
+          height: 'h-80',
+          margin: { top: 40, right: 5, left: 5, bottom: 60 },
+          xAxisHeight: 80,
+          barSize: 30,
+          barGap: '8%',
+          labelFontSize: '9px',
+          tickFontSize: 10,
+          yWidth: 30,
+        };
+      case 'tablet':
+        return {
+          height: 'h-96',
+          margin: { top: 40, right: 8, left: 8, bottom: 70 },
+          xAxisHeight: 90,
+          barSize: 35,
+          barGap: '9%',
+          labelFontSize: '9px',
+          tickFontSize: 10,
+          yWidth: 32,
+        };
+      default:
+        return {
+          height: 'lg:h-[400px] xl:h-[450px]',
+          margin: { top: 40, right: 10, left: 10, bottom: 80 },
+          xAxisHeight: 100,
+          barSize: 40,
+          barGap: '10%',
+          labelFontSize: '10px',
+          tickFontSize: 11,
+          yWidth: 35,
+        };
+    }
+  };
+
+  const chartConfig = getChartConfig();
+
   return (
-    <div className="w-full h-96"> {/* Increased height to match CashFlowChart */}
+    <div className={`w-full ${chartConfig.height}`}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={chartData}
-          margin={{ top: 20, right: 10, left: 10, bottom: 24 }}
+          margin={chartConfig.margin}
           barGap={0}
-          barCategoryGap={"15%"} // Adjust space between bars to use more width for better readability
+          barCategoryGap={chartConfig.barGap}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
           <XAxis
             dataKey="name"
-            height={64}
+            height={chartConfig.xAxisHeight}
             interval={0}
             tickLine={false}
             axisLine={{ stroke: '#E5E7EB' }}
             tick={renderXAxisTick}
           />
           <YAxis
-            tick={{ fontSize: 12, fontWeight: 500 }}
+            tick={{ fontSize: chartConfig.tickFontSize, fontWeight: 500 }}
             tickFormatter={(value) => {
               // Clean, rounded Y-axis labels
               const absValue = Math.abs(value / 1000000);
               if (absValue === 0) return '0';
               return absValue < 1 ? `${(absValue * 1000).toFixed(0)}K` : `${Math.round(absValue)}M`;
             }}
-            width={50}
-            tickCount={5}
-            label={{ 
-              value: t("dashboard.balance") + " (VND)", 
-              angle: -90, 
-              position: "insideLeft",
-              fontSize: 12,
-              fill: "#666",
-              offset: 0
-            }}
+            width={chartConfig.yWidth}
+            tickCount={4}
           />
           <Tooltip content={<CustomTooltip />} />
           
@@ -241,15 +310,20 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
             dataKey="balance" 
             name={t("dashboard.currentBalance")}
             shape={<CustomBar />}
-            barSize={60} // Increase bar width to use more space
+            barSize={chartConfig.barSize}
           >
             <LabelList
               dataKey="balance"
               position="top"
-              formatter={(value: number) => Math.round(value).toLocaleString("vi-VN")}
+              formatter={(value: number) => {
+                const absValue = Math.abs(value / 1000000);
+                if (absValue === 0) return '0';
+                return absValue < 1 ? `${(absValue * 1000).toFixed(0)}K` : `${Math.round(absValue)}M`;
+              }}
               style={{
-                fontSize: "11px",
-                fontWeight: "500",
+                fontSize: chartConfig.labelFontSize,
+                fontWeight: "600",
+                fill: "#374151"
               }}
             />
           </Bar>

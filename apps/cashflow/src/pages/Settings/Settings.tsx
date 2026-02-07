@@ -4,13 +4,17 @@ import ToggleSwitch from "../../components/UI/ToggleSwitch";
 import Button from "../../components/UI/Button";
 import PageHeader from "../../components/UI/PageHeader";
 import { databaseService } from "../../services/database";
-import { formatCurrency } from "../../utils/formatting";
+
+interface Tab {
+  id: string;
+  name: string;
+  icon: string;
+}
 
 interface TransactionType {
   id: string;
   name: string;
   color: string;
-  description: string;
   isActive: boolean;
 }
 
@@ -35,29 +39,62 @@ interface Branch {
 interface CustomerField {
   id: string;
   name: string;
-  type: "text" | "email" | "phone" | "select" | "textarea";
-  required: boolean;
+  type: string;
+  isRequired: boolean;
   isActive: boolean;
-  options?: string[];
 }
 
-// Định nghĩa type ImportField ở đầu file nếu chưa có:
-type ImportField = {
-  key: string;
-  label: string;
-  type: string;
-  required: boolean;
-  enabled: boolean;
-  optionSource?: string;
-  options?: string[];
-};
+const colorOptions = [
+  { value: "blue", class: "bg-blue-100 text-blue-800" },
+  { value: "green", class: "bg-green-100 text-green-800" },
+  { value: "yellow", class: "bg-yellow-100 text-yellow-800" },
+  { value: "red", class: "bg-red-100 text-red-800" },
+  { value: "purple", class: "bg-purple-100 text-purple-800" },
+];
 
 const Settings: React.FC = () => {
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
+  const [activeTab, setActiveTab] = useState("appearance");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("transaction-types");
-  const [_loading, setLoading] = useState(false);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [transactionTypes, setTransactionTypes] = useState<TransactionType[]>([
+    { id: "1", name: "Thanh toán", color: "green", isActive: true },
+    { id: "2", name: "Cho nợ", color: "red", isActive: true },
+    { id: "3", name: "Điều chỉnh", color: "yellow", isActive: true },
+    { id: "4", name: "Hoàn tiền", color: "blue", isActive: true },
+  ]);
+  const [customerFields, setCustomerFields] = useState<CustomerField[]>([
+    { id: "1", name: "Họ và tên", type: "text", isRequired: true, isActive: true },
+    { id: "2", name: "Email", type: "email", isRequired: false, isActive: true },
+    { id: "3", name: "Số điện thoại", type: "tel", isRequired: true, isActive: true },
+    { id: "4", name: "Địa chỉ", type: "text", isRequired: false, isActive: true },
+  ]);
+
+  // Apply dark mode to document
+  useEffect(() => {
+    console.log('Dark mode changed to:', darkMode);
+    console.log('Current document classes:', document.documentElement.className);
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      console.log('Added dark class to document');
+      // Force a re-render to ensure styles are applied
+      document.body.style.backgroundColor = '#111827';
+      document.body.style.color = '#f3f4f6';
+    } else {
+      document.documentElement.classList.remove('dark');
+      console.log('Removed dark class from document');
+      // Force a re-render to ensure styles are applied
+      document.body.style.backgroundColor = '#ffffff';
+      document.body.style.color = '#213547';
+    }
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+    console.log('Saved dark mode to localStorage:', darkMode);
+  }, [darkMode]);
 
   // Load data from database service
   useEffect(() => {
@@ -70,16 +107,15 @@ const Settings: React.FC = () => {
           throw new Error(bankAccountsResponse.error);
         }
 
-        const formattedBankAccounts =
-          bankAccountsResponse.data?.map((account: any) => ({
-            id: account.id,
-            bankName: account.bank_name,
-            accountNumber: account.account_number,
-            accountType: getAccountType(account.account_name),
-            accountName: account.account_name,
-            balance: account.balance,
-            isActive: account.is_active,
-          })) || [];
+        const formattedBankAccounts = bankAccountsResponse.data?.map((account: any) => ({
+          id: account.id,
+          bankName: account.bank_name,
+          accountNumber: account.account_number,
+          accountType: getAccountType(account.account_name),
+          accountName: account.account_name,
+          balance: account.balance,
+          isActive: account.is_active,
+        })) || [];
 
         setBankAccounts(formattedBankAccounts);
 
@@ -89,23 +125,17 @@ const Settings: React.FC = () => {
           throw new Error(branchesResponse.error);
         }
 
-        const formattedBranches =
-          branchesResponse.data?.map((branch: any) => ({
-            id: branch.id,
-            name: branch.name,
-            address: branch.address,
-            phone: branch.phone,
-            isActive: branch.is_active,
-          })) || [];
+        const formattedBranches = branchesResponse.data?.map((branch: any) => ({
+          id: branch.id,
+          name: branch.name,
+          address: branch.address,
+          phone: branch.phone,
+          isActive: branch.is_active,
+        })) || [];
 
         setBranches(formattedBranches);
-        localStorage.setItem(
-          "bankAccounts",
-          JSON.stringify(formattedBankAccounts),
-        );
-        localStorage.setItem("branches", JSON.stringify(formattedBranches));
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Lỗi khi tải dữ liệu");
+        setError(err instanceof Error ? err.message : "Failed to load settings");
       } finally {
         setLoading(false);
       }
@@ -114,250 +144,18 @@ const Settings: React.FC = () => {
     loadData();
   }, []);
 
-  // Helper function to determine account type based on account name
+  // Helper function to get account type from account name
   const getAccountType = (accountName: string): string => {
-    if (accountName.includes("chính")) return "TK Chính";
-    if (accountName.includes("thanh toán")) return "TK Thanh toán";
-    if (accountName.includes("tiết kiệm")) return "TK Tiết kiệm";
-    if (accountName.includes("vốn lưu động")) return "TK Vốn lưu động";
-    if (accountName.includes("dự phòng")) return "TK Dự phòng";
-    return "TK Khác";
+    if (accountName.toLowerCase().includes("checking")) return "Checking";
+    if (accountName.toLowerCase().includes("savings")) return "Savings";
+    if (accountName.toLowerCase().includes("business")) return "Business";
+    if (accountName.toLowerCase().includes("credit")) return "Credit";
+    return "Other";
   };
 
-  // Transaction Types
-  const [transactionTypes, setTransactionTypes] = useState<TransactionType[]>([
-    {
-      id: "1",
-      name: "Thanh toán",
-      color: "green",
-      description: "Khách hàng thanh toán nợ",
-      isActive: true,
-    },
-    {
-      id: "2",
-      name: "Cho nợ",
-      color: "red",
-      description: "Cho khách hàng vay tiền",
-      isActive: true,
-    },
-    {
-      id: "3",
-      name: "Điều chỉnh",
-      color: "yellow",
-      description: "Điều chỉnh số dư",
-      isActive: true,
-    },
-    {
-      id: "4",
-      name: "Hoàn tiền",
-      color: "blue",
-      description: "Hoàn tiền cho khách hàng",
-      isActive: true,
-    },
-  ]);
-
-  // Customer Fields
-  const [customerFields, setCustomerFields] = useState<CustomerField[]>([
-    {
-      id: "1",
-      name: "Mã khách hàng",
-      type: "text",
-      required: true,
-      isActive: true,
-    },
-    {
-      id: "2",
-      name: "Họ và tên",
-      type: "text",
-      required: true,
-      isActive: true,
-    },
-    { id: "3", name: "Email", type: "email", required: false, isActive: true },
-    {
-      id: "4",
-      name: "Số điện thoại",
-      type: "phone",
-      required: false,
-      isActive: true,
-    },
-    {
-      id: "5",
-      name: "Địa chỉ",
-      type: "textarea",
-      required: false,
-      isActive: true,
-    },
-    {
-      id: "6",
-      name: "Loại khách hàng",
-      type: "select",
-      required: false,
-      isActive: true,
-      options: ["Cá nhân", "Doanh nghiệp", "Tổ chức"],
-    },
-  ]);
-
-  // Thêm vào mảng tabs:
-  const tabs = [
-    { id: "transaction-types", name: "Loại giao dịch", icon: "📊" },
-    { id: "bank-accounts", name: "Tài khoản ngân hàng", icon: "🏦" },
-    { id: "branches", name: "Văn phòng", icon: "🏢" },
-    { id: "customer-fields", name: "Trường khách hàng", icon: "👥" },
-    { id: "import-fields", name: "Cài đặt trường import", icon: "📝" },
-  ];
-
-  // Thêm state và logic lưu cấu hình vào localStorage:
-  const defaultImportFields = [
-    {
-      key: "customer_name",
-      label: "Tên khách hàng",
-      type: "text",
-      required: true,
-      enabled: true,
-    },
-    {
-      key: "bank_account",
-      label: "Số tài khoản ngân hàng",
-      type: "bank-select",
-      required: false,
-      enabled: true,
-    },
-    {
-      key: "branch",
-      label: "Văn phòng",
-      type: "branch-select",
-      required: false,
-      enabled: true,
-    },
-    {
-      key: "transaction_type",
-      label: "Loại giao dịch",
-      type: "select",
-      required: true,
-      enabled: true,
-    },
-    {
-      key: "amount",
-      label: "Số tiền",
-      type: "number",
-      required: true,
-      enabled: true,
-    },
-    {
-      key: "transaction_date",
-      label: "Ngày giao dịch",
-      type: "date",
-      required: true,
-      enabled: true,
-    },
-    {
-      key: "document_number",
-      label: "Số chứng từ",
-      type: "document-number",
-      required: false,
-      enabled: true,
-    },
-    {
-      key: "description",
-      label: "Nội dung",
-      type: "text",
-      required: false,
-      enabled: true,
-    },
-  ];
-  // Cập nhật logic khởi tạo importFields:
-  const [importFields, setImportFields] = useState(() => {
-    const saved = localStorage.getItem("importFields");
-    let fields = saved ? JSON.parse(saved) : [];
-    // Merge các trường mẫu mới nếu thiếu
-    defaultImportFields.forEach((def: ImportField) => {
-      if (!fields.some((f: ImportField) => f.key === def.key)) {
-        fields.push(def);
-      }
-    });
-    if (fields.length === 0) fields = defaultImportFields;
-    localStorage.setItem("importFields", JSON.stringify(fields));
-    return fields;
-  });
-  // Bổ sung vào fieldTypes:
-  const fieldTypes = [
-    { value: "text", label: "Text" },
-    { value: "number", label: "Number" },
-    { value: "date", label: "Date" },
-    { value: "select", label: "Select" },
-    { value: "document-number", label: "Số chứng từ" },
-  ];
-  const handleFieldChange = (idx: number, prop: string, value: any) => {
-    setImportFields((fields: ImportField[]) => {
-      const updated = fields.map((f: ImportField, i: number) =>
-        i === idx ? { ...f, [prop]: value } : f,
-      );
-      localStorage.setItem("importFields", JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  // Thêm hàm di chuyển trường lên/xuống:
-  const moveField = (idx: number, direction: "up" | "down") => {
-    setImportFields((fields: ImportField[]) => {
-      const newFields = [...fields];
-      if (direction === "up" && idx > 0) {
-        [newFields[idx - 1], newFields[idx]] = [
-          newFields[idx],
-          newFields[idx - 1],
-        ];
-      }
-      if (direction === "down" && idx < newFields.length - 1) {
-        [newFields[idx], newFields[idx + 1]] = [
-          newFields[idx + 1],
-          newFields[idx],
-        ];
-      }
-      localStorage.setItem("importFields", JSON.stringify(newFields));
-      return newFields;
-    });
-  };
-  // Thêm hàm xóa trường:
-  const removeField = (idx: number) => {
-    setImportFields((fields: ImportField[]) => {
-      const newFields = fields.filter((_: ImportField, i: number) => i !== idx);
-      localStorage.setItem("importFields", JSON.stringify(newFields));
-      return newFields;
-    });
-  };
-  // Thêm state cho form thêm trường mới:
-  const [showAddField, setShowAddField] = useState(false);
-  const [newField, setNewField] = useState({
-    label: "",
-    type: "text",
-    required: false,
-    enabled: true,
-  });
-  const handleAddField = () => {
-    if (!newField.label.trim()) return;
-    setImportFields((fields: ImportField[]) => {
-      const updated = [...fields, { ...newField, key: Date.now().toString() }];
-      localStorage.setItem("importFields", JSON.stringify(updated));
-      return updated;
-    });
-    setShowAddField(false);
-    setNewField({ label: "", type: "text", required: false, enabled: true });
-  };
-
-  // Color options for transaction types
-  const colorOptions = [
-    { value: "green", label: "Xanh lá", class: "bg-green-100 text-green-800" },
-    { value: "red", label: "Đỏ", class: "bg-red-100 text-red-800" },
-    { value: "blue", label: "Xanh dương", class: "bg-blue-100 text-blue-800" },
-    { value: "yellow", label: "Vàng", class: "bg-yellow-100 text-yellow-800" },
-    { value: "purple", label: "Tím", class: "bg-purple-100 text-purple-800" },
-    { value: "gray", label: "Xám", class: "bg-gray-100 text-gray-800" },
-  ];
-
+  // Helper function to get color class for transaction type
   const getColorClass = (color: string) => {
-    const colorOption = colorOptions.find(
-      (opt: { value: string }) => opt.value === color,
-    );
+    const colorOption = colorOptions.find((opt) => opt.value === color);
     return colorOption?.class || "bg-gray-100 text-gray-800";
   };
 
@@ -365,30 +163,30 @@ const Settings: React.FC = () => {
     switch (type) {
       case "transaction-type":
         setTransactionTypes((prev) =>
-          prev.map((item: TransactionType) =>
-            item.id === id ? { ...item, isActive: !item.isActive } : item,
-          ),
+          prev.map((item) =>
+            item.id === id ? { ...item, isActive: !item.isActive } : item
+          )
         );
         break;
       case "bank-account":
         setBankAccounts((prev) =>
-          prev.map((item: BankAccount) =>
-            item.id === id ? { ...item, isActive: !item.isActive } : item,
-          ),
+          prev.map((item) =>
+            item.id === id ? { ...item, isActive: !item.isActive } : item
+          )
         );
         break;
       case "branch":
         setBranches((prev) =>
-          prev.map((item: Branch) =>
-            item.id === id ? { ...item, isActive: !item.isActive } : item,
-          ),
+          prev.map((item) =>
+            item.id === id ? { ...item, isActive: !item.isActive } : item
+          )
         );
         break;
       case "customer-field":
         setCustomerFields((prev) =>
-          prev.map((item: CustomerField) =>
-            item.id === id ? { ...item, isActive: !item.isActive } : item,
-          ),
+          prev.map((item) =>
+            item.id === id ? { ...item, isActive: !item.isActive } : item
+          )
         );
         break;
     }
@@ -396,7 +194,7 @@ const Settings: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ErrorFallback
             title="Lỗi cấu hình"
@@ -408,8 +206,17 @@ const Settings: React.FC = () => {
     );
   }
 
+  const tabs: Tab[] = [
+    { id: "appearance", name: "Giao diện", icon: "🎨" },
+    { id: "transaction-types", name: "Loại giao dịch", icon: "💳" },
+    { id: "bank-accounts", name: "Tài khoản ngân hàng", icon: "🏦" },
+    { id: "branches", name: "Văn phòng", icon: "🏢" },
+    { id: "customer-fields", name: "Trường khách hàng", icon: "�" },
+    { id: "data", name: "Dữ liệu", icon: "💾" },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <PageHeader
           title="Cài đặt hệ thống"
@@ -417,35 +224,94 @@ const Settings: React.FC = () => {
         />
 
         {/* Tabs */}
-        <div className="border-b border-gray-200 mb-8">
-          <nav className="-mb-px flex space-x-8">
+        <div className="border-b border-gray-200 dark:border-gray-600 mb-6 sm:mb-8 overflow-x-auto">
+          <nav className="flex space-x-1 sm:space-x-8 min-w-max px-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`py-2 px-3 sm:px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                   activeTab === tab.id
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
                 }`}
               >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.name}
+                <span className="mr-1 sm:mr-2">{tab.icon}</span>
+                <span className="hidden sm:inline">{tab.name}</span>
+                <span className="sm:hidden">{tab.name.split(' ')[0]}</span>
               </button>
             ))}
           </nav>
         </div>
 
         {/* Content */}
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          {/* Appearance Settings */}
+          {activeTab === "appearance" && (
+            <div className="p-4 sm:p-6">
+              <div className="mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
+                  Giao diện
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Tùy chỉnh giao diện ứng dụng theo sở thích của bạn
+                </p>
+              </div>
+
+              <div className="space-y-4 sm:space-y-6">
+                {/* Dark Mode Toggle */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg gap-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
+                      <svg
+                        className="w-5 h-5 text-gray-600 dark:text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M20.354 15.354A9 9 0 018.182 0l-5.646 5.646a9 9 0 01-12.728 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10h1"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                        Chế độ tối
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Chuyển đổi giữa giao diện sáng và tối
+                      </p>
+                    </div>
+                  </div>
+                  <ToggleSwitch
+                    checked={darkMode}
+                    onChange={(checked) => {
+                      console.log('Toggle switch changed to:', checked);
+                      setDarkMode(checked);
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Transaction Types */}
           {activeTab === "transaction-types" && (
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                   Loại giao dịch
                 </h2>
-                <Button variant="primary" size="md">
+                <Button variant="primary" size="sm" className="w-full sm:w-auto">
                   <svg
                     className="w-4 h-4 mr-2"
                     fill="none"
@@ -463,29 +329,25 @@ const Settings: React.FC = () => {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {transactionTypes.map((type) => (
                   <div
                     key={type.id}
-                    className="border border-gray-200 rounded-lg p-4"
+                    className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 sm:p-4"
                   >
-                    <div className="flex items-center justify-between mb-3">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getColorClass(type.color)}`}
-                      >
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getColorClass(type.color)}`}>
                         {type.name}
                       </span>
-                      <div className="flex items-center space-x-3">
-                        <ToggleSwitch
-                          checked={type.isActive}
-                          onChange={() =>
-                            handleToggleActive("transaction-type", type.id)
-                          }
-                          size="md"
-                        />
-                      </div>
+                      <ToggleSwitch
+                        checked={type.isActive}
+                        onChange={() => handleToggleActive("transaction-type", type.id)}
+                        size="sm"
+                      />
                     </div>
-                    <p className="text-sm text-gray-600">{type.description}</p>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {type.isActive ? "Đang hoạt động" : "Đã vô hiệu hóa"}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -494,12 +356,12 @@ const Settings: React.FC = () => {
 
           {/* Bank Accounts */}
           {activeTab === "bank-accounts" && (
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                   Tài khoản ngân hàng
                 </h2>
-                <Button variant="primary" size="md">
+                <Button variant="primary" size="sm" className="w-full sm:w-auto">
                   <svg
                     className="w-4 h-4 mr-2"
                     fill="none"
@@ -517,89 +379,66 @@ const Settings: React.FC = () => {
                 </Button>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Ngân hàng
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Số tài khoản
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Loại tài khoản
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Tên tài khoản
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Số dư
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Trạng thái
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Thao tác
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {bankAccounts.map((account) => (
-                      <tr key={account.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {account.bankName}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {account.accountNumber}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {account.accountType}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {account.accountName}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {formatCurrency(account.balance)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              account.isActive
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
+              <div className="space-y-3 sm:space-y-4">
+                {bankAccounts.map((account) => (
+                  <div
+                    key={account.id}
+                    className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 sm:p-4"
+                  >
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center flex-shrink-0">
+                          <svg
+                            className="w-5 h-5 text-blue-600 dark:text-blue-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
                           >
-                            {account.isActive ? "Hoạt động" : "Không hoạt động"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex items-center space-x-3">
-                            <ToggleSwitch
-                              checked={account.isActive}
-                              onChange={() =>
-                                handleToggleActive("bank-account", account.id)
-                              }
-                              size="sm"
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
                             />
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                            {account.accountName}
+                          </h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {account.bankName} • {account.accountNumber}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {account.accountType}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {formatCurrency(account.balance)}
+                        </div>
+                        <ToggleSwitch
+                          checked={account.isActive}
+                          onChange={() => handleToggleActive("bank-account", account.id)}
+                          size="sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
           {/* Branches */}
           {activeTab === "branches" && (
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                   Văn phòng
                 </h2>
-                <Button variant="primary" size="md">
+                <Button variant="primary" size="sm" className="w-full sm:w-auto">
                   <svg
                     className="w-4 h-4 mr-2"
                     fill="none"
@@ -617,35 +456,25 @@ const Settings: React.FC = () => {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {branches.map((branch) => (
                   <div
                     key={branch.id}
-                    className="border border-gray-200 rounded-lg p-4"
+                    className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 sm:p-4"
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-lg font-medium text-gray-900">
+                      <h3 className="text-sm font-medium text-gray-900 dark:text-white">
                         {branch.name}
                       </h3>
-                      <div className="flex items-center space-x-3">
-                        <ToggleSwitch
-                          checked={branch.isActive}
-                          onChange={() =>
-                            handleToggleActive("branch", branch.id)
-                          }
-                          size="md"
-                        />
-                      </div>
+                      <ToggleSwitch
+                        checked={branch.isActive}
+                        onChange={() => handleToggleActive("branch", branch.id)}
+                        size="sm"
+                      />
                     </div>
-                    <div className="space-y-2 text-sm text-gray-600">
-                      <p>
-                        <span className="font-medium">Địa chỉ:</span>{" "}
-                        {branch.address}
-                      </p>
-                      <p>
-                        <span className="font-medium">Điện thoại:</span>{" "}
-                        {branch.phone}
-                      </p>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                      <p>{branch.address}</p>
+                      <p>{branch.phone}</p>
                     </div>
                   </div>
                 ))}
@@ -655,12 +484,12 @@ const Settings: React.FC = () => {
 
           {/* Customer Fields */}
           {activeTab === "customer-fields" && (
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                   Trường khách hàng
                 </h2>
-                <Button variant="primary" size="md">
+                <Button variant="primary" size="sm" className="w-full sm:w-auto">
                   <svg
                     className="w-4 h-4 mr-2"
                     fill="none"
@@ -678,363 +507,102 @@ const Settings: React.FC = () => {
                 </Button>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Tên trường
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Loại
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Bắt buộc
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Trạng thái
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Thao tác
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {customerFields.map((field) => (
-                      <tr key={field.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {field.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <span className="capitalize">{field.type}</span>
-                          {field.options && (
-                            <span className="text-xs text-gray-500 ml-2">
-                              ({field.options.length} tùy chọn)
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              field.required
-                                ? "bg-red-100 text-red-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
+              <div className="space-y-3 sm:space-y-4">
+                {customerFields.map((field) => (
+                  <div
+                    key={field.id}
+                    className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 sm:p-4"
+                  >
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center flex-shrink-0">
+                          <svg
+                            className="w-5 h-5 text-purple-600 dark:text-purple-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
                           >
-                            {field.required ? "Bắt buộc" : "Tùy chọn"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              field.isActive
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {field.isActive ? "Hoạt động" : "Không hoạt động"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex items-center space-x-3">
-                            <ToggleSwitch
-                              checked={field.isActive}
-                              onChange={() =>
-                                handleToggleActive("customer-field", field.id)
-                              }
-                              size="sm"
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                             />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                            {field.name}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                            <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                              {field.type}
+                            </span>
+                            {field.isRequired && (
+                              <span className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 px-2 py-1 rounded">
+                                Bắt buộc
+                              </span>
+                            )}
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <ToggleSwitch
+                          checked={field.isActive}
+                          onChange={() => handleToggleActive("customer-field", field.id)}
+                          size="sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* Thêm UI cấu hình trường import khi activeTab === 'import-fields': */}
-          {activeTab === "import-fields" && (
-            <div className="p-6">
-              <h2 className="text-xl font-semibold mb-4">
-                Cài đặt trường import
-              </h2>
-              <table className="min-w-full border text-sm">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="px-2 py-1 border">Trường</th>
-                    <th className="px-2 py-1 border">Kiểu dữ liệu</th>
-                    <th className="px-2 py-1 border">Bắt buộc</th>
-                    <th className="px-2 py-1 border">Bật</th>
-                    <th className="px-2 py-1 border">Sắp xếp</th>
-                    <th className="px-2 py-1 border">Xóa</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {importFields.map((f: ImportField, idx: number) => (
-                    <tr key={f.key}>
-                      <td className="px-2 py-1 border">{f.label}</td>
-                      <td className="px-2 py-1 border">
-                        {(() => {
-                          // Cứng quy tắc cho 2 trường
-                          if (
-                            f.label === "Loại giao dịch" ||
-                            f.key === "transaction_type"
-                          ) {
-                            return (
-                              <>
-                                <select
-                                  value="select"
-                                  disabled
-                                  className="border rounded px-1 py-0.5"
-                                >
-                                  <option value="select">Select</option>
-                                </select>
-                                <div className="mt-1">
-                                  <label>
-                                    <input type="radio" checked readOnly /> Loại
-                                    giao dịch hệ thống
-                                  </label>
-                                </div>
-                              </>
-                            );
-                          }
-                          if (
-                            f.label === "Tài khoản ngân hàng" ||
-                            f.key === "bank_account"
-                          ) {
-                            return (
-                              <>
-                                <select
-                                  value="select"
-                                  disabled
-                                  className="border rounded px-1 py-0.5"
-                                >
-                                  <option value="select">Select</option>
-                                </select>
-                                <div className="mt-1">
-                                  <label>
-                                    <input type="radio" checked readOnly /> Ngân
-                                    hàng
-                                  </label>
-                                </div>
-                              </>
-                            );
-                          }
-                          // Trường khác giữ logic như cũ
-                          return (
-                            <>
-                              <select
-                                value={f.type}
-                                onChange={(e) =>
-                                  handleFieldChange(idx, "type", e.target.value)
-                                }
-                                className="border rounded px-1 py-0.5"
-                              >
-                                {fieldTypes.map((opt) => (
-                                  <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </option>
-                                ))}
-                              </select>
-                              {f.type === "select" && (
-                                <div className="mt-1">
-                                  <label className="mr-2">
-                                    <input
-                                      type="radio"
-                                      name={`optionSource-${idx}`}
-                                      checked={
-                                        f.optionSource === "manual" ||
-                                        !f.optionSource
-                                      }
-                                      onChange={() =>
-                                        handleFieldChange(
-                                          idx,
-                                          "optionSource",
-                                          "manual",
-                                        )
-                                      }
-                                    />{" "}
-                                    Tự nhập
-                                  </label>
-                                  <label className="mr-2">
-                                    <input
-                                      type="radio"
-                                      name={`optionSource-${idx}`}
-                                      checked={f.optionSource === "bank"}
-                                      onChange={() =>
-                                        handleFieldChange(
-                                          idx,
-                                          "optionSource",
-                                          "bank",
-                                        )
-                                      }
-                                    />{" "}
-                                    Ngân hàng
-                                  </label>
-                                  <label>
-                                    <input
-                                      type="radio"
-                                      name={`optionSource-${idx}`}
-                                      checked={f.optionSource === "branch"}
-                                      onChange={() =>
-                                        handleFieldChange(
-                                          idx,
-                                          "optionSource",
-                                          "branch",
-                                        )
-                                      }
-                                    />{" "}
-                                    Văn phòng
-                                  </label>
-                                  {(!f.optionSource ||
-                                    f.optionSource === "manual") && (
-                                    <input
-                                      type="text"
-                                      placeholder="Nhập các giá trị, cách nhau bởi dấu phẩy"
-                                      value={
-                                        f.options ? f.options.join(", ") : ""
-                                      }
-                                      onChange={(e) =>
-                                        handleFieldChange(
-                                          idx,
-                                          "options",
-                                          e.target.value
-                                            .split(",")
-                                            .map((s) => s.trim())
-                                            .filter(Boolean),
-                                        )
-                                      }
-                                      className="border rounded px-1 py-0.5 mt-1 w-full"
-                                    />
-                                  )}
-                                </div>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </td>
-                      <td className="px-2 py-1 border text-center">
-                        <input
-                          type="checkbox"
-                          checked={f.required}
-                          onChange={(e) =>
-                            handleFieldChange(idx, "required", e.target.checked)
-                          }
-                        />
-                      </td>
-                      <td className="px-2 py-1 border text-center">
-                        <input
-                          type="checkbox"
-                          checked={f.enabled}
-                          onChange={(e) =>
-                            handleFieldChange(idx, "enabled", e.target.checked)
-                          }
-                        />
-                      </td>
-                      <td className="px-2 py-1 border text-center">
-                        <button
-                          onClick={() => moveField(idx, "up")}
-                          disabled={idx === 0}
-                          className="mr-1 px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          onClick={() => moveField(idx, "down")}
-                          disabled={idx === importFields.length - 1}
-                          className="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
-                        >
-                          ↓
-                        </button>
-                      </td>
-                      <td className="px-2 py-1 border text-center">
-                        <button
-                          onClick={() => removeField(idx)}
-                          className="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
-                        >
-                          Xóa
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="mt-4">
-                {!showAddField ? (
-                  <button
-                    onClick={() => setShowAddField(true)}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  >
-                    + Thêm trường mới
-                  </button>
-                ) : (
-                  <div className="flex items-center space-x-2 mt-2">
-                    <input
-                      type="text"
-                      placeholder="Tên trường"
-                      value={newField.label}
-                      onChange={(e) =>
-                        setNewField((f) => ({ ...f, label: e.target.value }))
-                      }
-                      className="border rounded px-2 py-1"
-                    />
-                    <select
-                      value={newField.type}
-                      onChange={(e) =>
-                        setNewField((f) => ({ ...f, type: e.target.value }))
-                      }
-                      className="border rounded px-2 py-1"
-                    >
-                      {fieldTypes.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={newField.required}
-                        onChange={(e) =>
-                          setNewField((f) => ({
-                            ...f,
-                            required: e.target.checked,
-                          }))
-                        }
-                        className="mr-1"
-                      />{" "}
-                      Bắt buộc
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={newField.enabled}
-                        onChange={(e) =>
-                          setNewField((f) => ({
-                            ...f,
-                            enabled: e.target.checked,
-                          }))
-                        }
-                        className="mr-1"
-                      />{" "}
-                      Bật
-                    </label>
-                    <button
-                      onClick={handleAddField}
-                      className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                    >
-                      Lưu
-                    </button>
-                    <button
-                      onClick={() => setShowAddField(false)}
-                      className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
-                    >
-                      Hủy
-                    </button>
+          {/* Data Settings */}
+          {activeTab === "data" && (
+            <div className="p-4 sm:p-6">
+              <div className="mb-6">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
+                  Dữ liệu
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Quản lý dữ liệu và sao lưu
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                    Sao lưu dữ liệu
+                  </h3>
+                  <div className="space-y-3">
+                    <Button variant="primary" className="w-full sm:w-auto">
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Sao lưu ngay
+                    </Button>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Sao lưu cuối cùng: Chưa có
+                    </p>
                   </div>
-                )}
+                </div>
+
+                <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                    Xuất dữ liệu
+                  </h3>
+                  <div className="space-y-3">
+                    <Button variant="secondary" className="w-full sm:w-auto">
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Xuất CSV
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -1042,6 +610,15 @@ const Settings: React.FC = () => {
       </div>
     </div>
   );
+};
+
+// Helper function for formatting currency
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+  }).format(amount);
 };
 
 export default Settings;

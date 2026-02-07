@@ -306,37 +306,35 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
       const data = payload[0].payload;
       
       return (
-        <div className="bg-white p-3 shadow-md rounded-md border border-gray-200">
-          <p className="font-medium text-gray-900">
+        <div className="bg-white dark:bg-gray-800 p-3 shadow-md rounded-md border border-gray-200 dark:border-gray-600">
+          <p className="font-medium text-gray-900 dark:text-white">
             {data.displayDate || data.name}
           </p>
-          
-          {data.type !== "total" && (
-            <>
-              <div className="mt-2">
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium">{t("dashboard.inflow")}</span>: {formatCurrency(data.inflow || 0)}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium">{t("dashboard.outflow")}</span>: {formatCurrency(data.outflow || 0)}
-                </p>
-              </div>
-              <div className="mt-1 pt-1 border-t border-gray-200">
-                <p className="text-sm font-medium" style={{ color: data.netFlow >= 0 ? '#10b981' : '#ef4444' }}>
-                  {t("dashboard.netFlow")}: {formatCurrency(data.netFlow || 0)}
-                </p>
-              </div>
-            </>
-          )}
-          
           {showBalance && (
-            <div className="mt-1 pt-1 border-t border-gray-200">
-              <p className="text-sm font-medium text-gray-900">
+            <div className="mt-1 pt-1 border-t border-gray-200 dark:border-gray-600">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
                 {t("dashboard.runningTotal")}: {formatCurrency(data.runningTotal)}
               </p>
             </div>
           )}
           
+          {data.type !== "total" && (
+            <>
+              <div className="mt-2">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  <span className="font-medium">{t("dashboard.inflow")}</span>: {formatCurrency(data.inflow || 0)}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  <span className="font-medium">{t("dashboard.outflow")}</span>: {formatCurrency(data.outflow || 0)}
+                </p>
+              </div>
+              <div className="mt-1 pt-2 border-t border-gray-200 dark:border-gray-600">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  {t("dashboard.delta")}: {formatCurrency(data.delta || 0)}
+                </p>
+              </div>
+            </>
+          )}
         </div>
       );
     }
@@ -454,20 +452,20 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
   };
 
   return (
-    <div className="w-full h-96">
+    <div className="w-full h-80 sm:h-96">
       {/* Controls and Legend */}
       <div className="flex justify-between items-center mb-2">
         {/* Legend with integrated toggle */}
         <div className="chart-legend flex items-center gap-3">
           {/* Toggle button styled as checkbox */}
           <div 
-            className="legend-item cursor-pointer flex items-center border border-gray-300 rounded px-2 py-1 bg-white hover:bg-gray-50" 
+            className="legend-item cursor-pointer flex items-center border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700" 
             onClick={() => setShowBalance(!showBalance)}
           >
-            <div className="w-4 h-4 border border-gray-400 rounded mr-1 flex items-center justify-center" style={{background: showBalance ? '#4f46e5' : 'white'}}>
+            <div className="w-4 h-4 border border-gray-400 dark:border-gray-600 rounded mr-1 flex items-center justify-center" style={{background: showBalance ? '#4f46e5' : 'white'}}>
               {showBalance && <span className="text-xs text-white">✓</span>}
             </div>
-            <span className="text-sm font-medium">{t("dashboard.balance")}</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("dashboard.balance")}</span>
           </div>
           
           <div className="legend-item">
@@ -485,23 +483,23 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
           data={displayData}
-          margin={{ top: 30, right: 30, left: 10, bottom: 50 }}
+          margin={{ top: 20, right: 20, left: 5, bottom: 40 }}
           barGap={0}
           barCategoryGap={barCategoryGap}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 11 }}
+            tick={{ fontSize: 9 }}
             angle={-45}
             textAnchor="end"
-            height={80}
+            height={60}
             interval={0}
             tickLine={false}
             padding={xAxisPadding}
           />
           <YAxis
-            tick={{ fontSize: 12, fontWeight: 500 }}
+            tick={{ fontSize: 10, fontWeight: 500 }}
             tickFormatter={(value) => {
               // Clean, rounded Y-axis labels
               const absValue = Math.abs(value / 1000000);

@@ -268,7 +268,7 @@ const CustomerList: React.FC = () => {
 
   if (state.loading && state.customers.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <LoadingFallback
             title={t("customers.loading")}
@@ -282,7 +282,7 @@ const CustomerList: React.FC = () => {
 
   if (state.error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ErrorFallback
             title={t("customers.error")}
@@ -295,7 +295,7 @@ const CustomerList: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <PageHeader
           title={t("customers.title")}
@@ -333,9 +333,9 @@ const CustomerList: React.FC = () => {
         />
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-600">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
               Bộ lọc khách hàng
             </h3>
           </div>
@@ -353,13 +353,13 @@ const CustomerList: React.FC = () => {
         </div>
 
         {/* Customer Table */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-600">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                 {t("customers.customerList")}
               </h3>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
                 {t("customers.showingResults", {
                   start: paginationInfo.start,
                   end: paginationInfo.end,
@@ -381,7 +381,7 @@ const CustomerList: React.FC = () => {
 
           {/* Pagination */}
           {state.totalCount > state.pageSize && (
-            <div className="px-6 py-4 border-t border-gray-200">
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-600">
               <Pagination
                 currentPage={state.currentPage}
                 totalPages={Math.ceil(state.totalCount / state.pageSize)}

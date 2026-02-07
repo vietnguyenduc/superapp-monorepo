@@ -5,6 +5,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -88,6 +89,16 @@ export default {
           'text-secondary': '#64748b',
           'text-muted': '#94a3b8',
         },
+        // Dark mode business colors
+        dark: {
+          'business-card-bg': '#1f2937',
+          'business-sidebar-bg': '#111827',
+          'business-border-light': '#374151',
+          'business-border-medium': '#4b5563',
+          'business-text-primary': '#f9fafb',
+          'business-text-secondary': '#d1d5db',
+          'business-text-muted': '#9ca3af',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'SF Pro Display', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
@@ -157,6 +168,36 @@ export default {
     },
   },
   plugins: [
+    // Custom component utilities
+    function({ addUtilities, theme }) {
+      const newUtilities = {
+        '.scrollbar-thin': {
+          scrollbarWidth: 'thin',
+          '&::-webkit-scrollbar': {
+            width: '6px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: '#d1d5db',
+            borderRadius: '3px',
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            backgroundColor: '#9ca3af',
+          },
+        },
+        '.dark .scrollbar-thin': {
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: '#4b5563',
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            backgroundColor: '#6b7280',
+          },
+        },
+      }
+      addUtilities(newUtilities)
+    },
     // Custom component utilities
     function({ addUtilities, theme }) {
       const newUtilities = {

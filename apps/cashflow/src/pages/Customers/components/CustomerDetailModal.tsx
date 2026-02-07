@@ -115,7 +115,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                   Chi tiết khách hàng
                 </h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Xem thông tin chi tiết và lịch sử giao dịch
+                  Xem thông tin và lịch sử giao dịch
                 </p>
               </div>
               <div className="flex items-center space-x-2">
@@ -136,7 +136,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                       d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                     />
                   </svg>
-                  Chỉnh sửa
+                  title="Sửa"
                 </button>
                 <button
                   onClick={onClose}

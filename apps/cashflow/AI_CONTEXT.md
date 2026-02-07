@@ -2,8 +2,31 @@
 
 > **Purpose**: This file helps AI assistants (Claude, GPT, Copilot, etc.) understand the project context quickly. Update this file after significant changes.
 > 
-> **Last Updated**: 2026-01-28
+> **Last Updated**: 2026-02-05
 > **Updated By**: Development Team
+
+---
+
+## 🚨 **CRITICAL RULES FOR AI ASSISTANTS**
+
+### File Operations - READ BEFORE EDITING
+**⚠️ NEVER use `write_to_file` for existing files!**
+
+1. **ALWAYS Read First**: Before editing any file, use `read_file` to understand current content
+2. **Use Edit Tools**: For existing files, use `edit` or `multi_edit` - NEVER `write_to_file`
+3. **Check File Existence**: If unsure if file exists, use `find_by_name` or `list_dir` first
+4. **Context Matters**: Read surrounding code to understand context before making changes
+
+### Common Mistakes to Avoid:
+- ❌ Creating new files when they already exist
+- ❌ Using `write_to_file` on existing files (corrupts them)
+- ❌ Making edits without reading the current content
+- ❌ Assuming file structure without verification
+
+### Correct Workflow:
+1. `read_file` → Understand current state
+2. `edit`/`multi_edit` → Make targeted changes
+3. Verify with `read_file` if needed
 
 ---
 
@@ -37,9 +60,24 @@ apps/cashflow/
 ## 📋 Current State & Active Work
 
 ### Recently Completed
+- [x] **Mobile-First Design**: Complete mobile optimization for all components
+- [x] **Dark Mode Implementation**: Full dark mode support with toggle in settings
+- [x] **Customer Table Redesign**: Moved GD button to bottom, improved mobile layout
+- [x] **TopCustomers Cards**: Restructured to prevent overflow, better mobile spacing
+- [x] **Balance Chart Improvements**: Removed Y-axis title, improved data labels
+- [x] **Settings Menu Mobile Fix**: Horizontal scroll tabs, responsive layout
+- [x] **Language Consistency**: Fixed English text to Vietnamese throughout app
+- [x] **CSS Loading Issues**: Resolved 500 errors, restarted dev server properly
 - [x] CashFlowChart component with dynamic time range filters (Day, Week, Month, Quarter, Year)
 - [x] Dynamic subtitle based on selected filter
 - [x] Data aggregation to prevent duplicate X-axis labels
+- [x] **Responsive Chart Balance**: Fixed mobile/desktop balance for bank account chart
+- [x] **Realistic Mock Data**: Enhanced sampleData.ts with realistic ups and downs between periods
+- [x] **Dark Mode Full Implementation**: Added dark mode to Dashboard, CustomerList, TransactionList, Reports pages
+- [x] **Customer Page Layout Fix**: Fixed weird desktop layout from aggressive mobile optimization
+- [x] **File Operation Process Fix**: Added critical rules to prevent file corruption mistakes
+- [x] **Enhanced Theme System**: Comprehensive theme overhaul with unified coding patterns
+- [x] **Mobile Spacing Improvements**: Better spacing and alignments in TopCustomers mobile layout
 - [x] Mock data system with separate files (mockData.ts, sampleData.ts)
 - [x] Added chart data export functionality (CSV and JSON formats)
 - [x] Enhanced tooltip with percentage changes between periods
@@ -57,6 +95,9 @@ apps/cashflow/
 - [x] Improved connector lines with dotted style and thinner stroke
 - [x] Enhanced Y-axis scaling for better delta visualization
 - [x] Normalized branch names consistently across all components
+- [x] **CRITICAL: Settings Functionality Restoration**: Restored complete Settings page with all original features
+- [x] **Complete Dark Mode Fix**: Fixed all dark mode issues including component classes and business colors
+- [x] **File Safety System**: Implemented comprehensive file operation safety rules and memory system
 
 ### In Progress
 - [ ] Refine MetricsCard component for better number formatting
@@ -101,18 +142,29 @@ databaseService.dashboard.getDashboardMetrics(branchId?, timeRange)
 
 ## ⚠️ Important Rules & Constraints
 
+### Branch Strategy (NEW)
+- **Personal Branch**: Work in personal branch "viet" instead of directly to origin/main
+- **Workflow**: Commit to "viet" branch → merge to origin/main later
+- **Collaboration**: Each team member has their own personal branch
+
 ### DO
 - ✅ Use TypeScript strict mode
 - ✅ Follow existing code patterns
 - ✅ Use i18n for all user-facing text
 - ✅ Keep mock data in separate files for easy management
 - ✅ Update this file after significant changes
+- ✅ Work in personal branch "viet" before merging to main
+- ✅ Test mobile responsiveness for all changes
+- ✅ Ensure dark mode compatibility
 
 ### DON'T
 - ❌ Hardcode Vietnamese text (use i18n)
 - ❌ Delete or modify existing translation keys without checking usage
 - ❌ Change the databaseService interface without updating all consumers
 - ❌ Add new dependencies without documenting in this file
+- ❌ Commit directly to origin/main
+- ❌ Ignore mobile responsiveness
+- ❌ Break dark mode functionality
 
 ---
 
@@ -122,7 +174,17 @@ databaseService.dashboard.getDashboardMetrics(branchId?, timeRange)
 ```bash
 cd c:\Vibecoding\superapp-monorepo
 npm run dev --workspace=cashflow
-# App runs at http://localhost:5180 (or next available port)
+# App runs at http://localhost:5174 (or next available port)
+```
+
+### Branch Workflow
+```bash
+git checkout viet
+# Make changes
+git add .
+git commit -m "description"
+git push origin viet
+# Later: merge to main via PR or merge command
 ```
 
 ### Adding New Mock Data
@@ -137,7 +199,70 @@ npm run dev --workspace=cashflow
 
 ---
 
-## 📝 Session Notes
+## � Common Issues & Solutions
+
+### Cascade Tool Issues
+- **Empty Code Changes**: When Cascade can't generate non-empty changes, check if the file exists and the exact text matches
+- **File Already Exists**: When trying to create files that exist (like postcss.config.cjs), use edit tool instead
+- **CSS Loading Errors**: If CSS files return 500 errors, restart dev server after killing all node processes
+
+### Development Server Issues
+- **Port Conflicts**: Kill all node processes with `taskkill /F /IM node.exe` then restart
+- **CSS 500 Errors**: Clear browser cache, hard refresh (Ctrl+F5), or restart dev server
+- **Wrong Port**: Check vite.config.ts for correct port (currently 5174)
+
+### Mobile Development
+- **Always Test**: Check mobile view in browser dev tools for all changes
+- **Dark Mode**: Ensure all components work in both light and dark modes
+- **Touch Targets**: Minimum 44px for mobile touch targets
+
+---
+
+## �� Session Notes
+
+### Session 2026-02-05 (Morning)
+**Goal**: Mobile Optimization and Dark Mode Implementation
+**Changes Made**:
+- Complete mobile-first redesign of all components
+- Implemented full dark mode with system-wide CSS variables
+- Fixed customer table layout issues
+- Resolved CSS loading errors
+- Fixed language inconsistencies
+
+**Features Added**:
+1. **Mobile-First Design**: All components now responsive with proper mobile layouts
+2. **Dark Mode**: Complete dark mode implementation with toggle in settings
+3. **Customer Table Redesign**: Moved action buttons to bottom, improved mobile spacing
+4. **TopCustomers Cards**: Restructured to prevent overflow, better mobile hierarchy
+5. **Balance Chart Improvements**: Removed Y-axis title, improved data label readability
+6. **Settings Mobile Fix**: Horizontal scroll tabs, responsive sections
+7. **Language Consistency**: Fixed English text to Vietnamese throughout app
+
+**Technical Details**:
+1. **Dark Mode Implementation**:
+   - Added `dark:` classes throughout all components
+   - Implemented CSS custom properties for dark theme
+   - Added localStorage persistence for theme preference
+   - Enhanced scrollbar styling for dark mode
+2. **Mobile Optimizations**:
+   - Responsive column visibility in tables
+   - Larger touch targets and better spacing
+   - Improved text sizing and contrast
+   - Better button layouts for mobile screens
+3. **Layout Improvements**:
+   - Customer table: moved GD button to bottom with vertical layout
+   - TopCustomers: card-based layout with debt amounts at bottom
+   - Settings: horizontal scroll tabs with mobile-friendly labels
+
+**Common Issues Encountered**:
+1. **CSS Loading Errors**: 500 errors resolved by restarting dev server
+2. **Cascade Tool Issues**: Empty changes when files don't exist or text doesn't match exactly
+3. **Language Inconsistencies**: Fixed English text in navigation and tooltips
+
+**Next Steps**:
+1. Continue testing mobile responsiveness across all pages
+2. Further optimize dark mode contrast ratios
+3. Implement remaining accessibility improvements
 
 ### Session 2026-01-28 (Evening)
 **Goal**: Refine CashFlowChart styling and normalize branch names
@@ -255,9 +380,13 @@ When starting a new session:
 2. **Check "Current State"** section for active work
 3. **Review "Important Rules"** before making changes
 4. **Update "Session Notes"** after significant changes
+5. **Always test mobile responsiveness** for all changes
+6. **Work in "viet" branch** before merging to main
 
 ### Quick Context Prompt
 ```
 I'm working on the Cashflow app in a monorepo. Please read AI_CONTEXT.md 
 in apps/cashflow/ for project context before making changes.
+I'm working in the "viet" branch and need to ensure mobile responsiveness
+and dark mode compatibility for all changes.
 ```

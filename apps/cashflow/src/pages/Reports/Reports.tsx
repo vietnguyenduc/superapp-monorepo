@@ -399,7 +399,7 @@ const Reports: React.FC = () => {
 
   if (state.loading && !state.reportData) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <LoadingFallback
             title={t("reports.loading")}
@@ -413,7 +413,7 @@ const Reports: React.FC = () => {
 
   if (state.error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ErrorFallback
             title={t("reports.error")}
@@ -426,7 +426,7 @@ const Reports: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <PageHeader
           title={t("reports.title")}

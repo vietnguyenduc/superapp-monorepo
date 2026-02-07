@@ -140,7 +140,7 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
     >
       <div className="flex items-center">
         <div
-          className={`${colorClasses.icon} p-2.5 rounded-xl bg-white shadow-sm`}
+          className={`${colorClasses.icon} p-2.5 rounded-xl bg-white dark:bg-gray-800 shadow-sm`}
         >
           {getIcon()}
         </div>

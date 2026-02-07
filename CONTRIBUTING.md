@@ -45,6 +45,25 @@ superapp-monorepo/
 
 This project is designed to work well with AI coding assistants. Follow these practices:
 
+### 🚨 CRITICAL FILE OPERATION RULES
+**⚠️ NEVER use `write_to_file` for existing files!**
+
+1. **ALWAYS Read First**: Before editing any file, use `read_file` to understand current content
+2. **Use Edit Tools**: For existing files, use `edit` or `multi_edit` - NEVER `write_to_file`
+3. **Check File Existence**: If unsure if file exists, use `find_by_name` or `list_dir` first
+4. **Context Matters**: Read surrounding code to understand context before making changes
+
+### Common Mistakes to Avoid:
+- ❌ Creating new files when they already exist
+- ❌ Using `write_to_file` on existing files (corrupts them)
+- ❌ Making edits without reading the current content
+- ❌ Assuming file structure without verification
+
+### Correct Workflow:
+1. `read_file` → Understand current state
+2. `edit`/`multi_edit` → Make targeted changes
+3. Verify with `read_file` if needed
+
 ### Before Starting a Session
 1. **Share context**: Point the AI to `apps/[app-name]/AI_CONTEXT.md`
 2. **State your goal clearly**: "I want to add feature X to the Dashboard"

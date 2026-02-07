@@ -113,10 +113,10 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
       <div className="relative" ref={dropdownRef}>
         <Button
           onClick={() => setIsOpen(!isOpen)}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
         >
           <svg
-            className="w-4 h-4 mr-2 text-gray-400"
+            className="w-4 h-4 mr-2 text-gray-400 dark:text-gray-500"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -145,9 +145,9 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
         </Button>
 
         {isOpen && (
-          <div className="absolute z-10 mt-2 w-80 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
+          <div className="absolute z-10 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
             <div className="p-4">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
                 Khoảng thời gian
               </h3>
 
@@ -155,31 +155,31 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
               <div className="grid grid-cols-2 gap-2 mb-4">
                 <Button
                   onClick={() => handleQuickDateSelect("today")}
-                  className="text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-colors"
+                  className="text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300 rounded-md transition-colors"
                 >
                   Hôm nay
                 </Button>
                 <Button
                   onClick={() => handleQuickDateSelect("week")}
-                  className="text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-colors"
+                  className="text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300 rounded-md transition-colors"
                 >
                   Tuần trước
                 </Button>
                 <Button
                   onClick={() => handleQuickDateSelect("month")}
-                  className="text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-colors"
+                  className="text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300 rounded-md transition-colors"
                 >
                   Tháng này
                 </Button>
                 <Button
                   onClick={() => handleQuickDateSelect("quarter")}
-                  className="text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-colors"
+                  className="text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300 rounded-md transition-colors"
                 >
                   Quý này
                 </Button>
                 <Button
                   onClick={() => handleQuickDateSelect("year")}
-                  className="text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-colors"
+                  className="text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300 rounded-md transition-colors"
                 >
                   Năm nay
                 </Button>
@@ -188,7 +188,7 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
               {/* Custom Date Range */}
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Từ ngày
                   </label>
                   <input
@@ -197,12 +197,12 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
                     onChange={(e) =>
                       handleCustomDateChange("start", e.target.value)
                     }
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white text-gray-900"
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Đến ngày
                   </label>
                   <input
@@ -211,7 +211,7 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
                     onChange={(e) =>
                       handleCustomDateChange("end", e.target.value)
                     }
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white text-gray-900"
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -233,11 +233,11 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
       {/* Active Filters Display */}
       {dateRange && (
         <div className="flex items-center space-x-2">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200">
             {formatDateRange()}
             <button
               onClick={clearFilters}
-              className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-primary-400 hover:bg-primary-200 hover:text-primary-500 focus:outline-none focus:bg-primary-500 focus:text-white"
+              className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-primary-400 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-700 hover:text-primary-500 dark:hover:text-primary-100 focus:outline-none focus:bg-primary-500 focus:text-white"
             >
               <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
                 <path

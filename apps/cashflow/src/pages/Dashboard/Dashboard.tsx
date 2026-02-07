@@ -110,12 +110,11 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8 w-full">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 w-full">
         <div className="px-4 sm:px-6 lg:px-8 w-full">
           <LoadingFallback
             title={t("dashboard.loading")}
-            message={t("dashboard.loadingData")}
-            size="lg"
+            message={t("dashboard.loadingDescription")}
           />
         </div>
       </div>
@@ -124,7 +123,7 @@ const Dashboard: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8 w-full">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 w-full">
         <div className="px-4 sm:px-6 lg:px-8 w-full">
           <ErrorFallback
             title={t("dashboard.error")}
@@ -138,15 +137,10 @@ const Dashboard: React.FC = () => {
 
   if (!metrics) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8 w-full">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 w-full">
         <div className="px-4 sm:px-6 lg:px-8 w-full">
           <div className="text-center">
-            <h3 className="text-lg font-medium text-gray-900">
-              {t("dashboard.noData")}
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {t("dashboard.noDataDescription")}
-            </p>
+            <p className="text-gray-500 dark:text-gray-400">{t("dashboard.noData")}</p>
           </div>
         </div>
       </div>
@@ -154,12 +148,12 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 w-full">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 w-full">
       <div className="px-4 sm:px-6 lg:px-8 w-full">
         {/* Fixed Time Range Selector */}
-        <div className="fixed top-16 left-0 right-0 z-40 px-4 sm:px-6 lg:px-8 py-1.5 bg-gray-50/5 border-b border-gray-100/10 lg:left-64">
+        <div className="fixed top-16 left-0 right-0 z-40 px-4 sm:px-6 lg:px-8 py-1.5 bg-gray-50/5 dark:bg-gray-900/5 border-b border-gray-100/10 dark:border-gray-700/10 lg:left-64">
           <div className="flex justify-end">
-            <div className="inline-flex rounded-2xl bg-white/90 p-1 shadow-[0_4px_12px_rgba(15,23,42,0.10)] border border-gray-200/80 ring-1 ring-gray-200/60">
+            <div className="inline-flex rounded-2xl bg-white/90 dark:bg-gray-800/90 p-1 shadow-[0_4px_12px_rgba(15,23,42,0.10)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.30)] border border-gray-200/80 dark:border-gray-600/80 ring-1 ring-gray-200/60 dark:ring-gray-600/60 max-w-[calc(100vw-2rem)]">
               <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
             </div>
           </div>
@@ -222,11 +216,11 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
         {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4 w-full">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-4 w-full">
           {/* Balance by Bank Account Chart */}
-          <div className="bg-white rounded-lg shadow w-full">
-            <div className="px-4 py-3 border-b border-gray-200">
-              <h3 className="text-base font-medium text-gray-900">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow w-full">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+              <h3 className="text-base font-medium text-gray-900 dark:text-white">
                 {t("dashboard.balanceByBank")}
               </h3>
             </div>
@@ -235,19 +229,19 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           {/* Cash Flow Chart */}
-          <div className="bg-white rounded-lg shadow w-full">
-            <div className="px-4 py-3 border-b border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow w-full">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-600">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="text-base font-medium text-gray-900">
+                  <h3 className="text-base font-medium text-gray-900 dark:text-white">
                     {t("dashboard.cashFlow")}
                   </h3>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     {timeRange === "day" ? `Cash flow chart ${rangeCount.day} days` :
                      timeRange === "week" ? `Cash flow chart ${rangeCount.week} weeks` :
                      timeRange === "month" ? `Cash flow chart ${rangeCount.month} months` :
-                     timeRange === "quarter" ? `Cash flow chart by quarter` :
-                     `Cash flow chart by year`}
+                     timeRange === "quarter" ? `Cash flow chart ${rangeCount.quarter} quarters` :
+                     `Cash flow chart ${rangeCount.year} years`}
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -594,16 +588,16 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
         {/* Lists Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 w-full">
           {/* Recent Transactions */}
-          <div className="bg-white rounded-lg shadow w-full">
-            <div className="px-4 py-3 border-b border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow w-full">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-600">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h3 className="text-base font-medium text-gray-900">
+                  <h3 className="text-base font-medium text-gray-900 dark:text-white">
                     {t("dashboard.recentTransactions")}
                   </h3>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     {t("dashboard.recentTransactionsDescription")}
                   </p>
                 </div>
@@ -662,12 +656,12 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           {/* Top Customers */}
-          <div className="bg-white rounded-lg shadow w-full">
-            <div className="px-4 py-3 border-b border-gray-200">
-              <h3 className="text-base font-medium text-gray-900">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow w-full">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+              <h3 className="text-base font-medium text-gray-900 dark:text-white">
                 {t("dashboard.customersToWatch")}
               </h3>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("dashboard.customersToWatchDescription")}
               </p>
             </div>

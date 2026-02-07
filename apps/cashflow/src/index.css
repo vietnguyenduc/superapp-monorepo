@@ -4,6 +4,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dark mode styles */
+.dark {
+  color-scheme: dark;
+}
+
 /* Custom dropdown styles for better contrast */
 select option {
   color: #111827 !important;
@@ -31,7 +36,7 @@ select option:checked {
   line-height: 1.5;
   font-weight: 400;
 
-  /* Remove dark color scheme - use light mode by default */
+  /* Light mode colors */
   color: #213547;
   background-color: #ffffff;
 
@@ -40,6 +45,11 @@ select option:checked {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+}
+
+.dark {
+  color: #f3f4f6;
+  background-color: #111827;
 }
 
 a {
@@ -51,6 +61,13 @@ a:hover {
   color: #535bf2;
 }
 
+.dark a {
+  color: #818cf8;
+}
+.dark a:hover {
+  color: #6366f1;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -59,6 +76,11 @@ body {
   overflow-x: hidden;
   background-color: #ffffff;
   color: #213547;
+}
+
+.dark body {
+  background-color: #111827;
+  color: #f3f4f6;
 }
 
 /* Custom scrollbar styles */
@@ -80,10 +102,22 @@ body {
   background: #9ca3af;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
+}
+
 /* Hide scrollbar for Firefox */
 * {
   scrollbar-width: thin;
   scrollbar-color: #d1d5db transparent;
+}
+
+.dark * {
+  scrollbar-color: #9ca3af transparent;
 }
 
 /* Hide scrollbar completely for specific elements */

@@ -246,7 +246,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
     {} as Record<string, string>,
   );
   const [tableData, setTableData] = useState(() =>
-    Array(5)
+    Array(1)
       .fill(null)
       .map(() => ({ ...emptyRow })),
   );
@@ -761,20 +761,94 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                 >
                   {t("import.pasteData")}
                 </label>
-                {/* Ẩn UI cấu hình trường import khỏi màn hình này (chỉ render hướng dẫn, ví dụ mẫu, validate theo importFields). */}
-                <EditableTable
-                  data={tableData}
-                  errors={importData.errors}
-                  onDataChange={setTableData}
-                  columns={enabledFields.map((f: ImportField) => ({
-                    key: f.key,
-                    label: f.label,
-                    required: f.required,
-                    type: f.type,
-                    options: f.type === "select" ? f.options || [] : undefined,
-                  }))}
-                  maxRows={100}
-                />
+                {/* Mobile: vertical per-transaction input */}
+                <div className="sm:hidden space-y-4">
+                  {tableData.map((row, rowIndex) => (
+                    <div
+                      key={`row-${rowIndex}`}
+                      className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-semibold text-gray-900">
+                          Giao dịch {rowIndex + 1}
+                        </span>
+                      </div>
+                      <div className="space-y-3">
+                        {enabledFields.map((field: ImportField) => (
+                          <div key={`${field.key}-${rowIndex}`}>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              {field.label}
+                              {field.required && <span className="text-red-500"> *</span>}
+                            </label>
+                            {field.type === "select" ? (
+                              <select
+                                value={row[field.key] || ""}
+                                onChange={(event) =>
+                                  setTableData((prev) => {
+                                    const next = [...prev];
+                                    next[rowIndex] = {
+                                      ...next[rowIndex],
+                                      [field.key]: event.target.value,
+                                    };
+                                    return next;
+                                  })
+                                }
+                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                <option value="">Chọn</option>
+                                {(field.options || []).map((option) => (
+                                  <option key={option} value={option}>
+                                    {option}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
+                                value={row[field.key] || ""}
+                                onChange={(event) =>
+                                  setTableData((prev) => {
+                                    const next = [...prev];
+                                    next[rowIndex] = {
+                                      ...next[rowIndex],
+                                      [field.key]: event.target.value,
+                                    };
+                                    return next;
+                                  })
+                                }
+                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    onClick={() => setTableData((prev) => [...prev, { ...emptyRow }])}
+                  >
+                    Thêm giao dịch
+                  </Button>
+                </div>
+
+                {/* Desktop/tablet: sheet-style input */}
+                <div className="hidden sm:block">
+                  <EditableTable
+                    data={tableData}
+                    errors={importData.errors}
+                    onDataChange={setTableData}
+                    columns={enabledFields.map((f: ImportField) => ({
+                      key: f.key,
+                      label: f.label,
+                      required: f.required,
+                      type: f.type,
+                      options: f.type === "select" ? f.options || [] : undefined,
+                    }))}
+                    maxRows={100}
+                  />
+                </div>
                 <div className="mt-4">
                   <h4 className="font-medium mb-2">Gợi ý nhập liệu:</h4>
                   <div className="space-y-2">
