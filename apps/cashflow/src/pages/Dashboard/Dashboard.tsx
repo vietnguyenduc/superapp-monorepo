@@ -494,14 +494,14 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
         {/* Balance Breakdown by Branch */}
-        <div className="bg-white rounded-lg shadow mb-4 w-full">
-          <div className="px-4 py-3 border-b border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-4 w-full">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-base font-medium text-gray-900">
+                <h3 className="text-base font-medium text-gray-900 dark:text-white">
                   {t("dashboard.balanceByBranch")}
                 </h3>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   {t("dashboard.balanceByBranchDescription", {
                     period: t(`dashboard.timeRange.${timeRange}`),
                   })}
@@ -511,7 +511,7 @@ const Dashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowBranchFilter((prev) => !prev)}
-                  className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                  className="inline-flex items-center gap-2 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   {selectedBranchIds.length > 0
                     ? `Đã chọn ${selectedBranchIds.length}`
@@ -529,14 +529,14 @@ const Dashboard: React.FC = () => {
                   </svg>
                 </button>
                 {showBranchFilter && (
-                  <div className="absolute right-0 z-10 mt-2 w-56 rounded-md border border-gray-200 bg-white shadow-lg">
+                  <div className="absolute right-0 z-10 mt-2 w-56 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg">
                     <div className="max-h-60 overflow-auto p-2">
                       {branches.map((branch) => {
                         const checked = selectedBranchIds.includes(branch.id);
                         return (
                           <label
                             key={branch.id}
-                            className="flex items-center gap-2 rounded px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                            className="flex items-center gap-2 rounded px-2 py-1 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
                           >
                             <input
                               type="checkbox"
@@ -554,17 +554,17 @@ const Dashboard: React.FC = () => {
                         );
                       })}
                     </div>
-                    <div className="flex items-center justify-between border-t border-gray-100 px-3 py-2 text-xs">
+                    <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-700 px-3 py-2 text-xs">
                       <button
                         type="button"
-                        className="text-gray-500 hover:text-gray-700"
+                        className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white"
                         onClick={() => setSelectedBranchIds([])}
                       >
                         Bỏ chọn
                       </button>
                       <button
                         type="button"
-                        className="text-blue-600 hover:text-blue-700"
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                         onClick={() => setShowBranchFilter(false)}
                       >
                         Xong

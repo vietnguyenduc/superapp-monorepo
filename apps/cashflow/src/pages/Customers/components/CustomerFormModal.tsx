@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Customer } from "../../../types";
+import type { Customer } from "../../../types";
 
 interface CustomerFormModalProps {
   mode: "create" | "edit";
@@ -121,23 +121,23 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+          className="fixed inset-0 bg-gray-700/70 dark:bg-gray-900/80 transition-opacity"
           onClick={onClose}
         />
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div className="inline-block align-bottom bg-white dark:bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
-            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className="bg-white dark:bg-gray-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
                     {mode === "create"
                       ? t("customers.form.createTitle")
                       : t("customers.form.editTitle")}
                   </h3>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     {mode === "create"
                       ? t("customers.form.createSubtitle")
                       : t("customers.form.editSubtitle")}
@@ -146,7 +146,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                 >
                   <svg
                     className="w-6 h-6"
@@ -168,7 +168,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 <div>
                   <label
                     htmlFor="customer_code"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     {t("customers.form.customerCode")} *
                   </label>
@@ -179,7 +179,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     onChange={(e) =>
                       handleInputChange("customer_code", e.target.value)
                     }
-                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white text-gray-900 ${
+                    className={`mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
                       errors.customer_code ? "border-red-300" : ""
                     }`}
                     placeholder={t("customers.form.customerCodePlaceholder")}
@@ -205,7 +205,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     onChange={(e) =>
                       handleInputChange("full_name", e.target.value)
                     }
-                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white text-gray-900 ${
+                    className={`mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
                       errors.full_name ? "border-red-300" : ""
                     }`}
                     placeholder={t("customers.form.fullNamePlaceholder")}
@@ -220,7 +220,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     {t("customers.form.email")}
                   </label>
@@ -229,7 +229,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     id="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
-                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white text-gray-900 ${
+                    className={`mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
                       errors.email ? "border-red-300" : ""
                     }`}
                     placeholder={t("customers.form.emailPlaceholder")}
@@ -242,7 +242,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 <div>
                   <label
                     htmlFor="phone"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     {t("customers.form.phone")}
                   </label>
@@ -251,7 +251,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     id="phone"
                     value={formData.phone}
                     onChange={(e) => handleInputChange("phone", e.target.value)}
-                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white text-gray-900 ${
+                    className={`mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
                       errors.phone ? "border-red-300" : ""
                     }`}
                     placeholder={t("customers.form.phonePlaceholder")}
@@ -264,7 +264,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 <div>
                   <label
                     htmlFor="address"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     {t("customers.form.address")}
                   </label>
@@ -275,7 +275,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     onChange={(e) =>
                       handleInputChange("address", e.target.value)
                     }
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white text-gray-900"
+                    className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     placeholder={t("customers.form.addressPlaceholder")}
                   />
                 </div>
@@ -288,18 +288,18 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     onChange={(e) =>
                       handleInputChange("is_active", e.target.checked)
                     }
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
                   />
                   <label
                     htmlFor="is_active"
-                    className="ml-2 block text-sm text-gray-900"
+                    className="ml-2 block text-sm text-gray-900 dark:text-gray-100"
                   >
                     {t("customers.form.isActive")}
                   </label>
                 </div>
 
                 {mode === "create" && (
-                  <div className="rounded-md border border-dashed border-gray-200 p-3 bg-gray-50">
+                  <div className="rounded-md border border-dashed border-gray-200 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-800/60">
                     <div className="flex items-start space-x-2">
                       <input
                         type="checkbox"
@@ -308,16 +308,16 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                         onChange={(e) =>
                           handleInputChange("create_transactions", e.target.checked)
                         }
-                        className="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                        className="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
                       />
                       <label
                         htmlFor="create_transactions"
-                        className="text-sm text-gray-900"
+                        className="text-sm text-gray-900 dark:text-gray-100"
                       >
                         <span className="font-medium">
                           {t("customers.form.createTransactions")}
                         </span>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {t("customers.form.createTransactionsHint")}
                         </p>
                       </label>
@@ -330,7 +330,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:mr-3 sm:w-auto sm:text-sm"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-gray-900 sm:mt-0 sm:mr-3 sm:w-auto sm:text-sm"
                 >
                   {t("common.cancel")}
                 </button>

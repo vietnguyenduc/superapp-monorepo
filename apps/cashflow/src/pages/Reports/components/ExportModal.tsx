@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import Button from "../../../components/UI/Button";
-import { ReportType, ExportFormat } from "../../../types";
+import type { ReportType, ExportFormat } from "../../../types";
 
 interface ExportModalProps {
   onClose: () => void;
@@ -54,25 +54,25 @@ const ExportModal: React.FC<ExportModalProps> = ({
     <div className="fixed inset-0 z-[200] overflow-y-auto">
       <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+          className="fixed inset-0 bg-gray-700/70 dark:bg-gray-900/80 transition-opacity"
           onClick={onClose}
         />
 
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+        <div className="inline-block align-bottom bg-white dark:bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <div className="bg-white dark:bg-gray-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
                   {t("reports.export.title")}
                 </h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   {t("reports.export.subtitle")}
                 </p>
               </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
               >
                 <svg
                   className="w-6 h-6"
@@ -91,18 +91,18 @@ const ExportModal: React.FC<ExportModalProps> = ({
             </div>
 
             {/* Report Info */}
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <h4 className="text-sm font-medium text-gray-900 mb-2">
+            <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800/60 rounded-lg">
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
                 {t("reports.export.reportInfo")}
               </h4>
-              <p className="text-sm text-gray-600">{getReportTypeLabel()}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{getReportTypeLabel()}</p>
             </div>
 
             {/* Export Options */}
             <div className="space-y-6">
               {/* Format Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                   {t("reports.export.format")}
                 </label>
                 <div className="space-y-3">
@@ -114,13 +114,13 @@ const ExportModal: React.FC<ExportModalProps> = ({
                       onChange={(e) =>
                         setFormat(e.target.value as ExportFormat)
                       }
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600"
                     />
                     <div className="ml-3">
-                      <span className="block text-sm font-medium text-gray-700">
+                      <span className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                         {t("reports.export.excel")}
                       </span>
-                      <span className="block text-sm text-gray-500">
+                      <span className="block text-sm text-gray-500 dark:text-gray-400">
                         {t("reports.export.excelDescription")}
                       </span>
                     </div>
@@ -134,13 +134,13 @@ const ExportModal: React.FC<ExportModalProps> = ({
                       onChange={(e) =>
                         setFormat(e.target.value as ExportFormat)
                       }
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600"
                     />
                     <div className="ml-3">
-                      <span className="block text-sm font-medium text-gray-700">
+                      <span className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                         {t("reports.export.csv")}
                       </span>
-                      <span className="block text-sm text-gray-500">
+                      <span className="block text-sm text-gray-500 dark:text-gray-400">
                         {t("reports.export.csvDescription")}
                       </span>
                     </div>
@@ -150,7 +150,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
 
               {/* Include Options */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                   {t("reports.export.includeOptions")}
                 </label>
                 <div className="space-y-3">
@@ -159,9 +159,9 @@ const ExportModal: React.FC<ExportModalProps> = ({
                       type="checkbox"
                       checked={includeHeaders}
                       onChange={(e) => setIncludeHeaders(e.target.checked)}
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
                     />
-                    <span className="ml-2 text-sm text-gray-700">
+                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">
                       {t("reports.export.includeHeaders")}
                     </span>
                   </label>
@@ -171,9 +171,9 @@ const ExportModal: React.FC<ExportModalProps> = ({
                       type="checkbox"
                       checked={includeCharts}
                       onChange={(e) => setIncludeCharts(e.target.checked)}
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
                     />
-                    <span className="ml-2 text-sm text-gray-700">
+                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">
                       {t("reports.export.includeCharts")}
                     </span>
                   </label>
@@ -183,9 +183,9 @@ const ExportModal: React.FC<ExportModalProps> = ({
                       type="checkbox"
                       checked={includeDetails}
                       onChange={(e) => setIncludeDetails(e.target.checked)}
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
                     />
-                    <span className="ml-2 text-sm text-gray-700">
+                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">
                       {t("reports.export.includeDetails")}
                     </span>
                   </label>
