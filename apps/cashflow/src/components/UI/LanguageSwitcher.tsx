@@ -25,7 +25,7 @@ export const LanguageSwitcher: React.FC = () => {
   const { i18n } = useTranslation();
   const [currentLanguage, setCurrentLanguage] = useLocalStorage(
     "i18nextLng",
-    "en",
+    "vi",
   );
 
   const handleLanguageChange = (languageCode: string) => {

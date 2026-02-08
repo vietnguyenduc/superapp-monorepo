@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ErrorFallback } from "../../components/UI/FallbackUI";
+import { ErrorFallback, LoadingFallback } from "../../components/UI/FallbackUI";
 import ToggleSwitch from "../../components/UI/ToggleSwitch";
 import Button from "../../components/UI/Button";
 import PageHeader from "../../components/UI/PageHeader";
@@ -25,6 +25,7 @@ interface BankAccount {
   accountType: string;
   accountName: string;
   balance: number;
+  openingBalance?: number;
   isActive: boolean;
 }
 
@@ -76,6 +77,15 @@ const Settings: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [isBankAccountModalOpen, setIsBankAccountModalOpen] = useState(false);
+  const [editingBankAccount, setEditingBankAccount] = useState<BankAccount | null>(null);
+  const [bankAccountForm, setBankAccountForm] = useState({
+    bankName: "",
+    accountNumber: "",
+    accountName: "",
+    accountType: "",
+    openingBalance: "",
+  });
   const [branches, setBranches] = useState<Branch[]>([]);
   const [transactionTypes, setTransactionTypes] = useState<TransactionType[]>([
     { id: "1", name: "Thanh toán", color: "green", isActive: true },
@@ -136,6 +146,7 @@ const Settings: React.FC = () => {
           accountType: getAccountType(account.account_name),
           accountName: account.account_name,
           balance: account.balance,
+          openingBalance: account.opening_balance ?? 0,
           isActive: account.is_active,
         })) || [];
 
@@ -165,6 +176,117 @@ const Settings: React.FC = () => {
 
     loadData();
   }, []);
+
+  const handleEditBankAccount = (account: BankAccount) => {
+    setEditingBankAccount(account);
+    setBankAccountForm({
+      bankName: account.bankName,
+      accountNumber: account.accountNumber,
+      accountName: account.accountName,
+      accountType: account.accountType,
+      openingBalance: String(account.openingBalance ?? 0),
+    });
+    setIsBankAccountModalOpen(true);
+  };
+
+  const handleResetData = () => {
+    const confirmation = window.prompt(
+      "Nhập CONFIRM để xóa toàn bộ dữ liệu và đặt lại hệ thống",
+      "",
+    );
+    if (confirmation !== "CONFIRM") {
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("cashflow_customers");
+      window.localStorage.removeItem("cashflow_transactions");
+      window.localStorage.removeItem("cashflow_bank_accounts");
+    }
+    window.location.reload();
+  };
+
+  const handleBankAccountFormChange = (
+    field: "bankName" | "accountNumber" | "accountName" | "accountType" | "openingBalance",
+    value: string,
+  ) => {
+    setBankAccountForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveBankAccount = () => {
+    const openingBalanceValue = bankAccountForm.openingBalance.trim();
+    const parsedOpeningBalance = openingBalanceValue ? Number(openingBalanceValue) : undefined;
+
+    if (editingBankAccount) {
+      const previousOpening = Number(editingBankAccount.openingBalance ?? 0);
+      const nextOpening = Number.isFinite(parsedOpeningBalance)
+        ? Number(parsedOpeningBalance)
+        : previousOpening;
+      const nextBalance = Math.max(0, editingBankAccount.balance + (nextOpening - previousOpening));
+      setBankAccounts((prev) =>
+        prev.map((account) =>
+          account.id === editingBankAccount.id
+            ? {
+                ...account,
+                bankName: bankAccountForm.bankName.trim(),
+                accountNumber: bankAccountForm.accountNumber.trim(),
+                accountName: bankAccountForm.accountName.trim(),
+                accountType: bankAccountForm.accountType.trim(),
+                openingBalance: nextOpening,
+                balance: nextBalance,
+              }
+            : account,
+        ),
+      );
+    } else {
+      const openingBalance = Number.isFinite(parsedOpeningBalance)
+        ? Number(parsedOpeningBalance)
+        : 0;
+      const nextAccount: BankAccount = {
+        id: `bank-${Date.now()}`,
+        bankName: bankAccountForm.bankName.trim() || "Ngan hang moi",
+        accountNumber: bankAccountForm.accountNumber.trim(),
+        accountName: bankAccountForm.accountName.trim() || "Tai khoan moi",
+        accountType: bankAccountForm.accountType.trim() || "Other",
+        balance: openingBalance,
+        openingBalance,
+        isActive: true,
+      };
+      setBankAccounts((prev) => [nextAccount, ...prev]);
+    }
+    setIsBankAccountModalOpen(false);
+    setEditingBankAccount(null);
+  };
+
+  const handleAddTransactionType = () => {
+    const name = window.prompt("Nhap ten loai giao dich");
+    if (!name) return;
+    setTransactionTypes((prev) => [
+      {
+        id: `type-${Date.now()}`,
+        name: name.trim(),
+        color: "blue",
+        isActive: true,
+      },
+      ...prev,
+    ]);
+  };
+
+  const handleAddCustomerField = () => {
+    const name = window.prompt("Nhap ten truong khach hang");
+    if (!name) return;
+    const type = window.prompt("Nhap kieu truong (text, email, tel)", "text") || "text";
+    setCustomerFields((prev) => [
+      {
+        id: `field-${Date.now()}`,
+        name: name.trim(),
+        type: type.trim() || "text",
+        isRequired: false,
+        isActive: true,
+      },
+      ...prev,
+    ]);
+  };
 
   // Helper function to get account type from account name
   const getAccountType = (accountName: string): string => {
@@ -224,6 +346,12 @@ const Settings: React.FC = () => {
     setIsBranchModalOpen(true);
   };
 
+  const handleAddBranch = () => {
+    setEditingBranch(null);
+    setBranchForm({ name: "", address: "", phone: "" });
+    setIsBranchModalOpen(true);
+  };
+
   const handleDeleteBranch = (branchId: string) => {
     setBranches((prev) => prev.filter((branch) => branch.id !== branchId));
   };
@@ -236,20 +364,48 @@ const Settings: React.FC = () => {
   };
 
   const handleSaveBranch = () => {
-    if (!editingBranch) {
-      return;
+    if (editingBranch) {
+      setBranches((prev) =>
+        prev.map((branch) =>
+          branch.id === editingBranch.id
+            ? { ...branch, ...branchForm }
+            : branch,
+        ),
+      );
+    } else {
+      const nextBranch: Branch = {
+        id: `branch-${Date.now()}`,
+        name: branchForm.name.trim() || "Van phong moi",
+        address: branchForm.address.trim(),
+        phone: branchForm.phone.trim(),
+        isActive: true,
+      };
+      setBranches((prev) => [nextBranch, ...prev]);
     }
-
-    setBranches((prev) =>
-      prev.map((branch) =>
-        branch.id === editingBranch.id
-          ? { ...branch, ...branchForm }
-          : branch,
-      ),
-    );
     setIsBranchModalOpen(false);
     setEditingBranch(null);
   };
+
+  const handleAddBankAccount = () => {
+    setEditingBankAccount(null);
+    setBankAccountForm({
+      bankName: "",
+      accountNumber: "",
+      accountName: "",
+      accountType: "",
+      openingBalance: "",
+    });
+    setIsBankAccountModalOpen(true);
+  };
+
+  if (loading) {
+    return (
+      <LoadingFallback
+        title="Đang tải cài đặt"
+        message="Vui lòng chờ trong giây lát"
+      />
+    );
+  }
 
   if (error) {
     return (
@@ -370,7 +526,7 @@ const Settings: React.FC = () => {
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                   Loại giao dịch
                 </h2>
-                <Button variant="primary" size="sm" className="w-full sm:w-auto">
+                <Button variant="primary" size="sm" className="w-full sm:w-auto" onClick={handleAddTransactionType}>
                   <svg
                     className="w-4 h-4 mr-2"
                     fill="none"
@@ -420,7 +576,12 @@ const Settings: React.FC = () => {
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                   Tài khoản ngân hàng
                 </h2>
-                <Button variant="primary" size="sm" className="w-full sm:w-auto">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={handleAddBankAccount}
+                >
                   <svg
                     className="w-4 h-4 mr-2"
                     fill="none"
@@ -477,11 +638,20 @@ const Settings: React.FC = () => {
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
                           {formatCurrency(account.balance)}
                         </div>
-                        <ToggleSwitch
-                          checked={account.isActive}
-                          onChange={() => handleToggleActive("bank-account", account.id)}
-                          size="sm"
-                        />
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => handleEditBankAccount(account)}
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                          >
+                            Sửa
+                          </button>
+                          <ToggleSwitch
+                            checked={account.isActive}
+                            onChange={() => handleToggleActive("bank-account", account.id)}
+                            size="sm"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -497,7 +667,12 @@ const Settings: React.FC = () => {
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                   Văn phòng
                 </h2>
-                <Button variant="primary" size="sm" className="w-full sm:w-auto">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={handleAddBranch}
+                >
                   <svg
                     className="w-4 h-4 mr-2"
                     fill="none"
@@ -531,7 +706,7 @@ const Settings: React.FC = () => {
                           onClick={() => handleEditBranch(branch)}
                           className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                         >
-                          Sua
+                          Sửa
                         </button>
                         <button
                           type="button"
@@ -557,12 +732,107 @@ const Settings: React.FC = () => {
             </div>
           )}
 
+          {isBankAccountModalOpen && editingBankAccount && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+              <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Chỉnh sửa tài khoản
+                  </h3>
+                </div>
+                <div className="p-4 space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Tên ngân hàng
+                    </label>
+                    <input
+                      type="text"
+                      value={bankAccountForm.bankName}
+                      onChange={(e) => handleBankAccountFormChange("bankName", e.target.value)}
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Số tài khoản
+                    </label>
+                    <input
+                      type="text"
+                      value={bankAccountForm.accountNumber}
+                      onChange={(e) => handleBankAccountFormChange("accountNumber", e.target.value)}
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Tên tài khoản
+                    </label>
+                    <input
+                      type="text"
+                      value={bankAccountForm.accountName}
+                      onChange={(e) => handleBankAccountFormChange("accountName", e.target.value)}
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Loại tài khoản
+                    </label>
+                    <input
+                      type="text"
+                      value={bankAccountForm.accountType}
+                      onChange={(e) => handleBankAccountFormChange("accountType", e.target.value)}
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Số dư hiện tại (chỉ đọc)
+                    </label>
+                    <input
+                      type="text"
+                      value={formatCurrency(editingBankAccount.balance)}
+                      disabled
+                      className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700/60 text-sm text-gray-700 dark:text-gray-300 px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Số dư đầu kỳ
+                    </label>
+                    <input
+                      type="number"
+                      value={bankAccountForm.openingBalance}
+                      onChange={(e) => handleBankAccountFormChange("openingBalance", e.target.value)}
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2"
+                    />
+                  </div>
+                </div>
+                <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setIsBankAccountModalOpen(false);
+                      setEditingBankAccount(null);
+                    }}
+                  >
+                    Hủy
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handleSaveBankAccount}>
+                    Lưu
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {isBranchModalOpen && editingBranch && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
               <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Chinh sua van phong
+                    Chỉnh sửa văn phòng
                   </h3>
                 </div>
                 <div className="p-4 space-y-4">
@@ -626,7 +896,12 @@ const Settings: React.FC = () => {
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                   Trường khách hàng
                 </h2>
-                <Button variant="primary" size="sm" className="w-full sm:w-auto">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={handleAddCustomerField}
+                >
                   <svg
                     className="w-4 h-4 mr-2"
                     fill="none"
@@ -739,6 +1014,22 @@ const Settings: React.FC = () => {
                       Xuất CSV
                     </Button>
                   </div>
+                </div>
+
+                <div className="p-4 border border-red-200 dark:border-red-700/60 rounded-lg bg-red-50/40 dark:bg-red-900/10">
+                  <h3 className="text-sm font-medium text-red-700 dark:text-red-300 mb-2">
+                    Reset dữ liệu
+                  </h3>
+                  <p className="text-xs text-red-600 dark:text-red-300 mb-3">
+                    Xóa toàn bộ dữ liệu khách hàng, giao dịch và tài khoản ngân hàng. Không thể hoàn tác.
+                  </p>
+                  <Button
+                    variant="secondary"
+                    className="w-full sm:w-auto border-red-300 text-red-700 hover:text-red-800 hover:border-red-400"
+                    onClick={handleResetData}
+                  >
+                    Reset toàn bộ dữ liệu
+                  </Button>
                 </div>
               </div>
             </div>

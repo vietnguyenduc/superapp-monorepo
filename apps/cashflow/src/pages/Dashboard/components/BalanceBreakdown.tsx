@@ -1,5 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "../../../utils/formatting";
 
 interface TransactionByBranch {
@@ -15,6 +16,7 @@ interface BalanceBreakdownProps {
 
 const BalanceBreakdown: React.FC<BalanceBreakdownProps> = ({ data }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   if (!data || data.length === 0) {
     return (
@@ -43,7 +45,8 @@ const BalanceBreakdown: React.FC<BalanceBreakdownProps> = ({ data }) => {
           return (
             <div
               key={branch.branch_id}
-              className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
+              className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+              onClick={() => navigate(`/transactions?branch_id=${branch.branch_id}`)}
             >
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">

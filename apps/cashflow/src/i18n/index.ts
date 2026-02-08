@@ -23,7 +23,7 @@ i18n
   // Initialize i18next
   .init({
     resources,
-    fallbackLng: "en",
+    fallbackLng: "vi",
     debug: process.env.NODE_ENV === "development",
     
     // Force language detection on every page load

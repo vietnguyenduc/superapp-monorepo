@@ -46,8 +46,15 @@ interface CashFlowChartProps {
 }
 
 const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBalance, endBalance }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [showBalance, setShowBalance] = React.useState(true);
+  const isDark = typeof document !== "undefined"
+    && document.documentElement.classList.contains("dark");
+  const axisLabelColor = isDark ? "#e5e7eb" : "#374151";
+  const axisLineColor = isDark ? "#4b5563" : "#9ca3af";
+  const gridLineColor = isDark ? "#374151" : "#e5e7eb";
+  const referenceLineColor = isDark ? "#9ca3af" : "#9ca3af";
+  const locale = i18n.language === "vi" ? "vi-VN" : undefined;
 
   if (!data || data.length === 0) {
     return (
@@ -64,23 +71,23 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
     const date = new Date(dateStr);
     switch (timeRange) {
       case "day":
-        return date.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+        return date.toLocaleDateString(locale, { day: "numeric", month: "short" });
       case "week":
         {
           const weekStart = new Date(date);
           const day = (weekStart.getDay() + 6) % 7;
           weekStart.setDate(weekStart.getDate() - day);
-          return weekStart.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+          return weekStart.toLocaleDateString(locale, { day: "numeric", month: "short" });
         }
       case "month":
-        return date.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+        return date.toLocaleDateString(locale, { month: "short", year: "numeric" });
       case "quarter":
         const quarter = Math.floor(date.getMonth() / 3) + 1;
         return `Q${quarter} ${date.getFullYear()}`;
       case "year":
         return date.getFullYear().toString();
       default:
-        return date.toLocaleDateString();
+        return date.toLocaleDateString(locale);
     }
   };
 
@@ -496,20 +503,20 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
           barGap={0}
           barCategoryGap={barCategoryGap}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+          <CartesianGrid strokeDasharray="3 3" stroke={gridLineColor} />
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 9, fill: "#e5e7eb", fontWeight: 600 }}
+            tick={{ fontSize: 11, fill: axisLabelColor, fontWeight: 600 }}
             angle={-45}
             textAnchor="end"
             height={60}
             interval={0}
             tickLine={false}
             padding={xAxisPadding}
-            axisLine={{ stroke: "#4b5563" }}
+            axisLine={{ stroke: axisLineColor }}
           />
           <YAxis
-            tick={{ fontSize: 10, fontWeight: 600, fill: "#e5e7eb" }}
+            tick={{ fontSize: 10, fontWeight: 600, fill: axisLabelColor }}
             tickFormatter={(value) => {
               // Clean, rounded Y-axis labels
               const absValue = Math.abs(value / 1000000);
@@ -519,9 +526,9 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
             width={50}
             tickCount={7}
             domain={[(dataMin: number) => dataMin * 1.1, (dataMax: number) => dataMax * 1.1]}
-            axisLine={{ stroke: "#4b5563" }}
+            axisLine={{ stroke: axisLineColor }}
           />
-          <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="4 3" />
+          <ReferenceLine y={0} stroke={referenceLineColor} strokeDasharray="4 3" />
           <Tooltip content={<CustomTooltip />} />
 
           <Bar dataKey="base" stackId="flow" fill="transparent" barSize={barSize} />

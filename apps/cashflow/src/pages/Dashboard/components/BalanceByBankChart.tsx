@@ -31,6 +31,12 @@ interface BalanceByBankChartProps {
 const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
   const { t } = useTranslation();
   const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
+  const isDark = typeof document !== "undefined"
+    && document.documentElement.classList.contains("dark");
+  const axisLabelColor = isDark ? "#e5e7eb" : "#374151";
+  const axisSecondaryColor = isDark ? "#9ca3af" : "#6b7280";
+  const axisLineColor = isDark ? "#4b5563" : "#9ca3af";
+  const gridLineColor = isDark ? "#374151" : "#e5e7eb";
 
   // Update screen size on mount and resize
   useEffect(() => {
@@ -212,7 +218,7 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
           x={0}
           y={0}
           textAnchor="end"
-          fill="#e5e7eb"
+          fill={axisLabelColor}
           fontSize={fontSize}
           fontWeight={600}
         >
@@ -224,7 +230,7 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
             x={0}
             y={fontSize + 2}
             textAnchor="end"
-            fill="#9ca3af"
+            fill={axisSecondaryColor}
             fontSize={fontSize - 1}
             fontWeight={500}
           >
@@ -285,17 +291,17 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
           barGap={0}
           barCategoryGap={chartConfig.barGap}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+          <CartesianGrid strokeDasharray="3 3" stroke={gridLineColor} />
           <XAxis
             dataKey="name"
             height={chartConfig.xAxisHeight}
             interval={0}
             tickLine={false}
-            axisLine={{ stroke: "#4b5563" }}
+            axisLine={{ stroke: axisLineColor }}
             tick={renderXAxisTick}
           />
           <YAxis
-            tick={{ fontSize: chartConfig.tickFontSize, fontWeight: 600, fill: "#e5e7eb" }}
+            tick={{ fontSize: chartConfig.tickFontSize, fontWeight: 600, fill: axisLabelColor }}
             tickFormatter={(value) => {
               // Clean, rounded Y-axis labels
               const absValue = Math.abs(value / 1000000);
@@ -304,7 +310,7 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
             }}
             width={chartConfig.yWidth}
             tickCount={4}
-            axisLine={{ stroke: "#4b5563" }}
+            axisLine={{ stroke: axisLineColor }}
           />
           <Tooltip content={<CustomTooltip />} />
           
@@ -326,7 +332,7 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
               style={{
                 fontSize: chartConfig.labelFontSize,
                 fontWeight: "600",
-                fill: "#f3f4f6"
+                fill: axisLabelColor
               }}
             />
           </Bar>

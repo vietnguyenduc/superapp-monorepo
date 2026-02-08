@@ -19,6 +19,10 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [balanceAfterMap, setBalanceAfterMap] = React.useState<Record<string, number>>({});
+  const [accountBalanceAfterMap, setAccountBalanceAfterMap] = React.useState<Record<string, number>>({});
+  const [bankAccounts, setBankAccounts] = React.useState<Array<{ id: string; name: string }>>([]);
+  const [selectedAccountId, setSelectedAccountId] = React.useState<string>("");
+  const [selectedBranchId, setSelectedBranchId] = React.useState<string>("");
   const defaultBranchMap: Record<string, string> = {
     "1": "Văn phòng chính",
     "2": "Văn phòng Bắc",
@@ -49,6 +53,24 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
 
   React.useEffect(() => {
     let isMounted = true;
+    const loadBankAccounts = async () => {
+      const response = await databaseService.bankAccounts.getBankAccounts();
+      if (!response?.data || !isMounted) return;
+      setBankAccounts(
+        response.data.map((account: any) => ({
+          id: String(account.id),
+          name: String(account.account_name || account.bank_name || account.account_number || account.id),
+        })),
+      );
+    };
+    loadBankAccounts();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  React.useEffect(() => {
+    let isMounted = true;
     const loadBalances = async () => {
       const response = await databaseService.transactions.getTransactions({
         page: 1,
@@ -59,9 +81,12 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
         (a, b) => new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime(),
       );
       const runningByCustomer = new Map<string, number>();
+      const runningByAccount = new Map<string, number>();
       const nextMap: Record<string, number> = {};
+      const nextAccountMap: Record<string, number> = {};
       all.forEach((tx) => {
         const prev = runningByCustomer.get(tx.customer_id) || 0;
+        const prevAccount = runningByAccount.get(tx.bank_account_id) || 0;
         let delta = tx.amount;
         if (tx.transaction_type === "charge") delta = -Math.abs(tx.amount);
         else if (tx.transaction_type === "payment" || tx.transaction_type === "refund") {
@@ -69,11 +94,15 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
         } else if (tx.transaction_type === "adjustment") {
           delta = tx.amount;
         }
-        const next = prev + delta;
+        const next = Math.max(0, prev + delta);
+        const nextAccount = Math.max(0, prevAccount + delta);
         runningByCustomer.set(tx.customer_id, next);
+        runningByAccount.set(tx.bank_account_id, nextAccount);
         nextMap[tx.id] = next;
+        nextAccountMap[tx.id] = nextAccount;
       });
       setBalanceAfterMap(nextMap);
+      setAccountBalanceAfterMap(nextAccountMap);
     };
     loadBalances();
     return () => {
@@ -103,7 +132,12 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
     );
   }
 
-  const displayTransactions = transactions.slice(0, maxItems);
+  const filteredTransactions = transactions.filter((transaction) => {
+    if (selectedBranchId && String(transaction.branch_id) !== selectedBranchId) return false;
+    if (selectedAccountId && String(transaction.bank_account_id) !== selectedAccountId) return false;
+    return true;
+  });
+  const displayTransactions = filteredTransactions.slice(0, maxItems);
 
   const getTransactionTypeColor = (type: string) => {
     switch (type) {
@@ -139,39 +173,64 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
     <div>
       {/* Display Count Selector */}
       {onMaxItemsChange && (
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm text-gray-600 dark:text-gray-400">
-            Hiển thị {maxItems}/{transactions.length}
+            Hiển thị {displayTransactions.length}/{filteredTransactions.length}
           </span>
-          <div className="relative">
+          <div className="flex flex-wrap items-center gap-2">
             <select
-              value={maxItems}
-              onChange={(e) => {
-                const newValue = Number(e.target.value);
-                console.log("Changing maxItems from", maxItems, "to", newValue);
-                onMaxItemsChange(newValue);
-              }}
-              className="appearance-none text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 pr-8 text-gray-900 dark:text-gray-100 cursor-pointer"
+              value={selectedAccountId}
+              onChange={(e) => setSelectedAccountId(e.target.value)}
+              className="appearance-none text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-gray-900 dark:text-gray-100 cursor-pointer"
             >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={15}>15</option>
-              <option value={20}>20</option>
+              <option value="">Tất cả tài khoản</option>
+              {bankAccounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name}
+                </option>
+              ))}
             </select>
-            <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-              <svg
-                className="w-4 h-4 text-gray-400 dark:text-gray-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <select
+              value={selectedBranchId}
+              onChange={(e) => setSelectedBranchId(e.target.value)}
+              className="appearance-none text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-gray-900 dark:text-gray-100 cursor-pointer"
+            >
+              <option value="">Tất cả văn phòng</option>
+              {Object.entries(branchMap).map(([id, name]) => (
+                <option key={id} value={id}>
+                  {name}
+                </option>
+              ))}
+            </select>
+            <div className="relative">
+              <select
+                value={maxItems}
+                onChange={(e) => {
+                  const newValue = Number(e.target.value);
+                  onMaxItemsChange(newValue);
+                }}
+                className="appearance-none text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 pr-8 text-gray-900 dark:text-gray-100 cursor-pointer"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+                <option value={20}>20</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg
+                  className="w-4 h-4 text-gray-400 dark:text-gray-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
@@ -186,30 +245,49 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
               <div
                 key={transaction.id}
                 className="p-4 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-                onClick={() => navigate(`/transactions/${transaction.id}`)}
+                onClick={() => navigate(getCustomerTransactionsUrl(transaction))}
               >
-                {/* Top row: Description, Amount, and Type */}
+                {/* Top row: Date, Customer, Amount, and Type */}
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1 min-w-0 pr-4">
-                    <div className="flex items-center gap-3 mb-1">
+                    <div className="mb-1">
+                      <span className="block text-lg font-semibold text-gray-900 dark:text-white">
+                        {formatDate(transaction.transaction_date)}
+                      </span>
                       <span
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/transactions?customer_id=${transaction.customer_id}&customer_name=${encodeURIComponent(transaction.customer_name || '')}`);
                         }}
-                        className="text-base font-semibold text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors underline decoration-transparent hover:underline"
+                        className="block text-sm font-medium text-gray-500 dark:text-gray-400 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                       >
                         {transaction.customer_name ||
                           t("dashboard.customerId", { id: transaction.customer_id })}
                       </span>
-                      <span className="text-sm font-medium text-gray-600 dark:text-gray-200">
-                        {formatDate(transaction.transaction_date)}
-                      </span>
+                    </div>
+                    <div className="flex flex-col gap-1 text-sm">
+                      <div className="flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {transaction.bank_account_name ||
+                            t("dashboard.accountId", { id: transaction.bank_account_id })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {getBranchName(transaction.branch_id)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div className="flex-shrink-0 text-right">
                     <div
-                      className={`text-lg font-bold ${
+                      className={`text-xl font-bold ${
                         transaction.transaction_type === "payment"
                           ? "text-green-600 dark:text-green-300"
                           : "text-red-600 dark:text-red-300"
@@ -218,7 +296,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                       {formatCurrency(transaction.amount)}
                     </div>
                     <span
-                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${getTransactionTypeColor(
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-semibold mt-1 ${getTransactionTypeColor(
                         transaction.transaction_type,
                       )}`}
                     >
@@ -227,28 +305,24 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                   </div>
                 </div>
 
-                {/* Bottom row: Account, Office, Date */}
-                <div className="flex justify-between items-center text-sm text-gray-500 dark:text-white pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                      </svg>
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
-                        {transaction.bank_account_name ||
-                          t("dashboard.accountId", { id: transaction.bank_account_id })}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
-                        {getBranchName(transaction.branch_id)}
-                      </span>
-                    </div>
+                {/* Bottom row: Balances */}
+                <div className="flex flex-wrap justify-end gap-x-8 gap-y-2 text-sm text-gray-500 dark:text-gray-300 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2 text-right">
+                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500">
+                      Số dư TK
+                    </span>
+                    <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                      {formatCurrency(accountBalanceAfterMap[transaction.id] ?? 0)}
+                    </span>
                   </div>
-                  <div />
+                  <div className="flex items-center gap-2 text-right">
+                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500">
+                      Số dư KH
+                    </span>
+                    <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                      {formatCurrency(balanceAfterMap[transaction.id] ?? 0)}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}

@@ -224,6 +224,16 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                     </dd>
                   </div>
                 </dl>
+
+                <div className="mt-6 rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800/60">
+                  <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                    Cách làm việc công nợ
+                  </h5>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                    {customer.working_method ||
+                      "Thu nợ theo chu kỳ 7 ngày. Khách hàng xác nhận đối soát vào thứ Hai, thanh toán trước 17:00 cùng ngày. Nếu quá hạn 3 ngày sẽ chuyển nhắc nợ lần 2 và áp dụng mức chiết khấu 1% khi thanh toán trong tuần."}
+                  </p>
+                </div>
               </div>
 
               {/* Financial Summary */}

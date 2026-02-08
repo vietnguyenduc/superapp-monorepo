@@ -46,6 +46,7 @@ export interface Customer {
   phone?: string;
   email?: string;
   address?: string;
+  working_method?: string;
   branch_id?: string | null;
   total_balance: number;
   last_transaction_date?: string;

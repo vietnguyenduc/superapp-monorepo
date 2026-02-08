@@ -5,7 +5,7 @@ export const useI18n = () => {
   const { t, i18n } = useTranslation();
   const [currentLanguage, setCurrentLanguage] = useLocalStorage(
     "i18nextLng",
-    "en",
+    "vi",
   );
 
   const changeLanguage = (language: string) => {

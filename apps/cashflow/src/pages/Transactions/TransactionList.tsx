@@ -1,18 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { databaseService } from "../../services/database";
-import type { Transaction, Customer } from "../../types";
-import {
-  formatCurrency,
-  formatDate,
-  getTransactionTypeColor,
-  getTransactionTypeTextColor,
-} from "../../utils/formatting";
+import type { Transaction } from "../../types";
+import { formatCurrency, formatDate } from "../../utils/formatting";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
 import Pagination from "../../components/UI/Pagination";
 import TimeRangeFilter from "../../components/UI/TimeRangeFilter";
-import Button from "../../components/UI/Button";
 import PageHeader from "../../components/UI/PageHeader";
 
 interface TransactionListState {
@@ -38,11 +31,11 @@ interface TransactionListState {
 }
 
 const TransactionList: React.FC = () => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [bankAccounts, setBankAccounts] = useState<{ id: string; name: string }[]>([]);
+  const [customers, setCustomers] = useState<{ id: string; name: string }[]>([]);
   const [userOptions, setUserOptions] = useState<string[]>([]);
   const [state, setState] = useState<TransactionListState>({
     transactions: [],
@@ -64,6 +57,7 @@ const TransactionList: React.FC = () => {
   useEffect(() => {
     const customerId = searchParams.get("customer_id");
     const customerName = searchParams.get("customer_name");
+    const branchId = searchParams.get("branch_id");
 
     if (customerId) {
       setState((prev) => ({
@@ -72,6 +66,13 @@ const TransactionList: React.FC = () => {
           id: customerId,
           name: customerName || null,
         },
+      }));
+    }
+
+    if (branchId) {
+      setState((prev) => ({
+        ...prev,
+        branchFilter: branchId,
       }));
     }
   }, [searchParams]);
@@ -131,9 +132,10 @@ const TransactionList: React.FC = () => {
 
   useEffect(() => {
     const loadFilters = async () => {
-      const [branchResult, bankResult] = await Promise.all([
+      const [branchResult, bankResult, customerResult] = await Promise.all([
         databaseService.branches.getBranches(),
         databaseService.bankAccounts.getBankAccounts(),
+        databaseService.customers.getCustomers({ limit: 500 }),
       ]);
       if (branchResult?.data) {
         setBranches(
@@ -148,6 +150,14 @@ const TransactionList: React.FC = () => {
           bankResult.data.map((account: any) => ({
             id: String(account.id),
             name: String(account.account_name || account.bank_name || account.id),
+          })),
+        );
+      }
+      if (customerResult?.data) {
+        setCustomers(
+          customerResult.data.map((customer: any) => ({
+            id: String(customer.id),
+            name: String(customer.full_name || customer.customer_name || customer.customer_code || customer.id),
           })),
         );
       }
@@ -170,10 +180,6 @@ const TransactionList: React.FC = () => {
 
   const handleDateRangeChange = (range: { start: string; end: string } | null) => {
     setState((prev) => ({ ...prev, dateRange: range, currentPage: 1 }));
-  };
-
-  const handleTransactionTypeChange = (type: string | null) => {
-    setState((prev) => ({ ...prev, transactionType: type, currentPage: 1 }));
   };
 
   const getBranchName = (branchId: string): string => {
@@ -314,6 +320,28 @@ const TransactionList: React.FC = () => {
                 {userOptions.map((user) => (
                   <option key={user} value={user}>
                     {user}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <select
+                value={state.customerFilter?.id || ""}
+                onChange={(event) =>
+                  setState((prev) => ({
+                    ...prev,
+                    customerFilter: event.target.value
+                      ? { id: event.target.value, name: null }
+                      : null,
+                    currentPage: 1,
+                  }))
+                }
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="">Tất cả khách hàng</option>
+                {customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name}
                   </option>
                 ))}
               </select>

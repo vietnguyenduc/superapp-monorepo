@@ -15,6 +15,7 @@ interface FormData {
   email: string;
   phone: string;
   address: string;
+  working_method: string;
   is_active: boolean;
   create_transactions: boolean;
 }
@@ -39,6 +40,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     email: "",
     phone: "",
     address: "",
+    working_method: "",
     is_active: true,
     create_transactions: false,
   });
@@ -53,6 +55,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         email: customer.email || "",
         phone: customer.phone || "",
         address: customer.address || "",
+        working_method: customer.working_method || "",
         is_active: customer.is_active,
         create_transactions: false,
       });
@@ -277,6 +280,25 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     }
                     className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     placeholder={t("customers.form.addressPlaceholder")}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="working_method"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Cách làm việc công nợ
+                  </label>
+                  <textarea
+                    id="working_method"
+                    rows={4}
+                    value={formData.working_method}
+                    onChange={(e) =>
+                      handleInputChange("working_method", e.target.value)
+                    }
+                    className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    placeholder="Ví dụ: Thu nợ theo chu kỳ 7 ngày, đối soát thứ Hai, thanh toán trước 17:00..."
                   />
                 </div>
 
