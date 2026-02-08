@@ -16,35 +16,50 @@ import TransactionImport from "./pages/DataImport/TransactionImport";
 import CustomerImport from "./pages/DataImport/CustomerImport";
 import Settings from "./pages/Settings/Settings";
 import Login from "./pages/Auth/Login";
+import CompanySelector from "./pages/CompanySelector/CompanySelector";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
+import { CompanyProvider } from "./contexts/CompanyContext";
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/login" element={<Login />} />
-        {/* Protected routes with layout */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="customers" element={<CustomerList />} />
-          <Route path="customers/:customerId" element={<CustomerDetail />} />
-          <Route path="transactions" element={<TransactionList />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="import/transactions" element={<TransactionImport />} />
-          <Route path="import/customers" element={<CustomerImport />} />
-        </Route>
-      </Routes>
-    </Router>
+    <CompanyProvider>
+      <Router>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login" element={<Login />} />
+
+          {/* Company selector for admins */}
+          <Route
+            path="/companies"
+            element={
+              <ProtectedRoute>
+                <CompanySelector />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Protected routes with layout */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="customers" element={<CustomerList />} />
+            <Route path="customers/:customerId" element={<CustomerDetail />} />
+            <Route path="transactions" element={<TransactionList />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="import/transactions" element={<TransactionImport />} />
+            <Route path="import/customers" element={<CustomerImport />} />
+          </Route>
+        </Routes>
+      </Router>
+    </CompanyProvider>
   );
 }
 

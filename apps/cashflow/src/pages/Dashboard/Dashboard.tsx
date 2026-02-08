@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { useCompany } from "../../contexts/CompanyContext";
 import { databaseService } from "../../services/database";
 import { formatNumber } from "../../utils/formatting";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
@@ -22,6 +23,7 @@ const Dashboard: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { selectedCompany } = useCompany();
   const [timeRange, setTimeRange] = useState<TimeRange>("month");
   const [topCustomersCount, setTopCustomersCount] = useState(8);
   const [recentTransactionsCount, setRecentTransactionsCount] = useState(8);
@@ -41,17 +43,23 @@ const Dashboard: React.FC = () => {
     quarter: 4
   });
 
+  // Determine the company ID for filtering
+  // Admin users: use selectedCompany from context
+  // Staff users: use company_id from their branch
+  const effectiveCompanyId = selectedCompany?.id || user?.branch?.company_id;
+
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // Get the appropriate data based on time range and rangeCount
+      // Get the appropriate data based on time range, rangeCount, and company
       const result = await databaseService.dashboard.getDashboardMetrics(
         undefined,
         timeRange,
         rangeCount, // Pass rangeCount to control the number of data points
+        effectiveCompanyId // Pass company ID for multi-tenant filtering
       );
 
       if (result.error) {
@@ -66,12 +74,12 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [timeRange, rangeCount]); // Add rangeCount as dependency
+  }, [timeRange, rangeCount, effectiveCompanyId]); // Add effectiveCompanyId as dependency
 
-  // Load data on component mount and when time range changes
+  // Load data on component mount and when time range or company changes
   useEffect(() => {
     fetchDashboardData();
-  }, [fetchDashboardData, timeRange]);
+  }, [fetchDashboardData, timeRange, effectiveCompanyId]);
 
   // Auto-refresh data every 5 minutes
   useEffect(() => {

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../../services/supabase";
+import CompanySwitcher from "./CompanySwitcher";
 
 const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -93,12 +94,14 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
             </div>
           </div>
         </div>
-        {/* Right: Today's Date + Language Switcher + User Menu */}
+        {/* Right: Today's Date + Company Switcher + Language Switcher + User Menu */}
         <div className="flex items-center space-x-4">
           {/* Today's Date */}
           <div className="hidden sm:block text-sm text-gray-600 font-medium">
             {formatToday()}
           </div>
+          {/* Company Switcher - for admin users */}
+          <CompanySwitcher />
           <button
             onClick={handleLanguageChange}
             className="px-3 py-1 rounded bg-white text-gray-800 hover:bg-gray-50 text-xs font-semibold border border-gray-300 shadow-sm"
