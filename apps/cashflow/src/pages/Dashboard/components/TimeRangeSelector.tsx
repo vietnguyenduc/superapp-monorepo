@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import Button from "../../../components/UI/Button";
-import { TimeRange } from "../Dashboard";
+import type { TimeRange } from "../Dashboard";
 
 interface TimeRangeSelectorProps {
   value: TimeRange;
@@ -17,14 +17,14 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
   const timeRanges: TimeRange[] = ["day", "week", "month", "quarter", "year"];
 
   return (
-    <div className="flex flex-wrap gap-1 bg-gray-50 rounded-xl p-1 overflow-x-auto shadow-sm border border-gray-100">
+    <div className="flex gap-0.5 sm:gap-1">
       {timeRanges.map((range) => (
         <Button
           key={range}
           variant={value === range ? "primary" : "secondary"}
           size="sm"
           onClick={() => onChange(range)}
-          className="text-xs"
+          className="text-xs px-2 sm:px-3 whitespace-nowrap min-h-[40px]"
         >
           {t(`dashboard.timeRange.${range}`)}
         </Button>

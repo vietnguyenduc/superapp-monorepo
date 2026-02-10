@@ -41,12 +41,12 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
 
   return (
     <nav className="sticky top-0 z-[100] bg-white shadow-sm border-b border-gray-200 backdrop-blur-sm">
-      <div className="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
+      <div className="flex justify-between items-center h-14 sm:h-16 px-2 sm:px-4 lg:px-8">
         {/* Left: Brand */}
         <div className="flex items-center">
           <button
             onClick={onMenuClick}
-            className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-gray-500 lg:hidden"
+            className="inline-flex items-center justify-center p-2 min-w-[44px] min-h-[44px] rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-gray-500 lg:hidden"
           >
             <span className="sr-only">Open main menu</span>
             <svg
@@ -64,11 +64,11 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
               />
             </svg>
           </button>
-          <div className="ml-2 flex items-center space-x-3">
+          <div className="ml-1 sm:ml-2 flex items-center space-x-2 sm:space-x-3">
             {/* App Icon */}
             <div className="flex-shrink-0">
               <svg
-                className="w-8 h-8 text-gray-700"
+                className="w-6 h-6 sm:w-8 sm:h-8 text-gray-700"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -82,41 +82,41 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
               </svg>
             </div>
             {/* Divider Line */}
-            <div className="mx-3 h-8 w-px bg-gray-300"></div>
+            <div className="hidden sm:block mx-2 sm:mx-3 h-6 sm:h-8 w-px bg-gray-300"></div>
             {/* App Title */}
             <div className="flex flex-col">
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900 tracking-tight leading-tight">
+              <h1 className="text-base sm:text-xl md:text-2xl font-bold text-gray-900 tracking-tight leading-tight">
                 Quản lý công nợ - TPL
               </h1>
-              <p className="text-xs md:text-sm text-gray-500 font-medium tracking-wide">
+              <p className="hidden sm:block text-xs md:text-sm text-gray-500 font-medium tracking-wide">
                 Hệ thống quản lý công nợ và giao dịch
               </p>
             </div>
           </div>
         </div>
         {/* Right: Today's Date + Company Switcher + Language Switcher + User Menu */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
           {/* Today's Date */}
-          <div className="hidden sm:block text-sm text-gray-600 font-medium">
+          <div className="hidden md:block text-sm text-gray-600 font-medium">
             {formatToday()}
           </div>
           {/* Company Switcher - for admin users */}
           <CompanySwitcher />
           <button
             onClick={handleLanguageChange}
-            className="px-3 py-1 rounded bg-white text-gray-800 hover:bg-gray-50 text-xs font-semibold border border-gray-300 shadow-sm"
+            className="px-2 sm:px-3 py-2 min-w-[44px] min-h-[44px] rounded bg-white text-gray-800 hover:bg-gray-50 text-xs font-semibold border border-gray-300 shadow-sm flex items-center justify-center"
           >
             {i18n.language === "en" ? "ENG" : "VI"}
           </button>
           <div className="relative">
             <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="flex items-center space-x-2 text-sm rounded-full bg-white border border-gray-300 px-3 py-2 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm"
+              className="flex items-center space-x-1 sm:space-x-2 text-sm rounded-full bg-white border border-gray-300 px-2 sm:px-3 py-2 min-h-[44px] hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm"
             >
               <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
                 <span className="text-gray-700 font-medium text-xs">U</span>
               </div>
-              <span className="text-gray-800 font-medium">User</span>
+              <span className="hidden sm:inline text-gray-800 font-medium">User</span>
               <svg
                 className={`h-4 w-4 text-gray-500 transition-transform ${
                   isUserMenuOpen ? "rotate-180" : ""
