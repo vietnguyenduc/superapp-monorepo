@@ -168,7 +168,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                 <span>{item.name}</span>
               </a>
               {item.hasAddButton && (
-                <div className="ml-2 flex-shrink-0">
+                <div className="ml-2 flex-shrink-0 hidden lg:flex">
                   <AddButton
                     onClick={() => {
                       item.addAction?.();

@@ -278,54 +278,100 @@ const CustomerDetail: React.FC = () => {
                   <p className="text-gray-500 dark:text-gray-400">Không có giao dịch nào</p>
                 </div>
               ) : (
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Ngày
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Loại
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Số tiền
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Mô tả
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Văn phòng
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+                <>
+                  <div className="sm:hidden divide-y divide-gray-200 dark:divide-gray-700">
                     {transactions.map((transaction) => (
-                      <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {formatDate(transaction.transaction_date)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTransactionTypeColor(
-                              transaction.transaction_type,
-                            )}`}
-                          >
-                            {getTransactionTypeLabel(transaction.transaction_type)}
+                      <div key={transaction.id} className="p-4 flex flex-col gap-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {formatDate(transaction.transaction_date)}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                              {transaction.description || "-"}
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0 ml-auto">
+                            <div className="text-sm font-bold text-gray-900 dark:text-white">
+                              {formatCurrency(transaction.amount)}
+                            </div>
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium mt-1 ${getTransactionTypeColor(
+                                transaction.transaction_type,
+                              )}`}
+                            >
+                              {getTransactionTypeLabel(transaction.transaction_type)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-300">
+                          <span className="inline-flex items-center gap-1">
+                            <span className="font-medium">Văn phòng:</span>
+                            <span className="truncate">{transaction.branch_id || "-"}</span>
                           </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {formatCurrency(transaction.amount)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                          {transaction.description || "-"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {transaction.branch_id || "-"}
-                        </td>
-                      </tr>
+                          <span className="inline-flex items-center gap-1">
+                            <span className="font-medium">Mã:</span>
+                            <span className="font-mono bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
+                              {transaction.transaction_code}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                  <div className="hidden sm:block">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Ngày
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Loại
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-32">
+                            Số tiền
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Mô tả
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Văn phòng
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+                        {transactions.map((transaction) => (
+                          <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {formatDate(transaction.transaction_date)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTransactionTypeColor(
+                                  transaction.transaction_type,
+                                )}`}
+                              >
+                                {getTransactionTypeLabel(transaction.transaction_type)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 dark:text-white tabular-nums">
+                              <div className="flex justify-end">
+                                {formatCurrency(transaction.amount)}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                              {transaction.description || "-"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {transaction.branch_id || "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>

@@ -10,8 +10,10 @@ interface EditableTableProps {
     key: string;
     label: string;
     required?: boolean;
-    type?: "text" | "number" | "date" | "select";
+    type?: "text" | "number" | "date" | "select" | "datalist";
     options?: string[];
+    onCreate?: (value: string) => void;
+    openOnFocus?: boolean;
   }[];
   maxRows?: number;
 }
@@ -80,6 +82,7 @@ const EditableTable: React.FC<EditableTableProps> = ({
     if (!editingCell) return;
 
     const { row, col } = editingCell;
+    const columnConfig = columns.find((item) => item.key === col);
     const newData = [...data];
 
     // Update the cell value
@@ -89,9 +92,17 @@ const EditableTable: React.FC<EditableTableProps> = ({
     };
 
     onDataChange(newData);
+    if (
+      columnConfig?.type === "datalist" &&
+      columnConfig.onCreate &&
+      editValue.trim() &&
+      !(columnConfig.options || []).includes(editValue.trim())
+    ) {
+      columnConfig.onCreate(editValue.trim());
+    }
     setEditingCell(null);
     setEditValue("");
-  }, [editingCell, editValue, data, onDataChange]);
+  }, [editingCell, editValue, data, onDataChange, columns]);
 
   // Handle edit cancellation
   const handleEditCancel = useCallback(() => {
@@ -208,19 +219,53 @@ const EditableTable: React.FC<EditableTableProps> = ({
           return (
             <select
               value={editValue}
-              onChange={handleEditChange}
+              onChange={(event) => {
+                const nextValue = event.target.value;
+                if (nextValue === "__create__" && columnConfig.onCreate) {
+                  columnConfig.onCreate("");
+                  setEditValue("");
+                  return;
+                }
+                handleEditChange(event);
+              }}
               onKeyDown={handleKeyPress}
               onBlur={handleBlur}
               className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              size={columnConfig.openOnFocus ? Math.min(6, columnConfig.options.length + 1) : undefined}
               autoFocus
             >
               <option value="">{t("common.select")}</option>
+              {columnConfig.onCreate && (
+                <option value="__create__">+ {t("common.addNew")}</option>
+              )}
               {columnConfig.options.map((option: string) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
               ))}
             </select>
+          );
+        }
+
+        if (columnConfig.type === "datalist") {
+          const listId = `datalist-${columnConfig.key}`;
+          return (
+            <>
+              <input
+                list={listId}
+                value={editValue}
+                onChange={handleEditChange}
+                onKeyDown={handleKeyPress}
+                onBlur={handleBlur}
+                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autoFocus
+              />
+              <datalist id={listId}>
+                {(columnConfig.options || []).map((option: string) => (
+                  <option key={option} value={option} />
+                ))}
+              </datalist>
+            </>
           );
         }
 

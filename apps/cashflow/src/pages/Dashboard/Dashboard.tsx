@@ -38,7 +38,8 @@ const Dashboard: React.FC = () => {
     day: 7,
     week: 8,
     month: 7,
-    quarter: 4
+    quarter: 4,
+    year: 3,
   });
 
   // Fetch dashboard data
@@ -529,48 +530,56 @@ const Dashboard: React.FC = () => {
                   </svg>
                 </button>
                 {showBranchFilter && (
-                  <div className="absolute right-0 z-10 mt-2 w-56 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg">
-                    <div className="max-h-60 overflow-auto p-2">
-                      {branches.map((branch) => {
-                        const checked = selectedBranchIds.includes(branch.id);
-                        return (
-                          <label
-                            key={branch.id}
-                            className="flex items-center gap-2 rounded px-2 py-1 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => {
-                                setSelectedBranchIds((prev) =>
-                                  checked
-                                    ? prev.filter((id) => id !== branch.id)
-                                    : [...prev, branch.id],
-                                );
-                              }}
-                            />
-                            <span className="truncate">{branch.name}</span>
-                          </label>
-                        );
-                      })}
+                  <>
+                    <button
+                      type="button"
+                      className="fixed inset-0 z-10 cursor-default"
+                      onClick={() => setShowBranchFilter(false)}
+                      aria-label="Đóng bộ lọc văn phòng"
+                    />
+                    <div className="absolute right-0 z-20 mt-2 w-56 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg">
+                      <div className="max-h-60 overflow-auto p-2">
+                        {branches.map((branch) => {
+                          const checked = selectedBranchIds.includes(branch.id);
+                          return (
+                            <label
+                              key={branch.id}
+                              className="flex items-center gap-2 rounded px-2 py-1 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => {
+                                  setSelectedBranchIds((prev) =>
+                                    checked
+                                      ? prev.filter((id) => id !== branch.id)
+                                      : [...prev, branch.id],
+                                  );
+                                }}
+                              />
+                              <span className="truncate">{branch.name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-700 px-3 py-2 text-xs">
+                        <button
+                          type="button"
+                          className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white"
+                          onClick={() => setSelectedBranchIds([])}
+                        >
+                          Bỏ chọn
+                        </button>
+                        <button
+                          type="button"
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                          onClick={() => setShowBranchFilter(false)}
+                        >
+                          Xong
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-700 px-3 py-2 text-xs">
-                      <button
-                        type="button"
-                        className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white"
-                        onClick={() => setSelectedBranchIds([])}
-                      >
-                        Bỏ chọn
-                      </button>
-                      <button
-                        type="button"
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-                        onClick={() => setShowBranchFilter(false)}
-                      >
-                        Xong
-                      </button>
-                    </div>
-                  </div>
+                  </>
                 )}
               </div>
             </div>
@@ -601,12 +610,12 @@ const Dashboard: React.FC = () => {
                     {t("dashboard.recentTransactionsDescription")}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <Button
                     variant="primary"
                     size="sm"
                     onClick={() => navigate("/import/transactions")}
-                    className="inline-flex items-center text-xs"
+                    className="inline-flex items-center text-xs w-full justify-center sm:w-auto"
                   >
                     <svg
                       className="w-3.5 h-3.5 mr-1.5"
@@ -627,7 +636,7 @@ const Dashboard: React.FC = () => {
                     variant="secondary"
                     size="sm"
                     onClick={() => navigate("/transactions")}
-                    className="inline-flex items-center text-xs"
+                    className="inline-flex items-center text-xs w-full justify-center sm:w-auto"
                   >
                     <svg
                       className="w-3.5 h-3.5 mr-1.5"

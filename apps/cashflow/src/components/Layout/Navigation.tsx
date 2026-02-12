@@ -39,13 +39,13 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
   };
 
   return (
-    <nav className="sticky top-0 z-[100] bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 backdrop-blur-sm">
+    <nav className="sticky top-0 z-[200] bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 backdrop-blur-sm">
       <div className="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
         {/* Left: Brand */}
         <div className="flex items-center">
           <button
             onClick={onMenuClick}
-            className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-gray-500 dark:focus:ring-gray-400 lg:hidden"
+            className="relative z-10 inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-gray-500 dark:focus:ring-gray-400 lg:hidden"
           >
             <span className="sr-only">Open main menu</span>
             <svg
@@ -83,8 +83,8 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
             {/* Divider Line */}
             <div className="mx-3 h-8 w-px bg-gray-300 dark:bg-gray-600"></div>
             {/* App Title */}
-            <div className="flex flex-col">
-              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white tracking-tight leading-tight">
+            <div className="flex flex-col min-w-0">
+              <h1 className="text-base sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white tracking-tight leading-tight truncate max-w-[180px] sm:max-w-none">
                 Quản lý công nợ - TPL
               </h1>
               <p className="hidden sm:block text-xs md:text-sm text-gray-500 dark:text-gray-400 font-medium tracking-wide">

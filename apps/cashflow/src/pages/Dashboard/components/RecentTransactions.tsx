@@ -173,35 +173,8 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
     <div>
       {/* Display Count Selector */}
       {onMaxItemsChange && (
-        <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            Hiển thị {displayTransactions.length}/{filteredTransactions.length}
-          </span>
+        <div className="flex flex-col gap-2 mb-4">
           <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={selectedAccountId}
-              onChange={(e) => setSelectedAccountId(e.target.value)}
-              className="appearance-none text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-gray-900 dark:text-gray-100 cursor-pointer"
-            >
-              <option value="">Tất cả tài khoản</option>
-              {bankAccounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={selectedBranchId}
-              onChange={(e) => setSelectedBranchId(e.target.value)}
-              className="appearance-none text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-gray-900 dark:text-gray-100 cursor-pointer"
-            >
-              <option value="">Tất cả văn phòng</option>
-              {Object.entries(branchMap).map(([id, name]) => (
-                <option key={id} value={id}>
-                  {name}
-                </option>
-              ))}
-            </select>
             <div className="relative">
               <select
                 value={maxItems}
@@ -232,7 +205,34 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                 </svg>
               </div>
             </div>
+            <select
+              value={selectedAccountId}
+              onChange={(e) => setSelectedAccountId(e.target.value)}
+              className="appearance-none text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-gray-900 dark:text-gray-100 cursor-pointer"
+            >
+              <option value="">Tất cả tài khoản</option>
+              {bankAccounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedBranchId}
+              onChange={(e) => setSelectedBranchId(e.target.value)}
+              className="appearance-none text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-gray-900 dark:text-gray-100 cursor-pointer"
+            >
+              <option value="">Tất cả văn phòng</option>
+              {Object.entries(branchMap).map(([id, name]) => (
+                <option key={id} value={id}>
+                  {name}
+                </option>
+              ))}
+            </select>
           </div>
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            Hiển thị {displayTransactions.length}/{filteredTransactions.length}
+          </span>
         </div>
       )}
 

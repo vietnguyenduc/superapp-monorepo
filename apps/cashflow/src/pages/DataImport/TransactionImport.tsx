@@ -168,6 +168,13 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
   // Đọc cấu hình trường import từ localStorage:
   const defaultImportFields = [
     {
+      key: "transaction_date",
+      label: "Thời gian",
+      type: "date",
+      required: true,
+      enabled: true,
+    },
+    {
       key: "customer_name",
       label: "Tên khách hàng",
       type: "text",
@@ -175,8 +182,15 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
       enabled: true,
     },
     {
+      key: "amount",
+      label: "Số tiền",
+      type: "number",
+      required: true,
+      enabled: true,
+    },
+    {
       key: "bank_account",
-      label: "Số tài khoản ngân hàng",
+      label: "Ngân hàng",
       type: "text",
       required: false,
       enabled: true,
@@ -190,34 +204,20 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
       optionSource: "branch",
     },
     {
-      key: "transaction_type",
-      label: "Loại giao dịch",
-      type: "select",
-      required: true,
-      enabled: true,
-      optionSource: "manual",
-      options: ["Thu", "Chi", "Điều chỉnh", "Hoàn tiền"],
-    },
-    {
-      key: "amount",
-      label: "Số tiền",
-      type: "number",
-      required: true,
-      enabled: true,
-    },
-    {
-      key: "transaction_date",
-      label: "Ngày giao dịch",
-      type: "date",
-      required: true,
-      enabled: true,
-    },
-    {
       key: "description",
       label: "Nội dung",
       type: "text",
       required: false,
       enabled: true,
+    },
+    {
+      key: "transaction_type",
+      label: "Loại giao dịch",
+      type: "select",
+      required: false,
+      enabled: false,
+      optionSource: "manual",
+      options: ["Thu", "Chi", "Điều chỉnh", "Hoàn tiền"],
     },
   ];
 
@@ -230,12 +230,58 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
     enabled: boolean;
     optionSource?: string;
     options?: string[];
+    onCreate?: (value: string) => void;
+    openOnFocus?: boolean;
   };
   // Xóa setImportFields nếu không dùng:
   const [importFields] = useState(() => {
     const saved = localStorage.getItem("importFields");
-    return saved ? JSON.parse(saved) : defaultImportFields;
+    const baseFields = saved ? JSON.parse(saved) : defaultImportFields;
+    const order = defaultImportFields.map((field) => field.key);
+    return baseFields.slice().sort((a: ImportField, b: ImportField) => {
+      const indexA = order.indexOf(a.key);
+      const indexB = order.indexOf(b.key);
+      return indexA - indexB;
+    });
   });
+
+  const [customerOptions, setCustomerOptions] = useState<string[]>([]);
+  const [bankAccountOptions, setBankAccountOptions] = useState<string[]>([]);
+  const [branchOptions, setBranchOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      const [customerResult, bankResult, branchResult] = await Promise.all([
+        databaseService.customers.getCustomers({ limit: 500 }),
+        databaseService.bankAccounts.getBankAccounts(),
+        databaseService.branches.getBranches(),
+      ]);
+
+      if (customerResult?.data) {
+        setCustomerOptions(
+          customerResult.data.map((customer: any) =>
+            String(customer.full_name || customer.customer_name || customer.customer_code || customer.id),
+          ),
+        );
+      }
+
+      if (bankResult?.data) {
+        setBankAccountOptions(
+          bankResult.data.map((account: any) =>
+            String(account.account_name || account.account_number || account.bank_name || account.id),
+          ),
+        );
+      }
+
+      if (branchResult?.data) {
+        setBranchOptions(
+          branchResult.data.map((branch: any) => String(branch.name || branch.branch_name || branch.id)),
+        );
+      }
+    };
+
+    loadOptions();
+  }, []);
 
   // Đặt ngay sau enabledFields:
   const emptyRow = importFields.reduce(
@@ -570,9 +616,6 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
     );
   };
 
-  // Lấy danh sách văn phòng và ngân hàng từ localStorage (do Settings đã load và lưu vào localStorage):
-  const branches = JSON.parse(localStorage.getItem("branches") || "[]");
-
   const normalizedFields = useMemo(() => {
     const transactionTypeOptions = [
       t("transactions.types.payment"),
@@ -584,27 +627,58 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
     return importFields.map((field: ImportField) => {
       const keyLower = field.key.toLowerCase();
       const isBranchField = keyLower.includes("branch");
+      const isCustomerField = keyLower.includes("customer");
+      const isBankField = keyLower.includes("bank");
       const isTransactionType = keyLower === "transaction_type";
       const normalizedLabel = /chi nhánh/i.test(field.label)
         ? "Văn phòng"
         : field.label;
       const options =
         field.options ||
-        (isBranchField
-          ? branches.map((b: any) => b.name)
-          : isTransactionType
-            ? transactionTypeOptions
-            : undefined);
+        (isCustomerField
+          ? customerOptions
+          : isBankField
+            ? bankAccountOptions
+            : isBranchField
+              ? branchOptions
+              : isTransactionType
+                ? transactionTypeOptions
+                : undefined);
+
+      const onCreate =
+        isCustomerField
+          ? (value: string) => {
+              setNewCustomerName(value);
+              setShowNewCustomerModal(true);
+            }
+          : isBankField
+            ? (value: string) => {
+                setBankAccountOptions((prev) =>
+                  prev.includes(value) ? prev : [...prev, value],
+                );
+              }
+            : isBranchField
+              ? (value: string) => {
+                  setBranchOptions((prev) =>
+                    prev.includes(value) ? prev : [...prev, value],
+                  );
+                }
+              : undefined;
 
       return {
         ...field,
         label: normalizedLabel,
-        type: isBranchField ? "select" : field.type,
+        type:
+          isCustomerField || isBankField || isBranchField || isTransactionType
+            ? "select"
+            : field.type,
         optionSource: field.optionSource || (isBranchField ? "branch" : undefined),
         options,
+        onCreate,
+        openOnFocus: isCustomerField || isBankField || isBranchField,
       };
     });
-  }, [importFields, branches, t]);
+  }, [importFields, t, customerOptions, bankAccountOptions, branchOptions]);
 
   // Thay thế importFieldConfig và importSamples bằng các giá trị động dựa trên importFields:
   const enabledFields = normalizedFields.filter((f: ImportField) => f.enabled);
@@ -628,50 +702,40 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
     XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
     XLSX.writeFile(workbook, "transaction-import-template.xlsx");
   }, [enabledFields]);
-  const importSamples = [
+  const buildSampleRow = (index: number) =>
     enabledFields
-      .map((f: ImportField) => {
-        switch (f.type) {
-          case "number":
-            return "1000000";
-          case "date":
-            return "01/07/2024";
-          case "select":
-            return "Thu";
+      .map((field: ImportField) => {
+        switch (field.key) {
+          case "customer_name":
+            return `Tên khách hàng ${index}`;
+          case "bank_account":
+            return `Tài khoản ${index}`;
+          case "branch":
+            return `Văn phòng ${index}`;
+          case "transaction_type":
+            return index % 2 === 0 ? "Thu" : "Chi";
+          case "amount":
+            return index === 1 ? "1000000" : index === 2 ? "500000" : "1500000";
+          case "transaction_date":
+            return index === 1 ? "01/07/2024" : index === 2 ? "02/07/2024" : "03/07/2024";
+          case "description":
+            return `Nội dung ${index}`;
           default:
-            return f.label;
+            switch (field.type) {
+              case "number":
+                return "1000000";
+              case "date":
+                return "01/07/2024";
+              case "select":
+                return field.options?.[0] || "Thu";
+              default:
+                return `${field.label} ${index}`;
+            }
         }
       })
-      .join(", "),
-    enabledFields
-      .map((f: ImportField) => {
-        switch (f.type) {
-          case "number":
-            return "500000";
-          case "date":
-            return "02/07/2024";
-          case "select":
-            return "Chi";
-          default:
-            return f.label + " 2";
-        }
-      })
-      .join(", "),
-    enabledFields
-      .map((f: ImportField) => {
-        switch (f.type) {
-          case "number":
-            return "1500000";
-          case "date":
-            return "03/07/2024";
-          case "select":
-            return "Thu";
-          default:
-            return f.label + " 3";
-        }
-      })
-      .join(", "),
-  ];
+      .join(", ");
+
+  const importSamples = [buildSampleRow(1), buildSampleRow(2), buildSampleRow(3)];
 
   if (isProcessing) {
     return (
@@ -787,7 +851,40 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                               {field.label}
                               {field.required && <span className="text-red-500"> *</span>}
                             </label>
-                            {field.type === "select" ? (
+                            {field.key.toLowerCase().includes("customer") ? (
+                              <>
+                                <input
+                                  list={`mobile-${field.key}`}
+                                  value={row[field.key] || ""}
+                                  onChange={(event) =>
+                                    setTableData((prev) => {
+                                      const next = [...prev];
+                                      next[rowIndex] = {
+                                        ...next[rowIndex],
+                                        [field.key]: event.target.value,
+                                      };
+                                      return next;
+                                    })
+                                  }
+                                  onBlur={(event) => {
+                                    const value = event.target.value.trim();
+                                    if (
+                                      value &&
+                                      field.onCreate &&
+                                      !(field.options || []).includes(value)
+                                    ) {
+                                      field.onCreate(value);
+                                    }
+                                  }}
+                                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <datalist id={`mobile-${field.key}`}>
+                                  {(field.options || []).map((option) => (
+                                    <option key={option} value={option} />
+                                  ))}
+                                </datalist>
+                              </>
+                            ) : field.type === "select" ? (
                               <select
                                 value={row[field.key] || ""}
                                 onChange={(event) =>
@@ -809,6 +906,39 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                                   </option>
                                 ))}
                               </select>
+                            ) : field.type === "datalist" ? (
+                              <>
+                                <input
+                                  list={`mobile-${field.key}`}
+                                  value={row[field.key] || ""}
+                                  onChange={(event) =>
+                                    setTableData((prev) => {
+                                      const next = [...prev];
+                                      next[rowIndex] = {
+                                        ...next[rowIndex],
+                                        [field.key]: event.target.value,
+                                      };
+                                      return next;
+                                    })
+                                  }
+                                  onBlur={(event) => {
+                                    const value = event.target.value.trim();
+                                    if (
+                                      value &&
+                                      field.onCreate &&
+                                      !(field.options || []).includes(value)
+                                    ) {
+                                      field.onCreate(value);
+                                    }
+                                  }}
+                                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <datalist id={`mobile-${field.key}`}>
+                                  {(field.options || []).map((option) => (
+                                    <option key={option} value={option} />
+                                  ))}
+                                </datalist>
+                              </>
                             ) : (
                               <input
                                 type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
@@ -851,7 +981,12 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                       label: f.label,
                       required: f.required,
                       type: f.type,
-                      options: f.type === "select" ? f.options || [] : undefined,
+                      options:
+                        f.type === "select" || f.type === "datalist"
+                          ? f.options || []
+                          : undefined,
+                      onCreate: f.onCreate,
+                      openOnFocus: f.openOnFocus,
                     }))}
                     maxRows={100}
                   />

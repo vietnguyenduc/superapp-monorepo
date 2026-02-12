@@ -7,10 +7,23 @@ const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const OutletComponent = Outlet as unknown as React.FC;
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (sidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [sidebarOpen]);
 
   // Initialize dark mode on app startup
   useEffect(() => {
@@ -58,8 +71,8 @@ const Layout: React.FC = () => {
         </div>
         {/* Main content - full width, flush left */}
         <main className="flex-1 min-w-0 w-full overflow-x-hidden">
-          <div className="p-4 sm:p-6 lg:p-8 w-full">
-            <Outlet />
+          <div className="p-4 sm:p-6 lg:p-8 w-full pb-24 sm:pb-8">
+            <OutletComponent />
             <div className="mt-10 border-t border-gray-200 dark:border-gray-700 pt-4 text-center text-xs text-gray-400 dark:text-gray-500">
               Quản lý công nợ - TPL
             </div>
@@ -72,10 +85,12 @@ const Layout: React.FC = () => {
           setSidebarOpen(false);
           navigate("/import/transactions");
         }}
-        className="fixed bottom-6 right-6 z-50 inline-flex h-16 w-16 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-50 dark:focus:ring-offset-gray-900"
+        className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 inline-flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-50 dark:focus:ring-offset-gray-900 transition-transform ${
+          sidebarOpen ? "scale-0 pointer-events-none" : "scale-100"
+        }`}
         aria-label="Thêm giao dịch mới"
       >
-        <svg className="h-9 w-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="h-8 w-8 sm:h-9 sm:w-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 6v12m6-6H6" />
         </svg>
       </button>

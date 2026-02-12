@@ -43,6 +43,7 @@ interface CustomerField {
   type: string;
   isRequired: boolean;
   isActive: boolean;
+  isDefault?: boolean;
 }
 
 const colorOptions = [
@@ -93,12 +94,25 @@ const Settings: React.FC = () => {
     { id: "3", name: "Điều chỉnh", color: "yellow", isActive: true },
     { id: "4", name: "Hoàn tiền", color: "blue", isActive: true },
   ]);
+  const [isTransactionTypeModalOpen, setIsTransactionTypeModalOpen] = useState(false);
+  const [editingTransactionType, setEditingTransactionType] = useState<TransactionType | null>(null);
+  const [transactionTypeForm, setTransactionTypeForm] = useState({
+    name: "",
+    color: "blue",
+  });
   const [customerFields, setCustomerFields] = useState<CustomerField[]>([
-    { id: "1", name: "Họ và tên", type: "text", isRequired: true, isActive: true },
-    { id: "2", name: "Email", type: "email", isRequired: false, isActive: true },
-    { id: "3", name: "Số điện thoại", type: "tel", isRequired: true, isActive: true },
-    { id: "4", name: "Địa chỉ", type: "text", isRequired: false, isActive: true },
+    { id: "1", name: "Họ và tên", type: "text", isRequired: true, isActive: true, isDefault: true },
+    { id: "2", name: "Email", type: "email", isRequired: false, isActive: true, isDefault: true },
+    { id: "3", name: "Số điện thoại", type: "tel", isRequired: true, isActive: true, isDefault: true },
+    { id: "4", name: "Địa chỉ", type: "text", isRequired: false, isActive: true, isDefault: true },
   ]);
+  const [isCustomerFieldModalOpen, setIsCustomerFieldModalOpen] = useState(false);
+  const [editingCustomerField, setEditingCustomerField] = useState<CustomerField | null>(null);
+  const [customerFieldForm, setCustomerFieldForm] = useState({
+    name: "",
+    type: "text",
+    isRequired: false,
+  });
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
   const [branchForm, setBranchForm] = useState({
@@ -259,33 +273,106 @@ const Settings: React.FC = () => {
   };
 
   const handleAddTransactionType = () => {
-    const name = window.prompt("Nhap ten loai giao dich");
+    setEditingTransactionType(null);
+    setTransactionTypeForm({ name: "", color: "blue" });
+    setIsTransactionTypeModalOpen(true);
+  };
+
+  const handleEditTransactionType = (type: TransactionType) => {
+    setEditingTransactionType(type);
+    setTransactionTypeForm({ name: type.name, color: type.color });
+    setIsTransactionTypeModalOpen(true);
+  };
+
+  const handleSaveTransactionType = () => {
+    const name = transactionTypeForm.name.trim();
     if (!name) return;
-    setTransactionTypes((prev) => [
-      {
-        id: `type-${Date.now()}`,
-        name: name.trim(),
-        color: "blue",
-        isActive: true,
-      },
-      ...prev,
-    ]);
+
+    if (editingTransactionType) {
+      setTransactionTypes((prev) =>
+        prev.map((item) =>
+          item.id === editingTransactionType.id
+            ? { ...item, name, color: transactionTypeForm.color }
+            : item,
+        ),
+      );
+    } else {
+      setTransactionTypes((prev) => [
+        {
+          id: `type-${Date.now()}`,
+          name,
+          color: transactionTypeForm.color,
+          isActive: true,
+        },
+        ...prev,
+      ]);
+    }
+    setIsTransactionTypeModalOpen(false);
+    setEditingTransactionType(null);
+  };
+
+  const handleEditCustomerField = (field: CustomerField) => {
+    setEditingCustomerField(field);
+    setCustomerFieldForm({
+      name: field.name,
+      type: field.type,
+      isRequired: field.isRequired,
+    });
+    setIsCustomerFieldModalOpen(true);
+  };
+
+  const handleDeleteCustomerField = (field: CustomerField) => {
+    if (field.isDefault) {
+      window.alert("Trường mặc định không thể xóa.");
+      return;
+    }
+    const confirmation = window.confirm(
+      `Xóa trường "${field.name}"? Thao tác này không thể hoàn tác.`,
+    );
+    if (!confirmation) return;
+    setCustomerFields((prev) => prev.filter((item) => item.id !== field.id));
   };
 
   const handleAddCustomerField = () => {
-    const name = window.prompt("Nhap ten truong khach hang");
+    setEditingCustomerField(null);
+    setCustomerFieldForm({ name: "", type: "text", isRequired: false });
+    setIsCustomerFieldModalOpen(true);
+  };
+
+  const handleSaveCustomerField = () => {
+    const name = customerFieldForm.name.trim();
     if (!name) return;
-    const type = window.prompt("Nhap kieu truong (text, email, tel)", "text") || "text";
-    setCustomerFields((prev) => [
-      {
-        id: `field-${Date.now()}`,
-        name: name.trim(),
-        type: type.trim() || "text",
-        isRequired: false,
-        isActive: true,
-      },
-      ...prev,
-    ]);
+    const type = customerFieldForm.type.trim() || "text";
+
+    if (editingCustomerField) {
+      setCustomerFields((prev) =>
+        prev.map((item) =>
+          item.id === editingCustomerField.id
+            ? {
+                ...item,
+                name,
+                type,
+                isRequired: customerFieldForm.isRequired,
+              }
+            : item,
+        ),
+      );
+    } else {
+      setCustomerFields((prev) => [
+        {
+          id: `field-${Date.now()}`,
+          name,
+          type,
+          isRequired: customerFieldForm.isRequired,
+          isActive: true,
+          isDefault: false,
+        },
+        ...prev,
+      ]);
+    }
+
+    setIsCustomerFieldModalOpen(false);
+    setEditingCustomerField(null);
   };
 
   // Helper function to get account type from account name
@@ -452,8 +539,7 @@ const Settings: React.FC = () => {
                 }`}
               >
                 <span className="mr-1 sm:mr-2">{tab.icon}</span>
-                <span className="hidden sm:inline">{tab.name}</span>
-                <span className="sm:hidden">{tab.name.split(' ')[0]}</span>
+                <span className="text-[11px] sm:text-sm leading-tight">{tab.name}</span>
               </button>
             ))}
           </nav>
@@ -519,6 +605,137 @@ const Settings: React.FC = () => {
             </div>
           )}
 
+          {isTransactionTypeModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+              <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {editingTransactionType ? "Chỉnh sửa loại giao dịch" : "Thêm loại giao dịch"}
+                  </h3>
+                </div>
+                <div className="p-4 space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Tên loại
+                    </label>
+                    <input
+                      type="text"
+                      value={transactionTypeForm.name}
+                      onChange={(e) =>
+                        setTransactionTypeForm((prev) => ({ ...prev, name: e.target.value }))
+                      }
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2"
+                      placeholder="Ví dụ: Thanh toán"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Màu nhãn
+                    </label>
+                    <select
+                      value={transactionTypeForm.color}
+                      onChange={(e) =>
+                        setTransactionTypeForm((prev) => ({ ...prev, color: e.target.value }))
+                      }
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2"
+                    >
+                      {colorOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.value}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setIsTransactionTypeModalOpen(false);
+                      setEditingTransactionType(null);
+                    }}
+                  >
+                    Hủy
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handleSaveTransactionType}>
+                    Lưu
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isCustomerFieldModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+              <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {editingCustomerField ? "Chỉnh sửa trường khách hàng" : "Thêm trường khách hàng"}
+                  </h3>
+                </div>
+                <div className="p-4 space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Tên trường
+                    </label>
+                    <input
+                      type="text"
+                      value={customerFieldForm.name}
+                      onChange={(e) =>
+                        setCustomerFieldForm((prev) => ({ ...prev, name: e.target.value }))
+                      }
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2"
+                      placeholder="Ví dụ: Mã số thuế"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Loại dữ liệu
+                    </label>
+                    <select
+                      value={customerFieldForm.type}
+                      onChange={(e) =>
+                        setCustomerFieldForm((prev) => ({ ...prev, type: e.target.value }))
+                      }
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2"
+                    >
+                      <option value="text">Text</option>
+                      <option value="email">Email</option>
+                      <option value="tel">Số điện thoại</option>
+                    </select>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <input
+                      type="checkbox"
+                      checked={customerFieldForm.isRequired}
+                      onChange={(e) =>
+                        setCustomerFieldForm((prev) => ({ ...prev, isRequired: e.target.checked }))
+                      }
+                      className="h-4 w-4 rounded border-gray-300 dark:border-gray-600"
+                    />
+                    Bắt buộc nhập
+                  </label>
+                </div>
+                <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setIsCustomerFieldModalOpen(false);
+                      setEditingCustomerField(null);
+                    }}
+                  >
+                    Hủy
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handleSaveCustomerField}>
+                    Lưu
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Transaction Types */}
           {activeTab === "transaction-types" && (
             <div className="p-4 sm:p-6">
@@ -554,11 +771,20 @@ const Settings: React.FC = () => {
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getColorClass(type.color)}`}>
                         {type.name}
                       </span>
-                      <ToggleSwitch
-                        checked={type.isActive}
-                        onChange={() => handleToggleActive("transaction-type", type.id)}
-                        size="sm"
-                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEditTransactionType(type)}
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                        >
+                          Sửa
+                        </button>
+                        <ToggleSwitch
+                          checked={type.isActive}
+                          onChange={() => handleToggleActive("transaction-type", type.id)}
+                          size="sm"
+                        />
+                      </div>
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       {type.isActive ? "Đang hoạt động" : "Đã vô hiệu hóa"}
@@ -958,7 +1184,27 @@ const Settings: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="flex justify-end">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleEditCustomerField(field)}
+                          >
+                            Sửa
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className={`border-red-200 text-red-600 hover:text-red-700 hover:border-red-300 ${
+                              field.isDefault ? "opacity-50 cursor-not-allowed" : ""
+                            }`}
+                            onClick={() => handleDeleteCustomerField(field)}
+                            disabled={field.isDefault}
+                          >
+                            Xóa
+                          </Button>
+                        </div>
                         <ToggleSwitch
                           checked={field.isActive}
                           onChange={() => handleToggleActive("customer-field", field.id)}
