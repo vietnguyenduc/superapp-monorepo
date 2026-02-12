@@ -4,6 +4,7 @@ import type { FC } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import Layout from './components/Layout/Layout';
 import DashboardPage from './pages/DashboardPage';
+import DashboardPageEnhanced from './pages/DashboardPageEnhanced';
 import InventoryVarianceReportPage from './pages/InventoryVarianceReportPage';
 import InventoryInputPage from './pages/InventoryInputPage';
 import DebugTestPage from './pages/DebugTestPage';
@@ -34,8 +35,8 @@ const App: FC = () => {
             
             {/* Main layout with nested routes */}
             <Route path="/" element={<Layout />}>
-              <Route index element={<Navigate to="/test" replace />} />
-            <Route path="dashboard" element={<DashboardPage />} />
+              <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<DashboardPageEnhanced />} />
             <Route path="inventory-input" element={<InventoryInputPage />} />
             <Route path="product-management" element={<ProductCatalogPageEnhanced />} />
             <Route path="product-catalog-settings" element={<ProductCatalogSettingsPage />} />

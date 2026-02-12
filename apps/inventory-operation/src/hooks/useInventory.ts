@@ -23,25 +23,20 @@ export const useInventory = (options: UseInventoryOptions = {}) => {
     setError(null);
 
     try {
-      // Try database service first
-      let response;
-      try {
-        response = await InventoryService.getInventoryRecords(filters);
-      } catch (dbError) {
-        console.warn('Database error, using fallback:', dbError);
-        // Use fallback service if database fails
-        const fallbackResponse = await fallbackService.getInventoryRecords(filters);
-        response = {
-          success: !fallbackResponse.error,
-          data: fallbackResponse.data,
-          error: fallbackResponse.error
-        };
-      }
+      console.log('🔄 Loading inventory records...');
       
-      if (response.success && response.data) {
-        setRecords(response.data);
+      // Force fallback mode for now since Supabase is not configured
+      console.warn('🔄 Using fallback mode (Supabase not configured)');
+      const fallbackResponse = await fallbackService.getInventoryRecords(filters);
+      
+      console.log('📊 Fallback response received:', fallbackResponse);
+      
+      if (fallbackResponse.data) {
+        setRecords(fallbackResponse.data);
+        console.log('✅ Records loaded:', fallbackResponse.data.length);
       } else {
-        setError(response.error || 'Không thể tải dữ liệu tồn kho');
+        setError(fallbackResponse.error || 'Không thể tải dữ liệu tồn kho');
+        console.error('❌ Failed to load records:', fallbackResponse.error);
       }
     } catch (err) {
       setError('Đã xảy ra lỗi khi tải dữ liệu');

@@ -141,6 +141,13 @@ function normalizeTransactionType(input: string): TransactionType {
   return "payment";
 }
 
+// Company IDs from Supabase for multi-tenant data
+const COMPANY_IDS = {
+  ALPHA: "11111111-1111-1111-1111-111111111111",
+  BETA: "22222222-2222-2222-2222-222222222222",
+  GAMMA: "33333333-3333-3333-3333-333333333333",
+};
+
 function ensureSeedData() {
   if (!isBrowser) return;
 
@@ -157,8 +164,31 @@ function ensureSeedData() {
     [],
   );
 
+  // Migration: Add company_id to existing data if missing
+  let migratedTransactions = existingTransactions;
+  let migratedCustomers = existingCustomers;
+
+  if (existingTransactions.length > 0 && !existingTransactions[0].company_id) {
+    // Assign company_id to transactions based on index distribution
+    // ~50% to Alpha (main), ~30% to Beta, ~20% to Gamma
+    migratedTransactions = existingTransactions.map((tx, idx) => ({
+      ...tx,
+      company_id: idx % 10 < 5 ? COMPANY_IDS.ALPHA : idx % 10 < 8 ? COMPANY_IDS.BETA : COMPANY_IDS.GAMMA,
+    }));
+    writeTransactions(migratedTransactions);
+  }
+
+  if (existingCustomers.length > 0 && !existingCustomers[0].company_id) {
+    // Assign company_id to customers with same distribution
+    migratedCustomers = existingCustomers.map((c, idx) => ({
+      ...c,
+      company_id: idx % 10 < 5 ? COMPANY_IDS.ALPHA : idx % 10 < 8 ? COMPANY_IDS.BETA : COMPANY_IDS.GAMMA,
+    }));
+    writeCustomers(migratedCustomers);
+  }
+
   if (existingTransactions.length > 0 && existingCustomers.length > 0 && existingBankAccounts.length > 0) {
-    let currentCustomers = [...existingCustomers];
+    let currentCustomers = [...(migratedCustomers.length > 0 ? migratedCustomers : existingCustomers)];
     const desiredCustomerCount = 30;
 
     if (currentCustomers.length < desiredCustomerCount) {
@@ -772,10 +802,10 @@ const customerService = {
     const search = String(_filters?.search || "").toLowerCase().trim();
     const filtered = search
       ? all.filter((c) =>
-          [c.full_name, c.customer_code, c.email, c.phone]
-            .filter(Boolean)
-            .some((value) => String(value).toLowerCase().includes(search)),
-        )
+        [c.full_name, c.customer_code, c.email, c.phone]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(search)),
+      )
       : all;
     const limit = Number.isFinite(_filters?.limit) ? Number(_filters.limit) : filtered.length;
     const offset = Number.isFinite(_filters?.offset) ? Number(_filters.offset) : 0;
@@ -786,12 +816,12 @@ const customerService = {
       count: filtered.length,
     };
   },
-  
+
   async getCustomerById(id: string) {
     ensureSeedData();
     const customers = readCustomers();
     const customer = customers.find((c) => c.id === id);
-    
+
     if (!customer) {
       return {
         data: null,
@@ -806,7 +836,7 @@ const customerService = {
       error: null,
     };
   },
-  
+
   async createCustomer(_customerData?: any) {
     ensureSeedData();
     const now = getNowIso();
@@ -830,7 +860,7 @@ const customerService = {
     writeCustomers([customer, ...customers]);
     return { data: customer, error: null };
   },
-  
+
   async updateCustomer(_id: string, _updates?: any) {
     ensureSeedData();
     const customers = readCustomers();
@@ -849,7 +879,7 @@ const customerService = {
     writeCustomers(next);
     return { data: updated, error: null };
   },
-  
+
   async deleteCustomer(_id: string) {
     ensureSeedData();
     const customers = readCustomers();
@@ -857,7 +887,7 @@ const customerService = {
     writeCustomers(next);
     return { error: null };
   },
-  
+
   async bulkCreateCustomers(_customers?: any[]) {
     ensureSeedData();
     const customers = readCustomers();
@@ -948,11 +978,11 @@ const transactionService = {
       count: filtered.length,
     };
   },
-  
+
   async getTransactionById(id: string) {
     ensureSeedData();
     const transaction = readTransactions().find((t) => t.id === id);
-    
+
     if (!transaction) {
       return {
         data: {
@@ -973,13 +1003,13 @@ const transactionService = {
         error: null,
       };
     }
-    
+
     return {
       data: transaction,
       error: null,
     };
   },
-  
+
   async createTransaction(_transactionData?: any) {
     ensureSeedData();
     const now = getNowIso();
@@ -1013,15 +1043,15 @@ const transactionService = {
     writeTransactions([tx, ...all]);
     return { data: tx, error: null };
   },
-  
+
   async updateTransaction(_id: string, _updates?: any) {
     return { data: null, error: null };
   },
-  
+
   async deleteTransaction(_id: string) {
     return { error: null };
   },
-  
+
   async bulkImportTransactions(
     _rawData?: any[],
     _branchId?: string,
@@ -1132,11 +1162,11 @@ const bankAccountService = {
       error: null,
     };
   },
-  
+
   async getBankAccountById(id: string) {
     ensureSeedData();
     const account = readBankAccounts().find((a) => a.id === id);
-    
+
     if (!account) {
       return {
         data: {
@@ -1153,7 +1183,7 @@ const bankAccountService = {
         error: null,
       };
     }
-    
+
     return {
       data: {
         ...account,
@@ -1182,10 +1212,10 @@ const branchService = {
       error: null,
     };
   },
-  
+
   async getBranchById(id: string) {
     const branch = dashboardMockData.transactionAmountsByBranch.day.find(b => b.branch_id === id);
-    
+
     if (!branch) {
       return {
         data: {
@@ -1203,7 +1233,7 @@ const branchService = {
         error: null,
       };
     }
-    
+
     return {
       data: {
         id: branch.branch_id,
@@ -1227,12 +1257,18 @@ const dashboardService = {
   async getDashboardMetrics(
     _branchId?: string,
     timeRange: TimeRange = "month",
-    rangeCount?: { day: number; week: number; month: number; quarter: number }
+    rangeCount?: { day: number; week: number; month: number; quarter: number },
+    companyId?: string
   ) {
     ensureSeedData();
     const branchId = String(_branchId || "");
     const transactionsAll = readTransactions();
-    const transactions = branchId ? transactionsAll.filter((t) => t.branch_id === branchId) : transactionsAll;
+    // Filter by company_id first if provided
+    let transactions = companyId
+      ? transactionsAll.filter((t) => t.company_id === companyId)
+      : transactionsAll;
+    // Then filter by branch if provided
+    transactions = branchId ? transactions.filter((t) => t.branch_id === branchId) : transactions;
 
     const count =
       timeRange === "day"

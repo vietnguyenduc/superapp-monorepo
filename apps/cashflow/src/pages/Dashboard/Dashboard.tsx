@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { useCompany } from "../../contexts/CompanyContext";
 import { databaseService } from "../../services/database";
 import { formatNumber } from "../../utils/formatting";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
@@ -22,6 +23,7 @@ const Dashboard: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { selectedCompany } = useCompany();
   const [timeRange, setTimeRange] = useState<TimeRange>("month");
   const [topCustomersCount, setTopCustomersCount] = useState(8);
   const [recentTransactionsCount, setRecentTransactionsCount] = useState(8);
@@ -42,17 +44,23 @@ const Dashboard: React.FC = () => {
     year: 3,
   });
 
+  // Determine the company ID for filtering
+  // Admin users: use selectedCompany from context
+  // Staff users: use company_id from their branch
+  const effectiveCompanyId = selectedCompany?.id || user?.branch?.company_id;
+
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // Get the appropriate data based on time range and rangeCount
+      // Get the appropriate data based on time range, rangeCount, and company
       const result = await databaseService.dashboard.getDashboardMetrics(
         undefined,
         timeRange,
         rangeCount, // Pass rangeCount to control the number of data points
+        effectiveCompanyId // Pass company ID for multi-tenant filtering
       );
 
       if (result.error) {
@@ -67,12 +75,12 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [timeRange, rangeCount]); // Add rangeCount as dependency
+  }, [timeRange, rangeCount, effectiveCompanyId]); // Add effectiveCompanyId as dependency
 
-  // Load data on component mount and when time range changes
+  // Load data on component mount and when time range or company changes
   useEffect(() => {
     fetchDashboardData();
-  }, [fetchDashboardData, timeRange]);
+  }, [fetchDashboardData, timeRange, effectiveCompanyId]);
 
   // Auto-refresh data every 5 minutes
   useEffect(() => {
@@ -159,11 +167,11 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="h-12" />
+        <div className="h-10 sm:h-12" />
 
         <PageHeader title={t("dashboard.title")} subtitle={t("dashboard.subtitle")} />
         {/* Key Metrics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-4 w-full min-w-0 overflow-hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4 w-full min-w-0 overflow-hidden">
           <MetricsCard
             title={t("dashboard.totalOutstanding")}
             value={formatNumber(metrics.totalOutstanding)}
@@ -225,7 +233,7 @@ const Dashboard: React.FC = () => {
                 {t("dashboard.balanceByBank")}
               </h3>
             </div>
-            <div className="p-4">
+            <div className="p-2 sm:p-4">
               <BalanceByBankChart data={metrics.balanceByBankAccount} />
             </div>
           </div>
@@ -245,15 +253,15 @@ const Dashboard: React.FC = () => {
                      `Cash flow chart ${rangeCount.year} years`}
                   </p>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1 sm:space-x-2">
                   {/* Free text input for range */}
                   {(timeRange === "day" || timeRange === "week" || timeRange === "month") && (
                     <div className="flex items-center">
-                      <input 
+                      <input
                         type="number" 
                         min="1"
                         max="100"
-                        className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 py-1 px-3 rounded border border-blue-200 w-16"
+                        className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 py-1.5 px-2 rounded border border-blue-200 w-14 sm:w-16"
                         value={rangeCount[timeRange as keyof typeof rangeCount]}
                         onChange={(e) => {
                           const newValue = e.target.value;
@@ -283,8 +291,8 @@ const Dashboard: React.FC = () => {
                   
                   {/* Export button */}
                   <div className="relative">
-                    <button 
-                      className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 py-1 px-3 rounded border border-blue-200"
+                    <button
+                      className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 py-1.5 px-2 sm:px-3 rounded border border-blue-200 min-h-[44px] flex items-center"
                       onClick={() => setShowExportMenu(!showExportMenu)}
                     >
                       Export
@@ -484,7 +492,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="p-4">
+            <div className="p-2 sm:p-4">
               <CashFlowChart
                 data={metrics.cashFlowData}
                 timeRange={timeRange}
@@ -584,7 +592,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="p-4">
+          <div className="p-2 sm:p-4">
             <BalanceBreakdown
               data={
                 selectedBranchIds.length === 0
@@ -656,7 +664,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="p-4">
+            <div className="p-2 sm:p-4">
               <RecentTransactions
                 transactions={metrics.recentTransactions}
                 maxItems={recentTransactionsCount}
@@ -674,7 +682,7 @@ const Dashboard: React.FC = () => {
                 {t("dashboard.customersToWatchDescription")}
               </p>
             </div>
-            <div className="p-4">
+            <div className="p-2 sm:p-4">
               <TopCustomers
                 customers={metrics.topCustomers}
                 maxItems={topCustomersCount}

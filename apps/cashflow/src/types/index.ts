@@ -22,6 +22,7 @@ export interface Branch {
   phone?: string;
   email?: string;
   manager_id?: string;
+  company_id?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -48,6 +49,7 @@ export interface Customer {
   address?: string;
   working_method?: string;
   branch_id?: string | null;
+  company_id?: string;
   total_balance: number;
   last_transaction_date?: string;
   is_active: boolean;
@@ -63,6 +65,7 @@ export interface Transaction {
   bank_account_id: string;
   bank_account_name?: string;
   branch_id: string;
+  company_id?: string;
   transaction_type: TransactionType;
   amount: number;
   description?: string;

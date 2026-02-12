@@ -1,41 +1,226 @@
-// MOCKED useAuth for Cypress and frontend testing without Supabase or login
+// Real useAuth hook that uses Supabase authentication
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "../services/supabase";
+import type { User } from "../types";
+import type { Session } from "@supabase/supabase-js";
+
+interface AuthState {
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  error: string | null;
+}
+
 export const useAuth = () => {
-  const user = {
-    id: "test-user",
-    email: "test@example.com",
-    full_name: "Test User",
-    phone: "0123456789",
-    position: "admin",
-    role: "admin" as const,
-    branch_id: "1",
-    branch: {
-      id: "1",
-      name: "Main Branch",
-      code: "MB001",
-      address: "123 Main St",
-      phone: "0123456789",
-      email: "main@branch.com",
-      manager_id: "test-user",
-      is_active: true,
-      created_at: "2024-01-01T00:00:00Z",
-      updated_at: "2024-01-01T00:00:00Z",
-    },
-    created_at: "2024-01-01T00:00:00Z",
-    updated_at: "2024-01-01T00:00:00Z",
-  };
-  return {
-    user,
-    session: {
-      access_token: "mock-token",
-      refresh: () => Promise.resolve({ error: null }),
-      expires_at: Math.floor(Date.now() / 1000) + 3600,
-    },
-    loading: false,
+  const [state, setState] = useState<AuthState>({
+    user: null,
+    session: null,
+    loading: true,
     error: null,
-    signIn: async () => ({ error: null }),
-    signOut: async () => ({ error: null }),
-    updateProfile: async () => ({ data: user, error: null }),
-    clearError: () => {},
-    isAuthenticated: true,
+  });
+
+  // Fetch user profile from public.users table
+  const fetchUserProfile = useCallback(async (userId: string): Promise<User | null> => {
+    // First fetch user without branch join to avoid RLS recursion
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", userId)
+      .single();
+
+    if (userError) {
+      console.error("Error fetching user profile:", userError);
+      return null;
+    }
+
+    // If user has a branch_id, fetch branch separately
+    let branch = null;
+    if (userData.branch_id) {
+      const { data: branchData } = await supabase
+        .from("branches")
+        .select("*")
+        .eq("id", userData.branch_id)
+        .single();
+      branch = branchData;
+    }
+
+    return { ...userData, branch } as unknown as User;
+  }, []);
+
+  // Initialize auth state
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        try {
+          const profile = await fetchUserProfile(session.user.id);
+          setState({
+            user: profile,
+            session,
+            loading: false,
+            error: null,
+          });
+        } catch (profileError) {
+          console.error("Error fetching user profile:", profileError);
+          // Still set loading to false so user can retry login
+          setState({
+            user: null,
+            session: null,
+            loading: false,
+            error: "Failed to fetch user profile",
+          });
+        }
+      } else {
+        setState({
+          user: null,
+          session: null,
+          loading: false,
+          error: null,
+        });
+      }
+    }).catch((error) => {
+      // Handle getSession errors - ensure loading is set to false
+      console.error("Error getting session:", error);
+      setState({
+        user: null,
+        session: null,
+        loading: false,
+        error: "Failed to check authentication",
+      });
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        const profile = await fetchUserProfile(session.user.id);
+        setState({
+          user: profile,
+          session,
+          loading: false,
+          error: null,
+        });
+      } else if (event === "SIGNED_OUT") {
+        setState({
+          user: null,
+          session: null,
+          loading: false,
+          error: null,
+        });
+      } else if (event === "TOKEN_REFRESHED" && session) {
+        setState((prev) => ({
+          ...prev,
+          session,
+        }));
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [fetchUserProfile]);
+
+  const signIn = async (
+    email: string,
+    password: string
+  ): Promise<{ error: string | null }> => {
+    setState((prev) => ({ ...prev, loading: true, error: null }));
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setState((prev) => ({
+        ...prev,
+        loading: false,
+        error: error.message,
+      }));
+      return { error: error.message };
+    }
+
+    if (data.session?.user) {
+      const profile = await fetchUserProfile(data.session.user.id);
+      setState({
+        user: profile,
+        session: data.session,
+        loading: false,
+        error: null,
+      });
+    }
+
+    return { error: null };
+  };
+
+  const signOut = async (): Promise<{ error: string | null }> => {
+    setState((prev) => ({ ...prev, loading: true }));
+
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      setState((prev) => ({
+        ...prev,
+        loading: false,
+        error: error.message,
+      }));
+      return { error: error.message };
+    }
+
+    setState({
+      user: null,
+      session: null,
+      loading: false,
+      error: null,
+    });
+
+    return { error: null };
+  };
+
+  const updateProfile = async (
+    updates: Partial<User>
+  ): Promise<{ data?: User; error: string | null }> => {
+    if (!state.user?.id) {
+      return { error: "No user logged in" };
+    }
+
+    const { data, error } = await supabase
+      .from("users")
+      .update(updates)
+      .eq("id", state.user.id)
+      .select(`
+        *,
+        branch:branches!users_branch_id_fkey(*)
+      `)
+      .single();
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    const updatedUser = data as unknown as User;
+    setState((prev) => ({
+      ...prev,
+      user: updatedUser,
+    }));
+
+    return { data: updatedUser, error: null };
+  };
+
+  const clearError = useCallback(() => {
+    setState((prev) => ({ ...prev, error: null }));
+  }, []);
+
+  return {
+    user: state.user,
+    session: state.session,
+    loading: state.loading,
+    error: state.error,
+    signIn,
+    signOut,
+    updateProfile,
+    clearError,
+    isAuthenticated: !!state.session && !!state.user,
   };
 };

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../../services/supabase";
+import CompanySwitcher from "./CompanySwitcher";
 
 const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -63,11 +64,11 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
               />
             </svg>
           </button>
-          <div className="ml-2 flex items-center space-x-3">
+          <div className="ml-1 sm:ml-2 flex items-center space-x-2 sm:space-x-3">
             {/* App Icon */}
             <div className="flex-shrink-0">
               <svg
-                className="w-8 h-8 text-gray-700 dark:text-gray-300"
+                className="w-6 h-6 sm:w-8 sm:h-8 text-gray-700"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -99,6 +100,8 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
           <div className="hidden sm:block text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">
             {formatToday()}
           </div>
+          {/* Company Switcher - for admin users */}
+          <CompanySwitcher />
           <button
             onClick={handleLanguageChange}
             className="px-2 sm:px-3 py-1 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 text-xs font-semibold border border-gray-300 dark:border-gray-600 shadow-sm"
@@ -113,6 +116,7 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
               <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center">
                 <span className="text-gray-700 dark:text-gray-300 font-medium text-xs">U</span>
               </div>
+              <span className="hidden sm:inline text-gray-800 dark:text-gray-200 font-medium">Người dùng</span>
               <span className="hidden sm:inline text-gray-800 dark:text-gray-200 font-medium">Người dùng</span>
               <svg
                 className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${

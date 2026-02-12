@@ -1,59 +1,73 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Environment variables for Supabase configuration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-// Validate environment variables
+// Validate environment variables at runtime only
+let envValidationError: string | null = null;
+
 if (!supabaseUrl) {
-  throw new Error('Missing VITE_SUPABASE_URL environment variable');
+  envValidationError = 'Missing VITE_SUPABASE_URL environment variable';
+  console.error(envValidationError);
 }
 
 if (!supabaseAnonKey) {
-  throw new Error('Missing VITE_SUPABASE_ANON_KEY environment variable');
+  envValidationError = 'Missing VITE_SUPABASE_ANON_KEY environment variable';
+  console.error(envValidationError);
 }
 
 // Create Supabase client with enhanced configuration
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    storageKey: 'inventory-operation-auth',
-    storage: {
-      getItem: (key: string) => {
-        try {
-          return localStorage.getItem(key);
-        } catch (error) {
-          console.error('Error reading from localStorage:', error);
-          return null;
-        }
-      },
-      setItem: (key: string, value: string) => {
-        try {
-          localStorage.setItem(key, value);
-        } catch (error) {
-          console.error('Error writing to localStorage:', error);
-        }
-      },
-      removeItem: (key: string) => {
-        try {
-          localStorage.removeItem(key);
-        } catch (error) {
-          console.error('Error removing from localStorage:', error);
-        }
+// Use placeholder values during build time if env vars are missing
+const createSupabaseClient = () => {
+  if (envValidationError) {
+    throw new Error(envValidationError);
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      storageKey: 'inventory-operation-auth',
+      storage: {
+        getItem: (key: string) => {
+          try {
+            return localStorage.getItem(key);
+          } catch (error) {
+            console.error('Error reading from localStorage:', error);
+            return null;
+          }
+        },
+        setItem: (key: string, value: string) => {
+          try {
+            localStorage.setItem(key, value);
+          } catch (error) {
+            console.error('Error writing to localStorage:', error);
+          }
+        },
+        removeItem: (key: string) => {
+          try {
+            localStorage.removeItem(key);
+          } catch (error) {
+            console.error('Error removing from localStorage:', error);
+          }
+        },
       },
     },
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10,
+    realtime: {
+      params: {
+        eventsPerSecond: 10,
+      },
     },
-  },
-  db: {
-    schema: 'public',
-  },
-});
+    db: {
+      schema: 'public',
+    },
+  });
+};
+
+// Export the client - will throw error on first use if env vars are missing
+export const supabase = supabaseUrl && supabaseAnonKey ? createSupabaseClient() : createClient('https://placeholder.supabase.co', 'placeholder-key');
 
 // Database table names
 export const TABLES = {
@@ -77,13 +91,13 @@ export const handleSupabaseError = (error: any): string => {
       'Duplicate key value': 'Dữ liệu đã tồn tại',
       'Connection error': 'Lỗi kết nối cơ sở dữ liệu',
     };
-    
+
     for (const [key, value] of Object.entries(errorMap)) {
       if (error.message.includes(key)) {
         return value;
       }
     }
-    
+
     return error.message;
   }
   return 'Đã xảy ra lỗi không xác định';

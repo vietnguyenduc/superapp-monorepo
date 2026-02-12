@@ -36,8 +36,21 @@ const ProductCatalogTable: React.FC<ProductCatalogTableProps> = ({
       [ProductCategory.DRY_GOODS]: 'Đồ khô',
       [ProductCategory.PROCESSED]: 'Sơ chế',
       [ProductCategory.FINISHED]: 'Thành phẩm',
+      [ProductCategory.BEVERAGE]: 'Đồ uống',
+      [ProductCategory.TOBACCO]: 'Thuốc lá',
+      [ProductCategory.OTHER]: 'Khác',
     };
     return categoryNames[category] || category;
+  };
+
+  const getProductTypeDisplayName = (isFinishedProduct: boolean) => {
+    return isFinishedProduct ? 'Thành phẩm' : 'Bán thành phẩm';
+  };
+
+  const getProductTypeBadgeClass = (isFinishedProduct: boolean) => {
+    return isFinishedProduct
+      ? 'bg-blue-100 text-blue-800'
+      : 'bg-orange-100 text-orange-800';
   };
 
   const getStatusDisplayName = (status: ProductStatus) => {
@@ -117,16 +130,19 @@ const ProductCatalogTable: React.FC<ProductCatalogTableProps> = ({
                   Sản phẩm
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Loại
+                  Loại SP
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Mã SP
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Định mức quy đổi
+                  Định lượng Nhập
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Đơn vị
+                  Định lượng Xuất
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Thành phẩm liên quan
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Trạng thái
@@ -145,20 +161,20 @@ const ProductCatalogTable: React.FC<ProductCatalogTableProps> = ({
                         <div className="text-sm font-medium text-gray-900">
                           {product.name}
                         </div>
-                        {product.isFinishedProduct && (
-                          <div className="text-xs text-primary-600 font-medium">
-                            Thành phẩm
-                          </div>
-                        )}
+                        <div className="text-xs text-gray-500">
+                          {getCategoryDisplayName(product.category)}
+                        </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {getCategoryDisplayName(product.category)}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getProductTypeBadgeClass(product.isFinishedProduct)}`}>
+                      {getProductTypeDisplayName(product.isFinishedProduct)}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      <div>KD: {product.businessCode}</div>
+                      <div className="font-medium">KD: {product.businessCode}</div>
                       {product.promotionCode && (
                         <div className="text-xs text-gray-500">
                           KM: {product.promotionCode}
@@ -167,28 +183,46 @@ const ProductCatalogTable: React.FC<ProductCatalogTableProps> = ({
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div>
-                      Nhập: {product.inputQuantity} {product.inputUnit}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Xuất: {product.outputQuantity} {product.outputUnit}
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-2">
+                      <div className="font-medium text-green-800">
+                        {product.inputQuantity} {product.inputUnit}
+                      </div>
+                      <div className="text-xs text-green-600">
+                        Định lượng nhập
+                      </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-col">
-                      <div className="font-medium">{product.inputUnit} → {product.outputUnit}</div>
-                      <div className="text-xs text-gray-600">
-                        <span className="font-medium">Xuất:</span> {product.outputQuantity || '-'} {product.outputUnit}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                      <div className="font-medium text-blue-800">
+                        {product.outputQuantity} {product.outputUnit}
                       </div>
-                      <div className="text-xs text-gray-600">
-                        <span className="font-medium">Nhập:</span> {product.inputQuantity || '-'} {product.inputUnit}
+                      <div className="text-xs text-blue-600">
+                        Định lượng xuất
                       </div>
-                      {product.finishedProductCode && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          TP: {product.finishedProductCode}
-                        </div>
-                      )}
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {product.finishedProductCode ? (
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-2">
+                        <div className="font-medium text-purple-800">
+                          {product.finishedProductCode}
+                        </div>
+                        <div className="text-xs text-purple-600">
+                          Mã thành phẩm
+                        </div>
+                        {product.finishedProductCode && products.find(p => p.businessCode === product.finishedProductCode) && (
+                          <div className="text-xs text-purple-500 mt-1">
+                            → {products.find(p => p.businessCode === product.finishedProductCode)?.name}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 text-center">
+                        <div className="text-lg">-</div>
+                        <div className="text-xs">Không có</div>
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(product.status)}`}>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { SalesRecord, SpecialOutboundRecord, Product, ApprovalLog, ApiResponse } from '../types';
 import { salesService } from '../services/salesService';
 import { specialOutboundService } from '../services/specialOutboundService';
+import { fallbackService } from '../services/fallbackService';
 
 export const useSalesReport = () => {
   const [salesRecords, setSalesRecords] = useState<SalesRecord[]>([]);
@@ -13,11 +14,20 @@ export const useSalesReport = () => {
     setError(null);
     
     try {
-      const response = await salesService.getAllSalesRecords();
-      if (response.success && response.data) {
+      console.log('🔄 Loading sales records...');
+      
+      // Force fallback mode for now since Supabase is not configured
+      console.warn('🔄 Using fallback mode (Supabase not configured)');
+      const response = await fallbackService.getSalesRecords();
+      
+      console.log('📊 Sales fallback response:', response);
+      
+      if (response.data) {
         setSalesRecords(response.data);
+        console.log('✅ Sales records loaded:', response.data.length);
       } else {
-        setError(response.message || 'Không thể tải danh sách báo cáo bán hàng');
+        setError(response.error || 'Không thể tải danh sách báo cáo bán hàng');
+        console.error('❌ Failed to load sales records:', response.error);
       }
     } catch (err) {
       setError('Lỗi kết nối khi tải dữ liệu');

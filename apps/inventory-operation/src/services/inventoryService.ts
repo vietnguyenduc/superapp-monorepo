@@ -45,13 +45,15 @@ export class InventoryService {
 
       if (error) {
         console.error('Error fetching inventory records:', error);
-        console.warn('Database error, using fallback service for inventory records');
+        console.warn('🔄 Database error, using fallback service for inventory records');
         
         // Use fallback service when database fails
         const fallbackResponse = await fallbackService.getInventoryRecords({
           dateFrom: filters?.date ? new Date(filters.date) : undefined,
           productCode: filters?.productId
         });
+        
+        console.log('📊 Fallback response:', fallbackResponse);
         
         return {
           success: !fallbackResponse.error,

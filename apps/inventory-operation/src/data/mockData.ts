@@ -7,7 +7,7 @@ import {
   SalesRecord, 
   SpecialOutboundRecord,
   SpecialOutboundReason,
-  ApprovalStatus,
+  SpecialOutboundApprovalStatus,
   InventoryVarianceReport 
 } from '../types';
 
@@ -265,7 +265,7 @@ export const mockSpecialOutboundRecords: SpecialOutboundRecord[] = [
     requestedBy: 'staff-001',
     approvedBy: 'manager',
     approvedAt: new Date('2024-01-15T10:00:00Z'),
-    status: ApprovalStatus.APPROVED,
+    status: SpecialOutboundApprovalStatus.APPROVED,
     createdAt: new Date('2024-01-15T09:00:00Z'),
     updatedAt: new Date('2024-01-15T10:00:00Z')
   },
@@ -280,7 +280,7 @@ export const mockSpecialOutboundRecords: SpecialOutboundRecord[] = [
     requestedBy: 'staff-002',
     approvedBy: 'manager',
     approvedAt: new Date('2024-01-16T10:00:00Z'),
-    status: ApprovalStatus.APPROVED,
+    status: SpecialOutboundApprovalStatus.APPROVED,
     createdAt: new Date('2024-01-16T09:00:00Z'),
     updatedAt: new Date('2024-01-16T10:00:00Z')
   }
