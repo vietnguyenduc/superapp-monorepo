@@ -123,7 +123,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
           <button
             onClick={onClose}
-            className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+            className="inline-flex items-center justify-center p-2 min-w-[44px] min-h-[44px] rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
           >
             <span className="sr-only">Close menu</span>
             <svg
@@ -144,8 +144,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
         </div>
       )}
 
-      <div className="p-4">
-        <nav className="space-y-2">
+      <div className="p-3 sm:p-4">
+        <nav className="space-y-1">
           {menuItems.map((item) => (
             <div
               key={item.path}
@@ -158,7 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                   navigate(item.path);
                   if (onClose) onClose();
                 }}
-                className={`flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors flex-1 ${
+                className={`flex items-center space-x-3 px-3 py-2.5 min-h-[44px] rounded-md text-sm font-medium transition-colors flex-1 ${
                   location.pathname === item.path
                     ? "bg-primary-100 text-primary-700"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { useCompany } from "../../contexts/CompanyContext";
 import { databaseService } from "../../services/database";
 import { formatNumber } from "../../utils/formatting";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
@@ -22,6 +23,7 @@ const Dashboard: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { selectedCompany } = useCompany();
   const [timeRange, setTimeRange] = useState<TimeRange>("month");
   const [topCustomersCount, setTopCustomersCount] = useState(8);
   const [recentTransactionsCount, setRecentTransactionsCount] = useState(8);
@@ -41,17 +43,23 @@ const Dashboard: React.FC = () => {
     quarter: 4
   });
 
+  // Determine the company ID for filtering
+  // Admin users: use selectedCompany from context
+  // Staff users: use company_id from their branch
+  const effectiveCompanyId = selectedCompany?.id || user?.branch?.company_id;
+
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // Get the appropriate data based on time range and rangeCount
+      // Get the appropriate data based on time range, rangeCount, and company
       const result = await databaseService.dashboard.getDashboardMetrics(
         undefined,
         timeRange,
         rangeCount, // Pass rangeCount to control the number of data points
+        effectiveCompanyId // Pass company ID for multi-tenant filtering
       );
 
       if (result.error) {
@@ -66,12 +74,12 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [timeRange, rangeCount]); // Add rangeCount as dependency
+  }, [timeRange, rangeCount, effectiveCompanyId]); // Add effectiveCompanyId as dependency
 
-  // Load data on component mount and when time range changes
+  // Load data on component mount and when time range or company changes
   useEffect(() => {
     fetchDashboardData();
-  }, [fetchDashboardData, timeRange]);
+  }, [fetchDashboardData, timeRange, effectiveCompanyId]);
 
   // Auto-refresh data every 5 minutes
   useEffect(() => {
@@ -154,21 +162,21 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 w-full">
-      <div className="px-4 sm:px-6 lg:px-8 w-full">
+    <div className="min-h-screen bg-gray-50 py-2 sm:py-4 w-full">
+      <div className="px-2 sm:px-4 lg:px-8 w-full">
         {/* Fixed Time Range Selector */}
-        <div className="fixed top-16 left-0 right-0 z-40 px-4 sm:px-6 lg:px-8 py-1.5 bg-gray-50/5 border-b border-gray-100/10 lg:left-64">
-          <div className="flex justify-end">
-            <div className="inline-flex rounded-2xl bg-white/90 p-1 shadow-[0_4px_12px_rgba(15,23,42,0.10)] border border-gray-200/80 ring-1 ring-gray-200/60">
+        <div className="fixed top-14 sm:top-16 left-0 right-0 z-40 px-2 sm:px-4 lg:px-8 py-1.5 bg-gray-50/95 backdrop-blur-sm border-b border-gray-100/20 lg:left-64">
+          <div className="flex justify-end overflow-x-auto">
+            <div className="inline-flex rounded-xl sm:rounded-2xl bg-white/90 p-0.5 sm:p-1 shadow-sm sm:shadow-[0_4px_12px_rgba(15,23,42,0.10)] border border-gray-200/80">
               <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
             </div>
           </div>
         </div>
-        <div className="h-12" />
+        <div className="h-10 sm:h-12" />
 
         <PageHeader title={t("dashboard.title")} subtitle={t("dashboard.subtitle")} />
         {/* Key Metrics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-4 w-full min-w-0 overflow-hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4 w-full min-w-0 overflow-hidden">
           <MetricsCard
             title={t("dashboard.totalOutstanding")}
             value={formatNumber(metrics.totalOutstanding)}
@@ -222,27 +230,27 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
         {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4 w-full">
           {/* Balance by Bank Account Chart */}
           <div className="bg-white rounded-lg shadow w-full">
-            <div className="px-4 py-3 border-b border-gray-200">
-              <h3 className="text-base font-medium text-gray-900">
+            <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200">
+              <h3 className="text-sm sm:text-base font-medium text-gray-900">
                 {t("dashboard.balanceByBank")}
               </h3>
             </div>
-            <div className="p-4">
+            <div className="p-2 sm:p-4">
               <BalanceByBankChart data={metrics.balanceByBankAccount} />
             </div>
           </div>
           {/* Cash Flow Chart */}
           <div className="bg-white rounded-lg shadow w-full">
-            <div className="px-4 py-3 border-b border-gray-200">
+            <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="text-base font-medium text-gray-900">
+                  <h3 className="text-sm sm:text-base font-medium text-gray-900">
                     {t("dashboard.cashFlow")}
                   </h3>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-0.5 sm:mt-1 text-xs text-gray-500">
                     {timeRange === "day" ? `Cash flow chart ${rangeCount.day} days` :
                      timeRange === "week" ? `Cash flow chart ${rangeCount.week} weeks` :
                      timeRange === "month" ? `Cash flow chart ${rangeCount.month} months` :
@@ -250,15 +258,15 @@ const Dashboard: React.FC = () => {
                      `Cash flow chart by year`}
                   </p>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1 sm:space-x-2">
                   {/* Free text input for range */}
                   {(timeRange === "day" || timeRange === "week" || timeRange === "month") && (
                     <div className="flex items-center">
-                      <input 
+                      <input
                         type="number" 
                         min="1"
                         max="100"
-                        className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 py-1 px-3 rounded border border-blue-200 w-16"
+                        className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 py-1.5 px-2 rounded border border-blue-200 w-14 sm:w-16"
                         value={rangeCount[timeRange as keyof typeof rangeCount]}
                         onChange={(e) => {
                           const newValue = e.target.value;
@@ -288,8 +296,8 @@ const Dashboard: React.FC = () => {
                   
                   {/* Export button */}
                   <div className="relative">
-                    <button 
-                      className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 py-1 px-3 rounded border border-blue-200"
+                    <button
+                      className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 py-1.5 px-2 sm:px-3 rounded border border-blue-200 min-h-[44px] flex items-center"
                       onClick={() => setShowExportMenu(!showExportMenu)}
                     >
                       Export
@@ -489,7 +497,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="p-4">
+            <div className="p-2 sm:p-4">
               <CashFlowChart
                 data={metrics.cashFlowData}
                 timeRange={timeRange}
@@ -501,10 +509,10 @@ const Dashboard: React.FC = () => {
         </div>
         {/* Balance Breakdown by Branch */}
         <div className="bg-white rounded-lg shadow mb-4 w-full">
-          <div className="px-4 py-3 border-b border-gray-200">
+          <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-base font-medium text-gray-900">
+                <h3 className="text-sm sm:text-base font-medium text-gray-900">
                   {t("dashboard.balanceByBranch")}
                 </h3>
                 <p className="mt-1 text-xs text-gray-500">
@@ -581,7 +589,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="p-4">
+          <div className="p-2 sm:p-4">
             <BalanceBreakdown
               data={
                 selectedBranchIds.length === 0
@@ -594,13 +602,13 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
         {/* Lists Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 w-full">
           {/* Recent Transactions */}
           <div className="bg-white rounded-lg shadow w-full">
-            <div className="px-4 py-3 border-b border-gray-200">
+            <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h3 className="text-base font-medium text-gray-900">
+                  <h3 className="text-sm sm:text-base font-medium text-gray-900">
                     {t("dashboard.recentTransactions")}
                   </h3>
                   <p className="mt-1 text-xs text-gray-500">
@@ -653,7 +661,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="p-4">
+            <div className="p-2 sm:p-4">
               <RecentTransactions
                 transactions={metrics.recentTransactions}
                 maxItems={recentTransactionsCount}
@@ -663,15 +671,15 @@ const Dashboard: React.FC = () => {
           </div>
           {/* Top Customers */}
           <div className="bg-white rounded-lg shadow w-full">
-            <div className="px-4 py-3 border-b border-gray-200">
-              <h3 className="text-base font-medium text-gray-900">
+            <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200">
+              <h3 className="text-sm sm:text-base font-medium text-gray-900">
                 {t("dashboard.customersToWatch")}
               </h3>
               <p className="mt-1 text-xs text-gray-500">
                 {t("dashboard.customersToWatchDescription")}
               </p>
             </div>
-            <div className="p-4">
+            <div className="p-2 sm:p-4">
               <TopCustomers
                 customers={metrics.topCustomers}
                 maxItems={topCustomersCount}

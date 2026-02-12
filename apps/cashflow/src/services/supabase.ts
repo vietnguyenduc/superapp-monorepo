@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "../types/database.types";
 
 // Environment variables for Supabase configuration
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -13,8 +14,8 @@ if (!supabaseAnonKey) {
   throw new Error("Missing VITE_SUPABASE_ANON_KEY environment variable");
 }
 
-// Create Supabase client with enhanced JWT configuration
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// Create Supabase client with enhanced JWT configuration and type safety
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,

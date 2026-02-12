@@ -9,14 +9,15 @@ const Login: React.FC = () => {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const navigate = useNavigate();
-  const { signIn, loading, error, clearError } = useAuthContext();
+  const { signIn, loading, error, clearError, isAuthenticated, user } = useAuthContext();
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (!loading && !error) {
+    if (isAuthenticated && user) {
+      // All users go directly to dashboard
       navigate("/dashboard");
     }
-  }, [loading, error, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   const validateForm = (): boolean => {
     const emailValidation = validateEmail(email);
@@ -36,10 +37,8 @@ const Login: React.FC = () => {
       return;
     }
 
-    const result = await signIn(email, password);
-    if (!result.error) {
-      navigate("/dashboard");
-    }
+    await signIn(email, password);
+    // Navigation is handled by useEffect when isAuthenticated changes
   };
 
   return (
