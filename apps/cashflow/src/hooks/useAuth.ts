@@ -4,6 +4,8 @@ import { supabase } from "../services/supabase";
 import type { User } from "../types";
 import type { Session } from "@supabase/supabase-js";
 
+const TRIAL_STORAGE_KEY = "cashflow_trial_user";
+
 interface AuthState {
   user: User | null;
   session: Session | null;
@@ -75,13 +77,26 @@ export const useAuth = () => {
           });
         }
       } else {
-        setState({
-          user: null,
-          session: null,
-          loading: false,
-          error: null,
-          isTrial: false,
-        });
+        // If no real session, attempt to restore trial user from storage
+        const trialRaw = typeof window !== "undefined" ? localStorage.getItem(TRIAL_STORAGE_KEY) : null;
+        if (trialRaw) {
+          const parsed = JSON.parse(trialRaw);
+          setState({
+            user: parsed?.user || null,
+            session: null,
+            loading: false,
+            error: null,
+            isTrial: true,
+          });
+        } else {
+          setState({
+            user: null,
+            session: null,
+            loading: false,
+            error: null,
+            isTrial: false,
+          });
+        }
       }
     }).catch((error) => {
       // Handle getSession errors - ensure loading is set to false
@@ -186,6 +201,10 @@ export const useAuth = () => {
       isTrial: false,
     });
 
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(TRIAL_STORAGE_KEY);
+    }
+
     return { error: null };
   };
 
@@ -225,20 +244,24 @@ export const useAuth = () => {
 
   const startTrial = () => {
     const now = new Date().toISOString();
+    const trialUser = {
+      id: "trial-user",
+      email: "trial@example.com",
+      full_name: "Trial User",
+      role: "staff",
+      created_at: now,
+      updated_at: now,
+    } as User;
     setState({
-      user: {
-        id: "trial-user",
-        email: "trial@example.com",
-        full_name: "Trial User",
-        role: "staff",
-        created_at: now,
-        updated_at: now,
-      } as User,
+      user: trialUser,
       session: null,
       loading: false,
       error: null,
       isTrial: true,
     });
+    if (typeof window !== "undefined") {
+      localStorage.setItem(TRIAL_STORAGE_KEY, JSON.stringify({ user: trialUser, started_at: now }));
+    }
   };
 
   return {

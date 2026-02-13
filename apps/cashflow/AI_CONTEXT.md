@@ -98,6 +98,8 @@ apps/cashflow/
 - [x] **CRITICAL: Settings Functionality Restoration**: Restored complete Settings page with all original features
 - [x] **Complete Dark Mode Fix**: Fixed all dark mode issues including component classes and business colors
 - [x] **File Safety System**: Implemented comprehensive file operation safety rules and memory system
+- [x] **Trial Mode UX**: Trial users can enter without auth; customer “Giao dịch” navigation now uses client-side routing (no logout); language/dark toggles on login; trial banner instead of auto-redirect.
+- [x] **Login UI Polish**: Vietnamese hero text, sans typography aligned with app, lightweight buttons, dark-mode icon toggle, footer note “Quản lí công nợ Ver 1.0 - 1 sản phẩm trong gói vận hành Doanh nghiệp theo yêu cầu.”
 
 ### In Progress
 - [ ] Refine MetricsCard component for better number formatting
@@ -112,6 +114,7 @@ apps/cashflow/
   localStorage.removeItem("cashflow_transactions")
   localStorage.removeItem("cashflow_bank_accounts")
   ```
+- Trial sessions persist via localStorage; login page no longer auto-redirects trial, but banner offers “Vào dashboard.”
 
 ---
 

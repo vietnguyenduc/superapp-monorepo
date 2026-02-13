@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 import { databaseService } from "../../services/database";
@@ -35,6 +36,7 @@ interface CustomerListState {
 const CustomerList: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [state, setState] = useState<CustomerListState>({
     customers: [],
@@ -165,7 +167,9 @@ const CustomerList: React.FC = () => {
           break;
         case "transactions":
           // Navigate to transactions page with customer filter
-          window.location.href = `/transactions?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.full_name)}`;
+          navigate(
+            `/transactions?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.full_name)}`,
+          );
           break;
         case "edit":
           setState((prev) => ({
@@ -230,9 +234,9 @@ const CustomerList: React.FC = () => {
           if (state.formMode === "create" && options?.createTransactions) {
             const name = customerData.full_name || result.data?.full_name;
             if (name) {
-              window.location.href = `/import/transactions?customer_name=${encodeURIComponent(String(name))}`;
+              navigate(`/import/transactions?customer_name=${encodeURIComponent(String(name))}`, { replace: true });
             } else {
-              window.location.href = "/import/transactions";
+              navigate("/import/transactions", { replace: true });
             }
           }
         }
