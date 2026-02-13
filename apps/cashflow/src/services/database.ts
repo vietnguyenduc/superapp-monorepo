@@ -562,7 +562,12 @@ function writeCustomers(customers: Customer[]) {
 function readBankAccounts(): any[] {
   if (!isBrowser) return [];
   ensureSeedData();
-  return safeParseJson<any[]>(window.localStorage.getItem(STORAGE_KEYS.bankAccounts), []);
+  const parsed = safeParseJson<any[]>(window.localStorage.getItem(STORAGE_KEYS.bankAccounts), []);
+  return parsed.map((acc) => ({
+    ...acc,
+    opening_balance: acc?.opening_balance ?? acc?.openingBalance ?? acc?.balance ?? 0,
+    openingBalance: acc?.openingBalance ?? acc?.opening_balance ?? acc?.balance ?? 0,
+  }));
 }
 
 function readBranches(): Array<{ id: string; name: string }> {

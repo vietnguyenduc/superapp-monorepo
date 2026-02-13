@@ -72,12 +72,22 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   React.useEffect(() => {
     let isMounted = true;
     const loadBalances = async () => {
-      const response = await databaseService.transactions.getTransactions({
-        page: 1,
-        pageSize: 5000,
+      const [txRes, accountRes] = await Promise.all([
+        databaseService.transactions.getTransactions({
+          page: 1,
+          pageSize: 5000,
+        }),
+        databaseService.bankAccounts.getBankAccounts(),
+      ]);
+      if (!txRes?.data || !isMounted) return;
+
+      const openingByAccount = new Map<string, number>();
+      accountRes?.data?.forEach((acc: any) => {
+        const opening = acc?.opening_balance ?? acc?.balance ?? 0;
+        openingByAccount.set(String(acc.id), Number(opening) || 0);
       });
-      if (!response?.data || !isMounted) return;
-      const all = [...response.data].sort(
+
+      const all = [...txRes.data].sort(
         (a, b) => new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime(),
       );
       const runningByCustomer = new Map<string, number>();
@@ -86,16 +96,27 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
       const nextAccountMap: Record<string, number> = {};
       all.forEach((tx) => {
         const prev = runningByCustomer.get(tx.customer_id) || 0;
-        const prevAccount = runningByAccount.get(tx.bank_account_id) || 0;
-        let delta = tx.amount;
-        if (tx.transaction_type === "charge") delta = -Math.abs(tx.amount);
+        const prevAccount =
+          runningByAccount.get(tx.bank_account_id) ||
+          openingByAccount.get(String(tx.bank_account_id)) ||
+          0;
+        // Receivable delta (customer): charge increases receivable (negative), payment/refund decrease (positive)
+        let deltaReceivable = tx.amount;
+        if (tx.transaction_type === "charge") deltaReceivable = -Math.abs(tx.amount);
         else if (tx.transaction_type === "payment" || tx.transaction_type === "refund") {
-          delta = Math.abs(tx.amount);
+          deltaReceivable = Math.abs(tx.amount);
         } else if (tx.transaction_type === "adjustment") {
-          delta = tx.amount;
+          deltaReceivable = tx.amount;
         }
-        const next = Math.max(0, prev + delta);
-        const nextAccount = Math.max(0, prevAccount + delta);
+
+        // Cash delta (bank account): charge does not move cash; payment adds; refund subtracts; adjustment signed
+        let deltaCash = 0;
+        if (tx.transaction_type === "payment") deltaCash = Math.abs(tx.amount);
+        else if (tx.transaction_type === "refund") deltaCash = -Math.abs(tx.amount);
+        else if (tx.transaction_type === "adjustment") deltaCash = tx.amount;
+
+        const next = prev + deltaReceivable;
+        const nextAccount = prevAccount + deltaCash;
         runningByCustomer.set(tx.customer_id, next);
         runningByAccount.set(tx.bank_account_id, nextAccount);
         nextMap[tx.id] = next;

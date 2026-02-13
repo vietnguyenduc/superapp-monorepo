@@ -237,8 +237,8 @@ const Settings: React.FC = () => {
         ? Number(parsedOpeningBalance)
         : previousOpening;
       const nextBalance = Math.max(0, editingBankAccount.balance + (nextOpening - previousOpening));
-      setBankAccounts((prev) =>
-        prev.map((account) =>
+      setBankAccounts((prev) => {
+        const next = prev.map((account) =>
           account.id === editingBankAccount.id
             ? {
                 ...account,
@@ -250,8 +250,12 @@ const Settings: React.FC = () => {
                 balance: nextBalance,
               }
             : account,
-        ),
-      );
+        );
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("cashflow_bank_accounts", JSON.stringify(next));
+        }
+        return next;
+      });
     } else {
       const openingBalance = Number.isFinite(parsedOpeningBalance)
         ? Number(parsedOpeningBalance)
@@ -266,7 +270,13 @@ const Settings: React.FC = () => {
         openingBalance,
         isActive: true,
       };
-      setBankAccounts((prev) => [nextAccount, ...prev]);
+      setBankAccounts((prev) => {
+        const next = [nextAccount, ...prev];
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("cashflow_bank_accounts", JSON.stringify(next));
+        }
+        return next;
+      });
     }
     setIsBankAccountModalOpen(false);
     setEditingBankAccount(null);
