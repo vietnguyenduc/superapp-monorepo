@@ -1,13 +1,31 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../../services/supabase";
 import CompanySwitcher from "./CompanySwitcher";
+import { useAuthContext } from "../../contexts/AuthContext";
 
 const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { i18n } = useTranslation();
+  const { user, isTrial } = useAuthContext();
+
+  const lang = i18n.language || localStorage.getItem("language") || "vi";
+  const fallbackName = lang === "vi" ? "Người dùng" : "User";
+  const trialName = lang === "vi" ? "Người dùng thử" : "Trial User";
+  const displayName = isTrial
+    ? trialName
+    : user?.full_name || user?.email || fallbackName;
+  const avatarInitial = displayName?.trim()?.charAt(0)?.toUpperCase() || "U";
+
+  // Ensure i18n follows stored language (so trial name matches)
+  useEffect(() => {
+    const storedLang = localStorage.getItem("language") || "vi";
+    if (i18n.language !== storedLang) {
+      i18n.changeLanguage(storedLang);
+    }
+  }, [i18n]);
 
   const handleLogout = async () => {
     try {
@@ -114,10 +132,13 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
               className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm rounded-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400 shadow-sm"
             >
               <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-100 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                <span className="text-gray-700 dark:text-gray-300 font-medium text-xs">U</span>
+                <span className="text-gray-700 dark:text-gray-300 font-medium text-xs">
+                  {avatarInitial}
+                </span>
               </div>
-              <span className="hidden sm:inline text-gray-800 dark:text-gray-200 font-medium">Người dùng</span>
-              <span className="hidden sm:inline text-gray-800 dark:text-gray-200 font-medium">Người dùng</span>
+              <span className="hidden sm:inline text-gray-800 dark:text-gray-200 font-medium truncate max-w-[120px]">
+                {displayName}
+              </span>
               <svg
                 className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${
                   isUserMenuOpen ? "rotate-180" : ""
@@ -136,10 +157,10 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
             </button>
             {/* Dropdown menu */}
             {isUserMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700">
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black/5 dark:ring-white/10 py-1 z-50 border border-gray-200 dark:border-gray-700">
                 <button
                   onClick={handleLogout}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   Đăng xuất
                 </button>

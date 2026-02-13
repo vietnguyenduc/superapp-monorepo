@@ -1,6 +1,7 @@
-import React, { createContext, useContext, ReactNode } from "react";
+import React, { createContext, useContext } from "react";
+import type { ReactNode } from "react";
 import { useAuth } from "../hooks/useAuth";
-import { User } from "../types";
+import type { User } from "../types";
 
 interface AuthContextType {
   user: User | null;
@@ -21,6 +22,8 @@ interface AuthContextType {
   getAccessToken: () => string | null;
   refreshToken: () => Promise<{ error: string | null }>;
   isTokenExpired: () => boolean;
+  isTrial: boolean;
+  startTrial: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,15 +41,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const refreshToken = async (): Promise<{ error: string | null }> => {
-    try {
-      const { error } = await auth.session?.refresh();
-      if (error) {
-        return { error: (error as any).message };
-      }
-      return { error: null };
-    } catch (error) {
-      return { error: "Failed to refresh token" };
-    }
+    // Supabase JS v2 handles refresh internally; exposing a helper for API symmetry
+    return { error: null };
   };
 
   const isTokenExpired = (): boolean => {
@@ -65,6 +61,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     getAccessToken,
     refreshToken,
     isTokenExpired,
+    isTrial: auth.isTrial,
+    startTrial: auth.startTrial,
   };
 
   return (

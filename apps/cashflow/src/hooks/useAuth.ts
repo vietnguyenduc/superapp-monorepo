@@ -9,6 +9,7 @@ interface AuthState {
   session: Session | null;
   loading: boolean;
   error: string | null;
+  isTrial: boolean;
 }
 
 export const useAuth = () => {
@@ -17,6 +18,7 @@ export const useAuth = () => {
     session: null,
     loading: true,
     error: null,
+    isTrial: false,
   });
 
   // Fetch user profile from public.users table
@@ -59,6 +61,7 @@ export const useAuth = () => {
             session,
             loading: false,
             error: null,
+            isTrial: false,
           });
         } catch (profileError) {
           console.error("Error fetching user profile:", profileError);
@@ -68,6 +71,7 @@ export const useAuth = () => {
             session: null,
             loading: false,
             error: "Failed to fetch user profile",
+            isTrial: false,
           });
         }
       } else {
@@ -76,6 +80,7 @@ export const useAuth = () => {
           session: null,
           loading: false,
           error: null,
+          isTrial: false,
         });
       }
     }).catch((error) => {
@@ -86,6 +91,7 @@ export const useAuth = () => {
         session: null,
         loading: false,
         error: "Failed to check authentication",
+        isTrial: false,
       });
     });
 
@@ -100,6 +106,7 @@ export const useAuth = () => {
           session,
           loading: false,
           error: null,
+          isTrial: false,
         });
       } else if (event === "SIGNED_OUT") {
         setState({
@@ -107,11 +114,13 @@ export const useAuth = () => {
           session: null,
           loading: false,
           error: null,
+          isTrial: false,
         });
       } else if (event === "TOKEN_REFRESHED" && session) {
         setState((prev) => ({
           ...prev,
           session,
+          isTrial: false,
         }));
       }
     });
@@ -148,6 +157,7 @@ export const useAuth = () => {
         session: data.session,
         loading: false,
         error: null,
+        isTrial: false,
       });
     }
 
@@ -173,6 +183,7 @@ export const useAuth = () => {
       session: null,
       loading: false,
       error: null,
+      isTrial: false,
     });
 
     return { error: null };
@@ -212,6 +223,24 @@ export const useAuth = () => {
     setState((prev) => ({ ...prev, error: null }));
   }, []);
 
+  const startTrial = () => {
+    const now = new Date().toISOString();
+    setState({
+      user: {
+        id: "trial-user",
+        email: "trial@example.com",
+        full_name: "Trial User",
+        role: "staff",
+        created_at: now,
+        updated_at: now,
+      } as User,
+      session: null,
+      loading: false,
+      error: null,
+      isTrial: true,
+    });
+  };
+
   return {
     user: state.user,
     session: state.session,
@@ -221,6 +250,8 @@ export const useAuth = () => {
     signOut,
     updateProfile,
     clearError,
-    isAuthenticated: !!state.session && !!state.user,
+    isAuthenticated: (!!state.session && !!state.user) || state.isTrial,
+    isTrial: state.isTrial,
+    startTrial,
   };
 };
