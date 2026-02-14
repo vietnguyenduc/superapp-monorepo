@@ -21,10 +21,9 @@ This is the Cashflow module of the Superapp Monorepo, built with React + TypeScr
   ```
 
 ### 3. **Environment Variables**
-- Copy `.env.example` to `.env.local` and fill in your real credentials:
+- Copy `.env.example` to `.env.local` (credentials are pre-filled):
   ```bash
   cp .env.example .env.local
-  # Edit .env.local with your Supabase credentials
   ```
 
 ### 4. **Development**
