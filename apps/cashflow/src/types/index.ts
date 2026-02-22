@@ -51,6 +51,7 @@ export interface Customer {
   branch_id?: string | null;
   company_id?: string;
   total_balance: number;
+  opening_balance?: number;
   last_transaction_date?: string;
   is_active: boolean;
   created_at: string;

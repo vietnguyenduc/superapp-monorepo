@@ -17,6 +17,7 @@ interface RawCustomerData {
   email?: string;
   address?: string;
   customer_code?: string;
+  working_method?: string;
 }
 
 const CustomerImport: React.FC<CustomerImportProps> = ({
@@ -43,6 +44,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [showPreview, setShowPreview] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Parse and validate data when file changes
   const [processedData, setProcessedData] = useState<{
@@ -100,6 +102,41 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     setCurrentStep(1);
   }, []);
 
+  const handleDownloadSample = useCallback(() => {
+    const headers = ["full_name", "phone", "email", "address", "customer_code", "working_method"];
+    const rows = [
+      {
+        full_name: "Công ty An Phát",
+        phone: "0909000001",
+        email: "contact@anphat.vn",
+        address: "123 Nguyễn Huệ, Q1, TP.HCM",
+        customer_code: "CUST0001",
+        working_method: "Thu nợ thứ 2 hằng tuần, thanh toán trong ngày",
+      },
+      {
+        full_name: "Công ty Việt Thịnh",
+        phone: "0909000002",
+        email: "hello@vietthinh.vn",
+        address: "45 Lê Lợi, Q1, TP.HCM",
+        customer_code: "CUST0002",
+        working_method: "Đối soát 2 lần/tháng, hạn thanh toán 5 ngày",
+      },
+      {
+        full_name: "Công ty Hoàng Gia",
+        phone: "0909000003",
+        email: "info@hoanggia.vn",
+        address: "78 Điện Biên Phủ, Q3, TP.HCM",
+        customer_code: "CUST0003",
+        working_method: "Thanh toán COD cho đơn mới, công nợ 14 ngày cho khách cũ",
+      },
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Customers");
+    XLSX.writeFile(workbook, "customer-import-sample.xlsx");
+  }, []);
+
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -143,31 +180,63 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     setCurrentStep(2);
   }, []);
 
+  const handleBackToUpload = useCallback(() => {
+    setShowPreview(false);
+    setCurrentStep(1);
+  }, []);
+
+  const handleRemoveErrorRows = useCallback(() => {
+    if (importData.errors.length === 0) return;
+    const errorRows = new Set(importData.errors.map((e) => e.row));
+    const filtered = importData.data.filter((_, idx) => !errorRows.has(idx));
+    setImportData((prev) => ({
+      ...prev,
+      data: filtered,
+      errors: [],
+      isValid: filtered.length > 0,
+    }));
+    setShowPreview(true);
+    setCurrentStep(2);
+  }, [importData]);
+
   const handleImportData = useCallback(async () => {
     if (
       !importData.isValid ||
-      importData.data.length === 0 ||
-      !user?.branch_id
+      importData.data.length === 0
     ) {
       return;
     }
+
+    const branchId = user?.branch_id || "1";
 
     setIsProcessing(true);
     try {
       const result = await databaseService.customers.bulkCreateCustomers(
         importData.data.map((customer) => ({
           ...customer,
-          branch_id: user.branch_id,
+          working_method: customer.working_method,
+          branch_id: branchId,
         })),
       );
 
       if (result.errors.length > 0) {
-        console.error("Import completed with errors:", result.errors);
-        // TODO: Show error notification with details
+        // Hiển thị lỗi (ví dụ trùng phone/mã KH) ở bước preview
+        setImportData((prev) => ({
+          ...prev,
+          errors: result.errors,
+          isValid: false,
+        }));
+        setShowPreview(true);
+        setCurrentStep(2);
+        return;
       }
 
       setCurrentStep(3);
       onImportComplete?.(result.data);
+
+      // Show success popup for 3s
+      setSuccessMessage("Đã nhập dữ liệu khách hàng thành công");
+      setTimeout(() => setSuccessMessage(null), 3000);
 
       // Reset form
       setImportData({ file: null, data: [], errors: [], isValid: false });
@@ -199,14 +268,18 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       setSingleError(t("customers.form.errors.fullNameRequired"));
       return;
     }
-    if (!user?.branch_id) return;
+    const branchId = user?.branch_id || "1";
+    if (!branchId) {
+      setSingleError("Không xác định được chi nhánh, vui lòng đăng nhập lại");
+      return;
+    }
     setSingleError(null);
     setIsCreatingSingle(true);
     try {
       const payload = {
         ...singleCustomer,
         customer_code: singleCustomer.customer_code?.trim() || undefined,
-        branch_id: user.branch_id,
+        branch_id: branchId,
       };
       const result = await databaseService.customers.createCustomer(payload);
       if (result.error) {
@@ -216,6 +289,8 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       if (result.data) {
         onImportComplete?.([result.data]);
       }
+      setSuccessMessage("Đã thêm khách hàng thành công");
+      setTimeout(() => setSuccessMessage(null), 3000);
       setSingleCustomer({
         full_name: "",
         phone: "",
@@ -325,18 +400,30 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
         </div>
       </div>
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {t("import.uploadCustomerData")}
-        </h2>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Nhập dữ liệu khách hàng hàng loạt
+          </h2>
+          <Button variant="secondary" size="sm" onClick={handleReset}>
+            Đặt lại
+          </Button>
+        </div>
         <div className="mb-4 rounded-lg border border-blue-100 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-900/20 px-4 py-3">
           <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
             {t("import.customerBulkGuidelinesTitle")}
           </p>
           <ul className="mt-2 space-y-1 text-sm text-blue-800 dark:text-blue-200">
-            <li>• {t("import.customerBulkGuidelines.item1")}</li>
-            <li>• {t("import.customerBulkGuidelines.item2")}</li>
-            <li>• {t("import.customerBulkGuidelines.item3")}</li>
+            <li>• Tải lên file Excel/CSV theo đúng tiêu đề cột: full_name, phone, email, address, customer_code, working_method</li>
+            <li>• Cột bắt buộc: full_name. Các cột còn lại có thể để trống</li>
+            <li>• Mỗi dòng là 1 khách hàng. Kiểm tra trước khi nhấn “Kiểm tra dữ liệu”</li>
           </ul>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700 dark:text-gray-200 mb-2">
+          <span className="font-medium">Tệp mẫu</span>
+          <Button size="sm" variant="secondary" className="text-xs" onClick={handleDownloadSample}>
+            Tải file mẫu
+          </Button>
         </div>
 
         <div
@@ -383,66 +470,54 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                 />
               </label>
             </div>
+            {importData.file && (
+              <div className="mt-4 inline-flex items-center gap-3 rounded-md border border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/30 px-4 py-2 text-left">
+                <svg
+                  className="h-5 w-5 text-green-500"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <div className="text-sm text-gray-800 dark:text-gray-100">
+                  <div className="font-medium">{importData.file.name}</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-300">
+                    {(importData.file.size / 1024 / 1024).toFixed(2)} MB
+                  </div>
+                </div>
+                <button
+                  onClick={() => setImportData((prev) => ({ ...prev, file: null }))}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  aria-label="Remove file"
+                >
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {importData.file && (
-        <div className="bg-gray-50 dark:bg-gray-800/60 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <svg
-                className="h-5 w-5 text-green-500"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {importData.file.name}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {(importData.file.size / 1024 / 1024).toFixed(2)} MB
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setImportData((prev) => ({ ...prev, file: null }))}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-            >
-              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Action Buttons */}
-      <div className="flex justify-between items-center">
-        <Button variant="secondary" size="md" onClick={handleReset}>
-          {t("common.reset")}
+      <div className="flex justify-end items-center">
+        <Button
+          variant="primary"
+          size="md"
+          onClick={handleValidateData}
+          disabled={!importData.file}
+        >
+          {t("import.validateData")}
         </Button>
-
-        <div className="flex space-x-3">
-          <Button
-            variant="primary"
-            size="md"
-            onClick={handleValidateData}
-            disabled={!importData.file}
-          >
-            {t("import.validateData")}
-          </Button>
-        </div>
       </div>
     </div>
   );
@@ -478,6 +553,9 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   {t("customers.customerCode")}
                 </th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Cách làm việc công nợ
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
@@ -511,6 +589,11 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                       className={`px-3 py-2 text-sm ${getErrorForCell(index, "customer_code") ? "bg-red-100" : ""}`}
                     >
                       {row.customer_code || "-"}
+                    </td>
+                    <td
+                      className={`px-3 py-2 text-sm ${getErrorForCell(index, "working_method") ? "bg-red-100" : ""}`}
+                    >
+                      {row.working_method || "-"}
                     </td>
                   </tr>
                 );
@@ -564,6 +647,19 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
               {t("import.totalErrors")}
             </p>
           )}
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Button size="sm" variant="secondary" onClick={handleBackToUpload}>
+              Quay lại bước 1 (tải/sửa file)
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleRemoveErrorRows}
+              disabled={importData.errors.length === 0 || importData.data.length === importData.errors.length}
+            >
+              Bỏ các dòng lỗi, giữ dòng hợp lệ
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -585,6 +681,25 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+      {successMessage && (
+        <div className="fixed inset-0 z-[300] flex items-start justify-center pointer-events-none">
+          <div className="mt-6 flex items-center gap-3 rounded-lg bg-green-50 text-green-800 px-4 py-3 shadow-lg border border-green-200">
+            <svg
+              className="h-5 w-5 text-green-600"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <div className="text-sm font-medium">{successMessage}</div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white dark:bg-gray-900 shadow rounded-lg border border-gray-200 dark:border-gray-800">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -791,6 +906,7 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
             email: "",
             address: "",
             customer_code: "",
+            working_method: "",
           };
 
           headers.forEach((header, colIndex) => {
@@ -819,6 +935,12 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
               case "code":
               case "id":
                 customerData.customer_code = String(value).trim();
+                break;
+              case "working_method":
+              case "working":
+              case "note":
+              case "policy":
+                customerData.working_method = String(value).trim();
                 break;
             }
           });

@@ -16,6 +16,9 @@ if (!supabaseAnonKey) {
 
 // Create Supabase client with enhanced JWT configuration and type safety
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  db: {
+    schema: "cashflow",
+  },
   auth: {
     autoRefreshToken: true,
     persistSession: true,

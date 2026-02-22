@@ -12,6 +12,11 @@ interface AuthContextType {
     email: string,
     password: string,
   ) => Promise<{ error: string | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    fullName?: string,
+  ) => Promise<{ error: string | null }>;
   signOut: () => Promise<{ error: string | null }>;
   updateProfile: (
     updates: Partial<User>,
@@ -63,6 +68,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isTokenExpired,
     isTrial: auth.isTrial,
     startTrial: auth.startTrial,
+    signUp: auth.signUp,
   };
 
   return (

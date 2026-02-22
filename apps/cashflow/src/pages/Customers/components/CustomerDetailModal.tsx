@@ -98,6 +98,10 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     .filter((transaction) => transaction.transaction_type === "charge")
     .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
 
+  const openingBalance = customer.opening_balance ?? 0;
+  const openingUpdatedAt =
+    (customer as any).opening_balance_updated_at || customer.updated_at || customer.created_at;
+
   return (
     <div className="fixed inset-0 z-[200] overflow-y-auto">
       <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -257,6 +261,25 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                     >
                       {formatCurrency(customer.total_balance)}
                     </dd>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Số dư đầu kỳ
+                      </dt>
+                      <dd className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {formatCurrency(openingBalance)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Cập nhật lúc
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                        {formatDate(openingUpdatedAt)}
+                      </dd>
+                    </div>
                   </div>
 
                   <div>

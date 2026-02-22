@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../services/supabase";
 import type { User } from "../types";
+import type { TablesInsert } from "../types/database.types";
 import type { Session } from "@supabase/supabase-js";
 
 const TRIAL_STORAGE_KEY = "cashflow_trial_user";
@@ -179,6 +180,68 @@ export const useAuth = () => {
     return { error: null };
   };
 
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName?: string
+  ): Promise<{ error: string | null; confirmationRequired?: boolean }> => {
+    setState((prev) => ({ ...prev, loading: true, error: null }));
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+        emailRedirectTo:
+          typeof window !== "undefined"
+            ? `${window.location.origin}/login`
+            : undefined,
+      },
+    });
+
+    if (error) {
+      setState((prev) => ({ ...prev, loading: false, error: error.message }));
+      return { error: error.message };
+    }
+
+    const authUser = data.session?.user ?? data.user;
+
+    if (authUser) {
+      // Create user profile row
+      const profilePayload: TablesInsert<"users"> = {
+        id: authUser.id,
+        email: authUser.email ?? "",
+        full_name: fullName || (authUser.user_metadata as { full_name?: string })?.full_name || null,
+        role: "staff",
+      };
+
+      const { error: profileError } = await supabase.from("users").upsert(profilePayload);
+
+      if (profileError) {
+        console.error("Error creating profile during sign up:", profileError);
+        setState((prev) => ({ ...prev, loading: false, error: profileError.message }));
+        return { error: profileError.message };
+      }
+
+      const profile = await fetchUserProfile(authUser.id);
+      setState({
+        user: profile,
+        session: data.session ?? null,
+        loading: false,
+        error: null,
+        isTrial: false,
+      });
+    } else {
+      // Supabase can require email confirmation; no session returned
+      setState((prev) => ({ ...prev, loading: false }));
+      return { error: null, confirmationRequired: true };
+    }
+
+    return { error: null, confirmationRequired: false };
+  };
+
   const signOut = async (): Promise<{ error: string | null }> => {
     setState((prev) => ({ ...prev, loading: true }));
 
@@ -271,6 +334,7 @@ export const useAuth = () => {
     error: state.error,
     signIn,
     signOut,
+    signUp,
     updateProfile,
     clearError,
     isAuthenticated: (!!state.session && !!state.user) || state.isTrial,

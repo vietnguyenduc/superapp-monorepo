@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { validateEmail, validatePassword } from "../../utils/validation";
 
-const Login: React.FC = () => {
+const SignUp: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -19,42 +20,39 @@ const Login: React.FC = () => {
   });
   const navigate = useNavigate();
   const { i18n } = useTranslation();
-  const { signIn, loading, error, clearError, isAuthenticated, user, startTrial, isTrial } =
+  const { signUp, loading, error, clearError, isAuthenticated, user, isTrial } =
     useAuthContext();
 
   const copy = {
     vi: {
-      title: "Đăng nhập tài khoản",
+      title: "Tạo tài khoản mới",
       subtitle: "Hệ thống quản lý công nợ",
+      fullName: "Họ và tên",
       email: "Email",
       password: "Mật khẩu",
-      signIn: "Đăng nhập",
-      signingIn: "Đang đăng nhập...",
-      or: "hoặc",
-      trial: "Dùng thử ngay (không cần đăng nhập)",
+      signUp: "Đăng ký",
+      signingUp: "Đang đăng ký...",
+      haveAccount: "Đã có tài khoản? Đăng nhập",
     },
     en: {
-      title: "Sign in to your account",
+      title: "Create your account",
       subtitle: "Debt Repayment Management System",
+      fullName: "Full name",
       email: "Email address",
       password: "Password",
-      signIn: "Sign in",
-      signingIn: "Signing in...",
-      or: "or",
-      trial: "Try now (no login needed)",
+      signUp: "Sign up",
+      signingUp: "Signing up...",
+      haveAccount: "Already have an account? Sign in",
     },
   } as const;
   const tCopy = copy[language as keyof typeof copy] || copy.vi;
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user && !isTrial) {
-      // Only real sessions auto-redirect
       navigate("/dashboard");
     }
   }, [isAuthenticated, isTrial, user, navigate]);
 
-  // Apply dark mode on login page
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark");
@@ -68,7 +66,6 @@ const Login: React.FC = () => {
     localStorage.setItem("darkMode", JSON.stringify(darkMode));
   }, [darkMode]);
 
-  // Persist language choice (default VI)
   useEffect(() => {
     document.documentElement.lang = language;
     localStorage.setItem("language", language);
@@ -76,6 +73,17 @@ const Login: React.FC = () => {
       i18n.changeLanguage(language);
     }
   }, [language, i18n]);
+
+  const toggleDarkMode = () => setDarkMode((prev) => !prev);
+  const toggleLanguage = () => {
+    setLanguage((prev) => {
+      const next = prev === "vi" ? "en" : "vi";
+      if (i18n.language !== next) {
+        i18n.changeLanguage(next);
+      }
+      return next;
+    });
+  };
 
   const validateForm = (): boolean => {
     const emailValidation = validateEmail(email);
@@ -87,33 +95,16 @@ const Login: React.FC = () => {
     return !emailValidation && !passwordValidation;
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
 
-    if (!validateForm()) {
-      return;
+    if (!validateForm()) return;
+
+    const result = await signUp(email, password, fullName.trim() || undefined);
+    if (!result.error) {
+      navigate("/dashboard");
     }
-
-    await signIn(email, password);
-    // Navigation is handled by useEffect when isAuthenticated changes
-  };
-
-  const handleStartTrial = () => {
-    clearError();
-    startTrial();
-    navigate("/dashboard");
-  };
-
-  const toggleDarkMode = () => setDarkMode((prev) => !prev);
-  const toggleLanguage = () => {
-    setLanguage((prev) => {
-      const next = prev === "vi" ? "en" : "vi";
-      if (i18n.language !== next) {
-        i18n.changeLanguage(next);
-      }
-      return next;
-    });
   };
 
   return (
@@ -135,6 +126,7 @@ const Login: React.FC = () => {
           <span className="text-sm">{language.toUpperCase()}</span>
         </button>
       </div>
+
       <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg px-7 py-8 border border-gray-100 dark:border-gray-700/60">
         <div>
           <h2 className="mt-1 text-center text-3xl font-medium text-gray-900 dark:text-white tracking-tight">
@@ -144,22 +136,24 @@ const Login: React.FC = () => {
             {tCopy.subtitle}
           </p>
         </div>
-        {isTrial && (
-          <div className="rounded-xl border border-blue-100 dark:border-blue-500/40 bg-blue-50/70 dark:bg-blue-900/30 px-4 py-3 text-sm text-blue-700 dark:text-blue-200 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <span>Đang trong phiên dùng thử.</span>
-              <button
-                type="button"
-                onClick={() => navigate("/dashboard")}
-                className="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm"
-              >
-                Vào dashboard
-              </button>
-            </div>
-          </div>
-        )}
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+
+        <form className="mt-8 space-y-6" onSubmit={handleSignUp}>
           <div className="space-y-4">
+            <div>
+              <label htmlFor="fullName" className="sr-only">
+                {tCopy.fullName}
+              </label>
+              <input
+                id="fullName"
+                name="fullName"
+                type="text"
+                autoComplete="name"
+                className="form-input w-full border-gray-200 dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-500 rounded-xl"
+                placeholder={tCopy.fullName}
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+            </div>
             <div>
               <label htmlFor="email" className="sr-only">
                 {tCopy.email}
@@ -178,9 +172,7 @@ const Login: React.FC = () => {
                   if (emailError) setEmailError("");
                 }}
               />
-              {emailError && (
-                <p className="text-red-500 text-sm mt-1">{emailError}</p>
-              )}
+              {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
             </div>
             <div>
               <label htmlFor="password" className="sr-only">
@@ -190,7 +182,7 @@ const Login: React.FC = () => {
                 id="password"
                 name="password"
                 type="password"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 required
                 className={`form-input w-full ${passwordError ? "border-red-500" : "border-gray-200"} dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-500 rounded-xl`}
                 placeholder={tCopy.password}
@@ -218,21 +210,14 @@ const Login: React.FC = () => {
               disabled={loading}
               className="w-full inline-flex justify-center items-center gap-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
             >
-              {loading ? tCopy.signingIn : tCopy.signIn}
+              {loading ? tCopy.signingUp : tCopy.signUp}
             </button>
             <button
               type="button"
-              onClick={handleStartTrial}
-              className="w-full rounded-xl border border-blue-200 dark:border-blue-500/40 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-medium text-blue-600 dark:text-blue-300 shadow-sm hover:bg-blue-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-            >
-              {tCopy.trial}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate("/signup")}
+              onClick={() => navigate("/login")}
               className="w-full text-center text-sm font-medium text-blue-600 dark:text-blue-300 hover:underline"
             >
-              {language === "vi" ? "Chưa có tài khoản? Đăng ký" : "No account yet? Sign up"}
+              {tCopy.haveAccount}
             </button>
           </div>
         </form>
@@ -244,4 +229,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login;
+export default SignUp;

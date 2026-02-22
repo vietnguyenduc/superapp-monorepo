@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import * as XLSX from "xlsx";
 import { ErrorFallback, LoadingFallback } from "../../components/UI/FallbackUI";
 import ToggleSwitch from "../../components/UI/ToggleSwitch";
 import Button from "../../components/UI/Button";
@@ -46,6 +47,11 @@ interface CustomerField {
   isDefault?: boolean;
 }
 
+interface OpeningBalanceRow {
+  customer_code: string;
+  opening_balance: number;
+}
+
 const colorOptions = [
   {
     value: "blue",
@@ -68,6 +74,8 @@ const colorOptions = [
     class: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200",
   },
 ];
+
+const TRANSACTION_TYPES_KEY = "cashflow_transaction_types";
 
 const Settings: React.FC = () => {
   const [darkMode, setDarkMode] = useState(() => {
@@ -121,6 +129,14 @@ const Settings: React.FC = () => {
     phone: "",
   });
 
+  // Opening balance import state
+  const [openingFile, setOpeningFile] = useState<File | null>(null);
+  const [openingRows, setOpeningRows] = useState<OpeningBalanceRow[]>([]);
+  const [openingErrors, setOpeningErrors] = useState<string[]>([]);
+  const [openingSuccess, setOpeningSuccess] = useState<string | null>(null);
+  const [isOpeningProcessing, setIsOpeningProcessing] = useState(false);
+  const [customerMap, setCustomerMap] = useState<Record<string, string>>({});
+
   // Apply dark mode to document
   useEffect(() => {
     console.log('Dark mode changed to:', darkMode);
@@ -143,6 +159,24 @@ const Settings: React.FC = () => {
   }, [darkMode]);
 
   // Load data from database service
+  useEffect(() => {
+    const storedTypes = localStorage.getItem(TRANSACTION_TYPES_KEY);
+    if (storedTypes) {
+      try {
+        const parsed = JSON.parse(storedTypes);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setTransactionTypes(parsed);
+        }
+      } catch (err) {
+        console.error("Failed to parse stored transaction types", err);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(TRANSACTION_TYPES_KEY, JSON.stringify(transactionTypes));
+  }, [transactionTypes]);
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -181,6 +215,16 @@ const Settings: React.FC = () => {
         })) || [];
 
         setBranches(formattedBranches);
+
+        // Load customers for opening balance preview
+        const customersResponse = await databaseService.customers.getCustomers({ limit: 1000 });
+        if (customersResponse?.data) {
+          const map: Record<string, string> = {};
+          customersResponse.data.forEach((c: any) => {
+            if (c?.customer_code) map[String(c.customer_code)] = c.full_name || c.customer_name || c.name || "";
+          });
+          setCustomerMap(map);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load settings");
       } finally {
@@ -405,29 +449,29 @@ const Settings: React.FC = () => {
       case "transaction-type":
         setTransactionTypes((prev) =>
           prev.map((item) =>
-            item.id === id ? { ...item, isActive: !item.isActive } : item
-          )
+            item.id === id ? { ...item, isActive: !item.isActive } : item,
+          ),
         );
         break;
       case "bank-account":
         setBankAccounts((prev) =>
           prev.map((item) =>
-            item.id === id ? { ...item, isActive: !item.isActive } : item
-          )
+            item.id === id ? { ...item, isActive: !item.isActive } : item,
+          ),
         );
         break;
       case "branch":
         setBranches((prev) =>
           prev.map((item) =>
-            item.id === id ? { ...item, isActive: !item.isActive } : item
-          )
+            item.id === id ? { ...item, isActive: !item.isActive } : item,
+          ),
         );
         break;
       case "customer-field":
         setCustomerFields((prev) =>
           prev.map((item) =>
-            item.id === id ? { ...item, isActive: !item.isActive } : item
-          )
+            item.id === id ? { ...item, isActive: !item.isActive } : item,
+          ),
         );
         break;
     }
@@ -483,6 +527,83 @@ const Settings: React.FC = () => {
     setEditingBranch(null);
   };
 
+  // Opening balance helpers
+  const handleDownloadOpeningTemplate = () => {
+    const rows = [
+      { customer_code: "CUST0001", opening_balance: 1000000 },
+      { customer_code: "CUST0002", opening_balance: 2500000 },
+      { customer_code: "CUST0003", opening_balance: 500000 },
+    ];
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "OpeningBalances");
+    XLSX.writeFile(wb, "opening_balance_template.xlsx");
+  };
+
+  const handleOpeningFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    setOpeningSuccess(null);
+    if (!file) return;
+    setOpeningFile(file);
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = evt.target?.result;
+        if (!data) return;
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(sheet, { defval: "" }) as any[];
+        const errors: string[] = [];
+        const parsed: OpeningBalanceRow[] = [];
+        json.forEach((row, idx) => {
+          const code = String(row.customer_code || row.code || "").trim();
+          const opening = Number(row.opening_balance ?? row.balance ?? "");
+          if (!code) {
+            errors.push(`Dòng ${idx + 2}: Thiếu customer_code`);
+            return;
+          }
+          if (!Number.isFinite(opening)) {
+            errors.push(`Dòng ${idx + 2}: opening_balance không hợp lệ`);
+            return;
+          }
+          parsed.push({ customer_code: code, opening_balance: opening });
+        });
+        setOpeningErrors(errors);
+        setOpeningRows(parsed);
+      } catch (err) {
+        console.error("Failed to parse opening balance file", err);
+        setOpeningErrors(["Không đọc được file. Vui lòng kiểm tra định dạng."]);
+        setOpeningRows([]);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleImportOpeningBalance = async () => {
+    if (openingRows.length === 0) return;
+    setIsOpeningProcessing(true);
+    setOpeningSuccess(null);
+    try {
+      const res = await databaseService.customers.bulkUpdateOpeningBalances(openingRows);
+      if (res.errors && res.errors.length > 0) {
+        const errs = res.errors.map((e: any) => {
+          const msg = e.message === "Customer not found" ? "Không tìm thấy khách hàng" : e.message;
+          return `Dòng ${e.row + 2}: ${msg}${e.value ? ` (${e.value})` : ""}`;
+        });
+        setOpeningErrors(errs);
+      } else {
+        setOpeningErrors([]);
+      }
+      setOpeningSuccess(`Đã cập nhật ${res.data?.updated || 0} khách hàng.`);
+    } catch (err) {
+      console.error("Import opening balance failed", err);
+      setOpeningErrors(["Có lỗi khi nhập số dư. Vui lòng thử lại."]);
+    } finally {
+      setIsOpeningProcessing(false);
+    }
+  };
+
   const handleAddBankAccount = () => {
     setEditingBankAccount(null);
     setBankAccountForm({
@@ -494,6 +615,19 @@ const Settings: React.FC = () => {
     });
     setIsBankAccountModalOpen(true);
   };
+
+  const tabs: Tab[] = useMemo(
+    () => [
+      { id: "appearance", name: "Giao diện", icon: "🎨" },
+      { id: "transaction-types", name: "Loại giao dịch", icon: "💳" },
+      { id: "bank-accounts", name: "Tài khoản ngân hàng", icon: "🏦" },
+      { id: "branches", name: "Văn phòng", icon: "🏢" },
+      { id: "customer-fields", name: "Trường khách hàng", icon: "🧾" },
+      { id: "data", name: "Dữ liệu", icon: "💾" },
+      { id: "opening-balance", name: "Số dư đầu kỳ", icon: "📥" },
+    ],
+    [],
+  );
 
   if (loading) {
     return (
@@ -518,27 +652,17 @@ const Settings: React.FC = () => {
     );
   }
 
-  const tabs: Tab[] = [
-    { id: "appearance", name: "Giao diện", icon: "🎨" },
-    { id: "transaction-types", name: "Loại giao dịch", icon: "💳" },
-    { id: "bank-accounts", name: "Tài khoản ngân hàng", icon: "🏦" },
-    { id: "branches", name: "Văn phòng", icon: "🏢" },
-    { id: "customer-fields", name: "Trường khách hàng", icon: "�" },
-    { id: "data", name: "Dữ liệu", icon: "💾" },
-  ];
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <PageHeader
           title="Cài đặt hệ thống"
           subtitle="Quản lý cấu hình cơ bản cho hệ thống quản lý công nợ"
         />
 
-        {/* Tabs */}
-        <div className="border-b border-gray-200 dark:border-gray-600 mb-6 sm:mb-8 overflow-x-auto">
+        <div className="border-b border-gray-200 dark:border-gray-600 mb-2 sm:mb-4 overflow-x-auto">
           <nav className="flex space-x-1 sm:space-x-8 min-w-max px-1">
-            {tabs.map((tab) => (
+            {tabs.map((tab: Tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -555,62 +679,93 @@ const Settings: React.FC = () => {
           </nav>
         </div>
 
-        {/* Content */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
           {/* Appearance Settings */}
           {activeTab === "appearance" && (
             <div className="p-4 sm:p-6">
               <div className="mb-4 sm:mb-6">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                  Giao diện
-                </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Tùy chỉnh giao diện ứng dụng theo sở thích của bạn
-                </p>
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">Giao diện</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Tùy chỉnh giao diện ứng dụng theo sở thích của bạn</p>
               </div>
-
               <div className="space-y-4 sm:space-y-6">
-                {/* Dark Mode Toggle */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg gap-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center flex-shrink-0">
-                      <svg
-                        className="w-5 h-5 text-gray-600 dark:text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M20.354 15.354A9 9 0 018.182 0l-5.646 5.646a9 9 0 01-12.728 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 10h1"
-                        />
+                      <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.182 0l-5.646 5.646a9 9 0 01-12.728 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10h1" />
                       </svg>
                     </div>
                     <div>
-                      <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                        Chế độ tối
-                      </h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Chuyển đổi giữa giao diện sáng và tối
-                      </p>
+                      <h3 className="text-sm font-medium text-gray-900 dark:text-white">Chế độ tối</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Chuyển đổi giữa giao diện sáng và tối</p>
                     </div>
                   </div>
-                  <ToggleSwitch
-                    checked={darkMode}
-                    onChange={(checked) => {
-                      console.log('Toggle switch changed to:', checked);
-                      setDarkMode(checked);
-                    }}
-                  />
+                  <ToggleSwitch checked={darkMode} onChange={setDarkMode} />
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "opening-balance" && (
+            <div className="p-4 sm:p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">Nhập số dư đầu kỳ</h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Tải file mẫu, điền customer_code và opening_balance, sau đó import.</p>
+                </div>
+                <Button variant="primary" size="sm" onClick={handleDownloadOpeningTemplate}>Tải file mẫu</Button>
+              </div>
+
+              <div className="border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+                <p className="text-sm text-gray-700 dark:text-gray-200 mb-2">Chọn file Excel/CSV (cột: customer_code, opening_balance)</p>
+                <input type="file" accept=".xlsx,.xls,.csv" onChange={handleOpeningFile} className="text-sm" />
+                {openingFile && <p className="text-xs text-gray-500 mt-1">Đã chọn: {openingFile.name}</p>}
+              </div>
+
+              {openingErrors.length > 0 && (
+                <div className="border border-red-200 bg-red-50 text-red-700 rounded p-3 text-sm">
+                  <p className="font-semibold mb-1">Lỗi</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    {openingErrors.map((err, idx) => (
+                      <li key={idx}>{err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {openingRows.length > 0 && (
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 text-sm font-medium text-gray-800 dark:text-gray-100">Xem trước ({openingRows.length} dòng)</div>
+                  <div className="max-h-64 overflow-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-gray-50 dark:bg-gray-800 text-left text-gray-700 dark:text-gray-200">
+                        <tr>
+                          <th className="px-3 py-2">Tên khách hàng</th>
+                          <th className="px-3 py-2">customer_code</th>
+                          <th className="px-3 py-2">opening_balance</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {openingRows.slice(0, 50).map((row, idx) => (
+                          <tr key={`${row.customer_code}-${idx}`}>
+                            <td className="px-3 py-2 text-gray-900 dark:text-gray-100">{customerMap[row.customer_code] || ""}</td>
+                            <td className="px-3 py-2 text-gray-900 dark:text-gray-100">{row.customer_code}</td>
+                            <td className="px-3 py-2 text-gray-900 dark:text-gray-100">{row.opening_balance}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {openingRows.length > 50 && <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">Hiển thị 50 dòng đầu</div>}
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                <Button variant="primary" size="sm" disabled={openingRows.length === 0 || isOpeningProcessing} onClick={handleImportOpeningBalance}>
+                  {isOpeningProcessing ? "Đang nhập..." : "Nhập số dư"}
+                </Button>
+                {openingSuccess && <p className="text-sm text-green-600">{openingSuccess}</p>}
               </div>
             </div>
           )}
@@ -968,12 +1123,12 @@ const Settings: React.FC = () => {
             </div>
           )}
 
-          {isBankAccountModalOpen && editingBankAccount && (
+          {isBankAccountModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
               <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Chỉnh sửa tài khoản
+                    {editingBankAccount ? "Chỉnh sửa tài khoản" : "Thêm tài khoản"}
                   </h3>
                 </div>
                 <div className="p-4 space-y-4">
@@ -1027,7 +1182,7 @@ const Settings: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      value={formatCurrency(editingBankAccount.balance)}
+                      value={formatCurrency(editingBankAccount?.balance || 0)}
                       disabled
                       className="w-full rounded-md border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700/60 text-sm text-gray-700 dark:text-gray-300 px-3 py-2"
                     />
@@ -1063,12 +1218,12 @@ const Settings: React.FC = () => {
             </div>
           )}
 
-          {isBranchModalOpen && editingBranch && (
+          {isBranchModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
               <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Chỉnh sửa văn phòng
+                    {editingBranch ? "Chỉnh sửa văn phòng" : "Thêm văn phòng"}
                   </h3>
                 </div>
                 <div className="p-4 space-y-4">

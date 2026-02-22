@@ -10,6 +10,44 @@ const STORAGE_KEYS = {
   bankAccounts: "cashflow_bank_accounts",
 };
 
+const TRANSACTION_TYPES_KEY = "cashflow_transaction_types";
+
+const reportService = {
+  async getReports() {
+    return { data: [], error: null };
+  },
+};
+
+const transactionTypeService = {
+  async getTransactionTypes() {
+    // Load from localStorage persisted by Settings; fallback to seed
+    const baseTypes = [
+      { id: "payment", name: "Thanh toán", is_active: true },
+      { id: "charge", name: "Cho nợ", is_active: true },
+      { id: "adjustment", name: "Điều chỉnh", is_active: true },
+      { id: "refund", name: "Hoàn tiền", is_active: true },
+    ];
+
+    if (typeof window !== "undefined" && window.localStorage) {
+      const stored = window.localStorage.getItem(TRANSACTION_TYPES_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return { data: parsed.filter((t) => t?.isActive !== false && t?.is_active !== false), error: null };
+          }
+        } catch {
+          // fallback to seed
+        }
+      }
+    }
+
+    return { data: baseTypes, error: null };
+  },
+};
+
+const SEED_DISABLED_KEY = "cashflow_seed_disabled";
+
 const isBrowser = typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 
 function safeParseJson<T>(value: string | null, fallback: T): T {
@@ -150,6 +188,9 @@ const COMPANY_IDS = {
 
 function ensureSeedData() {
   if (!isBrowser) return;
+
+  const seedDisabled = window.localStorage.getItem(SEED_DISABLED_KEY) === "true";
+  if (seedDisabled) return;
 
   const existingTransactions = safeParseJson<Transaction[]>(
     window.localStorage.getItem(STORAGE_KEYS.transactions),
@@ -580,21 +621,15 @@ function readBranches(): Array<{ id: string; name: string }> {
   }
 
   const saved = safeParseJson<any[]>(window.localStorage.getItem("branches"), []);
-  if (Array.isArray(saved) && saved.length > 0) {
-    return saved
-      .map((b: any) => {
-        const rawName = String(b.name || b.branch_name || b.code || b.id);
-        const normalizedName = rawName.replace(/Chi nhánh/gi, "Văn phòng");
-        return { id: String(b.id), name: normalizedName };
-      })
-      .filter((b: any) => b.id);
-  }
+  if (!Array.isArray(saved)) return [];
 
-  return [
-    { id: "1", name: "Văn phòng chính" },
-    { id: "2", name: "Văn phòng Bắc" },
-    { id: "3", name: "Văn phòng Nam" },
-  ];
+  return saved
+    .map((b: any) => {
+      const rawName = String(b.name || b.branch_name || b.code || b.id || "").trim();
+      const normalizedName = rawName ? rawName.replace(/Chi nhánh/gi, "Văn phòng") : "";
+      return { id: String(b.id), name: normalizedName || "" };
+    })
+    .filter((b: any) => b.id);
 }
 
 function inflowOutflowByType(type: TransactionType, amount: number) {
@@ -759,8 +794,8 @@ function buildPeriodStarts(timeRange: TimeRange, count: number, endDate: Date) {
   return starts;
 }
 
-function getPeriodWindow(timeRange: TimeRange, count: number) {
-  const end = endOfDay(new Date());
+function getPeriodWindow(timeRange: TimeRange, count: number, baseDate?: Date) {
+  const end = endOfDay(baseDate ? new Date(baseDate) : new Date());
   const start = startOfDay(new Date(end));
 
   if (timeRange === "day") {
@@ -799,19 +834,57 @@ function getPeriodWindow(timeRange: TimeRange, count: number) {
   return { start, end, prevStart, prevEnd };
 }
 
-// Customer service
 const customerService = {
   async getCustomers(_filters?: any) {
     ensureSeedData();
     const all = readCustomers();
+    const transactions = readTransactions();
+
+    const parseAmount = (value: any) => {
+      const num = Number(String(value ?? 0).replace(/[\s,]/g, ""));
+      return Number.isFinite(num) ? num : 0;
+    };
+
+    // Tính lại dư nợ = số dư đầu kỳ + phát sinh (charge tăng nợ, payment/refund giảm nợ)
+    const balanceMap = new Map<string, number>();
+    for (const c of all) {
+      balanceMap.set(c.id, parseAmount(c.opening_balance));
+    }
+
+    for (const tx of transactions) {
+      const prev = balanceMap.get(tx.customer_id) || 0;
+      const amtSigned = parseAmount(tx.amount);
+      const amtAbs = Math.abs(amtSigned);
+      switch (normalizeTransactionType(String(tx.transaction_type || ""))) {
+        case "charge":
+          balanceMap.set(tx.customer_id, prev + amtAbs);
+          break;
+        case "payment":
+        case "refund":
+          balanceMap.set(tx.customer_id, prev - amtAbs);
+          break;
+        case "adjustment":
+          balanceMap.set(tx.customer_id, prev + amtSigned);
+          break;
+        default:
+          balanceMap.set(tx.customer_id, prev + amtSigned);
+          break;
+      }
+    }
+
+    const customersWithBalance = all.map((c) => ({
+      ...c,
+      total_balance: balanceMap.get(c.id) ?? c.total_balance ?? 0,
+    }));
+
     const search = String(_filters?.search || "").toLowerCase().trim();
     const filtered = search
-      ? all.filter((c) =>
-        [c.full_name, c.customer_code, c.email, c.phone]
-          .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(search)),
-      )
-      : all;
+      ? customersWithBalance.filter((c) =>
+          [c.full_name, c.customer_code, c.email, c.phone]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(search)),
+        )
+      : customersWithBalance;
     const limit = Number.isFinite(_filters?.limit) ? Number(_filters.limit) : filtered.length;
     const offset = Number.isFinite(_filters?.offset) ? Number(_filters.offset) : 0;
     const data = filtered.slice(offset, offset + limit);
@@ -885,12 +958,46 @@ const customerService = {
     return { data: updated, error: null };
   },
 
-  async deleteCustomer(_id: string) {
+  async deleteCustomer(id: string) {
     ensureSeedData();
     const customers = readCustomers();
-    const next = customers.filter((c) => c.id !== _id);
-    writeCustomers(next);
-    return { error: null };
+    writeCustomers(customers.filter((customer) => customer.id !== id));
+    return { data: null, error: null };
+  },
+
+  async bulkUpdateOpeningBalances(rows: { customer_code?: string; opening_balance?: number }[]) {
+    ensureSeedData();
+    const customers = readCustomers();
+    const codeIndex = new Map(customers.map((c) => [String(c.customer_code || "").trim(), c] as const));
+    const errors: { row: number; message: string; value?: any }[] = [];
+    let updatedCount = 0;
+
+    rows.forEach((row, idx) => {
+      const code = String(row.customer_code || "").trim();
+      const opening = Number(row.opening_balance);
+
+      if (!code) {
+        errors.push({ row: idx, message: "Missing customer_code" });
+        return;
+      }
+      if (!Number.isFinite(opening)) {
+        errors.push({ row: idx, message: "Invalid opening_balance", value: row.opening_balance });
+        return;
+      }
+
+      const customer = codeIndex.get(code);
+      if (!customer) {
+        errors.push({ row: idx, message: "Customer not found", value: code });
+        return;
+      }
+
+      customer.opening_balance = opening;
+      customer.total_balance = opening;
+      updatedCount += 1;
+    });
+
+    writeCustomers(customers);
+    return { data: { updated: updatedCount }, errors };
   },
 
   async bulkCreateCustomers(_customers?: any[]) {
@@ -900,17 +1007,42 @@ const customerService = {
     const created: Customer[] = [];
     const errors: any[] = [];
 
+    const existingPhones = new Set(customers.map((c) => (c.phone || "").trim()).filter(Boolean));
+    const existingCodes = new Set(customers.map((c) => (c.customer_code || "").trim()).filter(Boolean));
+    const batchPhones = new Set<string>();
+    const batchCodes = new Set<string>();
+
     (_customers || []).forEach((raw: any, idx: number) => {
       if (!raw?.full_name) {
         errors.push({ row: idx, message: "Missing full_name" });
         return;
       }
+
+      const phone = (raw.phone || "").trim();
+      const code = (raw.customer_code || "").trim();
+
+      if (phone) {
+        if (existingPhones.has(phone) || batchPhones.has(phone)) {
+          errors.push({ row: idx, message: "Duplicate phone", column: "phone", value: phone });
+          return;
+        }
+        batchPhones.add(phone);
+      }
+
+      if (code) {
+        if (existingCodes.has(code) || batchCodes.has(code)) {
+          errors.push({ row: idx, message: "Duplicate customer_code", column: "customer_code", value: code });
+          return;
+        }
+        batchCodes.add(code);
+      }
+
       const id = uuid();
       const customer: Customer = {
         id,
-        customer_code: raw.customer_code || generateCustomerCode(customers.length + created.length + 1),
+        customer_code: code || generateCustomerCode(customers.length + created.length + 1),
         full_name: String(raw.full_name || "").trim(),
-        phone: raw.phone || "",
+        phone,
         email: raw.email || "",
         address: raw.address || "",
         working_method: raw.working_method || "",
@@ -1027,6 +1159,7 @@ const transactionService = {
     const customerId = String(_transactionData?.customer_id || "");
     const customer = customers.find((c) => c.id === customerId);
 
+    const explicitBranch = _transactionData?.branch_id;
     const tx: Transaction = {
       id: uuid(),
       transaction_code: padTxnCode(all.length + 1),
@@ -1034,7 +1167,12 @@ const transactionService = {
       customer_name: customer?.full_name,
       bank_account_id: bank?.id || bankAccountId || "",
       bank_account_name: bank?.account_name,
-      branch_id: String(_transactionData?.branch_id || bank?.branch_id || "1"),
+      branch_id:
+        explicitBranch !== undefined
+          ? String(explicitBranch || "")
+          : bank?.branch_id !== undefined
+          ? String(bank.branch_id || "")
+          : "",
       transaction_type: normalizeTransactionType(String(_transactionData?.transaction_type || "payment")),
       amount: Number(_transactionData?.amount || 0),
       description: _transactionData?.description || "",
@@ -1050,10 +1188,55 @@ const transactionService = {
   },
 
   async updateTransaction(_id: string, _updates?: any) {
-    return { data: null, error: null };
+    ensureSeedData();
+    const id = String(_id || "");
+    const updates = _updates || {};
+    const transactions = readTransactions();
+    const idx = transactions.findIndex((t) => t.id === id);
+    if (idx === -1) return { data: null, error: "Transaction not found" };
+
+    const bankAccounts = readBankAccounts();
+    const resolveBank = (input: string) => {
+      const v = String(input || "").trim();
+      if (!v) return null;
+      const byId = bankAccounts.find((b) => String(b.id) === v);
+      if (byId) return byId;
+      const lower = v.toLowerCase();
+      return (
+        bankAccounts.find((b) => String(b.account_name || "").toLowerCase().includes(lower)) ||
+        bankAccounts.find((b) => String(b.bank_name || "").toLowerCase().includes(lower)) ||
+        null
+      );
+    };
+
+    const existing = transactions[idx];
+    const bank = resolveBank(updates.bank_account_id || updates.bank_account_name || "");
+    const branchId = updates.branch_id !== undefined ? String(updates.branch_id || "") : existing.branch_id;
+    const now = getNowIso();
+
+    const updated: Transaction = {
+      ...existing,
+      ...updates,
+      bank_account_id: updates.bank_account_id !== undefined ? bank?.id || "" : existing.bank_account_id,
+      bank_account_name: updates.bank_account_name !== undefined ? bank?.account_name || "" : existing.bank_account_name,
+      branch_id: branchId || "",
+      updated_at: now,
+    };
+
+    transactions[idx] = updated;
+    writeTransactions(transactions);
+    return { data: updated, error: null };
   },
 
   async deleteTransaction(_id: string) {
+    ensureSeedData();
+    const id = String(_id || "");
+    const transactions = readTransactions();
+    const idx = transactions.findIndex((t) => t.id === id);
+    if (idx === -1) return { error: "Transaction not found" };
+
+    const next = [...transactions.slice(0, idx), ...transactions.slice(idx + 1)];
+    writeTransactions(next);
     return { error: null };
   },
 
@@ -1064,7 +1247,7 @@ const transactionService = {
   ) {
     ensureSeedData();
     const raw = Array.isArray(_rawData) ? _rawData : [];
-    const branchId = String(_branchId || "1");
+    const branchId = _branchId ? String(_branchId) : "";
     const createdBy = String(_createdBy || "");
 
     const bankAccounts = readBankAccounts();
@@ -1075,15 +1258,30 @@ const transactionService = {
     const errors: any[] = [];
     let nextCounter = transactions.length + 1;
 
+    const parseCustomerInput = (raw: string) => {
+      const full = String(raw || "").trim();
+      const match = full.match(/^([A-Za-z0-9]+)\s*-\s*(.+)$/);
+      if (match) return { code: match[1].trim(), name: match[2].trim() };
+      return { code: "", name: full };
+    };
+
     const findOrCreateCustomer = (name: string) => {
-      const fullName = String(name || "").trim();
-      if (!fullName) return null;
+      const parsed = parseCustomerInput(name);
+      const fullName = parsed.name;
+      const code = parsed.code;
+      if (!fullName && !code) return null;
+
+      if (code) {
+        const byCode = customers.find((c) => String(c.customer_code || "").toLowerCase() === code.toLowerCase());
+        if (byCode) return byCode;
+      }
+
       const existed = customers.find((c) => c.full_name.toLowerCase() === fullName.toLowerCase());
       if (existed) return existed;
       const now = getNowIso();
       const newCustomer: Customer = {
         id: uuid(),
-        customer_code: `CUST${String(customers.length + 1).padStart(4, "0")}`,
+        customer_code: code || `CUST${String(customers.length + 1).padStart(4, "0")}`,
         full_name: fullName,
         phone: "",
         email: "",
@@ -1101,14 +1299,14 @@ const transactionService = {
 
     const resolveBankAccount = (input: string) => {
       const v = String(input || "").trim();
-      if (!v) return bankAccounts[0];
+      if (!v) return null;
       const byNumber = bankAccounts.find((b) => String(b.account_number || "") === v);
       if (byNumber) return byNumber;
       const lower = v.toLowerCase();
       const byName = bankAccounts.find((b) => String(b.account_name || "").toLowerCase().includes(lower));
       if (byName) return byName;
       const byBank = bankAccounts.find((b) => String(b.bank_name || "").toLowerCase().includes(lower));
-      return byBank || bankAccounts[0];
+      return byBank || null;
     };
 
     for (let i = 0; i < raw.length; i++) {
@@ -1133,7 +1331,7 @@ const transactionService = {
           customer_name: customer?.full_name,
           bank_account_id: bank?.id || "",
           bank_account_name: bank?.account_name,
-          branch_id: branchId,
+          branch_id: row.branch || branchId || "",
           transaction_type: type,
           amount: Number.isFinite(amount) ? amount : 0,
           description: row.description || "",
@@ -1275,6 +1473,15 @@ const dashboardService = {
     // Then filter by branch if provided
     transactions = branchId ? transactions.filter((t) => t.branch_id === branchId) : transactions;
 
+    const latestTxDate = transactions.length
+      ? new Date(
+          transactions
+            .slice()
+            .sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())[0]
+            .transaction_date,
+        )
+      : undefined;
+
     const count =
       timeRange === "day"
         ? rangeCount?.day || 7
@@ -1286,7 +1493,7 @@ const dashboardService = {
               ? rangeCount?.quarter || 8
               : 2;
 
-    const { start, end, prevStart, prevEnd } = getPeriodWindow(timeRange, count);
+    const { start, end, prevStart, prevEnd } = getPeriodWindow(timeRange, count, latestTxDate);
     const inRange = (tx: Transaction, s: Date, e: Date) => {
       const t = new Date(tx.transaction_date).getTime();
       return t >= s.getTime() && t <= e.getTime();
@@ -1334,10 +1541,56 @@ const dashboardService = {
     const activeCustomers = new Set(currentTx.map((t) => t.customer_id)).size;
     const prevActiveCustomers = new Set(prevTx.map((t) => t.customer_id)).size;
 
-    const outstanding = receivableBalanceFromTransactions(transactions);
-    const prevOutstanding = receivableBalanceFromTransactions(
-      transactions.filter((t) => new Date(t.transaction_date) <= prevEnd),
-    );
+    const parseAmount = (value: any) => {
+      const num = Number(String(value ?? 0).replace(/[\s,]/g, ""));
+      return Number.isFinite(num) ? num : 0;
+    };
+
+    // Tính dư nợ theo logic thống nhất: opening_balance + charge(+), payment/refund(-), adjustment(signed)
+    const customersAll = readCustomers();
+    const balanceMap = new Map<string, number>();
+    for (const c of customersAll) {
+      balanceMap.set(c.id, parseAmount(c.opening_balance));
+    }
+    const applyTxToMap = (txs: Transaction[]) => {
+      for (const tx of txs) {
+        const prev = balanceMap.get(tx.customer_id) || 0;
+        const amtSigned = parseAmount(tx.amount);
+        const amtAbs = Math.abs(amtSigned);
+        switch (normalizeTransactionType(String(tx.transaction_type || ""))) {
+          case "charge":
+            balanceMap.set(tx.customer_id, prev + amtAbs);
+            break;
+          case "payment":
+          case "refund":
+            balanceMap.set(tx.customer_id, prev - amtAbs);
+            break;
+          case "adjustment":
+            balanceMap.set(tx.customer_id, prev + amtSigned);
+            break;
+          default:
+            balanceMap.set(tx.customer_id, prev + amtSigned);
+            break;
+        }
+      }
+    };
+
+    applyTxToMap(transactions);
+    const outstanding = Array.from(balanceMap.values()).reduce((s, v) => s + v, 0);
+
+    const prevBalanceMap = new Map(balanceMap);
+    prevBalanceMap.forEach((_, k) => prevBalanceMap.set(k, parseAmount(customersAll.find(c => c.id === k)?.opening_balance)));
+    for (const tx of transactions.filter((t) => new Date(t.transaction_date) <= prevEnd)) {
+      const prev = prevBalanceMap.get(tx.customer_id) || 0;
+      const amtSigned = parseAmount(tx.amount);
+      const amtAbs = Math.abs(amtSigned);
+      const type = normalizeTransactionType(String(tx.transaction_type || ""));
+      if (type === "charge") prevBalanceMap.set(tx.customer_id, prev + amtAbs);
+      else if (type === "payment" || type === "refund") prevBalanceMap.set(tx.customer_id, prev - amtAbs);
+      else if (type === "adjustment") prevBalanceMap.set(tx.customer_id, prev + amtSigned);
+      else prevBalanceMap.set(tx.customer_id, prev + amtSigned);
+    }
+    const prevOutstanding = Array.from(prevBalanceMap.values()).reduce((s, v) => s + v, 0);
 
     const cashFlowData = aggregateCashFlow(currentTx, timeRange, count);
 
@@ -1392,20 +1645,9 @@ const dashboardService = {
       .sort((a, b) => a.balance - b.balance)
       .slice(Math.min(2, balanceByBankAccountAll.length));
 
-    const customers = readCustomers();
-    const customerBalanceMap = new Map<string, number>();
-    for (const tx of transactions) {
-      const prev = customerBalanceMap.get(tx.customer_id) || 0;
-      if (tx.transaction_type === "charge") customerBalanceMap.set(tx.customer_id, prev - Math.abs(tx.amount));
-      else if (tx.transaction_type === "payment") customerBalanceMap.set(tx.customer_id, prev + Math.abs(tx.amount));
-      else if (tx.transaction_type === "refund") customerBalanceMap.set(tx.customer_id, prev + Math.abs(tx.amount));
-      else if (tx.transaction_type === "adjustment") customerBalanceMap.set(tx.customer_id, prev + tx.amount);
-      else customerBalanceMap.set(tx.customer_id, prev + tx.amount);
-    }
-
-    const customersWithBalance = customers.map((c) => ({
+    const customersWithBalance = customersAll.map((c) => ({
       ...c,
-      total_balance: customerBalanceMap.get(c.id) ?? c.total_balance,
+      total_balance: balanceMap.get(c.id) ?? c.total_balance,
     }));
 
     const debtCustomers = customersWithBalance
@@ -1419,7 +1661,7 @@ const dashboardService = {
 
     const topCustomers = [...debtCustomers, ...smallCreditCustomers].slice(0, 10);
 
-    const recentTransactions = [...currentTx]
+    const recentTransactions = [...transactions]
       .sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
       .slice(0, 20);
 
@@ -1428,7 +1670,7 @@ const dashboardService = {
 
     const branchAgg = new Map<string, { incomeAmount: number; debtAmount: number }>();
     for (const tx of currentTx) {
-      const branchIdForTx = String(tx.branch_id || "1");
+      const branchIdForTx = tx.branch_id ? String(tx.branch_id) : "";
       const prev = branchAgg.get(branchIdForTx) || { incomeAmount: 0, debtAmount: 0 };
       if (tx.transaction_type === "payment" || tx.transaction_type === "refund") {
         prev.incomeAmount += Math.abs(tx.amount);
@@ -1589,6 +1831,8 @@ export const databaseService = {
   dashboard: dashboardService,
   customers: customerService,
   transactions: transactionService,
+  transactionTypes: transactionTypeService,
+  branches: branchService,
   bankAccounts: bankAccountService,
-  branches: branchService
+  reports: reportService,
 };

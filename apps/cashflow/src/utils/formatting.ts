@@ -204,8 +204,8 @@ export const formatRelativeTime = (date: string | Date): string => {
 // Transaction type formatting
 export const formatTransactionType = (type: string): string => {
   const typeMap: Record<string, string> = {
-    payment: "Tiền vào",
-    charge: "Tiền ra",
+    payment: "Phát sinh tăng",
+    charge: "Phát sinh giảm",
     adjustment: "Điều chỉnh",
     refund: "Hoàn tiền",
   };

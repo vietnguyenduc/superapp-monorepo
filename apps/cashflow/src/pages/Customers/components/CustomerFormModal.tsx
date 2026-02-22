@@ -127,10 +127,10 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div
-          className="fixed inset-0 bg-gray-700/70 dark:bg-gray-900/80 transition-opacity"
+          className="fixed inset-0 bg-gray-700/70 dark:bg-gray-900/80 transition-opacity pointer-events-auto"
           onClick={onClose}
         />
-        <div className="inline-block align-bottom bg-white dark:bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div className="inline-block align-bottom bg-white dark:bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full pointer-events-auto">
           <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
             <div className="bg-white dark:bg-gray-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
               <div className="flex items-center justify-between mb-6">
@@ -179,6 +179,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     type="text"
                     id="customer_code"
                     value={formData.customer_code}
+                    autoFocus
                     onChange={(e) =>
                       handleInputChange("customer_code", e.target.value)
                     }

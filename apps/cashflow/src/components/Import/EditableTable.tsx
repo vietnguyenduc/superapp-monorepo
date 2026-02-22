@@ -15,7 +15,7 @@ interface EditableTableProps {
     onCreate?: (value: string) => void;
     openOnFocus?: boolean;
   }[];
-  maxRows?: number;
+  showInstructions?: boolean;
 }
 
 const EditableTable: React.FC<EditableTableProps> = ({
@@ -23,7 +23,7 @@ const EditableTable: React.FC<EditableTableProps> = ({
   errors,
   onDataChange,
   columns,
-  maxRows = 100,
+  showInstructions = true,
 }) => {
   const { t } = useTranslation();
   const [editingCell, setEditingCell] = useState<{
@@ -77,6 +77,13 @@ const EditableTable: React.FC<EditableTableProps> = ({
     [],
   );
 
+  const formatAmount = useCallback((value: string) => {
+    const raw = String(value || "").replace(/[,\s]/g, "");
+    const num = Number(raw);
+    if (!Number.isFinite(num) || raw === "") return "";
+    return num.toLocaleString("en-US");
+  }, []);
+
   // Handle edit completion
   const handleEditComplete = useCallback(() => {
     if (!editingCell) return;
@@ -84,11 +91,12 @@ const EditableTable: React.FC<EditableTableProps> = ({
     const { row, col } = editingCell;
     const columnConfig = columns.find((item) => item.key === col);
     const newData = [...data];
+    const nextValue = col === "amount" ? formatAmount(editValue) : editValue;
 
     // Update the cell value
     newData[row] = {
       ...newData[row],
-      [col]: editValue,
+      [col]: nextValue,
     };
 
     onDataChange(newData);
@@ -102,7 +110,7 @@ const EditableTable: React.FC<EditableTableProps> = ({
     }
     setEditingCell(null);
     setEditValue("");
-  }, [editingCell, editValue, data, onDataChange, columns]);
+  }, [editingCell, editValue, data, onDataChange, columns, formatAmount]);
 
   // Handle edit cancellation
   const handleEditCancel = useCallback(() => {
@@ -110,18 +118,44 @@ const EditableTable: React.FC<EditableTableProps> = ({
     setEditValue("");
   }, []);
 
+  const moveToCell = useCallback(
+    (row: number, colIndex: number) => {
+      if (row < 0 || row >= data.length) return;
+      if (colIndex < 0 || colIndex >= columns.length) return;
+      const targetCol = columns[colIndex];
+      const value = data[row]?.[targetCol.key] || "";
+      setEditingCell({ row, col: targetCol.key });
+      setEditValue(String(value));
+    },
+    [columns, data],
+  );
+
   // Handle key press in edit mode
   const handleKeyPress = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Enter") {
+      if (!editingCell) return;
+      const currentColIndex = columns.findIndex((c) => c.key === editingCell.col);
+
+      if (e.key === "Enter" || e.key === "Tab") {
         e.preventDefault();
         handleEditComplete();
+        const nextCol = (currentColIndex + 1) % columns.length;
+        const nextRow = currentColIndex === columns.length - 1 ? Math.min(data.length - 1, editingCell.row + 1) : editingCell.row;
+        moveToCell(nextRow, nextCol);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        handleEditComplete();
+        moveToCell(editingCell.row, Math.min(columns.length - 1, currentColIndex + 1));
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        handleEditComplete();
+        moveToCell(editingCell.row, Math.max(0, currentColIndex - 1));
       } else if (e.key === "Escape") {
         e.preventDefault();
         handleEditCancel();
       }
     },
-    [handleEditComplete, handleEditCancel],
+    [handleEditComplete, handleEditCancel, columns, data.length, editingCell, moveToCell],
   );
 
   // Handle blur to complete edit
@@ -133,18 +167,6 @@ const EditableTable: React.FC<EditableTableProps> = ({
       }
     }, 100);
   }, [editingCell, handleEditComplete]);
-
-  // Add new row
-  const handleAddRow = useCallback(() => {
-    if (data.length >= maxRows) return;
-
-    const newRow = columns.reduce((acc, col) => {
-      acc[col.key] = "";
-      return acc;
-    }, {} as any);
-
-    onDataChange([...data, newRow]);
-  }, [data, columns, maxRows, onDataChange]);
 
   // Remove row
   const handleRemoveRow = useCallback(
@@ -320,27 +342,6 @@ const EditableTable: React.FC<EditableTableProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Table Controls */}
-      <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-600">
-          {t("import.totalRows")}: {data.length}
-          {maxRows && (
-            <span className="ml-2 text-gray-400">
-              ({t("import.maxRows")}: {maxRows})
-            </span>
-          )}
-        </div>
-        <div className="flex space-x-2">
-          <button
-            onClick={handleAddRow}
-            disabled={data.length >= maxRows}
-            className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {t("import.addRow")}
-          </button>
-        </div>
-      </div>
-
       {/* Table */}
       <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
         <table
@@ -436,18 +437,19 @@ const EditableTable: React.FC<EditableTableProps> = ({
         </div>
       )}
 
-      {/* Instructions */}
-      <div className="text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-md p-3">
-        <p className="font-medium text-blue-800 mb-1">
-          {t("import.editingInstructions")}
-        </p>
-        <ul className="text-blue-700 space-y-1">
-          <li>• {t("import.clickToEdit")}</li>
-          <li>• {t("import.enterToSave")}</li>
-          <li>• {t("import.escapeToCancel")}</li>
-          <li>• {t("import.requiredFields")}</li>
-        </ul>
-      </div>
+      {showInstructions && (
+        <div className="text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-md p-3">
+          <p className="font-medium text-blue-800 mb-1">
+            {t("import.editingInstructions")}
+          </p>
+          <ul className="text-blue-700 space-y-1">
+            <li>• {t("import.clickToEdit")}</li>
+            <li>• {t("import.enterToSave")}</li>
+            <li>• {t("import.escapeToCancel")}</li>
+            <li>• {t("import.requiredFields")}</li>
+          </ul>
+        </div>
+      )}
     </div>
   );
 };

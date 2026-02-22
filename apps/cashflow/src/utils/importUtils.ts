@@ -73,8 +73,8 @@ function isTransactionTypeToken(value?: string): boolean {
 
 function normalizeTransactionTypeLabel(value: string): TransactionType | "" {
   const normalized = value.trim().toLowerCase();
-  if (normalized === "thu" || normalized === "payment") return "payment";
-  if (normalized === "chi" || normalized === "charge") return "charge";
+  if (["thu", "tiền vào", "tien vao", "payment", "thanh toán", "thanh toan"].includes(normalized)) return "payment";
+  if (["chi", "tiền ra", "tien ra", "charge", "cho nợ", "cho no"].includes(normalized)) return "charge";
   if (normalized === "điều chỉnh" || normalized === "dieu chinh" || normalized === "adjustment") {
     return "adjustment";
   }
@@ -165,15 +165,7 @@ export function validateTransactionData(
       });
     }
 
-    // Validate bank account
-    if (!row.bank_account || row.bank_account.trim().length === 0) {
-      errors.push({
-        row: index,
-        column: "bank_account",
-        message: "Bank account is required",
-        value: row.bank_account,
-      });
-    }
+    // Bank account is optional in this flow
 
     // Validate transaction type
     if (!row.transaction_type || row.transaction_type.trim().length === 0) {
@@ -202,7 +194,8 @@ export function validateTransactionData(
     }
 
     // Validate amount
-    if (!row.amount || row.amount.trim().length === 0) {
+    const amountRaw = String(row.amount ?? "").trim();
+    if (!amountRaw) {
       errors.push({
         row: index,
         column: "amount",
@@ -210,8 +203,10 @@ export function validateTransactionData(
         value: row.amount,
       });
     } else {
-      const amount = parseAmount(row.amount);
+      const amount = parseAmount(amountRaw);
       const isAdjustment = normalizedType === "adjustment";
+      const isPayment = normalizedType === "payment";
+      const isCharge = normalizedType === "charge";
 
       if (isNaN(amount) || amount === 0) {
         errors.push({
@@ -219,16 +214,30 @@ export function validateTransactionData(
           column: "amount",
           message: isAdjustment
             ? "Amount must be a non-zero number for adjustment"
-            : "Amount must be a positive number",
+            : isPayment
+              ? "Payment amount must be positive"
+              : isCharge
+                ? "Charge amount must be negative"
+                : "Amount must be a positive number",
           value: row.amount,
         });
-      } else if (!isAdjustment && amount < 0) {
-        errors.push({
-          row: index,
-          column: "amount",
-          message: "Amount must be a positive number",
-          value: row.amount,
-        });
+      } else {
+        if (isPayment && amount < 0) {
+          errors.push({
+            row: index,
+            column: "amount",
+            message: "Payment amount must be positive",
+            value: row.amount,
+          });
+        }
+        if (isCharge && amount > 0) {
+          errors.push({
+            row: index,
+            column: "amount",
+            message: "Charge amount must be negative",
+            value: row.amount,
+          });
+        }
       }
     }
 

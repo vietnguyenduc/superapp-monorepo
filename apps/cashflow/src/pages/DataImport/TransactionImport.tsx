@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useSearchParams } from "react-router-dom";
@@ -23,6 +23,7 @@ interface NewCustomerModalProps {
   onSave: (customer: Partial<Customer>) => void;
   customerName: string;
   isLoading?: boolean;
+  customerOptions: string[];
 }
 
 const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
@@ -31,6 +32,7 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
   onSave,
   customerName,
   isLoading = false,
+  customerOptions,
 }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -73,9 +75,15 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
                     full_name: e.target.value,
                   }))
                 }
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                required
+                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[260px]"
+                list="customer-list"
+                autoFocus
               />
+              <datalist id="customer-list">
+                {customerOptions.map((option: string) => (
+                  <option key={option} value={option} />
+                ))}
+              </datalist>
             </div>
 
             <div>
@@ -146,6 +154,18 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
   const { t } = useTranslation();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
+
+  type TransactionInputRow = {
+    transaction_code: string;
+    transaction_date: string;
+    customer_name: string;
+    transaction_type: string;
+    amount: string;
+    description: string;
+    bank_account: string;
+    branch: string;
+  };
+
   const [importData, setImportData] = useState<ImportData>({
     file: null,
     data: [],
@@ -154,7 +174,13 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
   });
   const [rawData, setRawData] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [dropInfo, setDropInfo] = useState<string>("");
+  const [validationMode, setValidationMode] = useState<"single" | "bulk" | null>(null);
+  const [showEditHelp, setShowEditHelp] = useState(false);
+  const [showGuidelines, setShowGuidelines] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
   // New customer modal state
@@ -167,6 +193,13 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
 
   // Đọc cấu hình trường import từ localStorage:
   const defaultImportFields = [
+    {
+      key: "transaction_code",
+      label: "Số chứng từ",
+      type: "text",
+      required: false,
+      enabled: true,
+    },
     {
       key: "transaction_date",
       label: "Thời gian",
@@ -182,26 +215,20 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
       enabled: true,
     },
     {
+      key: "transaction_type",
+      label: "Loại giao dịch",
+      type: "select",
+      required: true,
+      enabled: true,
+      optionSource: "manual",
+      options: ["Thu", "Chi", "Điều chỉnh", "Hoàn tiền"],
+    },
+    {
       key: "amount",
       label: "Số tiền",
       type: "number",
       required: true,
       enabled: true,
-    },
-    {
-      key: "bank_account",
-      label: "Ngân hàng",
-      type: "text",
-      required: false,
-      enabled: true,
-    },
-    {
-      key: "branch",
-      label: "Văn phòng",
-      type: "select",
-      required: false,
-      enabled: true,
-      optionSource: "branch",
     },
     {
       key: "description",
@@ -211,13 +238,20 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
       enabled: true,
     },
     {
-      key: "transaction_type",
-      label: "Loại giao dịch",
+      key: "bank_account",
+      label: "Tài khoản ngân hàng",
       type: "select",
       required: false,
-      enabled: false,
-      optionSource: "manual",
-      options: ["Thu", "Chi", "Điều chỉnh", "Hoàn tiền"],
+      enabled: true,
+      optionSource: "bank",
+    },
+    {
+      key: "branch",
+      label: "Văn phòng",
+      type: "select",
+      required: false,
+      enabled: true,
+      optionSource: "branch",
     },
   ];
 
@@ -248,34 +282,52 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
   const [customerOptions, setCustomerOptions] = useState<string[]>([]);
   const [bankAccountOptions, setBankAccountOptions] = useState<string[]>([]);
   const [branchOptions, setBranchOptions] = useState<string[]>([]);
+  const [transactionTypeOptions, setTransactionTypeOptions] = useState<string[]>([]);
 
   useEffect(() => {
     const loadOptions = async () => {
-      const [customerResult, bankResult, branchResult] = await Promise.all([
+      const [customerResult, bankResult, branchResult, typeResult] = await Promise.all([
         databaseService.customers.getCustomers({ limit: 500 }),
         databaseService.bankAccounts.getBankAccounts(),
         databaseService.branches.getBranches(),
+        databaseService.transactionTypes.getTransactionTypes(),
       ]);
 
       if (customerResult?.data) {
         setCustomerOptions(
-          customerResult.data.map((customer: any) =>
-            String(customer.full_name || customer.customer_name || customer.customer_code || customer.id),
-          ),
+          customerResult.data.map((customer: any) => {
+            const code = String(customer.customer_code || customer.id || "");
+            const name = String(customer.full_name || customer.customer_name || "");
+            return [code, name].filter(Boolean).join(" - ").trim();
+          }),
         );
       }
 
       if (bankResult?.data) {
         setBankAccountOptions(
-          bankResult.data.map((account: any) =>
-            String(account.account_name || account.account_number || account.bank_name || account.id),
-          ),
+          bankResult.data.map((account: any) => {
+            const name = String(account.account_name || account.bank_name || "");
+            const number = String(account.account_number || account.id || "");
+            return [name, number].filter(Boolean).join(" - ").trim();
+          }),
         );
       }
 
       if (branchResult?.data) {
         setBranchOptions(
-          branchResult.data.map((branch: any) => String(branch.name || branch.branch_name || branch.id)),
+          branchResult.data.map((branch: any) => {
+            const name = String(branch.name || branch.branch_name || "");
+            const code = String(branch.code || branch.id || "");
+            return [name, code].filter(Boolean).join(" - ").trim();
+          }),
+        );
+      }
+
+      if (typeResult?.data) {
+        setTransactionTypeOptions(
+          typeResult.data
+            .filter((t: any) => t.is_active !== false)
+            .map((t: any) => String(t.name || t.id || "")),
         );
       }
     };
@@ -284,18 +336,32 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
   }, []);
 
   // Đặt ngay sau enabledFields:
-  const emptyRow = importFields.reduce(
-    (acc: Record<string, string>, col: ImportField) => {
-      acc[col.key] = "";
-      return acc;
-    },
-    {} as Record<string, string>,
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const emptyRow: TransactionInputRow = useMemo(
+    () => ({
+      transaction_date: todayIso,
+      transaction_code: "",
+      customer_name: "",
+      transaction_type: "",
+      amount: "",
+      description: "",
+      bank_account: "",
+      branch: "",
+    }),
+    [todayIso],
   );
-  const [tableData, setTableData] = useState(() =>
-    Array(1)
+  const [tableData, setTableData] = useState(() => {
+    const saved = localStorage.getItem("transaction_import_table");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return Array(1)
       .fill(null)
-      .map(() => ({ ...emptyRow })),
-  );
+      .map(() => ({ ...emptyRow }));
+  });
 
   useEffect(() => {
     const customerName = searchParams.get("customer_name");
@@ -356,9 +422,22 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
     });
   }, [processedData]);
 
-  const handleValidateData = useCallback(() => {
-    // Chuyển tableData thành rawData dạng text nếu cần, hoặc validate trực tiếp
-    // Giả sử validateTransactionData nhận mảng object
+  // Persist tableData + currentStep to localStorage
+  useEffect(() => {
+    localStorage.setItem("transaction_import_table", JSON.stringify(tableData));
+  }, [tableData]);
+
+  useEffect(() => {
+    localStorage.setItem("transaction_import_step", String(currentStep));
+  }, [currentStep]);
+
+  useEffect(() => {
+    const savedStep = localStorage.getItem("transaction_import_step");
+    if (savedStep === "2") setCurrentStep(2);
+    else if (savedStep === "3") setCurrentStep(3);
+  }, []);
+
+  const handleValidateData = useCallback((mode: "single" | "bulk" = "single") => {
     const validation = validateTransactionData(tableData);
     setImportData({
       file: null,
@@ -366,8 +445,10 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
       errors: validation.errors,
       isValid: validation.isValid,
     });
-    setShowPreview(true);
-    setCurrentStep(2);
+    setShowPreview(mode === "bulk");
+    setCurrentStep(validation.isValid ? 3 : 2);
+    setValidationMode(mode);
+    return validation.isValid;
   }, [tableData]);
 
   const handleAddNewCustomer = useCallback((customerName: string) => {
@@ -406,56 +487,59 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
     [],
   );
 
-  const handleImportData = useCallback(async () => {
-    if (
-      !importData.isValid ||
-      importData.data.length === 0 ||
-      !user?.branch_id
-    ) {
-      return;
-    }
+  const handleImportData = useCallback(
+    async (payload?: any[]) => {
+      const dataToImport = payload ?? importData.data;
+      const isValid = payload ? true : importData.isValid;
+      if (!isValid || dataToImport.length === 0) return;
 
-    setIsProcessing(true);
-    try {
-      const result = await databaseService.transactions.bulkImportTransactions(
-        importData.data as any[],
-        user.branch_id,
-        user.id,
-      );
+      const branchId = user?.branch_id || "1";
+      setImportSuccess(null);
+      setIsProcessing(true);
+      try {
+        const result = await databaseService.transactions.bulkImportTransactions(
+          dataToImport as any[],
+          branchId,
+          user?.id || "",
+        );
 
-      if (result.errors.length > 0) {
-        console.error("Import completed with errors:", result.errors);
-        // TODO: Show error notification with details
+        if (result.errors.length > 0) {
+          console.error("Import completed with errors:", result.errors);
+        }
+
+        setCurrentStep(3);
+        onImportComplete?.(result.data);
+        setImportSuccess("Nhập giao dịch thành công");
+
+        // Reset form
+        setRawData("");
+        setImportData({ file: null, data: [], errors: [], isValid: false });
+        setShowPreview(false);
+        setCurrentStep(1);
+        setUnmatchedCustomers(new Set());
+        setDropInfo("");
+      } catch (error) {
+        console.error("Import failed:", error);
+      } finally {
+        setIsProcessing(false);
       }
+    },
+    [importData.data, importData.isValid, onImportComplete, user],
+  );
 
-      setCurrentStep(3);
-      onImportComplete?.(result.data);
+  const handleValidateAndImportInline = useCallback(async () => {
+    const isValid = handleValidateData("single");
+    if (!isValid) return;
+    await handleImportData(tableData);
+  }, [handleImportData, handleValidateData, tableData]);
 
-      // Reset form
-      setRawData("");
-      setImportData({ file: null, data: [], errors: [], isValid: false });
-      setShowPreview(false);
-      setCurrentStep(1);
-      setUnmatchedCustomers(new Set());
-    } catch (error) {
-      console.error("Import failed:", error);
-      // TODO: Show error notification
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [importData, onImportComplete, user]);
-
-  const handleReset = useCallback(() => {
-    setTableData(
-      Array(1)
-        .fill(null)
-        .map(() => ({ ...emptyRow })),
-    );
-    setImportData({ file: null, data: [], errors: [], isValid: false });
-    setShowPreview(false);
-    setCurrentStep(1);
-    setUnmatchedCustomers(new Set());
-  }, [emptyRow]);
+  const handleValidateAndImportBulk = useCallback(async () => {
+    setShowPreview(true);
+    setValidationMode("bulk");
+    const isValid = handleValidateData("bulk");
+    if (!isValid) return;
+    await handleImportData(importData.data);
+  }, [handleImportData, handleValidateData, importData.data]);
 
   const getErrorForRow = (rowIndex: number): ImportError[] => {
     return importData.errors.filter((error) => error.row === rowIndex);
@@ -577,7 +661,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
   };
 
   const renderValidationErrors = () => {
-    if (importData.errors.length === 0) {
+    if (validationMode !== "bulk" || importData.errors.length === 0) {
       return null;
     }
 
@@ -617,12 +701,15 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
   };
 
   const normalizedFields = useMemo(() => {
-    const transactionTypeOptions = [
-      t("transactions.types.payment"),
-      t("transactions.types.charge"),
-      t("transactions.types.adjustment"),
-      t("transactions.types.refund"),
-    ];
+    const transactionTypeOptionsFromSettings =
+      transactionTypeOptions.length > 0
+        ? transactionTypeOptions
+        : [
+            t("dashboard.transactions.types.payment"),
+            t("dashboard.transactions.types.charge"),
+            t("dashboard.transactions.types.adjustment"),
+            t("dashboard.transactions.types.refund"),
+          ];
 
     return importFields.map((field: ImportField) => {
       const keyLower = field.key.toLowerCase();
@@ -642,7 +729,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
             : isBranchField
               ? branchOptions
               : isTransactionType
-                ? transactionTypeOptions
+                ? transactionTypeOptionsFromSettings
                 : undefined);
 
       const onCreate =
@@ -669,16 +756,18 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
         ...field,
         label: normalizedLabel,
         type:
-          isCustomerField || isBankField || isBranchField || isTransactionType
-            ? "select"
-            : field.type,
+          isCustomerField || isBankField || isBranchField
+            ? "datalist"
+            : isTransactionType
+              ? "select"
+              : field.type,
         optionSource: field.optionSource || (isBranchField ? "branch" : undefined),
         options,
         onCreate,
         openOnFocus: isCustomerField || isBankField || isBranchField,
       };
     });
-  }, [importFields, t, customerOptions, bankAccountOptions, branchOptions]);
+  }, [importFields, t, customerOptions, bankAccountOptions, branchOptions, transactionTypeOptions]);
 
   // Thay thế importFieldConfig và importSamples bằng các giá trị động dựa trên importFields:
   const enabledFields = normalizedFields.filter((f: ImportField) => f.enabled);
@@ -702,48 +791,81 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
     XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
     XLSX.writeFile(workbook, "transaction-import-template.xlsx");
   }, [enabledFields]);
-  const buildSampleRow = (index: number) =>
-    enabledFields
-      .map((field: ImportField) => {
-        switch (field.key) {
-          case "customer_name":
-            return `Tên khách hàng ${index}`;
-          case "bank_account":
-            return `Tài khoản ${index}`;
-          case "branch":
-            return `Văn phòng ${index}`;
-          case "transaction_type":
-            return index % 2 === 0 ? "Thu" : "Chi";
-          case "amount":
-            return index === 1 ? "1000000" : index === 2 ? "500000" : "1500000";
-          case "transaction_date":
-            return index === 1 ? "01/07/2024" : index === 2 ? "02/07/2024" : "03/07/2024";
-          case "description":
-            return `Nội dung ${index}`;
-          default:
-            switch (field.type) {
-              case "number":
-                return "1000000";
-              case "date":
-                return "01/07/2024";
-              case "select":
-                return field.options?.[0] || "Thu";
-              default:
-                return `${field.label} ${index}`;
-            }
-        }
-      })
-      .join(", ");
 
-  const importSamples = [buildSampleRow(1), buildSampleRow(2), buildSampleRow(3)];
+  // handleDownloadSample removed (not used)
+  const handleReset = useCallback(() => {
+    setTableData([{ ...emptyRow }]);
+    setImportData({ file: null, data: [], errors: [], isValid: false });
+    setShowPreview(false);
+    setCurrentStep(1);
+  }, [emptyRow]);
+
+  const handleFileUpload = useCallback(
+    (file: File) => {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const data = evt.target?.result;
+        if (!data) return;
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: "" });
+        if (!Array.isArray(json) || json.length === 0) return;
+        const nextRows = json.map((row) => {
+          const base: Record<string, string> = { ...emptyRow };
+          enabledFields.forEach((f: ImportField) => {
+            const value = row[f.key] ?? row[f.label] ?? "";
+            base[f.key] = String(value ?? "");
+          });
+          if (!base["transaction_date"]) base["transaction_date"] = todayIso;
+          return base;
+        });
+        setTableData(nextRows);
+        setImportData({ file: null, data: nextRows, errors: [], isValid: false });
+        setValidationMode("bulk");
+        setShowPreview(true);
+        setCurrentStep(2);
+        setDropInfo(`Đã tải ${file.name} (${nextRows.length} dòng)`);
+      };
+      reader.readAsArrayBuffer(file);
+    },
+    [enabledFields, emptyRow, todayIso],
+  );
+
+  const handleDrag = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.type === "dragenter" || event.type === "dragover") {
+      setDragActive(true);
+    } else {
+      setDragActive(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setDragActive(false);
+      const file = event.dataTransfer?.files?.[0];
+      if (file) {
+        handleFileUpload(file);
+      } else {
+        setDropInfo("Không nhận được file. Vui lòng thử lại.");
+      }
+    },
+    [handleFileUpload],
+  );
+
+  const totalAmount = tableData.reduce((sum, row) => {
+    const raw = Number(String(row.amount || "").replace(/[\,\s]/g, ""));
+    return Number.isFinite(raw) ? sum + raw : sum;
+  }, 0);
 
   if (isProcessing) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <LoadingFallback
-            title={t("import.importing")}
-            message={t("import.processingData")}
+          <LoadingFallback title={t("import.importing")} message={t("import.processingData")}
             size="lg"
           />
         </div>
@@ -752,97 +874,78 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white dark:bg-gray-900 shadow rounded-lg border border-gray-200 dark:border-gray-800">
+    <>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white dark:bg-gray-900 shadow rounded-lg border border-gray-200 dark:border-gray-800">
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {t("import.transactionImport")}
-            </h1>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-              {t("import.transactionImportDescription")}
-            </p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("import.transactionImport")}</h1>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{t("import.transactionImportDescription")}</p>
           </div>
 
-          {/* Progress Steps */}
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center space-x-4">
-              <div
-                className={`flex items-center ${currentStep >= 1 ? "text-blue-600" : "text-gray-400"}`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                    currentStep >= 1
-                      ? "border-blue-600 bg-blue-600 text-white"
-                      : "border-gray-300 dark:border-gray-600 text-gray-500"
-                  }`}
-                >
-                  1
-                </div>
-                <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {t("import.step1")}
-                </span>
-              </div>
-
-              <div
-                className={`flex items-center ${currentStep >= 2 ? "text-blue-600" : "text-gray-400"}`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                    currentStep >= 2
-                      ? "border-blue-600 bg-blue-600 text-white"
-                      : "border-gray-300 dark:border-gray-600 text-gray-500"
-                  }`}
-                >
-                  2
-                </div>
-                <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {t("import.step2")}
-                </span>
-              </div>
-
-              <div
-                className={`flex items-center ${currentStep >= 3 ? "text-blue-600" : "text-gray-400"}`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                    currentStep >= 3
-                      ? "border-blue-600 bg-blue-600 text-white"
-                      : "border-gray-300 dark:border-gray-600 text-gray-500"
-                  }`}
-                >
-                  3
-                </div>
-                <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {t("import.step3")}
-                </span>
+          {importSuccess && (
+            <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700">
+              <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+                {importSuccess}
               </div>
             </div>
-          </div>
+          )}
 
           {/* Content */}
           <div className="px-6 py-6 bg-white dark:bg-gray-900">
-            {/* Step 1: Data Input */}
             <div className="space-y-6">
-              <div>
-                <label
-                  htmlFor="rawData"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                >
-                  {t("import.pasteData")}
-                </label>
-                {/* Mobile: vertical per-transaction input */}
+                {/* Action Buttons (top) */}
+                <div className="flex flex-wrap items-center gap-3 justify-between">
+                  <div className="text-sm text-gray-600 dark:text-gray-300">Tổng dòng: {tableData.length} (Số dòng tối đa: 100)</div>
+                  <div className="flex items-center space-x-3">
+                    <Button variant="secondary" size="sm" onClick={() => setTableData((prev) => [...prev, { ...emptyRow }])}>
+                      {t("import.addRow")}
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={handleReset}>
+                      {t("common.reset")}
+                    </Button>
+                    <Button variant="primary" size="sm" onClick={handleValidateAndImportInline}>
+                      {t("import.importData")}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Nhập từng giao dịch */}
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Nhập từng giao dịch</h2>
+
+                {/* Desktop/tablet input */}
+                <div className="hidden sm:block">
+                  <EditableTable
+                    data={tableData}
+                    errors={importData.errors}
+                    onDataChange={setTableData}
+                    columns={enabledFields.map((f: ImportField) => ({
+                      key: f.key,
+                      label: f.label,
+                      required: f.required,
+                      type: f.type,
+                      options: f.type === "select" || f.type === "datalist" ? f.options || [] : undefined,
+                      onCreate: f.onCreate,
+                      openOnFocus: f.openOnFocus,
+                    }))}
+                    showInstructions={false}
+                  />
+                </div>
+
+                {/* Mobile input */}
                 <div className="sm:hidden space-y-4">
                   {tableData.map((row, rowIndex) => (
-                    <div
-                      key={`row-${rowIndex}`}
-                      className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm"
-                    >
+                    <div key={`row-${rowIndex}`} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                          Giao dịch {rowIndex + 1}
-                        </span>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white">Giao dịch {rowIndex + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => setTableData((prev) => prev.filter((_, idx) => idx !== rowIndex))}
+                          className="text-red-500 text-xs hover:underline"
+                        >
+                          {t("import.removeRow")}
+                        </button>
                       </div>
                       <div className="space-y-3">
                         {enabledFields.map((field: ImportField) => (
@@ -851,49 +954,13 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                               {field.label}
                               {field.required && <span className="text-red-500"> *</span>}
                             </label>
-                            {field.key.toLowerCase().includes("customer") ? (
-                              <>
-                                <input
-                                  list={`mobile-${field.key}`}
-                                  value={row[field.key] || ""}
-                                  onChange={(event) =>
-                                    setTableData((prev) => {
-                                      const next = [...prev];
-                                      next[rowIndex] = {
-                                        ...next[rowIndex],
-                                        [field.key]: event.target.value,
-                                      };
-                                      return next;
-                                    })
-                                  }
-                                  onBlur={(event) => {
-                                    const value = event.target.value.trim();
-                                    if (
-                                      value &&
-                                      field.onCreate &&
-                                      !(field.options || []).includes(value)
-                                    ) {
-                                      field.onCreate(value);
-                                    }
-                                  }}
-                                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                <datalist id={`mobile-${field.key}`}>
-                                  {(field.options || []).map((option) => (
-                                    <option key={option} value={option} />
-                                  ))}
-                                </datalist>
-                              </>
-                            ) : field.type === "select" ? (
+                            {field.type === "select" ? (
                               <select
                                 value={row[field.key] || ""}
                                 onChange={(event) =>
                                   setTableData((prev) => {
                                     const next = [...prev];
-                                    next[rowIndex] = {
-                                      ...next[rowIndex],
-                                      [field.key]: event.target.value,
-                                    };
+                                    next[rowIndex] = { ...next[rowIndex], [field.key]: event.target.value };
                                     return next;
                                   })
                                 }
@@ -914,20 +981,13 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                                   onChange={(event) =>
                                     setTableData((prev) => {
                                       const next = [...prev];
-                                      next[rowIndex] = {
-                                        ...next[rowIndex],
-                                        [field.key]: event.target.value,
-                                      };
+                                      next[rowIndex] = { ...next[rowIndex], [field.key]: event.target.value };
                                       return next;
                                     })
                                   }
                                   onBlur={(event) => {
                                     const value = event.target.value.trim();
-                                    if (
-                                      value &&
-                                      field.onCreate &&
-                                      !(field.options || []).includes(value)
-                                    ) {
+                                    if (value && field.onCreate && !(field.options || []).includes(value)) {
                                       field.onCreate(value);
                                     }
                                   }}
@@ -946,13 +1006,35 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                                 onChange={(event) =>
                                   setTableData((prev) => {
                                     const next = [...prev];
-                                    next[rowIndex] = {
-                                      ...next[rowIndex],
-                                      [field.key]: event.target.value,
-                                    };
+                                    const raw = field.key === "amount" ? event.target.value.replace(/[\,\s]/g, "") : event.target.value;
+                                    next[rowIndex] = { ...next[rowIndex], [field.key]: raw };
                                     return next;
                                   })
                                 }
+                                onKeyDown={(event) => {
+                                  if (field.key !== "amount") return;
+                                  if (event.key === "Enter") {
+                                    const raw = (event.currentTarget.value || "").replace(/[\,\s]/g, "");
+                                    const num = Number(raw);
+                                    const formatted = Number.isFinite(num) ? num.toLocaleString("en-US") : "";
+                                    setTableData((prev) => {
+                                      const next = [...prev];
+                                      next[rowIndex] = { ...next[rowIndex], [field.key]: formatted };
+                                      return next;
+                                    });
+                                  }
+                                }}
+                                onBlur={(event) => {
+                                  if (field.key !== "amount") return;
+                                  const raw = event.target.value.replace(/[\,\s]/g, "");
+                                  const num = Number(raw);
+                                  const formatted = Number.isFinite(num) ? num.toLocaleString("en-US") : "";
+                                  setTableData((prev) => {
+                                    const next = [...prev];
+                                    next[rowIndex] = { ...next[rowIndex], [field.key]: formatted };
+                                    return next;
+                                  });
+                                }}
                                 className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
                             )}
@@ -961,202 +1043,175 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                       </div>
                     </div>
                   ))}
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    onClick={() => setTableData((prev) => [...prev, { ...emptyRow }])}
-                  >
-                    Thêm giao dịch
-                  </Button>
                 </div>
 
-                {/* Desktop/tablet: sheet-style input */}
-                <div className="hidden sm:block">
-                  <EditableTable
-                    data={tableData}
-                    errors={importData.errors}
-                    onDataChange={setTableData}
-                    columns={enabledFields.map((f: ImportField) => ({
-                      key: f.key,
-                      label: f.label,
-                      required: f.required,
-                      type: f.type,
-                      options:
-                        f.type === "select" || f.type === "datalist"
-                          ? f.options || []
-                          : undefined,
-                      onCreate: f.onCreate,
-                      openOnFocus: f.openOnFocus,
-                    }))}
-                    maxRows={100}
-                  />
+                {/* Hướng dẫn chỉnh sửa (thu gọn mặc định) */}
+                <div className="rounded-lg border border-blue-100 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-900/20 px-4 py-3">
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between text-sm font-medium text-blue-900 dark:text-blue-100"
+                    onClick={() => setShowEditHelp((v) => !v)}
+                  >
+                    <span>Hướng dẫn chỉnh sửa</span>
+                    <span className="text-xs text-blue-700 dark:text-blue-200">{showEditHelp ? "Thu gọn" : "Xem"}</span>
+                  </button>
+                  {showEditHelp && (
+                    <ul className="mt-2 space-y-1 text-sm text-blue-800 dark:text-blue-200">
+                      <li>• Nhấp hoặc nhấp đúp vào ô để chỉnh sửa</li>
+                      <li>• Nhấn Enter để lưu thay đổi</li>
+                      <li>• Nhấn Escape để hủy chỉnh sửa</li>
+                      <li>• Các trường có dấu * là bắt buộc</li>
+                    </ul>
+                  )}
                 </div>
-                <div className="mt-4">
-                  <h4 className="font-medium mb-2 text-gray-900 dark:text-white">Gợi ý nhập liệu:</h4>
-                  <div className="space-y-2">
-                    {importSamples.map((sample, idx) => (
-                      <div key={idx} className="flex items-center space-x-2">
-                        <code className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 px-2 py-1 rounded text-sm">
-                          {sample}
-                        </code>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() =>
-                            setTableData(
-                              sample.split(",").map((s: string) => ({
-                                ...emptyRow,
-                                ...enabledFields.reduce(
-                                  (
-                                    acc: Record<string, string>,
-                                    f: ImportField,
-                                  ) => {
-                                    acc[f.key] = s.trim();
-                                    return acc;
-                                  },
-                                  {} as Record<string, string>,
-                                ),
-                              })),
-                            )
-                          }
-                        >
-                          Dán vào ô nhập
-                        </Button>
-                      </div>
-                    ))}
+
+                {/* Nhập dữ liệu giao dịch hàng loạt */}
+                <div className="mt-6 space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Nhập dữ liệu giao dịch hàng loạt</h2>
                   </div>
-                  <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 px-3 py-2">
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {t("import.downloadTemplateHint")}
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={handleDownloadTemplate}
-                      className="text-xs"
+
+                  <div className="rounded-lg border border-blue-100 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-900/20 px-4 py-3">
+                    <button
+                      type="button"
+                      className="w-full flex items-center justify-between text-sm font-medium text-blue-900 dark:text-blue-100"
+                      onClick={() => setShowGuidelines((v) => !v)}
                     >
-                      {t("import.downloadTemplate")}
+                      <span>Quy tắc nhập dữ liệu giao dịch</span>
+                      <span className="text-xs text-blue-700 dark:text-blue-200">{showGuidelines ? "Thu gọn" : "Xem"}</span>
+                    </button>
+                    {showGuidelines && (
+                      <ul className="mt-2 space-y-1 text-sm text-blue-800 dark:text-blue-200">
+                        <li>• Chấp nhận tải file Excel/CSV hoặc dán dữ liệu với cột: transaction_date, customer_name, transaction_type, amount, description, bank_account_name, branch_name</li>
+                        <li>• Cột bắt buộc: transaction_date, transaction_type, amount; các cột khác có thể để trống</li>
+                        <li>• Mỗi dòng là 1 giao dịch; kiểm tra dữ liệu trước khi nhập</li>
+                        <li>• Định dạng ngày: yyyy-mm-dd; Số tiền: hỗ trợ dấu phẩy/nghìn, hệ thống tự chuẩn hóa</li>
+                      </ul>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700 dark:text-gray-200">
+                    <span className="font-medium">Tệp mẫu</span>
+                    <Button size="sm" variant="secondary" className="text-xs" onClick={handleDownloadTemplate}>
+                      Tải file mẫu
                     </Button>
                   </div>
-                </div>
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  {t("import.pasteInstructions")}
-                </p>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="flex justify-between items-center">
-                <Button variant="secondary" size="md" onClick={handleReset}>
-                  {t("common.reset")}
-                </Button>
-
-                <div className="flex space-x-3">
-                  <Button
-                    variant="primary"
-                    size="md"
-                    onClick={handleValidateData}
-                    disabled={
-                      !tableData.some((row) =>
-                        Object.values(row).some((val) => val !== ""),
-                      )
-                    }
+                  <div
+                    className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                      dragActive
+                        ? "border-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                        : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover-border-gray-500"
+                    }`}
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
                   >
-                    {t("import.validateData")}
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Step 2: Validation Results */}
-            {showPreview && (
-              <div className="mt-8 space-y-6">
-                {/* Validation Summary */}
-                <div className="bg-gray-50 dark:bg-gray-800/60 rounded-lg p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {importData.data.length}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {t("import.totalRows")}
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">
-                        {importData.data.length - importData.errors.length}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {t("import.validRows")}
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-red-600">
-                        {importData.errors.length}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {t("import.errorRows")}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Data Preview */}
-                {renderDataPreview()}
-
-                {/* Validation Errors */}
-                {renderValidationErrors()}
-
-                {/* Unmatched Customers */}
-                {renderUnmatchedCustomers()}
-
-                {/* Import Action */}
-                <div className="flex justify-end">
-                  <Button
-                    variant="success"
-                    size="md"
-                    onClick={handleImportData}
-                    disabled={
-                      !importData.isValid || importData.data.length === 0
-                    }
-                  >
-                    {t("import.importData")}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Success Message */}
-            {currentStep === 3 && (
-              <div className="mt-8">
-                <div className="bg-green-50 border border-green-200 rounded-md p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
+                    <div className="space-y-4">
                       <svg
-                        className="h-5 w-5 text-green-400"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
+                        className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
+                        stroke="currentColor"
+                        fill="none"
+                        viewBox="0 0 48 48"
                       >
                         <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                          clipRule="evenodd"
+                          d="M8 34a6 6 0 0 1 6-6h20a6 6 0 0 1 0 12H14a6 6 0 0 1-6-6Z"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         />
+                        <path d="M24 6v20m0 0 6-6m-6 6-6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-green-800">
-                        {t("import.importSuccess")}
-                      </h3>
-                      <p className="mt-1 text-sm text-green-700">
-                        {t("import.importedRows", {
-                          count: importData.data.length,
-                        })}
-                      </p>
+                      <div className="text-sm text-gray-700 dark:text-gray-200">Kéo thả file Excel/CSV vào đây hoặc</div>
+                      <label className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold cursor-pointer hover:bg-blue-700">
+                        Chọn file
+                        <input
+                          type="file"
+                          accept=".xlsx,.xls,.csv"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFileUpload(file);
+                          }}
+                        />
+                      </label>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Định dạng hỗ trợ: Excel (.xlsx, .xls), CSV</p>
                     </div>
                   </div>
+
+                  {dropInfo && (
+                    <div className="inline-flex items-center gap-2 text-sm text-gray-800 dark:text-gray-100 bg-gray-100 dark:bg-gray-800/80 px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700">
+                      <span className="inline-block h-2 w-2 rounded-full bg-green-500" aria-hidden />
+                      <span>{dropInfo}</span>
+                    </div>
+                  )}
+
+                  {/* Preview riêng cho nhập hàng loạt */}
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">Xem trước (file/dữ liệu dán)</p>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Bấm "Nhập dữ liệu" để kiểm tra & nhập</span>
+                    </div>
+                    {validationMode === "bulk" && showPreview ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div className="text-center">
+                            <div className="text-xl font-bold text-gray-900 dark:text-white">{importData.data.length}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{t("import.totalRows")}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xl font-bold text-green-600">{importData.data.length - importData.errors.length}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{t("import.validRows")}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xl font-bold text-red-600">{importData.errors.length}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{t("import.errorRows")}</div>
+                          </div>
+                        </div>
+
+                        {renderDataPreview()}
+                        {validationMode === "bulk" && renderValidationErrors()}
+                        {renderUnmatchedCustomers()}
+
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="success"
+                            size="sm"
+                            onClick={handleValidateAndImportBulk}
+                            disabled={importData.data.length === 0}
+                          >
+                            {t("import.importData")}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-600 dark:text-gray-300">Chọn file hoặc dán dữ liệu, sau đó bấm "Nhập dữ liệu" để kiểm tra và xem trước.</div>
+                    )}
+                  </div>
                 </div>
+
+                {currentStep === 3 && (
+                  <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <h3 className="text-sm font-medium text-green-800">{t("import.importSuccess")}</h3>
+                        <p className="mt-1 text-sm text-green-700">{t("import.importedRows", { count: importData.data.length })}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
@@ -1165,11 +1220,12 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
       <NewCustomerModal
         isOpen={showNewCustomerModal}
         onClose={() => setShowNewCustomerModal(false)}
-        onSave={handleSaveNewCustomer}
         customerName={newCustomerName}
         isLoading={isCreatingCustomer}
+        onSave={(customer) => handleSaveNewCustomer(customer)}
+        customerOptions={customerOptions}
       />
-    </div>
+    </>
   );
 };
 

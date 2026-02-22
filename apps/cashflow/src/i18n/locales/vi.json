@@ -128,8 +128,8 @@
       "quarter": "Quý",
       "year": "Năm"
     },
-    "inflow": "Tiền vào",
-    "outflow": "Tiền ra",
+    "inflow": "Phát sinh tăng",
+    "outflow": "Phát sinh giảm",
     "netFlow": "Dòng tiền ròng",
     "ofTotal": "của tổng",
     "startBalance": "Số dư đầu kỳ",
@@ -166,8 +166,8 @@
       "transactionDate": "Ngày giao dịch",
       "description": "Mô tả",
       "types": {
-        "payment": "Tiền vào",
-        "charge": "Tiền ra",
+        "payment": "Phát sinh tăng",
+        "charge": "Phát sinh giảm",
         "adjustment": "Điều chỉnh",
         "refund": "Hoàn tiền"
       }

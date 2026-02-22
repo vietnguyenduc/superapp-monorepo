@@ -16,6 +16,7 @@ import TransactionImport from "./pages/DataImport/TransactionImport";
 import CustomerImport from "./pages/DataImport/CustomerImport";
 import Settings from "./pages/Settings/Settings";
 import Login from "./pages/Auth/Login";
+import SignUp from "./pages/Auth/SignUp";
 import CompanySelector from "./pages/CompanySelector/CompanySelector";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import { CompanyProvider } from "./contexts/CompanyContext";
@@ -27,6 +28,7 @@ function App() {
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
 
           {/* Company selector for admins */}
           <Route
