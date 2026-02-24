@@ -323,28 +323,32 @@ function parseDate(dateStr: string): Date | null {
     return new Date(trimmed);
   }
 
-  // Try DD/MM/YYYY format
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmed)) {
-    const [day, month, year] = trimmed.split("/");
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  // Try DD/MM/YYYY or DD/MM/YY
+  if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(trimmed)) {
+    const [day, month, yearRaw] = trimmed.split("/");
+    const yearNum = yearRaw.length === 2 ? 2000 + parseInt(yearRaw, 10) : parseInt(yearRaw, 10);
+    return new Date(yearNum, parseInt(month, 10) - 1, parseInt(day, 10));
   }
 
-  // Try MM/DD/YYYY format
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmed)) {
-    const [month, day, year] = trimmed.split("/");
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  // Try MM/DD/YYYY or MM/DD/YY
+  if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(trimmed)) {
+    const [month, day, yearRaw] = trimmed.split("/");
+    const yearNum = yearRaw.length === 2 ? 2000 + parseInt(yearRaw, 10) : parseInt(yearRaw, 10);
+    return new Date(yearNum, parseInt(month, 10) - 1, parseInt(day, 10));
   }
 
-  // Try DD-MM-YYYY format
-  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(trimmed)) {
-    const [day, month, year] = trimmed.split("-");
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  // Try DD-MM-YYYY or DD-MM-YY format
+  if (/^\d{1,2}-\d{1,2}-\d{2,4}$/.test(trimmed)) {
+    const [day, month, yearRaw] = trimmed.split("-");
+    const yearNum = yearRaw.length === 2 ? 2000 + parseInt(yearRaw, 10) : parseInt(yearRaw, 10);
+    return new Date(yearNum, parseInt(month, 10) - 1, parseInt(day, 10));
   }
 
-  // Try MM-DD-YYYY format
-  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(trimmed)) {
-    const [month, day, year] = trimmed.split("-");
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  // Try MM-DD-YYYY or MM-DD-YY format
+  if (/^\d{1,2}-\d{1,2}-\d{2,4}$/.test(trimmed)) {
+    const [month, day, yearRaw] = trimmed.split("-");
+    const yearNum = yearRaw.length === 2 ? 2000 + parseInt(yearRaw, 10) : parseInt(yearRaw, 10);
+    return new Date(yearNum, parseInt(month, 10) - 1, parseInt(day, 10));
   }
 
   // Try DD.MM.YYYY format

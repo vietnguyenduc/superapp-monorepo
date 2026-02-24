@@ -4,6 +4,7 @@ import { ErrorFallback, LoadingFallback } from "../../components/UI/FallbackUI";
 import ToggleSwitch from "../../components/UI/ToggleSwitch";
 import Button from "../../components/UI/Button";
 import PageHeader from "../../components/UI/PageHeader";
+import { formatNumber } from "../../utils/formatting";
 import { databaseService } from "../../services/database";
 
 interface Tab {
@@ -431,10 +432,11 @@ const Settings: React.FC = () => {
 
   // Helper function to get account type from account name
   const getAccountType = (accountName: string): string => {
-    if (accountName.toLowerCase().includes("checking")) return "Checking";
-    if (accountName.toLowerCase().includes("savings")) return "Savings";
-    if (accountName.toLowerCase().includes("business")) return "Business";
-    if (accountName.toLowerCase().includes("credit")) return "Credit";
+    const safeName = (accountName || "").toLowerCase();
+    if (safeName.includes("checking")) return "Checking";
+    if (safeName.includes("savings")) return "Savings";
+    if (safeName.includes("business")) return "Business";
+    if (safeName.includes("credit")) return "Credit";
     return "Other";
   };
 
@@ -712,13 +714,13 @@ const Settings: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">Nhập số dư đầu kỳ</h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Tải file mẫu, điền customer_code và opening_balance, sau đó import.</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Tải file mẫu, điền Mã khách hàng (customer_code) và Số dư đầu kỳ (opening_balance), sau đó import.</p>
                 </div>
                 <Button variant="primary" size="sm" onClick={handleDownloadOpeningTemplate}>Tải file mẫu</Button>
               </div>
 
               <div className="border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
-                <p className="text-sm text-gray-700 dark:text-gray-200 mb-2">Chọn file Excel/CSV (cột: customer_code, opening_balance)</p>
+                <p className="text-sm text-gray-700 dark:text-gray-200 mb-2">Chọn file Excel/CSV (cột: customer_code – Mã khách hàng, opening_balance – Số dư đầu kỳ)</p>
                 <input type="file" accept=".xlsx,.xls,.csv" onChange={handleOpeningFile} className="text-sm" />
                 {openingFile && <p className="text-xs text-gray-500 mt-1">Đã chọn: {openingFile.name}</p>}
               </div>
@@ -742,8 +744,8 @@ const Settings: React.FC = () => {
                       <thead className="bg-gray-50 dark:bg-gray-800 text-left text-gray-700 dark:text-gray-200">
                         <tr>
                           <th className="px-3 py-2">Tên khách hàng</th>
-                          <th className="px-3 py-2">customer_code</th>
-                          <th className="px-3 py-2">opening_balance</th>
+                          <th className="px-3 py-2">Mã khách hàng</th>
+                          <th className="px-3 py-2">Số dư đầu kỳ</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -751,7 +753,7 @@ const Settings: React.FC = () => {
                           <tr key={`${row.customer_code}-${idx}`}>
                             <td className="px-3 py-2 text-gray-900 dark:text-gray-100">{customerMap[row.customer_code] || ""}</td>
                             <td className="px-3 py-2 text-gray-900 dark:text-gray-100">{row.customer_code}</td>
-                            <td className="px-3 py-2 text-gray-900 dark:text-gray-100">{row.opening_balance}</td>
+                            <td className="px-3 py-2 text-gray-900 dark:text-gray-100">{formatNumber(row.opening_balance)}</td>
                           </tr>
                         ))}
                       </tbody>

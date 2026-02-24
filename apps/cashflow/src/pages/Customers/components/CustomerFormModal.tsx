@@ -60,21 +60,12 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         create_transactions: false,
       });
     } else if (mode === "create") {
-      setFormData((prev) => ({
-        ...prev,
-        customer_code: prev.customer_code || `CUST${String(Date.now()).slice(-6)}`,
-      }));
+      setFormData((prev) => ({ ...prev }));
     }
   }, [customer, mode]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
-
-    if (!formData.customer_code.trim()) {
-      newErrors.customer_code = t("customers.form.errors.customerCodeRequired");
-    } else if (formData.customer_code.length < 3) {
-      newErrors.customer_code = t("customers.form.errors.customerCodeMinLength");
-    }
 
     if (!formData.full_name.trim()) {
       newErrors.full_name = t("customers.form.errors.fullNameRequired");
@@ -88,7 +79,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
 
     if (
       formData.phone &&
-      !/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/\s/g, ""))
+      !/^(?:\+?\d{1,3})?0?[1-9]\d{7,9}$/.test(formData.phone.replace(/\s/g, ""))
     ) {
       newErrors.phone = t("customers.form.errors.phoneInvalid");
     }
@@ -124,8 +115,8 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div className="fixed inset-0 z-50 overflow-y-auto pointer-events-none">
+      <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0 pointer-events-none">
         <div
           className="fixed inset-0 bg-gray-700/70 dark:bg-gray-900/80 transition-opacity pointer-events-auto"
           onClick={onClose}

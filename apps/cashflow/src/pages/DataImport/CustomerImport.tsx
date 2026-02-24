@@ -18,6 +18,7 @@ interface RawCustomerData {
   address?: string;
   customer_code?: string;
   working_method?: string;
+  notes?: string;
 }
 
 const CustomerImport: React.FC<CustomerImportProps> = ({
@@ -31,6 +32,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     email: "",
     address: "",
     customer_code: "",
+    notes: "",
   });
   const [singleError, setSingleError] = useState<string | null>(null);
   const [isCreatingSingle, setIsCreatingSingle] = useState(false);
@@ -103,31 +105,31 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
   }, []);
 
   const handleDownloadSample = useCallback(() => {
-    const headers = ["full_name", "phone", "email", "address", "customer_code", "working_method"];
+    const headers = ["full_name", "phone", "address", "customer_code", "working_method", "notes"];
     const rows = [
       {
         full_name: "Công ty An Phát",
         phone: "0909000001",
-        email: "contact@anphat.vn",
         address: "123 Nguyễn Huệ, Q1, TP.HCM",
         customer_code: "CUST0001",
         working_method: "Thu nợ thứ 2 hằng tuần, thanh toán trong ngày",
+        notes: "Ưu tiên giao buổi sáng",
       },
       {
         full_name: "Công ty Việt Thịnh",
         phone: "0909000002",
-        email: "hello@vietthinh.vn",
         address: "45 Lê Lợi, Q1, TP.HCM",
         customer_code: "CUST0002",
         working_method: "Đối soát 2 lần/tháng, hạn thanh toán 5 ngày",
+        notes: "Yêu cầu hóa đơn đỏ",
       },
       {
         full_name: "Công ty Hoàng Gia",
         phone: "0909000003",
-        email: "info@hoanggia.vn",
         address: "78 Điện Biên Phủ, Q3, TP.HCM",
         customer_code: "CUST0003",
         working_method: "Thanh toán COD cho đơn mới, công nợ 14 ngày cho khách cũ",
+        notes: "Liên hệ trước khi giao",
       },
     ];
 
@@ -215,6 +217,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
         importData.data.map((customer) => ({
           ...customer,
           working_method: customer.working_method,
+          notes: customer.notes,
           branch_id: branchId,
         })),
       );
@@ -413,7 +416,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
             {t("import.customerBulkGuidelinesTitle")}
           </p>
           <ul className="mt-2 space-y-1 text-sm text-blue-800 dark:text-blue-200">
-            <li>• Tải lên file Excel/CSV theo đúng tiêu đề cột: full_name, phone, email, address, customer_code, working_method</li>
+            <li>• Tải lên file Excel/CSV theo đúng tiêu đề cột: full_name, phone, address, customer_code, working_method, notes (tuỳ chọn)</li>
             <li>• Cột bắt buộc: full_name. Các cột còn lại có thể để trống</li>
             <li>• Mỗi dòng là 1 khách hàng. Kiểm tra trước khi nhấn “Kiểm tra dữ liệu”</li>
           </ul>
@@ -545,9 +548,6 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                   {t("customers.phone")}
                 </th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {t("customers.email")}
-                </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   {t("customers.address")}
                 </th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -574,11 +574,6 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                       className={`px-3 py-2 text-sm ${getErrorForCell(index, "phone") ? "bg-red-100" : ""}`}
                     >
                       {row.phone || "-"}
-                    </td>
-                    <td
-                      className={`px-3 py-2 text-sm ${getErrorForCell(index, "email") ? "bg-red-100" : ""}`}
-                    >
-                      {row.email || "-"}
                     </td>
                     <td
                       className={`px-3 py-2 text-sm ${getErrorForCell(index, "address") ? "bg-red-100" : ""}`}
@@ -903,10 +898,10 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
           const customerData: RawCustomerData = {
             full_name: "",
             phone: "",
-            email: "",
             address: "",
             customer_code: "",
             working_method: "",
+            notes: "",
           };
 
           headers.forEach((header, colIndex) => {
@@ -924,10 +919,6 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
               case "mobile":
                 customerData.phone = String(value).trim();
                 break;
-              case "email":
-              case "email_address":
-                customerData.email = String(value).trim();
-                break;
               case "address":
                 customerData.address = String(value).trim();
                 break;
@@ -941,6 +932,9 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
               case "note":
               case "policy":
                 customerData.working_method = String(value).trim();
+                break;
+              case "notes":
+                customerData.notes = String(value).trim();
                 break;
             }
           });
@@ -981,19 +975,6 @@ function validateCustomerData(data: RawCustomerData[]): {
         message: "Full name must be at least 2 characters",
         value: row.full_name,
       });
-    }
-
-    // Validate email (optional but if provided, check format)
-    if (row.email && row.email.trim().length > 0) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(row.email)) {
-        errors.push({
-          row: index,
-          column: "email",
-          message: "Invalid email format",
-          value: row.email,
-        });
-      }
     }
 
     // Validate phone (optional but if provided, check format)

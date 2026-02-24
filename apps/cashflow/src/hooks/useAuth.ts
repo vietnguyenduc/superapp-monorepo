@@ -187,59 +187,71 @@ export const useAuth = () => {
   ): Promise<{ error: string | null; confirmationRequired?: boolean }> => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+          emailRedirectTo:
+            typeof window !== "undefined"
+              ? `${window.location.origin}/login`
+              : undefined,
         },
-        emailRedirectTo:
-          typeof window !== "undefined"
-            ? `${window.location.origin}/login`
-            : undefined,
-      },
-    });
+      });
 
-    if (error) {
-      setState((prev) => ({ ...prev, loading: false, error: error.message }));
-      return { error: error.message };
-    }
-
-    const authUser = data.session?.user ?? data.user;
-
-    if (authUser) {
-      // Create user profile row
-      const profilePayload: TablesInsert<"users"> = {
-        id: authUser.id,
-        email: authUser.email ?? "",
-        full_name: fullName || (authUser.user_metadata as { full_name?: string })?.full_name || null,
-        role: "staff",
-      };
-
-      const { error: profileError } = await supabase.from("users").upsert(profilePayload);
-
-      if (profileError) {
-        console.error("Error creating profile during sign up:", profileError);
-        setState((prev) => ({ ...prev, loading: false, error: profileError.message }));
-        return { error: profileError.message };
+      if (error) {
+        setState((prev) => ({ ...prev, loading: false, error: error.message }));
+        return { error: error.message };
       }
 
-      const profile = await fetchUserProfile(authUser.id);
-      setState({
-        user: profile,
-        session: data.session ?? null,
-        loading: false,
-        error: null,
-        isTrial: false,
-      });
-    } else {
-      // Supabase can require email confirmation; no session returned
-      setState((prev) => ({ ...prev, loading: false }));
-      return { error: null, confirmationRequired: true };
-    }
+      const authUser = data.session?.user ?? data.user;
 
-    return { error: null, confirmationRequired: false };
+      // If email confirmation is required, Supabase returns user without session.
+      if (authUser && !data.session) {
+        setState((prev) => ({ ...prev, loading: false, error: null }));
+        return { error: null, confirmationRequired: true };
+      }
+
+      if (authUser && data.session) {
+        // Create user profile row (requires session JWT)
+        const profilePayload: TablesInsert<"users"> = {
+          id: authUser.id,
+          email: authUser.email ?? "",
+          full_name: fullName || (authUser.user_metadata as { full_name?: string })?.full_name || null,
+          role: "staff",
+        };
+
+        const { error: profileError } = await supabase.from("users").upsert(profilePayload);
+
+        if (profileError) {
+          console.error("Error creating profile during sign up:", profileError);
+          setState((prev) => ({ ...prev, loading: false, error: profileError.message }));
+          return { error: profileError.message };
+        }
+
+        const profile = await fetchUserProfile(authUser.id);
+        setState({
+          user: profile,
+          session: data.session ?? null,
+          loading: false,
+          error: null,
+          isTrial: false,
+        });
+      } else {
+        // No user returned
+        setState((prev) => ({ ...prev, loading: false }));
+        return { error: "No user returned from sign up" };
+      }
+
+      return { error: null, confirmationRequired: false };
+    } catch (err: any) {
+      console.error("Unhandled error during sign up:", err);
+      setState((prev) => ({ ...prev, loading: false, error: err?.message || "Sign up failed" }));
+      return { error: err?.message || "Sign up failed" };
+    }
   };
 
   const signOut = async (): Promise<{ error: string | null }> => {

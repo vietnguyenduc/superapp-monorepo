@@ -1152,6 +1152,36 @@ const transactionService = {
     const now = getNowIso();
     const all = readTransactions();
     const customers = readCustomers();
+    const normalizeAmountByType = (type: TransactionType, amount: number) => {
+      const abs = Math.abs(Number(amount) || 0);
+      switch (type) {
+        case "charge":
+          return -abs;
+        case "payment":
+        case "refund":
+          return abs;
+        case "adjustment":
+        default:
+          return Number(amount) || 0;
+      }
+    };
+    const updateCustomerFromTx = (cust: Customer | undefined, tx: Transaction) => {
+      if (!cust) return;
+      const currentBalance = Number.isFinite(Number(cust.total_balance)) ? Number(cust.total_balance) : 0;
+      const nextBalance = currentBalance + Number(tx.amount || 0);
+      cust.total_balance = nextBalance;
+      const txDate = new Date(tx.transaction_date);
+      const hasTxDate = Number.isFinite(txDate.getTime());
+      const lastDate = cust.last_transaction_date ? new Date(cust.last_transaction_date) : null;
+      if (hasTxDate && (!lastDate || txDate > lastDate)) {
+        cust.last_transaction_date = tx.transaction_date;
+      }
+      if (!cust.created_at) cust.created_at = now;
+      cust.updated_at = now;
+      if (cust.is_active === undefined || cust.is_active === null) {
+        cust.is_active = true;
+      }
+    };
     const bankAccounts = readBankAccounts();
 
     const bankAccountId = String(_transactionData?.bank_account_id || "");
@@ -1160,6 +1190,8 @@ const transactionService = {
     const customer = customers.find((c) => c.id === customerId);
 
     const explicitBranch = _transactionData?.branch_id;
+    const type = normalizeTransactionType(String(_transactionData?.transaction_type || "payment"));
+    const signedAmount = normalizeAmountByType(type, Number(_transactionData?.amount || 0));
     const tx: Transaction = {
       id: uuid(),
       transaction_code: padTxnCode(all.length + 1),
@@ -1174,7 +1206,7 @@ const transactionService = {
           ? String(bank.branch_id || "")
           : "",
       transaction_type: normalizeTransactionType(String(_transactionData?.transaction_type || "payment")),
-      amount: Number(_transactionData?.amount || 0),
+      amount: signedAmount,
       description: _transactionData?.description || "",
       reference_number: _transactionData?.reference_number || "",
       transaction_date: _transactionData?.transaction_date || now,
@@ -1183,6 +1215,8 @@ const transactionService = {
       updated_at: now,
     };
 
+    updateCustomerFromTx(customer, tx);
+    writeCustomers(customers);
     writeTransactions([tx, ...all]);
     return { data: tx, error: null };
   },
@@ -1309,6 +1343,54 @@ const transactionService = {
       return byBank || null;
     };
 
+    const normalizeAmountByType = (type: TransactionType, amount: number) => {
+      const abs = Math.abs(Number(amount) || 0);
+      switch (type) {
+        case "charge":
+          return -abs;
+        case "payment":
+        case "refund":
+          return abs;
+        case "adjustment":
+        default:
+          return Number(amount) || 0;
+      }
+    };
+
+    const updateCustomerFromTx = (cust: Customer | undefined, tx: Transaction, fallbackCreatedAt: string) => {
+      if (!cust) return;
+      const currentBalance = Number.isFinite(Number(cust.total_balance)) ? Number(cust.total_balance) : 0;
+      const nextBalance = currentBalance + Number(tx.amount || 0);
+      cust.total_balance = nextBalance;
+      const txDate = new Date(tx.transaction_date);
+      const hasTxDate = Number.isFinite(txDate.getTime());
+      const lastDate = cust.last_transaction_date ? new Date(cust.last_transaction_date) : null;
+      if (hasTxDate && (!lastDate || txDate > lastDate)) {
+        cust.last_transaction_date = tx.transaction_date;
+      }
+      if (!cust.created_at) cust.created_at = fallbackCreatedAt;
+      cust.updated_at = fallbackCreatedAt;
+      if (cust.is_active === undefined || cust.is_active === null) {
+        cust.is_active = true;
+      }
+    };
+
+    const parseDateFlexible = (input: string, fallback: string): string => {
+      const trimmed = String(input || "").trim();
+      if (!trimmed) return fallback;
+      const isoTry = new Date(trimmed);
+      if (Number.isFinite(isoTry.getTime())) return isoTry.toISOString();
+      const ddmmyyyy = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+      if (ddmmyyyy) {
+        const day = parseInt(ddmmyyyy[1], 10);
+        const month = parseInt(ddmmyyyy[2], 10) - 1;
+        const year = parseInt(ddmmyyyy[3], 10);
+        const d = new Date(year, month, day);
+        if (Number.isFinite(d.getTime())) return d.toISOString();
+      }
+      return fallback;
+    };
+
     for (let i = 0; i < raw.length; i++) {
       const row = raw[i] || {};
       try {
@@ -1321,9 +1403,9 @@ const transactionService = {
         const type = normalizeTransactionType(String(row.transaction_type || "payment"));
         const amount = Number(String(row.amount || 0).replace(/[$,€£¥₫\s]/g, ""));
         const dateStr = String(row.transaction_date || row.date || "");
-        const txDate = dateStr ? new Date(dateStr) : new Date();
-
         const now = getNowIso();
+        const txDateIso = parseDateFlexible(dateStr, now);
+        const signedAmount = normalizeAmountByType(type, amount);
         const tx: Transaction = {
           id: uuid(),
           transaction_code: padTxnCode(nextCounter++),
@@ -1333,26 +1415,31 @@ const transactionService = {
           bank_account_name: bank?.account_name,
           branch_id: row.branch || branchId || "",
           transaction_type: type,
-          amount: Number.isFinite(amount) ? amount : 0,
+          amount: Number.isFinite(signedAmount) ? signedAmount : 0,
           description: row.description || "",
           reference_number: row.reference_number || "",
-          transaction_date: Number.isFinite(txDate.getTime()) ? txDate.toISOString() : now,
+          transaction_date: txDateIso,
           created_by: createdBy,
           created_at: now,
           updated_at: now,
         };
+        updateCustomerFromTx(customer || undefined, tx, now);
         created.push(tx);
       } catch (e) {
         errors.push({ row: i, message: e instanceof Error ? e.message : "Import error" });
       }
     }
 
-    if (created.length > 0) {
+    if (errors.length > 0) {
       writeCustomers(customers);
       writeTransactions([...created, ...transactions]);
+      return { data: created, errors };
     }
 
-    return { data: created, errors };
+    writeCustomers(customers);
+    writeTransactions([...created, ...transactions]);
+
+    return { data: created, errors: [] };
   },
 };
 
@@ -1466,9 +1553,9 @@ const dashboardService = {
     ensureSeedData();
     const branchId = String(_branchId || "");
     const transactionsAll = readTransactions();
-    // Filter by company_id first if provided
+    // Filter by company_id first if provided, but keep legacy rows that have no company_id
     let transactions = companyId
-      ? transactionsAll.filter((t) => t.company_id === companyId)
+      ? transactionsAll.filter((t) => !t.company_id || t.company_id === companyId)
       : transactionsAll;
     // Then filter by branch if provided
     transactions = branchId ? transactions.filter((t) => t.branch_id === branchId) : transactions;

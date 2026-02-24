@@ -13,6 +13,8 @@ import { databaseService } from "../../services/database";
 import Button from "../../components/UI/Button";
 import EditableTable from "../../components/Import/EditableTable";
 
+const TRANSACTION_TYPES_KEY = "cashflow_transaction_types";
+
 interface TransactionImportProps {
   onImportComplete?: (data: Transaction[]) => void;
 }
@@ -286,6 +288,24 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
 
   useEffect(() => {
     const loadOptions = async () => {
+      // Prefer transaction types saved from Settings (localStorage)
+      const storedTypes = localStorage.getItem(TRANSACTION_TYPES_KEY);
+      if (storedTypes) {
+        try {
+          const parsed = JSON.parse(storedTypes);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const names = parsed
+              .filter((t: any) => t?.isActive !== false && t?.is_active !== false)
+              .map((t: any) => String(t.name || t.id || ""));
+            if (names.length > 0) {
+              setTransactionTypeOptions(names);
+            }
+          }
+        } catch (err) {
+          console.error("Failed to parse stored transaction types", err);
+        }
+      }
+
       const [customerResult, bankResult, branchResult, typeResult] = await Promise.all([
         databaseService.customers.getCustomers({ limit: 500 }),
         databaseService.bankAccounts.getBankAccounts(),
@@ -324,11 +344,10 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
       }
 
       if (typeResult?.data) {
-        setTransactionTypeOptions(
-          typeResult.data
-            .filter((t: any) => t.is_active !== false)
-            .map((t: any) => String(t.name || t.id || "")),
-        );
+        const names = typeResult.data
+          .filter((t: any) => t.is_active !== false)
+          .map((t: any) => String(t.name || t.id || ""));
+        if (names.length > 0) setTransactionTypeOptions(names);
       }
     };
 
@@ -336,10 +355,16 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
   }, []);
 
   // Đặt ngay sau enabledFields:
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayFormatted = [
+    String(yesterday.getDate()).padStart(2, "0"),
+    String(yesterday.getMonth() + 1).padStart(2, "0"),
+    yesterday.getFullYear(),
+  ].join("/");
   const emptyRow: TransactionInputRow = useMemo(
     () => ({
-      transaction_date: todayIso,
+      transaction_date: yesterdayFormatted,
       transaction_code: "",
       customer_name: "",
       transaction_type: "",
@@ -348,7 +373,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
       bank_account: "",
       branch: "",
     }),
-    [todayIso],
+    [yesterdayFormatted],
   );
   const [tableData, setTableData] = useState(() => {
     const saved = localStorage.getItem("transaction_import_table");
@@ -808,7 +833,11 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
         if (!data) return;
         const workbook = XLSX.read(data, { type: "array" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: "" });
+        const json = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, {
+          defval: "",
+          raw: false,
+          dateNF: "dd/mm/yyyy",
+        });
         if (!Array.isArray(json) || json.length === 0) return;
         const nextRows = json.map((row) => {
           const base: Record<string, string> = { ...emptyRow };
@@ -816,10 +845,10 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
             const value = row[f.key] ?? row[f.label] ?? "";
             base[f.key] = String(value ?? "");
           });
-          if (!base["transaction_date"]) base["transaction_date"] = todayIso;
+          if (!base["transaction_date"]) base["transaction_date"] = yesterdayFormatted;
           return base;
         });
-        setTableData(nextRows);
+        // Bulk upload should not overwrite single-entry table; only store in importData
         setImportData({ file: null, data: nextRows, errors: [], isValid: false });
         setValidationMode("bulk");
         setShowPreview(true);
@@ -828,7 +857,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
       };
       reader.readAsArrayBuffer(file);
     },
-    [enabledFields, emptyRow, todayIso],
+    [enabledFields, emptyRow],
   );
 
   const handleDrag = useCallback((event: React.DragEvent<HTMLDivElement>) => {
@@ -856,10 +885,6 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
     [handleFileUpload],
   );
 
-  const totalAmount = tableData.reduce((sum, row) => {
-    const raw = Number(String(row.amount || "").replace(/[\,\s]/g, ""));
-    return Number.isFinite(raw) ? sum + raw : sum;
-  }, 0);
 
   if (isProcessing) {
     return (
@@ -1001,7 +1026,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                               </>
                             ) : (
                               <input
-                                type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
+                                type={field.key === "transaction_date" ? "text" : field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
                                 value={row[field.key] || ""}
                                 onChange={(event) =>
                                   setTableData((prev) => {
@@ -1011,6 +1036,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                                     return next;
                                   })
                                 }
+                                placeholder={field.key === "transaction_date" ? "DD/MM/YYYY" : undefined}
                                 onKeyDown={(event) => {
                                   if (field.key !== "amount") return;
                                   if (event.key === "Enter") {
