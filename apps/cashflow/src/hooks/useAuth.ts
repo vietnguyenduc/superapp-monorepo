@@ -54,8 +54,21 @@ export const useAuth = () => {
 
   // Initialize auth state
   useEffect(() => {
+    // Add a timeout to prevent infinite loading states
+    const initTimeout = setTimeout(() => {
+      console.warn("Auth initialization timeout - forcing loading to false");
+      setState({
+        user: null,
+        session: null,
+        loading: false,
+        error: "Authentication check timed out",
+      });
+    }, 10000); // 10 second timeout
+
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      clearTimeout(initTimeout); // Clear timeout if we got a response
+
       if (session?.user) {
         try {
           const profile = await fetchUserProfile(session.user.id);
@@ -100,6 +113,7 @@ export const useAuth = () => {
         }
       }
     }).catch((error) => {
+      clearTimeout(initTimeout); // Clear timeout on error too
       // Handle getSession errors - ensure loading is set to false
       console.error("Error getting session:", error);
       setState({
