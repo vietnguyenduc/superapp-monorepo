@@ -23,7 +23,7 @@ const Dashboard: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { selectedCompany } = useCompany();
+  const { selectedCompany, loading: companyLoading } = useCompany();
   const [timeRange, setTimeRange] = useState<TimeRange>("month");
   const [topCustomersCount, setTopCustomersCount] = useState(8);
   const [recentTransactionsCount, setRecentTransactionsCount] = useState(8);
@@ -50,6 +50,8 @@ const Dashboard: React.FC = () => {
 
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
+    // Don't fetch until company context is ready (prevents showing all-company data flash)
+    if (companyLoading) return;
     setLoading(true);
     setError(null);
 
@@ -74,12 +76,14 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [timeRange, rangeCount, effectiveCompanyId]); // Add effectiveCompanyId as dependency
+  }, [timeRange, rangeCount, effectiveCompanyId, companyLoading]); // Add effectiveCompanyId and companyLoading as dependencies
 
   // Load data on component mount and when time range or company changes
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData, timeRange, effectiveCompanyId]);
+    if (!companyLoading) {
+      fetchDashboardData();
+    }
+  }, [fetchDashboardData, timeRange, effectiveCompanyId, companyLoading]);
 
   // Auto-refresh data every 5 minutes
   useEffect(() => {
