@@ -54,14 +54,18 @@ export const useAuth = () => {
 
   // Initialize auth state
   useEffect(() => {
+    let isMounted = true;
+
     // Add a timeout to prevent infinite loading states
     const initTimeout = setTimeout(() => {
+      if (!isMounted) return;
       console.warn("Auth initialization timeout - forcing loading to false");
       setState({
         user: null,
         session: null,
         loading: false,
         error: "Authentication check timed out",
+        isTrial: false,
       });
     }, 10000); // 10 second timeout
 
@@ -130,7 +134,24 @@ export const useAuth = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
-        const profile = await fetchUserProfile(session.user.id);
+        let profile = await fetchUserProfile(session.user.id);
+
+        // If no profile exists (e.g., after email confirmation), create one
+        if (!profile) {
+          const meta = session.user.user_metadata as { full_name?: string };
+          const profilePayload: TablesInsert<"users"> = {
+            id: session.user.id,
+            email: session.user.email ?? "",
+            full_name: meta?.full_name || null,
+            role: "staff",
+          };
+          const { error: upsertError } = await supabase.from("users").upsert(profilePayload);
+          if (upsertError) {
+            console.error("Error creating user profile on sign-in:", upsertError);
+          }
+          profile = await fetchUserProfile(session.user.id);
+        }
+
         setState({
           user: profile,
           session,
@@ -156,6 +177,8 @@ export const useAuth = () => {
     });
 
     return () => {
+      isMounted = false;
+      clearTimeout(initTimeout);
       subscription.unsubscribe();
     };
   }, [fetchUserProfile]);
@@ -271,17 +294,23 @@ export const useAuth = () => {
   const signOut = async (): Promise<{ error: string | null }> => {
     setState((prev) => ({ ...prev, loading: true }));
 
-    const { error } = await supabase.auth.signOut();
+    try {
+      // Race signOut against a timeout to prevent hanging forever
+      const signOutPromise = supabase.auth.signOut();
+      const timeoutPromise = new Promise<{ error: { message: string } }>((resolve) =>
+        setTimeout(() => resolve({ error: { message: "Sign out timed out" } }), 5000)
+      );
 
-    if (error) {
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: error.message,
-      }));
-      return { error: error.message };
+      const result = await Promise.race([signOutPromise, timeoutPromise]);
+
+      if (result.error) {
+        console.warn("Sign out issue:", result.error.message);
+      }
+    } catch (err) {
+      console.error("Sign out error:", err);
     }
 
+    // Always clear the local state regardless of API response
     setState({
       user: null,
       session: null,
@@ -292,6 +321,8 @@ export const useAuth = () => {
 
     if (typeof window !== "undefined") {
       localStorage.removeItem(TRIAL_STORAGE_KEY);
+      // Also clear the Supabase auth storage to prevent stale sessions
+      localStorage.removeItem("debt-repayment-auth");
     }
 
     return { error: null };
