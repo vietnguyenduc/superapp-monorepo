@@ -16,7 +16,7 @@ interface AuthContextType {
     email: string,
     password: string,
     fullName?: string,
-  ) => Promise<{ error: string | null }>;
+  ) => Promise<{ error: string | null; confirmationRequired?: boolean }>;
   signOut: () => Promise<{ error: string | null }>;
   updateProfile: (
     updates: Partial<User>,

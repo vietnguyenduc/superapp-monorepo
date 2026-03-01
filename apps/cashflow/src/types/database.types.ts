@@ -343,6 +343,30 @@ type PublicSchema = {
                 },
             ]
         }
+        transaction_types: {
+            Row: {
+                id: string
+                name: string
+                color: string | null
+                is_active: boolean | null
+                created_at: string | null
+            }
+            Insert: {
+                id?: string
+                name: string
+                color?: string | null
+                is_active?: boolean | null
+                created_at?: string | null
+            }
+            Update: {
+                id?: string
+                name?: string
+                color?: string | null
+                is_active?: boolean | null
+                created_at?: string | null
+            }
+            Relationships: []
+        }
     }
     Views: {
         [_ in never]: never

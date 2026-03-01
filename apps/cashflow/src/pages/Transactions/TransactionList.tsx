@@ -30,6 +30,7 @@ interface TransactionListState {
   } | null;
   showCustomerModal: boolean;
   modalCustomer: any | null;
+  groupBy: "" | "day" | "branch" | "transaction_type" | "customer";
 }
 
 const TransactionList: React.FC = () => {
@@ -38,6 +39,7 @@ const TransactionList: React.FC = () => {
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [bankAccounts, setBankAccounts] = useState<{ id: string; name: string }[]>([]);
   const [customers, setCustomers] = useState<{ id: string; name: string; code?: string }[]>([]);
+  const [transactionTypes, setTransactionTypes] = useState<{ id: string; name: string }[]>([]);
   const [showDateMenu, setShowDateMenu] = useState(false);
   const [customStart, setCustomStart] = useState<string>("");
   const [customEnd, setCustomEnd] = useState<string>("");
@@ -57,6 +59,7 @@ const TransactionList: React.FC = () => {
     customerFilter: null,
     showCustomerModal: false,
     modalCustomer: null,
+    groupBy: "",
   });
 
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
@@ -143,11 +146,13 @@ const TransactionList: React.FC = () => {
 
   useEffect(() => {
     const loadFilters = async () => {
-      const [branchResult, bankResult, customerResult] = await Promise.all([
+      const [branchResult, bankResult, customerResult, typeResult] = await Promise.all([
         databaseService.branches.getBranches(),
         databaseService.bankAccounts.getBankAccounts(),
         databaseService.customers.getCustomers({ limit: 500 }),
+        databaseService.transactionTypes.getTransactionTypes(),
       ]);
+
       if (branchResult?.data) {
         setBranches(
           branchResult.data.map((branch: any) => ({
@@ -156,6 +161,7 @@ const TransactionList: React.FC = () => {
           })),
         );
       }
+
       if (bankResult?.data) {
         setBankAccounts(
           bankResult.data.map((account: any) => ({
@@ -164,6 +170,7 @@ const TransactionList: React.FC = () => {
           })),
         );
       }
+
       if (customerResult?.data) {
         setCustomers(
           customerResult.data.map((customer: any) => ({
@@ -172,6 +179,13 @@ const TransactionList: React.FC = () => {
             code: customer.customer_code,
           })),
         );
+      }
+
+      if (typeResult?.data) {
+        const names = typeResult.data
+          .filter((t: any) => t.is_active !== false)
+          .map((t: any) => ({ id: String(t.id || t.value || t.name), name: String(t.name || t.id || t.value) }));
+        if (names.length > 0) setTransactionTypes(names);
       }
     };
     loadFilters();
@@ -258,6 +272,10 @@ const TransactionList: React.FC = () => {
 
   const handleUserChange = (userId: string) => {
     setState((prev) => ({ ...prev, userFilter: userId || null, currentPage: 1 }));
+  };
+
+  const handleGroupByChange = (groupBy: TransactionListState["groupBy"]) => {
+    setState((prev) => ({ ...prev, groupBy }));
   };
 
   const handleDelete = useCallback(
@@ -370,6 +388,28 @@ const TransactionList: React.FC = () => {
   const userOptions = useMemo(() => {
     return Array.from(new Set(state.transactions.map((t) => t.created_by).filter(Boolean)));
   }, [state.transactions]);
+
+  const groupedData = useMemo(() => {
+    if (!state.groupBy) return null;
+    const formatter = new Intl.DateTimeFormat("vi-VN");
+
+    const keyGetter: Record<Exclude<TransactionListState["groupBy"], "">, (tx: Transaction) => string> = {
+      day: (tx) => formatter.format(new Date(tx.transaction_date)),
+      branch: (tx) => (tx.branch_id ? getBranchName(tx.branch_id) : "Không có văn phòng"),
+      transaction_type: (tx) => getTransactionTypeLabel(tx.transaction_type),
+      customer: (tx) => tx.customer_name || `Customer #${tx.customer_id}`,
+    };
+
+    return state.transactions.reduce<Record<string, { count: number; total: number }>>((acc, tx) => {
+      const key = state.groupBy ? keyGetter[state.groupBy](tx) : "Khác";
+      if (!acc[key]) {
+        acc[key] = { count: 0, total: 0 };
+      }
+      acc[key].count += 1;
+      acc[key].total += tx.amount;
+      return acc;
+    }, {});
+  }, [state.groupBy, state.transactions, getBranchName]);
 
   const timeLabel = useMemo(() => {
     if (!state.dateRange) return "Tất cả thời gian";
@@ -526,6 +566,18 @@ const TransactionList: React.FC = () => {
                   <option key={u} value={u}>{u}</option>
                 ))}
               </select>
+
+              <select
+                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+                value={state.groupBy}
+                onChange={(e) => handleGroupByChange(e.target.value as TransactionListState["groupBy"])}
+              >
+                <option value="">Không nhóm</option>
+                <option value="day">Ngày</option>
+                <option value="branch">Văn phòng</option>
+                <option value="transaction_type">Loại giao dịch</option>
+                <option value="customer">Khách hàng</option>
+              </select>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -551,6 +603,43 @@ const TransactionList: React.FC = () => {
           )}
 
           <div className="hidden sm:block overflow-x-auto">
+            {groupedData && (
+              <div className="mb-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">Tổng hợp theo nhóm</h3>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{Object.keys(groupedData).length} nhóm</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nhóm</th>
+                        <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Số giao dịch</th>
+                        <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng số tiền</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {Object.entries(groupedData).map(([key, data]) => (
+                        <tr key={key} className="hover:bg-gray-50 dark:hover:bg-gray-700/60">
+                          <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{key}</td>
+                          <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm text-gray-700 dark:text-gray-200">{data.count}</td>
+                          <td
+                            className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${
+                              data.total >= 0
+                                ? "text-green-600 dark:text-green-400"
+                                : "text-red-600 dark:text-red-400"
+                            }`}
+                          >
+                            {formatCurrency(data.total)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             <table className="min-w-[1200px] divide-y divide-gray-200 dark:divide-gray-600">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
@@ -698,10 +787,14 @@ const TransactionList: React.FC = () => {
                   value={editForm.transaction_type}
                   onChange={(e) => setEditForm((p) => ({ ...p, transaction_type: e.target.value as any }))}
                 >
-                  <option value="payment">Phát sinh tăng</option>
-                  <option value="charge">Phát sinh giảm</option>
-                  <option value="adjustment">Điều chỉnh</option>
-                  <option value="refund">Hoàn tiền</option>
+                  {(transactionTypes.length ? transactionTypes : [
+                    { id: "payment", name: "Phát sinh tăng" },
+                    { id: "charge", name: "Phát sinh giảm" },
+                    { id: "adjustment", name: "Điều chỉnh" },
+                    { id: "refund", name: "Hoàn tiền" },
+                  ]).map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
                 </select>
               </div>
               <div>

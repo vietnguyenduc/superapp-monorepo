@@ -1,7 +1,7 @@
 import type { Transaction, ImportError, TransactionType } from "../types";
 
 export interface RawTransactionData {
-  customer_name: string;
+  customer_code: string;
   bank_account: string;
   branch?: string;
   transaction_type: string;
@@ -54,7 +54,7 @@ export function parseTransactionData(rawData: string): RawTransactionData[] {
     const referenceIndex = hasBranchColumn ? 7 : 6;
 
     return {
-      customer_name: columns[0]?.trim() || "",
+      customer_code: columns[0]?.trim() || "",
       bank_account: columns[1]?.trim() || "",
       branch,
       transaction_type: columns[transactionTypeIndex]?.trim() || "",
@@ -148,20 +148,13 @@ export function validateTransactionData(
   data.forEach((row, index) => {
     const normalizedType = normalizeTransactionTypeLabel(row.transaction_type || "");
 
-    // Validate customer name
-    if (!row.customer_name || row.customer_name.trim().length === 0) {
+    // Validate customer code (required)
+    if (!row.customer_code || row.customer_code.trim().length === 0) {
       errors.push({
         row: index,
-        column: "customer_name",
-        message: "Customer name is required",
-        value: row.customer_name,
-      });
-    } else if (row.customer_name.trim().length < 2) {
-      errors.push({
-        row: index,
-        column: "customer_name",
-        message: "Customer name must be at least 2 characters",
-        value: row.customer_name,
+        column: "customer_code",
+        message: "Customer code is required",
+        value: row.customer_code,
       });
     }
 
@@ -214,27 +207,17 @@ export function validateTransactionData(
           column: "amount",
           message: isAdjustment
             ? "Amount must be a non-zero number for adjustment"
-            : isPayment
-              ? "Payment amount must be positive"
-              : isCharge
-                ? "Charge amount must be negative"
-                : "Amount must be a positive number",
+            : "Amount must be a positive number",
           value: row.amount,
         });
       } else {
-        if (isPayment && amount < 0) {
+        if ((isPayment || isCharge) && amount < 0) {
           errors.push({
             row: index,
             column: "amount",
-            message: "Payment amount must be positive",
-            value: row.amount,
-          });
-        }
-        if (isCharge && amount > 0) {
-          errors.push({
-            row: index,
-            column: "amount",
-            message: "Charge amount must be negative",
+            message: isPayment
+              ? "Payment amount must be positive"
+              : "Charge amount must be positive",
             value: row.amount,
           });
         }
@@ -390,7 +373,7 @@ export function cleanTransactionData(
   data: RawTransactionData[],
 ): RawTransactionData[] {
   return data.map((row) => ({
-    customer_name: row.customer_name.trim(),
+    customer_code: row.customer_code.trim(),
     bank_account: row.bank_account.trim(),
     branch: row.branch?.trim() || "",
     transaction_type: normalizeTransactionTypeLabel(row.transaction_type || "") || row.transaction_type.trim().toLowerCase(),

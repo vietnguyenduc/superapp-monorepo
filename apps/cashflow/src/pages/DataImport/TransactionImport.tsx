@@ -11,9 +11,6 @@ import {
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import { databaseService } from "../../services/database";
 import Button from "../../components/UI/Button";
-import EditableTable from "../../components/Import/EditableTable";
-
-const TRANSACTION_TYPES_KEY = "cashflow_transaction_types";
 
 interface TransactionImportProps {
   onImportComplete?: (data: Transaction[]) => void;
@@ -160,7 +157,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
   type TransactionInputRow = {
     transaction_code: string;
     transaction_date: string;
-    customer_name: string;
+    customer_code: string;
     transaction_type: string;
     amount: string;
     description: string;
@@ -210,8 +207,8 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
       enabled: true,
     },
     {
-      key: "customer_name",
-      label: "Tên khách hàng",
+      key: "customer_code",
+      label: "Mã khách hàng",
       type: "text",
       required: true,
       enabled: true,
@@ -288,24 +285,6 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
 
   useEffect(() => {
     const loadOptions = async () => {
-      // Prefer transaction types saved from Settings (localStorage)
-      const storedTypes = localStorage.getItem(TRANSACTION_TYPES_KEY);
-      if (storedTypes) {
-        try {
-          const parsed = JSON.parse(storedTypes);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const names = parsed
-              .filter((t: any) => t?.isActive !== false && t?.is_active !== false)
-              .map((t: any) => String(t.name || t.id || ""));
-            if (names.length > 0) {
-              setTransactionTypeOptions(names);
-            }
-          }
-        } catch (err) {
-          console.error("Failed to parse stored transaction types", err);
-        }
-      }
-
       const [customerResult, bankResult, branchResult, typeResult] = await Promise.all([
         databaseService.customers.getCustomers({ limit: 500 }),
         databaseService.bankAccounts.getBankAccounts(),
@@ -366,7 +345,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
     () => ({
       transaction_date: yesterdayFormatted,
       transaction_code: "",
-      customer_name: "",
+      customer_code: "",
       transaction_type: "",
       amount: "",
       description: "",
@@ -394,7 +373,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
     setTableData((prev) => {
       if (!prev || prev.length === 0) return prev;
       const next = [...prev];
-      next[0] = { ...next[0], customer_name: customerName };
+      next[0] = { ...next[0], customer_code: customerName };
       return next;
     });
     setShowPreview(false);
@@ -411,11 +390,11 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
       const parsed = parseTransactionData(rawData);
       const validation = validateTransactionData(parsed);
 
-      // Extract unmatched customer names
-      const customerNames = new Set(
-        parsed.map((row) => row.customer_name.trim()),
+      // Extract unmatched customer codes
+      const customerCodes = new Set(
+        parsed.map((row) => row.customer_code.trim()),
       );
-      setUnmatchedCustomers(customerNames);
+      setUnmatchedCustomers(customerCodes);
 
       return {
         data: parsed,
@@ -476,8 +455,8 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
     return validation.isValid;
   }, [tableData]);
 
-  const handleAddNewCustomer = useCallback((customerName: string) => {
-    setNewCustomerName(customerName);
+  const handleAddNewCustomer = useCallback((customerCode: string) => {
+    setNewCustomerName(customerCode);
     setShowNewCustomerModal(true);
   }, []);
 
@@ -570,19 +549,9 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
     return importData.errors.filter((error) => error.row === rowIndex);
   };
 
-  const getErrorForCell = (
-    rowIndex: number,
-    column: string,
-  ): ImportError | undefined => {
-    return importData.errors.find(
-      (error) => error.row === rowIndex && error.column === column,
-    );
-  };
 
   const renderUnmatchedCustomers = () => {
-    if (unmatchedCustomers.size === 0) {
-      return null;
-    }
+    if (unmatchedCustomers.size === 0) return null;
 
     return (
       <div className="mt-6">
@@ -594,16 +563,15 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
           <p className="text-sm text-orange-800 mb-3">
             {t("import.unmatchedCustomersDescription")}
           </p>
-
           <div className="space-y-2">
-            {Array.from(unmatchedCustomers).map((customerName, index) => (
+            {Array.from(unmatchedCustomers).map((customerCode, index) => (
               <div
                 key={index}
                 className="flex items-center justify-between bg-white rounded-md p-3"
               >
-                <span className="text-sm text-gray-900">{customerName}</span>
+                <span className="text-sm text-gray-900">{customerCode}</span>
                 <button
-                  onClick={() => handleAddNewCustomer(customerName)}
+                  onClick={() => handleAddNewCustomer(customerCode)}
                   className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   {t("import.addCustomer")}
@@ -617,23 +585,18 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
   };
 
   const renderDataPreview = () => {
-    if (!showPreview || importData.data.length === 0) {
-      return null;
-    }
+    if (!showPreview || importData.data.length === 0) return null;
 
-    // Trong renderDataPreview, lấy danh sách cột từ enabledFields (importFields.filter(f => f.enabled)), giữ đúng thứ tự và label:
     const previewColumns = importFields.filter((f: ImportField) => f.enabled);
 
     return (
       <div className="mt-6">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-          {t("import.dataPreview")} ({importData.data.length}{" "}
-          {t("import.totalRows")})
+          {t("import.dataPreview")} ({importData.data.length} {t("import.totalRows")})
         </h3>
 
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700">
-            {/* Render header: */}
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 {previewColumns.map((col: ImportField) => (
@@ -646,7 +609,6 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                 ))}
               </tr>
             </thead>
-            {/* Render từng dòng: */}
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
               {importData.data.slice(0, 10).map((row, index) => {
                 const rowErrors = getErrorForRow(index);
@@ -658,14 +620,10 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                   >
                     {previewColumns.map((col: ImportField) => (
                       <td
-                        key={col.key}
-                        className={`px-3 py-2 text-sm text-gray-900 dark:text-gray-100 ${
-                          getErrorForCell(index, col.key)
-                            ? "bg-red-100 dark:bg-red-900/50"
-                            : ""
-                        }`}
+                        key={`${index}-${col.key}`}
+                        className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100"
                       >
-                        {row[col.key] ?? "-"}
+                        {row[col.key as keyof typeof row] as string}
                       </td>
                     ))}
                   </tr>
@@ -677,8 +635,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
 
         {importData.data.length > 10 && (
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            {t("import.showingFirst10")} {importData.data.length}{" "}
-            {t("import.totalRows")}
+            {t("import.showingFirst10")} {importData.data.length} {t("import.totalRows")}
           </p>
         )}
       </div>
@@ -1108,7 +1065,7 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
                     </button>
                     {showGuidelines && (
                       <ul className="mt-2 space-y-1 text-sm text-blue-800 dark:text-blue-200">
-                        <li>• Chấp nhận tải file Excel/CSV hoặc dán dữ liệu với cột: transaction_date, customer_name, transaction_type, amount, description, bank_account_name, branch_name</li>
+                        <li>• Chấp nhận tải file Excel/CSV hoặc dán dữ liệu với cột: transaction_date, customer_code (bắt buộc), transaction_type, amount, description, bank_account_name, branch_name</li>
                         <li>• Cột bắt buộc: transaction_date, transaction_type, amount; các cột khác có thể để trống</li>
                         <li>• Mỗi dòng là 1 giao dịch; kiểm tra dữ liệu trước khi nhập</li>
                         <li>• Định dạng ngày: yyyy-mm-dd; Số tiền: hỗ trợ dấu phẩy/nghìn, hệ thống tự chuẩn hóa</li>

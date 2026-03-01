@@ -1,6 +1,7 @@
 // Mock services for cashflow app
 import type { Customer, Transaction, TransactionType } from "../types";
 import { dashboardMockData } from "./mockData";
+import { supabase } from "./supabase";
 
 type TimeRange = "day" | "week" | "month" | "quarter" | "year";
 
@@ -20,13 +21,27 @@ const reportService = {
 
 const transactionTypeService = {
   async getTransactionTypes() {
-    // Load from localStorage persisted by Settings; fallback to seed
     const baseTypes = [
-      { id: "payment", name: "Thanh toán", is_active: true },
-      { id: "charge", name: "Cho nợ", is_active: true },
-      { id: "adjustment", name: "Điều chỉnh", is_active: true },
-      { id: "refund", name: "Hoàn tiền", is_active: true },
+      { id: "payment", name: "Thanh toán", is_active: true, color: "green" },
+      { id: "charge", name: "Cho nợ", is_active: true, color: "red" },
+      { id: "adjustment", name: "Điều chỉnh", is_active: true, color: "yellow" },
+      { id: "refund", name: "Hoàn tiền", is_active: true, color: "blue" },
     ];
+
+    try {
+      const { data, error } = await supabase
+        .from("transaction_types")
+        .select("id, name, color, is_active")
+        .order("created_at", { ascending: false });
+      if (!error && Array.isArray(data) && data.length > 0) {
+        return {
+          data: data.filter((t) => t?.is_active !== false),
+          error: null,
+        };
+      }
+    } catch (err) {
+      console.warn("Supabase transaction_types fetch failed, falling back to local storage / defaults", err);
+    }
 
     if (typeof window !== "undefined" && window.localStorage) {
       const stored = window.localStorage.getItem(TRANSACTION_TYPES_KEY);
@@ -34,15 +49,54 @@ const transactionTypeService = {
         try {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            return { data: parsed.filter((t) => t?.isActive !== false && t?.is_active !== false), error: null };
+            return {
+              data: parsed.filter((t) => t?.isActive !== false && t?.is_active !== false),
+              error: null,
+            };
           }
         } catch {
-          // fallback to seed
+          // ignore
         }
       }
     }
 
     return { data: baseTypes, error: null };
+  },
+
+  async upsertTransactionType(payload: { id?: string; name: string; color?: string; is_active?: boolean }) {
+    try {
+      const body = {
+        id: payload.id,
+        name: payload.name,
+        color: payload.color || "blue",
+        is_active: payload.is_active !== false,
+      };
+      const { data, error } = await supabase.from("transaction_types").upsert(body).select("id, name, color, is_active").single();
+      return { data, error: error?.message || null };
+    } catch (err) {
+      return { data: null, error: err instanceof Error ? err.message : "Failed to save transaction type" };
+    }
+  },
+
+  async toggleTransactionType(id: string, isActive: boolean) {
+    try {
+      const { error } = await supabase
+        .from("transaction_types")
+        .update({ is_active: isActive })
+        .eq("id", id);
+      return { error: error?.message || null };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Failed to update transaction type" };
+    }
+  },
+
+  async deleteTransactionType(id: string) {
+    try {
+      const { error } = await supabase.from("transaction_types").delete().eq("id", id);
+      return { error: error?.message || null };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Failed to delete transaction type" };
+    }
   },
 };
 
@@ -845,7 +899,7 @@ const customerService = {
       return Number.isFinite(num) ? num : 0;
     };
 
-    // Tính lại dư nợ = số dư đầu kỳ + phát sinh (charge tăng nợ, payment/refund giảm nợ)
+    // Tính lại dư nợ = số dư đầu kỳ + phát sinh tăng (payment) - phát sinh giảm (charge) + điều chỉnh
     const balanceMap = new Map<string, number>();
     for (const c of all) {
       balanceMap.set(c.id, parseAmount(c.opening_balance));
@@ -856,10 +910,10 @@ const customerService = {
       const amtSigned = parseAmount(tx.amount);
       const amtAbs = Math.abs(amtSigned);
       switch (normalizeTransactionType(String(tx.transaction_type || ""))) {
-        case "charge":
+        case "payment": // phát sinh tăng: tăng dư nợ
           balanceMap.set(tx.customer_id, prev + amtAbs);
           break;
-        case "payment":
+        case "charge": // phát sinh giảm: giảm dư nợ
         case "refund":
           balanceMap.set(tx.customer_id, prev - amtAbs);
           break;
@@ -1299,10 +1353,10 @@ const transactionService = {
       return { code: "", name: full };
     };
 
-    const findOrCreateCustomer = (name: string) => {
-      const parsed = parseCustomerInput(name);
-      const fullName = parsed.name;
-      const code = parsed.code;
+    const findOrCreateCustomer = (codeInput: string, nameInput: string) => {
+      const parsed = parseCustomerInput(codeInput || nameInput);
+      const code = codeInput?.trim() || parsed.code;
+      const fullName = (nameInput || parsed.name || code || "").trim();
       if (!fullName && !code) return null;
 
       if (code) {
@@ -1310,13 +1364,16 @@ const transactionService = {
         if (byCode) return byCode;
       }
 
-      const existed = customers.find((c) => c.full_name.toLowerCase() === fullName.toLowerCase());
-      if (existed) return existed;
+      if (fullName) {
+        const existed = customers.find((c) => c.full_name.toLowerCase() === fullName.toLowerCase());
+        if (existed) return existed;
+      }
+
       const now = getNowIso();
       const newCustomer: Customer = {
         id: uuid(),
         customer_code: code || `CUST${String(customers.length + 1).padStart(4, "0")}`,
-        full_name: fullName,
+        full_name: fullName || `Customer ${customers.length + 1}`,
         phone: "",
         email: "",
         address: "",
@@ -1394,8 +1451,9 @@ const transactionService = {
     for (let i = 0; i < raw.length; i++) {
       const row = raw[i] || {};
       try {
+        const customerCode = row.customer_code || "";
         const customerName = row.customer_name || row.full_name || row.customer || "";
-        const customer = findOrCreateCustomer(customerName);
+        const customer = findOrCreateCustomer(customerCode, customerName);
 
         const bankInput = row.bank_account || row.bank_account_name || row.account_number || "";
         const bank = resolveBankAccount(bankInput);
@@ -1445,100 +1503,126 @@ const transactionService = {
 
 // Bank account service
 const bankAccountService = {
-  async getBankAccounts(_filters?: any) {
-    ensureSeedData();
-    return {
-      data: readBankAccounts(),
-      error: null,
-    };
+  async getBankAccounts() {
+    try {
+      const { data, error } = await supabase
+        .from("bank_accounts")
+        .select("id, account_name, account_number, bank_name, balance, branch_id, company_id, is_active, created_at, updated_at")
+        .order("created_at", { ascending: false });
+      if (error) return { data: [], error: error.message };
+      return { data: data || [], error: null };
+    } catch (err) {
+      return { data: [], error: err instanceof Error ? err.message : "Failed to load bank accounts" };
+    }
   },
 
-  async getBankAccountById(id: string) {
-    ensureSeedData();
-    const account = readBankAccounts().find((a) => a.id === id);
-
-    if (!account) {
-      return {
-        data: {
-          id: "1",
-          account_number: "123456",
-          account_name: "Test Bank",
-          bank_name: "Test Bank",
-          branch_id: "1",
-          balance: 1000,
-          is_active: true,
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-        },
-        error: null,
-      };
+  async getBankAccount(id: string) {
+    try {
+      const { data, error } = await supabase
+        .from("bank_accounts")
+        .select("id, account_name, account_number, bank_name, balance, branch_id, company_id, is_active, created_at, updated_at")
+        .eq("id", id)
+        .single();
+      if (error) return { data: null, error: error.message };
+      return { data, error: null };
+    } catch (err) {
+      return { data: null, error: err instanceof Error ? err.message : "Failed to load bank account" };
     }
+  },
 
-    return {
-      data: {
-        ...account,
-      },
-      error: null,
-    };
+  async upsertBankAccount(payload: Partial<ReturnType<typeof readBankAccounts>[number]>) {
+    try {
+      const body = {
+        id: payload.id,
+        account_name: payload.account_name,
+        account_number: payload.account_number,
+        bank_name: payload.bank_name,
+        branch_id: (payload as any)?.branch_id || null,
+        company_id: (payload as any)?.company_id || null,
+        balance: payload.balance ?? 0,
+        is_active: (payload as any)?.is_active !== false,
+      };
+      const { data, error } = await supabase
+        .from("bank_accounts")
+        .upsert(body)
+        .select("id, account_name, account_number, bank_name, balance, branch_id, company_id, is_active, created_at, updated_at")
+        .single();
+      return { data, error: error?.message || null };
+    } catch (err) {
+      return { data: null, error: err instanceof Error ? err.message : "Failed to save bank account" };
+    }
+  },
+
+  async deleteBankAccount(id: string) {
+    try {
+      const { error } = await supabase.from("bank_accounts").delete().eq("id", id);
+      return { error: error?.message || null };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Failed to delete bank account" };
+    }
   },
 };
 
 // Branch service
 const branchService = {
   async getBranches() {
-    return {
-      data: dashboardMockData.transactionAmountsByBranch.day.map(branch => ({
-        id: branch.branch_id,
-        name: branch.branch_name,
-        code: `BR${branch.branch_id}`,
-        address: `${branch.branch_id}23 Đường chính, Quận 1, TP.HCM`,
-        phone: `01234${branch.branch_id}789`,
-        email: `${branch.branch_name.toLowerCase().replace(/\s+/g, '')}@branch.com`,
-        manager_id: "test-user",
-        is_active: true,
-        created_at: "2024-01-01T00:00:00Z",
-        updated_at: "2024-01-01T00:00:00Z",
-      })),
-      error: null,
-    };
+    try {
+      const { data, error } = await supabase
+        .from("branches")
+        .select("id, name, code, address, phone, email, manager_id, company_id, is_active, created_at, updated_at")
+        .order("created_at", { ascending: false });
+      if (error) return { data: [], error: error.message };
+      return { data: data || [], error: null };
+    } catch (err) {
+      return { data: [], error: err instanceof Error ? err.message : "Failed to load branches" };
+    }
   },
 
   async getBranchById(id: string) {
-    const branch = dashboardMockData.transactionAmountsByBranch.day.find(b => b.branch_id === id);
-
-    if (!branch) {
-      return {
-        data: {
-          id: "1",
-          name: "Main Branch",
-          code: "MB001",
-          address: "123 Main St",
-          phone: "0123456789",
-          email: "main@branch.com",
-          manager_id: "test-user",
-          is_active: true,
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-        },
-        error: null,
-      };
+    try {
+      const { data, error } = await supabase
+        .from("branches")
+        .select("id, name, code, address, phone, email, manager_id, company_id, is_active, created_at, updated_at")
+        .eq("id", id)
+        .single();
+      if (error) return { data: null, error: error.message };
+      return { data, error: null };
+    } catch (err) {
+      return { data: null, error: err instanceof Error ? err.message : "Failed to load branch" };
     }
+  },
 
-    return {
-      data: {
-        id: branch.branch_id,
-        name: branch.branch_name,
-        code: `BR${branch.branch_id}`,
-        address: `${branch.branch_id}23 Đường chính, Quận 1, TP.HCM`,
-        phone: `01234${branch.branch_id}789`,
-        email: `${branch.branch_name.toLowerCase().replace(/\s+/g, '')}@branch.com`,
-        manager_id: "test-user",
-        is_active: true,
-        created_at: "2024-01-01T00:00:00Z",
-        updated_at: "2024-01-01T00:00:00Z",
-      },
-      error: null,
-    };
+  async upsertBranch(payload: Partial<ReturnType<typeof readBranches>[number]>) {
+    try {
+      const body = {
+        id: payload.id,
+        name: (payload as any)?.name,
+        code: (payload as any)?.code,
+        address: (payload as any)?.address || null,
+        phone: (payload as any)?.phone || null,
+        email: (payload as any)?.email || null,
+        company_id: (payload as any)?.company_id || null,
+        manager_id: (payload as any)?.manager_id || null,
+        is_active: (payload as any)?.is_active !== false,
+      };
+      const { data, error } = await supabase
+        .from("branches")
+        .upsert(body)
+        .select("id, name, code, address, phone, email, manager_id, company_id, is_active, created_at, updated_at")
+        .single();
+      return { data, error: error?.message || null };
+    } catch (err) {
+      return { data: null, error: err instanceof Error ? err.message : "Failed to save branch" };
+    }
+  },
+
+  async deleteBranch(id: string) {
+    try {
+      const { error } = await supabase.from("branches").delete().eq("id", id);
+      return { error: error?.message || null };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Failed to delete branch" };
+    }
   },
 };
 
@@ -1548,7 +1632,7 @@ const dashboardService = {
     _branchId?: string,
     timeRange: TimeRange = "month",
     rangeCount?: { day: number; week: number; month: number; quarter: number },
-    companyId?: string
+    companyId?: string,
   ) {
     ensureSeedData();
     const branchId = String(_branchId || "");
@@ -1645,10 +1729,10 @@ const dashboardService = {
         const amtSigned = parseAmount(tx.amount);
         const amtAbs = Math.abs(amtSigned);
         switch (normalizeTransactionType(String(tx.transaction_type || ""))) {
-          case "charge":
+          case "payment":
             balanceMap.set(tx.customer_id, prev + amtAbs);
             break;
-          case "payment":
+          case "charge":
           case "refund":
             balanceMap.set(tx.customer_id, prev - amtAbs);
             break;
@@ -1672,9 +1756,9 @@ const dashboardService = {
       const amtSigned = parseAmount(tx.amount);
       const amtAbs = Math.abs(amtSigned);
       const type = normalizeTransactionType(String(tx.transaction_type || ""));
-      if (type === "charge") prevBalanceMap.set(tx.customer_id, prev + amtAbs);
-      else if (type === "payment" || type === "refund") prevBalanceMap.set(tx.customer_id, prev - amtAbs);
-      else if (type === "adjustment") prevBalanceMap.set(tx.customer_id, prev + amtSigned);
+      if (type === "payment") prevBalanceMap.set(tx.customer_id, prev - amtAbs);
+      else if (type === "charge") prevBalanceMap.set(tx.customer_id, prev + amtAbs);
+      else if (type === "refund") prevBalanceMap.set(tx.customer_id, prev - amtAbs);
       else prevBalanceMap.set(tx.customer_id, prev + amtSigned);
     }
     const prevOutstanding = Array.from(prevBalanceMap.values()).reduce((s, v) => s + v, 0);
@@ -1806,8 +1890,7 @@ const dashboardService = {
       },
       error: null,
     };
-  }
-  ,
+  },
 
   async getReceivableLedger(
     _branchId?: string,
@@ -1910,7 +1993,7 @@ const dashboardService = {
       },
       error: null,
     };
-  }
+  },
 };
 
 // Export all services as a single object to match the import in Dashboard.tsx

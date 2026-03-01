@@ -76,8 +76,6 @@ const colorOptions = [
   },
 ];
 
-const TRANSACTION_TYPES_KEY = "cashflow_transaction_types";
-
 const Settings: React.FC = () => {
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
@@ -159,29 +157,22 @@ const Settings: React.FC = () => {
     console.log('Saved dark mode to localStorage:', darkMode);
   }, [darkMode]);
 
-  // Load data from database service
-  useEffect(() => {
-    const storedTypes = localStorage.getItem(TRANSACTION_TYPES_KEY);
-    if (storedTypes) {
-      try {
-        const parsed = JSON.parse(storedTypes);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setTransactionTypes(parsed);
-        }
-      } catch (err) {
-        console.error("Failed to parse stored transaction types", err);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(TRANSACTION_TYPES_KEY, JSON.stringify(transactionTypes));
-  }, [transactionTypes]);
-
+  // Load data from Supabase-backed services
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
+        // Load transaction types
+        const txTypeRes = await databaseService.transactionTypes.getTransactionTypes();
+        if (txTypeRes.error) throw new Error(txTypeRes.error);
+        const formattedTypes = (txTypeRes.data || []).map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          color: t.color || "blue",
+          isActive: t.is_active !== false,
+        }));
+        setTransactionTypes(formattedTypes);
+
         // Load bank accounts
         const bankAccountsResponse = await databaseService.bankAccounts.getBankAccounts();
         if (bankAccountsResponse.error) {
@@ -272,59 +263,80 @@ const Settings: React.FC = () => {
     setBankAccountForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveBankAccount = () => {
+  const handleSaveBankAccount = async () => {
     const openingBalanceValue = bankAccountForm.openingBalance.trim();
     const parsedOpeningBalance = openingBalanceValue ? Number(openingBalanceValue) : undefined;
 
-    if (editingBankAccount) {
-      const previousOpening = Number(editingBankAccount.openingBalance ?? 0);
-      const nextOpening = Number.isFinite(parsedOpeningBalance)
-        ? Number(parsedOpeningBalance)
-        : previousOpening;
-      const nextBalance = Math.max(0, editingBankAccount.balance + (nextOpening - previousOpening));
-      setBankAccounts((prev) => {
-        const next = prev.map((account) =>
-          account.id === editingBankAccount.id
-            ? {
-                ...account,
-                bankName: bankAccountForm.bankName.trim(),
-                accountNumber: bankAccountForm.accountNumber.trim(),
-                accountName: bankAccountForm.accountName.trim(),
-                accountType: bankAccountForm.accountType.trim(),
-                openingBalance: nextOpening,
-                balance: nextBalance,
-              }
-            : account,
-        );
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem("cashflow_bank_accounts", JSON.stringify(next));
-        }
-        return next;
-      });
-    } else {
-      const openingBalance = Number.isFinite(parsedOpeningBalance)
-        ? Number(parsedOpeningBalance)
-        : 0;
-      const nextAccount: BankAccount = {
-        id: `bank-${Date.now()}`,
-        bankName: bankAccountForm.bankName.trim() || "Ngan hang moi",
-        accountNumber: bankAccountForm.accountNumber.trim(),
-        accountName: bankAccountForm.accountName.trim() || "Tai khoan moi",
-        accountType: bankAccountForm.accountType.trim() || "Other",
-        balance: openingBalance,
-        openingBalance,
-        isActive: true,
+    const previousOpening = Number(editingBankAccount?.openingBalance ?? 0);
+    const nextOpening = Number.isFinite(parsedOpeningBalance)
+      ? Number(parsedOpeningBalance)
+      : previousOpening;
+    const nextBalance = editingBankAccount
+      ? Math.max(0, editingBankAccount.balance + (nextOpening - previousOpening))
+      : nextOpening || 0;
+
+    try {
+      const payload: any = {
+        id: editingBankAccount?.id,
+        bank_name: bankAccountForm.bankName.trim(),
+        account_number: bankAccountForm.accountNumber.trim(),
+        account_name: bankAccountForm.accountName.trim(),
+        balance: nextBalance,
+        is_active: editingBankAccount?.isActive ?? true,
       };
+      const res = await databaseService.bankAccounts.upsertBankAccount(payload);
+      if (res.error) throw new Error(res.error);
+      const saved = res.data || {
+        id: editingBankAccount?.id || `bank-${Date.now()}`,
+        bank_name: bankAccountForm.bankName.trim() || "Ngan hang moi",
+        account_number: bankAccountForm.accountNumber.trim(),
+        account_name: bankAccountForm.accountName.trim() || "Tai khoan moi",
+        balance: nextBalance,
+        is_active: true,
+      };
+
       setBankAccounts((prev) => {
-        const next = [nextAccount, ...prev];
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem("cashflow_bank_accounts", JSON.stringify(next));
-        }
+        const exists = prev.some((b) => b.id === saved.id);
+        const balanceValue = Number.isFinite(Number((saved as any).balance)) ? Number((saved as any).balance) : 0;
+        const openingValue = Number.isFinite(Number((saved as any).opening_balance))
+          ? Number((saved as any).opening_balance)
+          : nextOpening;
+        const next = exists
+          ? prev.map((b) =>
+              b.id === saved.id
+                ? {
+                    id: saved.id,
+                    bankName: (saved as any).bank_name,
+                    accountNumber: (saved as any).account_number,
+                    accountName: (saved as any).account_name,
+                    accountType: getAccountType((saved as any).account_name),
+                    balance: balanceValue,
+                    openingBalance: openingValue,
+                    isActive: (saved as any).is_active !== false,
+                  }
+                : b,
+            )
+          : [
+              {
+                id: saved.id,
+                bankName: (saved as any).bank_name,
+                accountNumber: (saved as any).account_number,
+                accountName: (saved as any).account_name,
+                accountType: getAccountType((saved as any).account_name),
+                balance: balanceValue,
+                openingBalance: openingValue,
+                isActive: (saved as any).is_active !== false,
+              },
+              ...prev,
+            ];
         return next;
       });
+
+      setIsBankAccountModalOpen(false);
+      setEditingBankAccount(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không lưu được tài khoản ngân hàng");
     }
-    setIsBankAccountModalOpen(false);
-    setEditingBankAccount(null);
   };
 
   const handleAddTransactionType = () => {
@@ -339,31 +351,31 @@ const Settings: React.FC = () => {
     setIsTransactionTypeModalOpen(true);
   };
 
-  const handleSaveTransactionType = () => {
+  const handleSaveTransactionType = async () => {
     const name = transactionTypeForm.name.trim();
     if (!name) return;
 
-    if (editingTransactionType) {
-      setTransactionTypes((prev) =>
-        prev.map((item) =>
-          item.id === editingTransactionType.id
-            ? { ...item, name, color: transactionTypeForm.color }
-            : item,
-        ),
-      );
-    } else {
-      setTransactionTypes((prev) => [
-        {
-          id: `type-${Date.now()}`,
-          name,
-          color: transactionTypeForm.color,
-          isActive: true,
-        },
-        ...prev,
-      ]);
+    try {
+      const res = await databaseService.transactionTypes.upsertTransactionType({
+        id: editingTransactionType?.id,
+        name,
+        color: transactionTypeForm.color,
+        is_active: editingTransactionType?.isActive ?? true,
+      });
+      if (res.error) throw new Error(res.error);
+      const saved = res.data || { id: editingTransactionType?.id || `type-${Date.now()}`, name, color: transactionTypeForm.color, is_active: true };
+      setTransactionTypes((prev) => {
+        const exists = prev.some((t) => t.id === saved.id);
+        const next = exists
+          ? prev.map((t) => (t.id === saved.id ? { id: saved.id, name: saved.name, color: saved.color || "blue", isActive: saved.is_active !== false } : t))
+          : [{ id: saved.id, name: saved.name, color: saved.color || "blue", isActive: saved.is_active !== false }, ...prev];
+        return next;
+      });
+      setIsTransactionTypeModalOpen(false);
+      setEditingTransactionType(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không lưu được loại giao dịch");
     }
-    setIsTransactionTypeModalOpen(false);
-    setEditingTransactionType(null);
   };
 
   const handleEditCustomerField = (field: CustomerField) => {
@@ -446,7 +458,7 @@ const Settings: React.FC = () => {
     return colorOption?.class || "bg-gray-100 text-gray-800";
   };
 
-  const handleToggleActive = (type: string, id: string) => {
+  const handleToggleActive = async (type: string, id: string) => {
     switch (type) {
       case "transaction-type":
         setTransactionTypes((prev) =>
@@ -454,6 +466,13 @@ const Settings: React.FC = () => {
             item.id === id ? { ...item, isActive: !item.isActive } : item,
           ),
         );
+        try {
+          const target = transactionTypes.find((t) => t.id === id);
+          const next = target ? !target.isActive : true;
+          await databaseService.transactionTypes.toggleTransactionType(id, next);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Không cập nhật được trạng thái loại giao dịch");
+        }
         break;
       case "bank-account":
         setBankAccounts((prev) =>
@@ -461,6 +480,13 @@ const Settings: React.FC = () => {
             item.id === id ? { ...item, isActive: !item.isActive } : item,
           ),
         );
+        try {
+          const target = bankAccounts.find((b) => b.id === id);
+          const next = target ? !target.isActive : true;
+          await databaseService.bankAccounts.upsertBankAccount({ ...target, is_active: next });
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Không cập nhật được tài khoản ngân hàng");
+        }
         break;
       case "branch":
         setBranches((prev) =>
@@ -468,6 +494,13 @@ const Settings: React.FC = () => {
             item.id === id ? { ...item, isActive: !item.isActive } : item,
           ),
         );
+        try {
+          const target = branches.find((b) => b.id === id);
+          const next = target ? !target.isActive : true;
+          await databaseService.branches.upsertBranch({ ...(target as any), is_active: next } as any);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Không cập nhật được văn phòng");
+        }
         break;
       case "customer-field":
         setCustomerFields((prev) =>
@@ -495,8 +528,14 @@ const Settings: React.FC = () => {
     setIsBranchModalOpen(true);
   };
 
-  const handleDeleteBranch = (branchId: string) => {
-    setBranches((prev) => prev.filter((branch) => branch.id !== branchId));
+  const handleDeleteBranch = async (branchId: string) => {
+    try {
+      const res = await databaseService.branches.deleteBranch(branchId);
+      if (res.error) throw new Error(res.error);
+      setBranches((prev) => prev.filter((branch) => branch.id !== branchId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không xóa được văn phòng");
+    }
   };
 
   const handleBranchFormChange = (
@@ -506,27 +545,29 @@ const Settings: React.FC = () => {
     setBranchForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveBranch = () => {
-    if (editingBranch) {
-      setBranches((prev) =>
-        prev.map((branch) =>
-          branch.id === editingBranch.id
-            ? { ...branch, ...branchForm }
-            : branch,
-        ),
-      );
-    } else {
-      const nextBranch: Branch = {
-        id: `branch-${Date.now()}`,
-        name: branchForm.name.trim() || "Van phong moi",
+  const handleSaveBranch = async () => {
+    try {
+      const payload: any = {
+        id: editingBranch?.id,
+        name: branchForm.name.trim(),
         address: branchForm.address.trim(),
         phone: branchForm.phone.trim(),
-        isActive: true,
       };
-      setBranches((prev) => [nextBranch, ...prev]);
+      const res = await databaseService.branches.upsertBranch(payload);
+      if (res.error) throw new Error(res.error);
+      const saved = res.data || { id: editingBranch?.id || `branch-${Date.now()}`, name: branchForm.name.trim(), address: branchForm.address.trim(), phone: branchForm.phone.trim(), is_active: true };
+      setBranches((prev) => {
+        const exists = prev.some((b) => b.id === saved.id);
+        const next = exists
+          ? prev.map((b) => (b.id === saved.id ? { id: saved.id, name: saved.name, address: saved.address || "", phone: saved.phone || "", isActive: saved.is_active !== false } : b))
+          : [{ id: saved.id, name: saved.name, address: saved.address || "", phone: saved.phone || "", isActive: saved.is_active !== false }, ...prev];
+        return next;
+      });
+      setIsBranchModalOpen(false);
+      setEditingBranch(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không lưu được văn phòng");
     }
-    setIsBranchModalOpen(false);
-    setEditingBranch(null);
   };
 
   // Opening balance helpers

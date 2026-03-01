@@ -10,6 +10,7 @@ const SignUp: React.FC = () => {
   const [fullName, setFullName] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem("darkMode");
     return saved ? JSON.parse(saved) : false;
@@ -98,13 +99,21 @@ const SignUp: React.FC = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
+    setInfoMessage(null);
 
     if (!validateForm()) return;
 
     const result = await signUp(email, password, fullName.trim() || undefined);
-    if (!result.error) {
-      navigate("/dashboard");
+
+    if (result.error) return;
+
+    if (result.confirmationRequired) {
+      setInfoMessage("Đăng ký thành công. Vui lòng kiểm tra email để xác nhận tài khoản trước khi đăng nhập.");
+      return;
     }
+
+    setInfoMessage("Đăng ký thành công. Bạn đang được chuyển đến dashboard...");
+    navigate("/dashboard");
   };
 
   return (
@@ -201,6 +210,12 @@ const SignUp: React.FC = () => {
           {error && (
             <div className="alert-danger">
               <p>{error}</p>
+            </div>
+          )}
+
+          {infoMessage && (
+            <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+              {infoMessage}
             </div>
           )}
 

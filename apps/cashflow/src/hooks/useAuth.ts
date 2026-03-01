@@ -62,6 +62,7 @@ export const useAuth = () => {
         session: null,
         loading: false,
         error: "Authentication check timed out",
+        isTrial: false,
       });
     }, 10000); // 10 second timeout
 
@@ -166,32 +167,48 @@ export const useAuth = () => {
   ): Promise<{ error: string | null }> => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: error.message,
-      }));
-      return { error: error.message };
-    }
+      if (error) {
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          error: error.message,
+        }));
+        return { error: error.message };
+      }
 
-    if (data.session?.user) {
-      const profile = await fetchUserProfile(data.session.user.id);
+      const authUser = data.session?.user;
+      if (!authUser) {
+        setState((prev) => ({ ...prev, loading: false, error: "Không nhận được phiên đăng nhập" }));
+        return { error: "Không nhận được phiên đăng nhập" };
+      }
+
+      let profile: User | null = null;
+      try {
+        profile = await fetchUserProfile(authUser.id);
+      } catch (profileErr) {
+        console.error("Failed to fetch profile during sign in:", profileErr);
+      }
+
       setState({
-        user: profile,
+        user: profile || (authUser as any) || null,
         session: data.session,
         loading: false,
         error: null,
         isTrial: false,
       });
-    }
 
-    return { error: null };
+      return { error: null };
+    } catch (err: any) {
+      console.error("Unhandled error during sign in:", err);
+      setState((prev) => ({ ...prev, loading: false, error: err?.message || "Sign in failed" }));
+      return { error: err?.message || "Sign in failed" };
+    }
   };
 
   const signUp = async (
