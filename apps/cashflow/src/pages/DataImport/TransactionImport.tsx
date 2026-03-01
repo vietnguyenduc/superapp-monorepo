@@ -11,10 +11,23 @@ import {
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import { databaseService } from "../../services/database";
 import Button from "../../components/UI/Button";
+import EditableTable from "../../components/Import/EditableTable";
 
 interface TransactionImportProps {
   onImportComplete?: (data: Transaction[]) => void;
 }
+
+type ImportField = {
+  key: string;
+  label: string;
+  type: "text" | "number" | "date" | "select" | "datalist";
+  required: boolean;
+  enabled: boolean;
+  optionSource?: string;
+  options?: string[];
+  onCreate?: (value: string) => void;
+  openOnFocus?: boolean;
+};
 
 interface NewCustomerModalProps {
   isOpen: boolean;
@@ -147,9 +160,7 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
   );
 };
 
-const TransactionImport: React.FC<TransactionImportProps> = ({
-  onImportComplete,
-}) => {
+const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -186,12 +197,10 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
   const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState("");
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
-  const [unmatchedCustomers, setUnmatchedCustomers] = useState<Set<string>>(
-    new Set(),
-  );
+  const [unmatchedCustomers, setUnmatchedCustomers] = useState<Set<string>>(new Set());
 
   // Đọc cấu hình trường import từ localStorage:
-  const defaultImportFields = [
+  const defaultImportFields: ImportField[] = [
     {
       key: "transaction_code",
       label: "Số chứng từ",
@@ -254,22 +263,9 @@ const TransactionImport: React.FC<TransactionImportProps> = ({
     },
   ];
 
-  // Định nghĩa type ImportField ở đầu file nếu chưa có:
-  type ImportField = {
-    key: string;
-    label: string;
-    type: string;
-    required: boolean;
-    enabled: boolean;
-    optionSource?: string;
-    options?: string[];
-    onCreate?: (value: string) => void;
-    openOnFocus?: boolean;
-  };
-  // Xóa setImportFields nếu không dùng:
-  const [importFields] = useState(() => {
+  const [importFields] = useState<ImportField[]>(() => {
     const saved = localStorage.getItem("importFields");
-    const baseFields = saved ? JSON.parse(saved) : defaultImportFields;
+    const baseFields: ImportField[] = saved ? JSON.parse(saved) : defaultImportFields;
     const order = defaultImportFields.map((field) => field.key);
     return baseFields.slice().sort((a: ImportField, b: ImportField) => {
       const indexA = order.indexOf(a.key);
