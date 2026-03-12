@@ -136,6 +136,10 @@ const Settings: React.FC = () => {
   const [isOpeningProcessing, setIsOpeningProcessing] = useState(false);
   const [customerMap, setCustomerMap] = useState<Record<string, string>>({});
 
+  // Users management state
+  const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
   // Apply dark mode to document
   useEffect(() => {
     console.log('Dark mode changed to:', darkMode);
@@ -659,6 +663,39 @@ const Settings: React.FC = () => {
     setIsBankAccountModalOpen(true);
   };
 
+  // User management functions
+  const loadUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const { data, error } = await databaseService.users.getUsers();
+      if (error) throw new Error(error);
+      setUsers(data || []);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleUpdateUserRole = async (userId: string, newRole: string) => {
+    try {
+      const { error } = await databaseService.users.updateUser(userId, { role: newRole });
+      if (error) throw new Error(error);
+      // Refresh users list
+      await loadUsers();
+    } catch (err) {
+      console.error('Failed to update user role:', err);
+      alert('Failed to update user role');
+    }
+  };
+
+  // Load users when component mounts
+  useEffect(() => {
+    if (activeTab === "users") {
+      loadUsers();
+    }
+  }, [activeTab]);
+
   const tabs: Tab[] = useMemo(
     () => [
       { id: "appearance", name: "Giao diện", icon: "🎨" },
@@ -666,6 +703,7 @@ const Settings: React.FC = () => {
       { id: "bank-accounts", name: "Tài khoản ngân hàng", icon: "🏦" },
       { id: "branches", name: "Văn phòng", icon: "🏢" },
       { id: "customer-fields", name: "Trường khách hàng", icon: "🧾" },
+      { id: "users", name: "Tài khoản & phân quyền", icon: "👥" },
       { id: "data", name: "Dữ liệu", icon: "💾" },
       { id: "opening-balance", name: "Số dư đầu kỳ", icon: "📥" },
     ],
@@ -1422,6 +1460,60 @@ const Settings: React.FC = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Users & Permissions */}
+          {activeTab === "users" && (
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
+                  Tài khoản & phân quyền
+                </h2>
+              </div>
+
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                  Danh sách tài khoản
+                </h3>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">
+                  Quản lý tài khoản và phân quyền người dùng
+                </p>
+                
+                {loadingUsers ? (
+                  <div className="text-center py-4">
+                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">Đang tải...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {users.length === 0 ? (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Chưa có tài khoản nào</p>
+                    ) : (
+                      users.map((user) => (
+                        <div key={user.id} className="bg-white dark:bg-gray-600 rounded-lg p-3 flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">{user.full_name || user.email}</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">{user.email}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-500">Vai trò: {user.role}</p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <select 
+                              className="text-xs border border-gray-300 dark:border-gray-500 rounded px-2 py-1 dark:bg-gray-700 dark:text-white"
+                              value={user.role}
+                              onChange={(e) => handleUpdateUserRole(user.id, e.target.value)}
+                            >
+                              <option value="admin">Admin</option>
+                              <option value="branch_manager">Manager</option>
+                              <option value="staff">Staff</option>
+                            </select>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

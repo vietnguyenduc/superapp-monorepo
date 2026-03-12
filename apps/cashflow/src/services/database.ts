@@ -2,6 +2,7 @@
 import type { Customer, Transaction, TransactionType } from "../types";
 import { dashboardMockData } from "./mockData";
 import { supabase } from "./supabase";
+import { userService } from "./user-service";
 
 type TimeRange = "day" | "week" | "month" | "quarter" | "year";
 
@@ -2005,4 +2006,5 @@ export const databaseService = {
   branches: branchService,
   bankAccounts: bankAccountService,
   reports: reportService,
+  users: userService,
 };
