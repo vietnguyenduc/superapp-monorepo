@@ -47,6 +47,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"single" | "bulk">("single");
 
   // Parse and validate data when file changes
   const [processedData, setProcessedData] = useState<{
@@ -318,219 +319,71 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       (error) => error.row === rowIndex && error.column === column,
     );
   };
-
-  const renderFileUpload = () => (
-    <div className="space-y-6">
-      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
-        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
-          Nhập từng khách hàng
-        </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Nhập nhanh từng khách hàng nếu không dùng file Excel/CSV.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Họ và tên *
-            </label>
-            <input
-              type="text"
-              value={singleCustomer.full_name}
-              onChange={(e) => handleSingleInputChange("full_name", e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
-              placeholder="Tên khách hàng"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Mã khách hàng
-            </label>
-            <input
-              type="text"
-              value={singleCustomer.customer_code}
-              onChange={(e) => handleSingleInputChange("customer_code", e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
-              placeholder="CUST0001"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Số điện thoại
-            </label>
-            <input
-              type="tel"
-              value={singleCustomer.phone}
-              onChange={(e) => handleSingleInputChange("phone", e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
-              placeholder="0900 000 000"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Email
-            </label>
-            <input
-              type="email"
-              value={singleCustomer.email}
-              onChange={(e) => handleSingleInputChange("email", e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
-              placeholder="name@email.com"
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Địa chỉ
-            </label>
-            <input
-              type="text"
-              value={singleCustomer.address}
-              onChange={(e) => handleSingleInputChange("address", e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
-              placeholder="Địa chỉ liên hệ"
-            />
-          </div>
-        </div>
-        {singleError && <p className="mt-3 text-sm text-red-600">{singleError}</p>}
-        <div className="mt-4 flex justify-end">
-          <Button
-            variant="primary"
-            size="md"
-            onClick={handleCreateSingleCustomer}
-            disabled={isCreatingSingle}
           >
-            {isCreatingSingle ? t("common.saving") : "Thêm khách hàng"}
-          </Button>
-        </div>
-      </div>
-      <div>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Nhập dữ liệu khách hàng hàng loạt
-          </h2>
-          <Button variant="secondary" size="sm" onClick={handleReset}>
-            Đặt lại
-          </Button>
-        </div>
-        <div className="mb-4 rounded-lg border border-blue-100 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-900/20 px-4 py-3">
-          <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-            {t("import.customerBulkGuidelinesTitle")}
-          </p>
-          <ul className="mt-2 space-y-1 text-sm text-blue-800 dark:text-blue-200">
-            <li>• Tải lên file Excel/CSV theo đúng tiêu đề cột: full_name, phone, address, customer_code, working_method, notes (tuỳ chọn)</li>
-            <li>• Cột bắt buộc: full_name. Các cột còn lại có thể để trống</li>
-            <li>• Mỗi dòng là 1 khách hàng. Kiểm tra trước khi nhấn “Kiểm tra dữ liệu”</li>
-          </ul>
-        </div>
+            <path
+              d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
 
-        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700 dark:text-gray-200 mb-2">
-          <span className="font-medium">Tệp mẫu</span>
-          <Button size="sm" variant="secondary" className="text-xs" onClick={handleDownloadSample}>
-            Tải file mẫu
-          </Button>
-        </div>
+          <div>
+            <p className="text-gray-600 dark:text-gray-300">{t("import.dragDropFile")}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {t("import.supportedFormats")}
+            </p>
+          </div>
 
-        <div
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-            dragActive
-              ? "border-blue-400 bg-blue-50 dark:bg-blue-900/20"
-              : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
-          }`}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-        >
-          <div className="space-y-4">
-            <svg
-              className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
-              stroke="currentColor"
-              fill="none"
-              viewBox="0 0 48 48"
-            >
-              <path
-                d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
+          <div>
+            <label className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              {t("import.browseFiles")}
+              <input
+                type="file"
+                className="hidden"
+                accept=".xlsx,.xls,.csv"
+                onChange={handleFileInput}
               />
-            </svg>
-
-            <div>
-              <p className="text-gray-600 dark:text-gray-300">{t("import.dragDropFile")}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {t("import.supportedFormats")}
-              </p>
-            </div>
-
-            <div>
-              <label className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                {t("import.browseFiles")}
-                <input
-                  type="file"
-                  className="hidden"
-                  accept=".xlsx,.xls,.csv"
-                  onChange={handleFileInput}
+            </label>
+          </div>
+          {importData.file && (
+            <div className="mt-4 inline-flex items-center gap-3 rounded-md border border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/30 px-4 py-2 text-left">
+              <svg
+                className="h-5 w-5 text-green-500"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
                 />
-              </label>
-            </div>
-            {importData.file && (
-              <div className="mt-4 inline-flex items-center gap-3 rounded-md border border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/30 px-4 py-2 text-left">
+              </svg>
+              <div className="text-sm">
+                <p className="font-medium text-green-800 dark:text-green-200">
+                  {t("import.fileSelected")}: {importData.file.name}
+                </p>
+                <p className="text-green-600 dark:text-green-300">
+                  {(importData.file.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+              </div>
+              <button
+                onClick={() => setImportData((prev) => ({ ...prev, file: null }))}
+                className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
+              >
                 <svg
-                  className="h-5 w-5 text-green-500"
+                  className="h-4 w-4"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
                   <path
                     fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
                     clipRule="evenodd"
                   />
                 </svg>
-                <div className="text-sm text-gray-800 dark:text-gray-100">
-                  <div className="font-medium">{importData.file.name}</div>
-                  <div className="text-xs text-gray-600 dark:text-gray-300">
-                    {(importData.file.size / 1024 / 1024).toFixed(2)} MB
-                  </div>
-                </div>
-                <button
-                  onClick={() => setImportData((prev) => ({ ...prev, file: null }))}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                  aria-label="Remove file"
-                >
-                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex justify-end items-center">
-        <Button
-          variant="primary"
-          size="md"
-          onClick={handleValidateData}
-          disabled={!importData.file}
-        >
-          {t("import.validateData")}
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderDataPreview = () => {
-    if (!showPreview || importData.data.length === 0) {
-      return null;
-    }
-
-    return (
+              </button>
+            </div>
       <div className="mt-6">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
           {t("import.dataPreview")} ({importData.data.length}{" "}
@@ -660,6 +513,160 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     );
   };
 
+  const renderSingleEntry = () => (
+    <div className="space-y-6">
+      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+          Nhập từng khách hàng
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Nhập nhanh từng khách hàng nếu không dùng file Excel/CSV.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Họ và tên *
+            </label>
+            <input
+              type="text"
+              value={singleCustomer.full_name}
+              onChange={(e) => handleSingleInputChange("full_name", e.target.value)}
+              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
+              placeholder="Tên khách hàng"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Mã khách hàng
+            </label>
+            <input
+              type="text"
+              value={singleCustomer.customer_code}
+              onChange={(e) => handleSingleInputChange("customer_code", e.target.value)}
+              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
+              placeholder="Mã khách hàng (tự động nếu để trống)"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Số điện thoại *
+            </label>
+            <input
+              type="tel"
+              value={singleCustomer.phone}
+              onChange={(e) => handleSingleInputChange("phone", e.target.value)}
+              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
+              placeholder="Số điện thoại"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Email
+            </label>
+            <input
+              type="email"
+              value={singleCustomer.email}
+              onChange={(e) => handleSingleInputChange("email", e.target.value)}
+              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
+              placeholder="Email"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Địa chỉ
+            </label>
+            <input
+              type="text"
+              value={singleCustomer.address}
+              onChange={(e) => handleSingleInputChange("address", e.target.value)}
+              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
+              placeholder="Địa chỉ"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Ghi chú
+            </label>
+            <textarea
+              value={singleCustomer.notes}
+              onChange={(e) => handleSingleInputChange("notes", e.target.value)}
+              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
+              placeholder="Ghi chú"
+              rows={3}
+            />
+          </div>
+        </div>
+        {singleError && (
+          <div className="mt-4 text-sm text-red-600 dark:text-red-400">
+            {singleError}
+          </div>
+        )}
+        <div className="mt-6 flex justify-end">
+          <Button
+            variant="primary"
+            size="md"
+            onClick={handleCreateSingleCustomer}
+            disabled={isCreatingSingle || !singleCustomer.full_name || !singleCustomer.phone}
+          >
+            {isCreatingSingle ? "Đang tạo..." : "Tạo khách hàng"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderBulkImport = () => (
+    <div className="space-y-6">
+      {renderFileUpload()}
+      {showPreview && (
+        <div className="mt-8 space-y-6">
+          <div className="bg-gray-50 dark:bg-gray-800/60 rounded-lg p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {importData.data.length}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {t("import.totalRows")}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {importData.data.length - importData.errors.length}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {t("import.validRows")}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">
+                  {importData.errors.length}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {t("import.errorRows")}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {renderDataPreview()}
+          {renderValidationErrors()}
+
+          <div className="flex justify-end">
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleImportData}
+              disabled={!importData.isValid || importData.data.length === 0}
+            >
+              {t("import.importData")}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   if (isProcessing) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
@@ -704,6 +711,32 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
               {t("import.customerImportDescription")}
             </p>
+          </div>
+
+          {/* Tabs */}
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex space-x-8">
+              <button
+                onClick={() => setActiveTab("single")}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "single"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
+                }`}
+              >
+                Nhập từng khách hàng
+              </button>
+              <button
+                onClick={() => setActiveTab("bulk")}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "bulk"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
+                }`}
+              >
+                Nhập hàng loạt
+              </button>
+            </div>
           </div>
 
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -762,86 +795,8 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
           </div>
 
           <div className="px-6 py-6 bg-white dark:bg-gray-900">
-            {currentStep === 1 && renderFileUpload()}
-
-            {showPreview && (
-              <div className="mt-8 space-y-6">
-                <div className="bg-gray-50 dark:bg-gray-800/60 rounded-lg p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {importData.data.length}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {t("import.totalRows")}
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">
-                        {importData.data.length - importData.errors.length}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {t("import.validRows")}
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-red-600">
-                        {importData.errors.length}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {t("import.errorRows")}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {renderDataPreview()}
-                {renderValidationErrors()}
-
-                <div className="flex justify-end">
-                  <Button
-                    variant="primary"
-                    size="md"
-                    onClick={handleImportData}
-                    disabled={!importData.isValid || importData.data.length === 0}
-                  >
-                    {t("import.importData")}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {currentStep === 3 && (
-              <div className="mt-8">
-                <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-md p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <svg
-                        className="h-5 w-5 text-green-400"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-green-800 dark:text-green-200">
-                        {t("import.importSuccess")}
-                      </h3>
-                      <p className="mt-1 text-sm text-green-700 dark:text-green-300">
-                        {t("import.importedRows", {
-                          count: importData.data.length,
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            {activeTab === "single" && renderSingleEntry()}
+            {activeTab === "bulk" && renderBulkImport()}
           </div>
         </div>
       </div>
