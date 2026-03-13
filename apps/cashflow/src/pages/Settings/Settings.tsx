@@ -239,7 +239,7 @@ const Settings: React.FC = () => {
     setIsBankAccountModalOpen(true);
   };
 
-  const handleResetData = () => {
+  const handleResetData = async () => {
     const confirmation = window.prompt(
       "Nhập CONFIRM để xóa toàn bộ dữ liệu và đặt lại hệ thống",
       "",
@@ -248,12 +248,71 @@ const Settings: React.FC = () => {
       return;
     }
 
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("cashflow_customers");
-      window.localStorage.removeItem("cashflow_transactions");
-      window.localStorage.removeItem("cashflow_bank_accounts");
+    try {
+      console.log("Starting reset data process...");
+      console.log("isTrial:", isTrial);
+      
+      // Delete from Supabase database
+      console.log("Deleting from Supabase database...");
+      
+      // Delete transactions first (due to foreign key constraints)
+      const txResult = await supabase
+        .from("transactions")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      
+      console.log("Transactions delete result:", txResult);
+      
+      // Delete customers
+      const custResult = await supabase
+        .from("customers")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      
+      console.log("Customers delete result:", custResult);
+      
+      // Delete bank accounts
+      const bankResult = await supabase
+        .from("bank_accounts")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+
+      console.log("Bank accounts delete result:", bankResult);
+
+      if (txResult.error || custResult.error || bankResult.error) {
+        console.error("Database deletion errors:", { 
+          txError: txResult.error, 
+          custError: custResult.error, 
+          bankError: bankResult.error 
+        });
+        alert(`Có lỗi khi xóa dữ liệu từ database:\n${txResult.error?.message || custResult.error?.message || bankResult.error?.message}`);
+        return;
+      }
+
+      console.log("✅ Database deletion successful");
+
+      // Clear localStorage (but preserve auth tokens)
+      if (typeof window !== "undefined") {
+        console.log("Clearing localStorage (preserving auth)...");
+        window.localStorage.removeItem("cashflow_customers");
+        window.localStorage.removeItem("cashflow_transactions");
+        window.localStorage.removeItem("cashflow_bank_accounts");
+        window.localStorage.removeItem("cashflow_branches");
+        window.localStorage.removeItem("cashflow_transaction_types");
+        // Set flag to disable seed data generation
+        window.localStorage.setItem("cashflow_seed_disabled", "true");
+        // DO NOT remove auth tokens: sb-*, debt-repayment-auth
+        console.log("✅ LocalStorage cleared (auth preserved)");
+      }
+
+      alert("Đã xóa toàn bộ dữ liệu thành công!");
+      
+      // Navigate to dashboard instead of reload to preserve session
+      navigate('/dashboard', { replace: true });
+    } catch (error) {
+      console.error("Reset data failed:", error);
+      alert(`Có lỗi khi reset dữ liệu: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
-    window.location.reload();
   };
 
   const handleBankAccountFormChange = (

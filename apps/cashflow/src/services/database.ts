@@ -246,6 +246,14 @@ function ensureSeedData() {
   const seedDisabled = window.localStorage.getItem(SEED_DISABLED_KEY) === "true";
   if (seedDisabled) return;
 
+  // Only seed data for trial users, not for real authenticated accounts
+  const isTrialUser = window.localStorage.getItem("debt-repayment-auth")?.includes("trial-user") || false;
+  if (!isTrialUser) {
+    // Disable seed data for real accounts
+    window.localStorage.setItem(SEED_DISABLED_KEY, "true");
+    return;
+  }
+
   const existingTransactions = safeParseJson<Transaction[]>(
     window.localStorage.getItem(STORAGE_KEYS.transactions),
     [],
