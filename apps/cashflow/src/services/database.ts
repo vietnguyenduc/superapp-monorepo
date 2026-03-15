@@ -979,8 +979,23 @@ const customerService = {
 
   async createCustomer(_customerData?: any) {
     ensureSeedData();
-    const now = getNowIso();
     const customers = readCustomers();
+    
+    // CRITICAL: Server-side duplicate check for customer_code
+    const proposedCode = _customerData?.customer_code?.trim();
+    if (proposedCode) {
+      const existing = customers.find(c => 
+        c.customer_code?.trim() === proposedCode
+      );
+      if (existing) {
+        return { 
+          data: null, 
+          error: `Customer with code "${proposedCode}" already exists` 
+        };
+      }
+    }
+    
+    const now = getNowIso();
     const id = uuid();
     const customer: Customer = {
       id,
@@ -1346,13 +1361,74 @@ const transactionService = {
     const branchId = _branchId ? String(_branchId) : "";
     const createdBy = String(_createdBy || "");
 
+    // SERVER-SIDE VALIDATION: File size limit
+    if (raw.length > 200) {
+      return { 
+        data: [], 
+        errors: [{ row: 0, message: "File exceeds maximum limit of 200 rows" }] 
+      };
+    }
+
     const bankAccounts = readBankAccounts();
     const customers = readCustomers();
     const transactions = readTransactions();
 
+    // SERVER-SIDE VALIDATION: Get transaction types from database
+    const transactionTypesResult = await databaseService.transactionTypes.getTransactionTypes();
+    const validTransactionTypes = transactionTypesResult.data?.map((tt: any) => tt.name.toLowerCase()) || [];
+
     const created: Transaction[] = [];
     const errors: any[] = [];
     let nextCounter = transactions.length + 1;
+
+    const validateTransactionRow = (row: any, index: number) => {
+      const validationErrors: string[] = [];
+
+      // Validate required fields
+      if (!row.customer_code || String(row.customer_code).trim() === '') {
+        validationErrors.push("Customer code is required");
+      }
+
+      if (!row.transaction_type || String(row.transaction_type).trim() === '') {
+        validationErrors.push("Transaction type is required");
+      }
+
+      if (!row.amount || String(row.amount).trim() === '') {
+        validationErrors.push("Amount is required");
+      }
+
+      if (!row.transaction_date || String(row.transaction_date).trim() === '') {
+        validationErrors.push("Transaction date is required");
+      }
+
+      // Validate transaction type against database
+      if (row.transaction_type) {
+        const normalizedType = String(row.transaction_type).toLowerCase();
+        if (!validTransactionTypes.includes(normalizedType)) {
+          validationErrors.push(`Invalid transaction type. Must be one of: ${validTransactionTypes.join(', ')}`);
+        }
+      }
+
+      // Validate amount
+      if (row.amount) {
+        const amount = Number(String(row.amount).replace(/[$,€£¥₫\s]/g, ""));
+        if (isNaN(amount) || amount === 0) {
+          validationErrors.push("Amount must be a non-zero number");
+        }
+      }
+
+      // Validate date format
+      if (row.transaction_date) {
+        const date = new Date(row.transaction_date);
+        if (isNaN(date.getTime())) {
+          validationErrors.push("Invalid date format");
+        } else if (date > new Date()) {
+          validationErrors.push("Transaction date cannot be in the future");
+        }
+      }
+
+      return validationErrors;
+    };
 
     const parseCustomerInput = (raw: string) => {
       const full = String(raw || "").trim();
@@ -1458,6 +1534,14 @@ const transactionService = {
 
     for (let i = 0; i < raw.length; i++) {
       const row = raw[i] || {};
+      
+      // SERVER-SIDE VALIDATION: Validate each row
+      const validationErrors = validateTransactionRow(row, i);
+      if (validationErrors.length > 0) {
+        errors.push({ row: i, message: validationErrors.join('; ') });
+        continue;
+      }
+
       try {
         const customerCode = row.customer_code || "";
         const customerName = row.customer_name || row.full_name || row.customer || "";

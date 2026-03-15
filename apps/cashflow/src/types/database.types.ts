@@ -309,6 +309,7 @@ type PublicSchema = {
                 phone: string | null
                 position: string | null
                 role: string
+                staff_permissions: Json | null
                 updated_at: string | null
             }
             Insert: {
@@ -320,6 +321,7 @@ type PublicSchema = {
                 phone?: string | null
                 position?: string | null
                 role?: string
+                staff_permissions?: Json | null
                 updated_at?: string | null
             }
             Update: {
@@ -331,6 +333,7 @@ type PublicSchema = {
                 phone?: string | null
                 position?: string | null
                 role?: string
+                staff_permissions?: Json | null
                 updated_at?: string | null
             }
             Relationships: [

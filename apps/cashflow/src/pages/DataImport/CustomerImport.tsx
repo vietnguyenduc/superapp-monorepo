@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useAuth } from "../../hooks/useAuth";
@@ -21,19 +21,27 @@ interface RawCustomerData {
   notes?: string;
 }
 
+const INITIAL_SINGLE_CUSTOMER: RawCustomerData = {
+  full_name: "",
+  phone: "",
+  email: "",
+  address: "",
+  customer_code: "",
+  notes: "",
+};
+
+const MAX_BULK_ROWS = 200;
+const PHONE_REGEX = /^[+]?[-0-9 ()]{8,15}$/;
+const IMPORT_HISTORY_KEY = "cashflow_import_history";
+
 const CustomerImport: React.FC<CustomerImportProps> = ({
   onImportComplete,
 }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [singleCustomer, setSingleCustomer] = useState<RawCustomerData>({
-    full_name: "",
-    phone: "",
-    email: "",
-    address: "",
-    customer_code: "",
-    notes: "",
-  });
+  const [singleCustomer, setSingleCustomer] = useState<RawCustomerData>(
+    INITIAL_SINGLE_CUSTOMER,
+  );
   const [singleError, setSingleError] = useState<string | null>(null);
   const [isCreatingSingle, setIsCreatingSingle] = useState(false);
   const [importData, setImportData] = useState<ImportData>({
@@ -44,9 +52,68 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+  const [activeTab, setActiveTab] = useState<"single" | "bulk">("single");
   const [showPreview, setShowPreview] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const canImportCustomers = useMemo(() => {
+    if (!user) return false;
+    if (user.role === "admin" || user.role === "branch_manager") return true;
+    if (user.role === "staff") {
+      const staffPermissions = (user as any)?.staff_permissions ?? {};
+      return Boolean(staffPermissions?.import_customers);
+    }
+    return false;
+  }, [user]);
+
+  const hasSingleChanges = useMemo(() => {
+    return [
+      "full_name",
+      "phone",
+      "email",
+      "address",
+      "customer_code",
+      "notes",
+    ].some((field) => {
+      const key = field as keyof RawCustomerData;
+      return (singleCustomer[key] || "") !== (INITIAL_SINGLE_CUSTOMER[key] || "");
+    });
+  }, [singleCustomer]);
+
+  React.useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (hasSingleChanges) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasSingleChanges]);
+
+  const logImportAction = useCallback(
+    (payload: { type: string; successCount: number }) => {
+      if (typeof window === "undefined" || !window.localStorage) return;
+      try {
+        const existing = JSON.parse(
+          window.localStorage.getItem(IMPORT_HISTORY_KEY) || "[]",
+        );
+        const entry = {
+          id: crypto.randomUUID?.() ?? `import_${Date.now()}`,
+          user_id: user?.id ?? null,
+          user_email: user?.email ?? null,
+          timestamp: new Date().toISOString(),
+          ...payload,
+        };
+        const next = [entry, ...existing].slice(0, 200);
+        window.localStorage.setItem(IMPORT_HISTORY_KEY, JSON.stringify(next));
+      } catch (error) {
+        console.warn("Unable to log import action", error);
+      }
+    },
+    [user?.email, user?.id],
+  );
 
   // Parse and validate data when file changes
   const [processedData, setProcessedData] = useState<{
@@ -64,6 +131,20 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     const processFile = async () => {
       try {
         const parsed = await parseCustomerFile(importData.file!);
+        if (parsed.length > MAX_BULK_ROWS) {
+          setProcessedData({
+            data: [],
+            errors: [
+              {
+                row: 0,
+                column: "general",
+                message: `File vượt quá giới hạn ${MAX_BULK_ROWS} dòng. Vui lòng chia nhỏ và thử lại`,
+              },
+            ],
+            isValid: false,
+          });
+          return;
+        }
         const validation = validateCustomerData(parsed);
 
         setProcessedData({
@@ -177,6 +258,20 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     [handleFileUpload],
   );
 
+  const handleChangeTab = useCallback(
+    (tab: "single" | "bulk") => {
+      if (tab === activeTab) return;
+      if (activeTab === "single" && hasSingleChanges) {
+        const confirmLeave = window.confirm(
+          "Bạn đang có dữ liệu nhập từng khách chưa lưu. Chuyển tab sẽ không xoá dữ liệu nhưng bạn nên lưu trước. Tiếp tục?",
+        );
+        if (!confirmLeave) return;
+      }
+      setActiveTab(tab);
+    },
+    [activeTab, hasSingleChanges],
+  );
+
   const handleValidateData = useCallback(() => {
     setShowPreview(true);
     setCurrentStep(2);
@@ -187,19 +282,25 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     setCurrentStep(1);
   }, []);
 
-  const handleRemoveErrorRows = useCallback(() => {
+  const handleDownloadErrorLog = useCallback(() => {
     if (importData.errors.length === 0) return;
-    const errorRows = new Set(importData.errors.map((e) => e.row));
-    const filtered = importData.data.filter((_, idx) => !errorRows.has(idx));
-    setImportData((prev) => ({
-      ...prev,
-      data: filtered,
-      errors: [],
-      isValid: filtered.length > 0,
-    }));
-    setShowPreview(true);
-    setCurrentStep(2);
-  }, [importData]);
+    const header = "row,column,message,value";
+    const rows = importData.errors.map((error) =>
+      [error.row + 1, error.column, error.message, error.value ?? ""].join(","),
+    );
+    const csvContent = [header, ...rows].join("\n");
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "customer-import-errors.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [importData.errors]);
 
   const handleImportData = useCallback(async () => {
     if (
@@ -223,7 +324,6 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       );
 
       if (result.errors.length > 0) {
-        // Hiển thị lỗi (ví dụ trùng phone/mã KH) ở bước preview
         setImportData((prev) => ({
           ...prev,
           errors: result.errors,
@@ -237,6 +337,8 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       setCurrentStep(3);
       onImportComplete?.(result.data);
 
+      logImportAction({ type: "bulk_customer", successCount: result.data.length });
+
       // Show success popup for 3s
       setSuccessMessage("Đã nhập dữ liệu khách hàng thành công");
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -247,11 +349,10 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       setCurrentStep(1);
     } catch (error) {
       console.error("Import failed:", error);
-      // TODO: Show error notification
     } finally {
       setIsProcessing(false);
     }
-  }, [importData, onImportComplete, user]);
+  }, [importData, logImportAction, onImportComplete, user]);
 
   const handleReset = useCallback(() => {
     setImportData({ file: null, data: [], errors: [], isValid: false });
@@ -267,10 +368,27 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
   );
 
   const handleCreateSingleCustomer = useCallback(async () => {
-    if (!singleCustomer.full_name.trim()) {
+    const name = singleCustomer.full_name.trim();
+    const code = singleCustomer.customer_code?.trim();
+    const phone = singleCustomer.phone?.replace(/\s+/g, "").trim();
+
+    if (!name) {
       setSingleError(t("customers.form.errors.fullNameRequired"));
       return;
     }
+    if (!code) {
+      setSingleError("Mã khách hàng là bắt buộc");
+      return;
+    }
+    if (!phone) {
+      setSingleError("Số điện thoại là bắt buộc");
+      return;
+    }
+    if (!PHONE_REGEX.test(phone)) {
+      setSingleError("Số điện thoại không hợp lệ");
+      return;
+    }
+
     const branchId = user?.branch_id || "1";
     if (!branchId) {
       setSingleError("Không xác định được chi nhánh, vui lòng đăng nhập lại");
@@ -281,7 +399,8 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     try {
       const payload = {
         ...singleCustomer,
-        customer_code: singleCustomer.customer_code?.trim() || undefined,
+        customer_code: code,
+        phone,
         branch_id: branchId,
       };
       const result = await databaseService.customers.createCustomer(payload);
@@ -292,19 +411,14 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       if (result.data) {
         onImportComplete?.([result.data]);
       }
+      logImportAction({ type: "single_customer", successCount: 1 });
       setSuccessMessage("Đã thêm khách hàng thành công");
       setTimeout(() => setSuccessMessage(null), 3000);
-      setSingleCustomer({
-        full_name: "",
-        phone: "",
-        email: "",
-        address: "",
-        customer_code: "",
-      });
+      setSingleCustomer(INITIAL_SINGLE_CUSTOMER);
     } finally {
       setIsCreatingSingle(false);
     }
-  }, [onImportComplete, singleCustomer, t, user?.branch_id]);
+  }, [logImportAction, onImportComplete, singleCustomer, t, user?.branch_id]);
 
   const getErrorForRow = (rowIndex: number): ImportError[] => {
     return importData.errors.filter((error) => error.row === rowIndex);
@@ -326,7 +440,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
           Nhập từng khách hàng
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Nhập nhanh từng khách hàng nếu không dùng file Excel/CSV.
+          Nhập nhanh từng khách hàng nếu không dùng file Excel/CSV. Các trường bắt buộc: Mã khách hàng, Họ và tên, Số điện thoại.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -355,7 +469,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Số điện thoại
+              Số điện thoại *
             </label>
             <input
               type="tel"
@@ -391,7 +505,22 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
           </div>
         </div>
         {singleError && <p className="mt-3 text-sm text-red-600">{singleError}</p>}
-        <div className="mt-4 flex justify-end">
+        <div className="mt-4 flex flex-wrap justify-between gap-3">
+          {hasSingleChanges && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                if (!hasSingleChanges) return;
+                if (window.confirm("Bạn có chắc chắn muốn xóa dữ liệu đang nhập?")) {
+                  setSingleCustomer(INITIAL_SINGLE_CUSTOMER);
+                  setSingleError(null);
+                }
+              }}
+            >
+              Xóa dữ liệu
+            </Button>
+          )}
           <Button
             variant="primary"
             size="md"
@@ -416,9 +545,9 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
             {t("import.customerBulkGuidelinesTitle")}
           </p>
           <ul className="mt-2 space-y-1 text-sm text-blue-800 dark:text-blue-200">
-            <li>• Tải lên file Excel/CSV theo đúng tiêu đề cột: full_name, phone, address, customer_code, working_method, notes (tuỳ chọn)</li>
-            <li>• Cột bắt buộc: full_name. Các cột còn lại có thể để trống</li>
-            <li>• Mỗi dòng là 1 khách hàng. Kiểm tra trước khi nhấn “Kiểm tra dữ liệu”</li>
+            <li>• File Excel/CSV tối đa {MAX_BULK_ROWS} dòng. Nếu hơn, vui lòng tách nhỏ.</li>
+            <li>• Cột bắt buộc: <strong>Mã khách hàng</strong>, <strong>Họ và tên</strong>, <strong>Số điện thoại</strong>.</li>
+            <li>• Không thể chỉnh sửa trực tiếp trong màn hình preview. Sửa file nguồn rồi tải lên lại khi có lỗi.</li>
           </ul>
         </div>
 
@@ -623,8 +752,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
             {importData.errors.slice(0, 20).map((error, index) => (
               <div key={index} className="text-sm text-red-800 dark:text-red-200 mb-2">
                 <span className="font-medium">
-                  {t("import.row")} {error.row + 1}, {t("import.column")}{" "}
-                  {error.column}:
+                  {t("import.row")} {error.row + 1}, {t("import.column")} {error.column}:
                 </span>{" "}
                 {error.message}
                 {error.value && (
@@ -642,17 +770,15 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
               {t("import.totalErrors")}
             </p>
           )}
+          <p className="mt-3 text-sm text-red-700 dark:text-red-300">
+            Vui lòng chỉnh sửa file gốc cho đến khi tất cả lỗi được xử lý, sau đó tải lại file. Hệ thống chỉ cho phép import khi không còn lỗi.
+          </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Button size="sm" variant="secondary" onClick={handleBackToUpload}>
               Quay lại bước 1 (tải/sửa file)
             </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={handleRemoveErrorRows}
-              disabled={importData.errors.length === 0 || importData.data.length === importData.errors.length}
-            >
-              Bỏ các dòng lỗi, giữ dòng hợp lệ
+            <Button size="sm" variant="secondary" onClick={handleDownloadErrorLog}>
+              Tải danh sách lỗi (CSV)
             </Button>
           </div>
         </div>
@@ -669,6 +795,23 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
             message={t("import.processingData")}
             size="lg"
           />
+        </div>
+      </div>
+    );
+  }
+
+  if (!canImportCustomers) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white dark:bg-gray-900 border border-yellow-200 dark:border-yellow-700 rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              Bạn không có quyền import khách hàng
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Liên hệ Admin hoặc Branch Manager để được cấp quyền "import_customers" cho tài khoản Staff của bạn.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -704,6 +847,33 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
               {t("import.customerImportDescription")}
             </p>
+          </div>
+
+          <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+            <div className="inline-flex rounded-md shadow-sm" role="tablist">
+              <button
+                type="button"
+                onClick={() => handleChangeTab("single")}
+                className={`px-4 py-2 text-sm font-medium border border-gray-200 dark:border-gray-700 first:rounded-l-md last:rounded-r-md focus:outline-none transition-colors ${
+                  activeTab === "single"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+              >
+                Nhập từng khách hàng
+              </button>
+              <button
+                type="button"
+                onClick={() => handleChangeTab("bulk")}
+                className={`px-4 py-2 text-sm font-medium border border-gray-200 dark:border-gray-700 border-l-0 focus:outline-none transition-colors ${
+                  activeTab === "bulk"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+              >
+                Nhập hàng loạt khách hàng
+              </button>
+            </div>
           </div>
 
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -762,9 +932,11 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
           </div>
 
           <div className="px-6 py-6 bg-white dark:bg-gray-900">
-            {currentStep === 1 && renderFileUpload()}
+            {activeTab === "single" && renderFileUpload()}
 
-            {showPreview && (
+            {activeTab === "bulk" && currentStep === 1 && renderFileUpload()}
+
+            {activeTab === "bulk" && showPreview && (
               <div className="mt-8 space-y-6">
                 <div className="bg-gray-50 dark:bg-gray-800/60 rounded-lg p-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -811,7 +983,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
               </div>
             )}
 
-            {currentStep === 3 && (
+            {activeTab === "bulk" && currentStep === 3 && (
               <div className="mt-8">
                 <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-md p-4">
                   <div className="flex">
@@ -958,46 +1130,71 @@ function validateCustomerData(data: RawCustomerData[]): {
   errors: ImportError[];
 } {
   const errors: ImportError[] = [];
+  const seenCodes = new Map<string, number>();
+  const seenPhones = new Map<string, number>();
 
-  data.forEach((row, index) => {
-    // Validate full name
-    if (!row.full_name || row.full_name.trim().length === 0) {
-      errors.push({
-        row: index,
-        column: "full_name",
-        message: "Full name is required",
-        value: row.full_name,
-      });
-    } else if (row.full_name.trim().length < 2) {
-      errors.push({
-        row: index,
-        column: "full_name",
-        message: "Full name must be at least 2 characters",
-        value: row.full_name,
-      });
-    }
+  data.forEach((raw, index) => {
+    const row = {
+      full_name: raw.full_name?.trim() ?? "",
+      phone: raw.phone?.replace(/\s+/g, "").trim() ?? "",
+      customer_code: raw.customer_code?.trim() ?? "",
+    };
 
-    // Validate phone (optional but if provided, check format)
-    if (row.phone && row.phone.trim().length > 0) {
-      const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,}$/;
-      if (!phoneRegex.test(row.phone)) {
-        errors.push({
-          row: index,
-          column: "phone",
-          message: "Invalid phone number format",
-          value: row.phone,
-        });
-      }
-    }
-
-    // Validate customer code (optional but if provided, check length)
-    if (row.customer_code && row.customer_code.trim().length > 50) {
+    if (!row.customer_code) {
       errors.push({
         row: index,
         column: "customer_code",
-        message: "Customer code must be less than 50 characters",
-        value: row.customer_code,
+        message: "Mã khách hàng là bắt buộc",
+        value: raw.customer_code,
       });
+    }
+    if (!row.full_name || row.full_name.length < 2) {
+      errors.push({
+        row: index,
+        column: "full_name",
+        message: row.full_name ? "Tên khách hàng phải từ 2 ký tự" : "Tên khách hàng là bắt buộc",
+        value: raw.full_name,
+      });
+    }
+    if (!row.phone) {
+      errors.push({
+        row: index,
+        column: "phone",
+        message: "Số điện thoại là bắt buộc",
+        value: raw.phone,
+      });
+    } else if (!PHONE_REGEX.test(row.phone)) {
+      errors.push({
+        row: index,
+        column: "phone",
+        message: "Số điện thoại không hợp lệ",
+        value: raw.phone,
+      });
+    }
+
+    if (row.customer_code) {
+      if (seenCodes.has(row.customer_code)) {
+        errors.push({
+          row: index,
+          column: "customer_code",
+          message: `Mã khách hàng trùng với dòng ${seenCodes.get(row.customer_code)! + 1}`,
+          value: raw.customer_code,
+        });
+      } else {
+        seenCodes.set(row.customer_code, index);
+      }
+    }
+    if (row.phone) {
+      if (seenPhones.has(row.phone)) {
+        errors.push({
+          row: index,
+          column: "phone",
+          message: `Số điện thoại trùng với dòng ${seenPhones.get(row.phone)! + 1}`,
+          value: raw.phone,
+        });
+      } else {
+        seenPhones.set(row.phone, index);
+      }
     }
   });
 

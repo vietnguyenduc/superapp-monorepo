@@ -1,5 +1,5 @@
 import React from "react";
-import { UserRole } from "../types";
+import type { UserRole } from "../types";
 
 // Permission definitions
 export interface Permission {
@@ -77,7 +77,7 @@ export const PERMISSIONS: Permission[] = [
   {
     resource: "import",
     action: "customers",
-    roles: ["admin", "branch_manager"],
+    roles: ["admin", "branch_manager", "staff"],
   },
 
   // User management permissions

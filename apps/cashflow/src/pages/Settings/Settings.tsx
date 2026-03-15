@@ -6,6 +6,9 @@ import Button from "../../components/UI/Button";
 import PageHeader from "../../components/UI/PageHeader";
 import { formatNumber } from "../../utils/formatting";
 import { databaseService } from "../../services/database";
+import { supabase } from "../../services/supabase";
+import { useAuth } from "../../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 interface Tab {
   id: string;
@@ -77,6 +80,8 @@ const colorOptions = [
 ];
 
 const Settings: React.FC = () => {
+  const { user, isTrial } = useAuth();
+  const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
@@ -84,6 +89,8 @@ const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState("appearance");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [staffUsers, setStaffUsers] = useState<any[]>([]);
+  const [loadingStaff, setLoadingStaff] = useState(false);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [isBankAccountModalOpen, setIsBankAccountModalOpen] = useState(false);
   const [editingBankAccount, setEditingBankAccount] = useState<BankAccount | null>(null);
@@ -226,6 +233,31 @@ const Settings: React.FC = () => {
 
     loadData();
   }, []);
+
+  // Load staff users for permissions management
+  useEffect(() => {
+    const loadStaffUsers = async () => {
+      if (user?.role !== "admin") return;
+      
+      setLoadingStaff(true);
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("id, email, full_name, role, staff_permissions, created_at")
+          .eq("role", "staff")
+          .order("created_at", { ascending: false });
+        
+        if (error) throw error;
+        setStaffUsers(data || []);
+      } catch (err) {
+        console.error("Failed to load staff users:", err);
+      } finally {
+        setLoadingStaff(false);
+      }
+    };
+
+    loadStaffUsers();
+  }, [user]);
 
   const handleEditBankAccount = (account: BankAccount) => {
     setEditingBankAccount(account);
@@ -718,6 +750,40 @@ const Settings: React.FC = () => {
     setIsBankAccountModalOpen(true);
   };
 
+  // Handle staff permission updates
+  const handleUpdateStaffPermission = async (staffId: string, permission: string, value: boolean) => {
+    try {
+      const { data: currentStaff } = await supabase
+        .from("users")
+        .select("staff_permissions")
+        .eq("id", staffId)
+        .single();
+
+      const currentPermissions = (currentStaff?.staff_permissions as any) || {};
+      const updatedPermissions: Record<string, boolean> = {
+        ...currentPermissions,
+        [permission]: value,
+      };
+
+      const { error } = await supabase
+        .from("users")
+        .update({ staff_permissions: updatedPermissions })
+        .eq("id", staffId);
+
+      if (error) throw error;
+
+      // Update local state
+      setStaffUsers(prev => prev.map(staff => 
+        staff.id === staffId 
+          ? { ...staff, staff_permissions: updatedPermissions }
+          : staff
+      ));
+    } catch (err) {
+      console.error("Failed to update staff permission:", err);
+      setError("Không cập nhật được quyền truy cập");
+    }
+  };
+
   const tabs: Tab[] = useMemo(
     () => [
       { id: "appearance", name: "Giao diện", icon: "🎨" },
@@ -725,6 +791,7 @@ const Settings: React.FC = () => {
       { id: "bank-accounts", name: "Tài khoản ngân hàng", icon: "🏦" },
       { id: "branches", name: "Văn phòng", icon: "🏢" },
       { id: "customer-fields", name: "Trường khách hàng", icon: "🧾" },
+      { id: "staff-permissions", name: "Quyền nhân viên", icon: "👥" },
       { id: "data", name: "Dữ liệu", icon: "💾" },
       { id: "opening-balance", name: "Số dư đầu kỳ", icon: "📥" },
     ],
@@ -1481,6 +1548,86 @@ const Settings: React.FC = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Staff Permissions */}
+          {activeTab === "staff-permissions" && user?.role === "admin" && (
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
+                  Quyền nhân viên
+                </h2>
+              </div>
+
+              {loadingStaff ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Đang tải...</p>
+                </div>
+              ) : staffUsers.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Không có nhân viên nào</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {staffUsers.map((staff) => (
+                    <div key={staff.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                              {staff.full_name || staff.email}
+                            </h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {staff.email} • {staff.role}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-4">
+                          <div className="flex items-center space-x-2">
+                            <label className="text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                              Import khách hàng
+                            </label>
+                            <ToggleSwitch
+                              checked={Boolean((staff.staff_permissions as any)?.import_customers)}
+                              onChange={(checked) => handleUpdateStaffPermission(staff.id, "import_customers", checked)}
+                              size="sm"
+                            />
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <label className="text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                              Import giao dịch
+                            </label>
+                            <ToggleSwitch
+                              checked={Boolean((staff.staff_permissions as any)?.import_transactions)}
+                              onChange={(checked) => handleUpdateStaffPermission(staff.id, "import_transactions", checked)}
+                              size="sm"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "staff-permissions" && user?.role !== "admin" && (
+            <div className="p-4 sm:p-6">
+              <div className="text-center py-8">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Chỉ admin mới có thể quản lý quyền nhân viên
+                </p>
               </div>
             </div>
           )}
