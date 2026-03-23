@@ -22,7 +22,7 @@
     "cypress:run": "cypress run"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.38.0",
+    "@supabase/supabase-js": "^2.100.0",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
     "i18next": "^23.7.6",
