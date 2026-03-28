@@ -56,57 +56,94 @@ export const useAuth = () => {
   useEffect(() => {
     let isMounted = true;
 
-    // Add a timeout to prevent infinite loading states
+    // Safety-net timeout: only fires if Supabase init hangs completely
+    // (e.g. total network failure, Supabase project sleeping on free tier).
     const initTimeout = setTimeout(() => {
       if (!isMounted) return;
-      console.warn("Auth initialization timeout - forcing loading to false");
-      setState({
-        user: null,
-        session: null,
-        loading: false,
-        error: "Authentication check timed out",
-        isTrial: false,
-      });
-    }, 10000); // 10 second timeout
-
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      clearTimeout(initTimeout); // Clear timeout if we got a response
-
-      if (session?.user) {
-        try {
-          const profile = await fetchUserProfile(session.user.id);
-          setState({
-            user: profile,
-            session,
-            loading: false,
-            error: null,
-            isTrial: false,
-          });
-        } catch (profileError) {
-          console.error("Error fetching user profile:", profileError);
-          // Still set loading to false so user can retry login
-          setState({
-            user: null,
-            session: null,
-            loading: false,
-            error: "Failed to fetch user profile",
-            isTrial: false,
-          });
-        }
-      } else {
-        // If no real session, attempt to restore trial user from storage
-        const trialRaw = typeof window !== "undefined" ? localStorage.getItem(TRIAL_STORAGE_KEY) : null;
+      setState((prev) => {
+        if (!prev.loading) return prev; // Already resolved — skip
+        console.warn("Auth initialization timeout — treating as unauthenticated");
+        // Try trial mode before giving up
+        const trialRaw =
+          typeof window !== "undefined" ? localStorage.getItem(TRIAL_STORAGE_KEY) : null;
         if (trialRaw) {
-          const parsed = JSON.parse(trialRaw);
-          setState({
-            user: parsed?.user || null,
-            session: null,
-            loading: false,
-            error: null,
-            isTrial: true,
-          });
+          try {
+            const parsed = JSON.parse(trialRaw);
+            return {
+              user: parsed?.user || null,
+              session: null,
+              loading: false,
+              error: null,
+              isTrial: true,
+            };
+          } catch {
+            // ignore
+          }
+        }
+        return {
+          user: null,
+          session: null,
+          loading: false,
+          error: null, // No scary error — just redirect to login
+          isTrial: false,
+        };
+      });
+    }, 20000); // 20s — generous for cold-start Supabase projects
+
+    // ─── Primary init: getSession() ─────────────────────────────────────────
+    // This is called OUTSIDE the auth lock, so fetchUserProfile()
+    // (which internally calls getSession() for the access token) won't deadlock.
+    supabase.auth
+      .getSession()
+      .then(async ({ data: { session } }) => {
+        clearTimeout(initTimeout);
+        if (!isMounted) return;
+
+        if (session?.user) {
+          try {
+            const profile = await fetchUserProfile(session.user.id);
+            if (!isMounted) return;
+            setState({
+              user: profile,
+              session,
+              loading: false,
+              error: null,
+              isTrial: false,
+            });
+          } catch (profileError) {
+            console.error("Error fetching user profile:", profileError);
+            if (!isMounted) return;
+            setState({
+              user: null,
+              session: null,
+              loading: false,
+              error: "Failed to fetch user profile",
+              isTrial: false,
+            });
+          }
         } else {
+          // No real session — check trial mode
+          const trialRaw =
+            typeof window !== "undefined"
+              ? localStorage.getItem(TRIAL_STORAGE_KEY)
+              : null;
+          if (trialRaw) {
+            try {
+              const parsed = JSON.parse(trialRaw);
+              if (!isMounted) return;
+              setState({
+                user: parsed?.user || null,
+                session: null,
+                loading: false,
+                error: null,
+                isTrial: true,
+              });
+              return;
+            } catch {
+              // ignore
+            }
+          }
+          if (!isMounted) return;
           setState({
             user: null,
             session: null,
@@ -115,51 +152,11 @@ export const useAuth = () => {
             isTrial: false,
           });
         }
-      }
-    }).catch((error) => {
-      clearTimeout(initTimeout); // Clear timeout on error too
-      // Handle getSession errors - ensure loading is set to false
-      console.error("Error getting session:", error);
-      setState({
-        user: null,
-        session: null,
-        loading: false,
-        error: "Failed to check authentication",
-        isTrial: false,
-      });
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        let profile = await fetchUserProfile(session.user.id);
-
-        // If no profile exists (e.g., after email confirmation), create one
-        if (!profile) {
-          const meta = session.user.user_metadata as { full_name?: string };
-          const profilePayload: TablesInsert<"users"> = {
-            id: session.user.id,
-            email: session.user.email ?? "",
-            full_name: meta?.full_name || null,
-            role: "staff",
-          };
-          const { error: upsertError } = await supabase.from("users").upsert(profilePayload);
-          if (upsertError) {
-            console.error("Error creating user profile on sign-in:", upsertError);
-          }
-          profile = await fetchUserProfile(session.user.id);
-        }
-
-        setState({
-          user: profile,
-          session,
-          loading: false,
-          error: null,
-          isTrial: false,
-        });
-      } else if (event === "SIGNED_OUT") {
+      })
+      .catch((error) => {
+        clearTimeout(initTimeout);
+        console.error("Error getting session:", error);
+        if (!isMounted) return;
         setState({
           user: null,
           session: null,
@@ -167,7 +164,75 @@ export const useAuth = () => {
           error: null,
           isTrial: false,
         });
-      } else if (event === "TOKEN_REFRESHED" && session) {
+      });
+
+    // ─── Listen for future auth changes ─────────────────────────────────────
+    // CRITICAL: Never do Supabase DB queries (from/select/upsert) inside this
+    // callback! Supabase holds an internal auth lock while calling back, and
+    // every DB query calls getSession() to get the access token — which needs
+    // the SAME lock → deadlock.
+    //
+    // Instead, schedule heavy work via setTimeout(0) so it runs AFTER the
+    // callback returns and the lock is released.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION") {
+        // Already handled by getSession() above — return immediately
+        // to release the auth lock.
+        return;
+      }
+
+      if (event === "SIGNED_IN" && session?.user) {
+        // Schedule profile fetch OUTSIDE the lock via setTimeout(0)
+        setTimeout(async () => {
+          if (!isMounted) return;
+          let profile = await fetchUserProfile(session.user.id);
+
+          // If no profile exists (e.g., after email confirmation), create one
+          if (!profile) {
+            const meta = session.user.user_metadata as { full_name?: string };
+            const profilePayload: TablesInsert<"users"> = {
+              id: session.user.id,
+              email: session.user.email ?? "",
+              full_name: meta?.full_name || null,
+              role: "staff",
+            };
+            const { error: upsertError } = await supabase
+              .from("users")
+              .upsert(profilePayload);
+            if (upsertError) {
+              console.error("Error creating user profile on sign-in:", upsertError);
+            }
+            profile = await fetchUserProfile(session.user.id);
+          }
+
+          if (!isMounted) return;
+          setState({
+            user: profile,
+            session,
+            loading: false,
+            error: null,
+            isTrial: false,
+          });
+        }, 0);
+        return;
+      }
+
+      if (event === "SIGNED_OUT") {
+        if (!isMounted) return;
+        setState({
+          user: null,
+          session: null,
+          loading: false,
+          error: null,
+          isTrial: false,
+        });
+        return;
+      }
+
+      if (event === "TOKEN_REFRESHED" && session) {
+        if (!isMounted) return;
         setState((prev) => ({
           ...prev,
           session,
