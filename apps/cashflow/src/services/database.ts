@@ -104,6 +104,18 @@ const SEED_DISABLED_KEY = "cashflow_seed_disabled";
 
 const isBrowser = typeof window !== "undefined" && typeof window.localStorage !== "undefined";
 
+// One-time migration: if seed was disabled (old guard) but localStorage is actually empty,
+// clear the flag so demo data gets seeded for real users on next load.
+if (isBrowser) {
+  const seedDisabledFlag = window.localStorage.getItem(SEED_DISABLED_KEY);
+  const hasCustomers = !!window.localStorage.getItem(STORAGE_KEYS.customers);
+  const hasTransactions = !!window.localStorage.getItem(STORAGE_KEYS.transactions);
+  if (seedDisabledFlag === "true" && !hasCustomers && !hasTransactions) {
+    window.localStorage.removeItem(SEED_DISABLED_KEY);
+  }
+}
+
+
 function safeParseJson<T>(value: string | null, fallback: T): T {
   if (!value) return fallback;
   try {
@@ -246,13 +258,8 @@ function ensureSeedData() {
   const seedDisabled = window.localStorage.getItem(SEED_DISABLED_KEY) === "true";
   if (seedDisabled) return;
 
-  // Only seed data for trial users, not for real authenticated accounts
-  const isTrialUser = window.localStorage.getItem("debt-repayment-auth")?.includes("trial-user") || false;
-  if (!isTrialUser) {
-    // Disable seed data for real accounts
-    window.localStorage.setItem(SEED_DISABLED_KEY, "true");
-    return;
-  }
+  // Seed demo data whenever localStorage is empty (both trial and real authenticated users).
+  // Once a user imports real data it stays in localStorage and the seed won't re-run.
 
   const existingTransactions = safeParseJson<Transaction[]>(
     window.localStorage.getItem(STORAGE_KEYS.transactions),
