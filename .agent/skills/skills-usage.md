@@ -2,6 +2,15 @@
 
 This document organizes and summarizes the currently installed agent skills located in `@[superapp-monorepo/.agent/skills]`, categorized by the bundles they originated from. Use this to determine when and how an AI assistant should leverage these tailored contexts.
 
+## 🚀 The "Essentials" Starter Pack
+_For everyone. Install these first._
+
+*   **`concise-planning`**: Use when asked for a plan for a coding task, generating a clear, actionable, and atomic checklist.
+*   **`lint-and-validate`**: MANTADORY utility to run appropriate validation tools after EVERY code change. Do not finish a task until the code is error-free.
+*   **`git-pushing`**: Use to stage all changes, create a conventional commit, and push whenever saving work to the remote branch is required or asked for.
+*   **`kaizen`**: A guide for continuous improvement, error proofing, and standardization. Use when improving code quality or refactoring.
+*   **`systematic-debugging`**: Use when encountering any bug, test failure, or unexpected behavior, *before* proposing fixes.
+
 ## 🌐 The "Web Wizard" Pack
 _For building modern, high-performance web apps._
 
