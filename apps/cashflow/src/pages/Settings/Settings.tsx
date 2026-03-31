@@ -142,6 +142,8 @@ const Settings: React.FC = () => {
   const [openingSuccess, setOpeningSuccess] = useState<string | null>(null);
   const [isOpeningProcessing, setIsOpeningProcessing] = useState(false);
   const [customerMap, setCustomerMap] = useState<Record<string, string>>({});
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
 
   // Apply dark mode to document
   useEffect(() => {
@@ -759,7 +761,7 @@ const Settings: React.FC = () => {
         .eq("id", staffId)
         .single();
 
-      const currentPermissions = (currentStaff?.staff_permissions as any) || {};
+      const currentPermissions = (currentStaff?.staff_permissions as Record<string, boolean>) || {};
       const updatedPermissions: Record<string, boolean> = {
         ...currentPermissions,
         [permission]: value,
@@ -778,6 +780,10 @@ const Settings: React.FC = () => {
           ? { ...staff, staff_permissions: updatedPermissions }
           : staff
       ));
+      
+      // Show success feedback
+      setSuccessMessage("Đã cập nhật quyền truy cập thành công");
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       console.error("Failed to update staff permission:", err);
       setError("Không cập nhật được quyền truy cập");
@@ -794,8 +800,12 @@ const Settings: React.FC = () => {
       { id: "staff-permissions", name: "Quyền nhân viên", icon: "👥" },
       { id: "data", name: "Dữ liệu", icon: "💾" },
       { id: "opening-balance", name: "Số dư đầu kỳ", icon: "📥" },
-    ],
-    [],
+    ].filter(tab => {
+      // Only show staff permissions tab for admin
+      if (tab.id === "staff-permissions" && user?.role !== "admin") return false;
+      return true;
+    }),
+    [user?.role],
   );
 
   if (loading) {
@@ -828,6 +838,23 @@ const Settings: React.FC = () => {
           title="Cài đặt hệ thống"
           subtitle="Quản lý cấu hình cơ bản cho hệ thống quản lý công nợ"
         />
+
+        {successMessage && (
+          <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-md p-4 mb-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                  {successMessage}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="border-b border-gray-200 dark:border-gray-600 mb-2 sm:mb-4 overflow-x-auto">
           <nav className="flex space-x-1 sm:space-x-8 min-w-max px-1">
@@ -1597,7 +1624,7 @@ const Settings: React.FC = () => {
                               Import khách hàng
                             </label>
                             <ToggleSwitch
-                              checked={Boolean((staff.staff_permissions as any)?.import_customers)}
+                              checked={Boolean(staff.staff_permissions?.import_customers)}
                               onChange={(checked) => handleUpdateStaffPermission(staff.id, "import_customers", checked)}
                               size="sm"
                             />
@@ -1608,7 +1635,7 @@ const Settings: React.FC = () => {
                               Import giao dịch
                             </label>
                             <ToggleSwitch
-                              checked={Boolean((staff.staff_permissions as any)?.import_transactions)}
+                              checked={Boolean(staff.staff_permissions?.import_transactions)}
                               onChange={(checked) => handleUpdateStaffPermission(staff.id, "import_transactions", checked)}
                               size="sm"
                             />

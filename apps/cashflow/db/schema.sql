@@ -345,7 +345,12 @@ ALTER TABLE branches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transaction_types ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies will be added separately based on requirements
-
+-- Allow admins to update any user
+CREATE POLICY "Admins can update user permissions" ON users FOR UPDATE USING (
+  EXISTS (
+    SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.role = 'admin'
+  )
+);
 -- Create views for common queries
 
 -- Customer balance view

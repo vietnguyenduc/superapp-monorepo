@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AddButton from "../UI/AddButton";
+import { useAuthContext } from "../../contexts/AuthContext";
 
 interface MenuItem {
   path: string;
@@ -19,6 +20,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
+  const { user } = useAuthContext();
+
+  const isAdminOrManager = user?.role === 'admin' || user?.role === 'branch_manager';
+  const canImportCustomers = isAdminOrManager || Boolean(user?.staff_permissions?.import_customers);
+  const canImportTransactions = isAdminOrManager || Boolean(user?.staff_permissions?.import_transactions);
 
   const menuItems: MenuItem[] = [
     {
@@ -64,7 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           />
         </svg>
       ),
-      hasAddButton: true,
+      hasAddButton: canImportCustomers,
       addAction: () => navigate("/import/customers"),
     },
     {
@@ -85,7 +91,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           />
         </svg>
       ),
-      hasAddButton: true,
+      hasAddButton: canImportTransactions,
       addAction: () => navigate("/import/transactions"),
     },
     {
