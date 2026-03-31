@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuthContext } from "../../contexts/AuthContext";
 import type { Customer, ImportData, ImportError } from "../../types";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import { databaseService } from "../../services/database";
@@ -38,7 +38,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
   onImportComplete,
 }) => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [singleCustomer, setSingleCustomer] = useState<RawCustomerData>(
     INITIAL_SINGLE_CUSTOMER,
   );
@@ -60,8 +60,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     if (!user) return false;
     if (user.role === "admin" || user.role === "branch_manager") return true;
     if (user.role === "staff") {
-      const staffPermissions = (user as any)?.staff_permissions ?? {};
-      return Boolean(staffPermissions?.import_customers);
+      return Boolean(user.staff_permissions?.import_customers);
     }
     return false;
   }, [user]);

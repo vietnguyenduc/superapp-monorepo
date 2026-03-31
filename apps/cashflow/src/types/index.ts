@@ -1,6 +1,11 @@
 import React from "react";
 
-// Database Types
+export interface StaffPermissions {
+  import_customers?: boolean;
+  import_transactions?: boolean;
+  [key: string]: boolean | undefined;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -10,6 +15,7 @@ export interface User {
   role: UserRole;
   branch_id?: string;
   branch?: Branch;
+  staff_permissions?: StaffPermissions;
   created_at: string;
   updated_at: string;
 }

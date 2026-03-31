@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useSearchParams } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuthContext } from "../../contexts/AuthContext";
 import type { Transaction, ImportData, ImportError, Customer } from "../../types";
 import {
   validateTransactionData,
@@ -48,7 +48,7 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
   customerOptions,
 }) => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [formData, setFormData] = useState({
     full_name: customerName,
     phone: "",
@@ -166,7 +166,7 @@ const IMPORT_HISTORY_KEY = "cashflow_import_history";
 
 const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [searchParams] = useSearchParams();
 
   // Check if user can import transactions
@@ -174,8 +174,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     if (!user) return false;
     if (user.role === "admin" || user.role === "branch_manager") return true;
     if (user.role === "staff") {
-      const staffPermissions = (user as any)?.staff_permissions ?? {};
-      return Boolean(staffPermissions?.import_transactions);
+      return Boolean(user.staff_permissions?.import_transactions);
     }
     return false;
   }, [user]);
