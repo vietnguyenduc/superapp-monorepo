@@ -145,6 +145,10 @@ const Settings: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
 
+  // Users management state
+  const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
   // Apply dark mode to document
   useEffect(() => {
     console.log('Dark mode changed to:', darkMode);
@@ -790,6 +794,40 @@ const Settings: React.FC = () => {
     }
   };
 
+  // User management functions
+  const loadUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const { data, error } = await databaseService.users.getUsers();
+      if (error) throw new Error(String(error));
+      setUsers(data || []);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleUpdateUserRole = async (userId: string, newRole: string) => {
+    try {
+      const { error } = await databaseService.users.updateUser(userId, { role: newRole as any });
+      if (error) throw new Error(String(error));
+      // Refresh users list
+      await loadUsers();
+    } catch (err) {
+      console.error('Failed to update user role:', err);
+      alert('Failed to update user role');
+    }
+  };
+
+  // Load users when component mounts
+  useEffect(() => {
+    if (activeTab === "users") {
+      loadUsers();
+    }
+  }, [activeTab]);
+
+
   const tabs: Tab[] = useMemo(
     () => [
       { id: "appearance", name: "Giao diện", icon: "🎨" },
@@ -797,12 +835,12 @@ const Settings: React.FC = () => {
       { id: "bank-accounts", name: "Tài khoản ngân hàng", icon: "🏦" },
       { id: "branches", name: "Văn phòng", icon: "🏢" },
       { id: "customer-fields", name: "Trường khách hàng", icon: "🧾" },
-      { id: "staff-permissions", name: "Quyền nhân viên", icon: "👥" },
+      { id: "users", name: "Tài khoản & phân quyền", icon: "👥" },
       { id: "data", name: "Dữ liệu", icon: "💾" },
       { id: "opening-balance", name: "Số dư đầu kỳ", icon: "📥" },
     ].filter(tab => {
-      // Only show staff permissions tab for admin
-      if (tab.id === "staff-permissions" && user?.role !== "admin") return false;
+      // Only show users/permissions tab for admin
+      if (tab.id === "users" && user?.role !== "admin") return false;
       return true;
     }),
     [user?.role],
@@ -1579,12 +1617,12 @@ const Settings: React.FC = () => {
             </div>
           )}
 
-          {/* Staff Permissions */}
-          {activeTab === "staff-permissions" && user?.role === "admin" && (
+          {/* Users & Permissions */}
+          {activeTab === "users" && user?.role === "admin" && (
             <div className="p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                  Quyền nhân viên
+                  Tài khoản & phân quyền
                 </h2>
               </div>
 
@@ -1649,7 +1687,7 @@ const Settings: React.FC = () => {
             </div>
           )}
 
-          {activeTab === "staff-permissions" && user?.role !== "admin" && (
+          {activeTab === "users" && user?.role !== "admin" && (
             <div className="p-4 sm:p-6">
               <div className="text-center py-8">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
