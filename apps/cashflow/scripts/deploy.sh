@@ -1,17 +1,19 @@
+This is an example
+
 # PROJECT MAP
 
 ## 1 SYSTEM OVERVIEW
 
 App name
-Portfolio Tracker
+Cashflow
 
 Purpose
-Track personal investment portfolio.
+Track personal cash flow.
 
 Core capabilities
 
 - import transactions
-- track holdings
+- track cash flow
 - calculate profit/loss
 - visualize portfolio
 
@@ -39,7 +41,7 @@ Add transaction
 → form input
 → validation
 → save to DB
-→ update holdings
+→ update cash flow
 
 ---
 
@@ -49,7 +51,7 @@ tables
 
 users
 transactions
-holdings
+cash_flow
 assets
 
 relationships
@@ -61,7 +63,7 @@ transactions
 → assets
 
 transactions
-→ holdings
+→ cash_flow
 
 ---
 
@@ -76,7 +78,7 @@ assets
 components
 
 transaction_table
-portfolio_chart
+cash_flow_chart
 import_modal
 
 ---
@@ -87,7 +89,7 @@ API
 
 /import
 /transactions
-/holdings
+/cash_flow
 
 ---
 
