@@ -94,7 +94,7 @@ CREATE TABLE transactions (
     payment_method TEXT,
     reference_number TEXT,
     notes TEXT,
-    branch_id UUID REFERENCES branches(id) NOT NULL,
+    branch_id UUID REFERENCES branches(id),
     created_by UUID REFERENCES users(id) NOT NULL,
     approved_by UUID REFERENCES users(id),
     approval_status approval_status DEFAULT 'pending',

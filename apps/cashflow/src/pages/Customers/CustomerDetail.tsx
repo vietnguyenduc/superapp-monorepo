@@ -3,9 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Button from "../../components/UI/Button";
 import { useAuth } from "../../hooks/useAuth";
+import { useCompany } from "../../contexts/CompanyContext";
 import { databaseService } from "../../services/database";
 import type { Customer, Transaction } from "../../types";
-import { formatCurrency, formatDate } from "../../utils/formatting";
+import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor } from "../../utils/formatting";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
 
 const CustomerDetail: React.FC = () => {
@@ -13,39 +14,29 @@ const CustomerDetail: React.FC = () => {
   const { customerId } = useParams<{ customerId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { selectedCompany } = useCompany();
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactionTypes, setTransactionTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const getTransactionTypeLabel = (type: string) => {
+    const dbType = transactionTypes.find((t) => t.id === type);
+    if (dbType) return dbType.name;
+
     switch (type) {
       case "payment":
-        return "Thanh toán";
+        return t("transactions.payment");
       case "charge":
-        return "Cho nợ";
+        return t("transactions.charge");
       case "adjustment":
-        return "Điều chỉnh";
+        return t("transactions.adjustment");
       case "refund":
-        return "Hoàn tiền";
+        return t("transactions.refund");
       default:
         return type;
-    }
-  };
-
-  const getTransactionTypeColor = (type: string) => {
-    switch (type) {
-      case "payment":
-        return "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200";
-      case "charge":
-        return "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200";
-      case "adjustment":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200";
-      case "refund":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
     }
   };
 
@@ -67,10 +58,12 @@ const CustomerDetail: React.FC = () => {
         setCustomer(customerResult.data);
 
         // Fetch customer transactions
+        const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
         const transactionsResult =
           await databaseService.transactions.getTransactions({
             customer_id: customerId,
             branch_id: user?.branch_id,
+            company_id: companyId,
           });
         if (transactionsResult.error) {
           console.error(
@@ -79,6 +72,12 @@ const CustomerDetail: React.FC = () => {
           );
         } else {
           setTransactions(transactionsResult.data || []);
+        }
+
+        // Fetch transaction types for dynamic names
+        const typeResult = await databaseService.transactionTypes.getTransactionTypes(companyId);
+        if (typeResult.data) {
+          setTransactionTypes(typeResult.data);
         }
       } catch (err) {
         setError(
@@ -90,9 +89,18 @@ const CustomerDetail: React.FC = () => {
     };
 
     fetchCustomerData();
-  }, [customerId, user?.branch_id]);
+  }, [customerId, user?.branch_id, user?.role, user?.company_id, selectedCompany?.id]);
 
-  if (loading) {
+  // Load color settings on mount
+  const [colorsReady, setColorsReady] = useState(false);
+  
+  useEffect(() => {
+    fetchColorSettings().then(() => {
+      setColorsReady(true);
+    });
+  }, []);
+
+  if (loading || !colorsReady) {
     return (
       <LoadingFallback
         title={t("common.loading")}
@@ -249,6 +257,59 @@ const CustomerDetail: React.FC = () => {
                   </p>
                 </div>
               )}
+
+              <div>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Số dư đầu kỳ
+                </label>
+                <p className="text-sm text-gray-900 dark:text-white">
+                  {formatCurrency(customer.opening_balance || 0)}
+                </p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Cập nhật lúc
+                </label>
+                <p className="text-sm text-gray-900 dark:text-white">
+                  {formatDate(customer.updated_at)}
+                </p>
+              </div>
+
+              {customer.updated_by_email && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Cập nhật bởi
+                  </label>
+                  <p className="text-sm text-gray-900 dark:text-white">
+                    {customer.updated_by_email}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-900 shadow rounded-lg p-6 mt-6">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              Thông tin công nợ
+            </h2>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Số dư hiện tại
+                </label>
+                <p className={`text-lg font-bold ${getCustomerDetailBalanceColor(customer.total_balance)}`}>
+                  {formatCurrency(customer.total_balance)}
+                </p>
+              </div>
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Số dư đầu kỳ
+                </label>
+                <p className="text-sm text-gray-900 dark:text-white">
+                  {formatCurrency(customer.opening_balance || 0)}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -292,7 +353,7 @@ const CustomerDetail: React.FC = () => {
                             </div>
                           </div>
                           <div className="text-right flex-shrink-0 ml-auto">
-                            <div className="text-sm font-bold text-gray-900 dark:text-white">
+                            <div className={`text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type)}`}>
                               {formatCurrency(transaction.amount)}
                             </div>
                             <span
@@ -355,8 +416,8 @@ const CustomerDetail: React.FC = () => {
                                 {getTransactionTypeLabel(transaction.transaction_type)}
                               </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 dark:text-white tabular-nums">
-                              <div className="flex justify-end">
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm tabular-nums">
+                              <div className={`flex justify-end font-bold ${getTransactionTypeAmountColor(transaction.transaction_type)}`}>
                                 {formatCurrency(transaction.amount)}
                               </div>
                             </td>

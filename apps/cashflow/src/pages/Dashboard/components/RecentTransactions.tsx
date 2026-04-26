@@ -2,8 +2,10 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import type { Transaction } from "../../../types";
-import { formatCurrency, formatDate } from "../../../utils/formatting";
+import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor } from "../../../utils/formatting";
 import { databaseService } from "../../../services/database";
+import { useAuth } from "../../../hooks/useAuth";
+import { useCompany } from "../../../contexts/CompanyContext";
 
 interface RecentTransactionsProps {
   transactions: Transaction[];
@@ -18,6 +20,8 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { selectedCompany } = useCompany();
   const [balanceAfterMap, setBalanceAfterMap] = React.useState<Record<string, number>>({});
   const [accountBalanceAfterMap, setAccountBalanceAfterMap] = React.useState<Record<string, number>>({});
   const [bankAccounts, setBankAccounts] = React.useState<Array<{ id: string; name: string }>>([]);
@@ -33,7 +37,8 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   React.useEffect(() => {
     let isMounted = true;
     const loadBranches = async () => {
-      const response = await databaseService.branches.getBranches();
+      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
+      const response = await databaseService.branches.getBranches(companyId);
       if (!response?.data || !isMounted) return;
       const map = response.data.reduce((acc: Record<string, string>, branch: any) => {
         const rawName = String(branch.name || branch.branch_name || branch.code || branch.id);
@@ -49,12 +54,13 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [user?.role, user?.company_id, selectedCompany?.id]);
 
   React.useEffect(() => {
     let isMounted = true;
     const loadBankAccounts = async () => {
-      const response = await databaseService.bankAccounts.getBankAccounts();
+      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
+      const response = await databaseService.bankAccounts.getBankAccounts(companyId);
       if (!response?.data || !isMounted) return;
       setBankAccounts(
         response.data.map((account: any) => ({
@@ -67,17 +73,19 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [user?.role, user?.company_id, selectedCompany?.id]);
 
   React.useEffect(() => {
     let isMounted = true;
     const loadBalances = async () => {
+      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
       const [txRes, accountRes] = await Promise.all([
         databaseService.transactions.getTransactions({
           page: 1,
           pageSize: 5000,
+          company_id: companyId,
         }),
-        databaseService.bankAccounts.getBankAccounts(),
+        databaseService.bankAccounts.getBankAccounts(companyId),
       ]);
       if (!txRes?.data || !isMounted) return;
 
@@ -129,6 +137,15 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
     return () => {
       isMounted = false;
     };
+  }, [user?.role, user?.company_id, selectedCompany?.id]);
+
+  // Load color settings on mount
+  const [colorsReady, setColorsReady] = React.useState(false);
+  
+  React.useEffect(() => {
+    fetchColorSettings().then(() => {
+      setColorsReady(true);
+    });
   }, []);
 
   // Function to get office name from branch_id
@@ -160,22 +177,21 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   });
   const displayTransactions = filteredTransactions.slice(0, maxItems);
 
-  const getTransactionTypeColor = (type: string) => {
-    switch (type) {
-      case "payment":
-        return "text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900";
-      case "charge":
-        return "text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-900";
-      case "adjustment":
-        return "text-yellow-600 bg-yellow-100 dark:text-yellow-300 dark:bg-yellow-900";
-      case "refund":
-        return "text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-900";
-      default:
-        return "text-gray-600 bg-gray-100 dark:text-gray-300 dark:bg-gray-900";
-    }
-  };
+  const [transactionTypes, setTransactionTypes] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    const loadTypes = async () => {
+      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
+      const response = await databaseService.transactionTypes.getTransactionTypes(companyId);
+      if (response.data) setTransactionTypes(response.data);
+    };
+    loadTypes();
+  }, [user?.role, user?.company_id, selectedCompany?.id]);
 
   const getTransactionTypeLabel = (type: string) => {
+    const dbType = transactionTypes.find((t) => t.id === type);
+    if (dbType) return dbType.name;
+
     switch (type) {
       case "payment":
         return t("transactions.types.payment");
@@ -308,10 +324,14 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                   </div>
                   <div className="flex-shrink-0 text-right">
                     <div
-                      className={`text-xl font-bold ${
-                        transaction.transaction_type === "payment"
-                          ? "text-green-600 dark:text-green-300"
-                          : "text-red-600 dark:text-red-300"
+                      className={`text-lg font-bold ${
+                        transaction.transaction_type === "charge"
+                          ? "text-red-600 dark:text-red-300"
+                          : transaction.transaction_type === "payment" || transaction.transaction_type === "refund"
+                            ? "text-green-600 dark:text-green-300"
+                            : transaction.transaction_type === "adjustment"
+                              ? "text-blue-600 dark:text-blue-300"
+                              : "text-gray-600 dark:text-gray-300"
                       }`}
                     >
                       {formatCurrency(transaction.amount)}
@@ -409,9 +429,13 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                   <td className="px-3 py-3 text-right">
                     <div
                       className={`text-sm font-bold ${
-                        transaction.transaction_type === "payment"
-                          ? "text-green-600 dark:text-green-300"
-                          : "text-red-600 dark:text-red-300"
+                        transaction.transaction_type === "charge"
+                          ? "text-red-600 dark:text-red-300"
+                          : transaction.transaction_type === "payment" || transaction.transaction_type === "refund"
+                            ? "text-green-600 dark:text-green-300"
+                            : transaction.transaction_type === "adjustment"
+                              ? "text-blue-600 dark:text-blue-300"
+                              : "text-gray-600 dark:text-gray-300"
                       }`}
                     >
                       {formatCurrency(transaction.amount)}
@@ -450,9 +474,13 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                 <div className="flex-shrink-0 text-right">
                   <div
                     className={`text-base font-bold ${
-                      transaction.transaction_type === "payment"
-                        ? "text-green-600 dark:text-green-300"
-                        : "text-red-600 dark:text-red-300"
+                      transaction.transaction_type === "charge"
+                        ? "text-red-600 dark:text-red-300"
+                        : transaction.transaction_type === "payment" || transaction.transaction_type === "refund"
+                          ? "text-green-600 dark:text-green-300"
+                          : transaction.transaction_type === "adjustment"
+                            ? "text-blue-600 dark:text-blue-300"
+                            : "text-gray-600 dark:text-gray-300"
                     }`}
                   >
                     {formatCurrency(transaction.amount)}

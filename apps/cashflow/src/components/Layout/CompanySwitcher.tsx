@@ -3,9 +3,15 @@ import { useCompany } from "../../contexts/CompanyContext";
 import { useAuth } from "../../hooks/useAuth";
 
 const CompanySwitcher: React.FC = () => {
-  const { companies, selectedCompany, setSelectedCompany, loading } = useCompany();
+  const { companies, selectedCompany, setSelectedCompany, loading, createCompany, deleteCompany, updateCompany } = useCompany();
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState("");
+  const [newCompanyCode, setNewCompanyCode] = useState("");
+  const [editCompanyName, setEditCompanyName] = useState("");
+  const [editCompanyCode, setEditCompanyCode] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -21,8 +27,8 @@ const CompanySwitcher: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Only show for admin users
-  if (user?.role !== "admin") {
+  // Only show for admin_master users
+  if (user?.role !== "admin_master") {
     return null;
   }
 
@@ -60,9 +66,18 @@ const CompanySwitcher: React.FC = () => {
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-80 overflow-y-auto">
-          <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
-            Switch Company
+        <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-80 overflow-y-auto">
+          <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 flex items-center justify-between">
+            <span>Switch Company</span>
+            <button
+              onClick={() => {
+                setIsCreateModalOpen(true);
+                setIsOpen(false);
+              }}
+              className="text-indigo-600 hover:text-indigo-700 font-medium text-xs"
+            >
+              + New Company
+            </button>
           </div>
           {companies.map((company) => (
             <button
@@ -71,11 +86,11 @@ const CompanySwitcher: React.FC = () => {
                 setSelectedCompany(company);
                 setIsOpen(false);
               }}
-              className={`w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors flex items-center justify-between ${
+              className={`w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors flex items-center justify-between group ${
                 selectedCompany?.id === company.id ? "bg-indigo-50" : ""
               }`}
             >
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 flex-1">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
                   {company.name.charAt(0)}
                 </div>
@@ -84,17 +99,172 @@ const CompanySwitcher: React.FC = () => {
                   <div className="text-xs text-gray-500">{company.code}</div>
                 </div>
               </div>
-              {selectedCompany?.id === company.id && (
-                <svg className="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              )}
+              <div className="flex items-center space-x-2">
+                {selectedCompany?.id === company.id && (
+                  <svg className="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                )}
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditCompanyName(company.name);
+                    setEditCompanyCode(company.code);
+                    setIsEditModalOpen(true);
+                    setIsOpen(false);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-blue-500 hover:text-blue-700 transition-opacity cursor-pointer"
+                  title="Edit company"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </div>
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm(`Are you sure you want to delete ${company.name}?`)) {
+                      deleteCompany(company.id);
+                    }
+                  }}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-700 transition-opacity cursor-pointer"
+                  title="Delete company"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </div>
+              </div>
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Create Company Modal */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Company</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                <input
+                  type="text"
+                  value={newCompanyName}
+                  onChange={(e) => setNewCompanyName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Enter company name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company Code</label>
+                <input
+                  type="text"
+                  value={newCompanyCode}
+                  onChange={(e) => setNewCompanyCode(e.target.value.toUpperCase())}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Enter company code (e.g., ABC)"
+                  maxLength={10}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setIsCreateModalOpen(false);
+                  setNewCompanyName("");
+                  setNewCompanyCode("");
+                }}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (newCompanyName && newCompanyCode) {
+                    createCompany({ 
+                      name: newCompanyName, 
+                      code: newCompanyCode,
+                      logo_url: null,
+                      is_active: true
+                    });
+                    setIsCreateModalOpen(false);
+                    setNewCompanyName("");
+                    setNewCompanyCode("");
+                  }
+                }}
+                disabled={!newCompanyName || !newCompanyCode}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Create Company
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Company Modal */}
+      {isEditModalOpen && selectedCompany && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit Company</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                <input
+                  type="text"
+                  value={editCompanyName}
+                  onChange={(e) => setEditCompanyName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Enter company name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company Code</label>
+                <input
+                  type="text"
+                  value={editCompanyCode}
+                  onChange={(e) => setEditCompanyCode(e.target.value.toUpperCase())}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Enter company code (e.g., ABC)"
+                  maxLength={10}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setEditCompanyName("");
+                  setEditCompanyCode("");
+                }}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (editCompanyName && editCompanyCode) {
+                    updateCompany(selectedCompany.id, { 
+                      name: editCompanyName, 
+                      code: editCompanyCode
+                    });
+                    setIsEditModalOpen(false);
+                    setEditCompanyName("");
+                    setEditCompanyCode("");
+                  }
+                }}
+                disabled={!editCompanyName || !editCompanyCode}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

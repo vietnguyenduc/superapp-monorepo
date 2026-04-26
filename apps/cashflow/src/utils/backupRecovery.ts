@@ -7,6 +7,7 @@ import { createError, ERROR_CODES } from "./errorHandling";
 export interface BackupData {
   version: string;
   timestamp: string;
+  company_id?: string;
   branch_id?: string;
   customers: Customer[];
   transactions: Transaction[];
@@ -27,12 +28,25 @@ export interface BackupOptions {
   includeTransactions: boolean;
   includeBankAccounts: boolean;
   includeBranches: boolean;
+  company_id?: string;
   branch_id?: string;
   dateRange?: {
     start: string;
     end: string;
   };
   format: "xlsx" | "json";
+}
+
+export interface ConflictInfo {
+  totalConflicts: number;
+  conflicts: Array<{
+    type: "customer" | "transaction" | "bank_account" | "branch";
+    id: string;
+    name: string;
+    existingData: any;
+    backupData: any;
+  }>;
+  backupMetadata: BackupData["metadata"];
 }
 
 // Default backup options
@@ -55,6 +69,7 @@ export const backupService = {
       const backupData: BackupData = {
         version: "1.0.0",
         timestamp: new Date().toISOString(),
+        company_id: options.company_id,
         branch_id: options.branch_id,
         customers: [],
         transactions: [],
@@ -74,6 +89,7 @@ export const backupService = {
       if (options.includeCustomers) {
         const { data: customers } =
           await databaseService.customers.getCustomers({
+            company_id: options.company_id,
             branch_id: options.branch_id,
             is_active: true,
           });
@@ -83,7 +99,10 @@ export const backupService = {
 
       // Fetch transactions
       if (options.includeTransactions) {
-        const filters: any = { branch_id: options.branch_id };
+        const filters: any = {
+          company_id: options.company_id,
+          branch_id: options.branch_id,
+        };
         if (options.dateRange) {
           filters.dateRange = options.dateRange;
         }
@@ -97,17 +116,19 @@ export const backupService = {
       // Fetch bank accounts
       if (options.includeBankAccounts) {
         const { data: bankAccounts } =
-          await databaseService.bankAccounts.getBankAccounts({
-            branch_id: options.branch_id,
-            is_active: true,
-          });
-        backupData.bank_accounts = bankAccounts;
-        backupData.metadata.totalBankAccounts = bankAccounts.length;
+          await databaseService.bankAccounts.getBankAccounts(options.company_id);
+        // Filter by branch_id if specified and exclude null branch_ids
+        let filteredBankAccounts = bankAccounts.filter((ba: any) => ba.branch_id !== null);
+        if (options.branch_id) {
+          filteredBankAccounts = filteredBankAccounts.filter((ba: any) => ba.branch_id === options.branch_id);
+        }
+        backupData.bank_accounts = filteredBankAccounts as BankAccount[];
+        backupData.metadata.totalBankAccounts = filteredBankAccounts.length;
       }
 
       // Fetch branches
       if (options.includeBranches) {
-        const { data: branches } = await databaseService.branches.getBranches();
+        const { data: branches } = await databaseService.branches.getBranches(options.company_id);
         backupData.branches = branches;
         backupData.metadata.totalBranches = branches.length;
       }
@@ -199,21 +220,9 @@ export const backupService = {
   async importBackup(file: File): Promise<BackupData> {
     try {
       if (file.name.endsWith(".json")) {
-        // TODO: Implement importJsonBackup
-        throw createError(
-          ERROR_CODES.FILE_READ_ERROR,
-          "JSON import is not yet implemented.",
-          null,
-          false,
-        );
+        return await this.importJsonBackup(file);
       } else if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
-        // TODO: Implement Excel backup import
-        throw createError(
-          ERROR_CODES.FILE_READ_ERROR,
-          "Unsupported file format. Please use .xlsx or .json files.",
-          null,
-          false,
-        );
+        return await this.importExcelBackup(file);
       } else {
         throw createError(
           ERROR_CODES.FILE_READ_ERROR,
@@ -230,6 +239,35 @@ export const backupService = {
         false,
       );
     }
+  },
+
+  // Import JSON backup
+  async importJsonBackup(file: File): Promise<BackupData> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result;
+          if (!data) {
+            reject(new Error("Failed to read file"));
+            return;
+          }
+
+          const json = JSON.parse(data as string);
+          
+          // Validate backup data structure
+          this.validateBackupData(json);
+
+          resolve(json as BackupData);
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsText(file);
+    });
   },
 
   // Import Excel backup
@@ -309,7 +347,7 @@ export const backupService = {
           }
 
           // Validate backup data structure
-          // TODO: Implement validateBackupData
+          this.validateBackupData(backupData);
           resolve(backupData);
         } catch (error) {
           reject(error);
@@ -319,6 +357,108 @@ export const backupService = {
       reader.onerror = () => reject(new Error("Failed to read file"));
       reader.readAsBinaryString(file);
     });
+  },
+
+  // Detect conflicts between backup data and existing data
+  async detectConflicts(
+    backupData: BackupData,
+    targetCompanyId?: string,
+  ): Promise<ConflictInfo["conflicts"]> {
+    const conflicts: ConflictInfo["conflicts"] = [];
+
+    // Check customer conflicts
+    for (const customer of backupData.customers) {
+      try {
+        const { data: existingCustomer } =
+          await databaseService.customers.getCustomerById(customer.id);
+        if (existingCustomer) {
+          // Check if company_id matches (if specified)
+          if (targetCompanyId && existingCustomer.company_id !== targetCompanyId) {
+            continue; // Skip if different company
+          }
+          conflicts.push({
+            type: "customer",
+            id: customer.id,
+            name: customer.full_name || customer.customer_code,
+            existingData: existingCustomer,
+            backupData: customer,
+          });
+        }
+      } catch (error) {
+        // Customer doesn't exist, no conflict
+      }
+    }
+
+    // Check transaction conflicts
+    for (const transaction of backupData.transactions) {
+      try {
+        const { data: existingTransaction } =
+          await databaseService.transactions.getTransactionById(transaction.id);
+        if (existingTransaction) {
+          // Check if company_id matches (if specified)
+          if (targetCompanyId && existingTransaction.company_id !== targetCompanyId) {
+            continue; // Skip if different company
+          }
+          conflicts.push({
+            type: "transaction",
+            id: transaction.id,
+            name: transaction.transaction_code,
+            existingData: existingTransaction,
+            backupData: transaction,
+          });
+        }
+      } catch (error) {
+        // Transaction doesn't exist, no conflict
+      }
+    }
+
+    // Check bank account conflicts
+    for (const bankAccount of backupData.bank_accounts) {
+      try {
+        const { data: existingAccount } =
+          await databaseService.bankAccounts.getBankAccount(bankAccount.id);
+        if (existingAccount) {
+          // Check if company_id matches (if specified)
+          if (targetCompanyId && existingAccount.company_id !== targetCompanyId) {
+            continue; // Skip if different company
+          }
+          conflicts.push({
+            type: "bank_account",
+            id: bankAccount.id,
+            name: bankAccount.account_name,
+            existingData: existingAccount,
+            backupData: bankAccount,
+          });
+        }
+      } catch (error) {
+        // Bank account doesn't exist, no conflict
+      }
+    }
+
+    // Check branch conflicts
+    for (const branch of backupData.branches) {
+      try {
+        const { data: existingBranch } =
+          await databaseService.branches.getBranchById(branch.id);
+        if (existingBranch) {
+          // Check if company_id matches (if specified)
+          if (targetCompanyId && existingBranch.company_id !== targetCompanyId) {
+            continue; // Skip if different company
+          }
+          conflicts.push({
+            type: "branch",
+            id: branch.id,
+            name: branch.name,
+            existingData: existingBranch,
+            backupData: branch,
+          });
+        }
+      } catch (error) {
+        // Branch doesn't exist, no conflict
+      }
+    }
+
+    return conflicts;
   },
 
   // Validate backup data structure
@@ -365,6 +505,8 @@ export const backupService = {
       restoreBranches?: boolean;
       overwriteExisting?: boolean;
       branchMapping?: Record<string, string>; // Map old branch IDs to new branch IDs
+      company_id?: string; // Target company_id for validation
+      onConflict?: (conflicts: ConflictInfo) => Promise<boolean>; // Callback for conflict resolution
     } = {},
   ): Promise<{
     restored: {
@@ -386,6 +528,37 @@ export const backupService = {
     };
 
     try {
+      // Validate company_id if specified
+      if (options.company_id && backupData.company_id) {
+        if (backupData.company_id !== options.company_id) {
+          throw createError(
+            ERROR_CODES.IMPORT_FAILED,
+            `Backup company_id (${backupData.company_id}) does not match target company_id (${options.company_id})`,
+            null,
+            false,
+          );
+        }
+      }
+      // Detect conflicts before restoration
+      const conflicts = await this.detectConflicts(backupData, options.company_id);
+      
+      // If conflicts exist and overwrite is not enabled, ask for confirmation
+      if (conflicts.length > 0 && !options.overwriteExisting) {
+        if (options.onConflict) {
+          const shouldProceed = await options.onConflict({
+            totalConflicts: conflicts.length,
+            conflicts,
+            backupMetadata: backupData.metadata,
+          });
+          if (!shouldProceed) {
+            return {
+              restored: result.restored,
+              errors: [...result.errors, { type: "conflict", message: "Restore cancelled by user due to conflicts" }],
+            };
+          }
+        }
+      }
+
       // Restore branches first (if needed for mapping)
       if (options.restoreBranches && backupData.branches.length > 0) {
         for (const branch of backupData.branches) {
@@ -422,13 +595,13 @@ export const backupService = {
 
             // Check if bank account already exists
             const { data: existingAccount } =
-              await databaseService.bankAccounts.getBankAccountById(
+              await databaseService.bankAccounts.getBankAccount(
                 bankAccount.id,
               );
 
             if (!existingAccount || options.overwriteExisting) {
               // Create or update bank account
-              // Note: This would need to be implemented in the bank account service
+              await databaseService.bankAccounts.upsertBankAccount(bankAccount);
               result.restored.bank_accounts++;
             }
           } catch (error) {
@@ -466,6 +639,9 @@ export const backupService = {
                 await databaseService.customers.createCustomer(customer);
               }
               result.restored.customers++;
+            } else {
+              // Skip existing customer
+              continue;
             }
           } catch (error) {
             result.errors.push({
@@ -507,6 +683,9 @@ export const backupService = {
                 );
               }
               result.restored.transactions++;
+            } else {
+              // Skip existing transaction
+              continue;
             }
           } catch (error) {
             result.errors.push({
@@ -560,6 +739,7 @@ export const recoveryUtils = {
   // Validate backup before restoration
   validateBackupForRestoration(
     backupData: BackupData,
+    targetCompanyId?: string,
     targetBranchId?: string,
   ): {
     isValid: boolean;
@@ -573,6 +753,17 @@ export const recoveryUtils = {
     if (backupData.version !== "1.0.0") {
       warnings.push(
         `Backup version ${backupData.version} may not be fully compatible with current system`,
+      );
+    }
+
+    // Check if backup is from different company
+    if (
+      targetCompanyId &&
+      backupData.company_id &&
+      backupData.company_id !== targetCompanyId
+    ) {
+      errors.push(
+        `Backup is from a different company (${backupData.company_id}). Cannot restore to company ${targetCompanyId}.`,
       );
     }
 

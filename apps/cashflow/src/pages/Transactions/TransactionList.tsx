@@ -2,7 +2,10 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { databaseService } from "../../services/database";
 import type { Transaction } from "../../types";
-import { formatCurrency, formatDate } from "../../utils/formatting";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "../../hooks/useAuth";
+import { useCompany } from "../../contexts/CompanyContext";
+import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../utils/formatting";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import Pagination from "../../components/UI/Pagination";
 import PageHeader from "../../components/UI/PageHeader";
@@ -34,7 +37,10 @@ interface TransactionListState {
 }
 
 const TransactionList: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { selectedCompany } = useCompany();
   const [searchParams] = useSearchParams();
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [bankAccounts, setBankAccounts] = useState<{ id: string; name: string }[]>([]);
@@ -71,6 +77,7 @@ const TransactionList: React.FC = () => {
     bank_account_id: "",
     branch_id: "",
     reference_number: "",
+    customer_id: "",
   });
 
   // Initialize customer filter from URL params
@@ -102,12 +109,14 @@ const TransactionList: React.FC = () => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
+      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
       const filters = {
         search: state.searchTerm || undefined,
         dateRange: state.dateRange || undefined,
         transaction_type: state.transactionType || undefined,
         customer_id: state.customerFilter?.id || undefined,
         branch_id: state.branchFilter || undefined,
+        company_id: companyId,
         page: state.currentPage,
         pageSize: state.pageSize,
       };
@@ -142,15 +151,16 @@ const TransactionList: React.FC = () => {
         loading: false,
       }));
     }
-  }, [state.searchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.currentPage, state.pageSize]);
+  }, [state.searchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.currentPage, state.pageSize, selectedCompany]);
 
   useEffect(() => {
     const loadFilters = async () => {
+      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
       const [branchResult, bankResult, customerResult, typeResult] = await Promise.all([
-        databaseService.branches.getBranches(),
-        databaseService.bankAccounts.getBankAccounts(),
-        databaseService.customers.getCustomers({ limit: 500 }),
-        databaseService.transactionTypes.getTransactionTypes(),
+        databaseService.branches.getBranches(companyId),
+        databaseService.bankAccounts.getBankAccounts(companyId),
+        databaseService.customers.getCustomers({ limit: 500, company_id: companyId }),
+        databaseService.transactionTypes.getTransactionTypes(companyId),
       ]);
 
       if (branchResult?.data) {
@@ -189,12 +199,21 @@ const TransactionList: React.FC = () => {
       }
     };
     loadFilters();
-  }, []);
+  }, [user?.role, user?.company_id, selectedCompany?.id]);
 
   // Load transactions on mount and when filters change
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
+
+  // Load color settings on mount
+  const [colorsReady, setColorsReady] = useState(false);
+  
+  useEffect(() => {
+    fetchColorSettings().then(() => {
+      setColorsReady(true);
+    });
+  }, []);
 
   const handlePageChange = (page: number) => {
     setState((prev) => ({ ...prev, currentPage: page }));
@@ -305,6 +324,7 @@ const TransactionList: React.FC = () => {
       bank_account_id: tx.bank_account_id || "",
       branch_id: tx.branch_id || "",
       reference_number: tx.reference_number || "",
+      customer_id: tx.customer_id || "",
     });
   }, []);
 
@@ -327,15 +347,21 @@ const TransactionList: React.FC = () => {
     }
     const dateIso = editForm.transaction_date ? new Date(editForm.transaction_date).toISOString() : editingTx.transaction_date;
     try {
-      const result = await databaseService.transactions.updateTransaction(editingTx.id, {
-        transaction_type: editForm.transaction_type,
-        transaction_date: dateIso,
-        amount: amt,
-        description: editForm.description,
-        bank_account_id: editForm.bank_account_id,
-        branch_id: editForm.branch_id,
-        reference_number: editForm.reference_number,
-      });
+      const result = await databaseService.transactions.updateTransaction(
+        editingTx.id,
+        {
+          transaction_type: editForm.transaction_type,
+          transaction_date: dateIso,
+          amount: amt,
+          description: editForm.description,
+          bank_account_id: editForm.bank_account_id,
+          branch_id: editForm.branch_id,
+          reference_number: editForm.reference_number,
+          customer_id: editingTx.customer_id,
+          created_by: editingTx.created_by,
+          company_id: editingTx.company_id,
+        }
+      );
       if (result.error) {
         alert("Cập nhật giao dịch thất bại");
       } else {
@@ -352,29 +378,37 @@ const TransactionList: React.FC = () => {
     return match?.name || "N/A";
   };
 
-  const getCustomerCode = (customerId?: string) => {
+  const getCustomerCode = (customerId?: string | null) => {
     if (!customerId) return "";
     const match = customers.find((c) => c.id === String(customerId));
     return match?.code || "";
   };
 
-  const handleSelectCustomer = (id?: string) => {
+  const handleSelectCustomer = (id?: string | null) => {
     if (!id) return;
     setState((prev) => ({
       ...prev,
       showCustomerModal: true,
-      modalCustomer: customers.find((c) => c.id === id) || null,
+      modalCustomer: customers.find((c) => c.id === String(id)) || null,
     }));
   };
 
   const getTransactionTypeLabel = (type: string): string => {
-    const labels: Record<string, string> = {
-      payment: "Phát sinh tăng",
-      charge: "Phát sinh giảm",
-      adjustment: "Điều chỉnh",
-      refund: "Hoàn tiền",
-    };
-    return labels[type] || type;
+    const dbType = transactionTypes.find((t) => t.id === type);
+    if (dbType) return dbType.name;
+
+    switch (type) {
+      case "payment":
+        return t("transactions.payment");
+      case "charge":
+        return t("transactions.charge");
+      case "adjustment":
+        return t("transactions.adjustment");
+      case "refund":
+        return t("transactions.refund");
+      default:
+        return type;
+    }
   };
 
   const hasCustomerFilter = Boolean(state.customerFilter?.id);
@@ -386,7 +420,7 @@ const TransactionList: React.FC = () => {
   }, [state.currentPage, state.pageSize, state.totalCount]);
 
   const userOptions = useMemo(() => {
-    return Array.from(new Set(state.transactions.map((t) => t.created_by).filter(Boolean)));
+    return Array.from(new Set(state.transactions.map((t) => t.created_by).filter((u): u is string => Boolean(u))));
   }, [state.transactions]);
 
   const groupedData = useMemo(() => {
@@ -397,7 +431,7 @@ const TransactionList: React.FC = () => {
       day: (tx) => formatter.format(new Date(tx.transaction_date)),
       branch: (tx) => (tx.branch_id ? getBranchName(tx.branch_id) : "Không có văn phòng"),
       transaction_type: (tx) => getTransactionTypeLabel(tx.transaction_type),
-      customer: (tx) => tx.customer_name || `Customer #${tx.customer_id}`,
+      customer: (tx) => tx.customer_name || tx.customer_id ? `Customer #${tx.customer_id}` : "Không có khách hàng",
     };
 
     return state.transactions.reduce<Record<string, { count: number; total: number }>>((acc, tx) => {
@@ -432,10 +466,10 @@ const TransactionList: React.FC = () => {
     setCustomEnd(state.dateRange.end.slice(0, 10));
   }, [state.dateRange]);
 
-  if (state.loading) {
+  if (state.loading || !colorsReady) {
     return (
       <LoadingFallback
-        title="Đang tải giao dịch"
+        title="Đang tải"
         message="Vui lòng chờ trong giây lát"
       />
     );
@@ -562,8 +596,8 @@ const TransactionList: React.FC = () => {
                 onChange={(e) => handleUserChange(e.target.value)}
               >
                 <option value="">Tất cả người thực hiện</option>
-                {userOptions.map((u) => (
-                  <option key={u} value={u}>{u}</option>
+                {userOptions.map((u, idx) => (
+                  <option key={idx} value={u}>{u}</option>
                 ))}
               </select>
 
@@ -663,26 +697,14 @@ const TransactionList: React.FC = () => {
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <span
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          transaction.transaction_type === "payment"
-                            ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
-                            : transaction.transaction_type === "charge"
-                            ? "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200"
-                            : transaction.transaction_type === "adjustment"
-                            ? "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"
-                            : "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
-                        }`}
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTransactionTypeColor(transaction.transaction_type)}`}
                       >
                         {getTransactionTypeLabel(transaction.transaction_type)}
                       </span>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
                       <span
-                        className={`text-xs sm:text-sm font-bold ${
-                          transaction.amount >= 0
-                            ? "text-green-600 dark:text-green-400"
-                            : "text-red-600 dark:text-red-400"
-                        }`}
+                        className={`text-xs sm:text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type)}`}
                       >
                         {formatCurrency(transaction.amount)}
                       </span>
@@ -691,22 +713,22 @@ const TransactionList: React.FC = () => {
                       <button
                         type="button"
                         className="text-left text-gray-900 dark:text-white hover:underline"
-                        onClick={() => handleSelectCustomer(transaction.customer_id)}
+                        onClick={() => transaction.customer_id && handleSelectCustomer(transaction.customer_id)}
                       >
-                        {transaction.customer_name || `Customer #${transaction.customer_id}`}
+                        {transaction.customer_name || (transaction.customer_id ? customers.find(c => c.id === String(transaction.customer_id))?.name : null) || (transaction.customer_id ? `Customer #${transaction.customer_id}` : "Không có khách hàng")}
                       </button>
                       {getCustomerCode(transaction.customer_id) ? (
                         <div className="text-xs text-gray-500 dark:text-gray-400">{getCustomerCode(transaction.customer_id)}</div>
                       ) : null}
                     </td>
                     <td className="hidden lg:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                      {transaction.branch_id ? getBranchName(transaction.branch_id) : "—"}
+                      {transaction.branch_name || "—"}
                     </td>
                     <td className="hidden md:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                      {transaction.bank_account_name || `#${transaction.bank_account_id}`}
+                      {transaction.bank_account_name || transaction.bank_account_id ? `#${transaction.bank_account_id}` : "Không có tài khoản"}
                     </td>
                     <td className="hidden lg:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                      {transaction.created_by}
+                      {transaction.creator_name || transaction.created_by}
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
                       <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 sm:px-2 py-0.5 rounded text-xs sm:text-xs">
@@ -781,6 +803,21 @@ const TransactionList: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Khách hàng</label>
+                <select
+                  className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  value={editForm.customer_id}
+                  onChange={(e) => setEditForm((p) => ({ ...p, customer_id: e.target.value }))}
+                >
+                  <option value="">Chọn khách hàng</option>
+                  {customers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Loại giao dịch</label>
                 <select
                   className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
@@ -788,10 +825,10 @@ const TransactionList: React.FC = () => {
                   onChange={(e) => setEditForm((p) => ({ ...p, transaction_type: e.target.value as any }))}
                 >
                   {(transactionTypes.length ? transactionTypes : [
-                    { id: "payment", name: "Phát sinh tăng" },
-                    { id: "charge", name: "Phát sinh giảm" },
-                    { id: "adjustment", name: "Điều chỉnh" },
-                    { id: "refund", name: "Hoàn tiền" },
+                    { id: "payment", name: t("transactions.payment") },
+                    { id: "charge", name: t("transactions.charge") },
+                    { id: "adjustment", name: t("transactions.adjustment") },
+                    { id: "refund", name: t("transactions.refund") },
                   ]).map((t) => (
                     <option key={t.id} value={t.id}>{t.name}</option>
                   ))}

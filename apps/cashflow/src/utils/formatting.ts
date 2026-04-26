@@ -204,8 +204,8 @@ export const formatRelativeTime = (date: string | Date): string => {
 // Transaction type formatting
 export const formatTransactionType = (type: string): string => {
   const typeMap: Record<string, string> = {
-    payment: "Phát sinh tăng",
-    charge: "Phát sinh giảm",
+    payment: "Điều chỉnh giảm",
+    charge: "Điều chỉnh tăng",
     adjustment: "Điều chỉnh",
     refund: "Hoàn tiền",
   };
@@ -270,11 +270,11 @@ export const formatTableCell = (
 
 // CSV/Excel data formatting
 export const formatForExport = (
-  data: any[],
+  data: Record<string, unknown>[],
   columns: Array<{ key: string; label: string; type?: string }>,
-): any[] => {
+): Record<string, unknown>[] => {
   return data.map((row) => {
-    const formattedRow: any = {};
+    const formattedRow: Record<string, unknown> = {};
     columns.forEach((column) => {
       const value = row[column.key];
       if (column.type) {
@@ -288,34 +288,184 @@ export const formatForExport = (
 };
 
 // Color utility functions for consistent UI theming
-export const getTransactionTypeColor = (type: string): string => {
-  switch (type) {
-    case "payment":
-      return "bg-green-100 text-green-800";
-    case "charge":
-      return "bg-red-100 text-red-800";
-    case "adjustment":
-      return "bg-yellow-100 text-yellow-800";
-    case "refund":
-      return "bg-blue-100 text-blue-800";
-    default:
-      return "bg-gray-100 text-gray-800";
+// Concept: Phát sinh tăng (tăng công nợ) = red, Phát sinh giảm (giảm công nợ) = green, Điều chỉnh = blue
+
+// Cache for color settings
+let cachedTransactionColors: any = null;
+let cachedBalanceColors: any = null;
+let colorsLoaded = false;
+let colorLoadPromise: Promise<void> | null = null;
+
+// Function to fetch and cache colors from database
+export async function fetchColorSettings() {
+  if (colorsLoaded) return; // Don't reload if already loaded
+  
+  if (colorLoadPromise) return colorLoadPromise; // Return existing promise if loading
+  
+  colorLoadPromise = (async () => {
+    try {
+      const { databaseService } = await import("../services/database");
+      
+      const [txColorsResult, balanceColorsResult] = await Promise.all([
+        databaseService.colorSettings.getTransactionTypeColors(),
+        databaseService.colorSettings.getCustomerBalanceColors(),
+      ]);
+
+      // The service returns { data: colors, error: null }
+      // Handle both cases: if it has .data property use it, otherwise use the result directly
+      const txColors = (txColorsResult as any)?.data || txColorsResult;
+      const balanceColors = (balanceColorsResult as any)?.data || balanceColorsResult;
+
+      if (txColors) {
+        cachedTransactionColors = txColors;
+      }
+      if (balanceColors) {
+        cachedBalanceColors = balanceColors;
+      }
+
+      colorsLoaded = true;
+    } catch (err) {
+      console.error("Failed to fetch color settings, using defaults", err);
+    } finally {
+      colorLoadPromise = null;
+    }
+  })();
+  
+  return colorLoadPromise;
+}
+
+export function getCustomerListBalanceColor(balance: number): string {
+  const colors = cachedBalanceColors;
+  if (!colors || !colors.customer_list) {
+    // Fallback to hardcoded colors if not loaded yet
+    return balance > 0 ? "text-black dark:text-white" : "text-green-600 dark:text-green-400";
   }
+
+  const listColors = colors.customer_list;
+  return balance > 0 ? listColors.positive_balance_color : listColors.zero_or_negative_color;
+}
+
+export function getCustomerDetailBalanceColor(balance: number): string {
+  const colors = cachedBalanceColors;
+  if (!colors || !colors.customer_detail) {
+    // Fallback to hardcoded colors if not loaded yet
+    return balance > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400";
+  }
+
+  const detailColors = colors.customer_detail;
+  return balance > 0 ? detailColors.positive_balance_color : detailColors.zero_or_negative_color;
+}
+
+export const getTransactionTypeColor = (
+  type: string,
+): string => {
+  const colors = cachedTransactionColors;
+  
+  if (!colors) {
+    // Fallback to hardcoded colors if not loaded yet
+    switch (type) {
+      case "payment":
+        return "text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900";
+      case "charge":
+        return "text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-900";
+      case "adjustment":
+        return "text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-900";
+      case "refund":
+        return "text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900";
+      default:
+        return "text-gray-600 bg-gray-100 dark:text-gray-300 dark:bg-gray-900";
+    }
+  }
+
+  const typeColors = colors[type];
+  if (!typeColors) {
+    return "text-gray-600 bg-gray-100 dark:text-gray-300 dark:bg-gray-900";
+  }
+
+  const colorClass = `${typeColors.text_color} ${typeColors.bg_color} ${typeColors.dark_text_color} ${typeColors.dark_bg_color}`;
+  return colorClass;
+};
+
+export const getTransactionTypeAmountColor = (
+  type: string,
+): string => {
+  const colors = cachedTransactionColors;
+  
+  if (!colors) {
+    // Fallback to hardcoded amount colors if not loaded yet
+    switch (type) {
+      case "payment":
+        return "text-green-600 dark:text-green-400";
+      case "charge":
+        return "text-red-600 dark:text-red-400";
+      case "adjustment":
+        return "text-blue-600 dark:text-blue-400";
+      case "refund":
+        return "text-green-600 dark:text-green-400";
+      default:
+        return "text-gray-600 dark:text-gray-400";
+    }
+  }
+
+  const typeColors = colors[type];
+  if (!typeColors) {
+    return "text-gray-600 dark:text-gray-400";
+  }
+
+  const amountColorClass = `${typeColors.amount_color} ${typeColors.dark_amount_color}`;
+  return amountColorClass;
 };
 
 export const getTransactionTypeTextColor = (type: string): string => {
-  switch (type) {
-    case "payment":
-      return "text-green-600";
-    case "charge":
-      return "text-red-600";
-    case "adjustment":
-      return "text-yellow-600";
-    case "refund":
-      return "text-blue-600";
-    default:
-      return "text-gray-600";
+  const colors = cachedTransactionColors;
+  if (!colors) {
+    // Fallback to hardcoded colors if not loaded yet
+    switch (type) {
+      case "payment":
+        return "text-green-600";
+      case "charge":
+        return "text-red-600";
+      case "adjustment":
+        return "text-blue-600";
+      case "refund":
+        return "text-green-600";
+      default:
+        return "text-gray-600";
+    }
   }
+
+  const typeColors = colors[type];
+  if (!typeColors) {
+    return "text-gray-600";
+  }
+
+  return typeColors.amount_color;
+};
+
+export const getTransactionTypeLabel = (type: string): string => {
+  const colors = cachedTransactionColors;
+  if (!colors) {
+    // Fallback to hardcoded labels if not loaded yet
+    switch (type) {
+      case "payment":
+        return "Điều chỉnh giảm";
+      case "charge":
+        return "Điều chỉnh tăng";
+      case "adjustment":
+        return "Điều chỉnh";
+      case "refund":
+        return "Hoàn tiền";
+      default:
+        return type;
+    }
+  }
+
+  const typeColors = colors[type];
+  if (!typeColors) {
+    return type;
+  }
+
+  return typeColors.label;
 };
 
 export const getBalanceColor = (balance: number): string => {

@@ -2,11 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { Customer, Transaction } from "../../../types";
 import { databaseService } from "../../../services/database";
-import {
-  formatCurrency,
-  formatDate,
-  formatPhoneNumber,
-} from "../../../utils/formatting";
+import { useAuth } from "../../../hooks/useAuth";
+import { useCompany } from "../../../contexts/CompanyContext";
+import { formatCurrency, formatDate, formatPhoneNumber, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor } from "../../../utils/formatting";
 import { LoadingFallback } from "../../../components/UI/FallbackUI";
 
 interface CustomerDetailModalProps {
@@ -21,6 +19,8 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   onEdit,
 }) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const { selectedCompany } = useCompany();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +29,10 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
+        const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
         const result = await databaseService.transactions.getTransactions({
           customer_id: customer.id,
+          company_id: companyId,
           limit: 50,
         });
 
@@ -49,22 +51,16 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     };
 
     fetchTransactions();
-  }, [customer.id]);
+  }, [customer.id, user?.role, user?.company_id, selectedCompany?.id]);
 
-  const getTransactionTypeColor = (type: string) => {
-    switch (type) {
-      case "payment":
-        return "text-green-600 bg-green-100";
-      case "charge":
-        return "text-red-600 bg-red-100";
-      case "adjustment":
-        return "text-yellow-600 bg-yellow-100";
-      case "refund":
-        return "text-blue-600 bg-blue-100";
-      default:
-        return "text-gray-600 bg-gray-100";
-    }
-  };
+  // Load color settings on mount
+  const [colorsReady, setColorsReady] = useState(false);
+  
+  useEffect(() => {
+    fetchColorSettings().then(() => {
+      setColorsReady(true);
+    });
+  }, []);
 
   const getTransactionTypeLabel = (type: string) => {
     switch (type) {
@@ -99,8 +95,33 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
 
   const openingBalance = customer.opening_balance ?? 0;
-  const openingUpdatedAt =
-    (customer as any).opening_balance_updated_at || customer.updated_at || customer.created_at;
+
+  // Tính công nợ hiện tại real-time từ opening_balance + transactions
+  // Logic: opening_balance + charge(+) + payment(-) + refund(-) + adjustment(signed)
+  const currentBalance = transactions.reduce((balance, transaction) => {
+    const amount = Number(transaction.amount) || 0;
+    switch (transaction.transaction_type) {
+      case "charge":
+        return balance + amount; // Charge tăng công nợ
+      case "payment":
+        return balance - amount; // Payment giảm công nợ
+      case "refund":
+        return balance - amount; // Refund giảm công nợ
+      case "adjustment":
+        return balance + amount; // Adjustment giữ nguyên dấu
+      default:
+        return balance;
+    }
+  }, openingBalance);
+
+  // Tìm giao dịch cuối từ transactions array
+  const lastTransactionDate = transactions.length > 0
+    ? transactions.reduce((latest, tx) => {
+      const txDate = new Date(tx.transaction_date);
+      const latestDate = new Date(latest.transaction_date);
+      return txDate > latestDate ? tx : latest;
+    }).transaction_date
+    : null;
 
   return (
     <div className="fixed inset-0 z-[200] overflow-y-auto">
@@ -165,7 +186,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                       Mã khách hàng
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">
-                      {customer.customer_code}
+                      {customer.customer_code || "-"}
                     </dd>
                   </div>
 
@@ -174,7 +195,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                       Họ và tên
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">
-                      {customer.full_name}
+                      {customer.full_name || "-"}
                     </dd>
                   </div>
 
@@ -225,7 +246,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                       Ngày tạo
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">
-                      {formatDate(customer.created_at)}
+                      {customer.created_at ? formatDate(customer.created_at) : "-"}
                     </dd>
                   </div>
                 </dl>
@@ -253,13 +274,9 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                       Công nợ hiện tại
                     </dt>
                     <dd
-                      className={`mt-1 text-2xl font-bold ${
-                        customer.total_balance < 0
-                          ? "text-red-600 dark:text-red-400"
-                          : "text-green-600 dark:text-green-400"
-                      }`}
+                      className={`mt-1 text-2xl font-bold ${getCustomerDetailBalanceColor(currentBalance)}`}
                     >
-                      {formatCurrency(customer.total_balance)}
+                      {formatCurrency(currentBalance)}
                     </dd>
                   </div>
 
@@ -269,7 +286,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                         Số dư đầu kỳ
                       </dt>
                       <dd className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {formatCurrency(openingBalance)}
+                        {formatCurrency(customer.opening_balance ?? 0)}
                       </dd>
                     </div>
                     <div>
@@ -277,7 +294,13 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                         Cập nhật lúc
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">
-                        {formatDate(openingUpdatedAt)}
+                        {(customer as any).opening_balance_updated_at
+                          ? formatDate((customer as any).opening_balance_updated_at)
+                          : customer.updated_at
+                            ? formatDate(customer.updated_at)
+                            : customer.created_at
+                              ? formatDate(customer.created_at)
+                              : "-"}
                       </dd>
                     </div>
                   </div>
@@ -296,8 +319,8 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                       Giao dịch cuối
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">
-                      {customer.last_transaction_date
-                        ? formatDate(customer.last_transaction_date)
+                      {lastTransactionDate
+                        ? formatDate(lastTransactionDate)
                         : "Không có giao dịch"}
                     </dd>
                   </div>
@@ -372,11 +395,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                             <span
-                              className={
-                                transaction.transaction_type === "charge"
-                                  ? "text-red-600 dark:text-red-400"
-                                  : "text-green-600 dark:text-green-400"
-                              }
+                              className={`text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type)}`}
                             >
                               {formatCurrency(transaction.amount)}
                             </span>

@@ -45,9 +45,9 @@ const Dashboard: React.FC = () => {
   });
 
   // Determine the company ID for filtering
-  // Admin users: use selectedCompany from context
-  // Staff users: use company_id from their branch
-  const effectiveCompanyId = selectedCompany?.id || user?.branch?.company_id;
+  // Admin master: use selectedCompany from context
+  // Other roles: use company_id from user profile
+  const effectiveCompanyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
 
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
@@ -94,13 +94,13 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     const loadBranches = async () => {
-      const result = await databaseService.branches.getBranches();
+      const result = await databaseService.branches.getBranches(effectiveCompanyId);
       if (result.data) {
         setBranches(result.data.map((b: any) => ({ id: String(b.id), name: String(b.name) })));
       }
     };
     loadBranches();
-  }, []);
+  }, [effectiveCompanyId]);
   
   // Listen for range changes from the CashFlowChart component
   useEffect(() => {
@@ -663,7 +663,7 @@ const Dashboard: React.FC = () => {
                         d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                       />
                     </svg>
-                    Danh sách
+                    {t("dashboard.transactionList")}
                   </Button>
                 </div>
               </div>

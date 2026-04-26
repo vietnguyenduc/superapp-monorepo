@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Customer } from "../../../types";
+import type { Customer } from "../../../types";
 import { formatCurrency, formatDate } from "../../../utils/formatting";
 
 interface TopCustomersProps {
@@ -26,7 +26,9 @@ const TopCustomers: React.FC<TopCustomersProps> = ({
     );
   }
 
-  const displayCustomers = customers.slice(0, maxItems);
+  const displayCustomers = customers
+    .sort((a, b) => b.total_balance - a.total_balance)
+    .slice(0, maxItems);
 
   return (
     <div>
@@ -41,7 +43,6 @@ const TopCustomers: React.FC<TopCustomersProps> = ({
               value={maxItems}
               onChange={(e) => {
                 const newValue = Number(e.target.value);
-                console.log("Changing maxItems from", maxItems, "to", newValue);
                 onMaxItemsChange(newValue);
               }}
               className="appearance-none text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 pr-8 text-gray-900 dark:text-gray-100 cursor-pointer"
@@ -98,8 +99,8 @@ const TopCustomers: React.FC<TopCustomersProps> = ({
                     <p
                       className={`text-sm sm:text-base font-bold ${
                         customer.total_balance >= 0
-                          ? "text-green-600 dark:text-green-300"
-                          : "text-red-600 dark:text-red-300"
+                          ? "text-red-600 dark:text-red-300"
+                          : "text-green-600 dark:text-green-300"
                       }`}
                     >
                       {formatCurrency(customer.total_balance)}
@@ -126,8 +127,8 @@ const TopCustomers: React.FC<TopCustomersProps> = ({
                     <span
                       className={`text-sm font-semibold sm:hidden ${
                         customer.total_balance >= 0
-                          ? "text-green-600 dark:text-green-300"
-                          : "text-red-600 dark:text-red-300"
+                          ? "text-red-600 dark:text-red-300"
+                          : "text-green-600 dark:text-green-300"
                       }`}
                     >
                       {formatCurrency(customer.total_balance)}

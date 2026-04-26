@@ -310,14 +310,34 @@ export function createErrorBoundary(
     };
 
     logError = (error: any, errorInfo: any) => {
-      // TODO: Implement error logging to monitoring service
-      console.error("Error logged:", {
-        error: normalizeError(error),
+      // Normalize error for logging
+      const normalizedError = normalizeError(error);
+      const errorLog = {
+        error: normalizedError,
         errorInfo,
         timestamp: new Date().toISOString(),
         userAgent: navigator.userAgent,
         url: window.location.href,
-      });
+      };
+
+      // Console error (always available)
+      console.error("Error logged:", errorLog);
+
+      // Send to monitoring service if configured
+      // TODO: Configure monitoring service (Sentry, LogRocket, etc.)
+      // Example: if (window.Sentry) { window.Sentry.captureException(error); }
+      // Example: if (window.logRocket) { window.logRocket.captureException(error); }
+      
+      // Store in localStorage for debugging (fallback)
+      try {
+        const errorHistory = JSON.parse(localStorage.getItem('error_history') || '[]');
+        errorHistory.push(errorLog);
+        // Keep only last 50 errors
+        if (errorHistory.length > 50) errorHistory.shift();
+        localStorage.setItem('error_history', JSON.stringify(errorHistory));
+      } catch (e) {
+        // Ignore localStorage errors
+      }
     };
 
     render(): React.ReactNode {

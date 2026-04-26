@@ -4,6 +4,7 @@ import type { Database } from "../types/database.types";
 // Environment variables for Supabase configuration
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+export const APP_SUPABASE_SCHEMA = "public" as const;
 
 // Validate environment variables
 if (!supabaseUrl) {
@@ -15,9 +16,9 @@ if (!supabaseAnonKey) {
 }
 
 // Create Supabase client with enhanced JWT configuration and type safety
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient<Database, "public">(supabaseUrl, supabaseAnonKey, {
   db: {
-    schema: "public",
+    schema: APP_SUPABASE_SCHEMA,
   },
   auth: {
     autoRefreshToken: true,
@@ -60,6 +61,44 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     },
   },
 });
+
+export type SupabaseHealthCheckResult = {
+  ok: boolean;
+  schema: string;
+  checks: Record<string, boolean>;
+  errors: string[];
+};
+
+export const runSupabaseHealthCheck = async (): Promise<SupabaseHealthCheckResult> => {
+  const checks: Record<string, boolean> = {};
+  const errors: string[] = [];
+
+  const probes = [
+    { name: "companies", query: () => supabase.from("companies").select("id", { head: true, count: "exact" }).limit(1) },
+    { name: "customers", query: () => supabase.from("customers").select("id", { head: true, count: "exact" }).limit(1) },
+    { name: "transactions", query: () => supabase.from("transactions").select("id", { head: true, count: "exact" }).limit(1) },
+  ];
+
+  for (const probe of probes) {
+    try {
+      const { error } = await probe.query();
+      checks[probe.name] = !error;
+      if (error) {
+        errors.push(`${probe.name}: ${error.message}`);
+      }
+    } catch (error) {
+      checks[probe.name] = false;
+      errors.push(`${probe.name}: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+  }
+
+  return {
+    ok: errors.length === 0,
+    schema: APP_SUPABASE_SCHEMA,
+    checks,
+    errors,
+  };
+};
 
 // JWT token management utilities
 export const getAccessToken = async (): Promise<string | null> => {

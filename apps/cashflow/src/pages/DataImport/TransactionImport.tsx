@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useSearchParams } from "react-router-dom";
 import { useAuthContext } from "../../contexts/AuthContext";
+import { useCompany } from "../../contexts/CompanyContext";
 import type { Transaction, ImportData, ImportError, Customer } from "../../types";
 import {
   validateTransactionData,
@@ -12,7 +13,6 @@ import { LoadingFallback } from "../../components/UI/FallbackUI";
 import { databaseService } from "../../services/database";
 import Button from "../../components/UI/Button";
 import EditableTable from "../../components/Import/EditableTable";
-import { v4 as uuid } from "uuid";
 
 interface TransactionImportProps {
   onImportComplete?: (data: Transaction[]) => void;
@@ -162,17 +162,17 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
 };
 
 const MAX_BULK_ROWS = 200;
-const IMPORT_HISTORY_KEY = "cashflow_import_history";
 
 const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   const { t } = useTranslation();
   const { user } = useAuthContext();
+  const { selectedCompany } = useCompany();
   const [searchParams] = useSearchParams();
 
   // Check if user can import transactions
   const canImportTransactions = useMemo(() => {
     if (!user) return false;
-    if (user.role === "admin" || user.role === "branch_manager") return true;
+    if (user.role === "admin" || user.role === "admin_master" || user.role === "branch_manager") return true;
     if (user.role === "staff") {
       return Boolean(user.staff_permissions?.import_transactions);
     }
@@ -207,13 +207,73 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   const [showGuidelines, setShowGuidelines] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  // New customer modal state
   const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState("");
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   const [unmatchedCustomers, setUnmatchedCustomers] = useState<Set<string>>(new Set());
+  const [customerOptions, setCustomerOptions] = useState<string[]>([]);
+  const [bankAccountOptions, setBankAccountOptions] = useState<string[]>([]);
+  const [branchOptions, setBranchOptions] = useState<string[]>([]);
+  const [transactionTypeOptions, setTransactionTypeOptions] = useState<string[]>([]);
 
-  // Đọc cấu hình trường import từ localStorage:
+  useEffect(() => {
+    const loadOptions = async () => {
+      const [customerResult, bankResult, branchResult, typeResult] = await Promise.all([
+        databaseService.customers.getCustomers({ limit: 2000 }),
+        databaseService.bankAccounts.getBankAccounts(),
+        databaseService.branches.getBranches(),
+        databaseService.transactionTypes.getTransactionTypes(),
+      ]);
+
+      if (customerResult?.data) {
+        setCustomerOptions(
+          customerResult.data.map((customer: any) => {
+            const code = String(customer.customer_code || customer.id || "");
+            const name = String(customer.full_name || customer.customer_name || "");
+            return [code, name].filter(Boolean).join(" - ").trim();
+          }),
+        );
+      }
+
+      if (bankResult?.data) {
+        setBankAccountOptions(
+          bankResult.data.map((account: any) => {
+            const name = String(account.account_name || account.bank_name || "");
+            const number = String(account.account_number || account.id || "");
+            return [name, number].filter(Boolean).join(" - ").trim();
+          }),
+        );
+      }
+
+      if (branchResult?.data) {
+        const branches = branchResult.data
+          .filter((b: any) => b.is_active !== false)
+          .map((branch: any) => {
+            const name = String(branch.name || branch.branch_name || "").trim();
+            const code = String(branch.code || branch.id || "").trim();
+            return [name, code].filter(Boolean).join(" - ");
+          })
+          .filter(Boolean);
+        
+        if (branches.length > 0) {
+          setBranchOptions(branches);
+        }
+      }
+
+      if (typeResult?.data) {
+        const names = typeResult.data
+          .filter((t: any) => t.is_active !== false)
+          .map((t: any) => String(t.name || t.id || ""));
+        if (names.length > 0) {
+          setTransactionTypeOptions(names);
+        }
+      }
+    };
+
+    loadOptions();
+  }, []);
+
+  // Import field configuration:
   const defaultImportFields: ImportField[] = [
     {
       key: "transaction_code",
@@ -243,7 +303,6 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
       required: true,
       enabled: true,
       optionSource: "manual",
-      options: ["Thu", "Chi", "Điều chỉnh", "Hoàn tiền"],
     },
     {
       key: "amount",
@@ -278,70 +337,13 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   ];
 
   const [importFields] = useState<ImportField[]>(() => {
-    const saved = localStorage.getItem("importFields");
-    const baseFields: ImportField[] = saved ? JSON.parse(saved) : defaultImportFields;
     const order = defaultImportFields.map((field) => field.key);
-    return baseFields.slice().sort((a: ImportField, b: ImportField) => {
+    return defaultImportFields.slice().sort((a: ImportField, b: ImportField) => {
       const indexA = order.indexOf(a.key);
       const indexB = order.indexOf(b.key);
       return indexA - indexB;
     });
   });
-
-  const [customerOptions, setCustomerOptions] = useState<string[]>([]);
-  const [bankAccountOptions, setBankAccountOptions] = useState<string[]>([]);
-  const [branchOptions, setBranchOptions] = useState<string[]>([]);
-  const [transactionTypeOptions, setTransactionTypeOptions] = useState<string[]>([]);
-
-  useEffect(() => {
-    const loadOptions = async () => {
-      const [customerResult, bankResult, branchResult, typeResult] = await Promise.all([
-        databaseService.customers.getCustomers({ limit: 500 }),
-        databaseService.bankAccounts.getBankAccounts(),
-        databaseService.branches.getBranches(),
-        databaseService.transactionTypes.getTransactionTypes(),
-      ]);
-
-      if (customerResult?.data) {
-        setCustomerOptions(
-          customerResult.data.map((customer: any) => {
-            const code = String(customer.customer_code || customer.id || "");
-            const name = String(customer.full_name || customer.customer_name || "");
-            return [code, name].filter(Boolean).join(" - ").trim();
-          }),
-        );
-      }
-
-      if (bankResult?.data) {
-        setBankAccountOptions(
-          bankResult.data.map((account: any) => {
-            const name = String(account.account_name || account.bank_name || "");
-            const number = String(account.account_number || account.id || "");
-            return [name, number].filter(Boolean).join(" - ").trim();
-          }),
-        );
-      }
-
-      if (branchResult?.data) {
-        setBranchOptions(
-          branchResult.data.map((branch: any) => {
-            const name = String(branch.name || branch.branch_name || "");
-            const code = String(branch.code || branch.id || "");
-            return [name, code].filter(Boolean).join(" - ").trim();
-          }),
-        );
-      }
-
-      if (typeResult?.data) {
-        const names = typeResult.data
-          .filter((t: any) => t.is_active !== false)
-          .map((t: any) => String(t.name || t.id || ""));
-        if (names.length > 0) setTransactionTypeOptions(names);
-      }
-    };
-
-    loadOptions();
-  }, []);
 
   // Đặt ngay sau enabledFields:
   const yesterday = new Date();
@@ -364,18 +366,11 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     }),
     [yesterdayFormatted],
   );
-  const [tableData, setTableData] = useState(() => {
-    const saved = localStorage.getItem("transaction_import_table");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch {}
-    }
-    return Array(1)
+  const [tableData, setTableData] = useState(() =>
+    Array(1)
       .fill(null)
-      .map(() => ({ ...emptyRow }));
-  });
+      .map(() => ({ ...emptyRow }))
+  );
 
   useEffect(() => {
     const customerName = searchParams.get("customer_name");
@@ -436,20 +431,6 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     });
   }, [processedData]);
 
-  // Persist tableData + currentStep to localStorage
-  useEffect(() => {
-    localStorage.setItem("transaction_import_table", JSON.stringify(tableData));
-  }, [tableData]);
-
-  useEffect(() => {
-    localStorage.setItem("transaction_import_step", String(currentStep));
-  }, [currentStep]);
-
-  useEffect(() => {
-    const savedStep = localStorage.getItem("transaction_import_step");
-    if (savedStep === "2") setCurrentStep(2);
-    else if (savedStep === "3") setCurrentStep(3);
-  }, []);
 
   const handleValidateData = useCallback((mode: "single" | "bulk" = "single") => {
     const validation = validateTransactionData(tableData);
@@ -489,11 +470,11 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
           setNewCustomerName("");
         } else if (result.error) {
           console.error("Failed to create customer:", result.error);
-          // TODO: Show error notification
+          alert("Không thể tạo khách hàng: " + result.error);
         }
       } catch (error) {
         console.error("Failed to create customer:", error);
-        // TODO: Show error notification
+        alert("Không thể tạo khách hàng: " + (error instanceof Error ? error.message : "Lỗi không xác định"));
       } finally {
         setIsCreatingCustomer(false);
       }
@@ -503,28 +484,15 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
 
   const logImportAction = useCallback(
     (payload: { type: string; successCount: number }) => {
-      if (typeof window === "undefined" || !window.localStorage) return;
-      try {
-        const existing = JSON.parse(
-          window.localStorage.getItem(IMPORT_HISTORY_KEY) || "[]",
-        );
-        const newEntry = {
-          id: uuid(),
-          user_id: user?.id || "",
-          user_email: user?.email || "",
-          action: payload.type,
-          timestamp: new Date().toISOString(),
-          success_count: payload.successCount,
-          metadata: {
-            import_type: "transaction",
-            branch_id: user?.branch_id || "",
-          },
-        };
-        existing.push(newEntry);
-        window.localStorage.setItem(IMPORT_HISTORY_KEY, JSON.stringify(existing));
-      } catch (error) {
-        console.error("Failed to log import action:", error);
-      }
+      console.info("Import action:", {
+        user_id: user?.id || "",
+        user_email: user?.email || "",
+        action: payload.type,
+        timestamp: new Date().toISOString(),
+        success_count: payload.successCount,
+        import_type: "transaction",
+        branch_id: user?.branch_id || "",
+      });
     },
     [user],
   );
@@ -535,7 +503,8 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
       const isValid = payload ? true : importData.isValid;
       if (!isValid || dataToImport.length === 0) return;
 
-      const branchId = user?.branch_id || "1";
+      const branchId = user?.branch_id || null;
+      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
       setImportSuccess(null);
       setIsProcessing(true);
       try {
@@ -543,10 +512,22 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
           dataToImport as any[],
           branchId,
           user?.id || "",
+          companyId,
         );
 
-        if (result.errors.length > 0) {
-          console.error("Import completed with errors:", result.errors);
+        if ((result as any).error) {
+          console.error("Import failed:", (result as any).error);
+          return;
+        }
+
+        if ((result as any).errors?.length > 0) {
+          console.error("Import completed with errors:", (result as any).errors);
+          return;
+        }
+
+        if (!result.data || result.data.length === 0) {
+          console.error("Import completed but no rows were inserted");
+          return;
         }
 
         // Log import action for audit
@@ -556,7 +537,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         });
 
         setCurrentStep(3);
-        onImportComplete?.(result.data);
+        onImportComplete?.(result.data as any);
         setImportSuccess("Nhập giao dịch thành công");
 
         // Reset form
@@ -746,17 +727,18 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
       const normalizedLabel = /chi nhánh/i.test(field.label)
         ? "Văn phòng"
         : field.label;
-      const options =
-        field.options ||
-        (isCustomerField
-          ? customerOptions
-          : isBankField
-            ? bankAccountOptions
-            : isBranchField
-              ? branchOptions
-              : isTransactionType
-                ? transactionTypeOptionsFromSettings
-                : undefined);
+      let options = field.options;
+      if (isCustomerField) {
+        options = customerOptions;
+      } else if (isBankField) {
+        options = bankAccountOptions;
+      } else if (isBranchField || field.key === "branch") {
+        options = branchOptions;
+      } else if (isTransactionType) {
+        options = transactionTypeOptionsFromSettings;
+      } else if (!options || options.length === 0) {
+        options = undefined;
+      }
 
       const onCreate =
         isCustomerField
@@ -782,7 +764,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         ...field,
         label: normalizedLabel,
         type:
-          isCustomerField || isBankField || isBranchField
+          isCustomerField || isBankField || isBranchField || field.key === "branch"
             ? "datalist"
             : isTransactionType
               ? "select"
@@ -790,7 +772,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         optionSource: field.optionSource || (isBranchField ? "branch" : undefined),
         options,
         onCreate,
-        openOnFocus: isCustomerField || isBankField || isBranchField,
+        openOnFocus: isCustomerField || isBankField || isBranchField || field.key === "branch",
       };
     });
   }, [importFields, t, customerOptions, bankAccountOptions, branchOptions, transactionTypeOptions]);
@@ -806,7 +788,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         case "date":
           return "01/07/2024";
         case "select":
-          return "Thu";
+          return "Điều chỉnh tăng";
         default:
           return field.label;
       }
@@ -1005,7 +987,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
                             </label>
                             {field.type === "select" ? (
                               <select
-                                value={row[field.key] || ""}
+                                value={(row as any)[field.key] || ""}
                                 onChange={(event) =>
                                   setTableData((prev) => {
                                     const next = [...prev];
@@ -1026,7 +1008,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
                               <>
                                 <input
                                   list={`mobile-${field.key}`}
-                                  value={row[field.key] || ""}
+                                  value={(row as any)[field.key] || ""}
                                   onChange={(event) =>
                                     setTableData((prev) => {
                                       const next = [...prev];
@@ -1050,8 +1032,8 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
                               </>
                             ) : (
                               <input
-                                type={field.key === "transaction_date" ? "text" : field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
-                                value={row[field.key] || ""}
+                                type={field.key === "transaction_date" ? "text" : field.key === "amount" ? "text" : field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
+                                value={(row as any)[field.key] || ""}
                                 onChange={(event) =>
                                   setTableData((prev) => {
                                     const next = [...prev];

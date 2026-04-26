@@ -17,7 +17,6 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
 }) => {
   const handleClick = () => {
     if (!disabled) {
-      console.log('ToggleSwitch clicked, current state:', checked, 'new state:', !checked);
       onChange(!checked);
     }
   };

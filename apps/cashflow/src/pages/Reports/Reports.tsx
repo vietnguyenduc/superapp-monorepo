@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
+import { useCompany } from "../../contexts/CompanyContext";
 import { databaseService } from "../../services/database";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
 import ReportTypeSelector from "./components/ReportTypeSelector";
@@ -30,12 +31,17 @@ interface ReportsState {
 const Reports: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { selectedCompany } = useCompany();
+
+  // Determine company_id based on user role
+  const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
 
   const [state, setState] = useState<ReportsState>({
     selectedReportType: null,
     filters: {
       dateRange: undefined,
       branch_id: user?.branch_id || null,
+      company_id: companyId || null,
       includeCharts: true,
       includeDetails: true,
       groupBy: null,
@@ -95,6 +101,9 @@ const Reports: React.FC = () => {
   const generateKeyMetricsReport = async () => {
     const metrics = await databaseService.dashboard.getDashboardMetrics(
       user?.branch_id,
+      undefined,
+      undefined,
+      companyId,
     );
 
     if (metrics.error) {
@@ -120,6 +129,7 @@ const Reports: React.FC = () => {
     const { data: customers, error } =
       await databaseService.customers.getCustomers({
         branch_id: user?.branch_id,
+        company_id: companyId,
         is_active: true,
       });
 
@@ -197,6 +207,7 @@ const Reports: React.FC = () => {
     const { data: transactions, error } =
       await databaseService.transactions.getTransactions({
         branch_id: user?.branch_id,
+        company_id: companyId,
         dateRange: state.filters.dateRange || undefined,
       });
 
@@ -250,6 +261,9 @@ const Reports: React.FC = () => {
   const generateCashFlowReport = async () => {
     const metrics = await databaseService.dashboard.getDashboardMetrics(
       user?.branch_id,
+      undefined,
+      undefined,
+      companyId,
     );
 
     if (metrics.error) {

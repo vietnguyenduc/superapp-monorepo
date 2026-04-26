@@ -49,6 +49,8 @@ type PublicSchema = {
                 created_at: string | null
                 id: string
                 is_active: boolean | null
+                opening_balance: number | null
+                account_type: string | null
                 updated_at: string | null
             }
             Insert: {
@@ -61,6 +63,8 @@ type PublicSchema = {
                 created_at?: string | null
                 id?: string
                 is_active?: boolean | null
+                opening_balance?: number | null
+                account_type?: string | null
                 updated_at?: string | null
             }
             Update: {
@@ -73,6 +77,8 @@ type PublicSchema = {
                 created_at?: string | null
                 id?: string
                 is_active?: boolean | null
+                opening_balance?: number | null
+                account_type?: string | null
                 updated_at?: string | null
             }
             Relationships: [
@@ -161,9 +167,14 @@ type PublicSchema = {
                 id: string
                 is_active: boolean | null
                 last_transaction_date: string | null
+                notes: string | null
+                opening_balance: number | null
+                opening_balance_updated_at: string | null
+                current_balance: number | null
                 phone: string | null
                 total_balance: number | null
                 updated_at: string | null
+                working_method: string | null
             }
             Insert: {
                 address?: string | null
@@ -176,9 +187,14 @@ type PublicSchema = {
                 id?: string
                 is_active?: boolean | null
                 last_transaction_date?: string | null
+                notes?: string | null
+                opening_balance?: number | null
+                opening_balance_updated_at?: string | null
+                current_balance?: number | null
                 phone?: string | null
                 total_balance?: number | null
                 updated_at?: string | null
+                working_method?: string | null
             }
             Update: {
                 address?: string | null
@@ -191,9 +207,14 @@ type PublicSchema = {
                 id?: string
                 is_active?: boolean | null
                 last_transaction_date?: string | null
+                notes?: string | null
+                opening_balance?: number | null
+                opening_balance_updated_at?: string | null
+                current_balance?: number | null
                 phone?: string | null
                 total_balance?: number | null
                 updated_at?: string | null
+                working_method?: string | null
             }
             Relationships: [
                 {
@@ -353,6 +374,8 @@ type PublicSchema = {
                 color: string | null
                 is_active: boolean | null
                 created_at: string | null
+                math_factor: number | null
+                impact_type: string | null
             }
             Insert: {
                 id?: string
@@ -360,6 +383,8 @@ type PublicSchema = {
                 color?: string | null
                 is_active?: boolean | null
                 created_at?: string | null
+                math_factor?: number | null
+                impact_type?: string | null
             }
             Update: {
                 id?: string
@@ -367,6 +392,8 @@ type PublicSchema = {
                 color?: string | null
                 is_active?: boolean | null
                 created_at?: string | null
+                math_factor?: number | null
+                impact_type?: string | null
             }
             Relationships: []
         }

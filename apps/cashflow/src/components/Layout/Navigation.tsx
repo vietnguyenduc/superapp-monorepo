@@ -159,6 +159,15 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
             {isUserMenuOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black/5 dark:ring-white/10 py-1 z-50 border border-gray-200 dark:border-gray-700">
                 <button
+                  onClick={() => {
+                    navigate("/profile");
+                    setIsUserMenuOpen(false);
+                  }}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  {i18n.language === "vi" ? "Hồ sơ" : "Profile"}
+                </button>
+                <button
                   onClick={handleLogout}
                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >

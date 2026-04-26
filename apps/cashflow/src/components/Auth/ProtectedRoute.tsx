@@ -19,9 +19,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { user, loading, isAuthenticated } = useAuthContext();
 
-  // Debug logging
-  console.log("ProtectedRoute", { loading, isAuthenticated, user });
-
   // Show loading spinner while checking authentication
   if (loading) {
     return (

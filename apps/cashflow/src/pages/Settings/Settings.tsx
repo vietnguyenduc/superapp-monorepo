@@ -9,6 +9,8 @@ import { databaseService } from "../../services/database";
 import { supabase } from "../../services/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useCompany } from "../../contexts/CompanyContext";
+import CreateUserModal from "../../components/UserManagement/CreateUserModal";
 
 interface Tab {
   id: string;
@@ -21,6 +23,8 @@ interface TransactionType {
   name: string;
   color: string;
   isActive: boolean;
+  math_factor?: number;
+  impact_type?: string;
 }
 
 interface BankAccount {
@@ -32,6 +36,8 @@ interface BankAccount {
   balance: number;
   openingBalance?: number;
   isActive: boolean;
+  branch_id?: string;
+  company_id?: string;
 }
 
 interface Branch {
@@ -40,6 +46,8 @@ interface Branch {
   address: string;
   phone: string;
   isActive: boolean;
+  company_id?: string;
+  code?: string;
 }
 
 interface CustomerField {
@@ -82,10 +90,8 @@ const colorOptions = [
 const Settings: React.FC = () => {
   const { user, isTrial } = useAuth();
   const navigate = useNavigate();
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved ? JSON.parse(saved) : false;
-  });
+  const { selectedCompany } = useCompany();
+  const [darkMode, setDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState("appearance");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,16 +109,18 @@ const Settings: React.FC = () => {
   });
   const [branches, setBranches] = useState<Branch[]>([]);
   const [transactionTypes, setTransactionTypes] = useState<TransactionType[]>([
-    { id: "1", name: "Thanh toán", color: "green", isActive: true },
-    { id: "2", name: "Cho nợ", color: "red", isActive: true },
-    { id: "3", name: "Điều chỉnh", color: "yellow", isActive: true },
-    { id: "4", name: "Hoàn tiền", color: "blue", isActive: true },
+    { id: "payment", name: "Điều chỉnh giảm", color: "green", isActive: true, math_factor: -1, impact_type: "decrease" },
+    { id: "charge", name: "Điều chỉnh tăng", color: "red", isActive: true, math_factor: 1, impact_type: "increase" },
+    { id: "adjustment", name: "Điều chỉnh", color: "blue", isActive: true, math_factor: 1, impact_type: "increase" },
+    { id: "refund", name: "Hoàn tiền", color: "green", isActive: true, math_factor: -1, impact_type: "decrease" },
   ]);
   const [isTransactionTypeModalOpen, setIsTransactionTypeModalOpen] = useState(false);
   const [editingTransactionType, setEditingTransactionType] = useState<TransactionType | null>(null);
   const [transactionTypeForm, setTransactionTypeForm] = useState({
     name: "",
     color: "blue",
+    math_factor: 1,
+    impact_type: "increase",
   });
   const [customerFields, setCustomerFields] = useState<CustomerField[]>([
     { id: "1", name: "Họ và tên", type: "text", isRequired: true, isActive: true, isDefault: true },
@@ -134,6 +142,14 @@ const Settings: React.FC = () => {
     address: "",
     phone: "",
   });
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [expandedPermissions, setExpandedPermissions] = useState<Record<string, boolean>>({
+    customers: false,
+    transactions: false,
+    settings: false,
+    reports: false,
+  });
 
   // Opening balance import state
   const [openingFile, setOpeningFile] = useState<File | null>(null);
@@ -142,8 +158,6 @@ const Settings: React.FC = () => {
   const [openingSuccess, setOpeningSuccess] = useState<string | null>(null);
   const [isOpeningProcessing, setIsOpeningProcessing] = useState(false);
   const [customerMap, setCustomerMap] = useState<Record<string, string>>({});
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
 
   // Users management state
   const [users, setUsers] = useState<any[]>([]);
@@ -166,8 +180,7 @@ const Settings: React.FC = () => {
       document.body.style.backgroundColor = '#ffffff';
       document.body.style.color = '#213547';
     }
-    localStorage.setItem('darkMode', JSON.stringify(darkMode));
-    console.log('Saved dark mode to localStorage:', darkMode);
+    console.log('Dark mode changed:', darkMode);
   }, [darkMode]);
 
   // Load data from Supabase-backed services
@@ -175,19 +188,24 @@ const Settings: React.FC = () => {
     const loadData = async () => {
       setLoading(true);
       try {
+        // Determine company_id based on user role and selected company
+        const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
+        
         // Load transaction types
-        const txTypeRes = await databaseService.transactionTypes.getTransactionTypes();
+        const txTypeRes = await databaseService.transactionTypes.getTransactionTypes(companyId);
         if (txTypeRes.error) throw new Error(txTypeRes.error);
         const formattedTypes = (txTypeRes.data || []).map((t: any) => ({
           id: t.id,
           name: t.name,
           color: t.color || "blue",
           isActive: t.is_active !== false,
+          math_factor: t.math_factor,
+          impact_type: t.impact_type,
         }));
         setTransactionTypes(formattedTypes);
 
         // Load bank accounts
-        const bankAccountsResponse = await databaseService.bankAccounts.getBankAccounts();
+        const bankAccountsResponse = await databaseService.bankAccounts.getBankAccounts(companyId);
         if (bankAccountsResponse.error) {
           throw new Error(bankAccountsResponse.error);
         }
@@ -201,12 +219,14 @@ const Settings: React.FC = () => {
           balance: account.balance,
           openingBalance: account.opening_balance ?? 0,
           isActive: account.is_active,
+          branch_id: account.branch_id,
+          company_id: account.company_id,
         })) || [];
 
         setBankAccounts(formattedBankAccounts);
 
         // Load branches
-        const branchesResponse = await databaseService.branches.getBranches();
+        const branchesResponse = await databaseService.branches.getBranches(companyId);
         if (branchesResponse.error) {
           throw new Error(branchesResponse.error);
         }
@@ -217,12 +237,14 @@ const Settings: React.FC = () => {
           address: branch.address,
           phone: branch.phone,
           isActive: branch.is_active,
+          company_id: branch.company_id,
+          code: branch.code,
         })) || [];
 
         setBranches(formattedBranches);
 
         // Load customers for opening balance preview
-        const customersResponse = await databaseService.customers.getCustomers({ limit: 1000 });
+        const customersResponse = await databaseService.customers.getCustomers({ limit: 1000, company_id: companyId });
         if (customersResponse?.data) {
           const map: Record<string, string> = {};
           customersResponse.data.forEach((c: any) => {
@@ -231,39 +253,67 @@ const Settings: React.FC = () => {
           setCustomerMap(map);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load settings");
+        console.error('Failed to load data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
         setLoading(false);
       }
     };
 
     loadData();
-  }, []);
+  }, [user?.role, user?.company_id, selectedCompany?.id]);
 
   // Load staff users for permissions management
-  useEffect(() => {
-    const loadStaffUsers = async () => {
-      if (user?.role !== "admin") return;
-      
-      setLoadingStaff(true);
-      try {
-        const { data, error } = await supabase
-          .from("users")
-          .select("id, email, full_name, role, staff_permissions, created_at")
-          .eq("role", "staff")
-          .order("created_at", { ascending: false });
-        
-        if (error) throw error;
-        setStaffUsers(data || []);
-      } catch (err) {
-        console.error("Failed to load staff users:", err);
-      } finally {
-        setLoadingStaff(false);
-      }
-    };
+  const loadStaffUsers = async () => {
+    const userRole = user?.role;
+    if (userRole !== "admin" && userRole !== "admin_master" && userRole !== "admin_company") return;
 
+    setLoadingStaff(true);
+    try {
+      let query = supabase
+        .from("users")
+        .select(`
+          id, 
+          email, 
+          full_name, 
+          role, 
+          staff_permissions, 
+          can_delete, 
+          created_at, 
+          updated_at,
+          company_id,
+          companies!inner (
+            id,
+            name,
+            code
+          )
+        `);
+
+      // Filter by selected company if admin_master has selected a company
+      if (userRole === "admin_master" && selectedCompany?.id) {
+        query = query.eq("company_id", selectedCompany.id);
+      }
+      // Admin_company sees only their company's users
+      else if (userRole === "admin_company" && user?.company_id) {
+        query = query.eq("company_id", user.company_id);
+      }
+
+      const { data, error } = await query
+        .in("role", ["staff", "admin_company"])
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setStaffUsers(data || []);
+    } catch (err) {
+      console.error("Failed to load staff users:", err);
+    } finally {
+      setLoadingStaff(false);
+    }
+  };
+
+  useEffect(() => {
     loadStaffUsers();
-  }, [user]);
+  }, [user, selectedCompany]);
 
   const handleEditBankAccount = (account: BankAccount) => {
     setEditingBankAccount(account);
@@ -287,11 +337,7 @@ const Settings: React.FC = () => {
     }
 
     try {
-      console.log("Starting reset data process...");
-      console.log("isTrial:", isTrial);
-      
       // Delete from Supabase database
-      console.log("Deleting from Supabase database...");
       
       // Delete transactions first (due to foreign key constraints)
       const txResult = await supabase
@@ -299,23 +345,17 @@ const Settings: React.FC = () => {
         .delete()
         .neq("id", "00000000-0000-0000-0000-000000000000");
       
-      console.log("Transactions delete result:", txResult);
-      
       // Delete customers
       const custResult = await supabase
         .from("customers")
         .delete()
         .neq("id", "00000000-0000-0000-0000-000000000000");
       
-      console.log("Customers delete result:", custResult);
-      
       // Delete bank accounts
       const bankResult = await supabase
         .from("bank_accounts")
         .delete()
         .neq("id", "00000000-0000-0000-0000-000000000000");
-
-      console.log("Bank accounts delete result:", bankResult);
 
       if (txResult.error || custResult.error || bankResult.error) {
         console.error("Database deletion errors:", { 
@@ -328,20 +368,6 @@ const Settings: React.FC = () => {
       }
 
       console.log("✅ Database deletion successful");
-
-      // Clear localStorage (but preserve auth tokens)
-      if (typeof window !== "undefined") {
-        console.log("Clearing localStorage (preserving auth)...");
-        window.localStorage.removeItem("cashflow_customers");
-        window.localStorage.removeItem("cashflow_transactions");
-        window.localStorage.removeItem("cashflow_bank_accounts");
-        window.localStorage.removeItem("cashflow_branches");
-        window.localStorage.removeItem("cashflow_transaction_types");
-        // Set flag to disable seed data generation
-        window.localStorage.setItem("cashflow_seed_disabled", "true");
-        // DO NOT remove auth tokens: sb-*, debt-repayment-auth
-        console.log("✅ LocalStorage cleared (auth preserved)");
-      }
 
       alert("Đã xóa toàn bộ dữ liệu thành công!");
       
@@ -361,7 +387,7 @@ const Settings: React.FC = () => {
   };
 
   const handleSaveBankAccount = async () => {
-    const openingBalanceValue = bankAccountForm.openingBalance.trim();
+    const openingBalanceValue = (bankAccountForm.openingBalance || "").trim();
     const parsedOpeningBalance = openingBalanceValue ? Number(openingBalanceValue) : undefined;
 
     const previousOpening = Number(editingBankAccount?.openingBalance ?? 0);
@@ -372,22 +398,31 @@ const Settings: React.FC = () => {
       ? Math.max(0, editingBankAccount.balance + (nextOpening - previousOpening))
       : nextOpening || 0;
 
+    // Tìm branch_id và company_id từ các nguồn có sẵn: tài khoản cũ, profile user, hoặc danh sách chi nhánh
+    const fallbackBranchId = branches.length > 0 ? branches[0].id : undefined;
+    const fallbackCompanyId = branches.length > 0 ? branches[0].company_id : (bankAccounts.length > 0 ? bankAccounts[0].company_id : undefined);
+
+    const finalBranchId = editingBankAccount?.branch_id || user?.branch_id || fallbackBranchId;
+    const finalCompanyId = editingBankAccount?.company_id || user?.branch?.company_id || fallbackCompanyId;
+
     try {
       const payload: any = {
         id: editingBankAccount?.id,
-        bank_name: bankAccountForm.bankName.trim(),
-        account_number: bankAccountForm.accountNumber.trim(),
-        account_name: bankAccountForm.accountName.trim(),
+        bank_name: (bankAccountForm.bankName || "").trim(),
+        account_number: (bankAccountForm.accountNumber || "").trim(),
+        account_name: (bankAccountForm.accountName || "").trim(),
         balance: nextBalance,
         is_active: editingBankAccount?.isActive ?? true,
+        branch_id: finalBranchId,
+        company_id: finalCompanyId,
       };
       const res = await databaseService.bankAccounts.upsertBankAccount(payload);
       if (res.error) throw new Error(res.error);
       const saved = res.data || {
         id: editingBankAccount?.id || `bank-${Date.now()}`,
-        bank_name: bankAccountForm.bankName.trim() || "Ngan hang moi",
-        account_number: bankAccountForm.accountNumber.trim(),
-        account_name: bankAccountForm.accountName.trim() || "Tai khoan moi",
+        bank_name: (bankAccountForm.bankName || "").trim() || "Ngan hang moi",
+        account_number: (bankAccountForm.accountNumber || "").trim(),
+        account_name: (bankAccountForm.accountName || "").trim() || "Tai khoan moi",
         balance: nextBalance,
         is_active: true,
       };
@@ -438,34 +473,64 @@ const Settings: React.FC = () => {
 
   const handleAddTransactionType = () => {
     setEditingTransactionType(null);
-    setTransactionTypeForm({ name: "", color: "blue" });
+    setTransactionTypeForm({ name: "", color: "blue", math_factor: 1, impact_type: "increase" });
     setIsTransactionTypeModalOpen(true);
   };
 
   const handleEditTransactionType = (type: TransactionType) => {
     setEditingTransactionType(type);
-    setTransactionTypeForm({ name: type.name, color: type.color });
+    setTransactionTypeForm({ 
+      name: type.name, 
+      color: type.color,
+      math_factor: type.math_factor ?? 1,
+      impact_type: type.impact_type ?? "increase"
+    });
     setIsTransactionTypeModalOpen(true);
   };
 
   const handleSaveTransactionType = async () => {
-    const name = transactionTypeForm.name.trim();
+    const name = (transactionTypeForm.name || "").trim();
     if (!name) return;
 
     try {
+      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
       const res = await databaseService.transactionTypes.upsertTransactionType({
         id: editingTransactionType?.id,
         name,
         color: transactionTypeForm.color,
+        math_factor: transactionTypeForm.math_factor,
+        impact_type: transactionTypeForm.impact_type,
         is_active: editingTransactionType?.isActive ?? true,
+        company_id: companyId,
       });
       if (res.error) throw new Error(res.error);
-      const saved = res.data || { id: editingTransactionType?.id || `type-${Date.now()}`, name, color: transactionTypeForm.color, is_active: true };
+      const saved = res.data || { 
+        id: editingTransactionType?.id || `type-${Date.now()}`, 
+        name, 
+        color: transactionTypeForm.color, 
+        math_factor: transactionTypeForm.math_factor,
+        impact_type: transactionTypeForm.impact_type,
+        is_active: true 
+      };
       setTransactionTypes((prev) => {
         const exists = prev.some((t) => t.id === saved.id);
         const next = exists
-          ? prev.map((t) => (t.id === saved.id ? { id: saved.id, name: saved.name, color: saved.color || "blue", isActive: saved.is_active !== false } : t))
-          : [{ id: saved.id, name: saved.name, color: saved.color || "blue", isActive: saved.is_active !== false }, ...prev];
+          ? prev.map((t) => (t.id === saved.id ? { 
+              id: saved.id, 
+              name: saved.name, 
+              color: saved.color || "blue", 
+              isActive: saved.is_active !== false,
+              math_factor: saved.math_factor,
+              impact_type: saved.impact_type
+            } : t))
+          : [{ 
+              id: saved.id, 
+              name: saved.name, 
+              color: saved.color || "blue", 
+              isActive: saved.is_active !== false,
+              math_factor: saved.math_factor,
+              impact_type: saved.impact_type
+            }, ...prev];
         return next;
       });
       setIsTransactionTypeModalOpen(false);
@@ -504,9 +569,8 @@ const Settings: React.FC = () => {
   };
 
   const handleSaveCustomerField = () => {
-    const name = customerFieldForm.name.trim();
-    if (!name) return;
-    const type = customerFieldForm.type.trim() || "text";
+    const name = (customerFieldForm.name || "").trim();
+    const type = (customerFieldForm.type || "").trim() || "text";
 
     if (editingCustomerField) {
       setCustomerFields((prev) =>
@@ -644,15 +708,20 @@ const Settings: React.FC = () => {
 
   const handleSaveBranch = async () => {
     try {
+      const fallbackCompanyId = branches.length > 0 ? branches[0].company_id : (bankAccounts.length > 0 ? bankAccounts[0].company_id : undefined);
+      const finalCompanyId = editingBranch?.company_id || user?.branch?.company_id || fallbackCompanyId;
+
       const payload: any = {
         id: editingBranch?.id,
-        name: branchForm.name.trim(),
-        address: branchForm.address.trim(),
-        phone: branchForm.phone.trim(),
+        name: (branchForm.name || "").trim(),
+        address: (branchForm.address || "").trim(),
+        phone: (branchForm.phone || "").trim(),
+        company_id: finalCompanyId,
+        code: editingBranch?.code || `BR-${Date.now()}`,
       };
       const res = await databaseService.branches.upsertBranch(payload);
       if (res.error) throw new Error(res.error);
-      const saved = res.data || { id: editingBranch?.id || `branch-${Date.now()}`, name: branchForm.name.trim(), address: branchForm.address.trim(), phone: branchForm.phone.trim(), is_active: true };
+      const saved = res.data || { id: editingBranch?.id || `branch-${Date.now()}`, name: (branchForm.name || "").trim(), address: (branchForm.address || "").trim(), phone: (branchForm.phone || "").trim(), is_active: true };
       setBranches((prev) => {
         const exists = prev.some((b) => b.id === saved.id);
         const next = exists
@@ -756,34 +825,65 @@ const Settings: React.FC = () => {
     setIsBankAccountModalOpen(true);
   };
 
-  // Handle staff permission updates
-  const handleUpdateStaffPermission = async (staffId: string, permission: string, value: boolean) => {
+  // Handle staff permission updates with new granular structure
+  const handleUpdateStaffPermission = async (staffId: string, permissionPath: string, value: boolean) => {
     try {
-      const { data: currentStaff } = await supabase
-        .from("users")
-        .select("staff_permissions")
-        .eq("id", staffId)
-        .single();
+      // Handle can_delete separately since it's a direct column
+      if (permissionPath === "can_delete") {
+        const { error } = await supabase
+          .from("users")
+          .update({ can_delete: value })
+          .eq("id", staffId);
 
-      const currentPermissions = (currentStaff?.staff_permissions as Record<string, boolean>) || {};
-      const updatedPermissions: Record<string, boolean> = {
-        ...currentPermissions,
-        [permission]: value,
-      };
+        if (error) throw error;
 
-      const { error } = await supabase
-        .from("users")
-        .update({ staff_permissions: updatedPermissions })
-        .eq("id", staffId);
+        // Update local state
+        setStaffUsers(prev => prev.map(staff => 
+          staff.id === staffId 
+            ? { ...staff, can_delete: value }
+            : staff
+        ));
+      } else {
+        // Handle staff_permissions JSON with new granular structure
+        const { data: currentStaff } = await supabase
+          .from("users")
+          .select("staff_permissions")
+          .eq("id", staffId)
+          .single();
 
-      if (error) throw error;
+        const currentPermissions = (currentStaff?.staff_permissions as any) || {};
+        
+        // Parse permission path (e.g., "customers.import_own" or "settings.branches")
+        const pathParts = permissionPath.split('.');
+        const updatedPermissions = { ...currentPermissions };
+        
+        // Navigate through the nested structure
+        let current = updatedPermissions;
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          const part = pathParts[i];
+          if (!current[part]) {
+            current[part] = {};
+          }
+          current = current[part];
+        }
+        
+        // Set the final value
+        current[pathParts[pathParts.length - 1]] = value;
 
-      // Update local state
-      setStaffUsers(prev => prev.map(staff => 
-        staff.id === staffId 
-          ? { ...staff, staff_permissions: updatedPermissions }
-          : staff
-      ));
+        const { error } = await supabase
+          .from("users")
+          .update({ staff_permissions: updatedPermissions })
+          .eq("id", staffId);
+
+        if (error) throw error;
+
+        // Update local state
+        setStaffUsers(prev => prev.map(staff => 
+          staff.id === staffId 
+            ? { ...staff, staff_permissions: updatedPermissions }
+            : staff
+        ));
+      }
       
       // Show success feedback
       setSuccessMessage("Đã cập nhật quyền truy cập thành công");
@@ -820,6 +920,35 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handlePromoteToAdminMaster = async (userId: string, userEmail: string) => {
+    if (!confirm(`Bạn có chắc chắn muốn promote ${userEmail} lên làm Admin Master?\n\nNgười dùng này sẽ có quyền truy cập toàn bộ hệ thống và có thể chuyển đổi giữa các công ty.`)) {
+      return;
+    }
+
+    try {
+      // First update role to admin_master
+      const { error } = await databaseService.users.updateUser(userId, { role: 'admin_master' });
+      if (error) throw new Error(String(error));
+      
+      // Then set company_id to null using direct Supabase call
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ company_id: null })
+        .eq('id', userId);
+      
+      if (updateError) throw new Error(String(updateError));
+      
+      setSuccessMessage(`Đã promote ${userEmail} lên làm Admin Master thành công`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+      
+      // Refresh users list
+      await loadUsers();
+    } catch (err) {
+      console.error('Failed to promote user to admin_master:', err);
+      setError('Không thể promote user lên Admin Master');
+    }
+  };
+
   // Load users when component mounts
   useEffect(() => {
     if (activeTab === "users") {
@@ -839,8 +968,8 @@ const Settings: React.FC = () => {
       { id: "data", name: "Dữ liệu", icon: "💾" },
       { id: "opening-balance", name: "Số dư đầu kỳ", icon: "📥" },
     ].filter(tab => {
-      // Only show users/permissions tab for admin
-      if (tab.id === "users" && user?.role !== "admin") return false;
+      // Only show users/permissions tab for admin or admin_master
+      if (tab.id === "users" && user?.role !== "admin" && user?.role !== "admin_master") return false;
       return true;
     }),
     [user?.role],
@@ -1045,6 +1174,30 @@ const Settings: React.FC = () => {
                       ))}
                     </select>
                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Ảnh hưởng dư nợ (Logic)
+                    </label>
+                    <select
+                      value={`${transactionTypeForm.math_factor}:${transactionTypeForm.impact_type}`}
+                      onChange={(e) => {
+                        const [factor, type] = e.target.value.split(":");
+                        setTransactionTypeForm((prev) => ({ 
+                          ...prev, 
+                          math_factor: Number(factor),
+                          impact_type: type
+                        }));
+                      }}
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2"
+                    >
+                      <option value="1:increase">Tăng dư nợ (+)</option>
+                      <option value="-1:decrease">Giảm dư nợ (-)</option>
+                      <option value="0:neutral">Không ảnh hưởng (0)</option>
+                    </select>
+                    <p className="mt-1 text-[10px] text-gray-500 italic">
+                      Dư nợ = Đầu kỳ + (Số tiền * Logic)
+                    </p>
+                  </div>
                 </div>
                 <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
                   <Button
@@ -1167,9 +1320,14 @@ const Settings: React.FC = () => {
                     className="border border-gray-200 dark:border-gray-600 rounded-lg p-3 sm:p-4"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getColorClass(type.color)}`}>
-                        {type.name}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getColorClass(type.color)}`}>
+                          {type.name}
+                        </span>
+                        <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500">
+                          ({type.math_factor === 1 ? "+" : type.math_factor === -1 ? "-" : "0"})
+                        </span>
+                      </div>
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
@@ -1185,8 +1343,11 @@ const Settings: React.FC = () => {
                         />
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {type.isActive ? "Đang hoạt động" : "Đã vô hiệu hóa"}
+                    <div className="flex justify-between items-center text-[10px] text-gray-500 dark:text-gray-400">
+                      <span>{type.isActive ? "Đang hoạt động" : "Đã vô hiệu hóa"}</span>
+                      <span className="italic">
+                        {type.math_factor === 1 ? "Tăng dư nợ" : type.math_factor === -1 ? "Giảm dư nợ" : "Không ảnh hưởng"}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -1463,7 +1624,7 @@ const Settings: React.FC = () => {
                 <div className="p-4 space-y-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Ten van phong
+                      Tên văn phòng
                     </label>
                     <input
                       type="text"
@@ -1474,7 +1635,7 @@ const Settings: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Dia chi
+                      Địa chỉ
                     </label>
                     <input
                       type="text"
@@ -1485,7 +1646,7 @@ const Settings: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      So dien thoai
+                      Số điện thoại
                     </label>
                     <input
                       type="text"
@@ -1504,10 +1665,10 @@ const Settings: React.FC = () => {
                       setEditingBranch(null);
                     }}
                   >
-                    Huy
+                    Hủy
                   </Button>
                   <Button variant="primary" size="sm" onClick={handleSaveBranch}>
-                    Luu
+                    Lưu
                   </Button>
                 </div>
               </div>
@@ -1617,13 +1778,42 @@ const Settings: React.FC = () => {
             </div>
           )}
 
-          {/* Users & Permissions */}
-          {activeTab === "users" && user?.role === "admin" && (
+          {/* Users & Permissions - admin, admin_master, and admin_company can access */}
+          {activeTab === "users" && (user?.role === "admin" || user?.role === "admin_master" || user?.role === "admin_company") && (
             <div className="p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                  Tài khoản & phân quyền
-                </h2>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
+                    Tài khoản & phân quyền
+                  </h2>
+                  {user?.role === 'admin_company' && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      👁️ Chế độ xem - Bạn không thể chỉnh sửa thông tin
+                    </p>
+                  )}
+                </div>
+                {(user?.role === "admin" || user?.role === "admin_master") && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setIsCreateUserModalOpen(true)}
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                    Tạo tài khoản mới
+                  </Button>
+                )}
               </div>
 
               {loadingStaff ? (
@@ -1639,44 +1829,295 @@ const Settings: React.FC = () => {
                 <div className="space-y-4">
                   {staffUsers.map((staff) => (
                     <div key={staff.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
-                            <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
+                      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                        <div className="flex-1 space-y-3">
+                          {/* User info header */}
+                          <div className="flex items-start space-x-3">
+                            <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
+                              <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                                {staff.full_name || staff.email}
+                              </h3>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {staff.email}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                              {staff.full_name || staff.email}
-                            </h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {staff.email} • {staff.role}
-                            </p>
+
+                          {/* User details */}
+                          <div className="grid grid-cols-2 gap-2 text-xs ml-13">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-gray-500 dark:text-gray-400">Vai trò:</span>
+                              <span className="font-medium text-gray-900 dark:text-white">
+                                {staff.role === 'staff' ? 'Nhân viên' : staff.role === 'admin_company' ? 'Quản trị công ty' : staff.role}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-gray-500 dark:text-gray-400">Công ty:</span>
+                              <span className="font-medium text-gray-900 dark:text-white">
+                                {staff.companies?.name || '-'}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-gray-500 dark:text-gray-400">Tạo lúc:</span>
+                              <span className="font-medium text-gray-900 dark:text-white">
+                                {staff.created_at ? new Date(staff.created_at).toLocaleDateString('vi-VN') + ' ' + new Date(staff.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-gray-500 dark:text-gray-400">Cập nhật:</span>
+                              <span className="font-medium text-gray-900 dark:text-white">
+                                {staff.updated_at ? new Date(staff.updated_at).toLocaleDateString('vi-VN') + ' ' + new Date(staff.updated_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                              </span>
+                            </div>
                           </div>
                         </div>
                         
-                        <div className="flex flex-wrap gap-4">
-                          <div className="flex items-center space-x-2">
-                            <label className="text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                              Import khách hàng
+                        <div className="flex flex-col gap-4">
+                          <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                            Quyền hạn:
+                          </div>
+                          
+                          {/* Customers Section */}
+                          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                            <button
+                              onClick={() => setExpandedPermissions(prev => ({ ...prev, customers: !prev.customers }))}
+                              className="flex items-center justify-between w-full text-left"
+                            >
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">👥 Khách hàng</span>
+                              <svg className={`w-4 h-4 text-gray-500 transition-transform ${expandedPermissions.customers ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            {expandedPermissions.customers && (
+                              <div className="mt-3 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs text-gray-700 dark:text-gray-300">
+                                    Nhập khách hàng (chỉ sửa của mình)
+                                  </label>
+                                  <ToggleSwitch
+                                    checked={Boolean(staff.staff_permissions?.customers?.import_own)}
+                                    onChange={(checked) => handleUpdateStaffPermission(staff.id, "customers.import_own", checked)}
+                                    size="sm"
+                                    disabled={user?.role === 'admin_company'}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs text-gray-700 dark:text-gray-300">
+                                    Quản lý khách hàng (sửa/xóa tất cả)
+                                  </label>
+                                  <ToggleSwitch
+                                    checked={Boolean(staff.staff_permissions?.customers?.manage_all)}
+                                    onChange={(checked) => handleUpdateStaffPermission(staff.id, "customers.manage_all", checked)}
+                                    size="sm"
+                                    disabled={user?.role === 'admin_company'}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Transactions Section */}
+                          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                            <button
+                              onClick={() => setExpandedPermissions(prev => ({ ...prev, transactions: !prev.transactions }))}
+                              className="flex items-center justify-between w-full text-left"
+                            >
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">💰 Giao dịch</span>
+                              <svg className={`w-4 h-4 text-gray-500 transition-transform ${expandedPermissions.transactions ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            {expandedPermissions.transactions && (
+                              <div className="mt-3 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs text-gray-700 dark:text-gray-300">
+                                    Nhập giao dịch (chỉ sửa của mình)
+                                  </label>
+                                  <ToggleSwitch
+                                    checked={Boolean(staff.staff_permissions?.transactions?.import_own)}
+                                    onChange={(checked) => handleUpdateStaffPermission(staff.id, "transactions.import_own", checked)}
+                                    size="sm"
+                                    disabled={user?.role === 'admin_company'}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs text-gray-700 dark:text-gray-300">
+                                    Quản lý giao dịch (sửa/xóa tất cả)
+                                  </label>
+                                  <ToggleSwitch
+                                    checked={Boolean(staff.staff_permissions?.transactions?.manage_all)}
+                                    onChange={(checked) => handleUpdateStaffPermission(staff.id, "transactions.manage_all", checked)}
+                                    size="sm"
+                                    disabled={user?.role === 'admin_company'}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Settings Section */}
+                          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                            <button
+                              onClick={() => setExpandedPermissions(prev => ({ ...prev, settings: !prev.settings }))}
+                              className="flex items-center justify-between w-full text-left"
+                            >
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">⚙️ Cài đặt</span>
+                              <svg className={`w-4 h-4 text-gray-500 transition-transform ${expandedPermissions.settings ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            {expandedPermissions.settings && (
+                              <div className="mt-3 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs text-gray-700 dark:text-gray-300">
+                                    Chỉnh sửa cài đặt chung
+                                  </label>
+                                  <ToggleSwitch
+                                    checked={Boolean(staff.staff_permissions?.settings?.edit_general)}
+                                    onChange={(checked) => handleUpdateStaffPermission(staff.id, "settings.edit_general", checked)}
+                                    size="sm"
+                                    disabled={user?.role === 'admin_company'}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs text-gray-700 dark:text-gray-300">
+                                    Văn phòng
+                                  </label>
+                                  <ToggleSwitch
+                                    checked={Boolean(staff.staff_permissions?.settings?.branches)}
+                                    onChange={(checked) => handleUpdateStaffPermission(staff.id, "settings.branches", checked)}
+                                    size="sm"
+                                    disabled={user?.role === 'admin_company'}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs text-gray-700 dark:text-gray-300">
+                                    Tài khoản ngân hàng
+                                  </label>
+                                  <ToggleSwitch
+                                    checked={Boolean(staff.staff_permissions?.settings?.bank_accounts)}
+                                    onChange={(checked) => handleUpdateStaffPermission(staff.id, "settings.bank_accounts", checked)}
+                                    size="sm"
+                                    disabled={user?.role === 'admin_company'}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs text-gray-700 dark:text-gray-300">
+                                    Loại giao dịch
+                                  </label>
+                                  <ToggleSwitch
+                                    checked={Boolean(staff.staff_permissions?.settings?.transaction_types)}
+                                    onChange={(checked) => handleUpdateStaffPermission(staff.id, "settings.transaction_types", checked)}
+                                    size="sm"
+                                    disabled={user?.role === 'admin_company'}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs text-gray-700 dark:text-gray-300">
+                                    Trường khách hàng
+                                  </label>
+                                  <ToggleSwitch
+                                    checked={Boolean(staff.staff_permissions?.settings?.customer_fields)}
+                                    onChange={(checked) => handleUpdateStaffPermission(staff.id, "settings.customer_fields", checked)}
+                                    size="sm"
+                                    disabled={user?.role === 'admin_company'}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs text-gray-700 dark:text-gray-300">
+                                    Màu sắc
+                                  </label>
+                                  <ToggleSwitch
+                                    checked={Boolean(staff.staff_permissions?.settings?.color_settings)}
+                                    onChange={(checked) => handleUpdateStaffPermission(staff.id, "settings.color_settings", checked)}
+                                    size="sm"
+                                    disabled={user?.role === 'admin_company'}
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs text-gray-700 dark:text-gray-300">
+                                    Báo cáo
+                                  </label>
+                                  <ToggleSwitch
+                                    checked={Boolean(staff.staff_permissions?.settings?.reports)}
+                                    onChange={(checked) => handleUpdateStaffPermission(staff.id, "settings.reports", checked)}
+                                    size="sm"
+                                    disabled={user?.role === 'admin_company'}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Reports Section */}
+                          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                            <button
+                              onClick={() => setExpandedPermissions(prev => ({ ...prev, reports: !prev.reports }))}
+                              className="flex items-center justify-between w-full text-left"
+                            >
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">📊 Báo cáo</span>
+                              <svg className={`w-4 h-4 text-gray-500 transition-transform ${expandedPermissions.reports ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            {expandedPermissions.reports && (
+                              <div className="mt-3 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs text-gray-700 dark:text-gray-300">
+                                    Xem báo cáo
+                                  </label>
+                                  <ToggleSwitch
+                                    checked={Boolean(staff.staff_permissions?.reports?.view)}
+                                    onChange={(checked) => handleUpdateStaffPermission(staff.id, "reports.view", checked)}
+                                    size="sm"
+                                    disabled={user?.role === 'admin_company'}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Delete permission (separate) */}
+                          <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-600 pt-3">
+                            <label className="text-xs text-gray-700 dark:text-gray-300">
+                              Xóa dữ liệu
                             </label>
                             <ToggleSwitch
-                              checked={Boolean(staff.staff_permissions?.import_customers)}
-                              onChange={(checked) => handleUpdateStaffPermission(staff.id, "import_customers", checked)}
+                              checked={Boolean(staff.can_delete)}
+                              onChange={(checked) => handleUpdateStaffPermission(staff.id, "can_delete", checked)}
                               size="sm"
+                              disabled={user?.role === 'admin_company'}
                             />
                           </div>
                           
-                          <div className="flex items-center space-x-2">
-                            <label className="text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                              Import giao dịch
-                            </label>
-                            <ToggleSwitch
-                              checked={Boolean(staff.staff_permissions?.import_transactions)}
-                              onChange={(checked) => handleUpdateStaffPermission(staff.id, "import_transactions", checked)}
-                              size="sm"
-                            />
+                          {user?.role === 'admin_master' && staff.role !== 'admin_master' && (
+                            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className="text-xs bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
+                                onClick={() => handlePromoteToAdminMaster(staff.id, staff.email || staff.full_name || '')}
+                              >
+                                👑 Promote lên Admin Master
+                              </Button>
+                            </div>
+                          )}
+                          
+                          {staff.role === 'admin_master' && (
+                            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                              <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                                👑 Admin Master - Có quyền truy cập toàn bộ hệ thống
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="text-xs text-gray-400 dark:text-gray-500 italic">
+                            * Mật khẩu được quản lý bởi Supabase Auth và không thể hiển thị. Để đặt lại mật khẩu, hãy sử dụng chức năng quên mật khẩu.
                           </div>
                         </div>
                       </div>
@@ -1687,7 +2128,7 @@ const Settings: React.FC = () => {
             </div>
           )}
 
-          {activeTab === "users" && user?.role !== "admin" && (
+          {activeTab === "users" && user?.role !== "admin" && user?.role !== "admin_master" && (
             <div className="p-4 sm:p-6">
               <div className="text-center py-8">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -1695,6 +2136,18 @@ const Settings: React.FC = () => {
                 </p>
               </div>
             </div>
+          )}
+
+          {/* CreateUserModal */}
+          {isCreateUserModalOpen && (
+            <CreateUserModal
+              isOpen={isCreateUserModalOpen}
+              onClose={() => setIsCreateUserModalOpen(false)}
+              onSuccess={() => {
+                setIsCreateUserModalOpen(false);
+                loadStaffUsers();
+              }}
+            />
           )}
 
           {/* Data Settings */}

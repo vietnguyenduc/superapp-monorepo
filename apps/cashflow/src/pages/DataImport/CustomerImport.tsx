@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useAuthContext } from "../../contexts/AuthContext";
+import { useCompany } from "../../contexts/CompanyContext";
 import type { Customer, ImportData, ImportError } from "../../types";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import { databaseService } from "../../services/database";
@@ -32,13 +33,13 @@ const INITIAL_SINGLE_CUSTOMER: RawCustomerData = {
 
 const MAX_BULK_ROWS = 200;
 const PHONE_REGEX = /^[+]?[-0-9 ()]{8,15}$/;
-const IMPORT_HISTORY_KEY = "cashflow_import_history";
 
 const CustomerImport: React.FC<CustomerImportProps> = ({
   onImportComplete,
 }) => {
   const { t } = useTranslation();
   const { user } = useAuthContext();
+  const { selectedCompany } = useCompany();
   const [singleCustomer, setSingleCustomer] = useState<RawCustomerData>(
     INITIAL_SINGLE_CUSTOMER,
   );
@@ -58,7 +59,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const canImportCustomers = useMemo(() => {
     if (!user) return false;
-    if (user.role === "admin" || user.role === "branch_manager") return true;
+    if (user.role === "admin" || user.role === "admin_master" || user.role === "branch_manager") return true;
     if (user.role === "staff") {
       return Boolean(user.staff_permissions?.import_customers);
     }
@@ -87,29 +88,27 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       }
     };
 
+    const preventDefault = (e: Event) => e.preventDefault();
+
     window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("dragover", preventDefault, false);
+    window.addEventListener("drop", preventDefault, false);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("dragover", preventDefault, false);
+      window.removeEventListener("drop", preventDefault, false);
+    };
   }, [hasSingleChanges]);
 
   const logImportAction = useCallback(
     (payload: { type: string; successCount: number }) => {
-      if (typeof window === "undefined" || !window.localStorage) return;
-      try {
-        const existing = JSON.parse(
-          window.localStorage.getItem(IMPORT_HISTORY_KEY) || "[]",
-        );
-        const entry = {
-          id: crypto.randomUUID?.() ?? `import_${Date.now()}`,
-          user_id: user?.id ?? null,
-          user_email: user?.email ?? null,
-          timestamp: new Date().toISOString(),
-          ...payload,
-        };
-        const next = [entry, ...existing].slice(0, 200);
-        window.localStorage.setItem(IMPORT_HISTORY_KEY, JSON.stringify(next));
-      } catch (error) {
-        console.warn("Unable to log import action", error);
-      }
+      console.info("Import action:", {
+        user_id: user?.id ?? null,
+        user_email: user?.email ?? null,
+        timestamp: new Date().toISOString(),
+        ...payload,
+      });
     },
     [user?.email, user?.id],
   );
@@ -214,6 +213,16 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     ];
 
     const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+    
+    // Đảm bảo cột số điện thoại (B) và mã khách hàng (D) luôn là định dạng Text để không mất số 0 ở đầu
+    for (const key in worksheet) {
+      if (key.startsWith("B") || key.startsWith("D")) {
+        if (worksheet[key] && typeof worksheet[key] === "object") {
+          worksheet[key].z = "@";
+        }
+      }
+    }
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Customers");
     XLSX.writeFile(workbook, "customer-import-sample.xlsx");
@@ -235,10 +244,12 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       e.stopPropagation();
       setDragActive(false);
 
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         const file = e.dataTransfer.files[0];
         if (isValidFileType(file)) {
           handleFileUpload(file);
+        } else {
+          alert("Định dạng file không được hỗ trợ. Vui lòng sử dụng Excel (.xlsx, .xls) hoặc CSV.");
         }
       }
     },
@@ -309,7 +320,8 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       return;
     }
 
-    const branchId = user?.branch_id || "1";
+    const branchId = user?.branch_id || null; // Admin can have null branch_id
+    const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
 
     setIsProcessing(true);
     try {
@@ -319,13 +331,48 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
           working_method: customer.working_method,
           notes: customer.notes,
           branch_id: branchId,
+          company_id: companyId,
         })),
       );
 
-      if (result.errors.length > 0) {
+      if (result.error) {
         setImportData((prev) => ({
           ...prev,
-          errors: result.errors,
+          errors: [
+            {
+              row: 0,
+              column: "general",
+              message: result.error,
+            },
+          ],
+          isValid: false,
+        }));
+        setShowPreview(true);
+        setCurrentStep(2);
+        return;
+      }
+
+      if ((result as any).errors?.length > 0) {
+        setImportData((prev) => ({
+          ...prev,
+          errors: (result as any).errors,
+          isValid: false,
+        }));
+        setShowPreview(true);
+        setCurrentStep(2);
+        return;
+      }
+
+      if (!result.data || result.data.length === 0) {
+        setImportData((prev) => ({
+          ...prev,
+          errors: [
+            {
+              row: 0,
+              column: "general",
+              message: "Supabase không trả về bản ghi nào sau khi import. Vui lòng kiểm tra RLS, constraint hoặc dữ liệu nhập.",
+            },
+          ],
           isValid: false,
         }));
         setShowPreview(true);
@@ -334,9 +381,9 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       }
 
       setCurrentStep(3);
-      onImportComplete?.(result.data);
+      onImportComplete?.((result.data ?? []) as any);
 
-      logImportAction({ type: "bulk_customer", successCount: result.data.length });
+      logImportAction({ type: "bulk_customer", successCount: result.data?.length ?? 0 });
 
       // Show success popup for 3s
       setSuccessMessage("Đã nhập dữ liệu khách hàng thành công");
@@ -388,11 +435,8 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       return;
     }
 
-    const branchId = user?.branch_id || "1";
-    if (!branchId) {
-      setSingleError("Không xác định được chi nhánh, vui lòng đăng nhập lại");
-      return;
-    }
+    const branchId = user?.branch_id || null;
+    const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
     setSingleError(null);
     setIsCreatingSingle(true);
     try {
@@ -401,6 +445,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
         customer_code: code,
         phone,
         branch_id: branchId,
+        company_id: companyId,
       };
       const result = await databaseService.customers.createCustomer(payload);
       if (result.error) {
@@ -408,7 +453,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
         return;
       }
       if (result.data) {
-        onImportComplete?.([result.data]);
+        onImportComplete?.([result.data as any]);
       }
       logImportAction({ type: "single_customer", successCount: 1 });
       setSuccessMessage("Đã thêm khách hàng thành công");
@@ -434,114 +479,23 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
 
   const renderFileUpload = () => (
     <div className="space-y-6">
-      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
-        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
-          Nhập từng khách hàng
-        </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Nhập nhanh từng khách hàng nếu không dùng file Excel/CSV. Các trường bắt buộc: Mã khách hàng, Họ và tên, Số điện thoại.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Họ và tên *
-            </label>
-            <input
-              type="text"
-              value={singleCustomer.full_name}
-              onChange={(e) => handleSingleInputChange("full_name", e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
-              placeholder="Tên khách hàng"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Mã khách hàng
-            </label>
-            <input
-              type="text"
-              value={singleCustomer.customer_code}
-              onChange={(e) => handleSingleInputChange("customer_code", e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
-              placeholder="CUST0001"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Số điện thoại *
-            </label>
-            <input
-              type="tel"
-              value={singleCustomer.phone}
-              onChange={(e) => handleSingleInputChange("phone", e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
-              placeholder="0900 000 000"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Email
-            </label>
-            <input
-              type="email"
-              value={singleCustomer.email}
-              onChange={(e) => handleSingleInputChange("email", e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
-              placeholder="name@email.com"
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Địa chỉ
-            </label>
-            <input
-              type="text"
-              value={singleCustomer.address}
-              onChange={(e) => handleSingleInputChange("address", e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
-              placeholder="Địa chỉ liên hệ"
-            />
-          </div>
-        </div>
-        {singleError && <p className="mt-3 text-sm text-red-600">{singleError}</p>}
-        <div className="mt-4 flex flex-wrap justify-between gap-3">
-          {hasSingleChanges && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                if (!hasSingleChanges) return;
-                if (window.confirm("Bạn có chắc chắn muốn xóa dữ liệu đang nhập?")) {
-                  setSingleCustomer(INITIAL_SINGLE_CUSTOMER);
-                  setSingleError(null);
-                }
-              }}
-            >
-              Xóa dữ liệu
-            </Button>
-          )}
-          <Button
-            variant="primary"
-            size="md"
-            onClick={handleCreateSingleCustomer}
-            disabled={isCreatingSingle}
-          >
-            {isCreatingSingle ? t("common.saving") : "Thêm khách hàng"}
-          </Button>
-        </div>
-      </div>
       <div>
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             Nhập dữ liệu khách hàng hàng loạt
           </h2>
-          <Button variant="secondary" size="sm" onClick={handleReset}>
-            Đặt lại
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={handleDownloadSample}>
+              Tải file mẫu
+            </Button>
+            <Button variant="secondary" size="sm" onClick={handleReset}>
+              Đặt lại
+            </Button>
+          </div>
         </div>
         <div className="mb-4 rounded-lg border border-blue-100 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-900/20 px-4 py-3">
           <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-            {t("import.customerBulkGuidelinesTitle")}
+            Quy tắc nhập hàng loạt khách hàng
           </p>
           <ul className="mt-2 space-y-1 text-sm text-blue-800 dark:text-blue-200">
             <li>• File Excel/CSV tối đa {MAX_BULK_ROWS} dòng. Nếu hơn, vui lòng tách nhỏ.</li>
@@ -550,40 +504,65 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
           </ul>
         </div>
 
-          <div>
-            <p className="text-gray-600 dark:text-gray-300">{t("import.dragDropFile")}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {t("import.supportedFormats")}
-            </p>
-          </div>
-
-          <div>
-            <label className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              {t("import.browseFiles")}
+        <div
+          className={`relative mt-4 flex flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 transition-colors ${
+            dragActive
+              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+              : "border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600"
+          }`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+        >
+          {dragActive && (
+            <div
+              className="absolute inset-0 z-50 rounded-lg"
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+            />
+          )}
+          <svg
+            className="mx-auto h-12 w-12 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1}
+              d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          <div className="mt-4 flex flex-col sm:flex-row items-center justify-center text-sm leading-6 text-gray-600 dark:text-gray-400">
+            <label className="relative cursor-pointer rounded-md bg-white dark:bg-gray-800 font-semibold text-blue-600 dark:text-blue-400 focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-600 focus-within:ring-offset-2 hover:text-blue-500 px-3 py-1">
+              <span>Chọn file</span>
               <input
                 type="file"
-                className="hidden"
+                className="sr-only"
                 accept=".xlsx,.xls,.csv"
                 onChange={handleFileInput}
               />
             </label>
+            <p className="pl-1 mt-2 sm:mt-0 pointer-events-none">hoặc kéo thả file vào đây</p>
           </div>
-          {importData.file && (
-            <div className="mt-4 inline-flex items-center gap-3 rounded-md border border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/30 px-4 py-2 text-left">
-              <svg
-                className="h-5 w-5 text-green-500"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
+          <p className="text-xs leading-5 text-gray-500 mt-2 pointer-events-none">
+            Định dạng hỗ trợ: Excel (.xlsx, .xls), CSV
+          </p>
+        </div>
+
+        {importData.file && (
+          <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-md border border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/30 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <svg className="h-6 w-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               <div className="text-sm">
                 <p className="font-medium text-green-800 dark:text-green-200">
-                  {t("import.fileSelected")}: {importData.file.name}
+                  File đã chọn: {importData.file.name}
                 </p>
                 <p className="text-green-600 dark:text-green-300">
                   {(importData.file.size / 1024 / 1024).toFixed(2)} MB
@@ -591,21 +570,25 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
               </div>
               <button
                 onClick={() => setImportData((prev) => ({ ...prev, file: null }))}
-                className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
+                className="ml-2 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 p-1"
+                title="Xóa file"
               >
-                <svg
-                  className="h-4 w-4"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
               </button>
             </div>
+            <Button variant="primary" size="md" onClick={handleValidateData}>
+              Tiếp tục kiểm tra dữ liệu
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderDataPreview = () => {
+    return (
       <div className="mt-6">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
           {t("import.dataPreview")} ({importData.data.length}{" "}
@@ -820,14 +803,30 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
             {singleError}
           </div>
         )}
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex flex-wrap justify-between gap-3">
+          {hasSingleChanges && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                if (!hasSingleChanges) return;
+                if (window.confirm("Bạn có chắc chắn muốn xóa dữ liệu đang nhập?")) {
+                  setSingleCustomer(INITIAL_SINGLE_CUSTOMER);
+                  setSingleError(null);
+                }
+              }}
+            >
+              Xóa dữ liệu
+            </Button>
+          )}
+          <div className="flex-1"></div>
           <Button
             variant="primary"
             size="md"
             onClick={handleCreateSingleCustomer}
             disabled={isCreatingSingle || !singleCustomer.full_name || !singleCustomer.phone}
           >
-            {isCreatingSingle ? "Đang tạo..." : "Tạo khách hàng"}
+            {isCreatingSingle ? t("common.saving") : "Thêm khách hàng"}
           </Button>
         </div>
       </div>
@@ -1033,7 +1032,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
           </div>
 
           <div className="px-6 py-6 bg-white dark:bg-gray-900">
-            {activeTab === "single" && renderFileUpload()}
+            {activeTab === "single" && renderSingleEntry()}
 
             {activeTab === "bulk" && currentStep === 1 && renderFileUpload()}
 
@@ -1071,7 +1070,14 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                 {renderDataPreview()}
                 {renderValidationErrors()}
 
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-3">
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    onClick={handleBackToUpload}
+                  >
+                    Quay lại tải file
+                  </Button>
                   <Button
                     variant="primary"
                     size="md"
@@ -1129,11 +1135,12 @@ function isValidFileType(file: File): boolean {
     "application/vnd.ms-excel", // .xls
     "text/csv", // .csv
   ];
+  const fileName = file.name.toLowerCase();
   return (
     validTypes.includes(file.type) ||
-    file.name.endsWith(".xlsx") ||
-    file.name.endsWith(".xls") ||
-    file.name.endsWith(".csv")
+    fileName.endsWith(".xlsx") ||
+    fileName.endsWith(".xls") ||
+    fileName.endsWith(".csv")
   );
 }
 

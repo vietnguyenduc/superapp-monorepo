@@ -225,8 +225,8 @@ describe("Formatting Utils", () => {
 
   describe("formatTransactionType", () => {
     it("formats transaction types correctly", () => {
-      expect(formatTransactionType("payment")).toBe("Tiền vào");
-      expect(formatTransactionType("charge")).toBe("Tiền ra");
+      expect(formatTransactionType("payment")).toBe("Điều chỉnh tăng");
+      expect(formatTransactionType("charge")).toBe("Điều chỉnh giảm");
       expect(formatTransactionType("adjustment")).toBe("Điều chỉnh");
       expect(formatTransactionType("refund")).toBe("Hoàn tiền");
     });
@@ -270,7 +270,7 @@ describe("Formatting Utils", () => {
       expect(formatTableCell("2024-01-15", "date")).toBe("15 thg 1, 2024");
       expect(formatTableCell("1234567890", "phone")).toBe("(123) 456-7890");
       expect(formatTableCell(true, "status")).toBe("Hoạt động");
-      expect(formatTableCell("payment", "type")).toBe("Tiền vào");
+      expect(formatTableCell("payment", "type")).toBe("Điều chỉnh tăng");
       expect(formatTableCell("admin", "role")).toBe("Quản trị viên");
     });
 

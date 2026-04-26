@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hướng Dẫn Sử Dụng Cashflow - Nhân viên</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        header {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .toc {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+            border-left: 4px solid #11998e;
+        }
+        
+        .toc h2 {
+            color: #11998e;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .toc ul {
+            list-style: none;
+        }
+        
+        .toc li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .toc li:last-child {
+            border-bottom: none;
+        }
+        
+        .toc a {
+            color: #495057;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .toc a:hover {
+            color: #11998e;
+        }
+        
+        h2 {
+            color: #11998e;
+            margin: 40px 0 20px 0;
+            font-size: 1.8em;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+        
+        h3 {
+            color: #495057;
+            margin: 25px 0 15px 0;
+            font-size: 1.4em;
+        }
+        
+        h4 {
+            color: #6c757d;
+            margin: 20px 0 10px 0;
+            font-size: 1.2em;
+        }
+        
+        p {
+            margin: 15px 0;
+            text-align: justify;
+        }
+        
+        ul, ol {
+            margin: 15px 0 15px 30px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .note {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        th {
+            background: #11998e;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .feature-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #11998e;
+        }
+        
+        .feature-item strong {
+            color: #11998e;
+        }
+        
+        .faq-item {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #38ef7d;
+        }
+        
+        .faq-item strong {
+            color: #38ef7d;
+            font-size: 1.1em;
+        }
+        
+        footer {
+            background: #343a40;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-top: 40px;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .print-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #11998e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background 0.3s;
+        }
+        
+        .print-btn:hover {
+            background: #38ef7d;
+        }
+        
+        @media print {
+            .print-btn {
+                display: none;
+            }
+            
+            body {
+                background: white;
+            }
+            
+            .container {
+                box-shadow: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+            
+            h2 {
+                font-size: 1.5em;
+            }
+            
+            .feature-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="print-btn" onclick="window.print()">🖨️ In/PDF</button>
+    
+    <div class="container">
+        <header>
+            <h1>Hướng Dẫn Sử Dụng Cashflow</h1>
+            <p class="subtitle">Nhân viên</p>
+            <p class="subtitle">Phiên bản 1.0 | Ngày 27/04/2026</p>
+        </header>
+        
+        <div class="toc">
+            <h2>📋 Mục Lục</h2>
+            <ul>
+                <li><a href="#1-gioi-thieu">1. Giới thiệu</a></li>
+                <li><a href="#2-dang-nhap-va-dang-xuat">2. Đăng nhập và Đăng xuất</a></li>
+                <li><a href="#3-dashboard---tong-quan">3. Dashboard - Tổng quan</a></li>
+                <li><a href="#4-quan-ly-khach-hang">4. Quản lý Khách hàng</a></li>
+                <li><a href="#5-quan-ly-giao-dich">5. Quản lý Giao dịch</a></li>
+                <li><a href="#6-nhap-du-lieu">6. Nhập dữ liệu</a></li>
+                <li><a href="#7-bao-cao">7. Báo cáo</a></li>
+                <li><a href="#8-ho-so-ca-nhan">8. Hồ sơ cá nhân</a></li>
+                <li><a href="#9-cau-hoi-thuong-gap">9. Câu hỏi thường gặp</a></li>
+            </ul>
+        </div>
+        
+        <section id="1-gioi-thieu">
+            <h2>1. Giới thiệu</h2>
+            <p>Cashflow là hệ thống quản lý dòng tiền giúp bạn theo dõi và quản lý các giao dịch tài chính. Với vai trò Staff, bạn có thể:</p>
+            
+            <div class="feature-list">
+                <div class="feature-item">
+                    <strong>✅ Xem và quản lý</strong> khách hàng trong chi nhánh
+                </div>
+                <div class="feature-item">
+                    <strong>✅ Nhập và theo dõi</strong> giao dịch
+                </div>
+                <div class="feature-item">
+                    <strong>✅ Nhập dữ liệu</strong> hàng loạt
+                </div>
+                <div class="feature-item">
+                    <strong>✅ Xem báo cáo</strong> chi nhánh
+                </div>
+                <div class="feature-item">
+                    <strong>✅ Cập nhật hồ sơ</strong> cá nhân
+                </div>
+            </div>
+            
+            <h3>Tính năng chính cho Staff</h3>
+            <div class="feature-list">
+                <div class="feature-item"><strong>Quản lý khách hàng</strong> trong chi nhánh</div>
+                <div class="feature-item"><strong>Nhập và theo dõi</strong> giao dịch</div>
+                <div class="feature-item"><strong>Nhập dữ liệu</strong> hàng loạt</div>
+                <div class="feature-item"><strong>Xem báo cáo</strong> chi nhánh</div>
+                <div class="feature-item"><strong>Cập nhật thông tin</strong> cá nhân</div>
+            </div>
+        </section>
+        
+        <section id="2-dang-nhap-va-dang-xuat">
+            <h2>2. Đăng nhập và Đăng xuất</h2>
+            
+            <h3>2.1 Đăng nhập</h3>
+            <ol>
+                <li>Truy cập URL ứng dụng</li>
+                <li>Nhập email đăng ký</li>
+                <li>Nhập mật khẩu</li>
+                <li>Nhấn nút "Đăng nhập"</li>
+            </ol>
+            
+            <h3>2.2 Đăng xuất</h3>
+            <ol>
+                <li>Nhấn vào avatar ở góc trên bên phải</li>
+                <li>Chọn "Đăng xuất" từ menu</li>
+            </ol>
+        </section>
+        
+        <section id="3-dashboard---tong-quan">
+            <h2>3. Dashboard - Tổng quan</h2>
+            <p>Dashboard cung cấp cái nhìn tổng quan về tình hình tài chính của chi nhánh.</p>
+            
+            <h3>3.1 Các chỉ số chính</h3>
+            <ul>
+                <li><strong>Tổng số khách hàng</strong>: Số lượng khách hàng trong chi nhánh</li>
+                <li><strong>Tổng số giao dịch</strong>: Số lượng giao dịch trong khoảng thời gian</li>
+                <li><strong>Tổng dư nợ</strong>: Tổng số tiền khách hàng nợ trong chi nhánh</li>
+                <li><strong>Tổng thu</strong>: Tổng số tiền thu trong kỳ</li>
+                <li><strong>Tổng chi</strong>: Tổng số tiền chi trong kỳ</li>
+            </ul>
+            
+            <h3>3.2 Biểu đồ</h3>
+            <ul>
+                <li><strong>Biểu đồ dòng tiền</strong>: Hiển thị xu hướng thu chi theo thời gian</li>
+                <li><strong>Biểu đồ dư nợ theo ngân hàng</strong>: Phân bổ dư nợ theo từng tài khoản ngân hàng</li>
+                <li><strong>Biểu đồ phân loại giao dịch</strong>: Tỷ lệ các loại giao dịch (thu, chi, điều chỉnh)</li>
+            </ul>
+            
+            <h3>3.3 Khách hàng có dư nợ cao nhất</h3>
+            <p>Danh sách 10 khách hàng có dư nợ cao nhất trong chi nhánh để ưu tiên thu hồi.</p>
+            
+            <h3>3.4 Giao dịch gần đây</h3>
+            <p>Danh sách 10 giao dịch gần nhất trong chi nhánh để theo dõi hoạt động.</p>
+        </section>
+        
+        <section id="4-quan-ly-khach-hang">
+            <h2>4. Quản lý Khách hàng</h2>
+            
+            <h3>4.1 Xem danh sách khách hàng</h3>
+            <ol>
+                <li>Chọn menu "Khách hàng" từ sidebar</li>
+                <li>Xem danh sách khách hàng trong chi nhánh của bạn</li>
+                <li>Sử dụng bộ lọc để tìm kiếm:
+                    <ul>
+                        <li>Tìm kiếm theo tên, mã, điện thoại</li>
+                        <li>Lọc theo trạng thái (có dư nợ, không dư nợ)</li>
+                    </ul>
+                </li>
+            </ol>
+            
+            <h3>4.2 Thêm khách hàng mới</h3>
+            <ol>
+                <li>Nhấn nút "Thêm khách hàng"</li>
+                <li>Điền thông tin:
+                    <ul>
+                        <li><strong>Mã khách hàng</strong>: Mã duy nhất (bắt buộc)</li>
+                        <li><strong>Họ và tên</strong>: Tên đầy đủ (bắt buộc)</li>
+                        <li><strong>Số điện thoại</strong>: Để liên hệ (bắt buộc)</li>
+                        <li><strong>Email</strong>: Để liên hệ</li>
+                        <li><strong>Địa chỉ</strong>: Địa chỉ khách hàng</li>
+                        <li><strong>Dư nợ đầu kỳ</strong>: Số tiền nợ ban đầu</li>
+                    </ul>
+                </li>
+                <li>Nhấn "Lưu"</li>
+            </ol>
+            
+            <h3>4.3 Chỉnh sửa thông tin khách hàng</h3>
+            <ol>
+                <li>Nhấn vào khách hàng muốn chỉnh sửa</li>
+                <li>Thay đổi thông tin cần thiết</li>
+                <li>Nhấn "Cập nhật"</li>
+            </ol>
+            
+            <h3>4.4 Xem chi tiết khách hàng</h3>
+            <ol>
+                <li>Nhấn vào khách hàng</li>
+                <li>Xem thông tin chi tiết:
+                    <ul>
+                        <li>Thông tin cá nhân</li>
+                        <li>Lịch sử giao dịch</li>
+                        <li>Dư nợ hiện tại</li>
+                        <li>Biểu đồ dư nợ theo thời gian</li>
+                    </ul>
+                </li>
+            </ol>
+        </section>
+        
+        <section id="5-quan-ly-giao-dich">
+            <h2>5. Quản lý Giao dịch</h2>
+            
+            <h3>5.1 Xem danh sách giao dịch</h3>
+            <ol>
+                <li>Chọn menu "Giao dịch" từ sidebar</li>
+                <li>Xem danh sách giao dịch trong chi nhánh</li>
+                <li>Sử dụng bộ lọc:
+                    <ul>
+                        <li>Tìm kiếm theo mã, mô tả</li>
+                        <li>Lọc theo loại giao dịch (thu, chi, điều chỉnh)</li>
+                        <li>Lọc theo khách hàng</li>
+                        <li>Lọc theo khoảng thời gian</li>
+                        <li>Lọc theo số tiền</li>
+                    </ul>
+                </li>
+            </ol>
+            
+            <h3>5.2 Thêm giao dịch mới</h3>
+            <ol>
+                <li>Nhấn nút "Thêm giao dịch"</li>
+                <li>Điền thông tin:
+                    <ul>
+                        <li><strong>Khách hàng</strong>: Chọn từ danh sách</li>
+                        <li><strong>Loại giao dịch</strong>: Thu, Chi, Điều chỉnh</li>
+                        <li><strong>Số tiền</strong>: Số tiền giao dịch</li>
+                        <li><strong>Ngày giao dịch</strong>: Ngày thực hiện giao dịch</li>
+                        <li><strong>Mô tả</strong>: Mô tả chi tiết</li>
+                        <li><strong>Loại giao dịch tùy chỉnh</strong>: (nếu có cấu hình)</li>
+                    </ul>
+                </li>
+                <li>Nhấn "Lưu"</li>
+            </ol>
+            
+            <h3>5.3 Chỉnh sửa giao dịch</h3>
+            <ol>
+                <li>Nhấn vào giao dịch muốn chỉnh sửa</li>
+                <li>Thay đổi thông tin</li>
+                <li>Nhấn "Cập nhật"</li>
+            </ol>
+        </section>
+        
+        <section id="6-nhap-du-lieu">
+            <h2>6. Nhập dữ liệu</h2>
+            
+            <h3>6.1 Nhập khách hàng hàng loạt</h3>
+            <ol>
+                <li>Chọn menu "Nhập dữ liệu" → "Nhập khách hàng"</li>
+                <li>Tải xuống template Excel</li>
+                <li>Điền thông tin khách hàng vào template</li>
+                <li>Upload file đã điền</li>
+                <li>Xem preview dữ liệu</li>
+                <li>Nhấn "Nhập dữ liệu"</li>
+            </ol>
+            
+            <h4>Định dạng file Excel:</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Column</th>
+                        <th>Nội dung</th>
+                        <th>Bắt buộc</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>A</td><td>Mã khách hàng</td><td>Có</td></tr>
+                    <tr><td>B</td><td>Họ và tên</td><td>Có</td></tr>
+                    <tr><td>C</td><td>Số điện thoại</td><td>Có</td></tr>
+                    <tr><td>D</td><td>Email</td><td>Không</td></tr>
+                    <tr><td>E</td><td>Địa chỉ</td><td>Không</td></tr>
+                    <tr><td>F</td><td>Dư nợ đầu kỳ</td><td>Không</td></tr>
+                </tbody>
+            </table>
+            
+            <h3>6.2 Nhập giao dịch hàng loạt</h3>
+            <ol>
+                <li>Chọn menu "Nhập dữ liệu" → "Nhập giao dịch"</li>
+                <li>Tải xuống template Excel</li>
+                <li>Điền thông tin giao dịch vào template</li>
+                <li>Upload file đã điền</li>
+                <li>Xem preview dữ liệu</li>
+                <li>Nhấn "Nhập dữ liệu"</li>
+            </ol>
+            
+            <h4>Định dạng file Excel:</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Column</th>
+                        <th>Nội dung</th>
+                        <th>Bắt buộc</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>A</td><td>Mã khách hàng</td><td>Có</td></tr>
+                    <tr><td>B</td><td>Loại giao dịch</td><td>Có</td></tr>
+                    <tr><td>C</td><td>Số tiền</td><td>Có</td></tr>
+                    <tr><td>D</td><td>Ngày giao dịch</td><td>Không</td></tr>
+                    <tr><td>E</td><td>Mô tả</td><td>Không</td></tr>
+                </tbody>
+            </table>
+            
+            <h3>6.3 Xử lý lỗi nhập</h3>
+            <p>Nếu có lỗi nhập:</p>
+            <ul>
+                <li>Hệ thống sẽ hiển thị danh sách lỗi</li>
+                <li>Kiểm tra và sửa lỗi trong file Excel</li>
+                <li>Upload lại file đã sửa</li>
+            </ul>
+        </section>
+        
+        <section id="7-bao-cao">
+            <h2>7. Báo cáo</h2>
+            
+            <h3>7.1 Xem báo cáo</h3>
+            <ol>
+                <li>Chọn menu "Báo cáo" từ sidebar</li>
+                <li>Chọn loại báo cáo:
+                    <ul>
+                        <li>Báo cáo dư nợ khách hàng</li>
+                        <li>Báo cáo giao dịch</li>
+                        <li>Báo cáo thu chi</li>
+                    </ul>
+                </li>
+                <li>Chọn khoảng thời gian</li>
+                <li>Chọn bộ lọc (khách hàng, loại giao dịch)</li>
+                <li>Nhấn "Xem báo cáo"</li>
+            </ol>
+            
+            <h3>7.2 Xuất báo cáo</h3>
+            <ol>
+                <li>Sau khi xem báo cáo</li>
+                <li>Nhấn nút "Xuất"</li>
+                <li>Chọn định dạng:
+                    <ul>
+                        <li>Excel (.xlsx)</li>
+                        <li>PDF</li>
+                    </ul>
+                </li>
+                <li>Chọn tên file</li>
+                <li>Nhấn "Xuất"</li>
+            </ol>
+        </section>
+        
+        <section id="8-ho-so-ca-nhan">
+            <h2>8. Hồ sơ cá nhân</h2>
+            
+            <h3>8.1 Xem hồ sơ</h3>
+            <ol>
+                <li>Nhấn vào avatar ở góc trên bên phải</li>
+                <li>Chọn "Hồ sơ" từ menu</li>
+                <li>Xem thông tin cá nhân:
+                    <ul>
+                        <li>Họ và tên</li>
+                        <li>Email</li>
+                        <li>Vai trò</li>
+                        <li>Chi nhánh</li>
+                        <li>Ngày tham gia</li>
+                    </ul>
+                </li>
+            </ol>
+            
+            <h3>8.2 Cập nhật thông tin</h3>
+            <ol>
+                <li>Trong trang hồ sơ</li>
+                <li>Nhấn "Chỉnh sửa"</li>
+                <li>Cập nhật thông tin cần thiết</li>
+                <li>Nhấn "Lưu"</li>
+            </ol>
+            
+            <h3>8.3 Đổi mật khẩu</h3>
+            <ol>
+                <li>Trong trang hồ sơ</li>
+                <li>Nhấn "Đổi mật khẩu"</li>
+                <li>Nhập mật khẩu hiện tại</li>
+                <li>Nhập mật khẩu mới</li>
+                <li>Xác nhận mật khẩu mới</li>
+                <li>Nhấn "Lưu"</li>
+            </ol>
+        </section>
+        
+        <section id="9-cau-hoi-thuong-gap">
+            <h2>9. Câu hỏi thường gặp</h2>
+            
+            <div class="faq-item">
+                <strong>Q1: Tôi quên mật khẩu thì làm sao?</strong>
+                <p>A: Nhấn "Quên mật khẩu" ở trang đăng nhập, nhập email, và làm theo hướng dẫn để reset mật khẩu.</p>
+            </div>
+            
+            <div class="faq-item">
+                <strong>Q2: Tôi có thể xem dữ liệu của chi nhánh khác không?</strong>
+                <p>A: Không, với vai trò Staff, bạn chỉ có thể xem và quản lý dữ liệu của chi nhánh được giao.</p>
+            </div>
+            
+            <div class="faq-item">
+                <strong>Q3: Làm sao để xuất báo cáo?</strong>
+                <p>A: Vào menu Báo cáo, chọn loại báo cáo, khoảng thời gian, bộ lọc, sau đó nhấn "Xuất".</p>
+            </div>
+            
+            <div class="faq-item">
+                <strong>Q4: File nhập dữ liệu bị lỗi thì sao?</strong>
+                <p>A: Kiểm tra định dạng file, đảm bảo đúng template, kiểm tra các trường bắt buộc đã điền, và upload lại.</p>
+            </div>
+            
+            <div class="faq-item">
+                <strong>Q5: Tôi có thể xóa khách hàng không?</strong>
+                <p>A: Không, với vai trò Staff, bạn không có quyền xóa khách hàng. Hãy liên hệ quản lý nếu cần xóa.</p>
+            </div>
+            
+            <div class="faq-item">
+                <strong>Q6: Tôi có thể thêm loại giao dịch mới không?</strong>
+                <p>A: Không, với vai trò Staff, bạn không có quyền thêm loại giao dịch mới. Hãy liên hệ quản lý.</p>
+            </div>
+            
+            <div class="faq-item">
+                <strong>Q7: Làm sao để liên hệ hỗ trợ?</strong>
+                <p>A: Liên hệ quản lý chi nhánh hoặc email support@cashflow.com.</p>
+            </div>
+        </section>
+        
+        <section>
+            <h2>Hỗ trợ</h2>
+            <p>Nếu bạn gặp vấn đề hoặc có câu hỏi, hãy liên hệ:</p>
+            <ul>
+                <li><strong>Quản lý chi nhánh:</strong> [Tên quản lý]</li>
+                <li><strong>Email:</strong> support@cashflow.com</li>
+                <li><strong>Điện thoại:</strong> +84 XXX XXX XXX</li>
+            </ul>
+        </section>
+        
+        <footer>
+            <p>Phiên bản tài liệu: 1.0</p>
+            <p>Cập nhật lần cuối: 27/04/2026</p>
+            <p>© 2026 Cashflow Management System</p>
+        </footer>
+    </div>
+</body>
+</html>

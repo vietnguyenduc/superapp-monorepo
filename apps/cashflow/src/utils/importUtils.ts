@@ -73,8 +73,8 @@ function isTransactionTypeToken(value?: string): boolean {
 
 function normalizeTransactionTypeLabel(value: string): TransactionType | "" {
   const normalized = value.trim().toLowerCase();
-  if (["thu", "tiền vào", "tien vao", "payment", "thanh toán", "thanh toan"].includes(normalized)) return "payment";
-  if (["chi", "tiền ra", "tien ra", "charge", "cho nợ", "cho no"].includes(normalized)) return "charge";
+  if (["thu", "điều chỉnh giảm", "dieu chinh giam", "tiền vào", "tien vao", "payment", "thanh toán", "thanh toan"].includes(normalized)) return "payment";
+  if (["chi", "điều chỉnh tăng", "dieu chinh tang", "tiền ra", "tien ra", "charge", "cho nợ", "cho no"].includes(normalized)) return "charge";
   if (normalized === "điều chỉnh" || normalized === "dieu chinh" || normalized === "adjustment") {
     return "adjustment";
   }

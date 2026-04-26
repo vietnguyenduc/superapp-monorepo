@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { TransactionType } from "../../types";
 
 export interface TransactionTypeFilterProps {
@@ -14,7 +15,7 @@ const TransactionTypeFilter: React.FC<TransactionTypeFilterProps> = ({
   placeholder = "Loại giao dịch",
   className = "",
 }) => {
-  // const { t } = useTranslation();
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -34,11 +35,11 @@ const TransactionTypeFilter: React.FC<TransactionTypeFilterProps> = ({
   }, []);
 
   const transactionTypes = [
-    { value: "all", label: "Tất cả loại" },
-    { value: "payment", label: "Thanh toán" },
-    { value: "charge", label: "Cho nợ" },
-    { value: "adjustment", label: "Điều chỉnh" },
-    { value: "refund", label: "Hoàn tiền" },
+    { value: "all", label: t("transactions.allTypes") },
+    { value: "payment", label: t("transactions.payment") },
+    { value: "charge", label: t("transactions.charge") },
+    { value: "adjustment", label: t("transactions.adjustment") },
+    { value: "refund", label: t("transactions.refund") },
   ];
 
   const handleTypeChange = (type: TransactionType | "all") => {

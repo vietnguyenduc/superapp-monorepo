@@ -153,7 +153,7 @@ const Login: React.FC = () => {
                 onClick={() => navigate("/dashboard")}
                 className="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm"
               >
-                Vào dashboard
+                Vào bảng điều khiển
               </button>
             </div>
           </div>
@@ -227,18 +227,11 @@ const Login: React.FC = () => {
             >
               {tCopy.trial}
             </button>
-            <button
-              type="button"
-              onClick={() => navigate("/signup")}
-              className="w-full text-center text-sm font-medium text-blue-600 dark:text-blue-300 hover:underline"
-            >
-              {language === "vi" ? "Chưa có tài khoản? Đăng ký" : "No account yet? Sign up"}
-            </button>
           </div>
         </form>
       </div>
       <p className="absolute bottom-4 inset-x-0 text-center text-xs text-gray-500 dark:text-gray-400 select-none">
-        Quản lí công nợ Ver 1.0 - 1 sản phẩm trong gói vận hành Doanh nghiệp theo yêu cầu.
+        Quản lý công nợ Ver 1.0 - 1 sản phẩm trong gói vận hành Doanh nghiệp theo yêu cầu.
       </p>
     </div>
   );

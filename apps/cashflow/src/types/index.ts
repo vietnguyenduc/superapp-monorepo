@@ -3,21 +3,29 @@ import React from "react";
 export interface StaffPermissions {
   import_customers?: boolean;
   import_transactions?: boolean;
+  add_transaction_only?: boolean;
+  no_edit_transaction?: boolean;
+  edit_settings?: boolean;
+  view_reports?: boolean;
+  manage_customers?: boolean;
+  manage_transactions?: boolean;
   [key: string]: boolean | undefined;
 }
 
-export interface User {
+export interface Company {
   id: string;
-  email: string;
-  full_name?: string;
+  name: string;
+  code: string;
+  logo_url?: string;
+  description?: string;
+  address?: string;
   phone?: string;
-  position?: string;
-  role: UserRole;
-  branch_id?: string;
-  branch?: Branch;
-  staff_permissions?: StaffPermissions;
+  email?: string;
+  website?: string;
+  created_by?: string;
   created_at: string;
   updated_at: string;
+  is_active: boolean;
 }
 
 export interface Branch {
@@ -28,10 +36,31 @@ export interface Branch {
   phone?: string;
   email?: string;
   manager_id?: string;
-  company_id?: string;
-  is_active: boolean;
+  company_id: string;
+  company?: Company;
+  created_by?: string;
   created_at: string;
   updated_at: string;
+  is_active: boolean;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  full_name?: string;
+  phone?: string;
+  position?: string;
+  role: UserRole;
+  company_id?: string;
+  company?: Company;
+  branch_id?: string;
+  branch?: Branch;
+  staff_permissions?: StaffPermissions;
+  avatar_url?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+  is_active?: boolean;
 }
 
 export interface BankAccount {
@@ -62,29 +91,48 @@ export interface Customer {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  updated_by?: string | null;
+  updated_by_email?: string | null;
 }
 
 export interface Transaction {
   id: string;
   transaction_code: string;
-  customer_id: string;
+  customer_id: string | null;
   customer_name?: string;
-  bank_account_id: string;
+  bank_account_id: string | null;
   bank_account_name?: string;
-  branch_id: string;
+  branch_id: string | null;
   company_id?: string;
   transaction_type: TransactionType;
   amount: number;
   description?: string;
   reference_number?: string;
   transaction_date: string;
-  created_by: string;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
+  customers?: {
+    full_name?: string;
+    customer_code?: string;
+  } | null;
+  bank_accounts?: {
+    account_name?: string;
+  } | null;
+  branches?: {
+    name?: string;
+    code?: string;
+  } | null;
+  users?: {
+    full_name?: string;
+    email?: string;
+  } | null;
+  branch_name?: string;
+  creator_name?: string;
 }
 
 // Enums
-export type UserRole = "admin" | "branch_manager" | "staff";
+export type UserRole = "admin_master" | "admin_company" | "admin" | "branch_manager" | "staff";
 export type TransactionType = "payment" | "charge" | "adjustment" | "refund";
 export type ReportType =
   | "keyMetrics"
@@ -195,6 +243,7 @@ export interface ReportFilters {
     end: string;
   };
   branch_id?: string | null;
+  company_id?: string | null;
   includeCharts?: boolean;
   includeDetails?: boolean;
   groupBy?: string | null;

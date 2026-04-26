@@ -13,6 +13,23 @@ export interface ValidationResult {
   errors: string[];
 }
 
+// Customer data interface for validation
+export interface CustomerValidationData {
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  branch_id?: string | null;
+}
+
+// Transaction data interface for validation
+export interface TransactionValidationData {
+  customer_id?: string | null;
+  bank_account_id?: string | null;
+  amount?: number | string;
+  transaction_type?: string;
+  transaction_date?: string;
+}
+
 // Email validation
 export const validateEmail = (email: string): string | null => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -48,7 +65,7 @@ export const validateAmount = (amount: number | string): string | null => {
 
 // Required field validation
 export const validateRequired = (
-  value: any,
+  value: unknown,
   fieldName: string,
 ): string | null => {
   if (!value || (typeof value === "string" && value.trim() === "")) {
@@ -80,7 +97,7 @@ export const validateDate = (date: string): string | null => {
 };
 
 // Customer validation
-export const validateCustomer = (customer: any): ValidationResult => {
+export const validateCustomer = (customer: CustomerValidationData): ValidationResult => {
   const errors: string[] = [];
 
   const nameError = validateRequired(customer.full_name, "Full name");
@@ -106,7 +123,7 @@ export const validateCustomer = (customer: any): ValidationResult => {
 };
 
 // Transaction validation
-export const validateTransaction = (transaction: any): ValidationResult => {
+export const validateTransaction = (transaction: TransactionValidationData): ValidationResult => {
   const errors: string[] = [];
 
   const customerError = validateRequired(transaction.customer_id, "Customer");
@@ -118,7 +135,7 @@ export const validateTransaction = (transaction: any): ValidationResult => {
   );
   if (bankAccountError) errors.push(bankAccountError);
 
-  const amountError = validateAmount(transaction.amount);
+  const amountError = transaction.amount !== undefined ? validateAmount(transaction.amount) : "Amount is required";
   if (amountError) errors.push(amountError);
 
   const typeError = validateRequired(
@@ -140,7 +157,7 @@ export const validateTransaction = (transaction: any): ValidationResult => {
 
 // Generic field validation
 export const validateField = (
-  value: any,
+  value: unknown,
   rules: ValidationRule,
   fieldName: string,
 ): string | null => {
@@ -188,7 +205,7 @@ export const validateField = (
 
 // Form validation helper
 export const validateForm = (
-  data: Record<string, any>,
+  data: Record<string, unknown>,
   rules: Record<string, ValidationRule>,
 ): ValidationResult => {
   const errors: string[] = [];
@@ -208,7 +225,7 @@ export const validateForm = (
 
 // Import data validation
 export const validateImportData = (
-  data: any[],
+  data: unknown[],
   requiredColumns: string[],
 ): ValidationResult => {
   const errors: string[] = [];

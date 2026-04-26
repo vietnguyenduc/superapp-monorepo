@@ -113,8 +113,8 @@
     "createdAt": "Ngày tạo",
     "lastTransaction": "Giao dịch cuối",
     "totalBalance": "Tổng số tiền giao dịch",
-    "totalIncome": "Tổng thu",
-    "totalDebt": "Tổng cho nợ",
+    "totalIncome": "Tổng điều chỉnh tăng",
+    "totalDebt": "Tổng điều chỉnh giảm",
     "totalTransactionAmount": "Tổng số tiền giao dịch",
     "noTransactions": "Không có giao dịch nào",
     "noCustomers": "Không có khách hàng nào",
@@ -129,8 +129,8 @@
       "quarter": "Quý",
       "year": "Năm"
     },
-    "inflow": "Phát sinh tăng",
-    "outflow": "Phát sinh giảm",
+    "inflow": "Điều chỉnh tăng",
+    "outflow": "Điều chỉnh giảm",
     "netFlow": "Dòng tiền ròng",
     "ofTotal": "của tổng",
     "startBalance": "Số dư đầu kỳ",
@@ -169,8 +169,8 @@
       "transactionDate": "Ngày giao dịch",
       "description": "Mô tả",
       "types": {
-        "payment": "Phát sinh tăng",
-        "charge": "Phát sinh giảm",
+        "payment": "Điều chỉnh giảm",
+        "charge": "Điều chỉnh tăng",
         "adjustment": "Điều chỉnh",
         "refund": "Hoàn tiền"
       }
@@ -359,8 +359,8 @@
     "referenceNumber": "Số tham chiếu",
     "transactionDate": "Ngày giao dịch",
     "createdBy": "Tạo bởi",
-    "payment": "Thanh toán",
-    "charge": "Thu phí",
+    "payment": "Điều chỉnh giảm",
+    "charge": "Điều chỉnh tăng",
     "adjustment": "Điều chỉnh",
     "refund": "Hoàn tiền",
     "debtIncrease": "Tăng nợ",
@@ -378,8 +378,8 @@
     "fromDate": "Từ ngày",
     "toDate": "Đến ngày",
     "types": {
-      "payment": "Thanh toán",
-      "charge": "Thu phí",
+      "payment": "Điều chỉnh giảm",
+      "charge": "Điều chỉnh tăng",
       "adjustment": "Điều chỉnh",
       "refund": "Hoàn tiền"
     }
@@ -778,8 +778,8 @@
   },
   "transactions": {
     "types": {
-      "payment": "Tiền vào",
-      "charge": "Tiền ra",
+      "payment": "Điều chỉnh giảm",
+      "charge": "Điều chỉnh tăng",
       "adjustment": "Điều chỉnh",
       "refund": "Hoàn tiền"
     }

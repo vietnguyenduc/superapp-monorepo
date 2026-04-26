@@ -1,6 +1,6 @@
 // Real useAuth hook that uses Supabase authentication
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "../services/supabase";
+import { runSupabaseHealthCheck, supabase } from "../services/supabase";
 import type { User } from "../types";
 import type { TablesInsert } from "../types/database.types";
 import type { Session } from "@supabase/supabase-js";
@@ -93,6 +93,16 @@ export const useAuth = () => {
     // ─── Primary init: getSession() ─────────────────────────────────────────
     // This is called OUTSIDE the auth lock, so fetchUserProfile()
     // (which internally calls getSession() for the access token) won't deadlock.
+    runSupabaseHealthCheck()
+      .then((result) => {
+        if (!result.ok) {
+          console.error("Supabase startup health check failed", result);
+        }
+      })
+      .catch((error) => {
+        console.error("Supabase startup health check crashed", error);
+      });
+
     supabase.auth
       .getSession()
       .then(async ({ data: { session } }) => {
@@ -114,8 +124,8 @@ export const useAuth = () => {
             console.error("Error fetching user profile:", profileError);
             if (!isMounted) return;
             setState({
-              user: null,
-              session: null,
+              user: (session.user as any) ?? null,
+              session,
               loading: false,
               error: "Failed to fetch user profile",
               isTrial: false,
@@ -209,10 +219,10 @@ export const useAuth = () => {
 
           if (!isMounted) return;
           setState({
-            user: profile,
+            user: profile || (session.user as any) || null,
             session,
             loading: false,
-            error: null,
+            error: profile ? null : "Failed to fetch user profile",
             isTrial: false,
           });
         }, 0);
