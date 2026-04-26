@@ -486,13 +486,18 @@ const customerService = {
     }
   },
 
-  async getCustomerById(id: string) {
+  async getCustomerById(id: string, companyId?: string) {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("customers")
         .select("*, updated_by")
-        .eq("id", id)
-        .single();
+        .eq("id", id);
+      
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+      
+      const { data, error } = await query.single();
 
       if (error) throw error;
 
@@ -776,17 +781,22 @@ const transactionService = {
     }
   },
 
-  async getTransactionById(id: string) {
+  async getTransactionById(id: string, companyId?: string) {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("transactions")
         .select(`
           *,
           customers!customer_id (full_name, customer_code),
           bank_accounts!bank_account_id (account_name)
         `)
-        .eq("id", id)
-        .single();
+        .eq("id", id);
+      
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+      
+      const { data, error } = await query.single();
 
       if (error) throw error;
       return { data, error: null };
@@ -1026,13 +1036,18 @@ const bankAccountService = {
     }
   },
 
-  async getBankAccount(id: string) {
+  async getBankAccount(id: string, companyId?: string) {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("bank_accounts")
         .select("id, account_name, account_number, bank_name, balance, branch_id, company_id, is_active, created_at, updated_at")
-        .eq("id", id)
-        .single();
+        .eq("id", id);
+      
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+      
+      const { data, error } = await query.single();
       if (error) return { data: null, error: error.message };
       return { data, error: null };
     } catch (err) {
@@ -1065,9 +1080,13 @@ const bankAccountService = {
     }
   },
 
-  async deleteBankAccount(id: string) {
+  async deleteBankAccount(id: string, companyId?: string) {
     try {
-      const { error } = await supabase.from("bank_accounts").delete().eq("id", id);
+      let query = supabase.from("bank_accounts").delete().eq("id", id);
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+      const { error } = await query;
       return { error: error?.message || null };
     } catch (err) {
       return { error: err instanceof Error ? err.message : "Failed to delete bank account" };
@@ -1095,13 +1114,18 @@ const branchService = {
     }
   },
 
-  async getBranchById(id: string) {
+  async getBranchById(id: string, companyId?: string) {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("branches")
         .select("id, name, code, address, phone, email, manager_id, company_id, is_active, created_at, updated_at")
-        .eq("id", id)
-        .single();
+        .eq("id", id);
+      
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+      
+      const { data, error } = await query.single();
       if (error) return { data: null, error: error.message };
       return { data, error: null };
     } catch (err) {
@@ -1134,9 +1158,13 @@ const branchService = {
     }
   },
 
-  async deleteBranch(id: string) {
+  async deleteBranch(id: string, companyId?: string) {
     try {
-      const { error } = await supabase.from("branches").delete().eq("id", id);
+      let query = supabase.from("branches").delete().eq("id", id);
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+      const { error } = await query;
       return { error: error?.message || null };
     } catch (err) {
       return { error: err instanceof Error ? err.message : "Failed to delete branch" };
@@ -1162,7 +1190,7 @@ const dashboardService = {
       supabase.from("branches").select("id, name"),
     ]);
 
-    let transactionsAll: Transaction[] = (txResult.data || []) as Transaction[];
+    const transactionsAll: Transaction[] = (txResult.data || []) as Transaction[];
     let transactions = companyId
       ? transactionsAll.filter((t: any) => !t.company_id || t.company_id === companyId)
       : transactionsAll;
@@ -1532,10 +1560,289 @@ const dashboardService = {
 const backupHistoryService = {
   async saveBackupHistory(backupData: any) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("backup_history")
         .insert({
           company_id: backupData.company_id,
           backup_name: backupData.backup_name || `Backup ${new Date().toISOString()}`,
           backup_version: backupData.version || "1.0.0",
-          ba
+          backup_timestamp: backupData.timestamp || new Date().toISOString(),
+          backup_format: backupData.format || "xlsx",
+          backup_size: backupData.size,
+          created_by: backupData.created_by,
+          total_customers: backupData.metadata?.totalCustomers || 0,
+          total_transactions: backupData.metadata?.totalTransactions || 0,
+          total_bank_accounts: backupData.metadata?.totalBankAccounts || 0,
+          total_branches: backupData.metadata?.totalBranches || 0,
+          branch_id: backupData.branch_id,
+          notes: backupData.notes,
+          is_restorable: true,
+        })
+        .select()
+        .single();
+      
+      if (error) return { data: null, error: error.message };
+      return { data, error: null };
+    } catch (err) {
+      return { data: null, error: err instanceof Error ? err.message : "Failed to save backup history" };
+    }
+  },
+
+  async saveBackupToDatabase(backupData: any, companyId: string, userId: string) {
+    try {
+      const { compressJSON } = await import("../utils/compression");
+      
+      // Compress backup data
+      const compressed = await compressJSON(backupData);
+      
+      // Get included tables
+      const includedTables = Object.keys(backupData).filter(
+        (key: string) => Array.isArray(backupData[key])
+      );
+      
+      // Save to database
+      const { data, error } = await (supabase as any)
+        .from('backup_history')
+        .insert({
+          company_id: companyId,
+          backup_name: `Backup ${new Date().toISOString()}`,
+          backup_data: compressed,
+          included_tables: includedTables,
+          is_compressed: true,
+          compression_algorithm: 'base64',
+          created_by: userId,
+          backup_timestamp: new Date().toISOString(),
+          backup_format: 'json',
+          backup_version: backupData.version || '1.0.0',
+          total_customers: backupData.customers?.length || 0,
+          total_transactions: backupData.transactions?.length || 0,
+          total_bank_accounts: backupData.bank_accounts?.length || 0,
+          total_branches: backupData.branches?.length || 0,
+          is_restorable: true,
+        })
+        .select()
+        .single();
+      
+      if (error) return { data: null, error: error.message };
+      
+      // Cleanup old backups (keep only 30)
+      await this.cleanupOldBackups(companyId);
+      
+      return { data, error: null };
+    } catch (err) {
+      return { 
+        data: null, 
+        error: err instanceof Error ? err.message : 'Failed to save backup to database' 
+      };
+    }
+  },
+
+  async loadBackupData(backupId: string, companyId?: string) {
+    try {
+      const { decompressJSON } = await import("../utils/compression");
+      
+      let query = (supabase as any)
+        .from('backup_history')
+        .select('backup_data, is_compressed, company_id')
+        .eq('id', backupId);
+      
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
+      
+      const { data, error } = await query.single();
+      
+      if (error) return { data: null, error: error.message };
+      
+      // Decompress data
+      const decompressed = data.is_compressed 
+        ? await decompressJSON(data.backup_data)
+        : data.backup_data;
+      
+      return { data: decompressed, error: null };
+    } catch (err) {
+      return { 
+        data: null, 
+        error: err instanceof Error ? err.message : 'Failed to load backup data' 
+      };
+    }
+  },
+
+  async revertTableFromBackup(backupId: string, tableName: string, companyId: string, userId: string) {
+    try {
+      const backupData = await this.loadBackupData(backupId, companyId);
+      if (backupData.error) return { error: backupData.error };
+      
+      // Get table data from backup
+      const tableData = backupData.data[tableName];
+      if (!Array.isArray(tableData)) {
+        return { error: `Table ${tableName} not found in backup` };
+      }
+      
+      // Restore table data based on table type
+      switch (tableName) {
+        case 'customers':
+          await this.restoreCustomers(tableData, companyId);
+          break;
+        case 'transactions':
+          await this.restoreTransactions(tableData, companyId);
+          break;
+        case 'bank_accounts':
+          await this.restoreBankAccounts(tableData, companyId);
+          break;
+        case 'branches':
+          await this.restoreBranches(tableData, companyId);
+          break;
+        default:
+          return { error: `Unsupported table: ${tableName}` };
+      }
+      
+      // Update restore metadata
+      await (supabase as any)
+        .from('backup_history')
+        .update({
+          restore_count: (await (supabase as any)
+            .from('backup_history')
+            .select('restore_count')
+            .eq('id', backupId)
+            .single()).data?.restore_count || 0 + 1,
+          last_restored_at: new Date().toISOString(),
+          last_restored_by: userId,
+        })
+        .eq('id', backupId);
+      
+      return { data: null, error: null };
+    } catch (err) {
+      return { 
+        error: err instanceof Error ? err.message : 'Failed to revert table from backup' 
+      };
+    }
+  },
+
+  async restoreCustomers(customers: any[], companyId: string) {
+    for (const customer of customers) {
+      try {
+        const { data: existing } = await customerService.getCustomerById(customer.id);
+        if (existing) {
+          await customerService.updateCustomer(customer.id, customer);
+        } else {
+          await customerService.createCustomer(customer);
+        }
+      } catch (error) {
+        console.error(`Failed to restore customer ${customer.id}:`, error);
+      }
+    }
+  },
+
+  async restoreTransactions(transactions: any[], companyId: string) {
+    for (const transaction of transactions) {
+      try {
+        const { data: existing } = await transactionService.getTransactionById(transaction.id);
+        if (existing) {
+          await transactionService.updateTransaction(transaction.id, transaction);
+        } else {
+          await transactionService.createTransaction(transaction);
+        }
+      } catch (error) {
+        console.error(`Failed to restore transaction ${transaction.id}:`, error);
+      }
+    }
+  },
+
+  async restoreBankAccounts(accounts: any[], companyId: string) {
+    for (const account of accounts) {
+      try {
+        await bankAccountService.upsertBankAccount(account);
+      } catch (error) {
+        console.error(`Failed to restore bank account ${account.id}:`, error);
+      }
+    }
+  },
+
+  async restoreBranches(branches: any[], companyId: string) {
+    for (const branch of branches) {
+      try {
+        const { data: existing } = await branchService.getBranchById(branch.id);
+        if (existing) {
+          console.log(`Branch ${branch.id} already exists, skipping`);
+        } else {
+          console.log(`Creating branch ${branch.id}`);
+        }
+      } catch (error) {
+        console.error(`Failed to restore branch ${branch.id}:`, error);
+      }
+    }
+  },
+
+  async cleanupOldBackups(companyId: string) {
+    try {
+      const { data: backups } = await (supabase as any)
+        .from('backup_history')
+        .select('id')
+        .eq('company_id', companyId)
+        .order('backup_timestamp', { ascending: false });
+      
+      if (backups && backups.length > 30) {
+        const toDelete = backups.slice(30);
+        const ids = toDelete.map((b: any) => b.id);
+        
+        await (supabase as any)
+          .from('backup_history')
+          .delete()
+          .in('id', ids);
+      }
+    } catch (error) {
+      console.error('Failed to cleanup old backups:', error);
+      // Don't throw error, cleanup is not critical
+    }
+  },
+
+  async getBackupHistory(companyId?: string, userId?: string) {
+    try {
+      let query = (supabase as any)
+        .from("backup_history")
+        .select("*")
+        .order("backup_timestamp", { ascending: false });
+      
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+      
+      if (userId) {
+        query = query.eq("created_by", userId);
+      }
+      
+      const { data, error } = await query;
+      if (error) return { data: [], error: error.message };
+      return { data: data || [], error: null };
+    } catch (err) {
+      return { data: [], error: err instanceof Error ? err.message : "Failed to load backup history" };
+    }
+  },
+
+  async deleteBackupHistory(id: string) {
+    try {
+      const { error } = await (supabase as any)
+        .from("backup_history")
+        .delete()
+        .eq("id", id);
+      return { error: error?.message || null };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Failed to delete backup history" };
+    }
+  },
+};
+
+// Export all services as a single object to match the import in Dashboard.tsx
+export const databaseService = {
+  dashboard: dashboardService,
+  customers: customerService,
+  transactions: transactionService,
+  transactionTypes: transactionTypeService,
+  branches: branchService,
+  bankAccounts: bankAccountService,
+  reports: reportService,
+  users: userService,
+  colorSettings: colorSettingsService,
+  backupHistory: backupHistoryService,
+};

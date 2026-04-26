@@ -34,7 +34,6 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
   const [error, setError] = useState("");
   const [passwordOption, setPasswordOption] = useState<"manual" | "auto">("auto");
   const [manualPassword, setManualPassword] = useState("");
-  const [autoPassword, setAutoPassword] = useState("");
   const [sendEmailNotification, setSendEmailNotification] = useState(false);
 
   if (!isOpen) return null;
@@ -59,7 +58,6 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
       let finalPassword = "";
       if (passwordOption === "auto") {
         finalPassword = generatePassword();
-        setAutoPassword(finalPassword);
       } else {
         finalPassword = manualPassword;
         if (finalPassword.length < 8) {

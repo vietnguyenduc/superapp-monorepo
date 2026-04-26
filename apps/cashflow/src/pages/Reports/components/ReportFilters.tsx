@@ -23,7 +23,7 @@ const ReportFilters: React.FC<ReportFiltersProps> = ({
   ) => {
     const now = new Date();
     let start: Date;
-    let end: Date = now;
+    const end: Date = now;
 
     switch (range) {
       case "today":

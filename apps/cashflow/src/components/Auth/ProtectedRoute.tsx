@@ -2,7 +2,7 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { hasPermission } from "../../utils/rbac";
-import { UserRole } from "../../types";
+import type { UserRole } from "../../types";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

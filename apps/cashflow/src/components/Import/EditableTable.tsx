@@ -192,7 +192,7 @@ const EditableTable: React.FC<EditableTableProps> = ({
       const { row: startRow, col: startCol } = editingCell;
       const colIndex = columns.findIndex((c) => c.key === startCol);
       if (colIndex === -1) return;
-      let newData = [...data];
+      const newData = [...data];
       // Thêm dòng nếu cần
       while (newData.length < startRow + rows.length) {
         const newRow = columns.reduce((acc, col) => {

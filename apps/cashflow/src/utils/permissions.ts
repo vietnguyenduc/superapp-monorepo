@@ -174,3 +174,41 @@ export function canAccessAccountsAndPermissions(user: User): boolean {
   if (!user) return false;
   return user.role === 'admin' || user.role === 'admin_master';
 }
+
+// Check if user can revert a specific table from backup
+// Admins can revert any table, staff can only revert tables they have permission for
+export function canRevertTable(user: User, tableName: string): boolean {
+  if (!user) return false;
+  
+  // Admins can revert any table
+  if (user.role === 'admin_master' || user.role === 'admin' || user.role === 'admin_company') {
+    return true;
+  }
+  
+  // Check granular permissions for staff
+  const permissions = user.staff_permissions;
+  
+  switch (tableName) {
+    case 'customers':
+      return Boolean(permissions?.customers?.import_own || permissions?.customers?.manage_all);
+    case 'transactions':
+      return Boolean(permissions?.transactions?.import_own || permissions?.transactions?.manage_all);
+    case 'bank_accounts':
+      return Boolean(permissions?.settings?.bank_accounts);
+    case 'branches':
+      return Boolean(permissions?.settings?.branches);
+    case 'transaction_types':
+      return Boolean(permissions?.settings?.transaction_types);
+    case 'customer_fields':
+      return Boolean(permissions?.settings?.customer_fields);
+    default:
+      return false;
+  }
+}
+
+// Check if user can restore full backup
+// Only admin_master and admin_company can restore full backups
+export function canRestoreFullBackup(user: User): boolean {
+  if (!user) return false;
+  return user.role === 'admin_master' || user.role === 'admin_company';
+}

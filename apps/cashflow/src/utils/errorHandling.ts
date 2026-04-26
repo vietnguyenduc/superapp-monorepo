@@ -1,5 +1,5 @@
 import React from "react";
-import { ImportError } from "../types";
+import type { ImportError } from "../types";
 
 // Error types
 export interface AppError {

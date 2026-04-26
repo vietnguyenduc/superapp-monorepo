@@ -36,7 +36,7 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
   ) => {
     const now = new Date();
     let start: Date;
-    let end: Date = now;
+    const end: Date = now;
 
     switch (range) {
       case "today":

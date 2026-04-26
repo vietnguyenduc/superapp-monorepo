@@ -9,6 +9,7 @@ import { formatNumber } from "../../utils/formatting";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
 import Button from "../../components/UI/Button";
 import PageHeader from "../../components/UI/PageHeader";
+import { backupService } from "../../utils/backupRecovery";
 import {
   MetricsCard,
   BalanceBreakdown,
@@ -33,6 +34,83 @@ const Dashboard: React.FC = () => {
   const [branches, setBranches] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
   const [showBranchFilter, setShowBranchFilter] = useState(false);
+  const [quickBackupLoading, setQuickBackupLoading] = useState(false);
+
+  // Handle quick backup
+  const handleQuickBackup = async () => {
+    setQuickBackupLoading(true);
+    try {
+      const companyId = effectiveCompanyId;
+      
+      if (!user?.id) {
+        throw new Error('User ID is required for backup');
+      }
+      
+      // Create backup data
+      const backupData = await backupService.createBackup(
+        {
+          includeCustomers: true,
+          includeTransactions: true,
+          includeBankAccounts: true,
+          includeBranches: true,
+          company_id: companyId,
+          format: 'json',
+        },
+        user.id
+      );
+
+      // Save to database
+      await databaseService.backupHistory.saveBackupToDatabase(
+        backupData,
+        companyId,
+        user.id
+      );
+
+      alert('Sao lưu thành công!');
+    } catch (err) {
+      console.error('Quick backup failed:', err);
+      alert('Sao lưu thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setQuickBackupLoading(false);
+    }
+  };
+
+  // Handle download backup as file
+  const handleDownloadBackup = async () => {
+    setQuickBackupLoading(true);
+    try {
+      const companyId = effectiveCompanyId;
+      
+      if (!user?.id) {
+        throw new Error('User ID is required for backup');
+      }
+      
+      // Create backup data
+      const backupData = await backupService.createBackup(
+        {
+          includeCustomers: true,
+          includeTransactions: true,
+          includeBankAccounts: true,
+          includeBranches: true,
+          company_id: companyId,
+          format: 'xlsx',
+        },
+        user.id
+      );
+
+      // Export to Excel
+      const blob = await backupService.exportBackup(backupData, 'xlsx');
+      const filename = backupService.generateBackupFilename(undefined, 'xlsx');
+      backupService.downloadBackup(blob, filename);
+
+      alert('Tải file thành công!');
+    } catch (err) {
+      console.error('Download backup failed:', err);
+      alert('Tải file thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setQuickBackupLoading(false);
+    }
+  };
   
   // State for Range and Export menus
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -173,7 +251,34 @@ const Dashboard: React.FC = () => {
         </div>
         <div className="h-10 sm:h-12" />
 
-        <PageHeader title={t("dashboard.title")} subtitle={t("dashboard.subtitle")} />
+        <div className="flex items-center justify-between mb-4">
+          <PageHeader title={t("dashboard.title")} subtitle={t("dashboard.subtitle")} />
+          {/* Quick backup buttons - available for all users */}
+          <div className="flex gap-2">
+            <Button
+              variant="primary"
+              className="text-sm"
+              onClick={handleQuickBackup}
+              disabled={quickBackupLoading}
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              {quickBackupLoading ? 'Đang sao lưu...' : 'Lưu DB'}
+            </Button>
+            <Button
+              variant="secondary"
+              className="text-sm"
+              onClick={handleDownloadBackup}
+              disabled={quickBackupLoading}
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              {quickBackupLoading ? 'Đang tải...' : 'Tải file'}
+            </Button>
+          </div>
+        </div>
         {/* Key Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4 w-full min-w-0 overflow-hidden">
           <MetricsCard
