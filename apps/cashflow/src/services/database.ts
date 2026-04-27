@@ -167,21 +167,28 @@ const transactionTypeService = {
       }
       
       if (!Array.isArray(data) || data.length === 0) {
-        return { 
-          data: [], 
-          error: "Không tìm thấy loại giao dịch nào. Vui lòng tạo loại giao dịch trong Cài đặt." 
+        return {
+          data: [],
+          error: "Không tìm thấy loại giao dịch nào. Vui lòng tạo loại giao dịch trong Cài đặt."
         };
       }
-      
-      return {
-        data: data.filter((t) => t?.is_active !== false).map((t: any) => ({
+
+      // Return ALL records so legacy-ID lookups (payment, charge, refund) keep working.
+      // Deduplication for dropdowns belongs in the UI layer / TransactionTypeContext.
+      const allTypes = data
+        .filter((t) => t?.is_active !== false)
+        .map((t: any) => ({
           id: t.id,
           name: t.name,
           color: t.color || "blue",
           isActive: t.is_active !== false,
           math_factor: t.math_factor ?? 1,
-          impact_type: t.impact_type ?? "increase"
-        })),
+          impact_type: t.impact_type ?? "increase",
+          company_id: t.company_id,
+        }));
+
+      return {
+        data: allTypes,
         error: null,
       };
     } catch (err) {

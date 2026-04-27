@@ -1,0 +1,113 @@
+import React, { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from "react";
+import { databaseService } from "../services/database";
+
+export interface TransactionTypeItem {
+  id: string;
+  name: string;
+  color: string;
+  isActive: boolean;
+  math_factor: number;
+  impact_type: string;
+  company_id: string | null;
+}
+
+interface TransactionTypeContextType {
+  types: TransactionTypeItem[];
+  loading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+  findById: (id: string) => TransactionTypeItem | undefined;
+  findByName: (name: string) => TransactionTypeItem | undefined;
+  getNameById: (id: string) => string;
+  getMathFactor: (id: string) => number;
+}
+
+const TransactionTypeContext = createContext<TransactionTypeContextType | undefined>(undefined);
+
+interface TransactionTypeProviderProps {
+  children: ReactNode;
+}
+
+export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = ({ children }) => {
+  const [types, setTypes] = useState<TransactionTypeItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await databaseService.transactionTypes.getTransactionTypes();
+      if (result.error) {
+        setError(result.error);
+        setTypes([]);
+      } else {
+        const all = result.data || [];
+        // Deduplicate by name for dropdowns; prefer new (company_id != null) over legacy
+        const dedupMap = new Map<string, TransactionTypeItem>();
+        all.forEach((t: any) => {
+          const key = String(t.name || t.id || "").toLowerCase().trim();
+          if (!key) return;
+          const existing = dedupMap.get(key);
+          if (!existing || (existing.company_id === null && t.company_id !== null)) {
+            dedupMap.set(key, t as TransactionTypeItem);
+          }
+        });
+        setTypes(Array.from(dedupMap.values()));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load transaction types");
+      setTypes([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  const findById = useCallback(
+    (id: string) => types.find((t) => t.id === id),
+    [types]
+  );
+
+  const findByName = useCallback(
+    (name: string) => types.find((t) => t.name.toLowerCase() === name.toLowerCase().trim()),
+    [types]
+  );
+
+  const getNameById = useCallback(
+    (id: string) => {
+      if (!id) return id;
+      const found = types.find((t) => t.id === id);
+      return found?.name || id;
+    },
+    [types]
+  );
+
+  const getMathFactor = useCallback(
+    (id: string) => {
+      if (!id) return 1;
+      const found = types.find((t) => t.id === id);
+      return found?.math_factor ?? 1;
+    },
+    [types]
+  );
+
+  return (
+    <TransactionTypeContext.Provider
+      value={{ types, loading, error, refetch, findById, findByName, getNameById, getMathFactor }}
+    >
+      {children}
+    </TransactionTypeContext.Provider>
+  );
+};
+
+export const useTransactionTypes = (): TransactionTypeContextType => {
+  const context = useContext(TransactionTypeContext);
+  if (!context) {
+    throw new Error("useTransactionTypes must be used within a TransactionTypeProvider");
+  }
+  return context;
+};

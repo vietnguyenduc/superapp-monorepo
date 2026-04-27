@@ -39,9 +39,17 @@ const TransactionTypeFilter: React.FC<TransactionTypeFilterProps> = ({
         setError(result.error);
         setTransactionTypes([{ value: "all", label: t("transactions.allTypes") }]);
       } else if (result.data && result.data.length > 0) {
+        // Deduplicate by name so legacy + UUID pairs don't appear twice
+        const seen = new Set<string>();
+        const unique = result.data.filter((tt: any) => {
+          const name = String(tt.name || "").trim();
+          if (!name || seen.has(name.toLowerCase())) return false;
+          seen.add(name.toLowerCase());
+          return true;
+        });
         setTransactionTypes([
           { value: "all", label: t("transactions.allTypes") },
-          ...result.data.map((tt: any) => ({
+          ...unique.map((tt: any) => ({
             value: tt.id as TransactionType,
             label: tt.name
           }))

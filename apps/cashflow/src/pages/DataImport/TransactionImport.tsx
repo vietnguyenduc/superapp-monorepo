@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import { useSearchParams } from "react-router-dom";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { useCompany } from "../../contexts/CompanyContext";
+import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import type { Transaction, ImportData, ImportError, Customer } from "../../types";
 import {
   validateTransactionData,
@@ -214,15 +215,14 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   const [customerOptions, setCustomerOptions] = useState<string[]>([]);
   const [bankAccountOptions, setBankAccountOptions] = useState<string[]>([]);
   const [branchOptions, setBranchOptions] = useState<string[]>([]);
-  const [transactionTypeOptions, setTransactionTypeOptions] = useState<string[]>([]);
+  const transactionTypeCtx = useTransactionTypes();
 
   useEffect(() => {
     const loadOptions = async () => {
-      const [customerResult, bankResult, branchResult, typeResult] = await Promise.all([
+      const [customerResult, bankResult, branchResult] = await Promise.all([
         databaseService.customers.getCustomers({ limit: 2000 }),
         databaseService.bankAccounts.getBankAccounts(),
         databaseService.branches.getBranches(),
-        databaseService.transactionTypes.getTransactionTypes(),
       ]);
 
       if (customerResult?.data) {
@@ -260,14 +260,6 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         }
       }
 
-      if (typeResult?.data) {
-        const names = typeResult.data
-          .filter((t: any) => t.is_active !== false)
-          .map((t: any) => String(t.name || t.id || ""));
-        if (names.length > 0) {
-          setTransactionTypeOptions(names);
-        }
-      }
     };
 
     loadOptions();
@@ -510,9 +502,9 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
       try {
         const result = await databaseService.transactions.bulkImportTransactions(
           dataToImport as any[],
-          branchId,
+          branchId ?? undefined,
           user?.id || "",
-          companyId,
+          companyId ?? undefined,
         );
 
         if ((result as any).error) {
@@ -720,8 +712,8 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   };
 
   const normalizedFields = useMemo(() => {
-    // Always use transactionTypeOptions from database, no fallback to hardcoded values
-    const transactionTypeOptionsFromSettings = transactionTypeOptions;
+    // Single source of truth: use transaction types from global context
+    const transactionTypeNames = transactionTypeCtx.types.map((t) => t.name);
 
     return importFields.map((field: ImportField) => {
       const keyLower = field.key.toLowerCase();
@@ -740,7 +732,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
       } else if (isBranchField || field.key === "branch") {
         options = branchOptions;
       } else if (isTransactionType) {
-        options = transactionTypeOptionsFromSettings;
+        options = transactionTypeNames;
       } else if (!options || options.length === 0) {
         options = undefined;
       }
@@ -780,7 +772,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         openOnFocus: isCustomerField || isBankField || isBranchField || field.key === "branch",
       };
     });
-  }, [importFields, t, customerOptions, bankAccountOptions, branchOptions, transactionTypeOptions]);
+  }, [importFields, t, customerOptions, bankAccountOptions, branchOptions, transactionTypeCtx.types]);
 
   // Thay thế importFieldConfig và importSamples bằng các giá trị động dựa trên importFields:
   const enabledFields = normalizedFields.filter((f: ImportField) => f.enabled);

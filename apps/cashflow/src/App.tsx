@@ -22,11 +22,13 @@ import SignUp from "./pages/Auth/SignUp";
 import CompanySelector from "./pages/CompanySelector/CompanySelector";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import { CompanyProvider } from "./contexts/CompanyContext";
+import { TransactionTypeProvider } from "./contexts/TransactionTypeContext";
 
 function App() {
   return (
     <CompanyProvider>
-      <Router>
+      <TransactionTypeProvider>
+        <Router>
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
@@ -65,6 +67,7 @@ function App() {
           </Route>
         </Routes>
       </Router>
+      </TransactionTypeProvider>
     </CompanyProvider>
   );
 }

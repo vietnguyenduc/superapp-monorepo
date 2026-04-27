@@ -188,8 +188,15 @@ const TransactionList: React.FC = () => {
       }
 
       if (typeResult?.data) {
+        const seen = new Set<string>();
         const names = typeResult.data
           .filter((t: any) => t.is_active !== false)
+          .filter((t: any) => {
+            const name = String(t.name || "").trim();
+            if (!name || seen.has(name.toLowerCase())) return false;
+            seen.add(name.toLowerCase());
+            return true;
+          })
           .map((t: any) => ({ id: String(t.id || t.value || t.name), name: String(t.name || t.id || t.value) }));
         if (names.length > 0) setTransactionTypes(names);
       }
