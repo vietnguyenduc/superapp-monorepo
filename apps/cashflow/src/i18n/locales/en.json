@@ -57,6 +57,7 @@
     "importTransactions": "Import Transactions",
     "importCustomers": "Import Customers",
     "settings": "Settings",
+    "manual": "Manual",
     "help": "Help",
     "support": "Support"
   },
@@ -293,7 +294,13 @@
     "allTypes": "All Types",
     "dateRange": "Date Range",
     "fromDate": "From Date",
-    "toDate": "To Date"
+    "toDate": "To Date",
+    "types": {
+      "payment": "Payment",
+      "charge": "Charge",
+      "adjustment": "Adjustment",
+      "refund": "Refund"
+    }
   },
   "import": {
     "title": "Import Data",
@@ -589,13 +596,5 @@
     "accountCreated": "Account created successfully",
     "accountUpdated": "Account updated successfully",
     "accountDeleted": "Account deleted successfully"
-  },
-  "transactions": {
-    "types": {
-      "payment": "Payment received",
-      "charge": "Credit issued",
-      "adjustment": "Adjustment",
-      "refund": "Refund"
-    }
   }
 }
