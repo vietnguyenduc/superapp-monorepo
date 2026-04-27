@@ -620,18 +620,24 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
           {t("import.dataPreview")} ({importData.data.length} {t("import.totalRows")})
         </h3>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                {previewColumns.map((col: ImportField) => (
-                  <th
-                    key={col.key}
-                    className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                  >
-                    {col.label}
-                  </th>
-                ))}
+                {previewColumns.map((col: ImportField) => {
+                  const isHiddenOnMobile = col.key === 'description' || col.key === 'reference' || col.key === 'notes';
+                  const isHiddenOnTablet = col.key === 'notes' || col.key === 'reference';
+                  return (
+                    <th
+                      key={col.key}
+                      className={`px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${
+                        isHiddenOnMobile ? 'hidden sm:table-cell' : ''
+                      } ${isHiddenOnTablet ? 'hidden md:table-cell' : ''}`}
+                    >
+                      {col.label}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
@@ -643,14 +649,20 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
                     key={index}
                     className={hasRowError ? "bg-red-50 dark:bg-red-900/30" : ""}
                   >
-                    {previewColumns.map((col: ImportField) => (
-                      <td
-                        key={`${index}-${col.key}`}
-                        className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100"
-                      >
-                        {row[col.key as keyof typeof row] as string}
-                      </td>
-                    ))}
+                    {previewColumns.map((col: ImportField) => {
+                      const isHiddenOnMobile = col.key === 'description' || col.key === 'reference' || col.key === 'notes';
+                      const isHiddenOnTablet = col.key === 'notes' || col.key === 'reference';
+                      return (
+                        <td
+                          key={`${index}-${col.key}`}
+                          className={`px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 ${
+                            isHiddenOnMobile ? 'hidden sm:table-cell' : ''
+                          } ${isHiddenOnTablet ? 'hidden md:table-cell' : ''}`}
+                        >
+                          {row[col.key as keyof typeof row] as string}
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })}
@@ -708,15 +720,8 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   };
 
   const normalizedFields = useMemo(() => {
-    const transactionTypeOptionsFromSettings =
-      transactionTypeOptions.length > 0
-        ? transactionTypeOptions
-        : [
-            t("dashboard.transactions.types.payment"),
-            t("dashboard.transactions.types.charge"),
-            t("dashboard.transactions.types.adjustment"),
-            t("dashboard.transactions.types.refund"),
-          ];
+    // Always use transactionTypeOptions from database, no fallback to hardcoded values
+    const transactionTypeOptionsFromSettings = transactionTypeOptions;
 
     return importFields.map((field: ImportField) => {
       const keyLower = field.key.toLowerCase();

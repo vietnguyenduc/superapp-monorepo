@@ -323,10 +323,14 @@ type PublicSchema = {
         users: {
             Row: {
                 branch_id: string | null
+                can_delete: boolean | null
+                company_id: string | null
                 created_at: string | null
+                created_by: string | null
                 email: string
                 full_name: string | null
                 id: string
+                is_active: boolean | null
                 phone: string | null
                 position: string | null
                 role: string
@@ -335,10 +339,14 @@ type PublicSchema = {
             }
             Insert: {
                 branch_id?: string | null
+                can_delete?: boolean | null
+                company_id?: string | null
                 created_at?: string | null
+                created_by?: string | null
                 email: string
                 full_name?: string | null
                 id: string
+                is_active?: boolean | null
                 phone?: string | null
                 position?: string | null
                 role?: string
@@ -347,10 +355,14 @@ type PublicSchema = {
             }
             Update: {
                 branch_id?: string | null
+                can_delete?: boolean | null
+                company_id?: string | null
                 created_at?: string | null
+                created_by?: string | null
                 email?: string
                 full_name?: string | null
                 id?: string
+                is_active?: boolean | null
                 phone?: string | null
                 position?: string | null
                 role?: string
@@ -363,6 +375,20 @@ type PublicSchema = {
                     columns: ["branch_id"]
                     isOneToOne: false
                     referencedRelation: "branches"
+                    referencedColumns: ["id"]
+                },
+                {
+                    foreignKeyName: "users_company_id_fkey"
+                    columns: ["company_id"]
+                    isOneToOne: false
+                    referencedRelation: "companies"
+                    referencedColumns: ["id"]
+                },
+                {
+                    foreignKeyName: "users_created_by_fkey"
+                    columns: ["created_by"]
+                    isOneToOne: false
+                    referencedRelation: "users"
                     referencedColumns: ["id"]
                 },
             ]

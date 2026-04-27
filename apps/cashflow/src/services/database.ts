@@ -147,13 +147,6 @@ const colorSettingsService = {
 
 const transactionTypeService = {
   async getTransactionTypes(companyId?: string) {
-    const baseTypes = [
-      { id: "payment", name: "Điều chỉnh giảm", is_active: true, color: "green", math_factor: -1, impact_type: "decrease" },
-      { id: "charge", name: "Điều chỉnh tăng", is_active: true, color: "red", math_factor: 1, impact_type: "increase" },
-      { id: "adjustment", name: "Điều chỉnh", is_active: true, color: "blue", math_factor: 1, impact_type: "increase" },
-      { id: "refund", name: "Hoàn tiền", is_active: true, color: "green", math_factor: -1, impact_type: "decrease" },
-    ];
-
     try {
       let query = supabase
         .from("transaction_types")
@@ -164,60 +157,237 @@ const transactionTypeService = {
       }
       
       const { data, error } = await query.order("created_at", { ascending: false });
-      if (!error && Array.isArray(data) && data.length > 0) {
-        return {
-          data: (data as any[]).filter((t) => t?.is_active !== false).map((t: any) => ({
-            ...t,
-            math_factor: t.math_factor ?? (t.id === 'charge' || t.id === 'refund' ? -1 : 1),
-            impact_type: t.impact_type ?? (t.id === 'charge' || t.id === 'refund' ? 'decrease' : 'increase')
-          })),
-          error: null,
+      
+      if (error) {
+        console.error("Failed to fetch transaction types:", error);
+        return { 
+          data: [], 
+          error: `Không thể tải loại giao dịch: ${error.message}. Vui lòng kiểm tra kết nối mạng và thử lại.` 
         };
       }
+      
+      if (!Array.isArray(data) || data.length === 0) {
+        return { 
+          data: [], 
+          error: "Không tìm thấy loại giao dịch nào. Vui lòng tạo loại giao dịch trong Cài đặt." 
+        };
+      }
+      
+      return {
+        data: data.filter((t) => t?.is_active !== false).map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          color: t.color || "blue",
+          isActive: t.is_active !== false,
+          math_factor: t.math_factor ?? 1,
+          impact_type: t.impact_type ?? "increase"
+        })),
+        error: null,
+      };
     } catch (err) {
-      console.warn("Supabase transaction_types fetch failed, using defaults", err);
+      console.error("Exception fetching transaction types:", err);
+      return { 
+        data: [], 
+        error: err instanceof Error 
+          ? `Lỗi hệ thống: ${err.message}` 
+          : "Không thể tải loại giao dịch. Vui lòng thử lại." 
+      };
     }
-
-    return { data: baseTypes, error: null };
   },
 
   async upsertTransactionType(payload: { id?: string; name: string; color?: string; is_active?: boolean; math_factor?: number; impact_type?: string; company_id?: string }) {
     try {
+      // STRICT VALIDATION: Validate required fields
+      if (!payload.name || payload.name.trim() === "") {
+        return { 
+          data: null, 
+          error: "Tên loại giao dịch không được để trống" 
+        };
+      }
+
+      // STRICT VALIDATION: Validate math_factor
+      if (payload.math_factor !== undefined && payload.math_factor !== -1 && payload.math_factor !== 1) {
+        return { 
+          data: null, 
+          error: "Hệ số toán học phải là -1 hoặc 1" 
+        };
+      }
+
+      // STRICT VALIDATION: Validate impact_type
+      if (payload.impact_type !== undefined && payload.impact_type !== "increase" && payload.impact_type !== "decrease") {
+        return { 
+          data: null, 
+          error: "Loại tác động phải là 'increase' hoặc 'decrease'" 
+        };
+      }
+
+      // STRICT VALIDATION: Check for duplicate name within company (for new types)
+      if (payload.id && payload.company_id) {
+        const { data: existingTypes } = await supabase
+          .from("transaction_types")
+          .select("id, name")
+          .eq("company_id", payload.company_id);
+        
+        if (existingTypes) {
+          const duplicate = existingTypes.find(
+            (t: any) => t.name === payload.name && t.id !== payload.id
+          );
+          if (duplicate) {
+            return { 
+              data: null, 
+              error: `Loại giao dịch "${payload.name}" đã tồn tại. Vui lòng chọn tên khác.` 
+            };
+          }
+        }
+      }
+
       const body: any = {
-        id: payload.id,
-        name: payload.name,
+        name: payload.name.trim(),
         color: payload.color || "blue",
         is_active: payload.is_active !== false,
-        math_factor: payload.math_factor ?? (payload.id === "charge" || payload.id === "refund" ? -1 : 1),
-        impact_type: payload.impact_type ?? (payload.id === "charge" || payload.id === "refund" ? "decrease" : "increase"),
-        company_id: payload.company_id,
+        math_factor: payload.math_factor ?? 1,
+        impact_type: payload.impact_type ?? "increase",
       };
 
+      // Only include id if provided (for updates)
+      if (payload.id) {
+        body.id = payload.id;
+      }
+
+      // Only include company_id if provided
+      if (payload.company_id) {
+        body.company_id = payload.company_id;
+      }
+
       const { data, error } = await supabase.from("transaction_types").upsert(body).select("id, name, color, is_active, math_factor, impact_type").single();
-      return { data, error: error?.message || null };
+      
+      if (error) {
+        return { 
+          data: null, 
+          error: `Không thể lưu loại giao dịch: ${error.message}` 
+        };
+      }
+      
+      return { data, error: null };
     } catch (err) {
-      return { data: null, error: err instanceof Error ? err.message : "Failed to save transaction type" };
+      console.error("Exception upserting transaction type:", err);
+      return { 
+        data: null, 
+        error: err instanceof Error 
+          ? `Lỗi hệ thống: ${err.message}` 
+          : "Không thể lưu loại giao dịch. Vui lòng thử lại." 
+      };
     }
   },
 
   async toggleTransactionType(id: string, isActive: boolean) {
     try {
+      // STRICT VALIDATION: Check if transaction type exists
+      const { data: existingType, error: checkError } = await supabase
+        .from("transaction_types")
+        .select("id, name")
+        .eq("id", id)
+        .single();
+      
+      if (checkError || !existingType) {
+        return { 
+          error: "Loại giao dịch không tồn tại" 
+        };
+      }
+
+      // STRICT VALIDATION: If deactivating, check if type is in use
+      if (!isActive) {
+        const { data: transactions } = await supabase
+          .from("transactions")
+          .select("id")
+          .eq("transaction_type", id)
+          .limit(1);
+        
+        if (transactions && transactions.length > 0) {
+          return { 
+            error: `Không thể vô hiệu hóa loại giao dịch "${existingType.name}" vì đang được sử dụng trong giao dịch. Vui lòng sử dụng tính năng soft delete.` 
+          };
+        }
+      }
+
       const { error } = await supabase
         .from("transaction_types")
         .update({ is_active: isActive })
         .eq("id", id);
-      return { error: error?.message || null };
+      
+      if (error) {
+        return { 
+          error: `Không thể cập nhật loại giao dịch: ${error.message}` 
+        };
+      }
+      
+      return { error: null };
     } catch (err) {
-      return { error: err instanceof Error ? err.message : "Failed to update transaction type" };
+      console.error("Exception toggling transaction type:", err);
+      return { 
+        error: err instanceof Error 
+          ? `Lỗi hệ thống: ${err.message}` 
+          : "Không thể cập nhật loại giao dịch. Vui lòng thử lại." 
+      };
     }
   },
 
   async deleteTransactionType(id: string) {
     try {
+      // STRICT VALIDATION: Check if transaction type exists
+      const { data: existingType, error: checkError } = await supabase
+        .from("transaction_types")
+        .select("id, name")
+        .eq("id", id)
+        .single();
+      
+      if (checkError || !existingType) {
+        return { 
+          error: "Loại giao dịch không tồn tại" 
+        };
+      }
+
+      // STRICT VALIDATION: Check if type is in use before deletion
+      const { data: transactions, error: countError } = await supabase
+        .from("transactions")
+        .select("id")
+        .eq("transaction_type", id);
+      
+      if (countError) {
+        return { 
+          error: `Không thể kiểm tra giao dịch: ${countError.message}` 
+        };
+      }
+      
+      if (transactions && transactions.length > 0) {
+        return { 
+          error: `Không thể xóa loại giao dịch "${existingType.name}" vì đang được sử dụng trong ${transactions.length} giao dịch. Vui lòng vô hiệu hóa thay vì xóa.` 
+        };
+      }
+
+      // STRICT VALIDATION: Perform deletion (foreign key constraint will also prevent deletion)
       const { error } = await supabase.from("transaction_types").delete().eq("id", id);
-      return { error: error?.message || null };
+      
+      if (error) {
+        // Foreign key constraint violation
+        if (error.message.includes("violates foreign key constraint")) {
+          return { 
+            error: `Không thể xóa loại giao dịch "${existingType.name}" vì đang được tham chiếu bởi dữ liệu khác.` 
+          };
+        }
+        return { 
+          error: `Không thể xóa loại giao dịch: ${error.message}` 
+        };
+      }
+      
+      return { error: null };
     } catch (err) {
-      return { error: err instanceof Error ? err.message : "Failed to delete transaction type" };
+      console.error("Exception deleting transaction type:", err);
+      return { 
+        error: err instanceof Error 
+          ? `Lỗi hệ thống: ${err.message}` 
+          : "Không thể xóa loại giao dịch. Vui lòng thử lại." 
+      };
     }
   },
 };
@@ -896,21 +1066,48 @@ const transactionService = {
       const createdBy = String(_createdBy || "");
       const now = getNowIso();
 
-      // Normalize transaction_type mapping - chỉ 4 loại chính
-      const normalizeTransactionType = (type: string): string => {
-        if (!type) return 'payment';
+      // STRICT VALIDATION: Fetch valid transaction types from database
+      const { data: validTransactionTypes, error: typeError } = await supabase
+        .from("transaction_types")
+        .select("id, name")
+        .eq("is_active", true);
+      
+      if (typeError) {
+        console.error("Failed to fetch transaction types for validation:", typeError);
+        throw new Error("Không thể tải loại giao dịch để validate. Vui lòng thử lại.");
+      }
+      
+      if (!validTransactionTypes || validTransactionTypes.length === 0) {
+        throw new Error("Không tìm thấy loại giao dịch nào. Vui lòng tạo loại giao dịch trong Cài đặt trước khi import.");
+      }
+      
+      const validTypeIds = new Set(validTransactionTypes.map((t: any) => t.id));
+      const validTypeNames = new Set(validTransactionTypes.map((t: any) => t.name.toLowerCase()));
+
+      // STRICT VALIDATION: Normalize and validate transaction type
+      const normalizeAndValidateTransactionType = (type: string, rowIdx: number): string => {
+        if (!type) {
+          throw new Error(`Row ${rowIdx + 1}: Loại giao dịch không được để trống`);
+        }
+        
         const normalized = type.toLowerCase().trim();
         
-        // Mapping đơn giản từ tiếng Việt sang tiếng Anh
-        if (normalized.includes('điều chỉnh giảm') || normalized.includes('thu') || normalized.includes('thanh toán')) return 'payment';
-        if (normalized.includes('điều chỉnh tăng') || normalized.includes('chi') || normalized.includes('phí')) return 'charge';
-        if (normalized.includes('điều chỉnh')) return 'adjustment';
-        if (normalized.includes('hoàn tiền') || normalized.includes('refund')) return 'refund';
+        // Try to match by ID first
+        if (validTypeIds.has(normalized)) {
+          return normalized;
+        }
         
-        // Fallback cho tiếng Anh
-        if (['payment', 'charge', 'adjustment', 'refund'].includes(normalized)) return normalized;
+        // Try to match by name
+        if (validTypeNames.has(normalized)) {
+          const matchedType = validTransactionTypes.find((t: any) => t.name.toLowerCase() === normalized);
+          if (matchedType) return matchedType.id;
+        }
         
-        return 'payment'; // Default
+        // STRICT: No fallback - reject if type not found
+        throw new Error(
+          `Row ${rowIdx + 1}: Loại giao dịch "${type}" không tồn tại. ` +
+          `Các loại giao dịch hợp lệ: ${Array.from(validTypeNames).join(", ")}`
+        );
       };
 
       // Fetch customers for mapping customer_code to customer_id
@@ -980,7 +1177,7 @@ const transactionService = {
           }
         }
 
-        const normalizedType = normalizeTransactionType(r.transaction_type);
+        const normalizedType = normalizeAndValidateTransactionType(r.transaction_type, idx);
 
         return {
           id: r.id || uuid(),
@@ -1387,9 +1584,22 @@ const dashboardService = {
 
     const topCustomers = [...debtCustomers, ...creditCustomers];
 
+    // Create maps for joining customer and bank account names
+    const customerNameMap = new Map(
+      customersAll.map((c) => [c.id, c.full_name || c.customer_code || c.id] as const)
+    );
+    const bankAccountNameMap = new Map(
+      bankAccounts.map((b) => [b.id, b.account_name || b.bank_name || b.account_number || b.id] as const)
+    );
+
     const recentTransactions = [...transactions]
       .sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
-      .slice(0, 20);
+      .slice(0, 20)
+      .map((tx) => ({
+        ...tx,
+        customer_name: customerNameMap.get(tx.customer_id || "") || tx.customer_name,
+        bank_account_name: bankAccountNameMap.get(tx.bank_account_id || "") || tx.bank_account_name,
+      }));
 
     const branches = (branchResult.data || []) as { id: string; name: string }[];
     const branchNameMap = new Map(branches.map((b) => [b.id, b.name] as const));

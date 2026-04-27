@@ -17,7 +17,8 @@
 8. [Cài đặt](#8-cài-đặt)
 9. [Quản lý Nhân viên](#9-quản-lý-nhân-viên)
 10. [Quản lý Chi nhánh](#10-quản-lý-chi-nhánh)
-11. [Câu hỏi thường gặp](#11-câu-hỏi-thường-gặp)
+11. [Sao lưu và Khôi phục dữ liệu](#11-sao-lưu-và-khôi-phục-dữ-liệu)
+12. [Câu hỏi thường gặp](#12-câu-hỏi-thường-gặp)
 
 ---
 
@@ -410,7 +411,106 @@ Nếu có lỗi nhập:
 
 ---
 
-## 11. Câu hỏi thường gặp
+## 11. Sao lưu và Khôi phục dữ liệu
+
+⚠️ **QUAN TRỌNG**: Chỉ Admin Master hoặc Admin System được cấp quyền mới thực hiện các thao tác backup/restore.
+
+### 11.1 Tổng quan về Backup/Restore
+
+Sao lưu và khôi phục dữ liệu là các quy trình quan trọng để bảo vệ dữ liệu của công ty khỏi:
+- Lỗi hệ thống
+- Xóa nhầm dữ liệu
+- Tấn công mạng
+- Thất bại phần cứng
+
+### 11.2 Backup Database
+
+#### 11.2.1 Backup qua Supabase Dashboard (Khuyên dùng)
+
+1. Truy cập https://supabase.com/dashboard
+2. Chọn project: `peslmsctejmvkwzyohke`
+3. Điều hướng đến: Database → Backups
+4. Nhấn nút "Create backup" hoặc "New backup"
+5. Đặt tên cho backup (ví dụ: `backup-2026-04-27-pre-deployment`)
+6. Chọn thời điểm backup (ngay bây giờ hoặc lịch trình)
+7. Nhấn "Confirm" để tạo backup
+8. Kiểm tra backup hiển thị trong danh sách với trạng thái "Completed"
+
+#### 11.2.2 Backup tự động
+
+**Cấu hình trong Supabase Dashboard:**
+1. Supabase Dashboard → Project Settings → Database
+2. Tìm section "Automated backups"
+3. Enable "Automated backups"
+4. Chọn tần suất backup (khuyến nghị: Daily)
+5. Chọn thời gian backup (khuyến nghị: 2:00 AM - 4:00 AM giờ địa phương)
+6. Chọn retention period (khuyến nghị: 7-30 ngày)
+7. Nhấn "Save"
+
+### 11.3 Restore Database
+
+#### 11.3.1 Restore qua Supabase Dashboard (Khuyên dùng)
+
+1. Supabase Dashboard → Database → Backups
+2. Chọn backup muốn restore
+3. Nhấn "Restore" trên backup đã chọn
+4. Xác nhận restore (sẽ ghi đè data hiện tại)
+5. Đợi restore hoàn thành
+6. Kiểm tra data sau restore
+7. Test các chức năng chính
+8. Verify RLS policies
+
+⚠️ **CẢNH BÁO**: Restore sẽ ghi đè toàn bộ dữ liệu hiện tại. Hãy backup database hiện tại trước khi restore.
+
+### 11.4 Best Practices
+
+#### Trước khi Backup
+- ✅ Kiểm tra database health
+- ✅ Đảm bảo không có active transactions quan trọng
+- ✅ Thông báo cho users về scheduled maintenance
+- ✅ Test backup process trong staging environment
+
+#### Sau khi Backup
+- ✅ Verify backup integrity
+- ✅ Test restore process (thử restore trong staging)
+- ✅ Lưu backup metadata (date, size, description)
+- ✅ Cập nhật backup log
+
+#### Trước khi Restore
+- ✅ Backup database hiện tại (trước khi restore)
+- ✅ Thông báo cho users về downtime
+- ✅ Lưu schema version hiện tại
+- ✅ Kiểm tra compatibility giữa backup và current schema
+
+#### Sau khi Restore
+- ✅ Test tất cả chức năng chính
+- ✅ Verify data consistency
+- ✅ Kiểm tra foreign key constraints
+- ✅ Thông báo cho users về system availability
+
+### 11.5 Troubleshooting
+
+#### Backup thất bại
+- Kiểm tra network connection
+- Verify database credentials
+- Kiểm tra disk space trên server
+- Thử backup nhỏ hơn (table cụ thể)
+
+#### Restore thất bại
+- Kiểm tra schema version
+- Drop và recreate constraints
+- Verify user permissions
+- Sử dụng `--clean` flag với pg_dump
+
+### 11.6 Tài liệu chi tiết
+
+Để xem hướng dẫn chi tiết hơn về backup và restore, tham khảo tài liệu kỹ thuật:
+- **File:** `memory/backup_restore_procedures.md`
+- **Nội dung:** Hướng dẫn đầy đủ qua CLI, psql, troubleshooting, emergency procedures
+
+---
+
+## 12. Câu hỏi thường gặp
 
 ### Q1: Tôi quên mật khẩu thì làm sao?
 
@@ -438,7 +538,7 @@ Nếu có lỗi nhập:
 
 ### Q7: Làm sao để backup dữ liệu?
 
-**A:** Liên hệ admin hệ thống hoặc xem tài liệu Backup/Restore Procedures.
+**A:** Vào Supabase Dashboard → Database → Backups → Nhấn "Create backup". Xem chi tiết ở phần [Sao lưu và Khôi phục dữ liệu](#11-sao-lưu-và-khôi-phục-dữ-liệu).
 
 ### Q8: Tôi có thể tùy chỉnh loại giao dịch không?
 

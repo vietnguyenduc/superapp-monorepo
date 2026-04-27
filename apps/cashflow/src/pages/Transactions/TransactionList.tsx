@@ -1,15 +1,14 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { databaseService } from "../../services/database";
-import type { Transaction } from "../../types";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useCompany } from "../../contexts/CompanyContext";
-import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../utils/formatting";
+import { databaseService } from "../../services/database";
+import type { Transaction, Customer, BankAccount, Branch } from "../../types";
+import { formatCurrency, formatDate, formatPhoneNumber, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor, getTransactionTypeNameFromDB } from "../../utils/formatting";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import Pagination from "../../components/UI/Pagination";
 import PageHeader from "../../components/UI/PageHeader";
-import CustomerDetailModal from "../Customers/components/CustomerDetailModal";
 
 interface TransactionListState {
   transactions: Transaction[];
@@ -31,8 +30,6 @@ interface TransactionListState {
     id: string | null;
     name: string | null;
   } | null;
-  showCustomerModal: boolean;
-  modalCustomer: any | null;
   groupBy: "" | "day" | "branch" | "transaction_type" | "customer";
 }
 
@@ -46,6 +43,7 @@ const TransactionList: React.FC = () => {
   const [bankAccounts, setBankAccounts] = useState<{ id: string; name: string }[]>([]);
   const [customers, setCustomers] = useState<{ id: string; name: string; code?: string }[]>([]);
   const [transactionTypes, setTransactionTypes] = useState<{ id: string; name: string }[]>([]);
+  const [transactionTypesLoading, setTransactionTypesLoading] = useState(true);
   const [showDateMenu, setShowDateMenu] = useState(false);
   const [customStart, setCustomStart] = useState<string>("");
   const [customEnd, setCustomEnd] = useState<string>("");
@@ -63,8 +61,6 @@ const TransactionList: React.FC = () => {
     bankAccountFilter: null,
     userFilter: null,
     customerFilter: null,
-    showCustomerModal: false,
-    modalCustomer: null,
     groupBy: "",
   });
 
@@ -197,6 +193,7 @@ const TransactionList: React.FC = () => {
           .map((t: any) => ({ id: String(t.id || t.value || t.name), name: String(t.name || t.id || t.value) }));
         if (names.length > 0) setTransactionTypes(names);
       }
+      setTransactionTypesLoading(false);
     };
     loadFilters();
   }, [user?.role, user?.company_id, selectedCompany?.id]);
@@ -384,33 +381,6 @@ const TransactionList: React.FC = () => {
     return match?.code || "";
   };
 
-  const handleSelectCustomer = (id?: string | null) => {
-    if (!id) return;
-    setState((prev) => ({
-      ...prev,
-      showCustomerModal: true,
-      modalCustomer: customers.find((c) => c.id === String(id)) || null,
-    }));
-  };
-
-  const getTransactionTypeLabel = (type: string): string => {
-    const dbType = transactionTypes.find((t) => t.id === type);
-    if (dbType) return dbType.name;
-
-    switch (type) {
-      case "payment":
-        return t("transactions.payment");
-      case "charge":
-        return t("transactions.charge");
-      case "adjustment":
-        return t("transactions.adjustment");
-      case "refund":
-        return t("transactions.refund");
-      default:
-        return type;
-    }
-  };
-
   const hasCustomerFilter = Boolean(state.customerFilter?.id);
 
   const paginationInfo = useMemo(() => {
@@ -420,7 +390,14 @@ const TransactionList: React.FC = () => {
   }, [state.currentPage, state.pageSize, state.totalCount]);
 
   const userOptions = useMemo(() => {
-    return Array.from(new Set(state.transactions.map((t) => t.created_by).filter((u): u is string => Boolean(u))));
+    const uniqueUsers = new Map<string, string>();
+    state.transactions.forEach((t) => {
+      if (t.created_by) {
+        const displayName = t.creator_name || t.created_by;
+        uniqueUsers.set(t.created_by, displayName);
+      }
+    });
+    return Array.from(uniqueUsers.entries());
   }, [state.transactions]);
 
   const groupedData = useMemo(() => {
@@ -430,7 +407,7 @@ const TransactionList: React.FC = () => {
     const keyGetter: Record<Exclude<TransactionListState["groupBy"], "">, (tx: Transaction) => string> = {
       day: (tx) => formatter.format(new Date(tx.transaction_date)),
       branch: (tx) => (tx.branch_id ? getBranchName(tx.branch_id) : "Không có văn phòng"),
-      transaction_type: (tx) => getTransactionTypeLabel(tx.transaction_type),
+      transaction_type: (tx) => getTransactionTypeNameFromDB(tx.transaction_type),
       customer: (tx) => tx.customer_name || tx.customer_id ? `Customer #${tx.customer_id}` : "Không có khách hàng",
     };
 
@@ -596,8 +573,8 @@ const TransactionList: React.FC = () => {
                 onChange={(e) => handleUserChange(e.target.value)}
               >
                 <option value="">Tất cả người thực hiện</option>
-                {userOptions.map((u, idx) => (
-                  <option key={idx} value={u}>{u}</option>
+                {userOptions.map(([userId, displayName]) => (
+                  <option key={userId} value={userId}>{displayName}</option>
                 ))}
               </select>
 
@@ -674,7 +651,7 @@ const TransactionList: React.FC = () => {
               </div>
             )}
 
-            <table className="min-w-[1200px] divide-y divide-gray-200 dark:divide-gray-600">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ngày giao dịch</th>
@@ -699,7 +676,7 @@ const TransactionList: React.FC = () => {
                       <span
                         className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTransactionTypeColor(transaction.transaction_type)}`}
                       >
-                        {getTransactionTypeLabel(transaction.transaction_type)}
+                        {getTransactionTypeNameFromDB(transaction.transaction_type)}
                       </span>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
@@ -710,13 +687,17 @@ const TransactionList: React.FC = () => {
                       </span>
                     </td>
                     <td className="hidden sm:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                      <button
-                        type="button"
-                        className="text-left text-gray-900 dark:text-white hover:underline"
-                        onClick={() => transaction.customer_id && handleSelectCustomer(transaction.customer_id)}
-                      >
-                        {transaction.customer_name || (transaction.customer_id ? customers.find(c => c.id === String(transaction.customer_id))?.name : null) || (transaction.customer_id ? `Customer #${transaction.customer_id}` : "Không có khách hàng")}
-                      </button>
+                      {transaction.customer_id ? (
+                        <button
+                          type="button"
+                          className="text-left text-gray-900 dark:text-white hover:underline hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                          onClick={() => navigate(`/customers/${transaction.customer_id}`)}
+                        >
+                          {transaction.customer_name || (transaction.customer_id ? customers.find(c => c.id === String(transaction.customer_id))?.name : null) || `Customer #${transaction.customer_id}`}
+                        </button>
+                      ) : (
+                        <span className="text-gray-500 dark:text-gray-400">Không có khách hàng</span>
+                      )}
                       {getCustomerCode(transaction.customer_id) ? (
                         <div className="text-xs text-gray-500 dark:text-gray-400">{getCustomerCode(transaction.customer_id)}</div>
                       ) : null}
@@ -776,17 +757,6 @@ const TransactionList: React.FC = () => {
         </div>
       </div>
 
-      {state.showCustomerModal && state.modalCustomer && (
-        <CustomerDetailModal
-          customer={state.modalCustomer as any}
-          onClose={() => setState((prev) => ({ ...prev, showCustomerModal: false }))}
-          onEdit={() => {
-            setState((prev) => ({ ...prev, showCustomerModal: false }));
-            navigate(`/customers`);
-          }}
-        />
-      )}
-
       {editingTx && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-xl p-6 space-y-4">
@@ -824,14 +794,11 @@ const TransactionList: React.FC = () => {
                   value={editForm.transaction_type}
                   onChange={(e) => setEditForm((p) => ({ ...p, transaction_type: e.target.value as any }))}
                 >
-                  {(transactionTypes.length ? transactionTypes : [
-                    { id: "payment", name: t("transactions.payment") },
-                    { id: "charge", name: t("transactions.charge") },
-                    { id: "adjustment", name: t("transactions.adjustment") },
-                    { id: "refund", name: t("transactions.refund") },
-                  ]).map((t) => (
+                  {transactionTypes.length ? transactionTypes.map((t) => (
                     <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
+                  )) : (
+                    <option value="" disabled>Không có loại giao dịch</option>
+                  )}
                 </select>
               </div>
               <div>

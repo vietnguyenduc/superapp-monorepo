@@ -293,6 +293,7 @@ export const formatForExport = (
 // Cache for color settings
 let cachedTransactionColors: any = null;
 let cachedBalanceColors: any = null;
+let cachedTransactionTypes: any = null;
 let colorsLoaded = false;
 let colorLoadPromise: Promise<void> | null = null;
 
@@ -305,22 +306,27 @@ export async function fetchColorSettings() {
   colorLoadPromise = (async () => {
     try {
       const { databaseService } = await import("../services/database");
-      
-      const [txColorsResult, balanceColorsResult] = await Promise.all([
+
+      const [txColorsResult, balanceColorsResult, txTypesResult] = await Promise.all([
         databaseService.colorSettings.getTransactionTypeColors(),
         databaseService.colorSettings.getCustomerBalanceColors(),
+        databaseService.transactionTypes.getTransactionTypes(),
       ]);
 
       // The service returns { data: colors, error: null }
       // Handle both cases: if it has .data property use it, otherwise use the result directly
       const txColors = (txColorsResult as any)?.data || txColorsResult;
       const balanceColors = (balanceColorsResult as any)?.data || balanceColorsResult;
+      const txTypes = (txTypesResult as any)?.data || txTypesResult;
 
       if (txColors) {
         cachedTransactionColors = txColors;
       }
       if (balanceColors) {
         cachedBalanceColors = balanceColors;
+      }
+      if (txTypes) {
+        cachedTransactionTypes = txTypes;
       }
 
       colorsLoaded = true;
@@ -466,6 +472,45 @@ export const getTransactionTypeLabel = (type: string): string => {
   }
 
   return typeColors.label;
+};
+
+// Helper function to get math_factor from transaction type
+export const getTransactionMathFactor = (type: string): number => {
+  if (!cachedTransactionTypes) {
+    // Fallback to hardcoded math factors if not loaded yet
+    switch (type) {
+      case "payment":
+        return -1;
+      case "charge":
+        return 1;
+      case "adjustment":
+        return 1;
+      case "refund":
+        return -1;
+      default:
+        return 1;
+    }
+  }
+
+  const txType = cachedTransactionTypes.find((t: any) => t.id === type);
+  if (!txType) {
+    return 1; // Default to 1 if not found
+  }
+
+  return txType.math_factor || 1;
+};
+
+// Simple mapping function to get transaction type name from database
+// This is the single source of truth for transaction type names
+export const getTransactionTypeNameFromDB = (typeId: string, cachedTypes?: any[]): string => {
+  const types = cachedTypes || cachedTransactionTypes;
+  if (!types) {
+    // Return typeId if types not loaded yet - makes it clear data hasn't loaded
+    return typeId;
+  }
+
+  const txType = types.find((t: any) => t.id === typeId);
+  return txType?.name || typeId;
 };
 
 export const getBalanceColor = (balance: number): string => {

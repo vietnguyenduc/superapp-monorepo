@@ -110,12 +110,7 @@ const Settings: React.FC = () => {
     openingBalance: "",
   });
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [transactionTypes, setTransactionTypes] = useState<TransactionType[]>([
-    { id: "payment", name: "Điều chỉnh giảm", color: "green", isActive: true, math_factor: -1, impact_type: "decrease" },
-    { id: "charge", name: "Điều chỉnh tăng", color: "red", isActive: true, math_factor: 1, impact_type: "increase" },
-    { id: "adjustment", name: "Điều chỉnh", color: "blue", isActive: true, math_factor: 1, impact_type: "increase" },
-    { id: "refund", name: "Hoàn tiền", color: "green", isActive: true, math_factor: -1, impact_type: "decrease" },
-  ]);
+  const [transactionTypes, setTransactionTypes] = useState<TransactionType[]>([]);
   const [isTransactionTypeModalOpen, setIsTransactionTypeModalOpen] = useState(false);
   const [editingTransactionType, setEditingTransactionType] = useState<TransactionType | null>(null);
   const [transactionTypeForm, setTransactionTypeForm] = useState({
@@ -164,6 +159,13 @@ const Settings: React.FC = () => {
   // Users management state
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [userEditForm, setUserEditForm] = useState({
+    full_name: "",
+    position: "",
+    company_name: "",
+  });
 
   // Backup/Restore state
   const [backupLoading, setBackupLoading] = useState(false);
@@ -1137,6 +1139,50 @@ const Settings: React.FC = () => {
     setIsBankAccountModalOpen(true);
   };
 
+  // Handle opening edit user modal
+  const handleOpenEditUser = (staff: any) => {
+    setEditingUser(staff);
+    setUserEditForm({
+      full_name: staff.full_name || "",
+      position: staff.position || "",
+      company_name: staff.companies?.name || "",
+    });
+    setIsEditUserModalOpen(true);
+  };
+
+  // Handle saving user details
+  const handleSaveUserDetails = async () => {
+    if (!editingUser) return;
+
+    try {
+      const { error } = await supabase
+        .from("users")
+        .update({
+          full_name: userEditForm.full_name,
+          position: userEditForm.position,
+        })
+        .eq("id", editingUser.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setStaffUsers(prev => prev.map(staff =>
+        staff.id === editingUser.id
+          ? { ...staff, full_name: userEditForm.full_name, position: userEditForm.position }
+          : staff
+      ));
+
+      setSuccessMessage("Đã cập nhật thông tin người dùng thành công");
+      setTimeout(() => setSuccessMessage(null), 3000);
+      setIsEditUserModalOpen(false);
+      setEditingUser(null);
+      setUserEditForm({ full_name: "", position: "", company_name: "" });
+    } catch (err) {
+      console.error("Error updating user details:", err);
+      setError("Không thể cập nhật thông tin người dùng");
+    }
+  };
+
   // Handle staff permission updates with new granular structure
   const handleUpdateStaffPermission = async (staffId: string, permissionPath: string, value: boolean) => {
     try {
@@ -1281,8 +1327,8 @@ const Settings: React.FC = () => {
       { id: "opening-balance", name: "Số dư đầu kỳ", icon: "📥" },
       { id: "backup", name: "Sao lưu", icon: "💿" },
     ].filter(tab => {
-      // Only show users/permissions tab for admin or admin_master
-      if (tab.id === "users" && user?.role !== "admin" && user?.role !== "admin_master") return false;
+      // Show users/permissions tab for admin, admin_master, and admin_company
+      if (tab.id === "users" && user?.role !== "admin" && user?.role !== "admin_master" && user?.role !== "admin_company") return false;
       return true;
     }),
     [user?.role],
@@ -2152,12 +2198,25 @@ const Settings: React.FC = () => {
                               </svg>
                             </div>
                             <div className="flex-1">
-                              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                                {staff.full_name || staff.email}
-                              </h3>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {staff.email}
-                              </p>
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                                    {staff.full_name || staff.email}
+                                  </h3>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {staff.email}
+                                  </p>
+                                </div>
+                                {user?.role === 'admin_master' && (
+                                  <button
+                                    onClick={() => handleOpenEditUser(staff)}
+                                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-xs font-medium"
+                                    title="Chỉnh sửa thông tin"
+                                  >
+                                    ✏️ Sửa
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
 
@@ -2461,6 +2520,71 @@ const Settings: React.FC = () => {
                 loadStaffUsers();
               }}
             />
+          )}
+
+          {/* Edit User Modal */}
+          {isEditUserModalOpen && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Chỉnh sửa thông tin người dùng
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Họ tên
+                    </label>
+                    <input
+                      type="text"
+                      value={userEditForm.full_name}
+                      onChange={(e) => setUserEditForm({ ...userEditForm, full_name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Công ty
+                    </label>
+                    <input
+                      type="text"
+                      value={userEditForm.company_name}
+                      readOnly
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                      title="Tên công ty được gán từ hệ thống"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Chức vụ
+                    </label>
+                    <input
+                      type="text"
+                      value={userEditForm.position}
+                      onChange={(e) => setUserEditForm({ ...userEditForm, position: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    onClick={() => {
+                      setIsEditUserModalOpen(false);
+                      setEditingUser(null);
+                      setUserEditForm({ full_name: "", position: "" });
+                    }}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    onClick={handleSaveUserDetails}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Lưu
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Data Settings */}
