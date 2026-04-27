@@ -294,13 +294,7 @@
     "allTypes": "All Types",
     "dateRange": "Date Range",
     "fromDate": "From Date",
-    "toDate": "To Date",
-    "types": {
-      "payment": "Payment",
-      "charge": "Charge",
-      "adjustment": "Adjustment",
-      "refund": "Refund"
-    }
+    "toDate": "To Date"
   },
   "import": {
     "title": "Import Data",
@@ -596,5 +590,13 @@
     "accountCreated": "Account created successfully",
     "accountUpdated": "Account updated successfully",
     "accountDeleted": "Account deleted successfully"
+  },
+  "transactions": {
+    "types": {
+      "payment": "Payment received",
+      "charge": "Credit issued",
+      "adjustment": "Adjustment",
+      "refund": "Refund"
+    }
   }
 }
