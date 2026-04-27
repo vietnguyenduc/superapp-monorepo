@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import type { Transaction } from "../../../types";
-import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor } from "../../../utils/formatting";
+import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionMathFactor, getTransactionTypeNameFromDB } from "../../../utils/formatting";
 import { databaseService } from "../../../services/database";
 import { useAuth } from "../../../hooks/useAuth";
 import { useCompany } from "../../../contexts/CompanyContext";
@@ -108,14 +108,9 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
           runningByAccount.get(tx.bank_account_id) ||
           openingByAccount.get(String(tx.bank_account_id)) ||
           0;
-        // Receivable delta (customer): charge increases receivable (negative), payment/refund decrease (positive)
-        let deltaReceivable = tx.amount;
-        if (tx.transaction_type === "charge") deltaReceivable = -Math.abs(tx.amount);
-        else if (tx.transaction_type === "payment" || tx.transaction_type === "refund") {
-          deltaReceivable = Math.abs(tx.amount);
-        } else if (tx.transaction_type === "adjustment") {
-          deltaReceivable = tx.amount;
-        }
+        // Receivable delta (customer): use math_factor from database
+        const mathFactor = getTransactionMathFactor(tx.transaction_type);
+        let deltaReceivable = tx.amount * mathFactor;
 
         // Cash delta (bank account): charge does not move cash; payment adds; refund subtracts; adjustment signed
         let deltaCash = 0;
@@ -188,88 +183,65 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
     loadTypes();
   }, [user?.role, user?.company_id, selectedCompany?.id]);
 
-  const getTransactionTypeLabel = (type: string) => {
-    const dbType = transactionTypes.find((t) => t.id === type);
-    if (dbType) return dbType.name;
-
-    switch (type) {
-      case "payment":
-        return t("transactions.types.payment");
-      case "charge":
-        return t("transactions.types.charge");
-      case "adjustment":
-        return t("transactions.types.adjustment");
-      case "refund":
-        return t("transactions.types.refund");
-      default:
-        return type;
-    }
-  };
-
   return (
     <div>
-      {/* Display Count Selector */}
+      {/* Filter Toolbar */}
       {onMaxItemsChange && (
-        <div className="flex flex-col gap-2 mb-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative">
-              <select
-                value={maxItems}
-                onChange={(e) => {
-                  const newValue = Number(e.target.value);
-                  onMaxItemsChange(newValue);
-                }}
-                className="appearance-none text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 pr-8 text-gray-900 dark:text-gray-100 cursor-pointer"
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={15}>15</option>
-                <option value={20}>20</option>
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                <svg
-                  className="w-4 h-4 text-gray-400 dark:text-gray-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Hiển thị:</label>
+                <select
+                  value={maxItems}
+                  onChange={(e) => {
+                    const newValue = Number(e.target.value);
+                    onMaxItemsChange(newValue);
+                  }}
+                  className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-900 dark:text-gray-100 cursor-pointer"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={15}>15</option>
+                  <option value={20}>20</option>
+                </select>
+              </div>
+              <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 hidden sm:block"></div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Tài khoản:</label>
+                <select
+                  value={selectedAccountId}
+                  onChange={(e) => setSelectedAccountId(e.target.value)}
+                  className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-900 dark:text-gray-100 cursor-pointer min-w-[150px]"
+                >
+                  <option value="">Tất cả</option>
+                  {bankAccounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Văn phòng:</label>
+                <select
+                  value={selectedBranchId}
+                  onChange={(e) => setSelectedBranchId(e.target.value)}
+                  className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-900 dark:text-gray-100 cursor-pointer min-w-[150px]"
+                >
+                  <option value="">Tất cả</option>
+                  {Object.entries(branchMap).map(([id, name]) => (
+                    <option key={id} value={id}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
-            <select
-              value={selectedAccountId}
-              onChange={(e) => setSelectedAccountId(e.target.value)}
-              className="appearance-none text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-gray-900 dark:text-gray-100 cursor-pointer"
-            >
-              <option value="">Tất cả tài khoản</option>
-              {bankAccounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={selectedBranchId}
-              onChange={(e) => setSelectedBranchId(e.target.value)}
-              className="appearance-none text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-gray-900 dark:text-gray-100 cursor-pointer"
-            >
-              <option value="">Tất cả văn phòng</option>
-              {Object.entries(branchMap).map(([id, name]) => (
-                <option key={id} value={id}>
-                  {name}
-                </option>
-              ))}
-            </select>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="font-medium">{displayTransactions.length}</span>/{filteredTransactions.length}
+            </div>
           </div>
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            Hiển thị {displayTransactions.length}/{filteredTransactions.length}
-          </span>
         </div>
       )}
 
@@ -341,7 +313,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                         transaction.transaction_type,
                       )}`}
                     >
-                      {getTransactionTypeLabel(transaction.transaction_type)}
+                      {getTransactionTypeNameFromDB(transaction.transaction_type)}
                     </span>
                   </div>
                 </div>
@@ -447,7 +419,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                         transaction.transaction_type,
                       )}`}
                     >
-                      {getTransactionTypeLabel(transaction.transaction_type)}
+                      {getTransactionTypeNameFromDB(transaction.transaction_type)}
                     </span>
                   </td>
                 </tr>
@@ -490,7 +462,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                       transaction.transaction_type,
                     )}`}
                   >
-                    {getTransactionTypeLabel(transaction.transaction_type)}
+                    {getTransactionTypeNameFromDB(transaction.transaction_type, transactionTypes)}
                   </span>
                 </div>
               </div>

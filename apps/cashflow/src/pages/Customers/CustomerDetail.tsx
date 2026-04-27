@@ -6,7 +6,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useCompany } from "../../contexts/CompanyContext";
 import { databaseService } from "../../services/database";
 import type { Customer, Transaction } from "../../types";
-import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor } from "../../utils/formatting";
+import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor, getTransactionTypeNameFromDB } from "../../utils/formatting";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
 
 const CustomerDetail: React.FC = () => {
@@ -21,24 +21,6 @@ const CustomerDetail: React.FC = () => {
   const [transactionTypes, setTransactionTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const getTransactionTypeLabel = (type: string) => {
-    const dbType = transactionTypes.find((t) => t.id === type);
-    if (dbType) return dbType.name;
-
-    switch (type) {
-      case "payment":
-        return t("transactions.payment");
-      case "charge":
-        return t("transactions.charge");
-      case "adjustment":
-        return t("transactions.adjustment");
-      case "refund":
-        return t("transactions.refund");
-      default:
-        return type;
-    }
-  };
 
   useEffect(() => {
     const fetchCustomerData = async () => {
@@ -361,7 +343,7 @@ const CustomerDetail: React.FC = () => {
                                 transaction.transaction_type,
                               )}`}
                             >
-                              {getTransactionTypeLabel(transaction.transaction_type)}
+                              {getTransactionTypeNameFromDB(transaction.transaction_type)}
                             </span>
                           </div>
                         </div>
@@ -413,7 +395,7 @@ const CustomerDetail: React.FC = () => {
                                   transaction.transaction_type,
                                 )}`}
                               >
-                                {getTransactionTypeLabel(transaction.transaction_type)}
+                                {getTransactionTypeNameFromDB(transaction.transaction_type)}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm tabular-nums">

@@ -121,9 +121,9 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           className="fixed inset-0 bg-gray-700/70 dark:bg-gray-900/80 transition-opacity pointer-events-auto"
           onClick={onClose}
         />
-        <div className="inline-block align-bottom bg-white dark:bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full pointer-events-auto">
+        <div className="inline-block align-bottom bg-white dark:bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl sm:w-full w-full mx-4 sm:mx-0 pointer-events-auto">
           <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
-            <div className="bg-white dark:bg-gray-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className="bg-white dark:bg-gray-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 max-h-[calc(100vh-12rem)] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">

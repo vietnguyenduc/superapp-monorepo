@@ -595,7 +595,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
           {t("import.totalRows")})
         </h3>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
@@ -605,13 +605,13 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   {t("customers.phone")}
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="hidden sm:table-cell px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   {t("customers.address")}
                 </th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   {t("customers.customerCode")}
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="hidden md:table-cell px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Cách làm việc công nợ
                 </th>
               </tr>
@@ -634,7 +634,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                       {row.phone || "-"}
                     </td>
                     <td
-                      className={`px-3 py-2 text-sm ${getErrorForCell(index, "address") ? "bg-red-100" : ""}`}
+                      className={`hidden sm:table-cell px-3 py-2 text-sm ${getErrorForCell(index, "address") ? "bg-red-100" : ""}`}
                     >
                       {row.address || "-"}
                     </td>
@@ -644,7 +644,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                       {row.customer_code || "-"}
                     </td>
                     <td
-                      className={`px-3 py-2 text-sm ${getErrorForCell(index, "working_method") ? "bg-red-100" : ""}`}
+                      className={`hidden md:table-cell px-3 py-2 text-sm ${getErrorForCell(index, "working_method") ? "bg-red-100" : ""}`}
                     >
                       {row.working_method || "-"}
                     </td>

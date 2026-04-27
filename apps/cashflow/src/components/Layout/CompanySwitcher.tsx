@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useCompany } from "../../contexts/CompanyContext";
 import { useAuth } from "../../hooks/useAuth";
+import { supabase } from "../../services/supabase";
 
 const CompanySwitcher: React.FC = () => {
   const { companies, selectedCompany, setSelectedCompany, loading, createCompany, deleteCompany, updateCompany } = useCompany();
@@ -12,6 +13,8 @@ const CompanySwitcher: React.FC = () => {
   const [newCompanyCode, setNewCompanyCode] = useState("");
   const [editCompanyName, setEditCompanyName] = useState("");
   const [editCompanyCode, setEditCompanyCode] = useState("");
+  const [editCompanyLogo, setEditCompanyLogo] = useState<File | null>(null);
+  const [editCompanyLogoPreview, setEditCompanyLogoPreview] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -114,6 +117,8 @@ const CompanySwitcher: React.FC = () => {
                     e.stopPropagation();
                     setEditCompanyName(company.name);
                     setEditCompanyCode(company.code);
+                    setEditCompanyLogo(null);
+                    setEditCompanyLogoPreview(company.logo_url || null);
                     setIsEditModalOpen(true);
                     setIsOpen(false);
                   }}
@@ -146,8 +151,8 @@ const CompanySwitcher: React.FC = () => {
 
       {/* Create Company Modal */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Company</h3>
             <div className="space-y-4">
               <div>
@@ -209,30 +214,67 @@ const CompanySwitcher: React.FC = () => {
 
       {/* Edit Company Modal */}
       {isEditModalOpen && selectedCompany && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit Company</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto my-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Edit Company</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Company Name</label>
                 <input
                   type="text"
                   value={editCompanyName}
                   onChange={(e) => setEditCompanyName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Enter company name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company Code</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Company Code</label>
                 <input
                   type="text"
                   value={editCompanyCode}
                   onChange={(e) => setEditCompanyCode(e.target.value.toUpperCase())}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Enter company code (e.g., ABC)"
                   maxLength={10}
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Company Logo</label>
+                <div className="flex items-center gap-4">
+                  {editCompanyLogoPreview ? (
+                    <img
+                      src={editCompanyLogoPreview}
+                      alt="Company Logo"
+                      className="w-16 h-16 rounded-lg object-cover border border-gray-300 dark:border-gray-600"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">No Logo</span>
+                    </div>
+                  )}
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setEditCompanyLogo(file);
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setEditCompanyLogoPreview(reader.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    <span className="px-3 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium">
+                      Upload Logo
+                    </span>
+                  </label>
+                </div>
               </div>
             </div>
             <div className="flex justify-end space-x-3 mt-6">
@@ -241,22 +283,52 @@ const CompanySwitcher: React.FC = () => {
                   setIsEditModalOpen(false);
                   setEditCompanyName("");
                   setEditCompanyCode("");
+                  setEditCompanyLogo(null);
+                  setEditCompanyLogoPreview(null);
                 }}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
               >
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  if (editCompanyName && editCompanyCode) {
-                    updateCompany(selectedCompany.id, { 
-                      name: editCompanyName, 
-                      code: editCompanyCode
-                    });
-                    setIsEditModalOpen(false);
-                    setEditCompanyName("");
-                    setEditCompanyCode("");
+                onClick={async () => {
+                  if (!editCompanyName || !editCompanyCode) return;
+
+                  let logoUrl = selectedCompany?.logo_url || null;
+
+                  // Upload logo if a new file was selected
+                  if (editCompanyLogo) {
+                    try {
+                      const fileName = `${Date.now()}-${editCompanyLogo.name}`;
+                      const { error: uploadError } = await supabase.storage
+                        .from('company-logos')
+                        .upload(fileName, editCompanyLogo);
+
+                      if (uploadError) throw uploadError;
+
+                      // Get public URL
+                      const { data: publicUrlData } = supabase.storage
+                        .from('company-logos')
+                        .getPublicUrl(fileName);
+
+                      logoUrl = publicUrlData.publicUrl;
+                    } catch (error) {
+                      console.error('Error uploading logo:', error);
+                      alert('Không thể tải lên logo. Vui lòng thử lại.');
+                      return;
+                    }
                   }
+
+                  updateCompany(selectedCompany.id, {
+                    name: editCompanyName,
+                    code: editCompanyCode,
+                    logo_url: logoUrl,
+                  });
+                  setIsEditModalOpen(false);
+                  setEditCompanyName("");
+                  setEditCompanyCode("");
+                  setEditCompanyLogo(null);
+                  setEditCompanyLogoPreview(null);
                 }}
                 disabled={!editCompanyName || !editCompanyCode}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"

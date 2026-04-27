@@ -17,14 +17,14 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
   const timeRanges: TimeRange[] = ["day", "week", "month", "quarter", "year"];
 
   return (
-    <div className="flex gap-0.5 sm:gap-1">
+    <div className="flex gap-0.5 sm:gap-1 overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0 scrollbar-hide">
       {timeRanges.map((range) => (
         <Button
           key={range}
           variant={value === range ? "primary" : "secondary"}
           size="sm"
           onClick={() => onChange(range)}
-          className="text-xs px-2 sm:px-3 whitespace-nowrap min-h-[40px]"
+          className="text-xs px-2 sm:px-3 whitespace-nowrap min-h-[40px] flex-shrink-0"
         >
           {t(`dashboard.timeRange.${range}`)}
         </Button>

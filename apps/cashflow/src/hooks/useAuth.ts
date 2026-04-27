@@ -49,7 +49,18 @@ export const useAuth = () => {
       branch = branchData;
     }
 
-    return { ...userData, branch } as unknown as User;
+    // If user has a company_id, fetch company separately
+    let company = null;
+    if (userData.company_id) {
+      const { data: companyData } = await supabase
+        .from("companies")
+        .select("*")
+        .eq("id", userData.company_id)
+        .single();
+      company = companyData;
+    }
+
+    return { ...userData, branch, company } as unknown as User;
   }, []);
 
   // Initialize auth state

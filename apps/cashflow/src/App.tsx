@@ -16,6 +16,7 @@ import TransactionImport from "./pages/DataImport/TransactionImport";
 import CustomerImport from "./pages/DataImport/CustomerImport";
 import Settings from "./pages/Settings/Settings";
 import Profile from "./pages/Profile/Profile";
+import Manual from "./pages/Manual/Manual";
 import Login from "./pages/Auth/Login";
 import SignUp from "./pages/Auth/SignUp";
 import CompanySelector from "./pages/CompanySelector/CompanySelector";
@@ -58,6 +59,7 @@ function App() {
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<Settings />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="manual" element={<Manual />} />
             <Route path="import/transactions" element={<TransactionImport />} />
             <Route path="import/customers" element={<CustomerImport />} />
           </Route>

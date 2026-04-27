@@ -32,6 +32,7 @@ const Login: React.FC = () => {
       signingIn: "Đang đăng nhập...",
       or: "hoặc",
       trial: "Dùng thử ngay (không cần đăng nhập)",
+      forgotPassword: "Quên mật khẩu?",
     },
     en: {
       title: "Sign in to your account",
@@ -42,6 +43,7 @@ const Login: React.FC = () => {
       signingIn: "Signing in...",
       or: "or",
       trial: "Try now (no login needed)",
+      forgotPassword: "Forgot password?",
     },
   } as const;
   const tCopy = copy[language as keyof typeof copy] || copy.vi;
@@ -204,6 +206,16 @@ const Login: React.FC = () => {
                 <p className="text-red-500 text-sm mt-1">{passwordError}</p>
               )}
             </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => window.location.href = "https://supabase.com/auth/reset-password"}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+            >
+              {tCopy.forgotPassword}
+            </button>
           </div>
 
           {error && (

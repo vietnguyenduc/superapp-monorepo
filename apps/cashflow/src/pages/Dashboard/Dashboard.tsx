@@ -46,6 +46,10 @@ const Dashboard: React.FC = () => {
         throw new Error('User ID is required for backup');
       }
       
+      if (!companyId) {
+        throw new Error('Company ID is required for backup');
+      }
+      
       // Create backup data
       const backupData = await backupService.createBackup(
         {

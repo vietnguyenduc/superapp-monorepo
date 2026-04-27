@@ -63,7 +63,7 @@ const Layout: React.FC = () => {
         </div>
         {/* Mobile sidebar */}
         <div
-          className={`fixed inset-y-0 left-0 z-50 w-72 sm:w-80 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out lg:hidden no-scrollbar overflow-y-auto ${
+          className={`fixed inset-y-0 left-0 z-50 w-72 sm:w-80 bg-white dark:bg-gray-800 shadow-lg transform transition-all duration-300 ease-out lg:hidden no-scrollbar overflow-y-auto ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >

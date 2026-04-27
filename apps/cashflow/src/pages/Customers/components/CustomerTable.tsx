@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { getCustomerListBalanceColor } from "../../../utils/formatting";
+import { getCustomerListBalanceColor, getTransactionMathFactor } from "../../../utils/formatting";
 import type { Customer, Transaction } from "../../../types";
 import { databaseService } from "../../../services/database";
 import { useAuth } from "../../../hooks/useAuth";
@@ -70,24 +70,14 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
           // Calculate balance for each customer
           customers.forEach(customer => {
             const customerTx = transactionsByCustomer.get(customer.id) || [];
-            
-            // Calculate balance: opening_balance + charge(+) + payment(-) + refund(-) + adjustment(signed)
+
+            // Calculate balance: opening_balance + transaction_amount * math_factor
             const balance = customerTx.reduce((acc, tx) => {
               const amount = Number(tx.amount) || 0;
-              switch (tx.transaction_type) {
-                case "charge":
-                  return acc + amount;
-                case "payment":
-                  return acc - amount;
-                case "refund":
-                  return acc - amount;
-                case "adjustment":
-                  return acc + amount;
-                default:
-                  return acc;
-              }
+              const mathFactor = getTransactionMathFactor(tx.transaction_type);
+              return acc + (amount * mathFactor);
             }, customer.opening_balance || 0);
-            
+
             balanceMap.set(customer.id, balance);
             
             // Find last transaction date
@@ -236,25 +226,25 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-[1480px] divide-y divide-gray-300 dark:divide-gray-600">
+    <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+      <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
         <thead className="bg-gray-50 dark:bg-gray-700">
           <tr>
             <th
               scope="col"
-              className="hidden sm:table-cell px-2 sm:px-4 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-20"
+              className="hidden sm:table-cell px-2 sm:px-3 py-2 text-left text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-16"
             >
-              <span>Giao dịch</span>
+              <span>GD</span>
             </th>
             <th
               scope="col"
-              className="hidden sm:table-cell px-2 sm:px-4 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-20"
+              className="hidden sm:table-cell px-2 sm:px-3 py-2 text-left text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-16"
             >
               <span>Mã</span>
             </th>
             <th
               scope="col"
-              className="px-2 sm:px-4 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 w-1/2"
+              className="px-2 sm:px-3 py-2 text-left text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 w-auto max-w-xs"
               onClick={() => handleSort("full_name")}
             >
               <div className="flex items-center space-x-1">
@@ -264,7 +254,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className="hidden md:table-cell px-4 py-4 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+              className="hidden md:table-cell px-3 py-2 text-right text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
               onClick={() => handleSort("total_balance")}
             >
               <div className="flex items-center justify-end space-x-1">
@@ -274,7 +264,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className="hidden lg:table-cell px-4 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+              className="hidden lg:table-cell px-3 py-2 text-left text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
               onClick={() => handleSort("last_transaction_date")}
             >
               <div className="flex items-center space-x-1">
@@ -284,17 +274,17 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className="hidden sm:table-cell px-4 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+              className="hidden sm:table-cell px-3 py-2 text-left text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
               onClick={() => handleSort("phone")}
             >
               <div className="flex items-center space-x-1">
-                <span>Điện thoại</span>
+                <span>ĐT</span>
                 {getSortIcon("phone")}
               </div>
             </th>
             <th
               scope="col"
-              className="hidden xl:table-cell px-4 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+              className="hidden xl:table-cell px-3 py-2 text-left text-[10px] sm:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
               onClick={() => handleSort("address")}
             >
               <div className="flex items-center space-x-1">
@@ -302,7 +292,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                 {getSortIcon("address")}
               </div>
             </th>
-            <th scope="col" className="relative px-2 sm:px-4 py-3">
+            <th scope="col" className="relative px-2 sm:px-3 py-2 w-16">
               <span className="sr-only">Thao tác</span>
             </th>
           </tr>
@@ -318,17 +308,17 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
               onMouseLeave={() => setHoveredRow(null)}
               onClick={() => onCustomerSelect(customer)}
             >
-              <td className="hidden sm:table-cell px-2 sm:px-4 py-4 sm:py-4 whitespace-nowrap w-20">
+              <td className="hidden sm:table-cell px-2 sm:px-3 py-2 whitespace-nowrap w-16">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleViewTransactions(e, customer);
                   }}
-                  className="inline-flex items-center justify-center px-2.5 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors shadow-sm"
+                  className="inline-flex items-center justify-center px-2 py-1.5 border border-transparent text-[10px] sm:text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors shadow-sm"
                   title="Xem giao dịch"
                 >
                   <svg
-                    className="w-3 h-3 mr-1"
+                    className="w-3 h-3"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -340,21 +330,19 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                   </svg>
-                  <span className="hidden sm:inline">Giao dịch</span>
-                  <span className="sm:hidden">GD</span>
                 </button>
               </td>
-              <td className="hidden sm:table-cell px-2 sm:px-4 py-4 sm:py-4 whitespace-nowrap w-20">
-                <div className="text-sm sm:text-base font-bold font-mono text-gray-900 dark:text-white">{customer.customer_code}</div>
+              <td className="hidden sm:table-cell px-2 sm:px-3 py-2 whitespace-nowrap w-16">
+                <div className="text-xs sm:text-sm font-bold font-mono text-gray-900 dark:text-white">{customer.customer_code}</div>
               </td>
-              <td className="px-2 sm:px-4 py-4 sm:py-4 w-1/2">
-                <div className="flex items-center justify-between gap-2 sm:hidden mb-2">
+              <td className="px-2 sm:px-3 py-2 w-auto max-w-xs">
+                <div className="flex items-center justify-between gap-2 sm:hidden mb-1">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleViewTransactions(e, customer);
                     }}
-                    className="inline-flex items-center justify-center px-2.5 py-1 text-xs font-semibold rounded-full text-blue-700 dark:text-blue-200 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-900/70 transition-colors"
+                    className="inline-flex items-center justify-center px-2 py-1 text-[10px] font-semibold rounded-full text-blue-700 dark:text-blue-200 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-900/70 transition-colors"
                     title="Xem giao dịch"
                   >
                     <svg
@@ -368,22 +356,22 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                         strokeLinejoin="round"
                         strokeWidth={2}
                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
+                    />
                     </svg>
-                    <span>Giao dịch</span>
+                    <span>GD</span>
                   </button>
-                  <span className="text-xs font-mono text-gray-500 dark:text-gray-300">
+                  <span className="text-[10px] font-mono text-gray-500 dark:text-gray-300">
                     {customer.customer_code}
                   </span>
                 </div>
-                <div className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight whitespace-normal break-words">
+                <div className="text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-tight truncate" title={customer.full_name}>
                   {customer.full_name}
                 </div>
                 {customer.email && (
-                  <div className="text-sm sm:text-base text-gray-600 dark:text-gray-300 break-all mt-1">{customer.email}</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-300 truncate mt-0.5" title={customer.email}>{customer.email}</div>
                 )}
                 {/* Mobile details */}
-                <div className="md:hidden mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-300">
+                <div className="md:hidden mt-1.5 space-y-0.5 text-[10px] text-gray-600 dark:text-gray-300">
                   {customer.phone && (
                     <a
                       href={`tel:${customer.phone}`}
@@ -400,7 +388,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
-                    <span>{customer.address || "-"}</span>
+                    <span className="truncate">{customer.address || "-"}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -413,7 +401,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                     </span>
                   </div>
                   <div
-                    className={`text-sm font-bold ${
+                    className={`text-xs font-bold ${
                       (customerBalances.get(customer.id) || 0) >= 0
                         ? "text-green-600 dark:text-green-300"
                         : "text-red-600 dark:text-red-300"
@@ -423,38 +411,38 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                   </div>
                 </div>
               </td>
-              <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap text-right">
+              <td className="hidden md:table-cell px-3 py-2 whitespace-nowrap text-right">
                 <div
-                  className={`text-sm font-medium ${getCustomerListBalanceColor(customerBalances.get(customer.id) || 0)}`}
+                  className={`text-xs font-medium ${getCustomerListBalanceColor(customerBalances.get(customer.id) || 0)}`}
                 >
                   {formatCurrency(customerBalances.get(customer.id) || 0)}
                 </div>
               </td>
-              <td className="hidden lg:table-cell px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+              <td className="hidden lg:table-cell px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
                 {customerLastTxDates.get(customer.id)
                   ? formatDate(customerLastTxDates.get(customer.id)!)
                   : t("customers.noTransactions")}
               </td>
-              <td className="hidden sm:table-cell px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+              <td className="hidden sm:table-cell px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
                 {customer.phone ? formatPhoneNumber(customer.phone) : "-"}
               </td>
-              <td className="hidden xl:table-cell px-4 py-4 text-sm text-gray-900 dark:text-white">
+              <td className="hidden xl:table-cell px-3 py-2 text-xs text-gray-900 dark:text-white">
                 <div className="max-w-xs truncate">
                   {customer.address || "-"}
                 </div>
               </td>
-              <td className="px-2 sm:px-4 py-4 sm:py-4 whitespace-nowrap">
-                <div className="flex items-center space-x-2">
+              <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                <div className="flex items-center space-x-1">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       onCustomerAction("edit", customer);
                     }}
-                    className="p-2 text-gray-600 hover:text-green-600 bg-white border border-gray-300 rounded-lg hover:bg-green-50 transition-colors"
+                    className="p-1.5 text-gray-600 hover:text-green-600 bg-white border border-gray-300 rounded hover:bg-green-50 transition-colors"
                     title="Sửa"
                   >
                     <svg
-                      className="w-4 h-4"
+                      className="w-3.5 h-3.5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -472,11 +460,11 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                       e.stopPropagation();
                       onCustomerAction("delete", customer);
                     }}
-                    className="p-2 text-gray-600 hover:text-red-600 bg-white border border-gray-300 rounded-lg hover:bg-red-50 transition-colors"
+                    className="p-1.5 text-gray-600 hover:text-red-600 bg-white border border-gray-300 rounded hover:bg-red-50 transition-colors"
                     title="Xóa"
                   >
                     <svg
-                      className="w-4 h-4"
+                      className="w-3.5 h-3.5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
