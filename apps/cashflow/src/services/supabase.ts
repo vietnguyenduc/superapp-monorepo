@@ -69,14 +69,31 @@ export type SupabaseHealthCheckResult = {
   errors: string[];
 };
 
+// Create a separate Supabase client for health checks without authentication
+const healthCheckClient = createClient<Database, "public">(supabaseUrl, supabaseAnonKey, {
+  db: {
+    schema: APP_SUPABASE_SCHEMA,
+  },
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+    detectSessionInUrl: false,
+  },
+  global: {
+    headers: {
+      "X-Client-Info": "debt-repayment-web-app-health-check",
+    },
+  },
+});
+
 export const runSupabaseHealthCheck = async (): Promise<SupabaseHealthCheckResult> => {
   const checks: Record<string, boolean> = {};
   const errors: string[] = [];
 
   const probes = [
-    { name: "companies", query: () => supabase.from("companies").select("id", { head: true, count: "exact" }).limit(1) },
-    { name: "customers", query: () => supabase.from("customers").select("id", { head: true, count: "exact" }).limit(1) },
-    { name: "transactions", query: () => supabase.from("transactions").select("id", { head: true, count: "exact" }).limit(1) },
+    { name: "companies", query: () => healthCheckClient.from("companies").select("id", { head: true, count: "exact" }).limit(1) },
+    { name: "customers", query: () => healthCheckClient.from("customers").select("id", { head: true, count: "exact" }).limit(1) },
+    { name: "transactions", query: () => healthCheckClient.from("transactions").select("id", { head: true, count: "exact" }).limit(1) },
   ];
 
   for (const probe of probes) {
