@@ -1,11 +1,12 @@
 import React, { createContext, useContext } from "react";
 import type { ReactNode } from "react";
+import type { Session } from "@supabase/supabase-js";
 import { useAuth } from "../hooks/useAuth";
 import type { User } from "../types";
 
 interface AuthContextType {
   user: User | null;
-  session: any | null;
+  session: Session | null;
   loading: boolean;
   error: string | null;
   signIn: (

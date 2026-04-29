@@ -30,6 +30,12 @@ interface User {
   can_delete?: boolean;
 }
 
+// Centralized admin-role check. Returns true for any of: admin, admin_master, admin_company.
+export function isAdmin(user?: { role?: string } | null): boolean {
+  if (!user?.role) return false;
+  return user.role === "admin" || user.role === "admin_master" || user.role === "admin_company";
+}
+
 // Check if user can import customers (create and edit their own)
 export function canImportCustomers(user: User): boolean {
   if (!user) return false;

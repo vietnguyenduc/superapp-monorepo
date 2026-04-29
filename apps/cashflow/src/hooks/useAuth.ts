@@ -6,6 +6,34 @@ import type { TablesInsert } from "../types/database.types";
 import type { Session } from "@supabase/supabase-js";
 
 const TRIAL_STORAGE_KEY = "cashflow_trial_user";
+const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+/**
+ * Read the persisted trial session from localStorage.
+ * Returns null when there is no trial, when the JSON is corrupt,
+ * or when the trial has expired (in which case the entry is also cleared).
+ */
+const readTrialFromStorage = (): { user: User; started_at: string } | null => {
+  if (typeof window === "undefined") return null;
+  const raw = localStorage.getItem(TRIAL_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { user?: User; started_at?: string };
+    if (!parsed?.user || !parsed?.started_at) {
+      localStorage.removeItem(TRIAL_STORAGE_KEY);
+      return null;
+    }
+    const startedMs = new Date(parsed.started_at).getTime();
+    if (!Number.isFinite(startedMs) || Date.now() - startedMs > TRIAL_DURATION_MS) {
+      localStorage.removeItem(TRIAL_STORAGE_KEY);
+      return null;
+    }
+    return { user: parsed.user, started_at: parsed.started_at };
+  } catch {
+    localStorage.removeItem(TRIAL_STORAGE_KEY);
+    return null;
+  }
+};
 
 interface AuthState {
   user: User | null;
@@ -74,22 +102,16 @@ export const useAuth = () => {
       setState((prev) => {
         if (!prev.loading) return prev; // Already resolved — skip
         console.warn("Auth initialization timeout — treating as unauthenticated");
-        // Try trial mode before giving up
-        const trialRaw =
-          typeof window !== "undefined" ? localStorage.getItem(TRIAL_STORAGE_KEY) : null;
-        if (trialRaw) {
-          try {
-            const parsed = JSON.parse(trialRaw);
-            return {
-              user: parsed?.user || null,
-              session: null,
-              loading: false,
-              error: null,
-              isTrial: true,
-            };
-          } catch {
-            // ignore
-          }
+        // Try trial mode (with expiry check) before giving up
+        const trial = readTrialFromStorage();
+        if (trial) {
+          return {
+            user: trial.user,
+            session: null,
+            loading: false,
+            error: null,
+            isTrial: true,
+          };
         }
         return {
           user: null,
@@ -134,26 +156,18 @@ export const useAuth = () => {
             });
           }
         } else {
-          // No real session — check trial mode
-          const trialRaw =
-            typeof window !== "undefined"
-              ? localStorage.getItem(TRIAL_STORAGE_KEY)
-              : null;
-          if (trialRaw) {
-            try {
-              const parsed = JSON.parse(trialRaw);
-              if (!isMounted) return;
-              setState({
-                user: parsed?.user || null,
-                session: null,
-                loading: false,
-                error: null,
-                isTrial: true,
-              });
-              return;
-            } catch {
-              // ignore
-            }
+          // No real session — check trial mode (with expiry)
+          const trial = readTrialFromStorage();
+          if (trial) {
+            if (!isMounted) return;
+            setState({
+              user: trial.user,
+              session: null,
+              loading: false,
+              error: null,
+              isTrial: true,
+            });
+            return;
           }
           if (!isMounted) return;
           setState({

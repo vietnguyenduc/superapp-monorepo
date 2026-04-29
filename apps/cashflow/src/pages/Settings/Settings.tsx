@@ -12,7 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { useCompany } from "../../contexts/CompanyContext";
 import CreateUserModal from "../../components/UserManagement/CreateUserModal";
 import { backupService, recoveryUtils } from "../../utils/backupRecovery";
-import { canRestoreFullBackup, canRevertTable } from "../../utils/permissions";
+import { canRestoreFullBackup, canRevertTable, isAdmin } from "../../utils/permissions";
 
 interface Tab {
   id: string;
@@ -1152,7 +1152,7 @@ const Settings: React.FC = () => {
   };
 
   const handleImportOpeningBalance = async () => {
-    if (user?.role !== "admin" && user?.role !== "admin_master" && user?.role !== "admin_company") {
+    if (!isAdmin(user)) {
       alert("Bạn không có quyền thực hiện thao tác này.");
       return;
     }
@@ -1379,7 +1379,7 @@ const Settings: React.FC = () => {
       { id: "users", name: "Tài khoản & phân quyền", icon: "👥" },
     ].filter(tab => {
       // Show users/permissions and opening-balance tabs for admin, admin_master, and admin_company
-      if ((tab.id === "users" || tab.id === "opening-balance") && user?.role !== "admin" && user?.role !== "admin_master" && user?.role !== "admin_company") return false;
+      if ((tab.id === "users" || tab.id === "opening-balance") && !isAdmin(user)) return false;
       return true;
     }),
     [user?.role],
@@ -1533,7 +1533,7 @@ const Settings: React.FC = () => {
                         size="sm"
                         disabled={isSavingCustomerBalances || customerBalances.filter(c => c.new_opening_balance !== c.opening_balance).length === 0}
                         onClick={async () => {
-                          if (user?.role !== "admin" && user?.role !== "admin_master" && user?.role !== "admin_company") {
+                          if (!isAdmin(user)) {
                             alert("Bạn không có quyền thực hiện thao tác này.");
                             return;
                           }
