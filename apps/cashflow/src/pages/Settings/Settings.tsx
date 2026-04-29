@@ -192,6 +192,7 @@ const Settings: React.FC = () => {
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [backupHistory, setBackupHistory] = useState<any[]>([]);
   const [loadingBackupHistory, setLoadingBackupHistory] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Load backup history
   useEffect(() => {
@@ -515,6 +516,31 @@ const Settings: React.FC = () => {
     console.log('Dark mode changed:', darkMode);
   }, [darkMode]);
 
+  const loadCustomerBalances = useCallback(async () => {
+    setIsLoadingCustomerBalances(true);
+    setCustomerBalanceErrors([]);
+    try {
+      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
+      const result = await databaseService.customers.getCustomers({ limit: 1000, company_id: companyId });
+      if (result?.data) {
+        const rows: CustomerBalanceRow[] = result.data.map((c: any) => ({
+          id: c.id,
+          customer_code: c.customer_code || "",
+          full_name: c.full_name || c.customer_name || c.name || "",
+          opening_balance: Number(c.opening_balance || 0),
+          current_balance: Number(c.current_balance || 0),
+          total_balance: Number(c.current_balance || 0) + Number(c.opening_balance || 0),
+          new_opening_balance: Number(c.opening_balance || 0),
+        }));
+        setCustomerBalances(rows);
+      }
+    } catch (err: any) {
+      setCustomerBalanceErrors([err?.message || "Failed to load customers"]);
+    } finally {
+      setIsLoadingCustomerBalances(false);
+    }
+  }, [user?.role, user?.company_id, selectedCompany?.id]);
+
   // Load data from Supabase-backed services
   useEffect(() => {
     const loadData = async () => {
@@ -597,26 +623,6 @@ const Settings: React.FC = () => {
 
     loadData();
   }, [user?.role, user?.company_id, selectedCompany?.id, loadCustomerBalances]);
-
-      const result = await databaseService.customers.getCustomers({ limit: 1000, company_id: companyId });
-      if (result?.data) {
-        const rows: CustomerBalanceRow[] = result.data.map((c: any) => ({
-          id: c.id,
-          customer_code: c.customer_code || "",
-          full_name: c.full_name || c.customer_name || c.name || "",
-          opening_balance: Number(c.opening_balance || 0),
-          current_balance: Number(c.current_balance || 0),
-          total_balance: Number(c.current_balance || 0) + Number(c.opening_balance || 0),
-          new_opening_balance: Number(c.opening_balance || 0),
-        }));
-        setCustomerBalances(rows);
-      }
-    } catch (err: any) {
-      setCustomerBalanceErrors([err?.message || "Failed to load customers"]);
-    } finally {
-      setIsLoadingCustomerBalances(false);
-    }
-  }, [user?.role, user?.company_id, selectedCompany?.id]);
 
   // Load staff users for permissions management
   const loadStaffUsers = async () => {
@@ -1146,6 +1152,10 @@ const Settings: React.FC = () => {
   };
 
   const handleImportOpeningBalance = async () => {
+    if (user?.role !== "admin" && user?.role !== "admin_master" && user?.role !== "admin_company") {
+      alert("Bạn không có quyền thực hiện thao tác này.");
+      return;
+    }
     if (openingRows.length === 0) return;
     setIsOpeningProcessing(true);
     setOpeningSuccess(null);
@@ -1368,8 +1378,8 @@ const Settings: React.FC = () => {
       { id: "transaction-types", name: "Loại giao dịch", icon: "💳" },
       { id: "users", name: "Tài khoản & phân quyền", icon: "👥" },
     ].filter(tab => {
-      // Show users/permissions tab for admin, admin_master, and admin_company
-      if (tab.id === "users" && user?.role !== "admin" && user?.role !== "admin_master" && user?.role !== "admin_company") return false;
+      // Show users/permissions and opening-balance tabs for admin, admin_master, and admin_company
+      if ((tab.id === "users" || tab.id === "opening-balance") && user?.role !== "admin" && user?.role !== "admin_master" && user?.role !== "admin_company") return false;
       return true;
     }),
     [user?.role],
@@ -1523,6 +1533,10 @@ const Settings: React.FC = () => {
                         size="sm"
                         disabled={isSavingCustomerBalances || customerBalances.filter(c => c.new_opening_balance !== c.opening_balance).length === 0}
                         onClick={async () => {
+                          if (user?.role !== "admin" && user?.role !== "admin_master" && user?.role !== "admin_company") {
+                            alert("Bạn không có quyền thực hiện thao tác này.");
+                            return;
+                          }
                           const modified = customerBalances.filter(c => c.new_opening_balance !== c.opening_balance);
                           if (modified.length === 0) return;
                           setIsSavingCustomerBalances(true);
