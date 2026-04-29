@@ -428,7 +428,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
 
   const handleValidateData = useCallback((mode: "single" | "bulk" = "single", dataToValidate?: TransactionInputRow[]) => {
     const targetData = dataToValidate ?? tableData;
-    const dbTypes = transactionTypeCtx.types.map((t) => ({ id: t.id, name: t.name }));
+    const dbTypes = transactionTypeCtx.typesForDropdown.map((t) => ({ id: t.id, name: t.name }));
     // Build valid customer code set from options ("CODE - Name" -> "code")
     const validCustomerCodes = new Set(
       customerOptions.map((opt) => {
@@ -457,7 +457,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     setCurrentStep(2); // always show preview/validation view; step 3 only after successful import
     setValidationMode(mode);
     return validation.isValid;
-  }, [tableData, transactionTypeCtx.types, customerOptions]);
+  }, [tableData, transactionTypeCtx.typesForDropdown, customerOptions]);
 
   const handleAddNewCustomer = useCallback((customerCode: string) => {
     setNewCustomerName(customerCode);
@@ -802,8 +802,8 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   };
 
   const normalizedFields = useMemo(() => {
-    // Single source of truth: use transaction types from global context
-    const transactionTypeNames = transactionTypeCtx.types.map((t) => t.name);
+    // Single source of truth: use transaction types from global context (deduplicated for dropdowns)
+    const transactionTypeNames = transactionTypeCtx.typesForDropdown.map((t) => t.name);
 
     return importFields.map((field: ImportField) => {
       const keyLower = field.key.toLowerCase();
@@ -862,7 +862,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         openOnFocus: isCustomerField || isBankField || isBranchField || field.key === "branch",
       };
     });
-  }, [importFields, t, customerOptions, bankAccountOptions, branchOptions, transactionTypeCtx.types]);
+  }, [importFields, t, customerOptions, bankAccountOptions, branchOptions, transactionTypeCtx.typesForDropdown]);
 
   // Thay thế importFieldConfig và importSamples bằng các giá trị động dựa trên importFields:
   const enabledFields = normalizedFields.filter((f: ImportField) => f.enabled);
@@ -876,7 +876,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
       return first || "KH001";
     };
     const pickTransactionType = () => {
-      if (transactionTypeCtx.types.length > 0) return transactionTypeCtx.types[0].name;
+      if (transactionTypeCtx.typesForDropdown.length > 0) return transactionTypeCtx.typesForDropdown[0].name;
       return "Thu";
     };
     const pickBank = () => {
@@ -923,7 +923,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
     XLSX.writeFile(workbook, "transaction-import-template.xlsx");
-  }, [enabledFields, customerOptions, transactionTypeCtx.types, bankAccountOptions, branchOptions]);
+  }, [enabledFields, customerOptions, transactionTypeCtx.typesForDropdown, bankAccountOptions, branchOptions]);
 
   // handleDownloadSample removed (not used)
   const handleReset = useCallback(() => {

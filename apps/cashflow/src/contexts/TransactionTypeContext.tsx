@@ -12,7 +12,8 @@ export interface TransactionTypeItem {
 }
 
 interface TransactionTypeContextType {
-  types: TransactionTypeItem[];
+  types: TransactionTypeItem[]; // All records for ID lookup
+  typesForDropdown: TransactionTypeItem[]; // Deduplicated for dropdowns
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -30,6 +31,7 @@ interface TransactionTypeProviderProps {
 
 export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = ({ children }) => {
   const [types, setTypes] = useState<TransactionTypeItem[]>([]);
+  const [typesForDropdown, setTypesForDropdown] = useState<TransactionTypeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,9 +43,13 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
       if (result.error) {
         setError(result.error);
         setTypes([]);
+        setTypesForDropdown([]);
       } else {
         const all = result.data || [];
-        // Only active types for dropdowns; deduplicate by name preferring UUID over legacy
+        // Keep ALL records for ID lookup (including legacy IDs like 'charge', 'payment', 'adjustment')
+        setTypes(all as TransactionTypeItem[]);
+        
+        // Deduplicate only for dropdowns by name, preferring UUID over legacy
         const active = all.filter((t: any) => t?.isActive !== false && t?.is_active !== false);
         const dedupMap = new Map<string, TransactionTypeItem>();
         active.forEach((t: any) => {
@@ -54,11 +60,12 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
             dedupMap.set(key, t as TransactionTypeItem);
           }
         });
-        setTypes(Array.from(dedupMap.values()));
+        setTypesForDropdown(Array.from(dedupMap.values()));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load transaction types");
       setTypes([]);
+      setTypesForDropdown([]);
     } finally {
       setLoading(false);
     }
@@ -98,7 +105,7 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
 
   return (
     <TransactionTypeContext.Provider
-      value={{ types, loading, error, refetch, findById, findByName, getNameById, getMathFactor }}
+      value={{ types, typesForDropdown, loading, error, refetch, findById, findByName, getNameById, getMathFactor }}
     >
       {children}
     </TransactionTypeContext.Provider>
