@@ -1318,14 +1318,13 @@ const Settings: React.FC = () => {
   const tabs: Tab[] = useMemo(
     () => [
       { id: "appearance", name: "Giao diện", icon: "🎨" },
-      { id: "transaction-types", name: "Loại giao dịch", icon: "💳" },
+      { id: "opening-balance", name: "Số dư đầu kỳ", icon: "📥" },
+      { id: "backup", name: "Sao lưu", icon: "💿" },
       { id: "bank-accounts", name: "Tài khoản ngân hàng", icon: "🏦" },
       { id: "branches", name: "Văn phòng", icon: "🏢" },
       { id: "customer-fields", name: "Trường khách hàng", icon: "🧾" },
+      { id: "transaction-types", name: "Loại giao dịch", icon: "💳" },
       { id: "users", name: "Tài khoản & phân quyền", icon: "👥" },
-      { id: "data", name: "Dữ liệu", icon: "💾" },
-      { id: "opening-balance", name: "Số dư đầu kỳ", icon: "📥" },
-      { id: "backup", name: "Sao lưu", icon: "💿" },
     ].filter(tab => {
       // Show users/permissions tab for admin, admin_master, and admin_company
       if (tab.id === "users" && user?.role !== "admin" && user?.role !== "admin_master" && user?.role !== "admin_company") return false;
@@ -2587,69 +2586,6 @@ const Settings: React.FC = () => {
             </div>
           )}
 
-          {/* Data Settings */}
-          {activeTab === "data" && (
-            <div className="p-4 sm:p-6">
-              <div className="mb-6">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                  Dữ liệu
-                </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Quản lý dữ liệu và sao lưu
-                </p>
-              </div>
-
-              <div className="space-y-6">
-                <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                    Sao lưu dữ liệu
-                  </h3>
-                  <div className="space-y-3">
-                    <Button variant="primary" className="w-full sm:w-auto">
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      Sao lưu ngay
-                    </Button>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Sao lưu cuối cùng: Chưa có
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                    Xuất dữ liệu
-                  </h3>
-                  <div className="space-y-3">
-                    <Button variant="secondary" className="w-full sm:w-auto">
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      Xuất CSV
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="p-4 border border-red-200 dark:border-red-700/60 rounded-lg bg-red-50/40 dark:bg-red-900/10">
-                  <h3 className="text-sm font-medium text-red-700 dark:text-red-300 mb-2">
-                    Reset dữ liệu
-                  </h3>
-                  <p className="text-xs text-red-600 dark:text-red-300 mb-3">
-                    Xóa toàn bộ dữ liệu khách hàng, giao dịch và tài khoản ngân hàng. Không thể hoàn tác.
-                  </p>
-                  <Button
-                    variant="secondary"
-                    className="w-full sm:w-auto border-red-300 text-red-700 hover:text-red-800 hover:border-red-400"
-                    onClick={handleResetData}
-                  >
-                    Reset toàn bộ dữ liệu
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Backup Settings */}
           {activeTab === "backup" && (
             <div className="p-4 sm:p-6">
@@ -2725,6 +2661,23 @@ const Settings: React.FC = () => {
                     </Button>
                   </div>
                 )}
+
+                {/* Reset Data Section */}
+                <div className="p-4 border border-red-200 dark:border-red-700/60 rounded-lg bg-red-50/40 dark:bg-red-900/10">
+                  <h3 className="text-sm font-medium text-red-700 dark:text-red-300 mb-2">
+                    Reset dữ liệu
+                  </h3>
+                  <p className="text-xs text-red-600 dark:text-red-300 mb-3">
+                    Xóa toàn bộ dữ liệu khách hàng, giao dịch và tài khoản ngân hàng. Không thể hoàn tác.
+                  </p>
+                  <Button
+                    variant="secondary"
+                    className="w-full sm:w-auto border-red-300 text-red-700 hover:text-red-800 hover:border-red-400"
+                    onClick={handleResetData}
+                  >
+                    Reset toàn bộ dữ liệu
+                  </Button>
+                </div>
 
                 {/* Backup History Section */}
                 <div className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg">

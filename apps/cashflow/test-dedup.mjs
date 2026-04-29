@@ -2,17 +2,16 @@
 // Architecture: service returns ALL records; context/UI deduplicates for dropdowns.
 
 function mapAllTypes(data) {
-  return data
-    .filter((t) => t?.is_active !== false)
-    .map((t) => ({
-      id: t.id,
-      name: t.name,
-      color: t.color || "blue",
-      isActive: t.is_active !== false,
-      math_factor: t.math_factor ?? 1,
-      impact_type: t.impact_type ?? "increase",
-      company_id: t.company_id,
-    }));
+  // Service returns ALL records (including inactive) for legacy-ID lookup
+  return data.map((t) => ({
+    id: t.id,
+    name: t.name,
+    color: t.color || "blue",
+    isActive: t.is_active !== false,
+    math_factor: t.math_factor ?? 1,
+    impact_type: t.impact_type ?? "increase",
+    company_id: t.company_id,
+  }));
 }
 
 function deduplicateByName(data) {
@@ -70,10 +69,10 @@ const assert = (condition, message) => {
 };
 
 // Service layer returns ALL records (backward compat for legacy-ID lookup)
-assert(allTypes.length === 7, `Service should return 7 active types, got ${allTypes.length}`);
+assert(allTypes.length === 8, `Service should return ALL 8 types (including inactive), got ${allTypes.length}`);
 assert(allTypes.find((t) => t.id === "payment"), "Legacy 'payment' record must exist in service response");
 assert(allTypes.find((t) => t.id === "charge"), "Legacy 'charge' record must exist in service response");
-assert(!allTypes.find((t) => t.id === "refund"), "Inactive 'refund' should be filtered out");
+assert(allTypes.find((t) => t.id === "refund"), "Inactive 'refund' must exist in service response for legacy lookup");
 
 // Legacy-ID lookup must resolve to Vietnamese name
 assert(getTransactionTypeNameFromDB("payment", allTypes) === "Điều chỉnh giảm", "Legacy ID 'payment' resolves to 'Điều chỉnh giảm'");

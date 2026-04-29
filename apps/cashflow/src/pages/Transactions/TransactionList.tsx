@@ -190,7 +190,7 @@ const TransactionList: React.FC = () => {
       if (typeResult?.data) {
         const seen = new Set<string>();
         const names = typeResult.data
-          .filter((t: any) => t.is_active !== false)
+          .filter((t: any) => t?.is_active !== false && t?.isActive !== false)
           .filter((t: any) => {
             const name = String(t.name || "").trim();
             if (!name || seen.has(name.toLowerCase())) return false;

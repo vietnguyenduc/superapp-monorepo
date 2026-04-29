@@ -173,19 +173,17 @@ const transactionTypeService = {
         };
       }
 
-      // Return ALL records so legacy-ID lookups (payment, charge, refund) keep working.
-      // Deduplication for dropdowns belongs in the UI layer / TransactionTypeContext.
-      const allTypes = data
-        .filter((t) => t?.is_active !== false)
-        .map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          color: t.color || "blue",
-          isActive: t.is_active !== false,
-          math_factor: t.math_factor ?? 1,
-          impact_type: t.impact_type ?? "increase",
-          company_id: t.company_id,
-        }));
+      // Return ALL records (including inactive) so legacy-ID lookups keep working.
+      // UI layers must filter is_active themselves for dropdowns.
+      const allTypes = data.map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        color: t.color || "blue",
+        isActive: t.is_active !== false,
+        math_factor: t.math_factor ?? 1,
+        impact_type: t.impact_type ?? "increase",
+        company_id: t.company_id,
+      }));
 
       return {
         data: allTypes,
@@ -1092,24 +1090,57 @@ const transactionService = {
       const validTypeNames = new Set(validTransactionTypes.map((t: any) => t.name.toLowerCase()));
 
       // STRICT VALIDATION: Normalize and validate transaction type
+      // The transactions table CHECK constraint expects legacy canonical names:
+      // payment, charge, adjustment, refund — not UUIDs from transaction_types.
       const normalizeAndValidateTransactionType = (type: string, rowIdx: number): string => {
         if (!type) {
           throw new Error(`Row ${rowIdx + 1}: Loại giao dịch không được để trống`);
         }
-        
+
         const normalized = type.toLowerCase().trim();
-        
-        // Try to match by ID first
+
+        // Map Vietnamese/common names to canonical legacy type
+        const mapToCanonical = (name: string): string => {
+          const n = name.toLowerCase().trim();
+          if (n.includes("thu") || n.includes("payment") || n.includes("income") || n.includes("receipt") || n.includes("tiền vào") || n.includes("nhận")) {
+            return "payment";
+          }
+          if (n.includes("chi") || n.includes("charge") || n.includes("expense") || n.includes("cost") || n.includes("tiền ra") || n.includes("xuất")) {
+            return "charge";
+          }
+          if (n.includes("hoàn") || n.includes("refund") || n.includes("trả lại") || n.includes("đền bù")) {
+            return "refund";
+          }
+          if (n.includes("điều chỉnh") || n.includes("adjustment") || n.includes("bù trừ") || n.includes("offset")) {
+            return "adjustment";
+          }
+          // Fallback: if it's already one of the canonical values
+          if (["payment", "charge", "refund", "adjustment"].includes(n)) return n;
+          return name.trim();
+        };
+
+        // Try to match by ID first (input is a UUID from the transaction_types table)
         if (validTypeIds.has(normalized)) {
-          return normalized;
+          const matchedType = validTransactionTypes.find((t: any) => t.id.toLowerCase() === normalized);
+          if (matchedType) {
+            const canonical = mapToCanonical(matchedType.name);
+            if (["payment", "charge", "refund", "adjustment"].includes(canonical)) {
+              return canonical;
+            }
+          }
         }
-        
+
         // Try to match by name
         if (validTypeNames.has(normalized)) {
           const matchedType = validTransactionTypes.find((t: any) => t.name.toLowerCase() === normalized);
-          if (matchedType) return matchedType.id;
+          if (matchedType) {
+            const canonical = mapToCanonical(matchedType.name);
+            if (["payment", "charge", "refund", "adjustment"].includes(canonical)) {
+              return canonical;
+            }
+          }
         }
-        
+
         // STRICT: No fallback - reject if type not found
         throw new Error(
           `Row ${rowIdx + 1}: Loại giao dịch "${type}" không tồn tại. ` +
@@ -1202,6 +1233,54 @@ const transactionService = {
           updated_at: now,
         };
       });
+
+      // Pre-check duplicate transaction_code within the batch
+      const seenCodes = new Set<string>();
+      const duplicateErrors: { row: number; message: string }[] = [];
+      body.forEach((row: any, idx: number) => {
+        const code = String(row.transaction_code || "").trim();
+        if (code) {
+          if (seenCodes.has(code)) {
+            duplicateErrors.push({
+              row: idx + 1,
+              message: `Mã chứng từ "${code}" bị trùng lặp trong file import (xuất hiện nhiều lần)`,
+            });
+          }
+          seenCodes.add(code);
+        }
+      });
+
+      if (duplicateErrors.length > 0) {
+        const firstErr = duplicateErrors[0];
+        throw new Error(`Dòng ${firstErr.row}: ${firstErr.message}`);
+      }
+
+      // Pre-check duplicate transaction_code against existing DB rows
+      if (body.length > 0) {
+        const codesInBatch = body
+          .map((r: any) => String(r.transaction_code || "").trim())
+          .filter(Boolean);
+        if (codesInBatch.length > 0) {
+          const { data: existingTxns, error: existingError } = await supabase
+            .from("transactions")
+            .select("transaction_code")
+            .in("transaction_code", codesInBatch);
+          if (existingError) {
+            console.error("Pre-check duplicate error:", existingError);
+            throw new Error("Không thể kiểm tra trùng lặp mã chứng từ trong cơ sở dữ liệu");
+          }
+          if (existingTxns && existingTxns.length > 0) {
+            const existingSet = new Set(existingTxns.map((t: any) => String(t.transaction_code).trim()));
+            const firstConflict = body.findIndex((r: any) =>
+              existingSet.has(String(r.transaction_code || "").trim())
+            );
+            const conflictCode = firstConflict >= 0 ? String(body[firstConflict].transaction_code).trim() : "";
+            throw new Error(
+              `Mã chứng từ "${conflictCode}" đã tồn tại trong hệ thống. Vui lòng kiểm tra lại.`
+            );
+          }
+        }
+      }
 
       const { data, error } = await supabase
         .from("transactions")

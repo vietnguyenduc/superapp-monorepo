@@ -43,9 +43,10 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
         setTypes([]);
       } else {
         const all = result.data || [];
-        // Deduplicate by name for dropdowns; prefer new (company_id != null) over legacy
+        // Only active types for dropdowns; deduplicate by name preferring UUID over legacy
+        const active = all.filter((t: any) => t?.isActive !== false && t?.is_active !== false);
         const dedupMap = new Map<string, TransactionTypeItem>();
-        all.forEach((t: any) => {
+        active.forEach((t: any) => {
           const key = String(t.name || t.id || "").toLowerCase().trim();
           if (!key) return;
           const existing = dedupMap.get(key);
