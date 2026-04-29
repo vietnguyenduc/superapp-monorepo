@@ -2,7 +2,8 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import type { Transaction } from "../../../types";
-import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionMathFactor, getTransactionTypeNameFromDB } from "../../../utils/formatting";
+import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionMathFactor } from "../../../utils/formatting";
+import { useTransactionTypes } from "../../../contexts/TransactionTypeContext";
 import { databaseService } from "../../../services/database";
 import { useAuth } from "../../../hooks/useAuth";
 import { useCompany } from "../../../contexts/CompanyContext";
@@ -22,6 +23,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const { selectedCompany } = useCompany();
+  const { getNameById: getTransactionTypeName } = useTransactionTypes();
   const [balanceAfterMap, setBalanceAfterMap] = React.useState<Record<string, number>>({});
   const [accountBalanceAfterMap, setAccountBalanceAfterMap] = React.useState<Record<string, number>>({});
   const [bankAccounts, setBankAccounts] = React.useState<Array<{ id: string; name: string }>>([]);
@@ -313,7 +315,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                         transaction.transaction_type,
                       )}`}
                     >
-                      {getTransactionTypeNameFromDB(transaction.transaction_type)}
+                      {getTransactionTypeName(transaction.transaction_type)}
                     </span>
                   </div>
                 </div>
@@ -419,7 +421,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                         transaction.transaction_type,
                       )}`}
                     >
-                      {getTransactionTypeNameFromDB(transaction.transaction_type)}
+                      {getTransactionTypeName(transaction.transaction_type)}
                     </span>
                   </td>
                 </tr>
@@ -462,7 +464,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                       transaction.transaction_type,
                     )}`}
                   >
-                    {getTransactionTypeNameFromDB(transaction.transaction_type, transactionTypes)}
+                    {getTransactionTypeName(transaction.transaction_type)}
                   </span>
                 </div>
               </div>

@@ -4,7 +4,8 @@ import type { Customer, Transaction } from "../../../types";
 import { databaseService } from "../../../services/database";
 import { useAuth } from "../../../hooks/useAuth";
 import { useCompany } from "../../../contexts/CompanyContext";
-import { formatCurrency, formatDate, formatPhoneNumber, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor, getTransactionMathFactor, getTransactionTypeNameFromDB } from "../../../utils/formatting";
+import { formatCurrency, formatDate, formatPhoneNumber, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor, getTransactionMathFactor } from "../../../utils/formatting";
+import { useTransactionTypes } from "../../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../../components/UI/FallbackUI";
 
 interface CustomerDetailModalProps {
@@ -21,6 +22,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   const { t } = useTranslation();
   const { user } = useAuth();
   const { selectedCompany } = useCompany();
+  const { getNameById: getTransactionTypeName } = useTransactionTypes();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [transactionTypes, setTransactionTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -372,7 +374,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                             <span
                               className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${getTransactionTypeColor(transaction.transaction_type)}`}
                             >
-                              {getTransactionTypeNameFromDB(transaction.transaction_type)}
+                              {getTransactionTypeName(transaction.transaction_type)}
                             </span>
                           </td>
                           <td className="px-3 sm:px-4 py-2 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-gray-100">

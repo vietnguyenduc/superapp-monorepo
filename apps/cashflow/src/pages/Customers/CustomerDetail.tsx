@@ -6,13 +6,15 @@ import { useAuth } from "../../hooks/useAuth";
 import { useCompany } from "../../contexts/CompanyContext";
 import { databaseService } from "../../services/database";
 import type { Customer, Transaction } from "../../types";
-import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor, getTransactionTypeNameFromDB } from "../../utils/formatting";
+import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor } from "../../utils/formatting";
+import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
 
 const CustomerDetail: React.FC = () => {
   const { t } = useTranslation();
   const { customerId } = useParams<{ customerId: string }>();
   const navigate = useNavigate();
+  const { getNameById: getTransactionTypeName } = useTransactionTypes();
   const { user } = useAuth();
   const { selectedCompany } = useCompany();
 
@@ -343,7 +345,7 @@ const CustomerDetail: React.FC = () => {
                                 transaction.transaction_type,
                               )}`}
                             >
-                              {getTransactionTypeNameFromDB(transaction.transaction_type)}
+                              {getTransactionTypeName(transaction.transaction_type)}
                             </span>
                           </div>
                         </div>
@@ -395,7 +397,7 @@ const CustomerDetail: React.FC = () => {
                                   transaction.transaction_type,
                                 )}`}
                               >
-                                {getTransactionTypeNameFromDB(transaction.transaction_type)}
+                                {getTransactionTypeName(transaction.transaction_type)}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm tabular-nums">

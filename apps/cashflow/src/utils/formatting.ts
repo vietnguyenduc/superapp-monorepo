@@ -500,12 +500,27 @@ export const getTransactionMathFactor = (type: string): number => {
   return txType.math_factor || 1;
 };
 
-// Simple mapping function to get transaction type name from database
-// This is the single source of truth for transaction type names
+/**
+ * @deprecated Use `useTransactionTypes().getNameById()` from
+ * `contexts/TransactionTypeContext` instead. See ADR-0001 and
+ * `docs/transaction-type-lessons-learned.md`. This helper relies on a private
+ * cache hydrated by `fetchColorSettings()` and is prone to race conditions
+ * causing raw IDs (e.g. "payment") to render before the cache is populated.
+ *
+ * Kept temporarily for any non-React contexts; emits a one-time console warning
+ * when the cache is empty so any remaining caller is visible during dev.
+ */
+let _txTypeNameCacheMissWarned = false;
 export const getTransactionTypeNameFromDB = (typeId: string, cachedTypes?: any[]): string => {
   const types = cachedTypes || cachedTransactionTypes;
-  if (!types) {
-    // Return typeId if types not loaded yet - makes it clear data hasn't loaded
+  if (!types || types.length === 0) {
+    if (!_txTypeNameCacheMissWarned && typeof console !== "undefined") {
+      _txTypeNameCacheMissWarned = true;
+      console.warn(
+        "[getTransactionTypeNameFromDB] cache miss — returning raw typeId. " +
+          "Migrate caller to useTransactionTypes().getNameById() (see ADR-0001)."
+      );
+    }
     return typeId;
   }
 

@@ -5,7 +5,8 @@ import { useAuth } from "../../hooks/useAuth";
 import { useCompany } from "../../contexts/CompanyContext";
 import { databaseService } from "../../services/database";
 import type { Transaction, Customer, BankAccount, Branch } from "../../types";
-import { formatCurrency, formatDate, formatPhoneNumber, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor, getTransactionTypeNameFromDB } from "../../utils/formatting";
+import { formatCurrency, formatDate, formatPhoneNumber, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../utils/formatting";
+import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import Pagination from "../../components/UI/Pagination";
 import PageHeader from "../../components/UI/PageHeader";
@@ -37,6 +38,7 @@ const TransactionList: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { getNameById: getTransactionTypeName } = useTransactionTypes();
   const { selectedCompany } = useCompany();
   const [searchParams] = useSearchParams();
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
@@ -414,7 +416,7 @@ const TransactionList: React.FC = () => {
     const keyGetter: Record<Exclude<TransactionListState["groupBy"], "">, (tx: Transaction) => string> = {
       day: (tx) => formatter.format(new Date(tx.transaction_date)),
       branch: (tx) => (tx.branch_id ? getBranchName(tx.branch_id) : "Không có văn phòng"),
-      transaction_type: (tx) => getTransactionTypeNameFromDB(tx.transaction_type),
+      transaction_type: (tx) => getTransactionTypeName(tx.transaction_type),
       customer: (tx) => tx.customer_name || tx.customer_id ? `Customer #${tx.customer_id}` : "Không có khách hàng",
     };
 
@@ -683,7 +685,7 @@ const TransactionList: React.FC = () => {
                       <span
                         className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTransactionTypeColor(transaction.transaction_type)}`}
                       >
-                        {getTransactionTypeNameFromDB(transaction.transaction_type)}
+                        {getTransactionTypeName(transaction.transaction_type)}
                       </span>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
