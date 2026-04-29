@@ -362,6 +362,12 @@ export function getCustomerDetailBalanceColor(balance: number): string {
   return balance > 0 ? detailColors.positive_balance_color : detailColors.zero_or_negative_color;
 }
 
+/**
+ * Gets the text/bg color class for a transaction type.
+ * NOTE: Uses cachedTransactionColors from color_settings table (separate from transaction_types table).
+ * This is intentional per ADR-0001 - color settings are a separate concern from transaction type names.
+ * The cache is populated by fetchColorSettings() calls.
+ */
 export const getTransactionTypeColor = (
   type: string,
 ): string => {
@@ -392,6 +398,12 @@ export const getTransactionTypeColor = (
   return colorClass;
 };
 
+/**
+ * Gets the amount color class for a transaction type.
+ * NOTE: Uses cachedTransactionColors from color_settings table (separate from transaction_types table).
+ * This is intentional per ADR-0001 - color settings are a separate concern from transaction type names.
+ * The cache is populated by fetchColorSettings() calls.
+ */
 export const getTransactionTypeAmountColor = (
   type: string,
 ): string => {
@@ -422,6 +434,12 @@ export const getTransactionTypeAmountColor = (
   return amountColorClass;
 };
 
+/**
+ * Gets the text color class for a transaction type amount.
+ * NOTE: Uses cachedTransactionColors from color_settings table (separate from transaction_types table).
+ * This is intentional per ADR-0001 - color settings are a separate concern from transaction type names.
+ * The cache is populated by fetchColorSettings() calls.
+ */
 export const getTransactionTypeTextColor = (type: string): string => {
   const colors = cachedTransactionColors;
   if (!colors) {
@@ -446,32 +464,6 @@ export const getTransactionTypeTextColor = (type: string): string => {
   }
 
   return typeColors.amount_color;
-};
-
-export const getTransactionTypeLabel = (type: string): string => {
-  const colors = cachedTransactionColors;
-  if (!colors) {
-    // Fallback to hardcoded labels if not loaded yet
-    switch (type) {
-      case "payment":
-        return "Điều chỉnh giảm";
-      case "charge":
-        return "Điều chỉnh tăng";
-      case "adjustment":
-        return "Điều chỉnh";
-      case "refund":
-        return "Hoàn tiền";
-      default:
-        return type;
-    }
-  }
-
-  const typeColors = colors[type];
-  if (!typeColors) {
-    return type;
-  }
-
-  return typeColors.label;
 };
 
 // Helper function to get math_factor from transaction type
