@@ -821,6 +821,42 @@ const customerService = {
     }
   },
 
+  async updateCustomerOpeningBalance(customerId: string, newOpening: number, companyId?: string) {
+    try {
+      let query = supabase
+        .from("customers")
+        .select("id, customer_code, company_id, opening_balance, current_balance")
+        .eq("id", customerId);
+      if (companyId) query = query.eq("company_id", companyId);
+      const { data: existing, error: fetchError } = await query.single();
+
+      if (fetchError || !existing) {
+        return { data: null, error: fetchError?.message || "Customer not found" };
+      }
+
+      const oldOpening = Number(existing.opening_balance || 0);
+      const oldCurrent = Number(existing.current_balance || 0);
+      const delta = oldCurrent - oldOpening;
+      const newCurrent = newOpening + delta;
+      const targetCompanyId: string = companyId || existing.company_id || "";
+
+      const { data, error } = await supabase
+        .from("customers")
+        .update({
+          opening_balance: newOpening,
+          current_balance: newCurrent,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", customerId)
+        .eq("company_id", targetCompanyId);
+
+      if (error) return { data: null, error: error.message };
+      return { data: { ...existing, opening_balance: newOpening, current_balance: newCurrent }, error: null };
+    } catch (err: any) {
+      return { data: null, error: err.message || "Failed to update opening balance" };
+    }
+  },
+
   async bulkUpdateOpeningBalances(rows: { customer_code?: string; opening_balance?: number }[]) {
     try {
       const errors: { row: number; message: string; value?: any }[] = [];

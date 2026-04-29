@@ -142,20 +142,47 @@ function parseCSVLine(line: string): string[] {
  */
 export function validateTransactionData(
   data: RawTransactionData[],
+  validTransactionTypes?: Array<{ id: string; name: string }>,
+  validCustomerCodes?: Set<string>,
 ): ValidationResult {
   const errors: ImportError[] = [];
+
+  // Build lookup sets from DB-provided types (fallback to legacy hardcoded if none provided)
+  const validTypeIds = validTransactionTypes ? new Set(validTransactionTypes.map((t) => t.id.toLowerCase().trim())) : null;
+  const validTypeNames = validTransactionTypes ? new Set(validTransactionTypes.map((t) => t.name.toLowerCase().trim())) : null;
 
   data.forEach((row, index) => {
     const normalizedType = normalizeTransactionTypeLabel(row.transaction_type || "");
 
     // Validate customer code (required)
-    if (!row.customer_code || row.customer_code.trim().length === 0) {
+    const rawCustomerCode = (row.customer_code || "").trim();
+    if (!rawCustomerCode) {
       errors.push({
         row: index,
         column: "customer_code",
         message: "Customer code is required",
         value: row.customer_code,
       });
+    } else if (validCustomerCodes && validCustomerCodes.size > 0) {
+      // Extract code before " - " or first space (handles "CODE - Name" format)
+      let parsedCode = rawCustomerCode.toLowerCase();
+      const dashIndex = parsedCode.indexOf(" - ");
+      if (dashIndex > 0) {
+        parsedCode = parsedCode.substring(0, dashIndex).trim();
+      } else {
+        const spaceIndex = parsedCode.indexOf(" ");
+        if (spaceIndex > 0) {
+          parsedCode = parsedCode.substring(0, spaceIndex).trim();
+        }
+      }
+      if (!validCustomerCodes.has(parsedCode)) {
+        errors.push({
+          row: index,
+          column: "customer_code",
+          message: `Customer code "${rawCustomerCode}" does not exist. Please check existing customers.`,
+          value: row.customer_code,
+        });
+      }
     }
 
     // Bank account is optional in this flow
@@ -169,18 +196,30 @@ export function validateTransactionData(
         value: row.transaction_type,
       });
     } else {
-      const validTypes: TransactionType[] = [
-        "payment",
-        "charge",
-        "adjustment",
-        "refund",
-      ];
+      const rawInput = row.transaction_type.trim().toLowerCase();
+      let isValid = false;
 
-      if (!validTypes.includes(normalizedType as TransactionType)) {
+      if (validTypeIds && validTypeNames) {
+        // DB-driven validation: match by normalized legacy id, type id, or type name
+        if (validTypeIds.has(rawInput) || validTypeNames.has(rawInput)) {
+          isValid = true;
+        } else if (normalizedType && (validTypeIds.has(normalizedType) || validTypeNames.has(normalizedType))) {
+          isValid = true;
+        }
+      } else {
+        // Legacy fallback (should not happen when DB is reachable)
+        const validTypes: TransactionType[] = ["payment", "charge", "adjustment", "refund"];
+        isValid = validTypes.includes(normalizedType as TransactionType);
+      }
+
+      if (!isValid) {
+        const allowedList = validTransactionTypes
+          ? validTransactionTypes.map((t) => t.name).join(", ")
+          : "payment, charge, adjustment, refund";
         errors.push({
           row: index,
           column: "transaction_type",
-          message: `Invalid transaction type. Must be one of: ${validTypes.join(", ")}`,
+          message: `Invalid transaction type. Must be one of: ${allowedList}`,
           value: row.transaction_type,
         });
       }

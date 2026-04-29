@@ -201,12 +201,14 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [dropInfo, setDropInfo] = useState<string>("");
   const [validationMode, setValidationMode] = useState<"single" | "bulk" | null>(null);
   const [showEditHelp, setShowEditHelp] = useState(false);
   const [showGuidelines, setShowGuidelines] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [activeTab, setActiveTab] = useState<"single" | "bulk">("single");
 
   const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState("");
@@ -424,19 +426,38 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   }, [processedData]);
 
 
-  const handleValidateData = useCallback((mode: "single" | "bulk" = "single") => {
-    const validation = validateTransactionData(tableData);
+  const handleValidateData = useCallback((mode: "single" | "bulk" = "single", dataToValidate?: TransactionInputRow[]) => {
+    const targetData = dataToValidate ?? tableData;
+    const dbTypes = transactionTypeCtx.types.map((t) => ({ id: t.id, name: t.name }));
+    // Build valid customer code set from options ("CODE - Name" -> "code")
+    const validCustomerCodes = new Set(
+      customerOptions.map((opt) => {
+        const lower = opt.toLowerCase();
+        const dashIndex = lower.indexOf(" - ");
+        if (dashIndex > 0) return lower.substring(0, dashIndex).trim();
+        const spaceIndex = lower.indexOf(" ");
+        if (spaceIndex > 0) return lower.substring(0, spaceIndex).trim();
+        return lower.trim();
+      }).filter(Boolean)
+    );
+    const validation = validateTransactionData(
+      targetData as any,
+      dbTypes.length > 0 ? dbTypes : undefined,
+      validCustomerCodes.size > 0 ? validCustomerCodes : undefined,
+    );
     setImportData({
       file: null,
-      data: tableData,
+      data: targetData,
       errors: validation.errors,
       isValid: validation.isValid,
     });
+    setImportSuccess(null);
+    setImportError(null);
     setShowPreview(mode === "bulk");
-    setCurrentStep(validation.isValid ? 3 : 2);
+    setCurrentStep(2); // always show preview/validation view; step 3 only after successful import
     setValidationMode(mode);
     return validation.isValid;
-  }, [tableData]);
+  }, [tableData, transactionTypeCtx.types, customerOptions]);
 
   const handleAddNewCustomer = useCallback((customerCode: string) => {
     setNewCustomerName(customerCode);
@@ -498,6 +519,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
       const branchId = user?.branch_id || null;
       const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
       setImportSuccess(null);
+      setImportError(null);
       setIsProcessing(true);
       try {
         const result = await databaseService.transactions.bulkImportTransactions(
@@ -508,17 +530,25 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         );
 
         if ((result as any).error) {
-          console.error("Import failed:", (result as any).error);
+          const errMsg = typeof (result as any).error === "string" ? (result as any).error : "Import failed";
+          setImportError(`Lỗi nhập liệu: ${errMsg}`);
+          setImportSuccess(null);
+          setCurrentStep(2);
           return;
         }
 
         if ((result as any).errors?.length > 0) {
-          console.error("Import completed with errors:", (result as any).errors);
+          const firstErr = (result as any).errors[0]?.message || "Import completed with errors";
+          setImportError(`Lỗi nhập liệu: ${firstErr}`);
+          setImportSuccess(null);
+          setCurrentStep(2);
           return;
         }
 
         if (!result.data || result.data.length === 0) {
-          console.error("Import completed but no rows were inserted");
+          setImportError("Lỗi: Không có dòng nào được nhập. Vui lòng kiểm tra dữ liệu.");
+          setImportSuccess(null);
+          setCurrentStep(2);
           return;
         }
 
@@ -531,6 +561,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         setCurrentStep(3);
         onImportComplete?.(result.data as any);
         setImportSuccess("Nhập giao dịch thành công");
+        setImportError(null);
 
         // Reset form
         setRawData("");
@@ -541,6 +572,9 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         setDropInfo("");
       } catch (error) {
         console.error("Import failed:", error);
+        setImportError(`Lỗi nhập liệu: ${error instanceof Error ? error.message : "Không xác định"}`);
+        setImportSuccess(null);
+        setCurrentStep(2);
       } finally {
         setIsProcessing(false);
       }
@@ -549,7 +583,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   );
 
   const handleValidateAndImportInline = useCallback(async () => {
-    const isValid = handleValidateData("single");
+    const isValid = handleValidateData("single", tableData);
     if (!isValid) return;
     await handleImportData(tableData);
   }, [handleImportData, handleValidateData, tableData]);
@@ -557,7 +591,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   const handleValidateAndImportBulk = useCallback(async () => {
     setShowPreview(true);
     setValidationMode("bulk");
-    const isValid = handleValidateData("bulk");
+    const isValid = handleValidateData("bulk", importData.data as any);
     if (!isValid) return;
     await handleImportData(importData.data);
   }, [handleImportData, handleValidateData, importData.data]);
@@ -566,6 +600,29 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     return importData.errors.filter((error) => error.row === rowIndex);
   };
 
+  const hasTableChanges = useMemo(() => {
+    return tableData.some((row) =>
+      Object.values(row).some((v) => String(v || "").trim() !== "")
+    );
+  }, [tableData]);
+
+  const handleChangeTab = useCallback(
+    (tab: "single" | "bulk") => {
+      if (tab === activeTab) return;
+      if (activeTab === "single" && hasTableChanges) {
+        const confirmLeave = window.confirm(
+          "Bạn đang có dữ liệu nhập từng giao dịch chưa lưu. Chuyển tab sẽ không xoá dữ liệu nhưng bạn nên lưu trước. Tiếp tục?",
+        );
+        if (!confirmLeave) return;
+      }
+      setActiveTab(tab);
+      setCurrentStep(1);
+      setShowPreview(false);
+      setImportSuccess(null);
+      setImportError(null);
+    },
+    [activeTab, hasTableChanges],
+  );
 
   const renderUnmatchedCustomers = () => {
     if (unmatchedCustomers.size === 0) return null;
@@ -606,6 +663,37 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
 
     const previewColumns = importFields.filter((f: ImportField) => f.enabled);
 
+    // Build customer name lookup from customerOptions (format: "CODE - Name")
+    const customerNameMap: Record<string, string> = {};
+    customerOptions.forEach((opt) => {
+      const parts = opt.split(" - ");
+      if (parts.length >= 2) {
+        customerNameMap[parts[0].trim().toLowerCase()] = parts[1].trim();
+      }
+    });
+    const getCustomerName = (code: string): string => {
+      if (!code) return "";
+      const clean = code.toLowerCase().trim();
+      const dashIdx = clean.indexOf(" - ");
+      if (dashIdx > 0) {
+        return customerNameMap[clean.substring(0, dashIdx)] || "";
+      }
+      return customerNameMap[clean] || "";
+    };
+
+    // Insert virtual "Tên khách hàng" column right after "Mã khách hàng"
+    const customerCodeIndex = previewColumns.findIndex((c) => c.key === "customer_code");
+    const previewColumnsWithName: ImportField[] = [...previewColumns];
+    if (customerCodeIndex >= 0) {
+      previewColumnsWithName.splice(customerCodeIndex + 1, 0, {
+        key: "_customer_name",
+        label: "Tên khách hàng",
+        type: "text",
+        required: false,
+        enabled: true,
+      } as ImportField);
+    }
+
     return (
       <div className="mt-6">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
@@ -616,7 +704,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                {previewColumns.map((col: ImportField) => {
+                {previewColumnsWithName.map((col: ImportField) => {
                   const isHiddenOnMobile = col.key === 'description' || col.key === 'reference' || col.key === 'notes';
                   const isHiddenOnTablet = col.key === 'notes' || col.key === 'reference';
                   return (
@@ -641,7 +729,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
                     key={index}
                     className={hasRowError ? "bg-red-50 dark:bg-red-900/30" : ""}
                   >
-                    {previewColumns.map((col: ImportField) => {
+                    {previewColumnsWithName.map((col: ImportField) => {
                       const isHiddenOnMobile = col.key === 'description' || col.key === 'reference' || col.key === 'notes';
                       const isHiddenOnTablet = col.key === 'notes' || col.key === 'reference';
                       return (
@@ -651,7 +739,9 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
                             isHiddenOnMobile ? 'hidden sm:table-cell' : ''
                           } ${isHiddenOnTablet ? 'hidden md:table-cell' : ''}`}
                         >
-                          {row[col.key as keyof typeof row] as string}
+                          {col.key === "_customer_name"
+                            ? getCustomerName(String(row["customer_code"] ?? ""))
+                            : (row[col.key as keyof typeof row] as string)}
                         </td>
                       );
                     })}
@@ -778,24 +868,62 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   const enabledFields = normalizedFields.filter((f: ImportField) => f.enabled);
   const handleDownloadTemplate = useCallback(() => {
     const headers = enabledFields.map((field: ImportField) => field.key);
-    const sampleRow = enabledFields.map((field: ImportField) => {
-      switch (field.type) {
-        case "number":
-          return "1000000";
-        case "date":
-          return "01/07/2024";
-        case "select":
-          return "Điều chỉnh tăng";
-        default:
-          return field.label;
-      }
-    });
 
-    const worksheet = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
+    // Pick real values from loaded options so the sample passes validation
+    const pickCustomerCode = () => {
+      if (customerOptions.length === 0) return "KH001";
+      const first = customerOptions[0].split(" - ")[0].trim();
+      return first || "KH001";
+    };
+    const pickTransactionType = () => {
+      if (transactionTypeCtx.types.length > 0) return transactionTypeCtx.types[0].name;
+      return "Thu";
+    };
+    const pickBank = () => {
+      if (bankAccountOptions.length > 0) return bankAccountOptions[0].split(" - ")[0].trim();
+      return "Vietcombank";
+    };
+    const pickBranch = () => {
+      if (branchOptions.length > 0) return branchOptions[0].split(" - ")[0].trim();
+      return "VP HCM";
+    };
+
+    const customerCode = pickCustomerCode();
+    const typeName = pickTransactionType();
+    const bankName = pickBank();
+    const branchName = pickBranch();
+
+    const makeRow = (idx: number) =>
+      enabledFields.map((field: ImportField) => {
+        switch (field.key) {
+          case "transaction_code":
+            return `GC-${String(idx + 1).padStart(3, "0")}`;
+          case "transaction_date":
+            return "01/07/2024";
+          case "customer_code":
+            return customerCode;
+          case "transaction_type":
+            return typeName;
+          case "amount":
+            return String((idx + 1) * 1000000);
+          case "description":
+            return `Nội dung giao dịch ${idx + 1}`;
+          case "bank_account":
+            return bankName;
+          case "branch":
+            return branchName;
+          default:
+            return field.label;
+        }
+      });
+
+    const rows = [makeRow(0), makeRow(1), makeRow(2)];
+
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
     XLSX.writeFile(workbook, "transaction-import-template.xlsx");
-  }, [enabledFields]);
+  }, [enabledFields, customerOptions, transactionTypeCtx.types, bankAccountOptions, branchOptions]);
 
   // handleDownloadSample removed (not used)
   const handleReset = useCallback(() => {
@@ -803,6 +931,8 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     setImportData({ file: null, data: [], errors: [], isValid: false });
     setShowPreview(false);
     setCurrentStep(1);
+    setImportSuccess(null);
+    setImportError(null);
   }, [emptyRow]);
 
   const handleFileUpload = useCallback(
@@ -819,6 +949,20 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
           dateNF: "dd/mm/yyyy",
         });
         if (!Array.isArray(json) || json.length === 0) return;
+        if (json.length > MAX_BULK_ROWS) {
+          setImportData({
+            file: null,
+            data: [],
+            errors: [{
+              row: 0,
+              column: "general",
+              message: `File vượt quá giới hạn ${MAX_BULK_ROWS} dòng. Vui lòng chia nhỏ và thử lại`,
+            }],
+            isValid: false,
+          });
+          setDropInfo(`File ${file.name} quá lớn (${json.length} dòng)`);
+          return;
+        }
         const nextRows = json.map((row) => {
           const base: Record<string, string> = { ...emptyRow };
           enabledFields.forEach((f: ImportField) => {
@@ -920,9 +1064,65 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
             </div>
           )}
 
+          {importError && (
+            <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700">
+              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {importError}
+              </div>
+            </div>
+          )}
+
           {/* Content */}
           <div className="px-6 py-6 bg-white dark:bg-gray-900">
+            <div className="mb-6">
+              <div className="inline-flex rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1 shadow-sm" aria-label="Tabs">
+                <button
+                  type="button"
+                  onClick={() => handleChangeTab("single")}
+                  className={`rounded-lg px-4 py-2.5 text-sm font-medium focus:outline-none transition-all ${activeTab === "single" ? "bg-blue-600 text-white shadow-sm" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                >
+                  Nhập từng giao dịch
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChangeTab("bulk")}
+                  className={`rounded-lg px-4 py-2.5 text-sm font-medium focus:outline-none transition-all ${activeTab === "bulk" ? "bg-blue-600 text-white shadow-sm" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                >
+                  Nhập hàng loạt
+                </button>
+              </div>
+            </div>
+
+            {activeTab === "single" && (
             <div className="space-y-6">
+                <div className="rounded-xl border border-blue-100 dark:border-blue-900/60 bg-gradient-to-r from-blue-50 to-white dark:from-blue-950/30 dark:to-gray-900 p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Nhập từng giao dịch</h3>
+                      <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                        Phù hợp khi bạn cần thêm nhanh vài giao dịch và muốn nhập trực tiếp trên màn hình.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:min-w-[420px]">
+                      <div className="rounded-lg border border-white/80 dark:border-gray-800 bg-white/90 dark:bg-gray-900/80 px-4 py-3 shadow-sm">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Bước 1</p>
+                        <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">Nhập từng dòng</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Điền thông tin giao dịch theo từng dòng trong bảng.</p>
+                      </div>
+                      <div className="rounded-lg border border-white/80 dark:border-gray-800 bg-white/90 dark:bg-gray-900/80 px-4 py-3 shadow-sm">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Bước 2</p>
+                        <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">Kiểm tra dữ liệu</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Rà soát các trường bắt buộc và định dạng trước khi lưu.</p>
+                      </div>
+                      <div className="rounded-lg border border-white/80 dark:border-gray-800 bg-white/90 dark:bg-gray-900/80 px-4 py-3 shadow-sm">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Bước 3</p>
+                        <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">Nhập dữ liệu</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Nhấn nút nhập để kiểm tra và lưu toàn bộ giao dịch đang có.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Action Buttons (top) */}
                 <div className="flex flex-wrap items-center gap-3 justify-between">
                   <div className="text-sm text-gray-600 dark:text-gray-300">Tổng dòng: {tableData.length} (Số dòng tối đa: 100)</div>
@@ -1093,6 +1293,38 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
                     </ul>
                   )}
                 </div>
+              </div>
+            )}
+
+            {activeTab === "bulk" && (
+            <div className="space-y-6">
+                <div className="rounded-xl border border-blue-100 dark:border-blue-900/60 bg-gradient-to-r from-blue-50 to-white dark:from-blue-950/30 dark:to-gray-900 p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Nhập giao dịch hàng loạt</h3>
+                      <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                        Dùng file Excel/CSV khi bạn cần nhập nhiều giao dịch cùng lúc và kiểm tra lỗi trước khi lưu.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:min-w-[420px]">
+                      <div className="rounded-lg border border-white/80 dark:border-gray-800 bg-white/90 dark:bg-gray-900/80 px-4 py-3 shadow-sm">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Bước 1</p>
+                        <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">Tải file dữ liệu</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Chọn hoặc kéo thả file Excel/CSV vào khu vực tải lên.</p>
+                      </div>
+                      <div className="rounded-lg border border-white/80 dark:border-gray-800 bg-white/90 dark:bg-gray-900/80 px-4 py-3 shadow-sm">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Bước 2</p>
+                        <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">Kiểm tra dữ liệu</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Xem trước dữ liệu, kiểm tra lỗi và đối chiếu khách hàng.</p>
+                      </div>
+                      <div className="rounded-lg border border-white/80 dark:border-gray-800 bg-white/90 dark:bg-gray-900/80 px-4 py-3 shadow-sm">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Bước 3</p>
+                        <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">Xác nhận nhập</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Chỉ nhập khi dữ liệu hợp lệ và không còn lỗi cần xử lý.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Nhập dữ liệu giao dịch hàng loạt */}
                 <div className="mt-6 space-y-4">
@@ -1240,6 +1472,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
                   </div>
                 )}
               </div>
+            )}
             </div>
           </div>
         </div>

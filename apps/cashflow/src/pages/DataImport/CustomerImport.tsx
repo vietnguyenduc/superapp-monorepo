@@ -717,13 +717,55 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
 
   const renderSingleEntry = () => (
     <div className="space-y-6">
-      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
-        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
-          Nhập từng khách hàng
-        </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Nhập nhanh từng khách hàng nếu không dùng file Excel/CSV.
-        </p>
+      <div className="rounded-xl border border-blue-100 dark:border-blue-900/60 bg-gradient-to-r from-blue-50 to-white dark:from-blue-950/30 dark:to-gray-900 p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Nhập từng khách hàng
+            </h3>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+              Phù hợp khi bạn cần thêm nhanh từng khách hàng mà không cần chuẩn bị file Excel/CSV.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:min-w-[420px]">
+            <div className="rounded-lg border border-white/80 dark:border-gray-800 bg-white/90 dark:bg-gray-900/80 px-4 py-3 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
+                Bước 1
+              </p>
+              <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
+                Nhập thông tin chính
+              </p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Điền họ tên, mã khách hàng và số điện thoại.
+              </p>
+            </div>
+            <div className="rounded-lg border border-white/80 dark:border-gray-800 bg-white/90 dark:bg-gray-900/80 px-4 py-3 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
+                Bước 2
+              </p>
+              <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
+                Bổ sung chi tiết
+              </p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Thêm email, địa chỉ và ghi chú nếu cần quản lý sâu hơn.
+              </p>
+            </div>
+            <div className="rounded-lg border border-white/80 dark:border-gray-800 bg-white/90 dark:bg-gray-900/80 px-4 py-3 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
+                Bước 3
+              </p>
+              <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
+                Lưu khách hàng
+              </p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Nhấn “Thêm khách hàng” để tạo mới ngay lập tức.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 sm:p-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -948,16 +990,15 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
             </p>
           </div>
 
-          {/* Tabs */}
-          <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-            <div className="inline-flex rounded-md shadow-sm" role="tablist">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/50">
+            <div className="inline-flex rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1 shadow-sm" role="tablist">
               <button
                 type="button"
                 onClick={() => handleChangeTab("single")}
-                className={`px-4 py-2 text-sm font-medium border border-gray-200 dark:border-gray-700 first:rounded-l-md last:rounded-r-md focus:outline-none transition-colors ${
+                className={`rounded-lg px-4 py-2.5 text-sm font-medium focus:outline-none transition-all ${
                   activeTab === "single"
-                    ? "bg-blue-600 text-white"
-                    : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 }`}
               >
                 Nhập từng khách hàng
@@ -965,10 +1006,10 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
               <button
                 type="button"
                 onClick={() => handleChangeTab("bulk")}
-                className={`px-4 py-2 text-sm font-medium border border-gray-200 dark:border-gray-700 border-l-0 focus:outline-none transition-colors ${
+                className={`rounded-lg px-4 py-2.5 text-sm font-medium focus:outline-none transition-all ${
                   activeTab === "bulk"
-                    ? "bg-blue-600 text-white"
-                    : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 }`}
               >
                 Nhập hàng loạt
@@ -976,8 +1017,18 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
             </div>
           </div>
 
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center space-x-4">
+          {activeTab === "bulk" && (
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+                  Quy trình nhập hàng loạt khách hàng
+                </h2>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Tải file, kiểm tra lỗi dữ liệu và xác nhận nhập để hoàn tất.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-4">
               <div
                 className={`flex items-center ${currentStep >= 1 ? "text-blue-600" : "text-gray-400"}`}
               >
@@ -1030,6 +1081,8 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
               </div>
             </div>
           </div>
+          </div>
+          )}
 
           <div className="px-6 py-6 bg-white dark:bg-gray-900">
             {activeTab === "single" && renderSingleEntry()}

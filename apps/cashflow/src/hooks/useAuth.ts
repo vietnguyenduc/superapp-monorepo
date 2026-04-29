@@ -1,6 +1,6 @@
 // Real useAuth hook that uses Supabase authentication
 import { useState, useEffect, useCallback } from "react";
-import { runSupabaseHealthCheck, supabase } from "../services/supabase";
+import { supabase } from "../services/supabase";
 import type { User } from "../types";
 import type { TablesInsert } from "../types/database.types";
 import type { Session } from "@supabase/supabase-js";
@@ -104,15 +104,6 @@ export const useAuth = () => {
     // ─── Primary init: getSession() ─────────────────────────────────────────
     // This is called OUTSIDE the auth lock, so fetchUserProfile()
     // (which internally calls getSession() for the access token) won't deadlock.
-    runSupabaseHealthCheck()
-      .then((result) => {
-        if (!result.ok) {
-          console.error("Supabase startup health check failed", result);
-        }
-      })
-      .catch((error) => {
-        console.error("Supabase startup health check crashed", error);
-      });
 
     supabase.auth
       .getSession()
