@@ -2,6 +2,7 @@
 import type { Customer, Transaction, TransactionType } from "../types";
 import { supabase } from "./supabase";
 import { userService } from "./user-service";
+import { getTrialMode, trialGet, trialDelete, trialUpdate, trialInsert } from "./trialMockStore";
 
 type TimeRange = "day" | "week" | "month" | "quarter" | "year";
 
@@ -13,6 +14,11 @@ const reportService = {
 
 const colorSettingsService = {
   async getTransactionTypeColors() {
+    // Trial mode: return default colors without Supabase call
+    if (getTrialMode()) {
+      return { data: this.getDefaultTransactionTypeColors(), error: null };
+    }
+
     try {
       const { data, error } = await (supabase as any)
         .from("color_settings")
@@ -33,6 +39,11 @@ const colorSettingsService = {
   },
 
   async getCustomerBalanceColors() {
+    // Trial mode: return default colors without Supabase call
+    if (getTrialMode()) {
+      return { data: this.getDefaultCustomerBalanceColors(), error: null };
+    }
+
     try {
       const { data, error } = await (supabase as any)
         .from("color_settings")
@@ -147,25 +158,43 @@ const colorSettingsService = {
 
 const transactionTypeService = {
   async getTransactionTypes(companyId?: string) {
+    // Trial mode: return mock transaction types without Supabase call
+    if (getTrialMode()) {
+      const mockTypes = trialGet("transaction_types");
+      if (mockTypes) {
+        const allTypes = mockTypes.map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          color: t.color || "blue",
+          isActive: t.is_active !== false,
+          math_factor: t.math_factor ?? 1,
+          impact_type: t.impact_type ?? "increase",
+          company_id: t.company_id,
+        }));
+        return { data: allTypes, error: null };
+      }
+      return { data: [], error: null };
+    }
+
     try {
       let query = supabase
         .from("transaction_types")
         .select("id, name, color, is_active, math_factor, impact_type");
-      
+
       if (companyId) {
         query = query.eq("company_id", companyId);
       }
-      
+
       const { data, error } = await query.order("created_at", { ascending: false });
-      
+
       if (error) {
         console.error("Failed to fetch transaction types:", error);
-        return { 
-          data: [], 
-          error: `Không thể tải loại giao dịch: ${error.message}. Vui lòng kiểm tra kết nối mạng và thử lại.` 
+        return {
+          data: [],
+          error: `Không thể tải loại giao dịch: ${error.message}. Vui lòng kiểm tra kết nối mạng và thử lại.`
         };
       }
-      
+
       if (!Array.isArray(data) || data.length === 0) {
         return {
           data: [],
@@ -204,26 +233,52 @@ const transactionTypeService = {
     try {
       // STRICT VALIDATION: Validate required fields
       if (!payload.name || payload.name.trim() === "") {
-        return { 
-          data: null, 
-          error: "Tên loại giao dịch không được để trống" 
+        return {
+          data: null,
+          error: "Tên loại giao dịch không được để trống"
         };
       }
 
       // STRICT VALIDATION: Validate math_factor
       if (payload.math_factor !== undefined && payload.math_factor !== -1 && payload.math_factor !== 1) {
-        return { 
-          data: null, 
-          error: "Hệ số toán học phải là -1 hoặc 1" 
+        return {
+          data: null,
+          error: "Hệ số toán học phải là -1 hoặc 1"
         };
       }
 
       // STRICT VALIDATION: Validate impact_type
       if (payload.impact_type !== undefined && payload.impact_type !== "increase" && payload.impact_type !== "decrease") {
-        return { 
-          data: null, 
-          error: "Loại tác động phải là 'increase' hoặc 'decrease'" 
+        return {
+          data: null,
+          error: "Loại tác động phải là 'increase' hoặc 'decrease'"
         };
+      }
+
+      // Trial mode: upsert to mock store
+      if (getTrialMode()) {
+        const body: any = {
+          id: payload.id || `type-${Date.now()}`,
+          name: payload.name.trim(),
+          color: payload.color || "blue",
+          is_active: payload.is_active !== false,
+          math_factor: payload.math_factor ?? 1,
+          impact_type: payload.impact_type ?? "increase",
+          company_id: payload.company_id || "trial-company",
+        };
+
+        if (payload.id) {
+          const updated = trialUpdate("transaction_types", payload.id, body);
+          if (updated) {
+            return { data: body, error: null };
+          }
+        } else {
+          const inserted = trialInsert("transaction_types", body);
+          if (inserted) {
+            return { data: body, error: null };
+          }
+        }
+        return { data: null, error: "Failed to save transaction type" };
       }
 
       // STRICT VALIDATION: Check for duplicate name within company (for new types)
@@ -232,15 +287,15 @@ const transactionTypeService = {
           .from("transaction_types")
           .select("id, name")
           .eq("company_id", payload.company_id);
-        
+
         if (existingTypes) {
           const duplicate = existingTypes.find(
             (t: any) => t.name === payload.name && t.id !== payload.id
           );
           if (duplicate) {
-            return { 
-              data: null, 
-              error: `Loại giao dịch "${payload.name}" đã tồn tại. Vui lòng chọn tên khác.` 
+            return {
+              data: null,
+              error: `Loại giao dịch "${payload.name}" đã tồn tại. Vui lòng chọn tên khác.`
             };
           }
         }
@@ -338,6 +393,15 @@ const transactionTypeService = {
   },
 
   async deleteTransactionType(id: string) {
+    // Trial mode: delete from mock store
+    if (getTrialMode()) {
+      const deleted = trialDelete("transaction_types", id);
+      if (deleted) {
+        return { error: null };
+      }
+      return { error: "Loại giao dịch không tồn tại" };
+    }
+
     try {
       // STRICT VALIDATION: Check if transaction type exists
       const { data: existingType, error: checkError } = await supabase
@@ -345,10 +409,10 @@ const transactionTypeService = {
         .select("id, name")
         .eq("id", id)
         .single();
-      
+
       if (checkError || !existingType) {
-        return { 
-          error: "Loại giao dịch không tồn tại" 
+        return {
+          error: "Loại giao dịch không tồn tại"
         };
       }
 
@@ -357,16 +421,16 @@ const transactionTypeService = {
         .from("transactions")
         .select("id")
         .eq("transaction_type", id);
-      
+
       if (countError) {
-        return { 
-          error: `Không thể kiểm tra giao dịch: ${countError.message}` 
+        return {
+          error: `Không thể kiểm tra giao dịch: ${countError.message}`
         };
       }
-      
+
       if (transactions && transactions.length > 0) {
-        return { 
-          error: `Không thể xóa loại giao dịch "${existingType.name}" vì đang được sử dụng trong ${transactions.length} giao dịch. Vui lòng vô hiệu hóa thay vì xóa.` 
+        return {
+          error: `Không thể xóa loại giao dịch "${existingType.name}" vì đang được sử dụng trong ${transactions.length} giao dịch. Vui lòng vô hiệu hóa thay vì xóa.`
         };
       }
 
@@ -1400,6 +1464,15 @@ const bankAccountService = {
   },
 
   async deleteBankAccount(id: string, companyId?: string) {
+    // Trial mode: delete from mock store
+    if (getTrialMode()) {
+      const deleted = trialDelete("bank_accounts", id);
+      if (deleted) {
+        return { error: null };
+      }
+      return { error: "Bank account not found" };
+    }
+
     try {
       let query = supabase.from("bank_accounts").delete().eq("id", id);
       if (companyId) {
@@ -1478,6 +1551,15 @@ const branchService = {
   },
 
   async deleteBranch(id: string, companyId?: string) {
+    // Trial mode: delete from mock store
+    if (getTrialMode()) {
+      const deleted = trialDelete("branches", id);
+      if (deleted) {
+        return { error: null };
+      }
+      return { error: "Branch not found" };
+    }
+
     try {
       let query = supabase.from("branches").delete().eq("id", id);
       if (companyId) {
@@ -1500,6 +1582,20 @@ const dashboardService = {
     companyId?: string,
   ) {
     const branchId = String(_branchId || "");
+
+    // Trial mode: return mock data without Supabase calls
+    if (getTrialMode()) {
+      const mockTransactions = trialGet("transactions") || [];
+      const mockCustomers = trialGet("customers") || [];
+      const mockBankAccounts = trialGet("bank_accounts") || [];
+      const mockBranches = trialGet("branches") || [];
+      return {
+        transactions: mockTransactions,
+        customers: mockCustomers,
+        bankAccounts: mockBankAccounts,
+        branches: mockBranches,
+      };
+    }
 
     // Fetch all needed data from Supabase in parallel
     const [txResult, custResult, bankResult, branchResult] = await Promise.all([
@@ -1785,6 +1881,16 @@ const dashboardService = {
     rangeCount?: { day: number; week: number; month: number; quarter: number },
   ) {
     const branchId = String(_branchId || "");
+
+    // Trial mode: return mock data without Supabase calls
+    if (getTrialMode()) {
+      const mockTransactions = trialGet("transactions") || [];
+      const mockBranches = trialGet("branches") || [];
+      return {
+        transactions: mockTransactions,
+        branches: mockBranches,
+      };
+    }
 
     const [txResult, branchResult] = await Promise.all([
       supabase.from("transactions").select("*").order("transaction_date", { ascending: false }),
