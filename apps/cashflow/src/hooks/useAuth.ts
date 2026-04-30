@@ -1,6 +1,7 @@
 // Real useAuth hook that uses Supabase authentication
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../services/supabase";
+import { setTrialMode, clearTrialStore } from "../services/trialMockStore";
 import type { User } from "../types";
 import type { TablesInsert } from "../types/database.types";
 import type { Session } from "@supabase/supabase-js";
@@ -105,6 +106,7 @@ export const useAuth = () => {
         // Try trial mode (with expiry check) before giving up
         const trial = readTrialFromStorage();
         if (trial) {
+          setTrialMode(true);
           return {
             user: trial.user,
             session: null,
@@ -159,6 +161,7 @@ export const useAuth = () => {
           // No real session — check trial mode (with expiry)
           const trial = readTrialFromStorage();
           if (trial) {
+            setTrialMode(true);
             if (!isMounted) return;
             setState({
               user: trial.user,
@@ -430,6 +433,7 @@ export const useAuth = () => {
       localStorage.removeItem(TRIAL_STORAGE_KEY);
       // Also clear the Supabase auth storage to prevent stale sessions
       localStorage.removeItem("debt-repayment-auth");
+      clearTrialStore();
     }
 
     return { error: null };
@@ -475,7 +479,7 @@ export const useAuth = () => {
       id: "trial-user",
       email: "trial@example.com",
       full_name: "Trial User",
-      role: "staff",
+      role: "admin",
       created_at: now,
       updated_at: now,
     } as User;
@@ -486,6 +490,7 @@ export const useAuth = () => {
       error: null,
       isTrial: true,
     });
+    setTrialMode(true);
     if (typeof window !== "undefined") {
       localStorage.setItem(TRIAL_STORAGE_KEY, JSON.stringify({ user: trialUser, started_at: now }));
     }
