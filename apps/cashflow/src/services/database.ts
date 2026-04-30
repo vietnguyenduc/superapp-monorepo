@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 import { userService } from "./user-service";
 import { getTrialMode, trialGet, trialDelete, trialUpdate, trialInsert } from "./trialMockStore";
 import { getDataAdapter } from "./dataAdapter";
-import { validateTransactionTypeData, transformRawTransactionType, validateBranchData, transformRawBranch } from "./businessLogic";
+import { validateTransactionTypeData, transformRawTransactionType, validateBranchData, transformRawBranch, validateBankAccountData, transformRawBankAccount } from "./businessLogic";
 
 type TimeRange = "day" | "week" | "month" | "quarter" | "year";
 
@@ -1586,23 +1586,12 @@ const transactionService = {
 // Bank account service
 const bankAccountService = {
   async getBankAccounts(companyId?: string) {
-    // Trial mode: return mock bank accounts without Supabase call
-    if (getTrialMode()) {
-      const mockBankAccounts = trialGet("bank_accounts") || [];
-      return { data: mockBankAccounts, error: null };
-    }
-
     try {
-      let query = supabase
-        .from("bank_accounts")
-        .select("id, account_name, account_number, bank_name, balance, branch_id, company_id, is_active, created_at, updated_at");
-
-      if (companyId) {
-        query = query.eq("company_id", companyId);
-      }
-
-      const { data, error } = await query.order("created_at", { ascending: false });
-      if (error) return { data: [], error: error.message };
+      const adapter = getDataAdapter();
+      const filters: any[] = companyId ? [{ field: "company_id", operator: "eq" as any, value: companyId }] : [];
+      
+      const data = await adapter.get("bank_accounts", filters);
+      
       return { data: data || [], error: null };
     } catch (err) {
       return { data: [], error: err instanceof Error ? err.message : "Failed to load bank accounts" };
@@ -1610,106 +1599,74 @@ const bankAccountService = {
   },
 
   async getBankAccount(id: string, companyId?: string) {
-    // Trial mode: return mock bank account without Supabase call
-    if (getTrialMode()) {
-      const mockBankAccounts = trialGet("bank_accounts") || [];
-      const bankAccount = mockBankAccounts.find((b: any) => b.id === id);
-      if (bankAccount) {
-        return { data: bankAccount, error: null };
+    try {
+      const adapter = getDataAdapter();
+      const filters: any[] = [{ field: "id", operator: "eq" as any, value: id }];
+      if (companyId) {
+        filters.push({ field: "company_id", operator: "eq" as any, value: companyId });
+      }
+      
+      const accounts = await adapter.get("bank_accounts", filters);
+      const account = accounts && accounts.length > 0 ? accounts[0] : null;
+      
+      if (account) {
+        return { data: account, error: null };
       }
       return { data: null, error: "Bank account not found" };
-    }
-
-    try {
-      let query = supabase
-        .from("bank_accounts")
-        .select("id, account_name, account_number, bank_name, balance, branch_id, company_id, is_active, created_at, updated_at")
-        .eq("id", id);
-
-      if (companyId) {
-        query = query.eq("company_id", companyId);
-      }
-
-      const { data, error } = await query.single();
-      if (error) return { data: null, error: error.message };
-      return { data, error: null };
     } catch (err) {
       return { data: null, error: err instanceof Error ? err.message : "Failed to load bank account" };
     }
   },
 
   async upsertBankAccount(payload: Partial<Record<string, any>>) {
-    // Trial mode: upsert to mock store
-    if (getTrialMode()) {
-      const now = new Date().toISOString();
-      const body: any = {
-        id: payload.id || `bank-${Date.now()}`,
-        account_name: payload.account_name,
-        account_number: payload.account_number,
-        bank_name: payload.bank_name,
-        balance: payload.balance ?? 0,
-        is_active: (payload as any)?.is_active !== false,
-        branch_id: (payload as any).branch_id || "trial-branch",
-        company_id: (payload as any).company_id || "trial-company",
-        created_at: now,
-        updated_at: now,
-      };
-
-      if (payload.id) {
-        const updated = trialUpdate("bank_accounts", payload.id, body);
-        if (updated) {
-          return { data: body, error: null };
-        }
-      } else {
-        const inserted = trialInsert("bank_accounts", body);
-        if (inserted) {
-          return { data: body, error: null };
-        }
-      }
-      return { data: null, error: "Failed to save bank account" };
-    }
-
     try {
-      const body: any = {
-        id: payload.id,
-        account_name: payload.account_name,
-        account_number: payload.account_number,
-        bank_name: payload.bank_name,
-        balance: payload.balance ?? 0,
-        is_active: (payload as any)?.is_active !== false,
-      };
+      // Use shared validation
+      const validation = validateBankAccountData(payload);
+      if (!validation.isValid) {
+        return {
+          data: null,
+          error: validation.errors.join(", ")
+        };
+      }
 
-      // Chá»‰ gÃ¡n branch_id vÃ  company_id náº¿u cÃ³ giÃ¡ trá»‹ Ä‘á»ƒ trÃ¡nh lá»—i RLS khi gÃ¡n null
-      if ((payload as any).branch_id) body.branch_id = (payload as any).branch_id;
-      if ((payload as any).company_id) body.company_id = (payload as any).company_id;
-      const { data, error } = await supabase
-        .from("bank_accounts")
-        .upsert(body)
-        .select("id, account_name, account_number, bank_name, balance, branch_id, company_id, is_active, created_at, updated_at")
-        .single();
-      return { data, error: error?.message || null };
+      const adapter = getDataAdapter();
+      const useUuidId = !getTrialMode();
+      
+      // Transform data using shared transformation
+      const transformed = transformRawBankAccount(payload, useUuidId);
+      
+      let result;
+      if (payload.id) {
+        // Update existing
+        result = await adapter.update("bank_accounts", payload.id, transformed);
+      } else {
+        // Insert new
+        result = await adapter.insert("bank_accounts", transformed);
+      }
+      
+      return { data: result, error: null };
     } catch (err) {
       return { data: null, error: err instanceof Error ? err.message : "Failed to save bank account" };
     }
   },
 
   async deleteBankAccount(id: string, companyId?: string) {
-    // Trial mode: delete from mock store
-    if (getTrialMode()) {
-      const deleted = trialDelete("bank_accounts", id);
-      if (deleted) {
-        return { error: null };
-      }
-      return { error: "Bank account not found" };
-    }
-
     try {
-      let query = supabase.from("bank_accounts").delete().eq("id", id);
-      if (companyId) {
-        query = query.eq("company_id", companyId);
+      const adapter = getDataAdapter();
+      
+      // Check if bank account exists
+      const account: any = await adapter.getById("bank_accounts", id);
+      if (!account) {
+        return { error: "Bank account not found" };
       }
-      const { error } = await query;
-      return { error: error?.message || null };
+      
+      // If companyId is provided, verify it matches
+      if (companyId && account.company_id !== companyId) {
+        return { error: "Bank account not found" };
+      }
+      
+      await adapter.delete("bank_accounts", id);
+      return { error: null };
     } catch (err) {
       return { error: err instanceof Error ? err.message : "Failed to delete bank account" };
     }
