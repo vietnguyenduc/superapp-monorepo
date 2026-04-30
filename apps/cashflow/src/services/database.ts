@@ -2168,6 +2168,14 @@ const backupHistoryService = {
 
 // Export all services as a single object to match the import in Dashboard.tsx
 // Trial mode wrapper - intercept calls when in trial mode
+const showTrialToast = () => {
+  if (typeof window !== 'undefined') {
+    // Simple alert for trial mode writes
+    // In a real app, this would use a toast notification library
+    console.log('Chế độ dùng thử — thay đổi chỉ hiển thị tạm thời');
+  }
+};
+
 const withTrialIntercept = (serviceName: string, originalService: any) => {
   return new Proxy(originalService, {
     get(target, prop) {
@@ -2200,15 +2208,18 @@ const withTrialIntercept = (serviceName: string, originalService: any) => {
             } else if (method.startsWith('create') || method.startsWith('insert') || method.startsWith('add')) {
               // Create operations
               const record = args[0];
+              showTrialToast();
               return { data: trialInsert(tableName, record), error: null };
             } else if (method.startsWith('update') || method.startsWith('edit')) {
               // Update operations
               const id = args[0];
               const updates = args[1];
+              showTrialToast();
               return { data: trialUpdate(tableName, id, updates), error: null };
             } else if (method.startsWith('delete') || method.startsWith('remove')) {
               // Delete operations
               const id = args[0];
+              showTrialToast();
               return { data: trialDelete(tableName, id), error: null };
             }
 
