@@ -13,6 +13,7 @@ import { useCompany } from "../../contexts/CompanyContext";
 import CreateUserModal from "../../components/UserManagement/CreateUserModal";
 import { backupService, recoveryUtils } from "../../utils/backupRecovery";
 import { canRestoreFullBackup, canRevertTable, isAdmin } from "../../utils/permissions";
+import { getTrialMode } from "../../services/trialMockStore";
 
 interface Tab {
   id: string;
@@ -2361,7 +2362,13 @@ const Settings: React.FC = () => {
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={() => setIsCreateUserModalOpen(true)}
+                    onClick={() => {
+                      if (getTrialMode()) {
+                        alert("Tính năng này không khả dụng trong chế độ dùng thử");
+                        return;
+                      }
+                      setIsCreateUserModalOpen(true);
+                    }}
                   >
                     <svg
                       className="w-4 h-4 mr-2"
