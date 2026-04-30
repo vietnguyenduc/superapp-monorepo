@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 import { userService } from "./user-service";
 import { getTrialMode, trialGet, trialDelete, trialUpdate, trialInsert } from "./trialMockStore";
 import { getDataAdapter } from "./dataAdapter";
-import { validateTransactionTypeData, transformRawTransactionType, validateBranchData, transformRawBranch, validateBankAccountData, transformRawBankAccount } from "./businessLogic";
+import { validateTransactionTypeData, transformRawTransactionType, validateBranchData, transformRawBranch, validateBankAccountData, transformRawBankAccount, validateCustomerData, transformRawCustomer } from "./businessLogic";
 
 type TimeRange = "day" | "week" | "month" | "quarter" | "year";
 
@@ -563,97 +563,80 @@ function getPeriodWindow(timeRange: TimeRange, count: number, baseDate?: Date) {
 
 const customerService = {
   async getCustomers(_filters?: any) {
-    // Trial mode: return mock customers without Supabase call
-    if (getTrialMode()) {
-      const mockCustomers = trialGet("customers") || [];
-      return {
-        data: mockCustomers,
-        error: null,
-        count: mockCustomers.length,
-      };
-    }
-
     try {
-      let query = supabase
-        .from("customers")
-        .select("*", { count: "exact" });
-
+      const adapter = getDataAdapter();
+      const filters: any[] = [];
+      
       if (_filters?.company_id) {
-        query = query.eq("company_id", _filters.company_id);
+        filters.push({ field: "company_id", operator: "eq" as any, value: _filters.company_id });
       }
 
+      let data = await adapter.get("customers", filters);
+      
+      if (!Array.isArray(data)) {
+        data = [];
+      }
+
+      // Apply search filter (client-side since adapter doesn't support complex OR queries)
       const search = String(_filters?.search || "").toLowerCase().trim();
       if (search) {
-        query = query.or(`full_name.ilike.%${search}%,customer_code.ilike.%${search}%,phone.ilike.%${search}%,email.ilike.%${search}%`);
+        data = data.filter((c: any) => 
+          (c.full_name && c.full_name.toLowerCase().includes(search)) ||
+          (c.customer_code && c.customer_code.toLowerCase().includes(search)) ||
+          (c.phone && c.phone.toLowerCase().includes(search)) ||
+          (c.email && c.email.toLowerCase().includes(search))
+        );
       }
 
+      // Sort by created_at descending
+      data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      // Apply pagination
+      let count = data.length;
       if (Number.isFinite(_filters?.limit)) {
         const limit = Number(_filters.limit);
         const offset = Number(_filters.offset || 0);
-        query = query.range(offset, offset + limit - 1);
+        data = data.slice(offset, offset + limit);
       }
 
-      const { data, error, count } = await query.order("created_at", { ascending: false });
-
-      if (error) throw error;
-
       // Map current_balance to total_balance for frontend compatibility
-      const mappedData = (data || []).map(c => ({
+      const mappedData = data.map((c: any) => ({
         ...c,
-        total_balance: (c as any).current_balance ?? (c as any).total_balance ?? 0
+        total_balance: c.current_balance ?? c.total_balance ?? 0
       }));
 
       return {
         data: mappedData,
         error: null,
-        count: count || mappedData.length,
+        count,
       };
     } catch (err) {
-      console.error("Failed to load customers from Supabase:", err);
+      console.error("Failed to load customers:", err);
       return { data: [], error: err instanceof Error ? err.message : "Failed to load customers", count: 0 };
     }
   },
 
   async getCustomerById(id: string, companyId?: string) {
-    // Trial mode: return mock customer without Supabase call
-    if (getTrialMode()) {
-      const mockCustomers = trialGet("customers") || [];
-      const customer = mockCustomers.find((c: any) => c.id === id);
-      if (customer) {
-        const mockTransactions = trialGet("transactions") || [];
-        const customerTransactions = mockTransactions.filter((t: any) => t.customer_id === id);
-        return {
-          data: {
-            ...customer,
-            total_balance: (customer as any).total_balance || 0,
-            transaction_count: customerTransactions.length,
-          },
-          error: null,
-        };
-      }
-      return { data: null, error: "Customer not found" };
-    }
-
     try {
-      let query = supabase
-        .from("customers")
-        .select("*, updated_by")
-        .eq("id", id);
-
+      const adapter = getDataAdapter();
+      const filters: any[] = [{ field: "id", operator: "eq" as any, value: id }];
       if (companyId) {
-        query = query.eq("company_id", companyId);
+        filters.push({ field: "company_id", operator: "eq" as any, value: companyId });
       }
+      
+      const customers = await adapter.get("customers", filters);
+      const customer = customers && customers.length > 0 ? customers[0] : null;
 
-      const { data, error } = await query.single();
-
-      if (error) throw error;
+      if (!customer) {
+        return { data: null, error: "Customer not found" };
+      }
 
       let updatedByEmail = null;
-      if ((data as any).updated_by) {
+      if ((customer as any).updated_by) {
         const { data: userData } = await supabase
           .from("users")
           .select("email")
-          .eq("id", (data as any).updated_by)
+          .eq("id", (customer as any).updated_by)
           .single();
         updatedByEmail = userData?.email || null;
       }
@@ -669,9 +652,11 @@ const customerService = {
         return Number.isFinite(num) ? num : 0;
       };
 
-      let calculatedBalance = parseAmount((data as any).opening_balance) || 0;
+      let calculatedBalance = parseAmount((customer as any).opening_balance) || 0;
+      let transactionCount = 0;
       
       if (txData) {
+        transactionCount = txData.length;
         for (const tx of txData) {
           const amtSigned = parseAmount(tx.amount);
           const amtAbs = Math.abs(amtSigned);
@@ -691,166 +676,117 @@ const customerService = {
 
       return {
         data: {
-          ...(data as any),
+          ...(customer as any),
           total_balance: calculatedBalance,
-          updated_by_email: updatedByEmail
+          transaction_count: transactionCount,
+          updated_by_email: updatedByEmail,
         },
         error: null,
       };
     } catch (err) {
-      return { data: null, error: err instanceof Error ? err.message : "Customer not found" };
+      console.error("Failed to load customer:", err);
+      return { data: null, error: err instanceof Error ? err.message : "Failed to load customer" };
     }
   },
 
   async createCustomer(_customerData?: any) {
-    // Trial mode: create in mock store
-    if (getTrialMode()) {
-      const body = {
-        id: _customerData.id || `cust-${Date.now()}`,
-        customer_code: _customerData.customer_code || `CUST${Date.now().toString().slice(-4)}`,
-        full_name: _customerData.full_name,
-        phone: _customerData.phone || null,
-        email: _customerData.email || null,
-        address: _customerData.address || null,
-        working_method: _customerData.working_method || null,
-        notes: _customerData.notes || null,
-        branch_id: _customerData.branch_id || "trial-branch",
-        company_id: _customerData.company_id || "trial-company",
-        opening_balance: _customerData.opening_balance ?? 0,
-        opening_balance_updated_at: _customerData.opening_balance_updated_at || getNowIso(),
-        current_balance: _customerData.current_balance ?? _customerData.total_balance ?? _customerData.opening_balance ?? 0,
-        total_balance: _customerData.total_balance ?? _customerData.current_balance ?? _customerData.opening_balance ?? 0,
-        last_transaction_date: _customerData.last_transaction_date || null,
-        created_at: getNowIso(),
-        updated_at: getNowIso(),
-        is_active: _customerData.is_active !== false,
-      };
-      const inserted = trialInsert("customers", body);
-      if (inserted) {
-        return { data: body, error: null };
-      }
-      return { data: null, error: "Failed to create customer" };
-    }
-
     try {
-      const body = {
-        id: _customerData.id || uuid(),
-        customer_code: _customerData.customer_code || `CUST${Date.now().toString().slice(-4)}`,
-        full_name: _customerData.full_name,
-        phone: _customerData.phone || null,
-        email: _customerData.email || null,
-        address: _customerData.address || null,
-        working_method: _customerData.working_method || null,
-        notes: _customerData.notes || null,
-        branch_id: _customerData.branch_id || null,
-        company_id: _customerData.company_id || null,
-        opening_balance: _customerData.opening_balance ?? 0,
-        opening_balance_updated_at: _customerData.opening_balance_updated_at || getNowIso(),
-        current_balance: _customerData.current_balance ?? _customerData.total_balance ?? _customerData.opening_balance ?? 0,
-        total_balance: _customerData.total_balance ?? _customerData.current_balance ?? _customerData.opening_balance ?? 0,
-        last_transaction_date: _customerData.last_transaction_date || null,
-        created_at: getNowIso(),
-        updated_at: getNowIso(),
-        is_active: _customerData.is_active !== false,
-      };
+      // Use shared validation
+      const validation = validateCustomerData(_customerData);
+      if (!validation.isValid) {
+        return {
+          data: null,
+          error: validation.errors.join(", ")
+        };
+      }
 
-      const { data, error } = await supabase
-        .from("customers")
-        .insert(body)
-        .select()
-        .single();
+      const adapter = getDataAdapter();
+      const useUuidId = !getTrialMode();
+      
+      // Transform data using shared transformation
+      const transformed = transformRawCustomer(_customerData, useUuidId);
 
-      if (error) throw error;
-
-      return { data, error: null };
+      // CRITICAL: Server-side duplicate check for customer_code (per memory 210bb746)
+      const proposedCode = transformed.customer_code?.trim();
+      if (proposedCode) {
+        const filters: any[] = [{ field: "customer_code", operator: "eq" as any, value: proposedCode }];
+        if (transformed.company_id) {
+          filters.push({ field: "company_id", operator: "eq" as any, value: transformed.company_id });
+        }
+        const existingCustomers = await adapter.get("customers", filters);
+        if (existingCustomers && existingCustomers.length > 0) {
+          return {
+            data: null,
+            error: `Customer with code "${proposedCode}" already exists`
+          };
+        }
+      }
+      
+      // Insert using adapter
+      const result = await adapter.insert("customers", transformed);
+      
+      return { data: result, error: null };
     } catch (err) {
       return { data: null, error: err instanceof Error ? err.message : "Failed to create customer" };
     }
   },
 
   async updateCustomer(id: string, _customerData: any) {
-    // Trial mode: update in mock store
-    if (getTrialMode()) {
-      const body = {
-        customer_code: _customerData.customer_code,
-        full_name: _customerData.full_name,
-        phone: _customerData.phone ?? null,
-        email: _customerData.email ?? null,
-        address: _customerData.address ?? null,
-        working_method: _customerData.working_method ?? null,
-        notes: _customerData.notes ?? null,
-        branch_id: _customerData.branch_id,
-        company_id: _customerData.company_id,
-        opening_balance: _customerData.opening_balance,
-        opening_balance_updated_at: _customerData.opening_balance_updated_at,
-        current_balance: _customerData.current_balance,
-        total_balance: _customerData.total_balance,
-        last_transaction_date: _customerData.last_transaction_date,
-        is_active: _customerData.is_active,
-        updated_at: getNowIso(),
-      };
-      const updated = trialUpdate("customers", id, body);
-      if (updated) {
-        return { data: body, error: null };
-      }
-      return { data: null, error: "Customer not found" };
-    }
-
     try {
-      const body = {
-        customer_code: _customerData.customer_code,
-        full_name: _customerData.full_name,
-        phone: _customerData.phone ?? null,
-        email: _customerData.email ?? null,
-        address: _customerData.address ?? null,
-        working_method: _customerData.working_method ?? null,
-        notes: _customerData.notes ?? null,
-        branch_id: _customerData.branch_id,
-        company_id: _customerData.company_id,
-        opening_balance: _customerData.opening_balance,
-        opening_balance_updated_at: _customerData.opening_balance_updated_at,
-        current_balance: _customerData.current_balance,
-        total_balance: _customerData.total_balance,
-        last_transaction_date: _customerData.last_transaction_date,
-        is_active: _customerData.is_active,
-        updated_at: getNowIso(),
-      };
+      // Use shared validation
+      const validation = validateCustomerData(_customerData);
+      if (!validation.isValid) {
+        return {
+          data: null,
+          error: validation.errors.join(", ")
+        };
+      }
 
-      Object.keys(body).forEach((key) => body[key as keyof typeof body] === undefined && delete body[key as keyof typeof body]);
+      const adapter = getDataAdapter();
+      const useUuidId = !getTrialMode();
+      
+      // Transform data using shared transformation
+      const transformed = transformRawCustomer(_customerData, useUuidId);
 
-      const { data, error } = await supabase
-        .from("customers")
-        .update(body)
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      return { data, error: null };
+      // CRITICAL: Server-side duplicate check for customer_code (excluding current customer)
+      const proposedCode = transformed.customer_code?.trim();
+      if (proposedCode) {
+        const filters: any[] = [
+          { field: "customer_code", operator: "eq" as any, value: proposedCode },
+          { field: "id", operator: "neq" as any, value: id } // Exclude current customer
+        ];
+        if (transformed.company_id) {
+          filters.push({ field: "company_id", operator: "eq" as any, value: transformed.company_id });
+        }
+        const existingCustomers = await adapter.get("customers", filters);
+        if (existingCustomers && existingCustomers.length > 0) {
+          return {
+            data: null,
+            error: `Customer with code "${proposedCode}" already exists`
+          };
+        }
+      }
+      
+      // Update using adapter
+      const result = await adapter.update("customers", id, transformed);
+      
+      return { data: result, error: null };
     } catch (err) {
       return { data: null, error: err instanceof Error ? err.message : "Failed to update customer" };
     }
   },
 
   async deleteCustomer(id: string) {
-    // Trial mode: delete from mock store
-    if (getTrialMode()) {
-      const deleted = trialDelete("customers", id);
-      if (deleted) {
-        return { data: null, error: null };
-      }
-      return { data: null, error: "Customer not found" };
-    }
-
     try {
-      const { error } = await supabase
-        .from("customers")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
+      const adapter = getDataAdapter();
+      
+      // Check if customer exists
+      const customer: any = await adapter.getById("customers", id);
+      if (!customer) {
+        return { data: null, error: "Customer not found" };
+      }
+      
+      await adapter.delete("customers", id);
       return { data: null, error: null };
     } catch (err) {
       return { data: null, error: err instanceof Error ? err.message : "Failed to delete customer" };
@@ -858,56 +794,35 @@ const customerService = {
   },
 
   async updateCustomerOpeningBalance(customerId: string, newOpening: number, companyId?: string) {
-    // Trial mode: update in mock store
-    if (getTrialMode()) {
-      const mockCustomers = trialGet("customers") || [];
-      const customer = mockCustomers.find((c: any) => c.id === customerId);
-      if (customer) {
-        const oldOpening = Number((customer as any).opening_balance || 0);
-        const oldCurrent = Number((customer as any).current_balance || 0);
-        const delta = oldCurrent - oldOpening;
-        const newCurrent = newOpening + delta;
-        const updated = trialUpdate("customers", customerId, {
-          opening_balance: newOpening,
-          current_balance: newCurrent,
-          updated_at: new Date().toISOString(),
-        });
-        if (updated) {
-          return { data: { ...customer, opening_balance: newOpening, current_balance: newCurrent }, error: null };
-        }
-      }
-      return { data: null, error: "Customer not found" };
-    }
-
     try {
-      let query = supabase
-        .from("customers")
-        .select("id, customer_code, company_id, opening_balance, current_balance")
-        .eq("id", customerId);
-      if (companyId) query = query.eq("company_id", companyId);
-      const { data: existing, error: fetchError } = await query.single();
+      const adapter = getDataAdapter();
+      
+      // Get existing customer
+      const filters: any[] = [{ field: "id", operator: "eq" as any, value: customerId }];
+      if (companyId) {
+        filters.push({ field: "company_id", operator: "eq" as any, value: companyId });
+      }
+      
+      const customers = await adapter.get("customers", filters);
+      const existing = customers && customers.length > 0 ? customers[0] : null;
 
-      if (fetchError || !existing) {
-        return { data: null, error: fetchError?.message || "Customer not found" };
+      if (!existing) {
+        return { data: null, error: "Customer not found" };
       }
 
-      const oldOpening = Number(existing.opening_balance || 0);
-      const oldCurrent = Number(existing.current_balance || 0);
+      // Calculate new current balance preserving the delta
+      const oldOpening = Number((existing as any).opening_balance || 0);
+      const oldCurrent = Number((existing as any).current_balance || 0);
       const delta = oldCurrent - oldOpening;
       const newCurrent = newOpening + delta;
-      const targetCompanyId: string = companyId || existing.company_id || "";
 
-      const { error } = await supabase
-        .from("customers")
-        .update({
-          opening_balance: newOpening,
-          current_balance: newCurrent,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", customerId)
-        .eq("company_id", targetCompanyId);
+      // Update using adapter
+      const updated = await adapter.update("customers", customerId, {
+        opening_balance: newOpening,
+        current_balance: newCurrent,
+        updated_at: new Date().toISOString(),
+      });
 
-      if (error) return { data: null, error: error.message };
       return { data: { ...existing, opening_balance: newOpening, current_balance: newCurrent }, error: null };
     } catch (err: any) {
       return { data: null, error: err.message || "Failed to update opening balance" };
@@ -915,37 +830,8 @@ const customerService = {
   },
 
   async bulkUpdateOpeningBalances(rows: { customer_code?: string; opening_balance?: number }[]) {
-    // Trial mode: update in mock store
-    if (getTrialMode()) {
-      const errors: { row: number; message: string; value?: any }[] = [];
-      let updatedCount = 0;
-      const mockCustomers = trialGet("customers") || [];
-
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        const code = String(row.customer_code || "").trim();
-        const opening = Number(row.opening_balance);
-
-        if (!code) {
-          errors.push({ row: i, message: "Missing customer_code" });
-          continue;
-        }
-
-        const customerIndex = mockCustomers.findIndex((c: any) => c.customer_code === code);
-        if (customerIndex !== -1) {
-          (mockCustomers[customerIndex] as any).opening_balance = opening;
-          (mockCustomers[customerIndex] as any).current_balance = opening;
-          (mockCustomers[customerIndex] as any).updated_at = new Date().toISOString();
-          updatedCount++;
-        } else {
-          errors.push({ row: i, message: "Customer not found", value: code });
-        }
-      }
-
-      return { data: { updated: updatedCount }, errors };
-    }
-
     try {
+      const adapter = getDataAdapter();
       const errors: { row: number; message: string; value?: any }[] = [];
       let updatedCount = 0;
 
@@ -959,18 +845,27 @@ const customerService = {
           continue;
         }
 
-        const { data, error } = await supabase
-          .from("customers")
-          .update({ opening_balance: opening, current_balance: opening } as any)
-          .eq("customer_code", code)
-          .select();
+        // Find customer by customer_code
+        const filters: any[] = [{ field: "customer_code", operator: "eq" as any, value: code }];
+        const customers = await adapter.get("customers", filters);
+        const customer = customers && customers.length > 0 ? customers[0] : null;
 
-        if (error) {
-          errors.push({ row: i, message: error.message, value: code });
-        } else if (data && data.length > 0) {
+        if (!customer) {
+          errors.push({ row: i, message: "Customer not found", value: code });
+          continue;
+        }
+
+        // Update using adapter
+        const updated = await adapter.update("customers", (customer as any).id, {
+          opening_balance: opening,
+          current_balance: opening,
+          updated_at: new Date().toISOString(),
+        });
+
+        if (updated) {
           updatedCount++;
         } else {
-          errors.push({ row: i, message: "Customer not found", value: code });
+          errors.push({ row: i, message: "Failed to update customer", value: code });
         }
       }
 
@@ -981,68 +876,50 @@ const customerService = {
   },
 
   async bulkCreateCustomers(_customers?: any[]) {
-    // Trial mode: create in mock store
-    if (getTrialMode()) {
-      const now = getNowIso();
-      const body = (_customers || []).map(raw => ({
-        id: raw.id || `cust-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
-        customer_code: raw.customer_code || `CUST${Date.now().toString().slice(-4)}_${Math.random().toString(36).slice(2, 5)}`,
-        full_name: raw.full_name,
-        phone: raw.phone || null,
-        email: raw.email || null,
-        address: raw.address || null,
-        working_method: raw.working_method || null,
-        notes: raw.notes || null,
-        branch_id: raw.branch_id || "trial-branch",
-        company_id: raw.company_id || "trial-company",
-        opening_balance: raw.opening_balance ?? 0,
-        opening_balance_updated_at: raw.opening_balance_updated_at || now,
-        current_balance: raw.current_balance ?? raw.total_balance ?? raw.opening_balance ?? 0,
-        total_balance: raw.total_balance ?? raw.current_balance ?? raw.opening_balance ?? 0,
-        last_transaction_date: raw.last_transaction_date || null,
-        created_at: now,
-        updated_at: now,
-        is_active: raw.is_active !== false,
-      }));
-
-      const mockCustomers = trialGet("customers") || [];
-      const allCustomers = [...body, ...mockCustomers];
-      // Update the mock store with all customers
-      localStorage.setItem("cashflow_trial_store", JSON.stringify({ customers: allCustomers }));
-      return { data: body, error: null };
-    }
-
     try {
-      const now = getNowIso();
-      const body = (_customers || []).map(raw => ({
-        id: raw.id || uuid(),
-        customer_code: raw.customer_code || `CUST${Date.now().toString().slice(-4)}_${Math.random().toString(36).slice(2, 5)}`,
-        full_name: raw.full_name,
-        phone: raw.phone || null,
-        email: raw.email || null,
-        address: raw.address || null,
-        working_method: raw.working_method || null,
-        notes: raw.notes || null,
-        branch_id: raw.branch_id || null,
-        company_id: raw.company_id || null,
-        opening_balance: raw.opening_balance ?? 0,
-        opening_balance_updated_at: raw.opening_balance_updated_at || now,
-        current_balance: raw.current_balance ?? raw.total_balance ?? raw.opening_balance ?? 0,
-        total_balance: raw.total_balance ?? raw.current_balance ?? raw.opening_balance ?? 0,
-        last_transaction_date: raw.last_transaction_date || null,
-        created_at: now,
-        updated_at: now,
-        is_active: raw.is_active !== false,
-      }));
+      const adapter = getDataAdapter();
+      const useUuidId = !getTrialMode();
+      const createdCustomers: any[] = [];
+      const errors: { row: number; message: string; value?: any }[] = [];
 
-      const { data, error } = await supabase
-        .from("customers")
-        .insert(body)
-        .select();
+      for (let i = 0; i < (_customers || []).length; i++) {
+        const raw = _customers![i];
+        
+        // Use shared validation
+        const validation = validateCustomerData(raw);
+        if (!validation.isValid) {
+          errors.push({ row: i, message: validation.errors.join(", "), value: raw.customer_code });
+          continue;
+        }
 
-      if (error) throw error;
+        // Transform data using shared transformation
+        const transformed = transformRawCustomer(raw, useUuidId);
 
-      return { data, error: null };
+        // CRITICAL: Server-side duplicate check for customer_code (per memory 210bb746)
+        // Check PER ROW to avoid race condition (not at function start)
+        const proposedCode = transformed.customer_code?.trim();
+        if (proposedCode) {
+          const filters: any[] = [{ field: "customer_code", operator: "eq" as any, value: proposedCode }];
+          if (transformed.company_id) {
+            filters.push({ field: "company_id", operator: "eq" as any, value: transformed.company_id });
+          }
+          const existingCustomers = await adapter.get("customers", filters);
+          if (existingCustomers && existingCustomers.length > 0) {
+            errors.push({ row: i, message: `Customer with code "${proposedCode}" already exists`, value: proposedCode });
+            continue;
+          }
+        }
+
+        // Insert using adapter
+        const result = await adapter.insert("customers", transformed);
+        if (result) {
+          createdCustomers.push(result);
+        } else {
+          errors.push({ row: i, message: "Failed to create customer", value: raw.customer_code });
+        }
+      }
+
+      return { data: createdCustomers, errors };
     } catch (err) {
       console.error('[bulkCreateCustomers] Exception:', err);
       return { data: null, error: err instanceof Error ? err.message : "Failed bulk create" };
