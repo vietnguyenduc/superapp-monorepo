@@ -21,7 +21,7 @@ const SignUp: React.FC = () => {
   });
   const navigate = useNavigate();
   const { i18n } = useTranslation();
-  const { signUp, loading, error, clearError, isAuthenticated, user, isTrial } =
+  const { signUp, loading, error, clearError, isAuthenticated, user } =
     useAuthContext();
 
   const copy = {
@@ -49,10 +49,10 @@ const SignUp: React.FC = () => {
   const tCopy = copy[language as keyof typeof copy] || copy.vi;
 
   useEffect(() => {
-    if (isAuthenticated && user && !isTrial) {
+    if (isAuthenticated && user) {
       navigate("/dashboard");
     }
-  }, [isAuthenticated, isTrial, user, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   useEffect(() => {
     if (darkMode) {

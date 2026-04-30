@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import Navigation from "./Navigation";
 import Sidebar from "./Sidebar";
-import TrialBanner from "./TrialBanner";
 
 const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -47,7 +46,6 @@ const Layout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <TrialBanner />
       <Navigation onMenuClick={() => setSidebarOpen(true)} />
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (

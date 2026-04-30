@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { Customer, Transaction } from "../../../types";
 import { databaseService } from "../../../services/database";
-import { useAuth } from "../../../hooks/useAuth";
-import { useCompany } from "../../../contexts/CompanyContext";
+import { useCompanyId } from "../../../hooks/useCompanyId";
 import { formatCurrency, formatDate, formatPhoneNumber, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor, getTransactionMathFactor } from "../../../utils/formatting";
 import { useTransactionTypes } from "../../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../../components/UI/FallbackUI";
@@ -20,11 +19,9 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   onEdit,
 }) => {
   const { t } = useTranslation();
-  const { user } = useAuth();
-  const { selectedCompany } = useCompany();
+  const companyId = useCompanyId();
   const { getNameById: getTransactionTypeName } = useTransactionTypes();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [transactionTypes, setTransactionTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +29,6 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
         const result = await databaseService.transactions.getTransactions({
           customer_id: customer.id,
           company_id: companyId,
@@ -54,21 +50,9 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     };
 
     fetchTransactions();
-  }, [customer.id, user?.role, user?.company_id, selectedCompany?.id]);
+  }, [customer.id, companyId]);
 
-  // Load transaction types
-  useEffect(() => {
-    const loadTransactionTypes = async () => {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
-      const result = await databaseService.transactionTypes.getTransactionTypes(companyId);
-      if (result.data) {
-        setTransactionTypes(result.data);
-      }
-    };
-    loadTransactionTypes();
-  }, [user?.role, user?.company_id, selectedCompany?.id]);
-
-  // Load color settings on mount
+  // Fetch color settings on mount
   useEffect(() => {
     fetchColorSettings();
   }, []);

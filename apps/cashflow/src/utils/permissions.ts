@@ -1,4 +1,5 @@
 // Granular permission checking utility
+import type { User as AppUser } from '../types';
 
 interface UserPermissions {
   customers?: {
@@ -23,9 +24,8 @@ interface UserPermissions {
   };
 }
 
-interface User {
-  id: string;
-  role: string;
+// Type for user with local permissions for type safety in this file
+type User = AppUser & {
   staff_permissions?: UserPermissions;
   can_delete?: boolean;
 }

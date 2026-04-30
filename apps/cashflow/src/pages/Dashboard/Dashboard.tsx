@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { useCompanyId } from "../../hooks/useCompanyId";
 import { useCompany } from "../../contexts/CompanyContext";
 import { databaseService } from "../../services/database";
 import { formatNumber } from "../../utils/formatting";
@@ -24,7 +25,8 @@ const Dashboard: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { selectedCompany, loading: companyLoading } = useCompany();
+  const companyId = useCompanyId();
+  const { loading: companyLoading } = useCompany();
   const [timeRange, setTimeRange] = useState<TimeRange>("month");
   const [topCustomersCount, setTopCustomersCount] = useState(8);
   const [recentTransactionsCount, setRecentTransactionsCount] = useState(8);
@@ -40,7 +42,6 @@ const Dashboard: React.FC = () => {
   const handleQuickBackup = async () => {
     setQuickBackupLoading(true);
     try {
-      const companyId = effectiveCompanyId;
       
       if (!user?.id) {
         throw new Error('User ID is required for backup');
@@ -83,7 +84,6 @@ const Dashboard: React.FC = () => {
   const handleDownloadBackup = async () => {
     setQuickBackupLoading(true);
     try {
-      const companyId = effectiveCompanyId;
       
       if (!user?.id) {
         throw new Error('User ID is required for backup');
@@ -126,10 +126,6 @@ const Dashboard: React.FC = () => {
     year: 3,
   });
 
-  // Determine the company ID for filtering
-  // Admin master: use selectedCompany from context
-  // Other roles: use company_id from user profile
-  const effectiveCompanyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
 
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
@@ -144,7 +140,7 @@ const Dashboard: React.FC = () => {
         undefined,
         timeRange,
         rangeCount, // Pass rangeCount to control the number of data points
-        effectiveCompanyId // Pass company ID for multi-tenant filtering
+        companyId // Pass company ID for multi-tenant filtering
       );
 
       if (result.error) {
@@ -159,14 +155,14 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [timeRange, rangeCount, effectiveCompanyId, companyLoading]); // Add effectiveCompanyId and companyLoading as dependencies
+  }, [timeRange, rangeCount, companyId, companyLoading]); // Add companyId and companyLoading as dependencies
 
   // Load data on component mount and when time range or company changes
   useEffect(() => {
     if (!companyLoading) {
       fetchDashboardData();
     }
-  }, [fetchDashboardData, timeRange, effectiveCompanyId, companyLoading]);
+  }, [fetchDashboardData, timeRange, companyId, companyLoading]);
 
   // Auto-refresh data every 5 minutes
   useEffect(() => {
@@ -176,13 +172,13 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     const loadBranches = async () => {
-      const result = await databaseService.branches.getBranches(effectiveCompanyId);
+      const result = await databaseService.branches.getBranches(companyId);
       if (result.data) {
         setBranches(result.data.map((b: any) => ({ id: String(b.id), name: String(b.name) })));
       }
     };
     loadBranches();
-  }, [effectiveCompanyId]);
+  }, [companyId]);
   
   // Listen for range changes from the CashFlowChart component
   useEffect(() => {

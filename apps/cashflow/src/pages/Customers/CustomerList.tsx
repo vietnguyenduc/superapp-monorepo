@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
-import { useCompany } from "../../contexts/CompanyContext";
+import { useCompanyId } from "../../hooks/useCompanyId";
 import { databaseService } from "../../services/database";
 import type { Customer } from "../../types";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
@@ -37,10 +37,8 @@ interface CustomerListState {
 const CustomerList: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { selectedCompany } = useCompany();
+  const companyId = useCompanyId();
   const navigate = useNavigate();
-
-  const effectiveCompanyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
 
   const [state, setState] = useState<CustomerListState>({
     customers: [],
@@ -67,7 +65,7 @@ const CustomerList: React.FC = () => {
       const offset = (state.currentPage - 1) * state.pageSize;
 
       const result = await databaseService.customers.getCustomers({
-        company_id: effectiveCompanyId,
+        company_id: companyId,
         search: state.searchTerm || undefined,
         limit: state.pageSize,
         offset,
@@ -90,7 +88,7 @@ const CustomerList: React.FC = () => {
         loading: false,
       }));
     }
-  }, [effectiveCompanyId, state.currentPage, state.pageSize, state.searchTerm]);
+  }, [companyId, state.currentPage, state.pageSize, state.searchTerm]);
 
   // Load customers on mount and when filters change
   useEffect(() => {

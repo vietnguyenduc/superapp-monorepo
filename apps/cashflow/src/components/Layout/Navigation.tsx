@@ -9,17 +9,14 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { i18n } = useTranslation();
-  const { user, isTrial } = useAuthContext();
+  const { user } = useAuthContext();
 
   const lang = i18n.language || localStorage.getItem("language") || "vi";
   const fallbackName = lang === "vi" ? "Người dùng" : "User";
-  const trialName = lang === "vi" ? "Người dùng thử" : "Trial User";
-  const displayName = isTrial
-    ? trialName
-    : user?.full_name || user?.email || fallbackName;
+  const displayName = user?.full_name || user?.email || fallbackName;
   const avatarInitial = displayName?.trim()?.charAt(0)?.toUpperCase() || "U";
 
-  // Ensure i18n follows stored language (so trial name matches)
+  // Ensure i18n follows stored language
   useEffect(() => {
     const storedLang = localStorage.getItem("language") || "vi";
     if (i18n.language !== storedLang) {

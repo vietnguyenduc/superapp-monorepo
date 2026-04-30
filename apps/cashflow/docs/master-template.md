@@ -24,19 +24,17 @@ Use this as a starting point when spinning up a new app with the same UX, auth, 
 - Call `i18n.changeLanguage(language)` on change/init.
 - Text strings should map through i18n; for quick forms, use a local copy map keyed by language.
 
-## Auth & Trial Flow
-- `useAuth` exposes: `user`, `session`, `isAuthenticated = (!!session && !!user) || isTrial`, `isTrial`, `startTrial`, `signOut`, `clearError`.
-- Trial: create mock user, persist to `cashflow_trial_user` in localStorage; restore on load if no session.
-- `signOut` must clear trial storage and reset `isTrial`.
+## Auth Flow
+- `useAuth` exposes: `user`, `session`, `isAuthenticated = !!session && !!user`, `signOut`, `clearError`.
 - ProtectedRoute: allow access if `isAuthenticated`; when `loading` show spinner; redirect to `/login` otherwise.
-- Login page: trial CTA, dark/language toggles, no auto-redirect for trial refresh; optional trial banner with "Vào dashboard".
+- Login page: dark/language toggles, footer note.
 
 ## Routing
-- Use client-side navigation (`navigate`) for internal links. Avoid `window.location.href` to prevent losing trial/session state.
+- Use client-side navigation (`navigate`) for internal links. Avoid `window.location.href` to prevent losing session state.
 - Layout wraps protected routes; public routes include `/login`.
 
 ## LocalStorage Keys
-- `cashflow_trial_user`, `darkMode`, `language`.
+- `darkMode`, `language`.
 - For domain data, namespace per app (e.g., `cashflow_transactions`, `cashflow_bank_accounts`, `cashflow_customers`).
 
 ## Checklists
@@ -48,10 +46,10 @@ Use this as a starting point when spinning up a new app with the same UX, auth, 
 - Keep UI components reusable (Button, Card, Input, PageHeader, Toggles).
 - Ensure dark mode & i18n coverage for new UI strings.
 - Avoid full-page reloads; use router navigation.
-- Persist toggles (dark/language) and trial state.
+- Persist toggles (dark/language).
 
 ### QA
-- Login: VI/EN toggle updates text; dark toggle flips theme; trial banner shown only when trial active; footer note present.
+- Login: VI/EN toggle updates text; dark toggle flips theme; footer note present.
 - Navigation: Customer -> Giao dịch link stays in app (no redirect to login).
 - Dark mode visuals correct for forms, menus, dropdowns.
 
@@ -66,7 +64,7 @@ Use this as a starting point when spinning up a new app with the same UX, auth, 
 
 ## Reuse Plan
 1) Copy shared UI (buttons, inputs, cards, toggles) and theme tokens into `shared/ui`.
-2) Copy `useAuth`, `AuthContext`, `ProtectedRoute` (with trial support) into `shared/auth`.
-3) Copy login page skeleton with toggles, trial CTA/banner, footer note.
+2) Copy `useAuth`, `AuthContext`, `ProtectedRoute` into `shared/auth`.
+3) Copy login page skeleton with toggles, footer note.
 4) Set up i18n base (vi/en) and dark-mode bootstrap script.
 5) Update AI_CONTEXT.md in the new app with these rules and checklists.

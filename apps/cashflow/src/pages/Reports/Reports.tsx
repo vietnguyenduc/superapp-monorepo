@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
-import { useCompany } from "../../contexts/CompanyContext";
+import { useCompanyId } from "../../hooks/useCompanyId";
 import { databaseService } from "../../services/database";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
 import ReportTypeSelector from "./components/ReportTypeSelector";
@@ -31,10 +31,7 @@ interface ReportsState {
 const Reports: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { selectedCompany } = useCompany();
-
-  // Determine company_id based on user role
-  const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
+  const companyId = useCompanyId();
 
   const [state, setState] = useState<ReportsState>({
     selectedReportType: null,
@@ -118,8 +115,8 @@ const Reports: React.FC = () => {
       summary: {
         totalOutstanding: metrics.data?.totalOutstanding || 0,
         activeCustomers: metrics.data?.activeCustomers || 0,
-        monthlyTransactions: metrics.data?.transactionsInPeriod || 0,
-        totalTransactions: metrics.data?.totalTransactions || 0,
+        monthlyTransactions: metrics.data?.transactionDebtInPeriod || 0,
+        totalTransactions: metrics.data?.transactionPaymentCount || 0,
       },
     };
   };

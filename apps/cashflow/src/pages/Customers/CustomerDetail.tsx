@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Button from "../../components/UI/Button";
 import { useAuth } from "../../hooks/useAuth";
-import { useCompany } from "../../contexts/CompanyContext";
+import { useCompanyId } from "../../hooks/useCompanyId";
 import { databaseService } from "../../services/database";
 import type { Customer, Transaction } from "../../types";
 import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor } from "../../utils/formatting";
@@ -16,11 +16,10 @@ const CustomerDetail: React.FC = () => {
   const navigate = useNavigate();
   const { getNameById: getTransactionTypeName } = useTransactionTypes();
   const { user } = useAuth();
-  const { selectedCompany } = useCompany();
+  const companyId = useCompanyId();
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [transactionTypes, setTransactionTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,7 +41,6 @@ const CustomerDetail: React.FC = () => {
         setCustomer(customerResult.data);
 
         // Fetch customer transactions
-        const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
         const transactionsResult =
           await databaseService.transactions.getTransactions({
             customer_id: customerId,
@@ -57,12 +55,6 @@ const CustomerDetail: React.FC = () => {
         } else {
           setTransactions(transactionsResult.data || []);
         }
-
-        // Fetch transaction types for dynamic names
-        const typeResult = await databaseService.transactionTypes.getTransactionTypes(companyId);
-        if (typeResult.data) {
-          setTransactionTypes(typeResult.data);
-        }
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to fetch customer data",
@@ -73,7 +65,7 @@ const CustomerDetail: React.FC = () => {
     };
 
     fetchCustomerData();
-  }, [customerId, user?.branch_id, user?.role, user?.company_id, selectedCompany?.id]);
+  }, [customerId, user?.branch_id, companyId]);
 
   // Load color settings on mount
   const [colorsReady, setColorsReady] = useState(false);

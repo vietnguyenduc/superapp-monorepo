@@ -3,8 +3,7 @@ import { useTranslation } from "react-i18next";
 import { getCustomerListBalanceColor, getTransactionMathFactor } from "../../../utils/formatting";
 import type { Customer, Transaction } from "../../../types";
 import { databaseService } from "../../../services/database";
-import { useAuth } from "../../../hooks/useAuth";
-import { useCompany } from "../../../contexts/CompanyContext";
+import { useCompanyId } from "../../../hooks/useCompanyId";
 import {
   formatCurrency,
   formatDate,
@@ -31,8 +30,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   loading = false,
 }) => {
   const { t } = useTranslation();
-  const { user } = useAuth();
-  const { selectedCompany } = useCompany();
+  const companyId = useCompanyId();
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [customerBalances, setCustomerBalances] = useState<Map<string, number>>(new Map());
   const [customerLastTxDates, setCustomerLastTxDates] = useState<Map<string, string>>(new Map());
@@ -49,7 +47,6 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
       
       try {
         // Fetch all transactions at once
-        const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
         const result = await databaseService.transactions.getTransactions({
           limit: 1000, // Get recent transactions
           company_id: companyId,
@@ -102,7 +99,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
     };
     
     fetchCustomerBalances();
-  }, [customers, user?.role, user?.company_id, selectedCompany?.id]);
+  }, [customers, companyId]);
 
   const getSortIcon = (column: string) => {
     if (sortBy !== column) {

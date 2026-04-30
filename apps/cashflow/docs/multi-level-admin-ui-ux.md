@@ -321,7 +321,6 @@ const RoleBadge: React.FC<{ role: UserRole }> = ({ role }) => {
 **Remove:**
 - Sign up button/link
 - Sign up route
-- "Try now" trial button (if applicable)
 
 **Add:**
 - Informational message about disabled registration

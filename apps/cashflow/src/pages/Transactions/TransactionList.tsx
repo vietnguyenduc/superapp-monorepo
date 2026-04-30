@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
-import { useCompany } from "../../contexts/CompanyContext";
+import { useCompanyId } from "../../hooks/useCompanyId";
 import { databaseService } from "../../services/database";
-import type { Transaction, Customer, BankAccount, Branch } from "../../types";
-import { formatCurrency, formatDate, formatPhoneNumber, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../utils/formatting";
+import type { Transaction } from "../../types";
+import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../utils/formatting";
 import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import Pagination from "../../components/UI/Pagination";
@@ -35,17 +33,14 @@ interface TransactionListState {
 }
 
 const TransactionList: React.FC = () => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const companyId = useCompanyId();
   const { getNameById: getTransactionTypeName } = useTransactionTypes();
-  const { selectedCompany } = useCompany();
   const [searchParams] = useSearchParams();
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [bankAccounts, setBankAccounts] = useState<{ id: string; name: string }[]>([]);
   const [customers, setCustomers] = useState<{ id: string; name: string; code?: string }[]>([]);
   const [transactionTypes, setTransactionTypes] = useState<{ id: string; name: string }[]>([]);
-  const [transactionTypesLoading, setTransactionTypesLoading] = useState(true);
   const [showDateMenu, setShowDateMenu] = useState(false);
   const [customStart, setCustomStart] = useState<string>("");
   const [customEnd, setCustomEnd] = useState<string>("");
@@ -107,7 +102,6 @@ const TransactionList: React.FC = () => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
       const filters = {
         search: state.searchTerm || undefined,
         dateRange: state.dateRange || undefined,
@@ -149,11 +143,10 @@ const TransactionList: React.FC = () => {
         loading: false,
       }));
     }
-  }, [state.searchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.currentPage, state.pageSize, selectedCompany]);
+  }, [state.searchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.currentPage, state.pageSize, companyId]);
 
   useEffect(() => {
     const loadFilters = async () => {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
       const [branchResult, bankResult, customerResult, typeResult] = await Promise.all([
         databaseService.branches.getBranches(companyId),
         databaseService.bankAccounts.getBankAccounts(companyId),
@@ -202,10 +195,9 @@ const TransactionList: React.FC = () => {
           .map((t: any) => ({ id: String(t.id || t.value || t.name), name: String(t.name || t.id || t.value) }));
         if (names.length > 0) setTransactionTypes(names);
       }
-      setTransactionTypesLoading(false);
     };
     loadFilters();
-  }, [user?.role, user?.company_id, selectedCompany?.id]);
+  }, [companyId]);
 
   // Load transactions on mount and when filters change
   useEffect(() => {

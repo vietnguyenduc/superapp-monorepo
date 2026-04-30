@@ -19,7 +19,7 @@ const Login: React.FC = () => {
   });
   const navigate = useNavigate();
   const { i18n } = useTranslation();
-  const { signIn, loading, error, clearError, isAuthenticated, user, startTrial, isTrial } =
+  const { signIn, loading, error, clearError, isAuthenticated, user } =
     useAuthContext();
 
   const copy = {
@@ -30,8 +30,6 @@ const Login: React.FC = () => {
       password: "Mật khẩu",
       signIn: "Đăng nhập",
       signingIn: "Đang đăng nhập...",
-      or: "hoặc",
-      trial: "Dùng thử ngay (không cần đăng nhập)",
       forgotPassword: "Quên mật khẩu?",
     },
     en: {
@@ -41,8 +39,6 @@ const Login: React.FC = () => {
       password: "Password",
       signIn: "Sign in",
       signingIn: "Signing in...",
-      or: "or",
-      trial: "Try now (no login needed)",
       forgotPassword: "Forgot password?",
     },
   } as const;
@@ -50,11 +46,10 @@ const Login: React.FC = () => {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated && user && !isTrial) {
-      // Only real sessions auto-redirect
+    if (isAuthenticated && user) {
       navigate("/dashboard");
     }
-  }, [isAuthenticated, isTrial, user, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   // Apply dark mode on login page
   useEffect(() => {
@@ -101,11 +96,6 @@ const Login: React.FC = () => {
     // Navigation is handled by useEffect when isAuthenticated changes
   };
 
-  const handleStartTrial = () => {
-    clearError();
-    startTrial();
-    navigate("/dashboard");
-  };
 
   const toggleDarkMode = () => setDarkMode((prev) => !prev);
   const toggleLanguage = () => {
@@ -146,20 +136,6 @@ const Login: React.FC = () => {
             {tCopy.subtitle}
           </p>
         </div>
-        {isTrial && (
-          <div className="rounded-xl border border-blue-100 dark:border-blue-500/40 bg-blue-50/70 dark:bg-blue-900/30 px-4 py-3 text-sm text-blue-700 dark:text-blue-200 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <span>Đang trong phiên dùng thử.</span>
-              <button
-                type="button"
-                onClick={() => navigate("/dashboard")}
-                className="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm"
-              >
-                Vào bảng điều khiển
-              </button>
-            </div>
-          </div>
-        )}
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
           <div className="space-y-4">
             <div>
@@ -224,22 +200,13 @@ const Login: React.FC = () => {
             </div>
           )}
 
-          <div className="space-y-3">
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full inline-flex justify-center items-center gap-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-            >
-              {loading ? tCopy.signingIn : tCopy.signIn}
-            </button>
-            <button
-              type="button"
-              onClick={handleStartTrial}
-              className="w-full rounded-xl border border-blue-200 dark:border-blue-500/40 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-medium text-blue-600 dark:text-blue-300 shadow-sm hover:bg-blue-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-            >
-              {tCopy.trial}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full inline-flex justify-center items-center gap-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+          >
+            {loading ? tCopy.signingIn : tCopy.signIn}
+          </button>
         </form>
       </div>
       <p className="absolute bottom-4 inset-x-0 text-center text-xs text-gray-500 dark:text-gray-400 select-none">

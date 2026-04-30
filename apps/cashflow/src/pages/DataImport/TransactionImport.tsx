@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useSearchParams } from "react-router-dom";
 import { useAuthContext } from "../../contexts/AuthContext";
-import { useCompany } from "../../contexts/CompanyContext";
+import { useCompanyId } from "../../hooks/useCompanyId";
 import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import type { Transaction, ImportData, ImportError, Customer } from "../../types";
 import {
@@ -167,7 +167,7 @@ const MAX_BULK_ROWS = 200;
 const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   const { t } = useTranslation();
   const { user } = useAuthContext();
-  const { selectedCompany } = useCompany();
+  const companyId = useCompanyId();
   const [searchParams] = useSearchParams();
 
   // Check if user can import transactions
@@ -517,7 +517,6 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
       if (!isValid || dataToImport.length === 0) return;
 
       const branchId = user?.branch_id || null;
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
       setImportSuccess(null);
       setImportError(null);
       setIsProcessing(true);

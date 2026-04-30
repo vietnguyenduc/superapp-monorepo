@@ -180,7 +180,6 @@ npm run format       # Prettier
 - **Auth-to-database sync**: User creation between Supabase Auth and the `users` table can fail silently — no retry logic yet
 - **`database.ts` is very large** (76KB): Contains mixed concerns (CRUD operations, mock data generation, service interfaces). Should be broken into smaller modules.
 - **Mock data coexistence**: Some mock/seed data logic is interleaved with real Supabase queries in `database.ts`; several backup copies exist (`database.complete.ts`, `database.fixed.ts`, etc.)
-- **Trial mode**: Trial users can enter without auth via localStorage; banner offered instead of auto-redirect
 
 ## Conventions
 

@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useAuthContext } from "../../contexts/AuthContext";
-import { useCompany } from "../../contexts/CompanyContext";
+import { useCompanyId } from "../../hooks/useCompanyId";
 import type { Customer, ImportData, ImportError } from "../../types";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import { databaseService } from "../../services/database";
@@ -39,7 +39,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
 }) => {
   const { t } = useTranslation();
   const { user } = useAuthContext();
-  const { selectedCompany } = useCompany();
+  const companyId = useCompanyId();
   const [singleCustomer, setSingleCustomer] = useState<RawCustomerData>(
     INITIAL_SINGLE_CUSTOMER,
   );
@@ -321,7 +321,6 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     }
 
     const branchId = user?.branch_id || null; // Admin can have null branch_id
-    const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
 
     setIsProcessing(true);
     try {
@@ -436,7 +435,6 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     }
 
     const branchId = user?.branch_id || null;
-    const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
     setSingleError(null);
     setIsCreatingSingle(true);
     try {
@@ -851,7 +849,6 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
               variant="secondary"
               size="sm"
               onClick={() => {
-                if (!hasSingleChanges) return;
                 if (window.confirm("Bạn có chắc chắn muốn xóa dữ liệu đang nhập?")) {
                   setSingleCustomer(INITIAL_SINGLE_CUSTOMER);
                   setSingleError(null);
@@ -872,58 +869,6 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
           </Button>
         </div>
       </div>
-    </div>
-  );
-
-  const renderBulkImport = () => (
-    <div className="space-y-6">
-      {renderFileUpload()}
-      {showPreview && (
-        <div className="mt-8 space-y-6">
-          <div className="bg-gray-50 dark:bg-gray-800/60 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {importData.data.length}
-                </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  {t("import.totalRows")}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {importData.data.length - importData.errors.length}
-                </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  {t("import.validRows")}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">
-                  {importData.errors.length}
-                </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  {t("import.errorRows")}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {renderDataPreview()}
-          {renderValidationErrors()}
-
-          <div className="flex justify-end">
-            <Button
-              variant="primary"
-              size="md"
-              onClick={handleImportData}
-              disabled={!importData.isValid || importData.data.length === 0}
-            >
-              {t("import.importData")}
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 

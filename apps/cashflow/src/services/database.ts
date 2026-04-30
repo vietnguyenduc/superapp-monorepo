@@ -2,7 +2,6 @@
 import type { Customer, Transaction, TransactionType } from "../types";
 import { supabase } from "./supabase";
 import { userService } from "./user-service";
-import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 
 type TimeRange = "day" | "week" | "month" | "quarter" | "year";
 
@@ -841,7 +840,7 @@ const customerService = {
       const newCurrent = newOpening + delta;
       const targetCompanyId: string = companyId || existing.company_id || "";
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("customers")
         .update({
           opening_balance: newOpening,
@@ -1859,7 +1858,7 @@ const dashboardService = {
         customer_id: t.customer_id,
         customer_name: t.customer_name,
         branch_id: t.branch_id,
-        branch_name: branchNameMap.get(t.branch_id) || (t.branch_id ? `Branch ${t.branch_id}` : "—"),
+        branch_name: t.branch_id ? (branchNameMap.get(t.branch_id) || `Branch ${t.branch_id}`) : "",
         bank_account_id: t.bank_account_id,
         bank_account_name: t.bank_account_name,
         transaction_type: t.transaction_type,
@@ -2015,16 +2014,16 @@ const backupHistoryService = {
       // Restore table data based on table type
       switch (tableName) {
         case 'customers':
-          await this.restoreCustomers(tableData, companyId);
+          await this.restoreCustomers(tableData);
           break;
         case 'transactions':
-          await this.restoreTransactions(tableData, companyId);
+          await this.restoreTransactions(tableData);
           break;
         case 'bank_accounts':
-          await this.restoreBankAccounts(tableData, companyId);
+          await this.restoreBankAccounts(tableData);
           break;
         case 'branches':
-          await this.restoreBranches(tableData, companyId);
+          await this.restoreBranches(tableData);
           break;
         default:
           return { error: `Unsupported table: ${tableName}` };
@@ -2052,7 +2051,7 @@ const backupHistoryService = {
     }
   },
 
-  async restoreCustomers(customers: any[], companyId: string) {
+  async restoreCustomers(customers: any[]) {
     for (const customer of customers) {
       try {
         const { data: existing } = await customerService.getCustomerById(customer.id);
@@ -2067,7 +2066,7 @@ const backupHistoryService = {
     }
   },
 
-  async restoreTransactions(transactions: any[], companyId: string) {
+  async restoreTransactions(transactions: any[]) {
     for (const transaction of transactions) {
       try {
         const { data: existing } = await transactionService.getTransactionById(transaction.id);
@@ -2082,17 +2081,7 @@ const backupHistoryService = {
     }
   },
 
-  async restoreBankAccounts(accounts: any[], companyId: string) {
-    for (const account of accounts) {
-      try {
-        await bankAccountService.upsertBankAccount(account);
-      } catch (error) {
-        console.error(`Failed to restore bank account ${account.id}:`, error);
-      }
-    }
-  },
-
-  async restoreBranches(branches: any[], companyId: string) {
+  async restoreBranches(branches: any[]) {
     for (const branch of branches) {
       try {
         const { data: existing } = await branchService.getBranchById(branch.id);
@@ -2103,6 +2092,21 @@ const backupHistoryService = {
         }
       } catch (error) {
         console.error(`Failed to restore branch ${branch.id}:`, error);
+      }
+    }
+  },
+
+  async restoreBankAccounts(bankAccounts: any[]) {
+    for (const bankAccount of bankAccounts) {
+      try {
+        const { data: existing } = await bankAccountService.getBankAccount(bankAccount.id);
+        if (existing) {
+          console.log(`Bank account ${bankAccount.id} already exists, skipping`);
+        } else {
+          console.log(`Creating bank account ${bankAccount.id}`);
+        }
+      } catch (error) {
+        console.error(`Failed to restore bank account ${bankAccount.id}:`, error);
       }
     }
   },
@@ -2167,84 +2171,15 @@ const backupHistoryService = {
 };
 
 // Export all services as a single object to match the import in Dashboard.tsx
-// Trial mode wrapper - intercept calls when in trial mode
-const showTrialToast = () => {
-  if (typeof window !== 'undefined') {
-    // Simple alert for trial mode writes
-    // In a real app, this would use a toast notification library
-    console.log('Chế độ dùng thử — thay đổi chỉ hiển thị tạm thời');
-  }
-};
-
-const withTrialIntercept = (serviceName: string, originalService: any) => {
-  return new Proxy(originalService, {
-    get(target, prop) {
-      const originalValue = target[prop];
-      if (typeof originalValue === 'function') {
-        return async (...args: any[]) => {
-          if (getTrialMode()) {
-            // Trial mode: use mock store
-            const tableMap: Record<string, string> = {
-              customers: 'customers',
-              transactions: 'transactions',
-              transactionTypes: 'transaction_types',
-              branches: 'branches',
-              bankAccounts: 'bank_accounts',
-              users: 'users',
-              companies: 'companies',
-            };
-
-            const tableName = tableMap[serviceName];
-            if (!tableName) {
-              // For services without direct table mapping, return mock data or no-op
-              return { data: null, error: null };
-            }
-
-            // Handle different operation types
-            const method = prop as string;
-            if (method.startsWith('get') || method.startsWith('fetch') || method.startsWith('list')) {
-              // Read operations
-              return { data: trialGet(tableName), error: null };
-            } else if (method.startsWith('create') || method.startsWith('insert') || method.startsWith('add')) {
-              // Create operations
-              const record = args[0];
-              showTrialToast();
-              return { data: trialInsert(tableName, record), error: null };
-            } else if (method.startsWith('update') || method.startsWith('edit')) {
-              // Update operations
-              const id = args[0];
-              const updates = args[1];
-              showTrialToast();
-              return { data: trialUpdate(tableName, id, updates), error: null };
-            } else if (method.startsWith('delete') || method.startsWith('remove')) {
-              // Delete operations
-              const id = args[0];
-              showTrialToast();
-              return { data: trialDelete(tableName, id), error: null };
-            }
-
-            // Default: return no-op
-            return { data: null, error: null };
-          }
-          // Normal mode: call original service
-          return originalValue.apply(target, args);
-        };
-      }
-      return originalValue;
-    }
-  });
-};
-
-// Apply trial interception to services that have direct table mappings
 export const databaseService = {
-  dashboard: withTrialIntercept('dashboard', dashboardService),
-  customers: withTrialIntercept('customers', customerService),
-  transactions: withTrialIntercept('transactions', transactionService),
-  transactionTypes: withTrialIntercept('transactionTypes', transactionTypeService),
-  branches: withTrialIntercept('branches', branchService),
-  bankAccounts: withTrialIntercept('bankAccounts', bankAccountService),
-  reports: reportService, // No table mapping
-  users: withTrialIntercept('users', userService),
-  colorSettings: colorSettingsService, // No table mapping
-  backupHistory: backupHistoryService, // No table mapping
+  dashboard: dashboardService,
+  customers: customerService,
+  transactions: transactionService,
+  transactionTypes: transactionTypeService,
+  branches: branchService,
+  bankAccounts: bankAccountService,
+  reports: reportService,
+  users: userService,
+  colorSettings: colorSettingsService,
+  backupHistory: backupHistoryService,
 };

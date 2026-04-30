@@ -5,11 +5,9 @@ interface AuthContextType {
   user: TemplateUser | null;
   loading: boolean;
   error: string | null;
-  isTrial: boolean;
   isAuthenticated: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<{ error: string | null }>;
-  startTrial: () => void;
   clearError: () => void;
 }
 

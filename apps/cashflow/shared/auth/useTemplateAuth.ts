@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 
-export const TRIAL_KEY = "template_trial_user";
 export interface TemplateUser {
   id: string;
   email: string;
@@ -14,7 +13,6 @@ interface AuthState {
   user: TemplateUser | null;
   loading: boolean;
   error: string | null;
-  isTrial: boolean;
 }
 
 export const useTemplateAuth = () => {
@@ -22,18 +20,11 @@ export const useTemplateAuth = () => {
     user: null,
     loading: true,
     error: null,
-    isTrial: false,
   });
 
-  // On init: restore trial user if present
+  // On init: initialize auth state
   useEffect(() => {
-    const trialRaw = typeof window !== "undefined" ? localStorage.getItem(TRIAL_KEY) : null;
-    if (trialRaw) {
-      const parsed = JSON.parse(trialRaw);
-      setState({ user: parsed?.user || null, loading: false, error: null, isTrial: true });
-    } else {
-      setState({ user: null, loading: false, error: null, isTrial: false });
-    }
+    setState({ user: null, loading: false, error: null });
   }, []);
 
   const signIn = async (_email: string, _password: string) => {
@@ -45,40 +36,19 @@ export const useTemplateAuth = () => {
   };
 
   const signOut = async () => {
-    setState({ user: null, loading: false, error: null, isTrial: false });
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(TRIAL_KEY);
-    }
+    setState({ user: null, loading: false, error: null });
     return { error: null } as const;
   };
 
   const clearError = () => setState((prev) => ({ ...prev, error: null }));
 
-  const startTrial = () => {
-    const now = new Date().toISOString();
-    const trialUser: TemplateUser = {
-      id: "trial-user",
-      email: "trial@example.com",
-      full_name: "Trial User",
-      role: "staff",
-      created_at: now,
-      updated_at: now,
-    };
-    setState({ user: trialUser, loading: false, error: null, isTrial: true });
-    if (typeof window !== "undefined") {
-      localStorage.setItem(TRIAL_KEY, JSON.stringify({ user: trialUser, started_at: now }));
-    }
-  };
-
   return {
     user: state.user,
     loading: state.loading,
     error: state.error,
-    isTrial: state.isTrial,
-    isAuthenticated: !!state.user || state.isTrial,
+    isAuthenticated: !!state.user,
     signIn,
     signOut,
-    startTrial,
     clearError,
   } as const;
 };

@@ -8,12 +8,11 @@ import { formatNumber } from "../../utils/formatting";
 import { databaseService } from "../../services/database";
 import { supabase } from "../../services/supabase";
 import { useAuth } from "../../hooks/useAuth";
+import { useCompanyId } from "../../hooks/useCompanyId";
 import { useNavigate } from "react-router-dom";
-import { useCompany } from "../../contexts/CompanyContext";
 import CreateUserModal from "../../components/UserManagement/CreateUserModal";
 import { backupService, recoveryUtils } from "../../utils/backupRecovery";
 import { canRestoreFullBackup, canRevertTable, isAdmin } from "../../utils/permissions";
-import { getTrialMode } from "../../services/trialMockStore";
 
 interface Tab {
   id: string;
@@ -102,12 +101,11 @@ const colorOptions = [
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
+  const companyId = useCompanyId();
   const navigate = useNavigate();
-  const { selectedCompany } = useCompany();
   const [darkMode, setDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState("interface");
   const [activeOpeningSubTab, setActiveOpeningSubTab] = useState<"list" | "file">("list");
-  const [companyName, setCompanyName] = useState("Công ty TNHH ABC");
   const [error, setError] = useState<string | null>(null);
   const [staffUsers, setStaffUsers] = useState<any[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(false);
@@ -198,7 +196,6 @@ const Settings: React.FC = () => {
   // Load backup history
   useEffect(() => {
     const loadBackupHistory = async () => {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
       if (!companyId) return;
       
       setLoadingBackupHistory(true);
@@ -215,14 +212,12 @@ const Settings: React.FC = () => {
     };
 
     loadBackupHistory();
-  }, [user?.role, user?.company_id, selectedCompany?.id]);
+  }, [companyId]);
 
   // Handle backup creation
   const handleCreateBackup = async () => {
     setBackupLoading(true);
     try {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
-      
       // Create backup data
       const backupData = await backupService.createBackup(
         {
@@ -242,7 +237,7 @@ const Settings: React.FC = () => {
       }
       await databaseService.backupHistory.saveBackupToDatabase(
         backupData,
-        companyId,
+        companyId || '',
         user.id
       );
 
@@ -266,8 +261,6 @@ const Settings: React.FC = () => {
   const handleDownloadBackup = async () => {
     setBackupLoading(true);
     try {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
-      
       // Create backup data
       const backupData = await backupService.createBackup(
         {
@@ -305,8 +298,6 @@ const Settings: React.FC = () => {
 
     setRestoreLoading(true);
     try {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
-      
       // Import backup data
       const backupData = await backupService.importBackup(restoreFile);
 
@@ -357,8 +348,6 @@ const Settings: React.FC = () => {
 
     setRestoreLoading(true);
     try {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
-      
       // Load backup data from database
       const { data: backupData, error: loadError } = await databaseService.backupHistory.loadBackupData(backupId, companyId);
       
@@ -415,8 +404,6 @@ const Settings: React.FC = () => {
 
     setRestoreLoading(true);
     try {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
-      
       // Load backup data from database
       const { data: backupData, error: loadError } = await databaseService.backupHistory.loadBackupData(backupId, companyId);
       
@@ -467,13 +454,11 @@ const Settings: React.FC = () => {
 
     setRestoreLoading(true);
     try {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
-      
       // Revert table from backup
       const { error } = await databaseService.backupHistory.revertTableFromBackup(
         backupId,
         tableName,
-        companyId,
+        companyId || '',
         user?.id || ''
       );
 
@@ -521,7 +506,6 @@ const Settings: React.FC = () => {
     setIsLoadingCustomerBalances(true);
     setCustomerBalanceErrors([]);
     try {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
       const result = await databaseService.customers.getCustomers({ limit: 1000, company_id: companyId });
       if (result?.data) {
         const rows: CustomerBalanceRow[] = result.data.map((c: any) => ({
@@ -540,16 +524,13 @@ const Settings: React.FC = () => {
     } finally {
       setIsLoadingCustomerBalances(false);
     }
-  }, [user?.role, user?.company_id, selectedCompany?.id]);
+  }, [companyId]);
 
   // Load data from Supabase-backed services
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-        // Determine company_id based on user role and selected company
-        const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
-        
         // Load transaction types
         const txTypeRes = await databaseService.transactionTypes.getTransactionTypes(companyId);
         if (txTypeRes.error) throw new Error(txTypeRes.error);
@@ -623,7 +604,7 @@ const Settings: React.FC = () => {
     };
 
     loadData();
-  }, [user?.role, user?.company_id, selectedCompany?.id, loadCustomerBalances]);
+  }, [companyId, loadCustomerBalances]);
 
   // Load staff users for permissions management
   const loadStaffUsers = async () => {
@@ -651,13 +632,9 @@ const Settings: React.FC = () => {
           )
         `);
 
-      // Filter by selected company if admin_master has selected a company
-      if (userRole === "admin_master" && selectedCompany?.id) {
-        query = query.eq("company_id", selectedCompany.id);
-      }
-      // Admin_company sees only their company's users
-      else if (userRole === "admin_company" && user?.company_id) {
-        query = query.eq("company_id", user.company_id);
+      // Filter by company
+      if (companyId) {
+        query = query.eq("company_id", companyId);
       }
 
       const { data, error } = await query
@@ -675,7 +652,7 @@ const Settings: React.FC = () => {
 
   useEffect(() => {
     loadStaffUsers();
-  }, [user, selectedCompany]);
+  }, [companyId]);
 
   const handleEditBankAccount = (account: BankAccount) => {
     setEditingBankAccount(account);
@@ -855,7 +832,6 @@ const Settings: React.FC = () => {
     if (!name) return;
 
     try {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
       const res = await databaseService.transactionTypes.upsertTransactionType({
         id: editingTransactionType?.id,
         name,
@@ -870,8 +846,8 @@ const Settings: React.FC = () => {
         id: editingTransactionType?.id || `type-${Date.now()}`, 
         name, 
         color: transactionTypeForm.color, 
-        math_factor: transactionTypeForm.math_factor,
-        impact_type: transactionTypeForm.impact_type,
+        math_factor: transactionTypeForm.math_factor ?? undefined,
+        impact_type: transactionTypeForm.impact_type ?? undefined,
         is_active: true 
       };
       setTransactionTypes((prev) => {
@@ -1053,7 +1029,6 @@ const Settings: React.FC = () => {
 
   const handleDeleteBranch = async (branchId: string) => {
     try {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
       const res = await databaseService.branches.deleteBranch(branchId, companyId);
       if (res.error) throw new Error(res.error);
       setBranches((prev) => prev.filter((branch) => branch.id !== branchId));
@@ -1543,7 +1518,6 @@ const Settings: React.FC = () => {
                           setIsSavingCustomerBalances(true);
                           setCustomerBalanceErrors([]);
                           setCustomerBalanceSuccess(null);
-                          const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
                           try {
                             for (const row of modified) {
                               const res = await databaseService.customers.updateCustomerOpeningBalance(row.id, Number(row.new_opening_balance), companyId);
@@ -2363,10 +2337,6 @@ const Settings: React.FC = () => {
                     variant="primary"
                     size="sm"
                     onClick={() => {
-                      if (getTrialMode()) {
-                        alert("Tính năng này không khả dụng trong chế độ dùng thử");
-                        return;
-                      }
                       setIsCreateUserModalOpen(true);
                     }}
                   >
@@ -2783,7 +2753,7 @@ const Settings: React.FC = () => {
                     onClick={() => {
                       setIsEditUserModalOpen(false);
                       setEditingUser(null);
-                      setUserEditForm({ full_name: "", position: "" });
+                      setUserEditForm({ full_name: "", position: "", company_name: "" });
                     }}
                     className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                   >
@@ -2964,9 +2934,9 @@ const Settings: React.FC = () => {
                             </div>
                           )}
                           {/* Revert own changes for all users */}
-                          {backup.included_tables && backup.included_tables.some(table => canRevertTable(user!, table)) && (
+                          {backup.included_tables && backup.included_tables.some((table: string) => canRevertTable(user!, table)) && (
                             <div className="flex flex-wrap gap-2 mt-2">
-                              {backup.included_tables.map((table) => (
+                              {backup.included_tables.map((table: string) => (
                                 canRevertTable(user!, table) && (
                                   <Button
                                     key={table}

@@ -5,8 +5,7 @@ import type { Transaction } from "../../../types";
 import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionMathFactor } from "../../../utils/formatting";
 import { useTransactionTypes } from "../../../contexts/TransactionTypeContext";
 import { databaseService } from "../../../services/database";
-import { useAuth } from "../../../hooks/useAuth";
-import { useCompany } from "../../../contexts/CompanyContext";
+import { useCompanyId } from "../../../hooks/useCompanyId";
 
 interface RecentTransactionsProps {
   transactions: Transaction[];
@@ -21,8 +20,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { selectedCompany } = useCompany();
+  const companyId = useCompanyId();
   const { getNameById: getTransactionTypeName } = useTransactionTypes();
   const [balanceAfterMap, setBalanceAfterMap] = React.useState<Record<string, number>>({});
   const [accountBalanceAfterMap, setAccountBalanceAfterMap] = React.useState<Record<string, number>>({});
@@ -39,7 +37,6 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   React.useEffect(() => {
     let isMounted = true;
     const loadBranches = async () => {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
       const response = await databaseService.branches.getBranches(companyId);
       if (!response?.data || !isMounted) return;
       const map = response.data.reduce((acc: Record<string, string>, branch: any) => {
@@ -56,12 +53,11 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [user?.role, user?.company_id, selectedCompany?.id]);
+  }, [companyId]);
 
   React.useEffect(() => {
     let isMounted = true;
     const loadBankAccounts = async () => {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
       const response = await databaseService.bankAccounts.getBankAccounts(companyId);
       if (!response?.data || !isMounted) return;
       setBankAccounts(
@@ -75,12 +71,11 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [user?.role, user?.company_id, selectedCompany?.id]);
+  }, [companyId]);
 
   React.useEffect(() => {
     let isMounted = true;
     const loadBalances = async () => {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
       const [txRes, accountRes] = await Promise.all([
         databaseService.transactions.getTransactions({
           page: 1,
@@ -134,15 +129,11 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [user?.role, user?.company_id, selectedCompany?.id]);
+  }, [companyId]);
 
   // Load color settings on mount
-  const [colorsReady, setColorsReady] = React.useState(false);
-  
   React.useEffect(() => {
-    fetchColorSettings().then(() => {
-      setColorsReady(true);
-    });
+    fetchColorSettings();
   }, []);
 
   // Function to get office name from branch_id
@@ -152,7 +143,9 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
 
   const getCustomerTransactionsUrl = (transaction: Transaction) => {
     const params = new URLSearchParams();
-    params.set("customer_id", transaction.customer_id);
+    if (transaction.customer_id) {
+      params.set("customer_id", transaction.customer_id);
+    }
     if (transaction.customer_name) {
       params.set("customer_name", transaction.customer_name);
     }
@@ -173,17 +166,6 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
     return true;
   });
   const displayTransactions = filteredTransactions.slice(0, maxItems);
-
-  const [transactionTypes, setTransactionTypes] = React.useState<any[]>([]);
-
-  React.useEffect(() => {
-    const loadTypes = async () => {
-      const companyId = user?.role === 'admin_master' ? selectedCompany?.id : user?.company_id;
-      const response = await databaseService.transactionTypes.getTransactionTypes(companyId);
-      if (response.data) setTransactionTypes(response.data);
-    };
-    loadTypes();
-  }, [user?.role, user?.company_id, selectedCompany?.id]);
 
   return (
     <div>
@@ -291,7 +273,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {getBranchName(transaction.branch_id)}
+                          {transaction.branch_id ? getBranchName(transaction.branch_id) : "Văn phòng không xác định"}
                         </span>
                       </div>
                     </div>
@@ -484,7 +466,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                   <span className="font-medium">Văn phòng:</span>
-                  <span className="min-w-0 truncate">{getBranchName(transaction.branch_id)}</span>
+                  <span className="min-w-0 truncate">{transaction.branch_id ? getBranchName(transaction.branch_id) : "Văn phòng không xác định"}</span>
                 </div>
               </div>
 
@@ -495,7 +477,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                   <span className="truncate">{transaction.bank_account_name ||
-                    t("dashboard.accountId", { id: transaction.bank_account_id })}</span>
+                    t("dashboard.accountId", { id: transaction.bank_account_id || "" })}</span>
                 </div>
                 <div className="flex-shrink-0 text-right">
                   <div className="text-[11px] text-gray-500 dark:text-gray-300">Số dư sau GD</div>
