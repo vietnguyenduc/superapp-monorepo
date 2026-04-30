@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 import { userService } from "./user-service";
 import { getTrialMode, trialGet, trialDelete, trialUpdate, trialInsert } from "./trialMockStore";
 import { getDataAdapter } from "./dataAdapter";
-import { validateTransactionTypeData, transformRawTransactionType, validateBranchData, transformRawBranch, validateBankAccountData, transformRawBankAccount, validateCustomerData, transformRawCustomer } from "./businessLogic";
+import { validateTransactionTypeData, transformRawTransactionType, validateBranchData, transformRawBranch, validateBankAccountData, transformRawBankAccount, validateCustomerData, transformRawCustomer, validateTransactionData, transformRawTransaction } from "./businessLogic";
 
 type TimeRange = "day" | "week" | "month" | "quarter" | "year";
 
@@ -998,115 +998,89 @@ const transactionService = {
   },
 
   async getTransactionById(id: string, companyId?: string) {
-    // Trial mode: return mock transaction without Supabase call
-    if (getTrialMode()) {
-      const mockTransactions = trialGet("transactions") || [];
-      const transaction = mockTransactions.find((t: any) => t.id === id);
-      if (transaction) {
-        return { data: transaction, error: null };
-      }
-      return { data: null, error: "Transaction not found" };
-    }
-
     try {
-      let query = supabase
-        .from("transactions")
-        .select(`
-          *,
-          customers!customer_id (full_name, customer_code),
-          bank_accounts!bank_account_id (account_name)
-        `)
-        .eq("id", id);
-
+      const adapter = getDataAdapter();
+      
+      // Get transaction
+      const filters: any[] = [{ field: "id", operator: "eq" as any, value: id }];
       if (companyId) {
-        query = query.eq("company_id", companyId);
+        filters.push({ field: "company_id", operator: "eq" as any, value: companyId });
+      }
+      
+      const transactions = await adapter.get("transactions", filters);
+      const transaction = transactions && transactions.length > 0 ? transactions[0] : null;
+
+      if (!transaction) {
+        return { data: null, error: "Transaction not found" };
       }
 
-      const { data, error } = await query.single();
+      // Manually fetch related data (customer and bank_account)
+      let customerData: any = null;
+      if ((transaction as any).customer_id) {
+        const customers = await adapter.get("customers", [
+          { field: "id", operator: "eq" as any, value: (transaction as any).customer_id }
+        ]);
+        customerData = customers && customers.length > 0 ? customers[0] : null;
+      }
 
-      if (error) throw error;
-      return { data, error: null };
+      let bankAccountData: any = null;
+      if ((transaction as any).bank_account_id) {
+        const bankAccounts = await adapter.get("bank_accounts", [
+          { field: "id", operator: "eq" as any, value: (transaction as any).bank_account_id }
+        ]);
+        bankAccountData = bankAccounts && bankAccounts.length > 0 ? bankAccounts[0] : null;
+      }
+
+      // Add nested data to match original structure
+      const result = {
+        ...transaction,
+        customers: customerData ? { full_name: customerData.full_name, customer_code: customerData.customer_code } : null,
+        bank_accounts: bankAccountData ? { account_name: bankAccountData.account_name } : null,
+      };
+
+      return { data: result, error: null };
     } catch (err) {
       return { data: null, error: err instanceof Error ? err.message : "Transaction not found" };
     }
   },
 
   async createTransaction(_transactionData?: any) {
-    // Trial mode: create in mock store
-    if (getTrialMode()) {
-      const now = getNowIso();
-      const body = {
-        id: _transactionData.id || `txn-${Date.now()}`,
-        transaction_code: _transactionData.transaction_code || `TXN${Date.now()}`,
-        customer_id: _transactionData.customer_id || null,
-        bank_account_id: _transactionData.bank_account_id || null,
-        branch_id: _transactionData.branch_id || "trial-branch",
-        company_id: _transactionData.company_id || "trial-company",
-        created_by: _transactionData.created_by || null,
-        transaction_type: _transactionData.transaction_type,
-        amount: _transactionData.amount,
-        description: _transactionData.description || null,
-        reference_number: _transactionData.reference_number || null,
-        transaction_date: _transactionData.transaction_date || now,
-        created_at: now,
-        updated_at: now,
-      };
-      const inserted = trialInsert("transactions", body);
-      if (inserted) {
-        return { data: body, error: null };
-      }
-      return { data: null, error: "Failed to create transaction" };
-    }
-
     try {
-      const now = getNowIso();
-      const body = {
-        id: _transactionData.id || uuid(),
-        transaction_code: _transactionData.transaction_code || `TXN${Date.now()}`,
-        customer_id: _transactionData.customer_id || null,
-        bank_account_id: _transactionData.bank_account_id || null,
-        branch_id: _transactionData.branch_id || null,
-        company_id: _transactionData.company_id || null,
-        created_by: _transactionData.created_by || null,
-        transaction_type: _transactionData.transaction_type,
-        amount: _transactionData.amount,
-        description: _transactionData.description || null,
-        reference_number: _transactionData.reference_number || null,
-        transaction_date: _transactionData.transaction_date || now,
-        created_at: now,
-        updated_at: now,
-      };
+      // Use shared validation
+      const validation = validateTransactionData(_transactionData);
+      if (!validation.isValid) {
+        return {
+          data: null,
+          error: validation.errors.join(", ")
+        };
+      }
 
-      const { data, error } = await supabase
-        .from("transactions")
-        .insert(body)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return { data, error: null };
+      const adapter = getDataAdapter();
+      const useUuidId = !getTrialMode();
+      
+      // Transform data using shared transformation
+      const transformed = transformRawTransaction(_transactionData, useUuidId);
+      
+      // Insert using adapter
+      const result = await adapter.insert("transactions", transformed);
+      
+      return { data: result, error: null };
     } catch (err) {
       return { data: null, error: err instanceof Error ? err.message : "Failed to create transaction" };
     }
   },
 
   async deleteTransaction(id: string) {
-    // Trial mode: delete from mock store
-    if (getTrialMode()) {
-      const deleted = trialDelete("transactions", id);
-      if (deleted) {
-        return { error: null };
-      }
-      return { error: "Transaction not found" };
-    }
-
     try {
-      const { error } = await supabase
-        .from("transactions")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
+      const adapter = getDataAdapter();
+      
+      // Check if transaction exists
+      const transaction: any = await adapter.getById("transactions", id);
+      if (!transaction) {
+        return { error: "Transaction not found" };
+      }
+      
+      await adapter.delete("transactions", id);
       return { error: null };
     } catch (err) {
       return { error: err instanceof Error ? err.message : "Failed to delete transaction" };
@@ -1114,56 +1088,26 @@ const transactionService = {
   },
 
   async updateTransaction(id: string, _transactionData?: any) {
-    // Trial mode: update in mock store
-    if (getTrialMode()) {
-      const now = getNowIso();
-      const body = {
-        transaction_code: _transactionData.transaction_code,
-        customer_id: _transactionData.customer_id || null,
-        bank_account_id: _transactionData.bank_account_id || null,
-        branch_id: _transactionData.branch_id || null,
-        company_id: _transactionData.company_id || null,
-        created_by: _transactionData.created_by || null,
-        transaction_type: _transactionData.transaction_type,
-        amount: _transactionData.amount,
-        description: _transactionData.description || null,
-        reference_number: _transactionData.reference_number || null,
-        transaction_date: _transactionData.transaction_date || now,
-        updated_at: now,
-      };
-      const updated = trialUpdate("transactions", id, body);
-      if (updated) {
-        return { data: body, error: null };
-      }
-      return { data: null, error: "Transaction not found" };
-    }
-
     try {
-      const now = getNowIso();
-      const body = {
-        transaction_code: _transactionData.transaction_code,
-        customer_id: _transactionData.customer_id || null,
-        bank_account_id: _transactionData.bank_account_id || null,
-        branch_id: _transactionData.branch_id || null,
-        company_id: _transactionData.company_id || null,
-        created_by: _transactionData.created_by || null,
-        transaction_type: _transactionData.transaction_type,
-        amount: _transactionData.amount,
-        description: _transactionData.description || null,
-        reference_number: _transactionData.reference_number || null,
-        transaction_date: _transactionData.transaction_date || now,
-        updated_at: now,
-      };
+      // Use shared validation
+      const validation = validateTransactionData(_transactionData);
+      if (!validation.isValid) {
+        return {
+          data: null,
+          error: validation.errors.join(", ")
+        };
+      }
 
-      const { data, error } = await supabase
-        .from("transactions")
-        .update(body)
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return { data, error: null };
+      const adapter = getDataAdapter();
+      const useUuidId = !getTrialMode();
+      
+      // Transform data using shared transformation
+      const transformed = transformRawTransaction(_transactionData, useUuidId);
+      
+      // Update using adapter
+      const result = await adapter.update("transactions", id, transformed);
+      
+      return { data: result, error: null };
     } catch (err) {
       return { data: null, error: err instanceof Error ? err.message : "Failed to update transaction" };
     }
