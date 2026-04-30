@@ -4,6 +4,7 @@
 import { dashboardMockData } from "./mockData";
 
 const TRIAL_STORE_KEY = "cashflow_trial_store";
+const TRIAL_MODE_KEY = "cashflow_trial_mode_enabled";
 
 // Seed data for trial mode
 const seedData = {
@@ -134,6 +135,10 @@ let isTrialMode = false;
 
 export const setTrialMode = (enabled: boolean) => {
   isTrialMode = enabled;
+  // Persist trial mode flag to localStorage
+  if (typeof window !== "undefined") {
+    localStorage.setItem(TRIAL_MODE_KEY, enabled ? "true" : "false");
+  }
   if (enabled) {
     // Load from localStorage or use seed
     try {
@@ -150,7 +155,27 @@ export const setTrialMode = (enabled: boolean) => {
   }
 };
 
-export const getTrialMode = () => isTrialMode;
+export const getTrialMode = () => {
+  // On first call, check localStorage to restore trial mode flag
+  if (typeof window !== "undefined" && isTrialMode === false) {
+    const saved = localStorage.getItem(TRIAL_MODE_KEY);
+    if (saved === "true") {
+      isTrialMode = true;
+      // Load store from localStorage
+      try {
+        const storeData = localStorage.getItem(TRIAL_STORE_KEY);
+        if (storeData) {
+          store = JSON.parse(storeData);
+        } else {
+          store = { ...seedData };
+        }
+      } catch {
+        store = { ...seedData };
+      }
+    }
+  }
+  return isTrialMode;
+};
 
 const saveStore = () => {
   if (typeof window !== "undefined") {
@@ -214,6 +239,8 @@ export const resetTrialStore = () => {
 export const clearTrialStore = () => {
   if (typeof window !== "undefined") {
     localStorage.removeItem(TRIAL_STORE_KEY);
+    localStorage.removeItem(TRIAL_MODE_KEY);
   }
   store = { ...seedData };
+  isTrialMode = false;
 };
