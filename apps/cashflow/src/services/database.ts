@@ -684,6 +684,16 @@ function getPeriodWindow(timeRange: TimeRange, count: number, baseDate?: Date) {
 
 const customerService = {
   async getCustomers(_filters?: any) {
+    // Trial mode: return mock customers without Supabase call
+    if (getTrialMode()) {
+      const mockCustomers = trialGet("customers") || [];
+      return {
+        data: mockCustomers,
+        error: null,
+        count: mockCustomers.length,
+      };
+    }
+
     try {
       let query = supabase
         .from("customers")
@@ -726,16 +736,35 @@ const customerService = {
   },
 
   async getCustomerById(id: string, companyId?: string) {
+    // Trial mode: return mock customer without Supabase call
+    if (getTrialMode()) {
+      const mockCustomers = trialGet("customers") || [];
+      const customer = mockCustomers.find((c: any) => c.id === id);
+      if (customer) {
+        const mockTransactions = trialGet("transactions") || [];
+        const customerTransactions = mockTransactions.filter((t: any) => t.customer_id === id);
+        return {
+          data: {
+            ...customer,
+            total_balance: (customer as any).total_balance || 0,
+            transaction_count: customerTransactions.length,
+          },
+          error: null,
+        };
+      }
+      return { data: null, error: "Customer not found" };
+    }
+
     try {
       let query = supabase
         .from("customers")
         .select("*, updated_by")
         .eq("id", id);
-      
+
       if (companyId) {
         query = query.eq("company_id", companyId);
       }
-      
+
       const { data, error } = await query.single();
 
       if (error) throw error;
@@ -795,6 +824,35 @@ const customerService = {
   },
 
   async createCustomer(_customerData?: any) {
+    // Trial mode: create in mock store
+    if (getTrialMode()) {
+      const body = {
+        id: _customerData.id || `cust-${Date.now()}`,
+        customer_code: _customerData.customer_code || `CUST${Date.now().toString().slice(-4)}`,
+        full_name: _customerData.full_name,
+        phone: _customerData.phone || null,
+        email: _customerData.email || null,
+        address: _customerData.address || null,
+        working_method: _customerData.working_method || null,
+        notes: _customerData.notes || null,
+        branch_id: _customerData.branch_id || "trial-branch",
+        company_id: _customerData.company_id || "trial-company",
+        opening_balance: _customerData.opening_balance ?? 0,
+        opening_balance_updated_at: _customerData.opening_balance_updated_at || getNowIso(),
+        current_balance: _customerData.current_balance ?? _customerData.total_balance ?? _customerData.opening_balance ?? 0,
+        total_balance: _customerData.total_balance ?? _customerData.current_balance ?? _customerData.opening_balance ?? 0,
+        last_transaction_date: _customerData.last_transaction_date || null,
+        created_at: getNowIso(),
+        updated_at: getNowIso(),
+        is_active: _customerData.is_active !== false,
+      };
+      const inserted = trialInsert("customers", body);
+      if (inserted) {
+        return { data: body, error: null };
+      }
+      return { data: null, error: "Failed to create customer" };
+    }
+
     try {
       const body = {
         id: _customerData.id || uuid(),
@@ -832,6 +890,32 @@ const customerService = {
   },
 
   async updateCustomer(id: string, _customerData: any) {
+    // Trial mode: update in mock store
+    if (getTrialMode()) {
+      const body = {
+        customer_code: _customerData.customer_code,
+        full_name: _customerData.full_name,
+        phone: _customerData.phone ?? null,
+        email: _customerData.email ?? null,
+        address: _customerData.address ?? null,
+        working_method: _customerData.working_method ?? null,
+        notes: _customerData.notes ?? null,
+        branch_id: _customerData.branch_id,
+        company_id: _customerData.company_id,
+        opening_balance: _customerData.opening_balance,
+        opening_balance_updated_at: _customerData.opening_balance_updated_at,
+        current_balance: _customerData.current_balance,
+        total_balance: _customerData.total_balance,
+        last_transaction_date: _customerData.last_transaction_date,
+        is_active: _customerData.is_active,
+        updated_at: getNowIso(),
+      };
+      const updated = trialUpdate("customers", id, body);
+      if (updated) {
+        return { data: body, error: null };
+      }
+      return { data: null, error: "Customer not found" };
+    }
 
     try {
       const body = {
@@ -871,6 +955,15 @@ const customerService = {
   },
 
   async deleteCustomer(id: string) {
+    // Trial mode: delete from mock store
+    if (getTrialMode()) {
+      const deleted = trialDelete("customers", id);
+      if (deleted) {
+        return { data: null, error: null };
+      }
+      return { data: null, error: "Customer not found" };
+    }
+
     try {
       const { error } = await supabase
         .from("customers")
@@ -886,6 +979,27 @@ const customerService = {
   },
 
   async updateCustomerOpeningBalance(customerId: string, newOpening: number, companyId?: string) {
+    // Trial mode: update in mock store
+    if (getTrialMode()) {
+      const mockCustomers = trialGet("customers") || [];
+      const customer = mockCustomers.find((c: any) => c.id === customerId);
+      if (customer) {
+        const oldOpening = Number((customer as any).opening_balance || 0);
+        const oldCurrent = Number((customer as any).current_balance || 0);
+        const delta = oldCurrent - oldOpening;
+        const newCurrent = newOpening + delta;
+        const updated = trialUpdate("customers", customerId, {
+          opening_balance: newOpening,
+          current_balance: newCurrent,
+          updated_at: new Date().toISOString(),
+        });
+        if (updated) {
+          return { data: { ...customer, opening_balance: newOpening, current_balance: newCurrent }, error: null };
+        }
+      }
+      return { data: null, error: "Customer not found" };
+    }
+
     try {
       let query = supabase
         .from("customers")
@@ -922,6 +1036,36 @@ const customerService = {
   },
 
   async bulkUpdateOpeningBalances(rows: { customer_code?: string; opening_balance?: number }[]) {
+    // Trial mode: update in mock store
+    if (getTrialMode()) {
+      const errors: { row: number; message: string; value?: any }[] = [];
+      let updatedCount = 0;
+      const mockCustomers = trialGet("customers") || [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const code = String(row.customer_code || "").trim();
+        const opening = Number(row.opening_balance);
+
+        if (!code) {
+          errors.push({ row: i, message: "Missing customer_code" });
+          continue;
+        }
+
+        const customerIndex = mockCustomers.findIndex((c: any) => c.customer_code === code);
+        if (customerIndex !== -1) {
+          (mockCustomers[customerIndex] as any).opening_balance = opening;
+          (mockCustomers[customerIndex] as any).current_balance = opening;
+          (mockCustomers[customerIndex] as any).updated_at = new Date().toISOString();
+          updatedCount++;
+        } else {
+          errors.push({ row: i, message: "Customer not found", value: code });
+        }
+      }
+
+      return { data: { updated: updatedCount }, errors };
+    }
+
     try {
       const errors: { row: number; message: string; value?: any }[] = [];
       let updatedCount = 0;
@@ -958,6 +1102,37 @@ const customerService = {
   },
 
   async bulkCreateCustomers(_customers?: any[]) {
+    // Trial mode: create in mock store
+    if (getTrialMode()) {
+      const now = getNowIso();
+      const body = (_customers || []).map(raw => ({
+        id: raw.id || `cust-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+        customer_code: raw.customer_code || `CUST${Date.now().toString().slice(-4)}_${Math.random().toString(36).slice(2, 5)}`,
+        full_name: raw.full_name,
+        phone: raw.phone || null,
+        email: raw.email || null,
+        address: raw.address || null,
+        working_method: raw.working_method || null,
+        notes: raw.notes || null,
+        branch_id: raw.branch_id || "trial-branch",
+        company_id: raw.company_id || "trial-company",
+        opening_balance: raw.opening_balance ?? 0,
+        opening_balance_updated_at: raw.opening_balance_updated_at || now,
+        current_balance: raw.current_balance ?? raw.total_balance ?? raw.opening_balance ?? 0,
+        total_balance: raw.total_balance ?? raw.current_balance ?? raw.opening_balance ?? 0,
+        last_transaction_date: raw.last_transaction_date || null,
+        created_at: now,
+        updated_at: now,
+        is_active: raw.is_active !== false,
+      }));
+
+      const mockCustomers = trialGet("customers") || [];
+      const allCustomers = [...body, ...mockCustomers];
+      // Update the mock store with all customers
+      localStorage.setItem("cashflow_trial_store", JSON.stringify({ customers: allCustomers }));
+      return { data: body, error: null };
+    }
+
     try {
       const now = getNowIso();
       const body = (_customers || []).map(raw => ({
@@ -999,6 +1174,16 @@ const customerService = {
 // Transaction service
 const transactionService = {
   async getTransactions(_filters?: any) {
+    // Trial mode: return mock transactions without Supabase call
+    if (getTrialMode()) {
+      const mockTransactions = trialGet("transactions") || [];
+      return {
+        data: mockTransactions,
+        error: null,
+        count: mockTransactions.length,
+      };
+    }
+
     try {
       const filters = _filters || {};
       let query = supabase
@@ -1057,6 +1242,16 @@ const transactionService = {
   },
 
   async getTransactionById(id: string, companyId?: string) {
+    // Trial mode: return mock transaction without Supabase call
+    if (getTrialMode()) {
+      const mockTransactions = trialGet("transactions") || [];
+      const transaction = mockTransactions.find((t: any) => t.id === id);
+      if (transaction) {
+        return { data: transaction, error: null };
+      }
+      return { data: null, error: "Transaction not found" };
+    }
+
     try {
       let query = supabase
         .from("transactions")
@@ -1066,11 +1261,11 @@ const transactionService = {
           bank_accounts!bank_account_id (account_name)
         `)
         .eq("id", id);
-      
+
       if (companyId) {
         query = query.eq("company_id", companyId);
       }
-      
+
       const { data, error } = await query.single();
 
       if (error) throw error;
@@ -1081,6 +1276,32 @@ const transactionService = {
   },
 
   async createTransaction(_transactionData?: any) {
+    // Trial mode: create in mock store
+    if (getTrialMode()) {
+      const now = getNowIso();
+      const body = {
+        id: _transactionData.id || `txn-${Date.now()}`,
+        transaction_code: _transactionData.transaction_code || `TXN${Date.now()}`,
+        customer_id: _transactionData.customer_id || null,
+        bank_account_id: _transactionData.bank_account_id || null,
+        branch_id: _transactionData.branch_id || "trial-branch",
+        company_id: _transactionData.company_id || "trial-company",
+        created_by: _transactionData.created_by || null,
+        transaction_type: _transactionData.transaction_type,
+        amount: _transactionData.amount,
+        description: _transactionData.description || null,
+        reference_number: _transactionData.reference_number || null,
+        transaction_date: _transactionData.transaction_date || now,
+        created_at: now,
+        updated_at: now,
+      };
+      const inserted = trialInsert("transactions", body);
+      if (inserted) {
+        return { data: body, error: null };
+      }
+      return { data: null, error: "Failed to create transaction" };
+    }
+
     try {
       const now = getNowIso();
       const body = {
@@ -1114,6 +1335,15 @@ const transactionService = {
   },
 
   async deleteTransaction(id: string) {
+    // Trial mode: delete from mock store
+    if (getTrialMode()) {
+      const deleted = trialDelete("transactions", id);
+      if (deleted) {
+        return { error: null };
+      }
+      return { error: "Transaction not found" };
+    }
+
     try {
       const { error } = await supabase
         .from("transactions")
@@ -1128,6 +1358,30 @@ const transactionService = {
   },
 
   async updateTransaction(id: string, _transactionData?: any) {
+    // Trial mode: update in mock store
+    if (getTrialMode()) {
+      const now = getNowIso();
+      const body = {
+        transaction_code: _transactionData.transaction_code,
+        customer_id: _transactionData.customer_id || null,
+        bank_account_id: _transactionData.bank_account_id || null,
+        branch_id: _transactionData.branch_id || null,
+        company_id: _transactionData.company_id || null,
+        created_by: _transactionData.created_by || null,
+        transaction_type: _transactionData.transaction_type,
+        amount: _transactionData.amount,
+        description: _transactionData.description || null,
+        reference_number: _transactionData.reference_number || null,
+        transaction_date: _transactionData.transaction_date || now,
+        updated_at: now,
+      };
+      const updated = trialUpdate("transactions", id, body);
+      if (updated) {
+        return { data: body, error: null };
+      }
+      return { data: null, error: "Transaction not found" };
+    }
+
     try {
       const now = getNowIso();
       const body = {
@@ -1165,6 +1419,57 @@ const transactionService = {
     _createdBy?: string,
     _companyId?: string,
   ) {
+    // Trial mode: import to mock store
+    if (getTrialMode()) {
+      const raw = Array.isArray(_rawData) ? _rawData : [];
+      const branchId = _branchId ? String(_branchId) : "trial-branch";
+      const createdBy = String(_createdBy || "");
+      const companyId = _companyId || "trial-company";
+      const now = getNowIso();
+      const mockTransactions = trialGet("transactions") || [];
+      const mockCustomers = trialGet("customers") || [];
+
+      const body = raw.map((row: any) => ({
+        id: `txn-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+        transaction_code: row.transaction_code || `TXN${Date.now()}`,
+        customer_id: row.customer_id || null,
+        customer_name: row.customer_name || null,
+        bank_account_id: row.bank_account_id || null,
+        bank_account_name: row.bank_account_name || null,
+        branch_id: branchId,
+        company_id: companyId,
+        created_by: createdBy,
+        transaction_type: row.transaction_type || "payment",
+        amount: Number(row.amount) || 0,
+        description: row.description || null,
+        reference_number: row.reference_number || null,
+        transaction_date: row.transaction_date || now,
+        created_at: now,
+        updated_at: now,
+      }));
+
+      const allTransactions = [...body, ...mockTransactions];
+      localStorage.setItem("cashflow_trial_store", JSON.stringify({ transactions: allTransactions }));
+
+      // Update customer balances
+      const mockCustomersMap = new Map(mockCustomers.map((c: any) => [c.id, c]));
+      body.forEach((tx: any) => {
+        if (tx.customer_id && mockCustomersMap.has(tx.customer_id)) {
+          const customer = mockCustomersMap.get(tx.customer_id);
+          const amount = Number(tx.amount) || 0;
+          const type = tx.transaction_type || "payment";
+          const multiplier = (type === "payment" || type === "refund") ? 1 : -1;
+          customer.total_balance = (customer.total_balance || 0) + (amount * multiplier);
+          customer.current_balance = customer.current_balance || customer.total_balance;
+          customer.updated_at = now;
+        }
+      });
+
+      localStorage.setItem("cashflow_trial_store", JSON.stringify({ customers: Array.from(mockCustomersMap.values()) }));
+
+      return { data: body, error: null };
+    }
+
     try {
       const raw = Array.isArray(_rawData) ? _rawData : [];
       const branchId = _branchId ? String(_branchId) : "";
@@ -1176,12 +1481,12 @@ const transactionService = {
         .from("transaction_types")
         .select("id, name")
         .eq("is_active", true);
-      
+
       if (typeError) {
         console.error("Failed to fetch transaction types for validation:", typeError);
         throw new Error("Không thể tải loại giao dịch để validate. Vui lòng thử lại.");
       }
-      
+
       if (!validTransactionTypes || validTransactionTypes.length === 0) {
         throw new Error("Không tìm thấy loại giao dịch nào. Vui lòng tạo loại giao dịch trong Cài đặt trước khi import.");
       }
@@ -1402,15 +1707,21 @@ const transactionService = {
 // Bank account service
 const bankAccountService = {
   async getBankAccounts(companyId?: string) {
+    // Trial mode: return mock bank accounts without Supabase call
+    if (getTrialMode()) {
+      const mockBankAccounts = trialGet("bank_accounts") || [];
+      return { data: mockBankAccounts, error: null };
+    }
+
     try {
       let query = supabase
         .from("bank_accounts")
         .select("id, account_name, account_number, bank_name, balance, branch_id, company_id, is_active, created_at, updated_at");
-      
+
       if (companyId) {
         query = query.eq("company_id", companyId);
       }
-      
+
       const { data, error } = await query.order("created_at", { ascending: false });
       if (error) return { data: [], error: error.message };
       return { data: data || [], error: null };
@@ -1420,16 +1731,26 @@ const bankAccountService = {
   },
 
   async getBankAccount(id: string, companyId?: string) {
+    // Trial mode: return mock bank account without Supabase call
+    if (getTrialMode()) {
+      const mockBankAccounts = trialGet("bank_accounts") || [];
+      const bankAccount = mockBankAccounts.find((b: any) => b.id === id);
+      if (bankAccount) {
+        return { data: bankAccount, error: null };
+      }
+      return { data: null, error: "Bank account not found" };
+    }
+
     try {
       let query = supabase
         .from("bank_accounts")
         .select("id, account_name, account_number, bank_name, balance, branch_id, company_id, is_active, created_at, updated_at")
         .eq("id", id);
-      
+
       if (companyId) {
         query = query.eq("company_id", companyId);
       }
-      
+
       const { data, error } = await query.single();
       if (error) return { data: null, error: error.message };
       return { data, error: null };
@@ -1439,6 +1760,36 @@ const bankAccountService = {
   },
 
   async upsertBankAccount(payload: Partial<Record<string, any>>) {
+    // Trial mode: upsert to mock store
+    if (getTrialMode()) {
+      const now = new Date().toISOString();
+      const body: any = {
+        id: payload.id || `bank-${Date.now()}`,
+        account_name: payload.account_name,
+        account_number: payload.account_number,
+        bank_name: payload.bank_name,
+        balance: payload.balance ?? 0,
+        is_active: (payload as any)?.is_active !== false,
+        branch_id: (payload as any).branch_id || "trial-branch",
+        company_id: (payload as any).company_id || "trial-company",
+        created_at: now,
+        updated_at: now,
+      };
+
+      if (payload.id) {
+        const updated = trialUpdate("bank_accounts", payload.id, body);
+        if (updated) {
+          return { data: body, error: null };
+        }
+      } else {
+        const inserted = trialInsert("bank_accounts", body);
+        if (inserted) {
+          return { data: body, error: null };
+        }
+      }
+      return { data: null, error: "Failed to save bank account" };
+    }
+
     try {
       const body: any = {
         id: payload.id,
@@ -1448,7 +1799,7 @@ const bankAccountService = {
         balance: payload.balance ?? 0,
         is_active: (payload as any)?.is_active !== false,
       };
-      
+
       // Chá»‰ gÃ¡n branch_id vÃ  company_id náº¿u cÃ³ giÃ¡ trá»‹ Ä‘á»ƒ trÃ¡nh lá»—i RLS khi gÃ¡n null
       if ((payload as any).branch_id) body.branch_id = (payload as any).branch_id;
       if ((payload as any).company_id) body.company_id = (payload as any).company_id;
@@ -1489,15 +1840,21 @@ const bankAccountService = {
 // Branch service
 const branchService = {
   async getBranches(companyId?: string) {
+    // Trial mode: return mock branches without Supabase call
+    if (getTrialMode()) {
+      const mockBranches = trialGet("branches") || [];
+      return { data: mockBranches, error: null };
+    }
+
     try {
       let query = supabase
         .from("branches")
         .select("id, name, code, address, phone, email, manager_id, company_id, is_active, created_at, updated_at");
-      
+
       if (companyId) {
         query = query.eq("company_id", companyId);
       }
-      
+
       const { data, error } = await query.order("created_at", { ascending: false });
       if (error) return { data: [], error: error.message };
       return { data: data || [], error: null };
@@ -1507,6 +1864,16 @@ const branchService = {
   },
 
   async getBranchById(id: string, companyId?: string) {
+    // Trial mode: return mock branch without Supabase call
+    if (getTrialMode()) {
+      const mockBranches = trialGet("branches") || [];
+      const branch = mockBranches.find((b: any) => b.id === id);
+      if (branch) {
+        return { data: branch, error: null };
+      }
+      return { data: null, error: "Branch not found" };
+    }
+
     try {
       let query = supabase
         .from("branches")
@@ -1526,6 +1893,37 @@ const branchService = {
   },
 
   async upsertBranch(payload: Partial<Record<string, any>>) {
+    // Trial mode: upsert to mock store
+    if (getTrialMode()) {
+      const now = new Date().toISOString();
+      const body: any = {
+        id: payload.id || `branch-${Date.now()}`,
+        name: (payload as any)?.name,
+        code: (payload as any)?.code,
+        address: (payload as any)?.address || null,
+        phone: (payload as any)?.phone || null,
+        email: (payload as any)?.email || null,
+        is_active: (payload as any)?.is_active !== false,
+        company_id: (payload as any).company_id || "trial-company",
+        manager_id: (payload as any).manager_id || null,
+        created_at: now,
+        updated_at: now,
+      };
+
+      if (payload.id) {
+        const updated = trialUpdate("branches", payload.id, body);
+        if (updated) {
+          return { data: body, error: null };
+        }
+      } else {
+        const inserted = trialInsert("branches", body);
+        if (inserted) {
+          return { data: body, error: null };
+        }
+      }
+      return { data: null, error: "Failed to save branch" };
+    }
+
     try {
       const body: any = {
         id: payload.id,
@@ -1536,7 +1934,7 @@ const branchService = {
         email: (payload as any)?.email || null,
         is_active: (payload as any)?.is_active !== false,
       };
-      
+
       if ((payload as any).company_id) body.company_id = (payload as any).company_id;
       if ((payload as any).manager_id) body.manager_id = (payload as any).manager_id;
       const { data, error } = await supabase
@@ -1583,17 +1981,72 @@ const dashboardService = {
   ) {
     const branchId = String(_branchId || "");
 
-    // Trial mode: return mock data without Supabase calls
+    // Trial mode: return processed mock data without Supabase calls
     if (getTrialMode()) {
       const mockTransactions = trialGet("transactions") || [];
       const mockCustomers = trialGet("customers") || [];
       const mockBankAccounts = trialGet("bank_accounts") || [];
       const mockBranches = trialGet("branches") || [];
+
+      // Process mock data to match real mode structure
+      const currentIncome = mockTransactions
+        .filter((t: any) => t.transaction_type === "payment" || t.transaction_type === "refund")
+        .reduce((s: number, t: any) => s + Math.abs(t.amount), 0);
+      const currentDebt = mockTransactions
+        .filter((t: any) => t.transaction_type === "charge")
+        .reduce((s: number, t: any) => s + Math.abs(t.amount), 0);
+      const outstanding = mockCustomers.reduce((s: number, c: any) => s + (Math.abs(c.total_balance) || 0), 0);
+      const activeCustomers = mockCustomers.length;
+      const currentPaymentCount = mockTransactions.filter((t: any) => t.transaction_type === "payment").length;
+      const currentChargeCount = mockTransactions.filter((t: any) => t.transaction_type === "charge").length;
+
+      const recentTransactions = [...mockTransactions]
+        .sort((a: any, b: any) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
+        .slice(0, 20);
+
+      const topCustomers = [...mockCustomers]
+        .sort((a: any, b: any) => Math.abs(b.total_balance) - Math.abs(a.total_balance))
+        .slice(0, 10);
+
+      const balanceByBankAccount = mockBankAccounts.map((b: any) => ({
+        bank_account_id: b.id,
+        account_name: b.account_name,
+        account_number: b.account_number,
+        balance: b.balance || 0,
+        historical_data: [],
+      }));
+
+      const cashFlowData: any[] = [];
+      const transactionAmountsByBranch = mockBranches.map((b: any) => ({
+        branch_id: b.id,
+        branch_name: b.name,
+        incomeAmount: currentIncome,
+        debtAmount: currentDebt,
+      }));
+
       return {
-        transactions: mockTransactions,
-        customers: mockCustomers,
-        bankAccounts: mockBankAccounts,
-        branches: mockBranches,
+        data: {
+          totalOutstanding: outstanding,
+          totalOutstandingChange: 0,
+          activeCustomers,
+          activeCustomersChange: 0,
+          transactionPaymentCount: currentPaymentCount,
+          transactionChargeCount: currentChargeCount,
+          transactionPaymentChange: 0,
+          transactionChargeChange: 0,
+          transactionIncomeInPeriod: currentIncome,
+          transactionDebtInPeriod: currentDebt,
+          transactionIncomeChange: 0,
+          transactionDebtChange: 0,
+          balanceByBankAccount,
+          cashFlowData,
+          cashFlowStartBalance: outstanding,
+          cashFlowEndBalance: outstanding,
+          transactionAmountsByBranch,
+          recentTransactions,
+          topCustomers,
+        },
+        error: null,
       };
     }
 
@@ -1997,6 +2450,34 @@ const dashboardService = {
 // Backup history service
 const backupHistoryService = {
   async saveBackupHistory(backupData: any) {
+    // Trial mode: save to mock store
+    if (getTrialMode()) {
+      const mockStore = JSON.parse(localStorage.getItem("cashflow_trial_store") || "{}");
+      const mockBackups = mockStore.backup_history || [];
+      const backup = {
+        id: `backup-${Date.now()}`,
+        company_id: backupData.company_id || "trial-company",
+        backup_name: backupData.backup_name || `Backup ${new Date().toISOString()}`,
+        backup_version: backupData.version || "1.0.0",
+        backup_timestamp: backupData.timestamp || new Date().toISOString(),
+        backup_format: backupData.format || "xlsx",
+        backup_size: backupData.size,
+        created_by: backupData.created_by,
+        total_customers: backupData.metadata?.totalCustomers || 0,
+        total_transactions: backupData.metadata?.totalTransactions || 0,
+        total_bank_accounts: backupData.metadata?.totalBankAccounts || 0,
+        total_branches: backupData.metadata?.totalBranches || 0,
+        branch_id: backupData.branch_id || "trial-branch",
+        notes: backupData.notes,
+        is_restorable: true,
+        created_at: new Date().toISOString(),
+      };
+      mockBackups.push(backup);
+      mockStore.backup_history = mockBackups;
+      localStorage.setItem("cashflow_trial_store", JSON.stringify(mockStore));
+      return { data: backup, error: null };
+    }
+
     try {
       const { data, error } = await (supabase as any)
         .from("backup_history")
@@ -2018,7 +2499,7 @@ const backupHistoryService = {
         })
         .select()
         .single();
-      
+
       if (error) return { data: null, error: error.message };
       return { data, error: null };
     } catch (err) {
@@ -2241,20 +2722,26 @@ const backupHistoryService = {
   },
 
   async getBackupHistory(companyId?: string, userId?: string) {
+    // Trial mode: return mock backups without Supabase call
+    if (getTrialMode()) {
+      const mockBackups = trialGet("backup_history") || [];
+      return { data: mockBackups, error: null };
+    }
+
     try {
       let query = (supabase as any)
         .from("backup_history")
         .select("*")
         .order("backup_timestamp", { ascending: false });
-      
+
       if (companyId) {
         query = query.eq("company_id", companyId);
       }
-      
+
       if (userId) {
         query = query.eq("created_by", userId);
       }
-      
+
       const { data, error } = await query;
       if (error) return { data: [], error: error.message };
       return { data: data || [], error: null };
@@ -2264,12 +2751,22 @@ const backupHistoryService = {
   },
 
   async deleteBackupHistory(id: string) {
+    // Trial mode: delete from mock store
+    if (getTrialMode()) {
+      const mockBackups = trialGet("backup_history") || [];
+      const filtered = mockBackups.filter((b: any) => b.id !== id);
+      localStorage.setItem("cashflow_trial_store", JSON.stringify({ backup_history: filtered }));
+      return { error: null };
+    }
+
     try {
       const { error } = await (supabase as any)
         .from("backup_history")
         .delete()
         .eq("id", id);
-      return { error: error?.message || null };
+
+      if (error) return { error: error.message };
+      return { error: null };
     } catch (err) {
       return { error: err instanceof Error ? err.message : "Failed to delete backup history" };
     }

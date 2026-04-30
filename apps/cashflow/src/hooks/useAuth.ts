@@ -244,6 +244,9 @@ export const useAuth = () => {
             error: profile ? null : "Failed to fetch user profile",
             isTrial: false,
           });
+
+          // Explicitly disable trial mode when signed in with real credentials
+          setTrialMode(false);
         }, 0);
         return;
       }
@@ -257,6 +260,9 @@ export const useAuth = () => {
           error: null,
           isTrial: false,
         });
+
+        // Explicitly disable trial mode when signed out
+        setTrialMode(false);
         return;
       }
 
@@ -267,6 +273,9 @@ export const useAuth = () => {
           session,
           isTrial: false,
         }));
+
+        // Explicitly disable trial mode during token refresh (real user)
+        setTrialMode(false);
       }
     });
 
@@ -318,6 +327,9 @@ export const useAuth = () => {
         error: null,
         isTrial: false,
       });
+
+      // Explicitly disable trial mode when signing in with real credentials
+      setTrialMode(false);
 
       return { error: null };
     } catch (err: any) {
@@ -387,6 +399,9 @@ export const useAuth = () => {
           error: null,
           isTrial: false,
         });
+
+        // Explicitly disable trial mode when signing up with real credentials
+        setTrialMode(false);
       } else {
         // No user returned
         setState((prev) => ({ ...prev, loading: false }));
@@ -435,6 +450,9 @@ export const useAuth = () => {
       localStorage.removeItem("debt-repayment-auth");
       clearTrialStore();
     }
+
+    // Explicitly disable trial mode when signing out
+    setTrialMode(false);
 
     return { error: null };
   };
