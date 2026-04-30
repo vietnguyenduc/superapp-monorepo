@@ -28,6 +28,8 @@ interface AuthContextType {
   getAccessToken: () => string | null;
   refreshToken: () => Promise<{ error: string | null }>;
   isTokenExpired: () => boolean;
+  isTrial: boolean;
+  startTrial: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -65,6 +67,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     getAccessToken,
     refreshToken,
     isTokenExpired,
+    isTrial: auth.isTrial,
+    startTrial: auth.startTrial,
     signUp: auth.signUp,
   };
 

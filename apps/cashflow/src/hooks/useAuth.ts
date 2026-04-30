@@ -1,15 +1,47 @@
 // Real useAuth hook that uses Supabase authentication
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../services/supabase";
+import { setTrialMode, clearTrialStore } from "../services/trialMockStore";
 import type { User } from "../types";
 import type { TablesInsert } from "../types/database.types";
 import type { Session } from "@supabase/supabase-js";
+
+const TRIAL_STORAGE_KEY = "cashflow_trial_user";
+const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+/**
+ * Read the persisted trial session from localStorage.
+ * Returns null when there is no trial, when the JSON is corrupt,
+ * or when the trial has expired (in which case the entry is also cleared).
+ */
+const readTrialFromStorage = (): { user: User; started_at: string } | null => {
+  if (typeof window === "undefined") return null;
+  const raw = localStorage.getItem(TRIAL_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { user?: User; started_at?: string };
+    if (!parsed?.user || !parsed?.started_at) {
+      localStorage.removeItem(TRIAL_STORAGE_KEY);
+      return null;
+    }
+    const startedMs = new Date(parsed.started_at).getTime();
+    if (!Number.isFinite(startedMs) || Date.now() - startedMs > TRIAL_DURATION_MS) {
+      localStorage.removeItem(TRIAL_STORAGE_KEY);
+      return null;
+    }
+    return { user: parsed.user, started_at: parsed.started_at };
+  } catch {
+    localStorage.removeItem(TRIAL_STORAGE_KEY);
+    return null;
+  }
+};
 
 interface AuthState {
   user: User | null;
   session: Session | null;
   loading: boolean;
   error: string | null;
+  isTrial: boolean;
 }
 
 export const useAuth = () => {
@@ -18,6 +50,7 @@ export const useAuth = () => {
     session: null,
     loading: true,
     error: null,
+    isTrial: false,
   });
 
   // Fetch user profile from public.users table
@@ -70,11 +103,24 @@ export const useAuth = () => {
       setState((prev) => {
         if (!prev.loading) return prev; // Already resolved — skip
         console.warn("Auth initialization timeout — treating as unauthenticated");
+        // Try trial mode (with expiry check) before giving up
+        const trial = readTrialFromStorage();
+        if (trial) {
+          setTrialMode(true);
+          return {
+            user: trial.user,
+            session: null,
+            loading: false,
+            error: null,
+            isTrial: true,
+          };
+        }
         return {
           user: null,
           session: null,
           loading: false,
           error: null, // No scary error — just redirect to login
+          isTrial: false,
         };
       });
     }, 20000); // 20s — generous for cold-start Supabase projects
@@ -98,6 +144,7 @@ export const useAuth = () => {
               session,
               loading: false,
               error: null,
+              isTrial: false,
             });
           } catch (profileError) {
             console.error("Error fetching user profile:", profileError);
@@ -107,15 +154,31 @@ export const useAuth = () => {
               session,
               loading: false,
               error: "Failed to fetch user profile",
+              isTrial: false,
             });
           }
         } else {
+          // No real session — check trial mode (with expiry)
+          const trial = readTrialFromStorage();
+          if (trial) {
+            setTrialMode(true);
+            if (!isMounted) return;
+            setState({
+              user: trial.user,
+              session: null,
+              loading: false,
+              error: null,
+              isTrial: true,
+            });
+            return;
+          }
           if (!isMounted) return;
           setState({
             user: null,
             session: null,
             loading: false,
             error: null,
+            isTrial: false,
           });
         }
       })
@@ -128,6 +191,7 @@ export const useAuth = () => {
           session: null,
           loading: false,
           error: null,
+          isTrial: false,
         });
       });
 
@@ -178,6 +242,7 @@ export const useAuth = () => {
             session,
             loading: false,
             error: profile ? null : "Failed to fetch user profile",
+            isTrial: false,
           });
         }, 0);
         return;
@@ -190,6 +255,7 @@ export const useAuth = () => {
           session: null,
           loading: false,
           error: null,
+          isTrial: false,
         });
         return;
       }
@@ -199,6 +265,7 @@ export const useAuth = () => {
         setState((prev) => ({
           ...prev,
           session,
+          isTrial: false,
         }));
       }
     });
@@ -249,6 +316,7 @@ export const useAuth = () => {
         session: data.session,
         loading: false,
         error: null,
+        isTrial: false,
       });
 
       return { error: null };
@@ -317,6 +385,7 @@ export const useAuth = () => {
           session: data.session ?? null,
           loading: false,
           error: null,
+          isTrial: false,
         });
       } else {
         // No user returned
@@ -357,11 +426,14 @@ export const useAuth = () => {
       session: null,
       loading: false,
       error: null,
+      isTrial: false,
     });
 
     if (typeof window !== "undefined") {
+      localStorage.removeItem(TRIAL_STORAGE_KEY);
       // Also clear the Supabase auth storage to prevent stale sessions
       localStorage.removeItem("debt-repayment-auth");
+      clearTrialStore();
     }
 
     return { error: null };
@@ -401,6 +473,29 @@ export const useAuth = () => {
     setState((prev) => ({ ...prev, error: null }));
   }, []);
 
+  const startTrial = () => {
+    const now = new Date().toISOString();
+    const trialUser = {
+      id: "trial-user",
+      email: "trial@example.com",
+      full_name: "Trial User",
+      role: "admin",
+      created_at: now,
+      updated_at: now,
+    } as User;
+    setState({
+      user: trialUser,
+      session: null,
+      loading: false,
+      error: null,
+      isTrial: true,
+    });
+    setTrialMode(true);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(TRIAL_STORAGE_KEY, JSON.stringify({ user: trialUser, started_at: now }));
+    }
+  };
+
   return {
     user: state.user,
     session: state.session,
@@ -411,6 +506,8 @@ export const useAuth = () => {
     signUp,
     updateProfile,
     clearError,
-    isAuthenticated: !!state.session && !!state.user,
+    isAuthenticated: (!!state.session && !!state.user) || state.isTrial,
+    isTrial: state.isTrial,
+    startTrial,
   };
 };
