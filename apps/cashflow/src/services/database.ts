@@ -3,6 +3,8 @@ import type { Customer, Transaction, TransactionType } from "../types";
 import { supabase } from "./supabase";
 import { userService } from "./user-service";
 import { getTrialMode, trialGet, trialDelete, trialUpdate, trialInsert } from "./trialMockStore";
+import { getDataAdapter } from "./dataAdapter";
+import { validateTransactionTypeData, transformRawTransactionType } from "./businessLogic";
 
 type TimeRange = "day" | "week" | "month" | "quarter" | "year";
 
@@ -158,43 +160,12 @@ const colorSettingsService = {
 
 const transactionTypeService = {
   async getTransactionTypes(companyId?: string) {
-    // Trial mode: return mock transaction types without Supabase call
-    if (getTrialMode()) {
-      const mockTypes = trialGet("transaction_types");
-      if (mockTypes) {
-        const allTypes = mockTypes.map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          color: t.color || "blue",
-          isActive: t.is_active !== false,
-          math_factor: t.math_factor ?? 1,
-          impact_type: t.impact_type ?? "increase",
-          company_id: t.company_id,
-        }));
-        return { data: allTypes, error: null };
-      }
-      return { data: [], error: null };
-    }
-
     try {
-      let query = supabase
-        .from("transaction_types")
-        .select("id, name, color, is_active, math_factor, impact_type");
-
-      if (companyId) {
-        query = query.eq("company_id", companyId);
-      }
-
-      const { data, error } = await query.order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Failed to fetch transaction types:", error);
-        return {
-          data: [],
-          error: `Không thể tải loại giao dịch: ${error.message}. Vui lòng kiểm tra kết nối mạng và thử lại.`
-        };
-      }
-
+      const adapter = getDataAdapter();
+      const filters: any[] = companyId ? [{ field: "company_id", operator: "eq", value: companyId }] : [];
+      
+      let data = await adapter.get("transaction_types", filters);
+      
       if (!Array.isArray(data) || data.length === 0) {
         return {
           data: [],
@@ -231,66 +202,30 @@ const transactionTypeService = {
 
   async upsertTransactionType(payload: { id?: string; name: string; color?: string; is_active?: boolean; math_factor?: number; impact_type?: string; company_id?: string }) {
     try {
-      // STRICT VALIDATION: Validate required fields
-      if (!payload.name || payload.name.trim() === "") {
+      // Use shared validation
+      const validation = validateTransactionTypeData(payload);
+      if (!validation.isValid) {
         return {
           data: null,
-          error: "Tên loại giao dịch không được để trống"
+          error: validation.errors.join(", ")
         };
       }
 
-      // STRICT VALIDATION: Validate math_factor
-      if (payload.math_factor !== undefined && payload.math_factor !== -1 && payload.math_factor !== 1) {
-        return {
-          data: null,
-          error: "Hệ số toán học phải là -1 hoặc 1"
-        };
-      }
-
-      // STRICT VALIDATION: Validate impact_type
-      if (payload.impact_type !== undefined && payload.impact_type !== "increase" && payload.impact_type !== "decrease") {
-        return {
-          data: null,
-          error: "Loại tác động phải là 'increase' hoặc 'decrease'"
-        };
-      }
-
-      // Trial mode: upsert to mock store
-      if (getTrialMode()) {
-        const body: any = {
-          id: payload.id || `type-${Date.now()}`,
-          name: payload.name.trim(),
-          color: payload.color || "blue",
-          is_active: payload.is_active !== false,
-          math_factor: payload.math_factor ?? 1,
-          impact_type: payload.impact_type ?? "increase",
-          company_id: payload.company_id || "trial-company",
-        };
-
-        if (payload.id) {
-          const updated = trialUpdate("transaction_types", payload.id, body);
-          if (updated) {
-            return { data: body, error: null };
-          }
-        } else {
-          const inserted = trialInsert("transaction_types", body);
-          if (inserted) {
-            return { data: body, error: null };
-          }
-        }
-        return { data: null, error: "Failed to save transaction type" };
-      }
-
+      const adapter = getDataAdapter();
+      const useUuidId = !getTrialMode();
+      
+      // Transform data using shared transformation
+      const transformed = transformRawTransactionType(payload, useUuidId);
+      
       // STRICT VALIDATION: Check for duplicate name within company (for new types)
-      if (payload.id && payload.company_id) {
-        const { data: existingTypes } = await supabase
-          .from("transaction_types")
-          .select("id, name")
-          .eq("company_id", payload.company_id);
+      if (payload.company_id && !payload.id) {
+        const existingTypes = await adapter.get("transaction_types", [
+          { field: "company_id", operator: "eq" as any, value: payload.company_id }
+        ]);
 
-        if (existingTypes) {
+        if (existingTypes && existingTypes.length > 0) {
           const duplicate = existingTypes.find(
-            (t: any) => t.name === payload.name && t.id !== payload.id
+            (t: any) => t.name === payload.name
           );
           if (duplicate) {
             return {
@@ -301,34 +236,16 @@ const transactionTypeService = {
         }
       }
 
-      const body: any = {
-        name: payload.name.trim(),
-        color: payload.color || "blue",
-        is_active: payload.is_active !== false,
-        math_factor: payload.math_factor ?? 1,
-        impact_type: payload.impact_type ?? "increase",
-      };
-
-      // Only include id if provided (for updates)
+      let result;
       if (payload.id) {
-        body.id = payload.id;
-      }
-
-      // Only include company_id if provided
-      if (payload.company_id) {
-        body.company_id = payload.company_id;
-      }
-
-      const { data, error } = await supabase.from("transaction_types").upsert(body).select("id, name, color, is_active, math_factor, impact_type").single();
-      
-      if (error) {
-        return { 
-          data: null, 
-          error: `Không thể lưu loại giao dịch: ${error.message}` 
-        };
+        // Update existing
+        result = await adapter.update("transaction_types", payload.id, transformed);
+      } else {
+        // Insert new
+        result = await adapter.insert("transaction_types", transformed);
       }
       
-      return { data, error: null };
+      return { data: result, error: null };
     } catch (err) {
       console.error("Exception upserting transaction type:", err);
       return { 
@@ -342,14 +259,12 @@ const transactionTypeService = {
 
   async toggleTransactionType(id: string, isActive: boolean) {
     try {
-      // STRICT VALIDATION: Check if transaction type exists
-      const { data: existingType, error: checkError } = await supabase
-        .from("transaction_types")
-        .select("id, name")
-        .eq("id", id)
-        .single();
+      const adapter = getDataAdapter();
       
-      if (checkError || !existingType) {
+      // STRICT VALIDATION: Check if transaction type exists
+      const existingType: any = await adapter.getById("transaction_types", id);
+      
+      if (!existingType) {
         return { 
           error: "Loại giao dịch không tồn tại" 
         };
@@ -357,11 +272,9 @@ const transactionTypeService = {
 
       // STRICT VALIDATION: If deactivating, check if type is in use
       if (!isActive) {
-        const { data: transactions } = await supabase
-          .from("transactions")
-          .select("id")
-          .eq("transaction_type", id)
-          .limit(1);
+        const transactions = await adapter.get("transactions", [
+          { field: "transaction_type", operator: "eq" as any, value: id }
+        ]);
         
         if (transactions && transactions.length > 0) {
           return { 
@@ -370,16 +283,7 @@ const transactionTypeService = {
         }
       }
 
-      const { error } = await supabase
-        .from("transaction_types")
-        .update({ is_active: isActive })
-        .eq("id", id);
-      
-      if (error) {
-        return { 
-          error: `Không thể cập nhật loại giao dịch: ${error.message}` 
-        };
-      }
+      await adapter.update("transaction_types", id, { is_active: isActive });
       
       return { error: null };
     } catch (err) {
@@ -393,40 +297,22 @@ const transactionTypeService = {
   },
 
   async deleteTransactionType(id: string) {
-    // Trial mode: delete from mock store
-    if (getTrialMode()) {
-      const deleted = trialDelete("transaction_types", id);
-      if (deleted) {
-        return { error: null };
-      }
-      return { error: "Loại giao dịch không tồn tại" };
-    }
-
     try {
+      const adapter = getDataAdapter();
+      
       // STRICT VALIDATION: Check if transaction type exists
-      const { data: existingType, error: checkError } = await supabase
-        .from("transaction_types")
-        .select("id, name")
-        .eq("id", id)
-        .single();
+      const existingType: any = await adapter.getById("transaction_types", id);
 
-      if (checkError || !existingType) {
+      if (!existingType) {
         return {
           error: "Loại giao dịch không tồn tại"
         };
       }
 
       // STRICT VALIDATION: Check if type is in use before deletion
-      const { data: transactions, error: countError } = await supabase
-        .from("transactions")
-        .select("id")
-        .eq("transaction_type", id);
-
-      if (countError) {
-        return {
-          error: `Không thể kiểm tra giao dịch: ${countError.message}`
-        };
-      }
+      const transactions = await adapter.get("transactions", [
+        { field: "transaction_type", operator: "eq" as any, value: id }
+      ]);
 
       if (transactions && transactions.length > 0) {
         return {
@@ -435,27 +321,20 @@ const transactionTypeService = {
       }
 
       // STRICT VALIDATION: Perform deletion (foreign key constraint will also prevent deletion)
-      const { error } = await supabase.from("transaction_types").delete().eq("id", id);
-      
-      if (error) {
-        // Foreign key constraint violation
-        if (error.message.includes("violates foreign key constraint")) {
-          return { 
-            error: `Không thể xóa loại giao dịch "${existingType.name}" vì đang được tham chiếu bởi dữ liệu khác.` 
-          };
-        }
-        return { 
-          error: `Không thể xóa loại giao dịch: ${error.message}` 
-        };
-      }
+      await adapter.delete("transaction_types", id);
       
       return { error: null };
     } catch (err) {
       console.error("Exception deleting transaction type:", err);
+      const error = err as any;
+      // Foreign key constraint violation
+      if (error?.message?.includes("violates foreign key constraint")) {
+        return { 
+          error: `Không thể xóa loại giao dịch vì đang được tham chiếu bởi dữ liệu khác.` 
+        };
+      }
       return { 
-        error: err instanceof Error 
-          ? `Lỗi hệ thống: ${err.message}` 
-          : "Không thể xóa loại giao dịch. Vui lòng thử lại." 
+        error: error?.message || "Không thể xóa loại giao dịch. Vui lòng thử lại." 
       };
     }
   },
