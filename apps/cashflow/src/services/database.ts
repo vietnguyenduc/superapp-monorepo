@@ -2,6 +2,7 @@
 import type { Customer, Transaction, TransactionType } from "../types";
 import { supabase } from "./supabase";
 import { userService } from "./user-service";
+import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 
 type TimeRange = "day" | "week" | "month" | "quarter" | "year";
 
@@ -2166,15 +2167,73 @@ const backupHistoryService = {
 };
 
 // Export all services as a single object to match the import in Dashboard.tsx
+// Trial mode wrapper - intercept calls when in trial mode
+const withTrialIntercept = (serviceName: string, originalService: any) => {
+  return new Proxy(originalService, {
+    get(target, prop) {
+      const originalValue = target[prop];
+      if (typeof originalValue === 'function') {
+        return async (...args: any[]) => {
+          if (getTrialMode()) {
+            // Trial mode: use mock store
+            const tableMap: Record<string, string> = {
+              customers: 'customers',
+              transactions: 'transactions',
+              transactionTypes: 'transaction_types',
+              branches: 'branches',
+              bankAccounts: 'bank_accounts',
+              users: 'users',
+              companies: 'companies',
+            };
+
+            const tableName = tableMap[serviceName];
+            if (!tableName) {
+              // For services without direct table mapping, return mock data or no-op
+              return { data: null, error: null };
+            }
+
+            // Handle different operation types
+            const method = prop as string;
+            if (method.startsWith('get') || method.startsWith('fetch') || method.startsWith('list')) {
+              // Read operations
+              return { data: trialGet(tableName), error: null };
+            } else if (method.startsWith('create') || method.startsWith('insert') || method.startsWith('add')) {
+              // Create operations
+              const record = args[0];
+              return { data: trialInsert(tableName, record), error: null };
+            } else if (method.startsWith('update') || method.startsWith('edit')) {
+              // Update operations
+              const id = args[0];
+              const updates = args[1];
+              return { data: trialUpdate(tableName, id, updates), error: null };
+            } else if (method.startsWith('delete') || method.startsWith('remove')) {
+              // Delete operations
+              const id = args[0];
+              return { data: trialDelete(tableName, id), error: null };
+            }
+
+            // Default: return no-op
+            return { data: null, error: null };
+          }
+          // Normal mode: call original service
+          return originalValue.apply(target, args);
+        };
+      }
+      return originalValue;
+    }
+  });
+};
+
+// Apply trial interception to services that have direct table mappings
 export const databaseService = {
-  dashboard: dashboardService,
-  customers: customerService,
-  transactions: transactionService,
-  transactionTypes: transactionTypeService,
-  branches: branchService,
-  bankAccounts: bankAccountService,
-  reports: reportService,
-  users: userService,
-  colorSettings: colorSettingsService,
-  backupHistory: backupHistoryService,
+  dashboard: withTrialIntercept('dashboard', dashboardService),
+  customers: withTrialIntercept('customers', customerService),
+  transactions: withTrialIntercept('transactions', transactionService),
+  transactionTypes: withTrialIntercept('transactionTypes', transactionTypeService),
+  branches: withTrialIntercept('branches', branchService),
+  bankAccounts: withTrialIntercept('bankAccounts', bankAccountService),
+  reports: reportService, // No table mapping
+  users: withTrialIntercept('users', userService),
+  colorSettings: colorSettingsService, // No table mapping
+  backupHistory: backupHistoryService, // No table mapping
 };
