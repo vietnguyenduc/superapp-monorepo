@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 import { userService } from "./user-service";
 import { getTrialMode, trialGet, trialDelete, trialUpdate, trialInsert } from "./trialMockStore";
 import { getDataAdapter } from "./dataAdapter";
-import { validateTransactionTypeData, transformRawTransactionType } from "./businessLogic";
+import { validateTransactionTypeData, transformRawTransactionType, validateBranchData, transformRawBranch } from "./businessLogic";
 
 type TimeRange = "day" | "week" | "month" | "quarter" | "year";
 
@@ -1719,23 +1719,12 @@ const bankAccountService = {
 // Branch service
 const branchService = {
   async getBranches(companyId?: string) {
-    // Trial mode: return mock branches without Supabase call
-    if (getTrialMode()) {
-      const mockBranches = trialGet("branches") || [];
-      return { data: mockBranches, error: null };
-    }
-
     try {
-      let query = supabase
-        .from("branches")
-        .select("id, name, code, address, phone, email, manager_id, company_id, is_active, created_at, updated_at");
-
-      if (companyId) {
-        query = query.eq("company_id", companyId);
-      }
-
-      const { data, error } = await query.order("created_at", { ascending: false });
-      if (error) return { data: [], error: error.message };
+      const adapter = getDataAdapter();
+      const filters: any[] = companyId ? [{ field: "company_id", operator: "eq" as any, value: companyId }] : [];
+      
+      const data = await adapter.get("branches", filters);
+      
       return { data: data || [], error: null };
     } catch (err) {
       return { data: [], error: err instanceof Error ? err.message : "Failed to load branches" };
@@ -1743,107 +1732,74 @@ const branchService = {
   },
 
   async getBranchById(id: string, companyId?: string) {
-    // Trial mode: return mock branch without Supabase call
-    if (getTrialMode()) {
-      const mockBranches = trialGet("branches") || [];
-      const branch = mockBranches.find((b: any) => b.id === id);
+    try {
+      const adapter = getDataAdapter();
+      const filters: any[] = [{ field: "id", operator: "eq" as any, value: id }];
+      if (companyId) {
+        filters.push({ field: "company_id", operator: "eq" as any, value: companyId });
+      }
+      
+      const branches = await adapter.get("branches", filters);
+      const branch = branches && branches.length > 0 ? branches[0] : null;
+      
       if (branch) {
         return { data: branch, error: null };
       }
       return { data: null, error: "Branch not found" };
-    }
-
-    try {
-      let query = supabase
-        .from("branches")
-        .select("id, name, code, address, phone, email, manager_id, company_id, is_active, created_at, updated_at")
-        .eq("id", id);
-      
-      if (companyId) {
-        query = query.eq("company_id", companyId);
-      }
-      
-      const { data, error } = await query.single();
-      if (error) return { data: null, error: error.message };
-      return { data, error: null };
     } catch (err) {
       return { data: null, error: err instanceof Error ? err.message : "Failed to load branch" };
     }
   },
 
   async upsertBranch(payload: Partial<Record<string, any>>) {
-    // Trial mode: upsert to mock store
-    if (getTrialMode()) {
-      const now = new Date().toISOString();
-      const body: any = {
-        id: payload.id || `branch-${Date.now()}`,
-        name: (payload as any)?.name,
-        code: (payload as any)?.code,
-        address: (payload as any)?.address || null,
-        phone: (payload as any)?.phone || null,
-        email: (payload as any)?.email || null,
-        is_active: (payload as any)?.is_active !== false,
-        company_id: (payload as any).company_id || "trial-company",
-        manager_id: (payload as any).manager_id || null,
-        created_at: now,
-        updated_at: now,
-      };
-
-      if (payload.id) {
-        const updated = trialUpdate("branches", payload.id, body);
-        if (updated) {
-          return { data: body, error: null };
-        }
-      } else {
-        const inserted = trialInsert("branches", body);
-        if (inserted) {
-          return { data: body, error: null };
-        }
-      }
-      return { data: null, error: "Failed to save branch" };
-    }
-
     try {
-      const body: any = {
-        id: payload.id,
-        name: (payload as any)?.name,
-        code: (payload as any)?.code,
-        address: (payload as any)?.address || null,
-        phone: (payload as any)?.phone || null,
-        email: (payload as any)?.email || null,
-        is_active: (payload as any)?.is_active !== false,
-      };
+      // Use shared validation
+      const validation = validateBranchData(payload);
+      if (!validation.isValid) {
+        return {
+          data: null,
+          error: validation.errors.join(", ")
+        };
+      }
 
-      if ((payload as any).company_id) body.company_id = (payload as any).company_id;
-      if ((payload as any).manager_id) body.manager_id = (payload as any).manager_id;
-      const { data, error } = await supabase
-        .from("branches")
-        .upsert(body)
-        .select("id, name, code, address, phone, email, manager_id, company_id, is_active, created_at, updated_at")
-        .single();
-      return { data, error: error?.message || null };
+      const adapter = getDataAdapter();
+      const useUuidId = !getTrialMode();
+      
+      // Transform data using shared transformation
+      const transformed = transformRawBranch(payload, useUuidId);
+      
+      let result;
+      if (payload.id) {
+        // Update existing
+        result = await adapter.update("branches", payload.id, transformed);
+      } else {
+        // Insert new
+        result = await adapter.insert("branches", transformed);
+      }
+      
+      return { data: result, error: null };
     } catch (err) {
       return { data: null, error: err instanceof Error ? err.message : "Failed to save branch" };
     }
   },
 
   async deleteBranch(id: string, companyId?: string) {
-    // Trial mode: delete from mock store
-    if (getTrialMode()) {
-      const deleted = trialDelete("branches", id);
-      if (deleted) {
-        return { error: null };
-      }
-      return { error: "Branch not found" };
-    }
-
     try {
-      let query = supabase.from("branches").delete().eq("id", id);
-      if (companyId) {
-        query = query.eq("company_id", companyId);
+      const adapter = getDataAdapter();
+      
+      // Check if branch exists
+      const branch: any = await adapter.getById("branches", id);
+      if (!branch) {
+        return { error: "Branch not found" };
       }
-      const { error } = await query;
-      return { error: error?.message || null };
+      
+      // If companyId is provided, verify it matches
+      if (companyId && branch.company_id !== companyId) {
+        return { error: "Branch not found" };
+      }
+      
+      await adapter.delete("branches", id);
+      return { error: null };
     } catch (err) {
       return { error: err instanceof Error ? err.message : "Failed to delete branch" };
     }
