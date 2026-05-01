@@ -16,24 +16,18 @@ const reportService = {
 
 const colorSettingsService = {
   async getTransactionTypeColors() {
-    // Trial mode: return default colors without Supabase call
-    if (getTrialMode()) {
-      return { data: this.getDefaultTransactionTypeColors(), error: null };
-    }
-
     try {
-      const { data, error } = await (supabase as any)
-        .from("color_settings")
-        .select("setting_value")
-        .eq("setting_key", "transaction_type_colors")
-        .single();
-
-      if (error) {
-        console.warn("Failed to fetch transaction type colors, using defaults", error);
-        return this.getDefaultTransactionTypeColors();
+      const adapter = getDataAdapter();
+      const filters: any[] = [{ field: "setting_key", operator: "eq" as any, value: "transaction_type_colors" }];
+      
+      const settings = await adapter.get("color_settings", filters);
+      
+      if (settings && settings.length > 0) {
+        return { data: settings[0].setting_value || this.getDefaultTransactionTypeColors(), error: null };
       }
-
-      return { data: data?.setting_value || this.getDefaultTransactionTypeColors(), error: null };
+      
+      // Fallback to defaults if no settings found
+      return { data: this.getDefaultTransactionTypeColors(), error: null };
     } catch (err) {
       console.warn("Error fetching transaction type colors, using defaults", err);
       return { data: this.getDefaultTransactionTypeColors(), error: null };
@@ -41,24 +35,18 @@ const colorSettingsService = {
   },
 
   async getCustomerBalanceColors() {
-    // Trial mode: return default colors without Supabase call
-    if (getTrialMode()) {
-      return { data: this.getDefaultCustomerBalanceColors(), error: null };
-    }
-
     try {
-      const { data, error } = await (supabase as any)
-        .from("color_settings")
-        .select("setting_value")
-        .eq("setting_key", "customer_balance_colors")
-        .single();
-
-      if (error) {
-        console.warn("Failed to fetch customer balance colors, using defaults", error);
-        return this.getDefaultCustomerBalanceColors();
+      const adapter = getDataAdapter();
+      const filters: any[] = [{ field: "setting_key", operator: "eq" as any, value: "customer_balance_colors" }];
+      
+      const settings = await adapter.get("color_settings", filters);
+      
+      if (settings && settings.length > 0) {
+        return { data: settings[0].setting_value || this.getDefaultCustomerBalanceColors(), error: null };
       }
-
-      return { data: data?.setting_value || this.getDefaultCustomerBalanceColors(), error: null };
+      
+      // Fallback to defaults if no settings found
+      return { data: this.getDefaultCustomerBalanceColors(), error: null };
     } catch (err) {
       console.warn("Error fetching customer balance colors, using defaults", err);
       return { data: this.getDefaultCustomerBalanceColors(), error: null };
@@ -930,69 +918,106 @@ const customerService = {
 // Transaction service
 const transactionService = {
   async getTransactions(_filters?: any) {
-    // Trial mode: return mock transactions without Supabase call
-    if (getTrialMode()) {
-      const mockTransactions = trialGet("transactions") || [];
-      return {
-        data: mockTransactions,
-        error: null,
-        count: mockTransactions.length,
-      };
-    }
-
     try {
+      const adapter = getDataAdapter();
       const filters = _filters || {};
-      let query = supabase
-        .from("transactions")
-        .select(`
-          *,
-          customers!customer_id (full_name, customer_code),
-          bank_accounts!bank_account_id (account_name),
-          branches!branch_id (name, code),
-          users!created_by (full_name, email)
-        `, { count: "exact" });
-
-      if (filters.company_id) query = query.eq("company_id", filters.company_id);
-      if (filters.branch_id) query = query.eq("branch_id", filters.branch_id);
-      if (filters.transaction_type) query = query.eq("transaction_type", filters.transaction_type);
-      if (filters.customer_id) query = query.eq("customer_id", filters.customer_id);
-
+      
+      // Build base filters
+      const baseFilters: any[] = [];
+      if (filters.company_id) {
+        baseFilters.push({ field: "company_id", operator: "eq" as any, value: filters.company_id });
+      }
+      if (filters.branch_id) {
+        baseFilters.push({ field: "branch_id", operator: "eq" as any, value: filters.branch_id });
+      }
+      if (filters.transaction_type) {
+        baseFilters.push({ field: "transaction_type", operator: "eq" as any, value: filters.transaction_type });
+      }
+      if (filters.customer_id) {
+        baseFilters.push({ field: "customer_id", operator: "eq" as any, value: filters.customer_id });
+      }
+      
+      // Fetch transactions
+      let transactions = await adapter.get("transactions", baseFilters);
+      
+      // Apply search filter (client-side)
       const search = String(filters.search || "").toLowerCase().trim();
       if (search) {
-        query = query.or(`description.ilike.%${search}%,reference_number.ilike.%${search}%`);
+        transactions = transactions.filter((tx: any) => {
+          const description = String(tx.description || "").toLowerCase();
+          const referenceNumber = String(tx.reference_number || "").toLowerCase();
+          return description.includes(search) || referenceNumber.includes(search);
+        });
       }
-
+      
+      // Apply date range filter (client-side)
       if (filters.dateRange?.start && filters.dateRange?.end) {
-        query = query.gte("transaction_date", filters.dateRange.start).lte("transaction_date", filters.dateRange.end);
+        const startDate = new Date(filters.dateRange.start);
+        const endDate = new Date(filters.dateRange.end);
+        transactions = transactions.filter((tx: any) => {
+          const txDate = new Date(tx.transaction_date);
+          return txDate >= startDate && txDate <= endDate;
+        });
       }
-
+      
+      // Sort by transaction_date descending (client-side)
+      transactions = transactions.sort((a: any, b: any) => 
+        new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
+      );
+      
+      // Get total count before pagination
+      const totalCount = transactions.length;
+      
+      // Apply pagination (client-side)
       const page = Number(filters.page || 1);
       const pageSize = Number(filters.pageSize || 20);
       const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-
-      const { data, error, count } = await query
-        .range(from, to)
-        .order("transaction_date", { ascending: false });
-
-      if (error) throw error;
-
-      // Map nested objects to flat structure for frontend compatibility
-      const mappedData = (data || []).map((tx: any) => ({
-        ...tx,
-        customer_name: tx.customers?.full_name || tx.customer_name,
-        bank_account_name: tx.bank_accounts?.account_name || tx.bank_account_name,
-        branch_name: tx.branches?.name,
-        creator_name: tx.users?.full_name,
-      }));
-
+      const to = from + pageSize;
+      const paginatedTransactions = transactions.slice(from, to);
+      
+      // Fetch related data for each transaction
+      const customerIds = [...new Set(paginatedTransactions.map((tx: any) => tx.customer_id).filter(Boolean))];
+      const bankAccountIds = [...new Set(paginatedTransactions.map((tx: any) => tx.bank_account_id).filter(Boolean))];
+      const branchIds = [...new Set(paginatedTransactions.map((tx: any) => tx.branch_id).filter(Boolean))];
+      const userIds = [...new Set(paginatedTransactions.map((tx: any) => tx.created_by).filter(Boolean))];
+      
+      // Fetch all related data in parallel
+      const [customers, bankAccounts, branches, users] = await Promise.all([
+        customerIds.length > 0 ? adapter.get("customers", [{ field: "id", operator: "in" as any, value: customerIds }]) : Promise.resolve([]),
+        bankAccountIds.length > 0 ? adapter.get("bank_accounts", [{ field: "id", operator: "in" as any, value: bankAccountIds }]) : Promise.resolve([]),
+        branchIds.length > 0 ? adapter.get("branches", [{ field: "id", operator: "in" as any, value: branchIds }]) : Promise.resolve([]),
+        userIds.length > 0 ? adapter.get("users", [{ field: "id", operator: "in" as any, value: userIds }]) : Promise.resolve([]),
+      ]);
+      
+      // Create maps for quick lookup
+      const customerMap = new Map(customers.map((c: any) => [c.id, c]));
+      const bankAccountMap = new Map(bankAccounts.map((b: any) => [b.id, b]));
+      const branchMap = new Map(branches.map((b: any) => [b.id, b]));
+      const userMap = new Map(users.map((u: any) => [u.id, u]));
+      
+      // Map nested objects to flat structure
+      const mappedData = paginatedTransactions.map((tx: any) => {
+        const customer = customerMap.get(tx.customer_id);
+        const bankAccount = bankAccountMap.get(tx.bank_account_id);
+        const branch = branchMap.get(tx.branch_id);
+        const user = userMap.get(tx.created_by);
+        
+        return {
+          ...tx,
+          customer_name: customer?.full_name || tx.customer_name,
+          bank_account_name: bankAccount?.account_name || tx.bank_account_name,
+          branch_name: branch?.name,
+          creator_name: user?.full_name,
+        };
+      });
+      
       return {
         data: mappedData,
         error: null,
-        count: count || (data?.length || 0),
+        count: totalCount,
       };
     } catch (err) {
-      console.error("Failed to load transactions from Supabase:", err);
+      console.error("Failed to load transactions:", err);
       return { data: [], error: null, count: 0 };
     }
   },
@@ -2063,12 +2088,12 @@ const dashboardService = {
 // Backup history service
 const backupHistoryService = {
   async saveBackupHistory(backupData: any) {
-    // Trial mode: save to mock store
-    if (getTrialMode()) {
-      const mockStore = JSON.parse(localStorage.getItem("cashflow_trial_store") || "{}");
-      const mockBackups = mockStore.backup_history || [];
+    try {
+      const adapter = getDataAdapter();
+      const useUuidId = !getTrialMode();
+      
       const backup = {
-        id: `backup-${Date.now()}`,
+        id: useUuidId ? uuid() : `backup-${Date.now()}`,
         company_id: backupData.company_id || "trial-company",
         backup_name: backupData.backup_name || `Backup ${new Date().toISOString()}`,
         backup_version: backupData.version || "1.0.0",
@@ -2085,36 +2110,10 @@ const backupHistoryService = {
         is_restorable: true,
         created_at: new Date().toISOString(),
       };
-      mockBackups.push(backup);
-      mockStore.backup_history = mockBackups;
-      localStorage.setItem("cashflow_trial_store", JSON.stringify(mockStore));
-      return { data: backup, error: null };
-    }
-
-    try {
-      const { data, error } = await (supabase as any)
-        .from("backup_history")
-        .insert({
-          company_id: backupData.company_id,
-          backup_name: backupData.backup_name || `Backup ${new Date().toISOString()}`,
-          backup_version: backupData.version || "1.0.0",
-          backup_timestamp: backupData.timestamp || new Date().toISOString(),
-          backup_format: backupData.format || "xlsx",
-          backup_size: backupData.size,
-          created_by: backupData.created_by,
-          total_customers: backupData.metadata?.totalCustomers || 0,
-          total_transactions: backupData.metadata?.totalTransactions || 0,
-          total_bank_accounts: backupData.metadata?.totalBankAccounts || 0,
-          total_branches: backupData.metadata?.totalBranches || 0,
-          branch_id: backupData.branch_id,
-          notes: backupData.notes,
-          is_restorable: true,
-        })
-        .select()
-        .single();
-
-      if (error) return { data: null, error: error.message };
-      return { data, error: null };
+      
+      const result = await adapter.insert("backup_history", backup);
+      
+      return { data: result, error: null };
     } catch (err) {
       return { data: null, error: err instanceof Error ? err.message : "Failed to save backup history" };
     }
@@ -2335,50 +2334,35 @@ const backupHistoryService = {
   },
 
   async getBackupHistory(companyId?: string, userId?: string) {
-    // Trial mode: return mock backups without Supabase call
-    if (getTrialMode()) {
-      const mockBackups = trialGet("backup_history") || [];
-      return { data: mockBackups, error: null };
-    }
-
     try {
-      let query = (supabase as any)
-        .from("backup_history")
-        .select("*")
-        .order("backup_timestamp", { ascending: false });
-
+      const adapter = getDataAdapter();
+      const filters: any[] = [];
+      
       if (companyId) {
-        query = query.eq("company_id", companyId);
+        filters.push({ field: "company_id", operator: "eq" as any, value: companyId });
       }
-
+      
       if (userId) {
-        query = query.eq("created_by", userId);
+        filters.push({ field: "created_by", operator: "eq" as any, value: userId });
       }
-
-      const { data, error } = await query;
-      if (error) return { data: [], error: error.message };
-      return { data: data || [], error: null };
+      
+      const backups = await adapter.get("backup_history", filters);
+      
+      // Sort by backup_timestamp descending (client-side sort since adapter doesn't support sort)
+      const sorted = (backups || []).sort((a: any, b: any) => 
+        new Date(b.backup_timestamp).getTime() - new Date(a.backup_timestamp).getTime()
+      );
+      
+      return { data: sorted, error: null };
     } catch (err) {
       return { data: [], error: err instanceof Error ? err.message : "Failed to load backup history" };
     }
   },
 
   async deleteBackupHistory(id: string) {
-    // Trial mode: delete from mock store
-    if (getTrialMode()) {
-      const mockBackups = trialGet("backup_history") || [];
-      const filtered = mockBackups.filter((b: any) => b.id !== id);
-      localStorage.setItem("cashflow_trial_store", JSON.stringify({ backup_history: filtered }));
-      return { error: null };
-    }
-
     try {
-      const { error } = await (supabase as any)
-        .from("backup_history")
-        .delete()
-        .eq("id", id);
-
-      if (error) return { error: error.message };
+      const adapter = getDataAdapter();
+      await adapter.delete("backup_history", id);
       return { error: null };
     } catch (err) {
       return { error: err instanceof Error ? err.message : "Failed to delete backup history" };
