@@ -2,7 +2,7 @@
 
 ## Overview
 
-Welcome to the Debt and Repayment Web Application! This comprehensive guide will help you understand and use all the features available in the system.
+Welcome to the Cashflow Management System! This comprehensive guide will help you understand and use all the features available in the system.
 
 ## Table of Contents
 
@@ -91,7 +91,7 @@ Welcome to the Debt and Repayment Web Application! This comprehensive guide will
 
 ### Overview
 
-The dashboard provides a comprehensive view of your debt and repayment data with real-time updates.
+The dashboard provides a comprehensive view of your cashflow and customer data with real-time updates.
 
 ### Key Metrics
 

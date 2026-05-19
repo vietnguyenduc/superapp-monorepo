@@ -1,6 +1,7 @@
 # SuperApp Monorepo - Architecture Documentation
 
-> **Last Updated**: 2026-02-07
+> **Last Updated**: 2026-05-01
+> **Merged from:** `ARCHITECTURE.md` (root), `apps/cashflow/docs/architecture.md`
 
 ---
 
@@ -54,7 +55,7 @@ Business cash flow management system for tracking:
 | Styling | TailwindCSS |
 | Charts | Recharts |
 | i18n | react-i18next |
-| Backend (future) | Supabase |
+| Backend | Supabase (PostgreSQL + Auth + Edge Functions) |
 
 ### Directory Structure
 ```
@@ -68,9 +69,10 @@ apps/cashflow/
 │   │   ├── Customers/     # Customer management
 │   │   └── Transactions/  # Transaction management
 │   ├── services/          # Data services
-│   │   ├── database.ts    # Main service exports
-│   │   ├── mockData.ts    # Static mock data
-│   │   └── sampleData.ts  # Generated sample data
+│   │   ├── database.ts    # Main service exports (Supabase client)
+│   │   ├── supabase.ts    # Supabase client configuration
+│   │   ├── trialMockStore.ts  # Offline/demo fallback data
+│   │   └── businessLogic.ts   # Validation & transformers
 │   ├── hooks/             # Custom React hooks
 │   ├── utils/             # Utility functions
 │   ├── locales/           # i18n translations
@@ -83,11 +85,17 @@ apps/cashflow/
 
 ### Data Flow
 ```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│   UI Layer  │────▶│   Services   │────▶│  Mock Data  │
-│  (React)    │◀────│ (database.ts)│◀────│  (Future:   │
-│             │     │              │     │  Supabase)  │
-└─────────────┘     └──────────────┘     └─────────────┘
+┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
+│   UI Layer  │────▶│   Services   │────▶│    Supabase     │
+│  (React)    │◀────│ (database.ts)│◀────│ (PostgreSQL +   │
+│             │     │              │     │  Auth + RLS)    │
+└─────────────┘     └──────────────┘     └─────────────────┘
+                           │
+                           ▼ (offline / demo fallback)
+                    ┌──────────────┐
+                    │ trialMockStore│
+                    │ (localStorage)│
+                    └──────────────┘
 ```
 
 ### Service Interface
@@ -124,14 +132,15 @@ export const databaseService = {
 
 ## 🔐 Security Considerations
 
-### Current (Development)
-- Mock data only, no real authentication
-- No sensitive data stored
+### Production (Active)
+- **Supabase Authentication** (`auth.users` ↔ `public.users` sync)
+- **Row-Level Security (RLS)** enabled on all tables; policies restrict data by `company_id` / `branch_id` / role
+- **API key management** via `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local`
+- **RBAC** granular permissions stored in `users.staff_permissions` JSONB
 
-### Future (Production)
-- Supabase authentication
-- Row-level security (RLS)
-- API key management via environment variables
+### Development / Trial Fallback
+- Offline demo mode uses `trialMockStore.ts` (localStorage) when Supabase is unreachable
+- No real auth in trial mode; do **not** use for production data
 
 ---
 
@@ -208,13 +217,14 @@ return <h1>{t("dashboard.title")}</h1>;
 ## 🔄 State Management
 
 ### Current Approach
-- React useState/useEffect for local state
-- Props drilling for component communication
-- Service layer for data fetching
+- **React useState/useEffect** for local component state
+- **Context API** for global state: `AuthContext` (session, user profile), `TransactionTypeContext` (deduplicated type cache)
+- **Service layer** (`database.ts`) for all Supabase CRUD
+- **Trial mock store** (`trialMockStore.ts`) for offline/demo mode
 
 ### Future Considerations
-- Context API for global state (auth, theme)
-- React Query for server state management
+- React Query (TanStack Query) for server state caching & deduplication
+- Zustand or Jotai if prop drilling becomes painful beyond current scope
 
 ---
 

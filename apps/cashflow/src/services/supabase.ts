@@ -24,7 +24,7 @@ export const supabase = createClient<Database, "public">(supabaseUrl, supabaseAn
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    storageKey: "debt-repayment-auth",
+    storageKey: "sb-peslmsctejmvkwzyohke-auth-token",
     storage: {
       getItem: (key: string) => {
         try {

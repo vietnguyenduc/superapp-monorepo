@@ -49,11 +49,13 @@ const seedData = {
     is_active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    partner_type: 'customer',
   })),
   transactions: dashboardMockData.recentTransactions.map((t) => ({
     ...t,
     branch_id: "trial-branch",
     company_id: "trial-company",
+    status: "completed",
   })),
   transaction_types: [
     {

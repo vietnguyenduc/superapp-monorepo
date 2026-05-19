@@ -29,6 +29,7 @@ interface TransactionListState {
     id: string | null;
     name: string | null;
   } | null;
+  statusFilter: "all" | "pending" | "completed";
   groupBy: "" | "day" | "branch" | "transaction_type" | "customer";
 }
 
@@ -58,6 +59,7 @@ const TransactionList: React.FC = () => {
     bankAccountFilter: null,
     userFilter: null,
     customerFilter: null,
+    statusFilter: "all",
     groupBy: "",
   });
 
@@ -108,6 +110,7 @@ const TransactionList: React.FC = () => {
         transaction_type: state.transactionType || undefined,
         customer_id: state.customerFilter?.id || undefined,
         branch_id: state.branchFilter || undefined,
+        status: state.statusFilter === "all" ? undefined : state.statusFilter,
         company_id: companyId,
         page: state.currentPage,
         pageSize: state.pageSize,
@@ -143,7 +146,7 @@ const TransactionList: React.FC = () => {
         loading: false,
       }));
     }
-  }, [state.searchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.currentPage, state.pageSize, companyId]);
+  }, [state.searchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, state.currentPage, state.pageSize, companyId]);
 
   useEffect(() => {
     const loadFilters = async () => {
@@ -480,6 +483,29 @@ const TransactionList: React.FC = () => {
             }
           />
 
+          {/* Status Tabs */}
+          <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
+            <button
+              className={`px-4 py-2 text-sm font-medium ${state.statusFilter === "all" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+              onClick={() => setState(prev => ({ ...prev, statusFilter: "all", currentPage: 1 }))}
+            >
+              Tất cả
+            </button>
+            <button
+              className={`px-4 py-2 text-sm font-medium flex items-center gap-2 ${state.statusFilter === "pending" ? "text-amber-600 border-b-2 border-amber-600" : "text-gray-500 hover:text-gray-700"}`}
+              onClick={() => setState(prev => ({ ...prev, statusFilter: "pending", currentPage: 1 }))}
+            >
+              Hàng chờ duyệt
+              {state.statusFilter === "pending" && <span className="bg-amber-100 text-amber-700 py-0.5 px-2 rounded-full text-xs">{state.totalCount}</span>}
+            </button>
+            <button
+              className={`px-4 py-2 text-sm font-medium ${state.statusFilter === "completed" ? "text-green-600 border-b-2 border-green-600" : "text-gray-500 hover:text-gray-700"}`}
+              onClick={() => setState(prev => ({ ...prev, statusFilter: "completed", currentPage: 1 }))}
+            >
+              Đã hoàn thành
+            </button>
+          </div>
+
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700 mb-4 space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="relative">
@@ -662,8 +688,8 @@ const TransactionList: React.FC = () => {
                   <th className="hidden lg:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Văn phòng</th>
                   <th className="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tài khoản</th>
                   <th className="hidden lg:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Người thực hiện</th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mã giao dịch</th>
-                  <th className="hidden xl:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cập nhật gần nhất</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mã GD</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trạng thái</th>
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hành động</th>
                 </tr>
               </thead>
@@ -713,15 +739,34 @@ const TransactionList: React.FC = () => {
                       {transaction.creator_name || transaction.created_by}
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
-                      <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 sm:px-2 py-0.5 rounded text-xs sm:text-xs">
+                      <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs">
                         {transaction.transaction_code}
                       </span>
                     </td>
-                    <td className="hidden xl:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                      {formatDate(transaction.updated_at)}
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      {transaction.status === 'pending' ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">Chờ duyệt</span>
+                      ) : transaction.status === 'cancelled' ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">Đã hủy</span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">Hoàn thành</span>
+                      )}
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
                       <div className="flex items-center gap-2">
+                        {transaction.status === 'pending' && (
+                          <button
+                            type="button"
+                            className="px-2 py-1 rounded border border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-800 font-medium"
+                            onClick={async () => {
+                              if (!confirm("Xác nhận duyệt giao dịch vào công nợ?")) return;
+                              const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: 'completed' });
+                              if (error) alert("Lỗi khi duyệt"); else fetchTransactions();
+                            }}
+                          >
+                            Duyệt
+                          </button>
+                        )}
                         <button
                           type="button"
                           className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"

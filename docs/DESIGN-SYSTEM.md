@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the Apple-inspired design system used in the Debt Repayment Web Application. This system provides a clean, modern, and professional interface that follows Apple's design principles while maintaining excellent usability and accessibility.
+This document outlines the Apple-inspired design system used in the Cashflow Management System. This system provides a clean, modern, and professional interface that follows Apple's design principles while maintaining excellent usability and accessibility.
 
 ## Design Philosophy
 
@@ -382,4 +382,457 @@ Based on 4px grid system:
 ### Design Inspiration
 - [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/)
 - [Material Design](https://material.io/design) - For additional patterns
-- [Ant Design](https://ant.design/) - For business UI patterns 
+- [Ant Design](https://ant.design/) - For business UI patterns
+
+---
+
+## Layout System
+
+### Component Structure
+```
+Layout/
+├── Layout.tsx          # Main layout wrapper
+├── Navigation.tsx      # Top navigation bar
+└── Sidebar.tsx         # Side navigation menu
+```
+
+### Responsive Breakpoints
+- **sm**: 640px+ (Small tablets)
+- **md**: 768px+ (Tablets)
+- **lg**: 1024px+ (Desktop)
+- **xl**: 1280px+ (Large desktop)
+- **2xl**: 1536px+ (2X large)
+
+### Desktop (lg: 1024px+)
+- Fixed sidebar always visible
+- Full navigation bar
+- Optimal content area
+
+### Tablet (md: 768px - 1023px)
+- Collapsible sidebar
+- Responsive navigation
+- Adaptive content padding
+
+### Mobile (sm: 640px and below)
+- Hidden sidebar with slide-out menu
+- Hamburger menu button
+- Touch-friendly navigation
+- Overlay background (semi-transparent, click outside to close)
+
+### Mobile Navigation Details
+- Slides in from the left
+- Smooth animations (300ms ease-in-out)
+- Touch-friendly close button
+- Auto-close on navigation
+
+### CSS Classes Used
+```css
+/* Layout Container */
+.min-h-screen          /* Full viewport height */
+.bg-gray-50            /* Light gray background */
+.flex                  /* Flexbox layout */
+
+/* Navigation */
+.bg-white              /* White background */
+.shadow-sm             /* Subtle shadow */
+.border-b.border-gray-200 /* Bottom border */
+.h-16                  /* Fixed height (64px) */
+
+/* Sidebar */
+.w-64                  /* Fixed width (256px) */
+.bg-white              /* White background */
+.shadow-sm             /* Subtle shadow */
+.border-r.border-gray-200 /* Right border */
+
+/* Mobile Overlay */
+.fixed.inset-0         /* Full screen overlay */
+.z-40/.z-50            /* High z-index */
+.transform.transition-transform /* Smooth animations */
+.translate-x-0/-translate-x-full /* Slide animations */
+```
+
+---
+
+## Component Classes Quick Reference
+
+### Cards
+```css
+.card-base          /* Basic card with shadow and border */
+.card-interactive   /* Card with hover effects */
+.card-elevated      /* Card with stronger shadow */
+```
+
+### Buttons
+```css
+.btn-primary        /* Primary action button */
+.btn-secondary      /* Secondary action button */
+.btn-success        /* Success action button */
+.btn-warning        /* Warning action button */
+.btn-danger         /* Danger action button */
+.btn-outline        /* Outline button */
+.btn-sm             /* Small button */
+.btn-lg             /* Large button */
+```
+
+### Forms
+```css
+.form-input         /* Standard input field */
+.form-input-error   /* Input field with error state */
+.form-label         /* Form label */
+.form-error         /* Error message */
+.form-help          /* Help text */
+```
+
+### Tables
+```css
+.table-container    /* Table wrapper */
+.table              /* Table element */
+.table-header       /* Table header row */
+.table-header-cell  /* Table header cell */
+.table-body         /* Table body */
+.table-row          /* Table row */
+.table-cell         /* Table cell */
+.table-cell-secondary /* Secondary table cell */
+```
+
+### Badges
+```css
+.badge-primary      /* Primary badge */
+.badge-success      /* Success badge */
+.badge-warning      /* Warning badge */
+.badge-danger       /* Danger badge */
+.badge-gray         /* Gray badge */
+```
+
+### Alerts
+```css
+.alert-success      /* Success alert */
+.alert-warning      /* Warning alert */
+.alert-danger       /* Danger alert */
+.alert-info         /* Info alert */
+```
+
+### Loading States
+```css
+.loading-spinner    /* Spinning loader */
+.loading-skeleton   /* Skeleton loading animation */
+```
+
+### Built-in Animations
+- **fade-in**: Fade in from transparent to opaque
+- **slide-up**: Slide up from below with fade
+- **slide-down**: Slide down from above with fade
+- **scale-in**: Scale from 95% to 100% with fade
+- **pulse-slow**: Slow pulse animation
+
+### Shadow Variants
+- **shadow-soft**: Subtle shadow for cards
+- **shadow-medium**: Medium shadow for elevated elements
+- **shadow-strong**: Strong shadow for modals and overlays
+- **shadow-inner-soft**: Inner shadow for inputs
+
+---
+
+## Special Effects
+
+### CSS Classes Available
+```css
+/* Shine effect */
+.shine-effect
+
+/* Glass morphism */
+.glass-effect
+
+/* Smooth hover */
+.apple-hover
+
+/* Button press */
+.apple-press
+
+/* Gradient text */
+.gradient-text
+
+/* Animations */
+.float-animation
+.pulse-animation
+.bounce-animation
+
+/* Focus states */
+.apple-focus
+
+/* Custom scrollbar */
+.custom-scrollbar
+```
+
+### Button Variants
+- `primary` — Blue → Teal gradient (default)
+- `secondary` — Light gray
+- `success` — Green → Emerald gradient
+- `danger` — Red → Pink gradient
+- `warning` — Yellow → Orange gradient
+- `icon` — Small circular button
+
+### Button Sizes
+- `sm` — Small (px-3 py-1.5 text-xs)
+- `md` — Medium (px-4 py-2 text-sm) — default
+- `lg` — Large (px-6 py-3 text-base)
+
+---
+
+## Component Usage Examples
+
+### Basic Card
+```html
+<div class="card-base p-6">
+  <h3 class="text-lg font-semibold text-business-text-primary">Card Title</h3>
+  <p class="text-business-text-secondary">Card content goes here.</p>
+</div>
+```
+
+### Interactive Button
+```html
+<button class="btn-primary">
+  Click Me
+</button>
+```
+
+### Form with Validation
+```html
+<div>
+  <label class="form-label">Email</label>
+  <input type="email" class="form-input" placeholder="Enter email" />
+  <p class="form-help">We'll never share your email.</p>
+</div>
+```
+
+### Alert Message
+```html
+<div class="alert-success">
+  <p>Operation completed successfully!</p>
+</div>
+```
+
+### Loading State
+```html
+<div class="flex items-center space-x-2">
+  <div class="loading-spinner w-4 h-4"></div>
+  <span>Loading...</span>
+</div>
+```
+
+### Segmented Controls
+```css
+/* Container */
+.flex.gap-1.bg-gray-50.rounded-xl.p-1.shadow-sm.border.border-gray-100
+
+/* Selected Button */
+.bg-white.text-blue-600.shadow-md.border.border-gray-200.transform.scale-105
+
+/* Unselected Button */
+.bg-transparent.text-gray-600.hover:text-gray-900.hover:bg-white/50
+```
+
+### Button with Shine Effect
+```tsx
+<Button variant="primary" className="shine-effect">
+  Thêm giao dịch
+</Button>
+```
+
+### Card with Glass Effect
+```tsx
+<div className="glass-effect rounded-lg p-4">
+  Nội dung card
+</div>
+```
+
+### Text with Gradient
+```tsx
+<h1 className="gradient-text text-3xl font-bold mb-6">
+  Tiêu đề đẹp
+</h1>
+```
+
+### Complete Example
+```tsx
+import { Button, AddButton } from '../components/UI';
+
+const ExamplePage: React.FC = () => {
+  return (
+    <div className="p-6">
+      <h1 className="gradient-text text-3xl font-bold mb-6">
+        Trang ví dụ
+      </h1>
+      <div className="space-y-4">
+        <Button variant="primary" className="shine-effect">
+          Thêm mới
+        </Button>
+        <Button variant="success">Lưu thay đổi</Button>
+        <Button variant="danger">Xóa</Button>
+        <AddButton 
+          onClick={() => console.log('Add clicked')}
+          showShine={true}
+        />
+      </div>
+    </div>
+  );
+};
+```
+
+---
+
+## Customization
+
+### Adding New Colors
+Modify `tailwind.config.js`:
+```javascript
+colors: {
+  custom: {
+    50: '#f0f9ff',
+    100: '#e0f2fe',
+    // ... more shades
+  }
+}
+```
+
+### Adding New Component Classes
+Add to `src/styles/components.css`:
+```css
+.custom-component {
+  @apply bg-white rounded-lg shadow-soft border border-business-border-light;
+}
+```
+
+### Adding New Animations
+Modify `tailwind.config.js`:
+```javascript
+keyframes: {
+  customAnimation: {
+    '0%': { opacity: '0', transform: 'scale(0.8)' },
+    '100%': { opacity: '1', transform: 'scale(1)' },
+  }
+},
+animation: {
+  'custom': 'customAnimation 0.3s ease-out',
+}
+```
+
+### Thêm Variant Mới
+1. Cập nhật `src/styles/theme.ts`:
+```tsx
+buttons: {
+  custom: {
+    base: '...',
+    gradient: 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600',
+  }
+}
+```
+2. Cập nhật Button component:
+```tsx
+variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'icon' | 'custom';
+```
+
+### Sidebar Width
+```tsx
+// For wider sidebar
+<div className="w-80 bg-white...">
+
+// For narrower sidebar  
+<div className="w-48 bg-white...">
+```
+
+### Animation Duration
+```tsx
+// Faster animation
+className="transform transition-transform duration-200..."
+
+// Slower animation
+className="transform transition-transform duration-500..."
+```
+
+---
+
+## Checklist for New Components
+
+### Typography
+- [ ] Use Inter font family
+- [ ] Apply appropriate font weight (300–700)
+- [ ] Use consistent text sizes
+- [ ] Maintain 1.5 line height
+
+### Colors
+- [ ] Use semantic color palette
+- [ ] Ensure proper contrast ratios (WCAG AA)
+- [ ] Apply consistent color meanings
+- [ ] Use Apple blue for primary actions
+
+### Spacing
+- [ ] Follow 4px grid system
+- [ ] Use consistent padding/margins
+- [ ] Apply generous spacing for breathing room
+- [ ] Consider mobile spacing
+
+### Interactions
+- [ ] Add smooth transitions (200ms)
+- [ ] Include hover/focus states
+- [ ] Use subtle scale effects (105% max)
+- [ ] Provide immediate feedback
+
+### Accessibility
+- [ ] Ensure keyboard navigation
+- [ ] Add proper focus indicators
+- [ ] Use semantic HTML
+- [ ] Test with screen readers
+
+### Responsive
+- [ ] Mobile-first design
+- [ ] Touch targets ≥ 44px
+- [ ] Test on multiple screen sizes
+- [ ] Tables scrollable on mobile
+
+### Performance
+- [ ] Components properly memoized where needed
+- [ ] No unnecessary re-renders
+- [ ] Lazy loading for heavy components
+- [ ] Images optimized and properly sized
+
+---
+
+## Quick Fix Commands
+
+```bash
+# Check for inline styles
+grep -r "style=" src/ --include="*.tsx"
+
+# Check for hardcoded colors
+grep -r "#[0-9a-fA-F]\{6\}" src/ --include="*.tsx"
+
+# Check for accessibility issues
+npm run lint
+
+# Check TypeScript errors
+npm run type-check
+
+# Run performance audit
+npm run build && npx lighthouse http://localhost:4173
+```
+
+### Common Layout Issues
+1. **Sidebar not sliding on mobile**: Check z-index values, verify transform classes, ensure JavaScript is enabled
+2. **Overlay not working**: Check event handlers, verify click outside functionality, test touch events
+3. **Layout breaking on resize**: Check responsive classes, verify breakpoint logic, test viewport meta tag
+
+---
+
+## File Structure
+
+```
+src/
+├── styles/
+│   └── components.css    # Component-specific styles
+├── index.css            # Main CSS with Tailwind imports
+└── App.css              # App-specific styles
+
+tailwind.config.js       # Tailwind configuration
+postcss.config.js        # PostCSS configuration
+``` 

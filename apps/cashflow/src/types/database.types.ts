@@ -175,6 +175,7 @@ type PublicSchema = {
                 total_balance: number | null
                 updated_at: string | null
                 working_method: string | null
+                partner_type: string | null
             }
             Insert: {
                 address?: string | null
@@ -195,6 +196,7 @@ type PublicSchema = {
                 total_balance?: number | null
                 updated_at?: string | null
                 working_method?: string | null
+                partner_type?: string | null
             }
             Update: {
                 address?: string | null
@@ -215,6 +217,7 @@ type PublicSchema = {
                 total_balance?: number | null
                 updated_at?: string | null
                 working_method?: string | null
+                partner_type?: string | null
             }
             Relationships: [
                 {
@@ -249,6 +252,7 @@ type PublicSchema = {
                 transaction_date: string
                 transaction_type: string
                 updated_at: string | null
+                status: string | null
             }
             Insert: {
                 amount: number
@@ -265,6 +269,7 @@ type PublicSchema = {
                 transaction_date?: string
                 transaction_type: string
                 updated_at?: string | null
+                status?: string | null
             }
             Update: {
                 amount?: number
@@ -281,6 +286,7 @@ type PublicSchema = {
                 transaction_date?: string
                 transaction_type?: string
                 updated_at?: string | null
+                status?: string | null
             }
             Relationships: [
                 {

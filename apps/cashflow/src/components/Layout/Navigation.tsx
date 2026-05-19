@@ -10,6 +10,7 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
   const { user } = useAuthContext();
+  const appSwitcherTarget = import.meta.env.VITE_APP_SWITCHER_TARGET;
 
   const lang = i18n.language || localStorage.getItem("language") || "vi";
   const fallbackName = lang === "vi" ? "Người dùng" : "User";
@@ -117,6 +118,17 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
           </div>
           {/* Company Switcher - for admin users */}
           <CompanySwitcher />
+          {appSwitcherTarget && (
+            <a
+              href={appSwitcherTarget}
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-emerald-700"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+              <span className="hidden sm:inline">Inventory</span>
+            </a>
+          )}
           <button
             onClick={handleLanguageChange}
             className="px-2 sm:px-3 py-1 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 text-xs font-semibold border border-gray-300 dark:border-gray-600 shadow-sm"

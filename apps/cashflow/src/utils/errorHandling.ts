@@ -1,28 +1,33 @@
 import React from "react";
 import type { ImportError } from "../types";
+import {
+  AppError as SharedAppError,
+  ERROR_CODES as SharedErrorCodes,
+  createError as sharedCreateError,
+  isRetryableError as sharedIsRetryableError,
+  defaultRetryConfig as sharedDefaultRetryConfig,
+  RetryConfig as SharedRetryConfig,
+} from "@superapp/shared-utils";
 
-// Error types
-export interface AppError {
-  code: string;
-  message: string;
-  details?: any;
-  timestamp: Date;
-  retryable: boolean;
-}
+// Re-export shared types and functions for backward compatibility
+export type AppError = Omit<SharedAppError, 'timestamp'> & { timestamp: Date };
+export type RetryConfig = Omit<SharedRetryConfig, 'retryableErrors'> & { retryableErrors: string[] };
 
-export interface RetryConfig {
-  maxAttempts: number;
-  baseDelay: number;
-  maxDelay: number;
-  backoffMultiplier: number;
-  retryableErrors: string[];
-}
+// Cashflow-specific error codes (extend shared codes)
+export const ERROR_CODES = {
+  ...SharedErrorCodes,
+  // Cashflow-specific codes
+  CUSTOMER_NOT_FOUND: "customer_not_found",
+  BANK_ACCOUNT_NOT_FOUND: "bank_account_not_found",
+  RATE_LIMIT_EXCEEDED: "rate_limit_exceeded",
+  SERVICE_UNAVAILABLE: "service_unavailable",
+} as const;
 
-// Default retry configuration
+// Default retry configuration (cashflow-specific)
 export const defaultRetryConfig: RetryConfig = {
   maxAttempts: 3,
-  baseDelay: 1000, // 1 second
-  maxDelay: 10000, // 10 seconds
+  baseDelay: 1000,
+  maxDelay: 10000,
   backoffMultiplier: 2,
   retryableErrors: [
     "network_error",
@@ -33,64 +38,39 @@ export const defaultRetryConfig: RetryConfig = {
   ],
 };
 
-// Error codes
-export const ERROR_CODES = {
-  // Network errors
-  NETWORK_ERROR: "network_error",
-  TIMEOUT: "timeout",
-  CONNECTION_FAILED: "connection_failed",
-
-  // Database errors
-  DATABASE_CONNECTION_FAILED: "database_connection_failed",
-  DATABASE_QUERY_FAILED: "database_query_failed",
-  DATABASE_CONSTRAINT_VIOLATION: "database_constraint_violation",
-
-  // Authentication errors
-  AUTHENTICATION_FAILED: "authentication_failed",
-  UNAUTHORIZED: "unauthorized",
-  TOKEN_EXPIRED: "token_expired",
-
-  // Validation errors
-  VALIDATION_ERROR: "validation_error",
-  INVALID_DATA: "invalid_data",
-
-  // Import errors
-  IMPORT_FAILED: "import_failed",
-  FILE_READ_ERROR: "file_read_error",
-  PARSE_ERROR: "parse_error",
-
-  // Business logic errors
-  CUSTOMER_NOT_FOUND: "customer_not_found",
-  BANK_ACCOUNT_NOT_FOUND: "bank_account_not_found",
-  INSUFFICIENT_PERMISSIONS: "insufficient_permissions",
-
-  // Generic errors
-  UNKNOWN_ERROR: "unknown_error",
-  INTERNAL_SERVER_ERROR: "internal_server_error",
-} as const;
-
-// Create application error
+// Create application error (wrapper around shared function)
 export function createError(
   code: string,
   message: string,
   details?: any,
   retryable: boolean = false,
 ): AppError {
-  return {
-    code,
+  const sharedError = sharedCreateError(
+    code as any,
     message,
     details,
-    timestamp: new Date(),
-    retryable,
+    undefined,
+    retryable
+  );
+  return {
+    ...sharedError,
+    timestamp: new Date(sharedError.timestamp),
   };
 }
 
-// Check if error is retryable
+// Check if error is retryable (wrapper around shared function)
 export function isRetryableError(
   error: AppError,
   config: RetryConfig = defaultRetryConfig,
 ): boolean {
-  return error.retryable && config.retryableErrors.includes(error.code);
+  const sharedConfig: SharedRetryConfig = {
+    maxAttempts: config.maxAttempts,
+    baseDelay: config.baseDelay,
+    maxDelay: config.maxDelay,
+    backoffMultiplier: config.backoffMultiplier,
+    retryableErrors: config.retryableErrors as any[],
+  };
+  return sharedIsRetryableError(error as any, sharedConfig);
 }
 
 // Calculate delay for retry with exponential backoff

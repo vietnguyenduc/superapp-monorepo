@@ -93,6 +93,7 @@ export interface Customer {
   updated_at: string;
   updated_by?: string | null;
   updated_by_email?: string | null;
+  partner_type?: string | null; // 'customer' | 'supplier' | 'both'
 }
 
 export interface Transaction {
@@ -112,6 +113,7 @@ export interface Transaction {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  status?: string | null; // 'pending' | 'completed' | 'cancelled'
   customers?: {
     full_name?: string;
     customer_code?: string;

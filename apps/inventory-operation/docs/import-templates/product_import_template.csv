@@ -1,0 +1,6 @@
+Business Code,Name,Category,Input Quantity,Output Quantity,Input Unit,Output Unit,Status,Business Status
+PROD001,Cà phê đen,BEVERAGE,1,1,ly,ly,ACTIVE,active
+PROD002,Trà sữa trân châu,BEVERAGE,1,1,ly,ly,ACTIVE,active
+PROD003,Bánh mì thịt nướng,FINISHED,1,1,cái,cái,ACTIVE,active
+PROD004,Nguyên liệu cà phê,DRY_GOODS,1,1,kg,gói,ACTIVE,active
+PROD005,Nước cam vắt,BEVERAGE,1,1,ly,ly,ACTIVE,active

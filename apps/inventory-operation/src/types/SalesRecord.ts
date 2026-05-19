@@ -5,6 +5,8 @@ export interface SalesRecord {
   productCode: string; // Mã SP (thành phẩm)
   outputDate: Date; // Ngày xuất
   quantitySold: number; // Số lượng bán
+  customerId?: string; // ID Khách hàng (Partner ID)
+  customerName?: string; // Tên khách hàng (Lưu cache)
   notes?: string; // Ghi chú: xuất bán, xuất khuyến mãi, xuất cúng...
   
   // Metadata

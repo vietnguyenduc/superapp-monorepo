@@ -167,7 +167,11 @@ CREATE TABLE stock_check_prints (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     check_date DATE NOT NULL,
     title VARCHAR(255) NOT NULL,
-    
+
+    -- Multi-tenancy
+    company_id UUID REFERENCES public.companies(id) ON DELETE SET NULL,
+    branch_id UUID REFERENCES public.branches(id) ON DELETE SET NULL,
+
     -- Metadata
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_by UUID NOT NULL,

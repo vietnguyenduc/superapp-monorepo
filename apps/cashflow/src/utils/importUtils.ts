@@ -1,4 +1,5 @@
 import type { Transaction, ImportError, TransactionType } from "../types";
+import { parseFile } from "@superapp/shared-utils";
 
 export interface RawTransactionData {
   customer_code: string;

@@ -22,7 +22,8 @@
     "cypress:run": "cypress run"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.100.0",
+    "@supabase/supabase-js": "^2.38.0",
+    "@superapp/shared-utils": "*",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
     "i18next": "^23.7.6",
@@ -32,7 +33,7 @@
     "react-dom": "^18.2.0",
     "react-i18next": "^13.5.0",
     "react-icons": "^5.5.0",
-    "react-router-dom": "^6.8.0",
+    "react-router-dom": "^6.26.0",
     "recharts": "^2.8.0",
     "xlsx": "^0.18.5"
   },

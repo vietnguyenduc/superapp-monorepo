@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Demo: Data Excel "Quản Lý danh mục"</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .editable-cell {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .editable-cell:hover {
+            background-color: #f3f4f6;
+        }
+        .editing {
+            background-color: #dbeafe !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen p-6">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                    📊 Demo: Data Excel "Quản Lý danh mục"
+                </h1>
+                <p class="text-gray-600">
+                    Test data thực tế từ file Excel với giao diện Excel-like editing
+                </p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="text-sm font-medium text-gray-500">Tổng sản phẩm</div>
+                    <div class="text-2xl font-bold text-blue-600" id="total-products">17</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="text-sm font-medium text-gray-500">Loại sản phẩm</div>
+                    <div class="text-2xl font-bold text-green-600" id="total-categories">7</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="text-sm font-medium text-gray-500">Tổng giá trị</div>
+                    <div class="text-2xl font-bold text-purple-600" id="total-value">₫542,000</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="text-sm font-medium text-gray-500">Giá trung bình</div>
+                    <div class="text-2xl font-bold text-orange-600" id="avg-price">₫31,882</div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="bg-white rounded-lg shadow p-6 mb-8">
+                <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div class="flex flex-col md:flex-row gap-4 flex-1">
+                        <input
+                            type="text"
+                            id="search-input"
+                            placeholder="🔍 Tìm kiếm sản phẩm..."
+                            class="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <select
+                            id="category-filter"
+                            class="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                            <option value="">Tất cả loại</option>
+                            <option value="Nguyên liệu">Nguyên liệu</option>
+                            <option value="Đồ uống">Đồ uống</option>
+                            <option value="Thức ăn">Thức ăn</option>
+                            <option value="Bánh ngọt">Bánh ngọt</option>
+                            <option value="Nước ép">Nước ép</option>
+                            <option value="Smoothie">Smoothie</option>
+                            <option value="Combo">Combo</option>
+                        </select>
+                    </div>
+                    <button
+                        id="add-product-btn"
+                        class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium"
+                    >
+                        + Thêm sản phẩm
+                    </button>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="table-container overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200" id="products-table">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã hàng</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên hàng</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Đơn vị</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá bán</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ghi chú</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="products-tbody">
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="mt-8 text-center text-gray-500 text-sm">
+                <p id="footer-stats">📊 Hiển thị 17 / 17 sản phẩm</p>
+                <p class="mt-2">
+                    ✨ Demo data thực tế từ file Excel "Quản Lý danh mục" với tính năng Excel-like editing
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Real Excel data from "Quản Lý danh mục" file
+        let productsData = [
+            // Nguyên liệu - Raw Materials
+            { id: 'NL001', code: 'NL-001', name: 'Đường trắng', unit: 'Kg', price: 24000, category: 'Nguyên liệu', notes: 'Đường tinh luyện trắng' },
+            { id: 'NL002', code: 'NL-002', name: 'Cà phê hạt', unit: 'Kg', price: 180000, category: 'Nguyên liệu', notes: 'Cà phê Robusta rang vừa' },
+            { id: 'NL003', code: 'NL-003', name: 'Sữa tươi', unit: 'Lít', price: 28000, category: 'Nguyên liệu', notes: 'Sữa tươi không đường' },
+            { id: 'NL004', code: 'NL-004', name: 'Trà xanh', unit: 'Gói', price: 15000, category: 'Nguyên liệu', notes: 'Trà xanh túi lọc 100g' },
+            { id: 'NL005', code: 'NL-005', name: 'Bột mì', unit: 'Kg', price: 22000, category: 'Nguyên liệu', notes: 'Bột mì đa dụng số 8' },
+            
+            // Thành phẩm - Finished Products
+            { id: 'TP001', code: 'TP-001', name: 'Cà phê đen', unit: 'Ly', price: 20000, category: 'Đồ uống', notes: 'Cà phê phin truyền thống' },
+            { id: 'TP002', code: 'TP-002', name: 'Cà phê sữa', unit: 'Ly', price: 25000, category: 'Đồ uống', notes: 'Cà phê phin với sữa đặc' },
+            { id: 'TP003', code: 'TP-003', name: 'Trà sữa trân châu', unit: 'Ly', price: 35000, category: 'Đồ uống', notes: 'Trà sữa Đài Loan với trân châu đen' },
+            { id: 'TP004', code: 'TP-004', name: 'Trà xanh đá', unit: 'Ly', price: 18000, category: 'Đồ uống', notes: 'Trà xanh pha lạnh' },
+            { id: 'TP005', code: 'TP-005', name: 'Bánh mì thịt nướng', unit: 'Ổ', price: 25000, category: 'Thức ăn', notes: 'Bánh mì Việt Nam với thịt nướng' },
+            { id: 'TP006', code: 'TP-006', name: 'Bánh croissant', unit: 'Cái', price: 30000, category: 'Bánh ngọt', notes: 'Bánh croissant bơ Pháp' },
+            { id: 'TP007', code: 'TP-007', name: 'Bánh tiramisu', unit: 'Phần', price: 45000, category: 'Bánh ngọt', notes: 'Bánh tiramisu Ý truyền thống' },
+            { id: 'TP008', code: 'TP-008', name: 'Nước cam vắt', unit: 'Ly', price: 30000, category: 'Nước ép', notes: 'Cam tươi vắt 100%' },
+            { id: 'TP009', code: 'TP-009', name: 'Smoothie xoài', unit: 'Ly', price: 40000, category: 'Smoothie', notes: 'Xoài tươi xay với sữa chua' },
+            { id: 'TP010', code: 'TP-010', name: 'Smoothie dâu', unit: 'Ly', price: 42000, category: 'Smoothie', notes: 'Dâu tây tươi xay với sữa' },
+            
+            // Combo & Set
+            { id: 'CB001', code: 'CB-001', name: 'Combo sáng', unit: 'Set', price: 55000, category: 'Combo', notes: 'Cà phê sữa + Bánh mì + Trứng ốp la' },
+            { id: 'CB002', code: 'CB-002', name: 'Combo chiều', unit: 'Set', price: 65000, category: 'Combo', notes: 'Trà sữa + Bánh ngọt + Snack' }
+        ];
+
+        let filteredData = [...productsData];
+        let editingCell = null;
+
+        // Format price in VND
+        function formatPrice(price) {
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(price);
+        }
+
+        // Update statistics
+        function updateStats() {
+            const total = filteredData.length;
+            const categories = new Set(filteredData.map(item => item.category)).size;
+            const totalValue = filteredData.reduce((sum, item) => sum + item.price, 0);
+            const avgPrice = totalValue / total;
+
+            document.getElementById('total-products').textContent = total;
+            document.getElementById('total-categories').textContent = categories;
+            document.getElementById('total-value').textContent = formatPrice(totalValue);
+            document.getElementById('avg-price').textContent = formatPrice(avgPrice);
+            document.getElementById('footer-stats').textContent = `📊 Hiển thị ${total} / ${productsData.length} sản phẩm`;
+        }
+
+        // Render table
+        function renderTable() {
+            const tbody = document.getElementById('products-tbody');
+            tbody.innerHTML = '';
+
+            filteredData.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 editable-cell" data-field="code" data-id="${item.id}">${item.code}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 editable-cell" data-field="name" data-id="${item.id}">${item.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 editable-cell" data-field="unit" data-id="${item.id}">${item.unit}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600 editable-cell" data-field="price" data-id="${item.id}">${formatPrice(item.price)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap editable-cell" data-field="category" data-id="${item.id}">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            ${item.category}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate editable-cell" data-field="notes" data-id="${item.id}">${item.notes}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <button onclick="deleteProduct('${item.id}')" class="text-red-600 hover:text-red-800">
+                            🗑️
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Add click listeners for editable cells
+            document.querySelectorAll('.editable-cell').forEach(cell => {
+                cell.addEventListener('click', handleCellClick);
+            });
+
+            updateStats();
+        }
+
+        // Handle cell click for editing
+        function handleCellClick(event) {
+            const cell = event.target;
+            const field = cell.dataset.field;
+            const id = cell.dataset.id;
+            const currentValue = cell.textContent.trim();
+
+            if (editingCell) {
+                finishEditing();
+            }
+
+            editingCell = { cell, field, id, originalValue: currentValue };
+            cell.classList.add('editing');
+
+            let input;
+            if (field === 'price') {
+                const numericValue = productsData.find(p => p.id === id).price;
+                input = document.createElement('input');
+                input.type = 'number';
+                input.value = numericValue;
+                input.className = 'w-full px-2 py-1 border border-blue-300 rounded text-sm';
+            } else if (field === 'unit') {
+                input = document.createElement('select');
+                input.className = 'w-full px-2 py-1 border border-blue-300 rounded text-sm';
+                const units = ['Ly', 'Cái', 'Phần', 'Ổ', 'Set', 'Kg', 'Gói', 'Lít'];
+                units.forEach(unit => {
+                    const option = document.createElement('option');
+                    option.value = unit;
+                    option.textContent = unit;
+                    if (unit === currentValue) option.selected = true;
+                    input.appendChild(option);
+                });
+            } else if (field === 'category') {
+                input = document.createElement('select');
+                input.className = 'w-full px-2 py-1 border border-blue-300 rounded text-sm';
+                const categories = ['Nguyên liệu', 'Đồ uống', 'Thức ăn', 'Bánh ngọt', 'Nước ép', 'Smoothie', 'Combo'];
+                categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    if (cat === currentValue) option.selected = true;
+                    input.appendChild(option);
+                });
+            } else {
+                input = document.createElement('input');
+                input.type = 'text';
+                input.value = currentValue;
+                input.className = 'w-full px-2 py-1 border border-blue-300 rounded text-sm';
+            }
+
+            input.addEventListener('blur', finishEditing);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    finishEditing();
+                } else if (e.key === 'Escape') {
+                    cancelEditing();
+                }
+            });
+
+            cell.innerHTML = '';
+            cell.appendChild(input);
+            input.focus();
+        }
+
+        // Finish editing
+        function finishEditing() {
+            if (!editingCell) return;
+
+            const { cell, field, id } = editingCell;
+            const input = cell.querySelector('input, select');
+            const newValue = input.value;
+
+            // Update data
+            const product = productsData.find(p => p.id === id);
+            if (product) {
+                if (field === 'price') {
+                    product[field] = parseInt(newValue) || 0;
+                } else {
+                    product[field] = newValue;
+                }
+            }
+
+            cell.classList.remove('editing');
+            editingCell = null;
+            
+            // Re-render to show updated data
+            filterAndRender();
+        }
+
+        // Cancel editing
+        function cancelEditing() {
+            if (!editingCell) return;
+
+            const { cell, originalValue } = editingCell;
+            cell.classList.remove('editing');
+            cell.textContent = originalValue;
+            editingCell = null;
+        }
+
+        // Delete product
+        function deleteProduct(id) {
+            if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
+                productsData = productsData.filter(p => p.id !== id);
+                filterAndRender();
+            }
+        }
+
+        // Add new product
+        function addProduct() {
+            const newId = 'NEW' + Date.now();
+            const newProduct = {
+                id: newId,
+                code: '',
+                name: '',
+                unit: 'Ly',
+                price: 0,
+                category: 'Đồ uống',
+                notes: ''
+            };
+            productsData.push(newProduct);
+            filterAndRender();
+            
+            // Auto-focus on the first cell of the new product after rendering
+            setTimeout(() => {
+                const newRowCells = document.querySelectorAll(`[data-id="${newId}"]`);
+                if (newRowCells.length > 0) {
+                    // Focus on the first cell (product code)
+                    const firstCell = newRowCells[0];
+                    firstCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstCell.click();
+                }
+            }, 100);
+        }
+
+        // Filter and render
+        function filterAndRender() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const categoryFilter = document.getElementById('category-filter').value;
+
+            filteredData = productsData.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(searchTerm) ||
+                                    item.code.toLowerCase().includes(searchTerm);
+                const matchesCategory = !categoryFilter || item.category === categoryFilter;
+                return matchesSearch && matchesCategory;
+            });
+
+            renderTable();
+        }
+
+        // Event listeners
+        document.getElementById('search-input').addEventListener('input', filterAndRender);
+        document.getElementById('category-filter').addEventListener('change', filterAndRender);
+        document.getElementById('add-product-btn').addEventListener('click', addProduct);
+
+        // Initial render
+        renderTable();
+
+        // Handle clicks outside of editing cells
+        document.addEventListener('click', (e) => {
+            if (editingCell && !e.target.closest('.editable-cell')) {
+                finishEditing();
+            }
+        });
+    </script>
+</body>
+</html>

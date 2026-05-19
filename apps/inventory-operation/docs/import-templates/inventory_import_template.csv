@@ -1,0 +1,6 @@
+Date,Product Code,Product Name,Input Quantity,Raw Material Stock,Raw Material Unit,Processed Stock,Processed Unit,Finished Product Stock,Finished Product Unit,Notes
+2024-01-15,PROD001,Cà phê đen,10,5,kg,8,ly,8,ly,Nhập kho mới
+2024-01-15,PROD002,Trà sữa trân châu,15,10,kg,12,ly,12,ly,Nhập kho mới
+2024-01-15,PROD003,Bánh mì thịt nướng,20,0,kg,0,ly,20,cái,Nhập kho mới
+2024-01-15,PROD004,Nguyên liệu cà phê,50,50,kg,0,ly,0,ly,Nhập kho nguyên liệu
+2024-01-15,PROD005,Nước cam vắt,30,25,kg,28,ly,28,ly,Nhập kho mới

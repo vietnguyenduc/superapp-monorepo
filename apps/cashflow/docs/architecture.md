@@ -22,7 +22,8 @@ Cashflow là ứng dụng web AI-native sử dụng frontend React + Supabase ba
 - Supabase (PostgreSQL 15) làm database chính
 - Supabase Auth (email/password + JWT) và Row Level Security cho từng bảng
 - Supabase Storage cho file template/import log (tương lai)
-- Edge Functions (dự kiến) để xử lý import lớn hoặc tác vụ nền
+- Edge Function `create-user` (đã deploy) — tự động tạo record `public.users` sau khi auth sign-up
+- Edge Functions khác (dự kiến) để xử lý import lớn hoặc tác vụ nền
 
 ### Tooling
 - Vitest + Testing Library cho unit/UI tests
@@ -45,8 +46,11 @@ Cashflow là ứng dụng web AI-native sử dụng frontend React + Supabase ba
 │   Supabase Backend    │
 │ - Auth & RLS          │
 │ - Tables: users,      │
+│   companies, branches,│
 │   customers,          │
-│   transactions, audit │
+│   transactions,       │
+│   transaction_types,  │
+│   backup_history      │
 │ - Edge Functions      │
 └──────────┬────────────┘
            │ SQL / REST
@@ -60,7 +64,7 @@ Cashflow là ứng dụng web AI-native sử dụng frontend React + Supabase ba
 
 - **Pages/DataImport/CustomerImport.tsx** xử lý cả single-entry và bulk import.
 - **services/database.ts** cung cấp hàm `customers.bulkCreateCustomers`, `transactions.bulkCreateTransactions` (đã kết nối Supabase) cùng logic seed (đang dần loại bỏ khi chạy dữ liệu thật).
-- **Audit logging** (planned) sẽ được hiện thực bằng bảng `import_logs` hoặc mở rộng `audit_logs` hiện có.
+- **Audit / history tracking**: bảng `backup_history` lưu các thao tác import/export; chưa có bảng `audit_logs` riêng.
 
 ---
 
@@ -71,7 +75,7 @@ Cashflow là ứng dụng web AI-native sử dụng frontend React + Supabase ba
 2. Frontend form thu thập Mã KH, Tên KH, SĐT + optional fields.
 3. Form validation client-side (format) → call `databaseService.customers.createCustomer`.
 4. Supabase insert vào `customers`, trigger RLS kiểm tra branch + role.
-5. Success → frontend reset form, hiển thị toast, ghi audit ({user_id, action="single_customer_import", success_count=1}).
+5. Success → frontend reset form, hiển thị toast. (Audit log đầy đủ chưa implement; có thể ghi vào `backup_history` với operation='import').
 
 ### 2. Bulk Import Customers/Transactions
 1. User chọn file Excel/CSV (<=200 dòng). Client parse dùng `xlsx`.
@@ -79,7 +83,7 @@ Cashflow là ứng dụng web AI-native sử dụng frontend React + Supabase ba
 3. Nếu còn lỗi: disable import, hiển thị bảng lỗi → user chỉnh file & upload lại.
 4. Khi hợp lệ: gửi payload tới Supabase (upsert/insert hàng loạt). Có thể chia batch 50-100 rows để tránh timeout.
 5. Supabase xử lý, trả danh sách thành công/thất bại. Frontend hiển thị modal kết quả.
-6. Ghi audit log (hoặc bảng `import_history`): user, loại import, success_count, timestamp.
+6. Ghi vào `backup_history` (operation='import') nếu cần theo dõi; chưa có bảng `import_history` riêng.
 
 ### 3. Permission & RBAC Integration
 - `useAuth` tải role + `staff_permissions` JSONB.
@@ -89,7 +93,7 @@ Cashflow là ứng dụng web AI-native sử dụng frontend React + Supabase ba
 ---
 
 ## SECURITY & RLS SUMMARY
-- Các bảng `customers`, `transactions`, `users`, `audit_logs` đã bật RLS.
+- Tất cả các bảng trong schema `public` đã bật RLS: `users`, `companies`, `branches`, `bank_accounts`, `customers`, `transactions`, `transaction_types`, `customer_fields`, `color_settings`, `user_preferences`, `backup_history`.
 - Chính sách hiện có:
   - Admin: full access.
   - Branch Manager: CRUD trong branch của họ.
@@ -111,7 +115,7 @@ Cashflow là ứng dụng web AI-native sử dụng frontend React + Supabase ba
 ---
 
 ## NEXT STEPS / RECOMMENDATIONS
-1. **Finalize Audit Log Schema:** tạo bảng `import_history` (id, user_id, import_type, success_count, failed_count, created_at, metadata JSON).
-2. **Edge Function for Large Imports:** chuẩn bị function `import-transactions` để xử lý file lớn (>200) trong tương lai.
-3. **Permission Middleware:** tạo hook chung `usePermissionGate` để disable toàn bộ UI khi user thiếu quyền.
-4. **Monitoring:** thêm bảng `import_metrics` hoặc log sang monitoring service để theo dõi thời gian xử lý, tỉ lệ lỗi.
+1. **Audit Logging:** đánh giá nhu cầu bảng `audit_logs` chuyên dụng thay vì dùng `backup_history`; nếu cần thiết thì thiết kế schema (id, user_id, action, entity_type, entity_id, metadata JSONB, created_at).
+2. **Edge Function for Large Imports:** chuẩn bị function `import-transactions` để xử lý file lớn (>200 rows) server-side nếu client-side timeout.
+3. **Permission Middleware:** hoàn thiện `usePermissionGate` hook (hoặc HOC) để disable toàn bộ UI khi user thiếu quyền, thay vì kiểm tra lẻ tẻ từng component.
+4. **Monitoring:** thêm bảng `system_metrics` hoặc tích hợp logging service để theo dõi thời gian xử lý import, tỉ lệ lỗi RLS, và performance query.

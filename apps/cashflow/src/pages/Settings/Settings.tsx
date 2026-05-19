@@ -106,6 +106,9 @@ const Settings: React.FC = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState("interface");
   const [activeOpeningSubTab, setActiveOpeningSubTab] = useState<"list" | "file">("list");
+  const [autoApproveExternal, setAutoApproveExternal] = useState(() => {
+    return localStorage.getItem("cashflow_auto_approve_external") === "true";
+  });
   const [error, setError] = useState<string | null>(null);
   const [staffUsers, setStaffUsers] = useState<any[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(false);
@@ -1352,6 +1355,7 @@ const Settings: React.FC = () => {
       { id: "branches", name: "Văn phòng", icon: "🏢" },
       { id: "customer-fields", name: "Trường khách hàng", icon: "🧾" },
       { id: "transaction-types", name: "Loại giao dịch", icon: "💳" },
+      { id: "integration", name: "Tích hợp", icon: "🔗" },
       { id: "users", name: "Tài khoản & phân quyền", icon: "👥" },
     ].filter(tab => {
       // Show users/permissions and opening-balance tabs for admin, admin_master, and admin_company
@@ -1451,6 +1455,40 @@ const Settings: React.FC = () => {
                     </div>
                   </div>
                   <ToggleSwitch checked={darkMode} onChange={setDarkMode} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Integration Settings */}
+          {activeTab === "integration" && (
+            <div className="p-4 sm:p-6">
+              <div className="mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">Tích hợp & Tự động hóa</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Cấu hình kết nối với các phân hệ khác (Inventory, Sales)</p>
+              </div>
+              <div className="space-y-4 sm:space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg gap-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-xl">⚡</span>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-900 dark:text-white">Tự động duyệt công nợ từ hệ thống khác</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {autoApproveExternal 
+                          ? 'Giao dịch từ kho/bán hàng sẽ được tạo thẳng thành công nợ (Completed).'
+                          : 'Giao dịch từ kho/bán hàng sẽ vào Hàng chờ (Pending) để kế toán duyệt.'}
+                      </p>
+                    </div>
+                  </div>
+                  <ToggleSwitch
+                    checked={autoApproveExternal}
+                    onChange={(checked) => {
+                      setAutoApproveExternal(checked);
+                      localStorage.setItem("cashflow_auto_approve_external", String(checked));
+                    }}
+                  />
                 </div>
               </div>
             </div>

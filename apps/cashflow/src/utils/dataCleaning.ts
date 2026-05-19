@@ -1,4 +1,11 @@
 import { TransactionType } from "../types";
+import {
+  trimWhitespaceRule,
+  normalizeDatesRule,
+  applyRules,
+  CleaningRule,
+  CleaningResult as SharedCleaningResult,
+} from "@superapp/shared-utils";
 
 /**
  * Data cleaning utilities for import operations
@@ -21,8 +28,12 @@ export interface CleanedData {
   changes: string[];
 }
 
+// Re-export shared cleaning result for backward compatibility
+export type CleaningResult = SharedCleaningResult;
+
 /**
  * Clean a single value with specified options
+ * Uses shared utilities where applicable, cashflow-specific logic otherwise
  */
 export function cleanValue(
   value: string,
@@ -126,6 +137,22 @@ export function cleanValue(
     cleaned,
     changes,
   };
+}
+
+/**
+ * Clean an object using shared utilities
+ */
+export function cleanWithSharedRules(data: any): CleaningResult {
+  const rules: CleaningRule[] = [];
+  
+  if (typeof data === 'string') {
+    rules.push(trimWhitespaceRule);
+  } else if (typeof data === 'object' && data !== null) {
+    rules.push(trimWhitespaceRule);
+    rules.push(normalizeDatesRule);
+  }
+  
+  return applyRules(data, rules);
 }
 
 /**

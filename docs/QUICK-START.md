@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-This guide helps you get started with the Debt and Repayment Web Application quickly while avoiding common errors.
+This guide helps you get started with the Cashflow Management System quickly while avoiding common errors.
 
 ## 🚀 Prerequisites
 
@@ -30,7 +30,7 @@ cp env.example .env
 # Edit .env with your Supabase credentials
 # VITE_SUPABASE_URL=your_supabase_url
 # VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-# VITE_APP_NAME=Debt Repayment App
+# VITE_APP_NAME=Cashflow Management System
 ```
 
 ### 3. Verify Setup
@@ -181,10 +181,16 @@ The app uses Supabase for authentication. Make sure to:
 
 The database schema includes:
 - `users` - User accounts and roles
+- `companies` - Company/tenant records
 - `customers` - Customer information
 - `transactions` - Financial transactions
 - `branches` - Branch locations
 - `bank_accounts` - Bank account details
+- `transaction_types` - Configurable transaction types per company
+- `customer_fields` - Custom fields for customers
+- `color_settings` - UI color configuration
+- `user_preferences` - User-specific settings
+- `backup_history` - Backup / import operation logs
 
 ## 🚀 Deployment
 
