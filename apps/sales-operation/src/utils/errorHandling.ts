@@ -105,7 +105,7 @@ export function logError(error: AppError, context?: string): void {
  */
 export function handleError(error: any, context?: string): {
   error: string;
-  code: ERROR_CODES;
+  code: string;
   userMessage: string;
 } {
   const appError = toAppError(error);

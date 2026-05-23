@@ -1,1 +1,2 @@
-// Export all shared theme utilities from this file
+export * from './theme';
+export * from './tailwind-preset';

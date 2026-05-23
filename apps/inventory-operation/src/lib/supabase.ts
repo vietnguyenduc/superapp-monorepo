@@ -1,3 +1,4 @@
+import { createSupabaseClient as createSharedClient } from '@superapp/shared-utils';
 import { createClient } from '@supabase/supabase-js';
 
 // Environment variables for Supabase configuration
@@ -24,7 +25,7 @@ const createSupabaseClient = () => {
     throw new Error(envValidationError);
   }
 
-  return createClient(supabaseUrl, supabaseAnonKey, {
+  return createSharedClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       autoRefreshToken: true,
       persistSession: true,

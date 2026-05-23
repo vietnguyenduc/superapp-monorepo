@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "../types/database.types";
+import { createSupabaseClient } from "@superapp/shared-utils";
+import type { Database } from "@repo/types";
 
 // Environment variables for Supabase configuration
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -16,7 +16,7 @@ if (!supabaseAnonKey) {
 }
 
 // Create Supabase client with enhanced JWT configuration and type safety
-export const supabase = createClient<Database, "public">(supabaseUrl, supabaseAnonKey, {
+export const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
   db: {
     schema: APP_SUPABASE_SCHEMA,
   },
@@ -70,7 +70,7 @@ export type SupabaseHealthCheckResult = {
 };
 
 // Create a separate Supabase client for health checks without authentication
-const healthCheckClient = createClient<Database, "public">(supabaseUrl, supabaseAnonKey, {
+const healthCheckClient = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
   db: {
     schema: APP_SUPABASE_SCHEMA,
   },

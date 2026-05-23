@@ -192,8 +192,9 @@ export const validateProductCatalogItem = (item: Partial<ProductCatalogItem>): s
       errors.push(`${column.label} không được để trống`);
     }
     
-    if (column.validation && item[column.key as keyof ProductCatalogItem]) {
-      const validationError = column.validation(item[column.key as keyof ProductCatalogItem] as any);
+    if (column.validation && item[column.key as keyof ProductCatalogItem] !== undefined) {
+      // @ts-expect-error - column.validation has a union type of signatures which TS cannot invoke directly
+      const validationError = column.validation(item[column.key as keyof ProductCatalogItem]);
       if (validationError) {
         errors.push(validationError);
       }

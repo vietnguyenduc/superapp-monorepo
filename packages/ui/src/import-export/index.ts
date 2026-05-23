@@ -10,11 +10,4 @@ export type { PasteData } from './ClipboardPasteInput';
 export { default as GoogleSheetsIntegration } from './GoogleSheetsIntegration';
 export type { GoogleSheetsConfig, SpreadsheetData } from './GoogleSheetsIntegration';
 
-// Re-export all types for convenience
-export type {
-  ImportError,
-  ColumnDefinition,
-  PasteData,
-  GoogleSheetsConfig,
-  SpreadsheetData,
-};
+

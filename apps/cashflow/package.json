@@ -24,6 +24,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",
     "@superapp/shared-utils": "*",
+    "@repo/types": "*",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
     "i18next": "^23.7.6",
@@ -38,6 +39,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@repo/eslint-config": "*",
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/react-hooks": "^7.0.2",

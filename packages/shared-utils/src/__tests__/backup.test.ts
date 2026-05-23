@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createBackup, detectConflicts, ConflictResolutionStrategy } from '../backup';
+import { createBackup, detectConflicts } from '../backup';
 
 describe('Backup/Restore', () => {
   it('should create a backup with metadata', () => {

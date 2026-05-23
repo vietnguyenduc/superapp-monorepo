@@ -1,156 +1,82 @@
 # Superapp Monorepo
 
-A comprehensive monorepo for F&B management applications built with Turborepo, featuring shared components and standardized data migration capabilities.
+A comprehensive monorepo for F&B management applications built with Turborepo, featuring shared UI components, shared auth, standardized data migration capabilities, and multi-tenant capabilities.
 
-## Using this example
+## Architecture Overview
 
-Run the following command:
-
-```sh
-npx create-turbo@latest
-```
-
-## What's inside?
-
-This monorepo includes the following applications and packages:
+This monorepo leverages Turborepo to orchestrate a unified ecosystem of applications:
 
 ### Applications
-
-- `apps/cashflow`: Cash flow management application
-- `apps/inventory-operation`: Inventory management system for F&B operations
-- `apps/docs`: Documentation site (planned)
+- **`apps/cashflow`**: Cash flow management application. Integrates securely with inventory and sales data.
+- **`apps/inventory-operation`**: Inventory management system for F&B operations.
+- **`apps/sales-operation`**: Sales tracking and POS management application.
+- **`apps/docs`**: Documentation site (planned).
 
 ### Shared Packages
+- **`@repo/ui`**: Shared React component library with an Apple-like design system. Includes complex components like `DataTable` and `AuthProvider`.
+- **`@repo/hooks`**: Shared custom React hooks (`useDebounce`, `usePagination`, `useRealtimeSubscription`).
+- **`@repo/shared-utils`**: Common logic, utilities, API fetchers, and the shared Supabase authentication module.
+- **`@repo/theme`**: Shared styling definitions, tokens, and Tailwind configuration presets.
+- **`@repo/eslint-config`**: Standardized ESLint configurations for React and internal libraries.
+- **`@repo/typescript-config`**: Base TypeScript configurations used across all workspaces.
 
-- `@repo/ui`: Shared React component library with Apple-like design system
-  - Basic UI components (Button, Card, etc.)
-  - **Data Migration Components**: EditableDataGrid, ClipboardPasteInput, GoogleSheetsIntegration
-- `@repo/hooks`: Shared React hooks
-- `@repo/theme`: Apple-like design tokens and themes
-- `@repo/eslint-config`: ESLint configurations
-- `@repo/typescript-config`: TypeScript configurations
+### Database & Security (Supabase)
+We use a centralized Supabase project. The `supabase/migrations/` folder manages the unified schema.
+- **Cross-app Triggers**: Database triggers automatically sync activities across apps (e.g., inventory imports or sales orders auto-create pending cashflow transactions).
+- **Multi-Tenancy**: The `company_id` column provides a secure, tenant-level isolation layer across all major tables using Row Level Security (RLS).
+- **Authentication**: Role-based access control (RBAC) securely restricts visibility based on `app_permissions` and `staff_permissions`.
 
-### Data Migration Hub
+## Getting Started
+
+### Prerequisites
+- Node.js >= 18
+- `npm` >= 10
+- A Supabase project (for database/auth)
+
+### Installation
+1. Clone the repository and install dependencies:
+```bash
+npm install
+```
+
+2. **Environment Variables**
+Copy the master `.env.example` to your application roots (`apps/cashflow/.env.local`, `apps/sales-operation/.env.local`, etc.) and fill in your Supabase credentials:
+```bash
+cp .env.example apps/cashflow/.env.local
+cp .env.example apps/sales-operation/.env.local
+```
+
+### Monorepo Scripts
+We use Turborepo for efficient task execution. Run these from the root directory:
+
+- `npm run dev`: Start all apps in development mode concurrently.
+- `npm run build`: Build all apps and packages.
+- `npm run lint`: Run ESLint across all workspaces.
+- `npm run format`: Format code across the monorepo using Prettier.
+- `npm run type-check`: Run TypeScript compilation check.
+
+To run a task for a specific app, use the `--filter` flag:
+```bash
+npx turbo run dev --filter=cashflow
+```
+
+## Data Migration Hub
 
 🚀 **NEW**: Comprehensive data migration system for seamless transition from manual/legacy workflows:
-
 - **Excel-like Interface**: Familiar grid editing experience
 - **Multi-source Import**: Excel, Google Sheets, CSV, manual input
 - **Smart Validation**: Real-time data validation with user-friendly messages
-- **Smooth UX**: Designed for users transitioning from manual processes
 
 📚 **Documentation**:
 - [Data Migration Hub Architecture](./docs/DATA-MIGRATION-HUB.md)
 - [Development Rules & Standards](./docs/DATA-MIGRATION-RULES.md)
-- [Task Breakdown & Collaboration](./docs/DATA-MIGRATION-TASKS.md)
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
-```
-
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
 
 ## 🤖 AI-Assisted Development (Vibe Coding)
 
 This project is optimized for AI-assisted development. Each app contains an `AI_CONTEXT.md` file that helps AI assistants understand the project quickly.
 
 ### Quick Start for AI Sessions
-```
+```text
 I'm working on the [app-name] app in the superapp-monorepo. 
 Please read AI_CONTEXT.md in apps/[app-name]/ for project context.
 ```
@@ -169,15 +95,3 @@ Update the `AI_CONTEXT.md` file with:
 - Current issues
 - Next steps
 
----
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
