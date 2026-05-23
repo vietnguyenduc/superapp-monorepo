@@ -5,7 +5,7 @@ import { INVENTORY_VIEWS } from '../types/InventoryMovement';
 import { getTrialInventoryRecords, seedTrialDataIfNeeded } from '../data/trialMockData';
 import InventoryMovementLedger from '../components/InventoryMovementLedger';
 import { useProducts } from '../hooks/useProducts';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useAuthContext } from '@superapp/iam';
 import { UserRole } from '../types/UserRole';
 import { ConversionEngine } from '../utils/conversionLogic';
 

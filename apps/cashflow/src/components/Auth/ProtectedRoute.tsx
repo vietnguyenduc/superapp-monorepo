@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
-import { useAuthContext } from "../../contexts/AuthContext";
+import { useAuthContext } from "@superapp/iam";
 import { hasPermission } from "../../utils/rbac";
 import type { UserRole } from "../../types";
 

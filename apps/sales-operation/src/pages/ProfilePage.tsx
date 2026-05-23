@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuthContext } from "../contexts/AuthContext";
+import { useAuthContext } from "@superapp/iam";
 
 const ProfilePage: React.FC = () => {
   const { user, updateProfile, signOut, isTrial } = useAuthContext();

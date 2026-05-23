@@ -4,8 +4,8 @@ import "@testing-library/jest-dom";
 import TransactionImport from "../TransactionImport";
 import { databaseService } from "../../../services/database";
 
-vi.mock("../../../../src/hooks/useAuth", () => ({
-  useAuth: () => ({
+vi.mock("@superapp/iam", () => ({
+  useAuthContext: () => ({
     user: { id: "user-1", branch_id: "branch-1" },
   }),
 }));

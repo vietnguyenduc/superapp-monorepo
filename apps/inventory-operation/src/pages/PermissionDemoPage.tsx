@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthContext as useAuth } from '@superapp/iam';
 import { Permission } from '../types/UserRole';
 import PermissionGuard, { 
   MultiplePermissionGuard, 

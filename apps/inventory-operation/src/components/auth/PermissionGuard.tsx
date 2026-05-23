@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuthContext as useAuth } from '@superapp/iam';
 import { Permission } from '../../types/UserRole';
 
 interface PermissionGuardProps {

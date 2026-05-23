@@ -30,31 +30,6 @@ const createSupabaseClient = () => {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
-      storageKey: 'sb-peslmsctejmvkwzyohke-auth-token',
-      storage: {
-        getItem: (key: string) => {
-          try {
-            return localStorage.getItem(key);
-          } catch (error) {
-            console.error('Error reading from localStorage:', error);
-            return null;
-          }
-        },
-        setItem: (key: string, value: string) => {
-          try {
-            localStorage.setItem(key, value);
-          } catch (error) {
-            console.error('Error writing to localStorage:', error);
-          }
-        },
-        removeItem: (key: string) => {
-          try {
-            localStorage.removeItem(key);
-          } catch (error) {
-            console.error('Error removing from localStorage:', error);
-          }
-        },
-      },
     },
     realtime: {
       params: {

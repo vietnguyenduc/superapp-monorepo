@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useCompany } from "../../contexts/CompanyContext";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuthContext as useAuth } from "@superapp/iam";
 import { supabase } from "../../services/supabase";
 
 const CompanySwitcher: React.FC = () => {

@@ -1654,7 +1654,18 @@ const dashboardService = {
         historical_data: [],
       }));
 
-      const cashFlowData: any[] = [];
+      const count =
+        timeRange === "day"
+          ? rangeCount?.day || 7
+          : timeRange === "week"
+            ? rangeCount?.week || 8
+            : timeRange === "month"
+              ? rangeCount?.month || 7
+              : timeRange === "quarter"
+                ? rangeCount?.quarter || 8
+                : 2;
+      const cashFlowData = aggregateCashFlow(mockTransactions, timeRange, count);
+      
       const transactionAmountsByBranch = mockBranches.map((b: any) => ({
         branch_id: b.id,
         branch_name: b.name,

@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AddButton from "../UI/AddButton";
-import { useAuthContext } from "../../contexts/AuthContext";
+import { useAuthContext } from "@superapp/iam";
 
 interface MenuItem {
   path: string;

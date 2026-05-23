@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useAuthContext } from "../../contexts/AuthContext";
+import { useAuthContext } from "@superapp/iam";
 import { supabase } from "../../services/supabase";
 
 const Profile: React.FC = () => {

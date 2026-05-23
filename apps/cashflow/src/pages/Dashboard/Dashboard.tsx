@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuthContext as useAuth } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useCompany } from "../../contexts/CompanyContext";
 import { databaseService } from "../../services/database";

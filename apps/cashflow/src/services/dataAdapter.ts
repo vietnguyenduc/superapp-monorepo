@@ -277,14 +277,18 @@ class SupabaseAdapter implements DataAdapter {
 
 // Adapter Factory
 let adapterInstance: DataAdapter | null = null;
+let adapterIsTrialMode: boolean | null = null;
 
 export function getDataAdapter(): DataAdapter {
-  if (!adapterInstance) {
-    if (getTrialMode()) {
+  const isTrial = getTrialMode();
+  
+  if (!adapterInstance || adapterIsTrialMode !== isTrial) {
+    if (isTrial) {
       adapterInstance = new LocalStorageAdapter();
     } else {
       adapterInstance = new SupabaseAdapter();
     }
+    adapterIsTrialMode = isTrial;
   }
   return adapterInstance;
 }

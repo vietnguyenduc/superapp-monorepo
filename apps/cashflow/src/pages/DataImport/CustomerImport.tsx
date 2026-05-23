@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
-import { useAuthContext } from "../../contexts/AuthContext";
+import { useAuthContext } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import type { Customer, ImportData, ImportError } from "../../types";
 import { LoadingFallback } from "../../components/UI/FallbackUI";

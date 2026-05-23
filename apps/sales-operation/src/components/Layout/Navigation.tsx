@@ -1,7 +1,8 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
-import { useAuthContext } from "../../contexts/AuthContext";
+import { useAuthContext } from "@superapp/iam";
 import { useCompany } from "../../contexts/CompanyContext";
+import AppSwitcher from "./AppSwitcher";
 
 interface NavigationProps {
   onMenuClick: () => void;
@@ -79,17 +80,7 @@ const Navigation: React.FC<NavigationProps> = ({ onMenuClick }) => {
                 </span>
               </button>
             )}
-            {appSwitcherTarget && (
-              <a
-                href={appSwitcherTarget}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
-              >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                </svg>
-                <span className="hidden sm:inline">Cashflow</span>
-              </a>
-            )}
+            <AppSwitcher />
             {user && (
               <div className="relative">
                 <button

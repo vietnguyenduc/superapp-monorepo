@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuthContext as useAuth } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { databaseService } from "../../services/database";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";

@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import InventoryInputForm from '../components/InventoryInputForm';
 import { useInventory } from '../hooks/useInventory';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useAuthContext } from '@superapp/iam';
 import { useProducts } from '../hooks/useProducts';
 import appSettingsService from '../services/appSettingsService';
 import { UserRole } from '../types/UserRole';

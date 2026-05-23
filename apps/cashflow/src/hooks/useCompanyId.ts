@@ -1,4 +1,4 @@
-import { useAuthContext } from "../contexts/AuthContext";
+import { useAuthContext } from "@superapp/iam";
 import { useCompany } from "../contexts/CompanyContext";
 
 /**

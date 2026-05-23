@@ -3,7 +3,7 @@ import InventoryInputForm from '../components/InventoryInputForm';
 import InventoryTable from '../components/InventoryTable';
 import { useProducts } from '../hooks/useProducts';
 import { useInventory } from '../hooks/useInventory';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthContext as useAuth } from '@superapp/iam';
 import { UserRole } from '../types/UserRole';
 import { InventoryRecord, ImportError } from '../types';
 

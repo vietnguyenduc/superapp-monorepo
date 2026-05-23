@@ -1,5 +1,5 @@
 import React from "react";
-import { useAuthContext } from "../../contexts/AuthContext";
+import { useAuthContext } from "@superapp/iam";
 
 /**
  * Persistent banner shown across the app when the user is in trial mode.

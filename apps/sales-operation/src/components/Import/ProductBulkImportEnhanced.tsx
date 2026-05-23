@@ -3,7 +3,7 @@
 // Features: drag-drop, validation preview, row-level errors, multi-step process
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthContext as useAuth } from '@superapp/iam';
 import type { Product } from '../../types';
 import { parseProductFile, validateProductData, convertToProduct, canProceedWithImport, formatErrorMessage, getValidationSummary, type ImportError, type RawProductData, type ImportData } from '../../utils/importUtils';
 import Button from '../UI/Button';

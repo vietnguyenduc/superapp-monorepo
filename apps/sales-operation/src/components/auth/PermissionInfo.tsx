@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuthContext as useAuth } from '@superapp/iam';
 import { Permission, getRoleDisplayName } from '../../types/UserRole';
 
 export const PermissionInfo: React.FC = () => {

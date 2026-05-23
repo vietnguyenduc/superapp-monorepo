@@ -7,7 +7,7 @@ import PageHeader from "../../components/UI/PageHeader";
 import { formatNumber } from "../../utils/formatting";
 import { databaseService } from "../../services/database";
 import { supabase } from "../../services/supabase";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuthContext as useAuth } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useNavigate } from "react-router-dom";
 import CreateUserModal from "../../components/UserManagement/CreateUserModal";

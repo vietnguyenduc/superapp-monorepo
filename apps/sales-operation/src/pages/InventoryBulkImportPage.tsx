@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { BulkImport } from '../components/Import/BulkImport';
 import { validators } from '../utils/validation';
 import { databaseService } from '../services/databaseService';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useAuthContext } from '@superapp/iam';
 
 const inventoryRequiredColumns = ['productCode', 'productName', 'rawMaterialStock', 'processedStock', 'finishedProductStock'];
 

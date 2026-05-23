@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ProductEntryForm } from '../components/Form/ProductEntryForm';
 import { Product } from '../types';
 import { databaseService } from '../services/databaseService';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useAuthContext } from '@superapp/iam';
 
 const ProductEntryPage: React.FC = () => {
   const { hasPermission } = useAuthContext();

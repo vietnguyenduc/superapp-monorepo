@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { InventoryEntryForm } from '../components/Form/InventoryEntryForm';
 import { InventoryRecord } from '../types';
 import { databaseService } from '../services/databaseService';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useAuthContext } from '@superapp/iam';
 
 const InventoryEntryPage: React.FC = () => {
   const { hasPermission } = useAuthContext();

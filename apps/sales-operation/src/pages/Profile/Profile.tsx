@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useAuthContext } from "../../contexts/AuthContext";
+import { useAuthContext } from "@superapp/iam";
 import { supabase } from "../../lib/supabase";
 
 const Profile: React.FC = () => {

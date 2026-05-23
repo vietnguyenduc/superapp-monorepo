@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '@repo/types';
+import type { Database } from '@repo/types';
 
 export type DbResult<T> = {
   data: T | null;

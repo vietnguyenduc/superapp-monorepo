@@ -1,0 +1,37 @@
+{
+  "name": "@superapp/iam",
+  "version": "1.0.0",
+  "description": "Identity and Access Management for Superapp",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix"
+  },
+  "keywords": [
+    "iam",
+    "auth",
+    "permissions"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "typescript": "^5.0.0",
+    "eslint": "^8.50.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "@repo/types": "*"
+  }
+}

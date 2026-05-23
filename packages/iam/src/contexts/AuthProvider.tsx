@@ -2,7 +2,7 @@ import React, { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { useAuth } from "../hooks/useAuth";
-import type { User } from "../types";
+import type { User } from "@repo/types";
 
 interface AuthContextType {
   user: User | null;

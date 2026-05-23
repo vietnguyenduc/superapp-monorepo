@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import type { FC } from 'react';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider } from '@superapp/iam';
 import Layout from './components/Layout/Layout';
 import DashboardPage from './pages/DashboardPage';
 import InventoryVarianceReportPage from './pages/InventoryVarianceReportPage';

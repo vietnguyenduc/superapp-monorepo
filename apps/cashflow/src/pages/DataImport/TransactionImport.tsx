@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useSearchParams } from "react-router-dom";
-import { useAuthContext } from "../../contexts/AuthContext";
+import { useAuthContext } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import type { Transaction, ImportData, ImportError, Customer } from "../../types";

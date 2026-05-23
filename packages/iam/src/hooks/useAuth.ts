@@ -1,9 +1,8 @@
 // Real useAuth hook that uses Supabase authentication
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "../services/supabase";
-import { setTrialMode, clearTrialStore } from "../services/trialMockStore";
-import type { User } from "../types";
-import type { TablesInsert } from "../types/database.types";
+import { getSupabaseClient } from "@superapp/shared-utils";
+import { setTrialMode, clearTrialStore } from "../utils/trialManager";
+import type { User, TablesInsert } from "@repo/types";
 import type { Session } from "@supabase/supabase-js";
 
 const TRIAL_STORAGE_KEY = "cashflow_trial_user";
@@ -45,6 +44,7 @@ interface AuthState {
 }
 
 export const useAuth = () => {
+  const supabase = getSupabaseClient();
   const [state, setState] = useState<AuthState>({
     user: null,
     session: null,
@@ -125,13 +125,29 @@ export const useAuth = () => {
       });
     }, 20000); // 20s — generous for cold-start Supabase projects
 
+    // ─── Single Sign-On check (URL Params) ──────────────────────────────────
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const accessToken = urlParams.get("access_token");
+      const refreshToken = urlParams.get("refresh_token");
+
+      if (accessToken && refreshToken) {
+        // Clear them from URL to avoid leaking
+        window.history.replaceState({}, document.title, window.location.pathname);
+        supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        }).catch(err => console.error("Error setting session from URL:", err));
+      }
+    }
+
     // ─── Primary init: getSession() ─────────────────────────────────────────
     // This is called OUTSIDE the auth lock, so fetchUserProfile()
     // (which internally calls getSession() for the access token) won't deadlock.
 
     supabase.auth
       .getSession()
-      .then(async ({ data: { session } }) => {
+      .then(async ({ data: { session } }: any) => {
         clearTimeout(initTimeout);
         if (!isMounted) return;
 
@@ -182,7 +198,7 @@ export const useAuth = () => {
           });
         }
       })
-      .catch((error) => {
+      .catch((error: any) => {
         clearTimeout(initTimeout);
         console.error("Error getting session:", error);
         if (!isMounted) return;
@@ -205,7 +221,7 @@ export const useAuth = () => {
     // callback returns and the lock is released.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange((event: string, session: any) => {
       if (event === "INITIAL_SESSION") {
         // Already handled by getSession() above — return immediately
         // to release the auth lock.

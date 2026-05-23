@@ -3,7 +3,7 @@ import { BulkImport } from '../components/Import/BulkImport';
 import { validators } from '../utils/validation';
 import { ProductCategory } from '../types';
 import { databaseService } from '../services/databaseService';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useAuthContext } from '@superapp/iam';
 
 const productRequiredColumns = ['businessCode', 'name', 'category', 'inputQuantity', 'inputUnit'];
 
