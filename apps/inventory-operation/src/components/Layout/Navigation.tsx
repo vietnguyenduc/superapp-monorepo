@@ -1,7 +1,7 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 import { useAuthContext } from "@superapp/iam";
-import { useCompany } from "../../contexts/CompanyContext";
+import { useCompany } from "@superapp/iam";
 import AppSwitcher from "./AppSwitcher";
 
 interface NavigationProps {

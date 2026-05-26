@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext as useAuth } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
-import { useCompany } from "../../contexts/CompanyContext";
+import { useCompany } from "@superapp/iam";
 import { databaseService } from "../../services/database";
 import { formatNumber } from "../../utils/formatting";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";

@@ -21,7 +21,7 @@ import Login from "./pages/Auth/Login";
 import SignUp from "./pages/Auth/SignUp";
 import CompanySelector from "./pages/CompanySelector/CompanySelector";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
-import { CompanyProvider } from "./contexts/CompanyContext";
+import { CompanyProvider } from "@superapp/iam";
 import { TransactionTypeProvider } from "./contexts/TransactionTypeContext";
 
 function App() {

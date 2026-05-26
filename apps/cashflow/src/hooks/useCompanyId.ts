@@ -1,5 +1,5 @@
 import { useAuthContext } from "@superapp/iam";
-import { useCompany } from "../contexts/CompanyContext";
+import { useCompany } from "@superapp/iam";
 
 /**
  * Resolves the active company ID for the current user.

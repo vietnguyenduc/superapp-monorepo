@@ -60,7 +60,7 @@ const seedData = {
   transaction_types: [
     {
       id: "payment",
-      name: "Điều chỉnh giảm",
+      name: "Phát sinh giảm",
       math_factor: -1,
       impact_type: "decrease",
       color: "#10b981",
@@ -76,7 +76,7 @@ const seedData = {
     },
     {
       id: "charge",
-      name: "Điều chỉnh tăng",
+      name: "Phát sinh tăng",
       math_factor: 1,
       impact_type: "increase",
       color: "#ef4444",
@@ -140,6 +140,7 @@ export const setTrialMode = (enabled: boolean) => {
   // Persist trial mode flag to localStorage
   if (typeof window !== "undefined") {
     localStorage.setItem(TRIAL_MODE_KEY, enabled ? "true" : "false");
+    localStorage.setItem("isTrial", enabled ? "true" : "false");
   }
   if (enabled) {
     // Load from localStorage or use seed
@@ -161,8 +162,12 @@ export const getTrialMode = () => {
   // On first call, check localStorage to restore trial mode flag
   if (typeof window !== "undefined" && isTrialMode === false) {
     const saved = localStorage.getItem(TRIAL_MODE_KEY);
-    if (saved === "true") {
+    const iamUser = localStorage.getItem("cashflow_trial_user");
+    const superappTrial = localStorage.getItem("superapp_trial_mode");
+    
+    if (saved === "true" || iamUser || superappTrial || localStorage.getItem("isTrial") === "true") {
       isTrialMode = true;
+      localStorage.setItem("isTrial", "true");
       // Load store from localStorage
       try {
         const storeData = localStorage.getItem(TRIAL_STORE_KEY);
@@ -242,6 +247,7 @@ export const clearTrialStore = () => {
   if (typeof window !== "undefined") {
     localStorage.removeItem(TRIAL_STORE_KEY);
     localStorage.removeItem(TRIAL_MODE_KEY);
+    localStorage.removeItem("isTrial");
   }
   store = { ...seedData };
   isTrialMode = false;

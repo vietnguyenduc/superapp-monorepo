@@ -10,10 +10,10 @@ const AppSwitcher = () => {
   const isAdmin = role === 'admin_master' || role === 'admin_company';
 
   const apps = [
-    ...(isAdmin ? [{ id: 'admin', name: 'Admin Portal', url: 'http://localhost:5173', color: 'bg-indigo-100 text-indigo-600' }] : []),
-    { id: 'sales', name: 'Sales & POS', url: 'http://localhost:5176', color: 'bg-orange-100 text-orange-600' },
-    { id: 'inventory', name: 'Inventory', url: 'http://localhost:5175', color: 'bg-emerald-100 text-emerald-600' },
-    { id: 'cashflow', name: 'Cashflow', url: 'http://localhost:5174', color: 'bg-blue-100 text-blue-600' }
+    ...(isAdmin ? [{ id: 'admin', name: 'Admin Portal', url: import.meta.env.VITE_ADMIN_PORTAL_URL || 'http://localhost:5173', color: 'bg-indigo-100 text-indigo-600' }] : []),
+    { id: 'sales', name: 'Sales & POS', url: import.meta.env.VITE_SALES_APP_URL || 'http://localhost:5176', color: 'bg-orange-100 text-orange-600' },
+    { id: 'inventory', name: 'Inventory', url: import.meta.env.VITE_INVENTORY_APP_URL || 'http://localhost:5175', color: 'bg-emerald-100 text-emerald-600' },
+    { id: 'cashflow', name: 'Cashflow', url: import.meta.env.VITE_CASHFLOW_APP_URL || 'http://localhost:5174', color: 'bg-blue-100 text-blue-600' }
   ];
 
   const getUrlWithSession = (baseUrl: string) => {

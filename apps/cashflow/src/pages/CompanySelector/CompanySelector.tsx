@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useCompany } from "../../contexts/CompanyContext";
+import { useCompany } from "@superapp/iam";
 import type { Company } from "../../types/database.types";
 
 const CompanySelector: React.FC = () => {

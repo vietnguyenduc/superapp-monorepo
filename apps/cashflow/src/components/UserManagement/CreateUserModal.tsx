@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useCompany } from "../../contexts/CompanyContext";
+import { useCompany } from "@superapp/iam";
 import { useAuthContext as useAuth } from "@superapp/iam";
 
 interface CreateUserModalProps {

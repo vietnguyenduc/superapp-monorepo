@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from "react";
 import { databaseService } from "../services/database";
+import { useAuthContext } from "@superapp/iam";
 
 export interface TransactionTypeItem {
   id: string;
@@ -34,6 +35,7 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
   const [typesForDropdown, setTypesForDropdown] = useState<TransactionTypeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated, isTrial } = useAuthContext();
 
   const refetch = useCallback(async () => {
     setLoading(true);
@@ -72,8 +74,14 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
   }, []);
 
   useEffect(() => {
-    refetch();
-  }, [refetch]);
+    if (isAuthenticated) {
+      refetch();
+    } else {
+      setTypes([]);
+      setTypesForDropdown([]);
+      setLoading(false);
+    }
+  }, [refetch, isAuthenticated, isTrial]);
 
   const findById = useCallback(
     (id: string) => types.find((t) => t.id === id),

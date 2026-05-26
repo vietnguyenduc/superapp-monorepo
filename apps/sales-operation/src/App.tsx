@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import type { FC } from 'react';
-import { AuthProvider } from '@superapp/iam';
-import { CompanyProvider } from './contexts/CompanyContext';
+import { AuthProvider, CompanyProvider } from '@superapp/iam';
 import Layout from './components/Layout/Layout';
 import Login from './pages/Auth/Login';
 import SignUp from './pages/Auth/SignUp';

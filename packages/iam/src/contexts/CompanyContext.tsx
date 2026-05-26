@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { supabase } from "../services/supabase";
-import type { Company } from "../types/database.types";
+import { getSupabaseClient } from "@superapp/shared-utils";
+import type { Company } from "@repo/types";
+import { useAuthContext } from "./AuthProvider";
 
-interface CompanyContextType {
+export interface CompanyContextType {
   companies: Company[];
   selectedCompany: Company | null;
   setSelectedCompany: (company: Company | null) => void;
@@ -26,52 +27,61 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
   const [selectedCompany, setSelectedCompanyState] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { session, isTrial } = useAuthContext();
 
   const fetchCompanies = async () => {
     setLoading(true);
     setError(null);
-    
-    // Check if user is authenticated before fetching
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+
+    // Skip if not authenticated and not in trial mode
+    if (!session && !isTrial) {
       setLoading(false);
       return;
     }
 
-    const { data, error: fetchError } = await supabase
-      .from("companies")
-      .select("*")
-      .eq("is_active", true)
-      .order("name");
+    try {
+      if (isTrial) {
+        setCompanies([{
+          id: "trial-company",
+          name: "Công ty Dùng Thử",
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        } as Company]);
+        setLoading(false);
+        return;
+      }
 
-    if (fetchError) {
-      console.error("Error fetching companies:", fetchError);
-      setError(fetchError.message);
-    } else {
-      setCompanies(data || []);
+      const supabase = getSupabaseClient();
+      const { data, error: fetchError } = await supabase
+        .from("companies")
+        .select("*")
+        .eq("is_active", true)
+        .order("name");
+
+      if (fetchError) {
+        console.error("Error fetching companies:", fetchError);
+        setError(fetchError.message);
+      } else {
+        setCompanies(data || []);
+      }
+    } catch (err) {
+      console.error("Error calling Supabase:", err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Load companies when auth state changes
   useEffect(() => {
-    // Initial fetch
-    fetchCompanies();
-
-    // Subscribe to auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN') {
-        fetchCompanies();
-      } else if (event === 'SIGNED_OUT') {
-        setCompanies([]);
-        setSelectedCompanyState(null);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+    if (session || isTrial) {
+      fetchCompanies();
+    } else {
+      setCompanies([]);
+      setSelectedCompanyState(null);
+    }
+  }, [session, isTrial]);
 
   // Load selected company from localStorage when companies are loaded
   useEffect(() => {
@@ -99,6 +109,8 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
   };
 
   const createCompany = async (company: Omit<Company, "id" | "created_at" | "updated_at">) => {
+    if (isTrial) return;
+    const supabase = getSupabaseClient();
     const { error } = await supabase
       .from("companies")
       .insert(company)
@@ -114,6 +126,8 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
   };
 
   const deleteCompany = async (companyId: string) => {
+    if (isTrial) return;
+    const supabase = getSupabaseClient();
     const { error } = await supabase
       .from("companies")
       .update({ is_active: false })
@@ -133,6 +147,8 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
   };
 
   const updateCompany = async (companyId: string, updates: Partial<Company>) => {
+    if (isTrial) return;
+    const supabase = getSupabaseClient();
     const { error } = await supabase
       .from("companies")
       .update(updates)
@@ -145,7 +161,7 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
 
     // Update selected company if it's the one being edited
     if (selectedCompany?.id === companyId) {
-      setSelectedCompanyState({ ...selectedCompany, ...updates });
+      setSelectedCompanyState({ ...selectedCompany, ...updates as Company });
     }
 
     await fetchCompanies();

@@ -514,6 +514,8 @@ export const useAuth = () => {
       email: "trial@example.com",
       full_name: "Trial User",
       role: "admin",
+      company_id: "trial-company",
+      branch_id: "trial-branch",
       created_at: now,
       updated_at: now,
     } as User;

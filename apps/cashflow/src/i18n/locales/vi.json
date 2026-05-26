@@ -170,8 +170,8 @@
       "transactionDate": "Ngày giao dịch",
       "description": "Mô tả",
       "types": {
-        "payment": "Điều chỉnh giảm",
-        "charge": "Điều chỉnh tăng",
+        "payment": "Phát sinh giảm",
+        "charge": "Phát sinh tăng",
         "adjustment": "Điều chỉnh",
         "refund": "Hoàn tiền"
       }
@@ -360,8 +360,8 @@
     "referenceNumber": "Số tham chiếu",
     "transactionDate": "Ngày giao dịch",
     "createdBy": "Tạo bởi",
-    "payment": "Điều chỉnh giảm",
-    "charge": "Điều chỉnh tăng",
+    "payment": "Phát sinh giảm",
+    "charge": "Phát sinh tăng",
     "adjustment": "Điều chỉnh",
     "refund": "Hoàn tiền",
     "debtIncrease": "Tăng nợ",
@@ -379,8 +379,8 @@
     "fromDate": "Từ ngày",
     "toDate": "Đến ngày",
     "types": {
-      "payment": "Điều chỉnh giảm",
-      "charge": "Điều chỉnh tăng",
+      "payment": "Phát sinh giảm",
+      "charge": "Phát sinh tăng",
       "adjustment": "Điều chỉnh",
       "refund": "Hoàn tiền"
     }
@@ -779,8 +779,8 @@
   },
   "transactions": {
     "types": {
-      "payment": "Điều chỉnh giảm",
-      "charge": "Điều chỉnh tăng",
+      "payment": "Phát sinh giảm",
+      "charge": "Phát sinh tăng",
       "adjustment": "Điều chỉnh",
       "refund": "Hoàn tiền"
     }
