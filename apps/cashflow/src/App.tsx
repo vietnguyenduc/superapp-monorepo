@@ -27,8 +27,7 @@ import { TransactionTypeProvider } from "./contexts/TransactionTypeContext";
 function App() {
   return (
     <CompanyProvider>
-      <TransactionTypeProvider>
-        <Router>
+      <Router>
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
@@ -49,7 +48,9 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <Layout />
+                <TransactionTypeProvider>
+                  <Layout />
+                </TransactionTypeProvider>
               </ProtectedRoute>
             }
           >
@@ -67,7 +68,6 @@ function App() {
           </Route>
         </Routes>
       </Router>
-      </TransactionTypeProvider>
     </CompanyProvider>
   );
 }

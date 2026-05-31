@@ -14,6 +14,12 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@superapp/shared-utils": ["../../packages/shared-utils/src"],
+      "@superapp/iam": ["../../packages/iam/src"],
+      "@repo/types": ["../../packages/types/src"]
+    },
 
     /* Linting */
     "strict": true,
