@@ -8,11 +8,58 @@ Handles message splitting, file attachments for large data, and pagination.
 import io
 import json
 import logging
+import re
 from typing import Union
 
 logger = logging.getLogger("ATA.telegram_utils")
 
 TELEGRAM_MAX_LEN = 4000  # Telegram hard limit is 4096, leave buffer for formatting
+
+
+def process_markdown_extras(bot, chat_id: int, text: str) -> str:
+    """
+    Tiền xử lý text để trích xuất hình ảnh (gửi dạng photo) và format lại bảng Markdown
+    để hiển thị đẹp trên Telegram (bọc trong ```text).
+    """
+    # 1. Trích xuất và gửi ảnh: ![alt](url)
+    img_pattern = re.compile(r'!\[([^\]]*)\]\((https?://[^)]+)\)')
+    
+    def send_img_match(match):
+        alt_text = match.group(1)
+        url = match.group(2)
+        try:
+            bot.send_photo(chat_id, url, caption=alt_text[:1024] if alt_text else None)
+            return f"🖼️ `[Đã hiển thị ảnh: {alt_text}]`"
+        except Exception as e:
+            logger.error(f"Failed to send image {url}: {e}")
+            return match.group(0) # Trả lại nguyên gốc nếu lỗi
+            
+    text = img_pattern.sub(send_img_match, text)
+    
+    # 2. Xử lý bảng Markdown
+    # Tìm các dòng liên tiếp có chứa ký tự '|'
+    table_pattern = re.compile(r'(?:^[ \t]*\|.*\|[ \t]*$\n?)+', re.MULTILINE)
+    
+    def format_table_match(match):
+        table_text = match.group(0).strip()
+        try:
+            from tabulate import tabulate
+            lines = table_text.split('\n')
+            if len(lines) >= 3 and '|---' in lines[1].replace(' ', ''):
+                headers = [col.strip() for col in lines[0].strip(' \t|').split('|')]
+                data = []
+                for line in lines[2:]:
+                    cols = [col.strip() for col in line.strip(' \t|').split('|')]
+                    data.append(cols)
+                pretty_table = tabulate(data, headers=headers, tablefmt="presto")
+                return f"\n```text\n{pretty_table}\n```\n"
+        except Exception:
+            pass
+        # Fallback
+        return f"\n```text\n{table_text}\n```\n"
+        
+    text = table_pattern.sub(format_table_match, text)
+    return text
 
 
 def safe_split(text: str, max_len: int = TELEGRAM_MAX_LEN) -> list[str]:
@@ -47,6 +94,8 @@ def safe_send(bot, chat_id: int, text: str, parse_mode: str = "Markdown", **kwar
     """
     if not text or not text.strip():
         text = "_(empty response)_"
+
+    text = process_markdown_extras(bot, chat_id, text)
 
     chunks = safe_split(text)
     sent = []
