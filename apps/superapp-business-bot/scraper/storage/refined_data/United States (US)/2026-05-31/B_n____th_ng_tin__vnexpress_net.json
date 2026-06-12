@@ -1,0 +1,60 @@
+{
+    "title": "Bản đồ thông tin: vnexpress.net",
+    "is_list_page": true,
+    "inferred_categories": [
+        "United States (US)",
+        "China",
+        "Vietnam",
+        "Europe",
+        "Donald Trump",
+        "Tô Lâm",
+        "Buddhism"
+    ],
+    "confidence_score": 0.95,
+    "articles": [
+        {
+            "title": "Cú bẻ lái điều quân của ông Trump tại châu Âu",
+            "summary": "Target mapped under category: Politics/Geopolitics",
+            "category": "Politics/Geopolitics",
+            "url": "https://vnexpress.net/cu-be-lai-dieu-quan-cua-ong-trump-tai-chau-au-5077226.html"
+        },
+        {
+            "title": "Việt Nam lên tiếng về việc Mỹ điều tra vấn đề sở hữu trí tuệ",
+            "summary": "Target mapped under category: International Relations/Trade",
+            "category": "International Relations/Trade",
+            "url": "https://vnexpress.net/viet-nam-len-tieng-ve-viec-my-dieu-tra-van-de-so-huu-tri-tue-5080110.html"
+        },
+        {
+            "title": "Châu Âu phá hơn 600 con đập cứu môi trường",
+            "summary": "Target mapped under category: Environment/Conservation",
+            "category": "Environment/Conservation",
+            "url": "https://vnexpress.net/chau-au-pha-hon-600-con-dap-cuu-moi-truong-5079252.html"
+        },
+        {
+            "title": "Tổng Bí thư, Chủ tịch nước Tô Lâm trả lời phỏng vấn truyền thông quốc tế",
+            "summary": "Target mapped under category: Politics/Diplomacy",
+            "category": "Politics/Diplomacy",
+            "url": "https://vnexpress.net/tong-bi-thu-chu-tich-nuoc-to-lam-tra-loi-phong-van-truyen-thong-quoc-te-5080156.html"
+        },
+        {
+            "title": "Phi hành đoàn Trung Quốc trở về sau nhiệm vụ dài kỷ lục",
+            "summary": "Target mapped under category: Science/Space Exploration",
+            "category": "Science/Space Exploration",
+            "url": "https://vnexpress.net/phi-hanh-doan-trung-quoc-tro-ve-sau-nhiem-vu-dai-ky-luc-5080031.html"
+        },
+        {
+            "title": "Bộ Công Thương giải đáp về xăng E10",
+            "summary": "Target mapped under category: Domestic Policy/Energy",
+            "category": "Domestic Policy/Energy",
+            "url": "https://vnexpress.net/bo-cong-thuong-giai-dap-ve-xang-e10-5080024.html"
+        }
+    ],
+    "global_trends": [
+        "Geopolitical Dynamics & Alliance Realignments",
+        "International Trade & Intellectual Property Disputes",
+        "Environmental Conservation & Restoration Efforts",
+        "Advancements in Space Exploration",
+        "Domestic Energy Policy & Sustainability Initiatives"
+    ],
+    "original_source_url": "https://vnexpress.net"
+}

@@ -1,4 +1,4 @@
-// React import not needed in React 18+ with JSX transform
+import React, { Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -7,27 +7,38 @@ import {
 } from "react-router-dom";
 import "./App.css";
 import Layout from "./components/Layout/Layout";
-import Dashboard from "./pages/Dashboard/Dashboard";
-import CustomerList from "./pages/Customers/CustomerList";
-import CustomerDetail from "./pages/Customers/CustomerDetail";
-import Reports from "./pages/Reports/Reports";
-import TransactionList from "./pages/Transactions/TransactionList";
-import TransactionImport from "./pages/DataImport/TransactionImport";
-import CustomerImport from "./pages/DataImport/CustomerImport";
-import Settings from "./pages/Settings/Settings";
-import Profile from "./pages/Profile/Profile";
-import Manual from "./pages/Manual/Manual";
-import Login from "./pages/Auth/Login";
-import SignUp from "./pages/Auth/SignUp";
-import CompanySelector from "./pages/CompanySelector/CompanySelector";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import { CompanyProvider } from "@superapp/iam";
 import { TransactionTypeProvider } from "./contexts/TransactionTypeContext";
 
+// Lazy-loaded pages for code splitting
+const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
+const CustomerList = lazy(() => import("./pages/Customers/CustomerList"));
+const CustomerDetail = lazy(() => import("./pages/Customers/CustomerDetail"));
+const Reports = lazy(() => import("./pages/Reports/Reports"));
+const TransactionList = lazy(() => import("./pages/Transactions/TransactionList"));
+const TransactionImport = lazy(() => import("./pages/DataImport/TransactionImport"));
+const CustomerImport = lazy(() => import("./pages/DataImport/CustomerImport"));
+const Settings = lazy(() => import("./pages/Settings/Settings"));
+const Profile = lazy(() => import("./pages/Profile/Profile"));
+const Manual = lazy(() => import("./pages/Manual/Manual"));
+const Login = lazy(() => import("./pages/Auth/Login"));
+const SignUp = lazy(() => import("./pages/Auth/SignUp"));
+const CompanySelector = lazy(() => import("./pages/CompanySelector/CompanySelector"));
+
+// Loading fallback component
+const PageLoading = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+  </div>
+);
+
 function App() {
   return (
     <CompanyProvider>
-      <Router>
+      <TransactionTypeProvider>
+        <Router>
+        <Suspense fallback={<PageLoading />}>
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
@@ -48,9 +59,7 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <TransactionTypeProvider>
-                  <Layout />
-                </TransactionTypeProvider>
+                <Layout />
               </ProtectedRoute>
             }
           >
@@ -67,7 +76,9 @@ function App() {
             <Route path="import/customers" element={<CustomerImport />} />
           </Route>
         </Routes>
+        </Suspense>
       </Router>
+      </TransactionTypeProvider>
     </CompanyProvider>
   );
 }

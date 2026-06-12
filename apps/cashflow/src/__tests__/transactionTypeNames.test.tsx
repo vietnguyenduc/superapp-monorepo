@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 
@@ -9,6 +9,15 @@ vi.mock("../services/database", () => ({
       getTransactionTypes: vi.fn(),
     },
   },
+}));
+
+// Mock @superapp/iam to provide useAuthContext
+vi.mock("@superapp/iam", () => ({
+  useAuthContext: () => ({
+    isAuthenticated: true,
+    isTrial: false,
+    user: { id: "test-user", company_id: "tenant-1" },
+  }),
 }));
 
 import { TransactionTypeProvider, useTransactionTypes } from "../contexts/TransactionTypeContext";
@@ -108,8 +117,8 @@ describe("TransactionTypeContext (ADR-0001 regression guard)", () => {
     });
 
     const Counter: React.FC = () => {
-      const { types } = useTransactionTypes();
-      return <span data-testid="count">{types.length}</span>;
+      const { typesForDropdown } = useTransactionTypes();
+      return <span data-testid="count">{typesForDropdown.length}</span>;
     };
 
     render(

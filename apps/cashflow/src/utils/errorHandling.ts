@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import type { ImportError } from "../types";
 import {
   AppError as SharedAppError,
@@ -17,6 +17,11 @@ export type RetryConfig = Omit<SharedRetryConfig, 'retryableErrors'> & { retryab
 export const ERROR_CODES = {
   ...SharedErrorCodes,
   // Cashflow-specific codes
+  DATABASE_CONNECTION_FAILED: "database_connection_failed",
+  DATABASE_QUERY_FAILED: "database_query_failed",
+  DATABASE_CONSTRAINT_VIOLATION: "database_constraint_violation",
+  TIMEOUT: "timeout",
+  TOKEN_EXPIRED: "token_expired",
   CUSTOMER_NOT_FOUND: "customer_not_found",
   BANK_ACCOUNT_NOT_FOUND: "bank_account_not_found",
   RATE_LIMIT_EXCEEDED: "rate_limit_exceeded",

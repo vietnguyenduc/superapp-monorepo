@@ -200,7 +200,7 @@ export async function batchOperation<T, R>(
     );
 
     batchResults.forEach((result, batchIndex) => {
-      const item = batch[batchIndex];
+      const item = batch[batchIndex] as T;
       const index = i + batchIndex;
 
       if (result.status === 'fulfilled') {

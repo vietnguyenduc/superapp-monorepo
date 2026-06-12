@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import BalanceByBankChart from "../BalanceByBankChart";
@@ -53,7 +53,8 @@ vi.mock("recharts", async () => {
 describe("BalanceByBankChart", () => {
   it("renders balance labels without currency symbols", () => {
     const value = 273_072_157;
-    const formatted = Math.round(value).toLocaleString("vi-VN");
+    // Component uses compact format: Math.round(value / 1_000_000) + "M"
+    const expectedLabel = "273M";
 
     render(
       <BalanceByBankChart
@@ -72,7 +73,7 @@ describe("BalanceByBankChart", () => {
       />,
     );
 
-    expect(screen.getByText(formatted)).toBeInTheDocument();
+    expect(screen.getByText(expectedLabel)).toBeInTheDocument();
     expect(screen.queryByText("₫")).not.toBeInTheDocument();
   });
 });

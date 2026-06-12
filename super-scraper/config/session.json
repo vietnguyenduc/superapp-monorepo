@@ -1,0 +1,15 @@
+{
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "cookies": [
+        {
+            "name": "cf_clearance",
+            "value": "doaVBiQ3eezKZ.dbDnpyYSyu4_Cn6gF5cJTxm0L3.t8-1780103422-1.2.1.1-EQzunsiuvv_w0WwtPE45t9PqAd9kx_V4MXL6KkHwYbiGKNRpK2N0.YnJhKJN9a9S99raXX5I9XOWjAQCa0lq1LeRGgRK6Qb1ErSVLuQSq6GWezuN24a0jHF0alznyaAjceVxpwvJHzfdXGIBnFc3mxjU6OcheK4HK8tj_WY1sfoGmxBS13HhycUoXRwLEGIw4UR0kwDfkY0Xo1h_hG6v8Ua0nIzSHA7eQZf32PvEZtxJ_Pq.1jwbMmr5vsstnP8KWL1yI2kCHMCV3cWxSCriFJNkP7t50EpRVXV3H7_s2hOvNZBoi1_XvbrJNlEmpaDoFj_ZzB8PYdO8wbxCokHVNw",
+            "domain": ".nowsecure.nl",
+            "path": "/",
+            "expires": 1811639422.7584,
+            "httpOnly": true,
+            "secure": true,
+            "sameSite": "None"
+        }
+    ]
+}

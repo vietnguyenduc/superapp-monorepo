@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
-import Layout from '../components/Layout';
+import Layout from '../components/Layout/Layout';
 import DashboardPageEnhanced from '../pages/DashboardPageEnhanced';
 import ProductCatalogPageEnhanced from '../pages/ProductCatalogPageEnhanced';
 import InventoryRecordsPage from '../pages/InventoryRecordsPage';

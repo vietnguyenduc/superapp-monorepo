@@ -156,6 +156,9 @@ export async function importBackup<T = any>(
   }
 
   const backup = parsed.data[0];
+  if (!backup) {
+    throw new Error('Backup file contains no backup record');
+  }
   
   // Validate
   const validation = validateBackup(backup);

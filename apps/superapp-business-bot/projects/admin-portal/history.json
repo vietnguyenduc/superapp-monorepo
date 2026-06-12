@@ -1,0 +1,18 @@
+[
+  {
+    "role": "user",
+    "content": "/waleup"
+  },
+  {
+    "role": "model",
+    "content": "Antigravity online. Project `admin-portal` active. Research vault empty."
+  },
+  {
+    "role": "user",
+    "content": "/waleup"
+  },
+  {
+    "role": "model",
+    "content": "❌ **System Error**:\nPrimary Gemini API call failed: `503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}`\nLocal Fallback to Ollama/Llama (qwen2.5:3b) also failed: `HTTP Error 404: Not Found`\n\nPlease verify your API keys and local server status."
+  }
+]

@@ -7,7 +7,7 @@ const cookieStorage = {
   getItem: (key: string) => {
     if (typeof document === 'undefined') return null;
     const match = document.cookie.match(new RegExp('(^| )' + encodeURIComponent(key) + '=([^;]+)'));
-    return match ? decodeURIComponent(match[2]) : null;
+    return match && match[2] ? decodeURIComponent(match[2]) : null;
   },
   setItem: (key: string, value: string) => {
     if (typeof document === 'undefined') return;

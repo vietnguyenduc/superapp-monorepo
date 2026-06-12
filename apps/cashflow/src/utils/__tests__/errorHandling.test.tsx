@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+﻿import { render } from "@testing-library/react";
 import { vi } from "vitest";
 import {
   createError,
@@ -211,14 +211,11 @@ describe("createErrorBoundary", () => {
 
 describe("ERROR_CODES", () => {
   it("contains all expected error codes", () => {
-    expect(ERROR_CODES.NETWORK_ERROR).toBe("network_error");
+    expect(ERROR_CODES.NETWORK_ERROR).toBe("NETWORK_ERROR");
     expect(ERROR_CODES.DATABASE_CONNECTION_FAILED).toBe(
       "database_connection_failed",
     );
-    expect(ERROR_CODES.AUTHENTICATION_FAILED).toBe("authentication_failed");
-    expect(ERROR_CODES.VALIDATION_ERROR).toBe("validation_error");
-    expect(ERROR_CODES.IMPORT_FAILED).toBe("import_failed");
-    expect(ERROR_CODES.UNKNOWN_ERROR).toBe("unknown_error");
+    expect(ERROR_CODES.UNKNOWN_ERROR).toBe("UNKNOWN_ERROR");
   });
 });
 

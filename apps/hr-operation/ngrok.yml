@@ -1,0 +1,5 @@
+version: "2"
+tunnels:
+  hr:
+    addr: 3003
+    proto: http

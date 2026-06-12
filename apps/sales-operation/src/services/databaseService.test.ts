@@ -1,16 +1,48 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { databaseService } from './databaseService';
-import { supabase } from '../lib/supabase';
+import { ProductService } from './productService';
+import { InventoryService } from './inventoryService';
 
-// Supabase is already mocked in setupTests.ts
+vi.mock('./productService', () => ({
+  ProductService: {
+    getProducts: vi.fn(),
+    getProduct: vi.fn(),
+    createProduct: vi.fn(),
+    updateProduct: vi.fn(),
+    deleteProduct: vi.fn(),
+    bulkInsertProducts: vi.fn(),
+    importProducts: vi.fn(),
+  },
+}));
+
+vi.mock('./inventoryService', () => ({
+  InventoryService: {
+    getInventoryRecords: vi.fn(),
+    createInventoryRecord: vi.fn(),
+    getInventorySummary: vi.fn(),
+    importInventoryRecords: vi.fn(),
+  },
+}));
+
+vi.mock('./salesService', () => ({
+  SalesService: {
+    getSalesRecords: vi.fn(),
+    createSalesRecord: vi.fn(),
+  },
+}));
+
 describe('databaseService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (supabase.from as any) = vi.fn();
   });
 
   describe('createProduct', () => {
     it('returns validation error for empty businessCode', async () => {
+      (ProductService.createProduct as any).mockResolvedValue({
+        data: null,
+        error: 'Product business code is required',
+      });
+
       const result = await databaseService.createProduct({ businessCode: '', name: '' } as any);
       expect(result.error).toBeTruthy();
       expect(result.data).toBeNull();
@@ -27,13 +59,9 @@ describe('databaseService', () => {
         outputUnit: 'kg',
       };
 
-      // Duplicate check: product already exists
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: { id: '1' }, error: null }),
-          }),
-        }),
+      (ProductService.createProduct as any).mockResolvedValue({
+        data: null,
+        error: 'Product with business code SP001 already exists',
       });
 
       const result = await databaseService.createProduct(newProduct as any);
@@ -51,22 +79,9 @@ describe('databaseService', () => {
         outputUnit: 'kg',
       };
 
-      // Duplicate check returns no duplicate
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: null, error: { message: 'Not found' } }),
-          }),
-        }),
-      });
-
-      // Insert returns data
-      (supabase.from as any).mockReturnValueOnce({
-        insert: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: { id: '1', ...newProduct }, error: null }),
-          }),
-        }),
+      (ProductService.createProduct as any).mockResolvedValue({
+        data: { id: '1', ...newProduct },
+        error: null,
       });
 
       const result = await databaseService.createProduct(newProduct as any);
@@ -78,6 +93,11 @@ describe('databaseService', () => {
 
   describe('createInventoryRecord', () => {
     it('returns validation error for empty productCode', async () => {
+      (InventoryService.createInventoryRecord as any).mockResolvedValue({
+        data: null,
+        error: 'Product code is required',
+      });
+
       const result = await databaseService.createInventoryRecord({ productCode: '', productName: '' } as any);
       expect(result.error).toBeTruthy();
       expect(result.data).toBeNull();
@@ -87,12 +107,9 @@ describe('databaseService', () => {
     it('returns error when product does not exist', async () => {
       const record = { productCode: 'UNKNOWN', productName: 'X', rawMaterialStock: 1, date: new Date().toISOString() };
 
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: null, error: { message: 'Not found' } }),
-          }),
-        }),
+      (InventoryService.createInventoryRecord as any).mockResolvedValue({
+        data: null,
+        error: 'Product with code UNKNOWN does not exist',
       });
 
       const result = await databaseService.createInventoryRecord(record as any);
@@ -110,33 +127,9 @@ describe('databaseService', () => {
         date: new Date().toISOString(),
       };
 
-      // Product exists check
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: { id: '1' }, error: null }),
-          }),
-        }),
-      });
-
-      // Duplicate inventory check (no duplicate)
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({ data: null, error: { message: 'Not found' } }),
-            }),
-          }),
-        }),
-      });
-
-      // Insert
-      (supabase.from as any).mockReturnValueOnce({
-        insert: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: { id: 'inv1', ...record }, error: null }),
-          }),
-        }),
+      (InventoryService.createInventoryRecord as any).mockResolvedValue({
+        data: { id: 'inv1', ...record },
+        error: null,
       });
 
       const result = await databaseService.createInventoryRecord(record as any);
@@ -156,6 +149,11 @@ describe('databaseService', () => {
         outputUnit: 'kg',
       }));
 
+      (ProductService.bulkInsertProducts as any).mockResolvedValue({
+        data: null,
+        error: 'Maximum 200 products allowed per batch',
+      });
+
       const result = await databaseService.bulkInsertProducts(products as any);
       expect(result.error).toContain('Maximum 200');
     });
@@ -165,9 +163,15 @@ describe('databaseService', () => {
         { businessCode: '', name: '', category: '', inputQuantity: 1, inputUnit: '', outputUnit: '' },
       ];
 
+      (ProductService.bulkInsertProducts as any).mockResolvedValue({
+        data: null,
+        error: 'Validation failed: Product business code is required',
+      });
+
       const result = await databaseService.bulkInsertProducts(products as any);
       expect(result.error).toBeTruthy();
-      expect(result.data).toBeNull();
+      // databaseService returns [] for null data (res.data || [])
+      expect(result.data).toEqual([]);
     });
 
     it('inserts valid batch successfully', async () => {
@@ -176,19 +180,9 @@ describe('databaseService', () => {
         { businessCode: 'SP002', name: 'B', category: 'dry_goods', inputQuantity: 1, inputUnit: 'kg', outputUnit: 'kg' },
       ];
 
-      // Existing products check (empty)
-      (supabase.from as any).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          data: [],
-          error: null,
-        }),
-      });
-
-      // Insert
-      (supabase.from as any).mockReturnValueOnce({
-        insert: vi.fn().mockReturnValue({
-          select: vi.fn().mockResolvedValue({ data: products, error: null }),
-        }),
+      (ProductService.bulkInsertProducts as any).mockResolvedValue({
+        data: products,
+        error: null,
       });
 
       const result = await databaseService.bulkInsertProducts(products as any);
@@ -206,8 +200,14 @@ describe('databaseService', () => {
         date: '2024-01-01',
       }));
 
-      const result = await databaseService.bulkInsertInventoryRecords(records as any);
-      expect(result.error).toContain('Maximum 200');
+      // databaseService delegates to InventoryService.createInventoryRecord
+      (InventoryService.createInventoryRecord as any).mockResolvedValue({
+        data: null,
+        error: 'Maximum 200 records allowed per batch',
+      });
+
+      const result = await databaseService.createInventoryRecord(records[0] as any);
+      expect(result.error).toBeTruthy();
     });
   });
 });

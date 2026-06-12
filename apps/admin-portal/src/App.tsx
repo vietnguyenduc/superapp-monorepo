@@ -1,12 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
-import { Shield, Users, Settings, Database, Activity, LogOut } from 'lucide-react';
+import { Shield, Users, Settings, Database, Activity, LogOut, BookOpen, Menu, X } from 'lucide-react';
 import { AuthProvider, useAuthContext } from '@superapp/iam';
 import IdentityManagement from './pages/IdentityManagement';
 import ConsolidatedReports from './pages/ConsolidatedReports';
 import DataLifecycle from './pages/DataLifecycle';
 import GlobalSettings from './pages/GlobalSettings';
 import CompanyManagement from './pages/CompanyManagement';
+import Manual from './pages/Manual';
 import { supabase } from './lib/supabase';
 import { AdminProvider, useAdminContext } from './contexts/AdminContext';
 import { LayoutGrid, ExternalLink, CheckCircle2, XCircle, LayoutDashboard, Building2 } from 'lucide-react';
@@ -90,80 +91,253 @@ const Login = () => {
   );
 };
 
-const AdminLayout = ({ children }: { children: React.ReactNode }) => {
-  const [isSidebarOpen] = React.useState(true);
+const navItems = [
+  { id: 'reports', icon: LayoutDashboard, label: 'Consolidated Reports', path: '/reports' },
+  { id: 'companies', icon: Building2, label: 'Company Management', path: '/companies', masterOnly: true },
+  { id: 'identity', icon: Users, label: 'Identity & Access', path: '/identity' },
+  { id: 'data', icon: Database, label: 'Data Lifecycle', path: '/data' },
+  { id: 'settings', icon: Settings, label: 'Global Settings', path: '/settings' },
+  { id: 'manual', icon: BookOpen, label: 'User Manual', path: '/manual' },
+];
+
+// 4 main items for mobile bottom nav
+const mainNavItems = navItems.slice(0, 4);
+// remaining items for "More" drawer
+const moreNavItems = navItems.slice(4);
+
+const Sidebar = () => {
   const location = useLocation();
-  const { user, signOut } = useAuthContext();
-  
-  const navItems = [
-    { id: 'reports', icon: LayoutDashboard, label: 'Consolidated Reports', path: '/reports' },
-    { id: 'companies', icon: Building2, label: 'Company Management', path: '/companies', masterOnly: true },
-    { id: 'identity', icon: Users, label: 'Identity & Access', path: '/identity' },
-    { id: 'data', icon: Database, label: 'Data Lifecycle', path: '/data' },
-    { id: 'settings', icon: Settings, label: 'Global Settings', path: '/settings' },
-  ];
+  const { signOut } = useAuthContext();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 text-white flex flex-col">
-        <div className="p-6">
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <Shield className="w-6 h-6 text-indigo-400" />
-            Superapp Admin
-          </h1>
-        </div>
-        <nav className="flex-1 px-4 space-y-2">
-          {navItems.map((item) => (
-            <Link 
-              key={item.id} 
-              to={item.path} 
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                location.pathname === item.path ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'
-              }`}
-            >
-              <item.icon className="w-5 h-5" />
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="p-4">
-          <button 
-            onClick={signOut}
-            className="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+    <aside className="w-64 bg-slate-900 text-white flex flex-col h-full fixed hidden lg:flex">
+      <div className="p-6">
+        <h1 className="text-xl font-bold flex items-center gap-2">
+          <Shield className="w-6 h-6 text-indigo-400" />
+          Superapp Admin
+        </h1>
+      </div>
+      <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
+        {navItems.map((item) => (
+          <Link 
+            key={item.id} 
+            to={item.path} 
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              location.pathname === item.path ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'
+            }`}
           >
-            <LogOut className="w-5 h-5" />
-            Logout
+            <item.icon className="w-5 h-5" />
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+      <div className="p-4">
+        <button 
+          onClick={signOut}
+          className="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+        >
+          <LogOut className="w-5 h-5" />
+          Logout
+        </button>
+      </div>
+    </aside>
+  );
+};
+
+/**
+ * MobileBottomNav – 4 items chính + nút "More" (thứ 5)
+ * Nút "More" mở MobileMenuDrawer (bottom sheet) chứa các items còn lại.
+ */
+const MobileBottomNav = () => {
+  const location = useLocation();
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const { signOut } = useAuthContext();
+
+  return (
+    <>
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 safe-area-bottom shadow-lg">
+        <div className="flex items-center justify-around px-2 py-1">
+          {mainNavItems.map((item) => {
+            const active = location.pathname === item.path;
+            return (
+              <Link
+                key={item.id}
+                to={item.path}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-all ${
+                  active ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                <span className="text-[10px] font-medium truncate max-w-[60px]">{item.label.split(' ')[0]}</span>
+              </Link>
+            );
+          })}
+          {/* Nút "More" – mở drawer */}
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-all text-slate-500 hover:text-slate-700"
+          >
+            <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center">
+              <span className="text-xs font-bold text-slate-600">+</span>
+            </div>
+            <span className="text-[10px] font-medium">More</span>
           </button>
         </div>
-      </aside>
+      </nav>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto flex flex-col">
-        <header className="bg-white shadow-sm px-8 py-4 flex items-center justify-between">
-          <h2 className="text-2xl font-semibold text-gray-800">
-            {location.pathname === '/identity' && 'Identity & Access Management'}
-            {location.pathname === '/reports' && 'Consolidated Reports'}
-            {location.pathname === '/data' && 'Data Lifecycle'}
-            {location.pathname === '/settings' && 'Global Settings'}
-            {location.pathname === '/companies' && 'Company Management'}
-          </h2>
-          <div className="flex items-center gap-4">
+      {/* MobileMenuDrawer – bottom sheet chứa các items còn lại + Logout */}
+      {drawerOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setDrawerOpen(false)} />
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl z-50 lg:hidden animate-slide-up safe-area-bottom">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h3 className="font-semibold text-slate-800">More Options</h3>
+              <button onClick={() => setDrawerOpen(false)} className="p-1 text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-3 space-y-1 max-h-[70vh] overflow-y-auto">
+              {moreNavItems.map((item) => {
+                const active = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.id}
+                    to={item.path}
+                    onClick={() => setDrawerOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm font-medium ${
+                      active
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <item.icon className={`w-5 h-5 ${active ? 'text-indigo-600' : 'text-slate-400'}`} />
+                    {item.label}
+                  </Link>
+                );
+              })}
+              <div className="border-t border-slate-100 pt-2 mt-2">
+                <button
+                  onClick={() => { setDrawerOpen(false); signOut(); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="w-5 h-5" />
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
+};
+
+const AdminLayout = ({ children }: { children: React.ReactNode }) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const location = useLocation();
+  const { user, signOut } = useAuthContext();
+
+  const getPageTitle = () => {
+    switch (location.pathname) {
+      case '/identity': return 'Identity & Access Management';
+      case '/reports': return 'Consolidated Reports';
+      case '/data': return 'Data Lifecycle';
+      case '/settings': return 'Global Settings';
+      case '/companies': return 'Company Management';
+      case '/manual': return 'User Manual';
+      default: return 'Admin Portal';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header */}
+      <header className="bg-white shadow-sm fixed top-0 w-full z-10">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 -ml-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
+            </button>
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 truncate max-w-[180px] sm:max-w-none">
+              {getPageTitle()}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4">
             <AppSwitcher />
-            <div className="h-6 w-px bg-gray-200 mx-1"></div>
+            <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
             <CompanySelector />
-            <div className="h-6 w-px bg-gray-200 mx-2"></div>
-            <span className="text-sm text-gray-500">Logged in as {user?.email || 'Admin'}</span>
-            <div className="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-bold">
+            <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
+            <span className="text-sm text-gray-500 hidden sm:block truncate max-w-[120px]">
+              {user?.email || 'Admin'}
+            </span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-bold text-sm sm:text-base flex-shrink-0">
               {user?.email?.[0]?.toUpperCase() || 'A'}
             </div>
           </div>
-        </header>
-        
-        <div className="p-8 flex-1">
-          {children}
         </div>
-      </main>
+      </header>
+
+      <div className="flex pt-[73px] flex-1">
+        {/* Desktop Sidebar */}
+        <Sidebar />
+
+        {/* Mobile sidebar drawer */}
+        {mobileMenuOpen && (
+          <>
+            <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
+            <div className="fixed top-[73px] left-0 bottom-0 w-72 bg-slate-900 text-white shadow-2xl z-50 lg:hidden overflow-y-auto">
+              <div className="p-6">
+                <h1 className="text-xl font-bold flex items-center gap-2">
+                  <Shield className="w-6 h-6 text-indigo-400" />
+                  Superapp Admin
+                </h1>
+              </div>
+              <nav className="px-4 space-y-2">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.id}
+                    to={item.path}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                      location.pathname === item.path ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+              <div className="p-4 mt-4">
+                <button
+                  onClick={() => { setMobileMenuOpen(false); signOut(); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <LogOut className="w-5 h-5" />
+                  Logout
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Main Content */}
+        <main className="flex-1 lg:ml-64 overflow-auto flex flex-col">
+          <div className="p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8 flex-1">
+            {children}
+          </div>
+        </main>
+      </div>
+
+      {/* Mobile bottom navigation */}
+      <MobileBottomNav />
     </div>
   );
 };
@@ -243,7 +417,10 @@ const AppSwitcher = () => {
   const apps = [
     { id: 'sales', name: 'Sales & POS', url: 'http://localhost:5176', color: 'bg-orange-100 text-orange-600' },
     { id: 'inventory', name: 'Inventory', url: 'http://localhost:5175', color: 'bg-emerald-100 text-emerald-600' },
-    { id: 'cashflow', name: 'Cashflow', url: 'http://localhost:5174', color: 'bg-blue-100 text-blue-600' }
+    { id: 'cashflow', name: 'Cashflow', url: 'http://localhost:5174', color: 'bg-blue-100 text-blue-600' },
+    { id: 'hr', name: 'HR & Payroll', url: 'http://localhost:5177', color: 'bg-pink-100 text-pink-600' },
+    { id: 'accounting', name: 'Accounting', url: 'http://localhost:5178', color: 'bg-purple-100 text-purple-600' },
+    { id: 'operations', name: 'Operations', url: 'http://localhost:3006', color: 'bg-cyan-100 text-cyan-600' }
   ];
 
   const getUrlWithSession = (baseUrl: string) => {
@@ -301,9 +478,15 @@ const AppSwitcher = () => {
                       {statuses[app.id] === undefined ? (
                         <span className="text-xs text-gray-400">Checking status...</span>
                       ) : statuses[app.id] ? (
-                        <><CheckCircle2 className="w-3 h-3 text-green-500" /><span className="text-xs text-green-600">Operational</span></>
+                        <span className="flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-green-500" />
+                          <span className="text-xs text-green-600">Operational</span>
+                        </span>
                       ) : (
-                        <><XCircle className="w-3 h-3 text-red-500" /><span className="text-xs text-red-600">Offline / Unreachable</span></>
+                        <span className="flex items-center gap-1">
+                          <XCircle className="w-3 h-3 text-red-500" />
+                          <span className="text-xs text-red-600">Offline / Unreachable</span>
+                        </span>
                       )}
                     </div>
                   </div>
@@ -329,6 +512,7 @@ function App() {
           <Route path="/reports" element={<ProtectedAdminRoute><ConsolidatedReports /></ProtectedAdminRoute>} />
           <Route path="/data" element={<ProtectedAdminRoute><DataLifecycle /></ProtectedAdminRoute>} />
           <Route path="/settings" element={<ProtectedAdminRoute><GlobalSettings /></ProtectedAdminRoute>} />
+          <Route path="/manual" element={<ProtectedAdminRoute><Manual /></ProtectedAdminRoute>} />
         </Routes>
       </Router>
     </AuthProvider>

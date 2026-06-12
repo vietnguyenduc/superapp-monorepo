@@ -1,5 +1,13 @@
+"use client";
+
 // @ts-nocheck
 import React, { useState, useCallback } from 'react';
+
+declare global {
+  interface Window {
+    gapi: any;
+  }
+}
 
 export interface GoogleSheetsConfig {
   apiKey: string;
@@ -128,7 +136,7 @@ const GoogleSheetsIntegration: React.FC<GoogleSheetsIntegrationProps> = ({
             spreadsheetId: file.id
           });
 
-          const sheets = sheetResponse.result.sheets?.map(sheet => ({
+          const sheets = sheetResponse.result.sheets?.map((sheet: any) => ({
             title: sheet.properties?.title || 'Untitled',
             sheetId: sheet.properties?.sheetId || 0,
             data: []
@@ -178,9 +186,9 @@ const GoogleSheetsIntegration: React.FC<GoogleSheetsIntegrationProps> = ({
 
       // Convert to object format
       const headers = values[0];
-      const data = values.slice(1).map(row => {
+      const data = values.slice(1).map((row: any) => {
         const obj: any = {};
-        headers.forEach((header, index) => {
+        headers.forEach((header: any, index: number) => {
           obj[header] = row[index] || '';
         });
         return obj;
@@ -223,7 +231,7 @@ const GoogleSheetsIntegration: React.FC<GoogleSheetsIntegrationProps> = ({
       const headers = Object.keys(data[0] || {});
       const values = [
         headers,
-        ...data.map(row => headers.map(header => row[header] || ''))
+        ...data.map((row: any) => headers.map((header: string) => row[header] || ''))
       ];
 
       // Write data to spreadsheet

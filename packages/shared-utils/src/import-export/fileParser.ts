@@ -40,9 +40,10 @@ export async function parseExcelFile<T = any>(
         const data = e.target?.result as ArrayBuffer;
         const workbook = XLSX.read(data, { type: 'array' });
         
+        const firstSheetName = workbook.SheetNames[0];
         const sheet = sheetName 
           ? workbook.Sheets[sheetName]
-          : workbook.Sheets[workbook.SheetNames[0]];
+          : (firstSheetName ? workbook.Sheets[firstSheetName] : undefined);
         
         if (!sheet) {
           reject(new Error('Sheet not found'));
@@ -132,14 +133,14 @@ export async function parseCSVFile<T = any>(
         }
 
         // Parse headers
-        const headers = parseCSVLine(lines[headerRow]).map(h => 
+        const headers = parseCSVLine(lines[headerRow] || '').map(h => 
           trimWhitespace ? h.trim() : h
         );
 
         // Parse data rows
         const data: T[] = [];
         for (let i = headerRow + 1; i < lines.length; i++) {
-          const values = parseCSVLine(lines[i]);
+          const values = parseCSVLine(lines[i] || '');
           
           if (skipEmptyRows && values.every(v => !v || v.trim() === '')) {
             continue;

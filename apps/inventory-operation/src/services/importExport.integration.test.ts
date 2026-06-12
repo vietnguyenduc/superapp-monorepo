@@ -1,12 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { databaseService } from './databaseService';
-import { supabase } from '../lib/supabase';
+import { ProductService } from './productService';
+import { InventoryService } from './inventoryService';
 import { validateBulkImport, checkImportLimit } from '../utils/validation';
+
+vi.mock('./productService', () => ({
+  ProductService: {
+    bulkInsertProducts: vi.fn(),
+  },
+}));
+
+vi.mock('./inventoryService', () => ({
+  InventoryService: {
+    createInventoryRecord: vi.fn(),
+  },
+}));
 
 describe('Import/Export Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (supabase.from as any) = vi.fn();
   });
 
   it('validates and rejects oversized import batch', async () => {
@@ -21,6 +33,11 @@ describe('Import/Export Integration', () => {
 
     const limitCheck = checkImportLimit(products.length);
     expect(limitCheck.allowed).toBe(false);
+
+    (ProductService.bulkInsertProducts as any).mockResolvedValue({
+      data: null,
+      error: 'Maximum 200 products allowed per batch',
+    });
 
     const result = await databaseService.bulkInsertProducts(products as any);
     expect(result.error).toContain('Maximum 200');
@@ -43,18 +60,9 @@ describe('Import/Export Integration', () => {
       { businessCode: 'SP001', name: 'A', category: 'fruit', inputQuantity: 1, inputUnit: 'kg', outputUnit: 'kg' },
     ];
 
-    // No existing products
-    (supabase.from as any).mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({ data: [], error: null }),
-      }),
-    });
-
-    // Insert succeeds
-    (supabase.from as any).mockReturnValueOnce({
-      insert: vi.fn().mockReturnValue({
-        select: vi.fn().mockResolvedValue({ data: products, error: null }),
-      }),
+    (ProductService.bulkInsertProducts as any).mockResolvedValue({
+      data: products,
+      error: null,
     });
 
     const result = await databaseService.bulkInsertProducts(products as any);
@@ -68,6 +76,11 @@ describe('Import/Export Integration', () => {
       { businessCode: 'SP001', name: 'B', category: 'dry_goods', inputQuantity: 1, inputUnit: 'kg', outputUnit: 'kg' },
     ];
 
+    (ProductService.bulkInsertProducts as any).mockResolvedValue({
+      data: null,
+      error: 'Duplicate business codes found in batch',
+    });
+
     const result = await databaseService.bulkInsertProducts(products as any);
     expect(result.error).toBeTruthy();
   });
@@ -75,12 +88,9 @@ describe('Import/Export Integration', () => {
   it('inventory import validates product existence before insert', async () => {
     const record = { productCode: 'UNKNOWN', productName: 'X', rawMaterialStock: 1, date: new Date().toISOString() };
 
-    (supabase.from as any).mockReturnValueOnce({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({ data: null, error: { message: 'Not found' } }),
-        }),
-      }),
+    (InventoryService.createInventoryRecord as any).mockResolvedValue({
+      data: null,
+      error: 'Product with code UNKNOWN does not exist',
     });
 
     const result = await databaseService.createInventoryRecord(record as any);

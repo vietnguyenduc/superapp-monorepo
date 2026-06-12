@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { vi } from "vitest";
 import {
   hasPermission,
@@ -17,23 +17,21 @@ import type { UserRole } from "../../types";
 
 describe("RBAC Utils", () => {
   describe("hasPermission", () => {
-    it("returns true for admin with any permission", () => {
-      expect(hasPermission("admin", "customers", "delete")).toBe(true);
-      expect(hasPermission("admin", "users", "create")).toBe(true);
-      expect(hasPermission("admin", "dashboard", "view")).toBe(true);
+    it("returns true for admin_master with any permission", () => {
+      expect(hasPermission("admin_master", "customers", "delete")).toBe(true);
+      expect(hasPermission("admin_master", "users", "create")).toBe(true);
+      expect(hasPermission("admin_master", "dashboard", "view")).toBe(true);
     });
 
-    it("returns true for branch_manager with appropriate permissions", () => {
-      expect(hasPermission("branch_manager", "customers", "view")).toBe(true);
-      expect(hasPermission("branch_manager", "customers", "create")).toBe(true);
-      expect(hasPermission("branch_manager", "customers", "edit")).toBe(true);
+    it("returns true for admin_company with appropriate permissions", () => {
+      expect(hasPermission("admin_company", "customers", "view")).toBe(true);
+      expect(hasPermission("admin_company", "customers", "create")).toBe(true);
+      expect(hasPermission("admin_company", "customers", "edit")).toBe(true);
     });
 
-    it("returns false for branch_manager with restricted permissions", () => {
-      expect(hasPermission("branch_manager", "customers", "delete")).toBe(
-        false,
-      );
-      expect(hasPermission("branch_manager", "users", "view")).toBe(false);
+    it("returns true for admin_company with company-level permissions", () => {
+      expect(hasPermission("admin_company", "customers", "delete")).toBe(true);
+      expect(hasPermission("admin_company", "users", "view")).toBe(true);
     });
 
     it("returns true for staff with basic permissions", () => {
@@ -48,7 +46,7 @@ describe("RBAC Utils", () => {
     });
 
     it("returns false for non-existent permissions", () => {
-      expect(hasPermission("admin", "nonexistent", "action")).toBe(false);
+      expect(hasPermission("admin_master", "nonexistent", "action")).toBe(false);
       expect(hasPermission("staff", "customers", "nonexistent")).toBe(false);
     });
   });
@@ -60,23 +58,23 @@ describe("RBAC Utils", () => {
         { resource: "customers", action: "view" },
       ];
 
-      expect(hasAnyPermission("admin", permissions)).toBe(true);
-      expect(hasAnyPermission("branch_manager", permissions)).toBe(true);
+      expect(hasAnyPermission("admin_master", permissions)).toBe(true);
+      expect(hasAnyPermission("admin_company", permissions)).toBe(true);
       expect(hasAnyPermission("staff", permissions)).toBe(true);
     });
 
-    it("returns false if user has none of the specified permissions", () => {
+    it("returns true if user has any of the specified permissions (admin_company has users.create)", () => {
       const permissions = [
         { resource: "users", action: "create" },
         { resource: "users", action: "delete" },
       ];
 
-      expect(hasAnyPermission("branch_manager", permissions)).toBe(false);
+      expect(hasAnyPermission("admin_company", permissions)).toBe(true);
       expect(hasAnyPermission("staff", permissions)).toBe(false);
     });
 
     it("returns false for empty permissions array", () => {
-      expect(hasAnyPermission("admin", [])).toBe(false);
+      expect(hasAnyPermission("admin_master", [])).toBe(false);
     });
   });
 
@@ -87,49 +85,49 @@ describe("RBAC Utils", () => {
         { resource: "customers", action: "create" },
       ];
 
-      expect(hasAllPermissions("admin", permissions)).toBe(true);
-      expect(hasAllPermissions("branch_manager", permissions)).toBe(true);
-      expect(hasAllPermissions("staff", permissions)).toBe(true);
+      expect(hasAllPermissions("admin_master", permissions)).toBe(true);
+      expect(hasAllPermissions("admin_company", permissions)).toBe(true);
+      expect(hasAllPermissions("staff", permissions)).toBe(false);
     });
 
-    it("returns false if user lacks any of the specified permissions", () => {
+    it("returns true if user has all specified permissions (admin_company has customers.view AND customers.delete)", () => {
       const permissions = [
         { resource: "customers", action: "view" },
         { resource: "customers", action: "delete" },
       ];
 
-      expect(hasAllPermissions("branch_manager", permissions)).toBe(false);
+      expect(hasAllPermissions("admin_company", permissions)).toBe(true);
       expect(hasAllPermissions("staff", permissions)).toBe(false);
     });
 
     it("returns true for empty permissions array", () => {
-      expect(hasAllPermissions("admin", [])).toBe(true);
+      expect(hasAllPermissions("admin_master", [])).toBe(true);
     });
   });
 
   describe("getRolePermissions", () => {
-    it("returns all permissions for admin role", () => {
-      const permissions = getRolePermissions("admin");
+    it("returns all permissions for admin_master role", () => {
+      const permissions = getRolePermissions("admin_master");
 
       expect(permissions.length).toBeGreaterThan(0);
-      expect(permissions.every((p) => p.roles.includes("admin"))).toBe(true);
+      expect(permissions.every((p) => p.roles.includes("admin_master"))).toBe(true);
     });
 
-    it("returns appropriate permissions for branch_manager role", () => {
-      const permissions = getRolePermissions("branch_manager");
+    it("returns appropriate permissions for admin_company role", () => {
+      const permissions = getRolePermissions("admin_company");
 
       expect(permissions.length).toBeGreaterThan(0);
-      expect(permissions.every((p) => p.roles.includes("branch_manager"))).toBe(
+      expect(permissions.every((p) => p.roles.includes("admin_company"))).toBe(
         true,
       );
 
-      // Should not include admin-only permissions
-      const adminOnlyPermissions = permissions.filter(
+      // admin_company has users.view, users.create, users.edit AND customers.delete
+      const adminCompanyPermissions = permissions.filter(
         (p) =>
           p.resource === "users" ||
           (p.resource === "customers" && p.action === "delete"),
       );
-      expect(adminOnlyPermissions).toHaveLength(0);
+      expect(adminCompanyPermissions.length).toBeGreaterThan(0);
     });
 
     it("returns basic permissions for staff role", () => {
@@ -150,20 +148,20 @@ describe("RBAC Utils", () => {
   });
 
   describe("canAccessBranch", () => {
-    it("allows admin to access any branch", () => {
-      expect(canAccessBranch("admin", "branch-1", "branch-2")).toBe(true);
-      expect(canAccessBranch("admin", null, "branch-1")).toBe(true);
+    it("allows admin_master to access any branch", () => {
+      expect(canAccessBranch("admin_master", "branch-1", "branch-2")).toBe(true);
+      expect(canAccessBranch("admin_master", null, "branch-1")).toBe(true);
     });
 
-    it("allows branch_manager to access their own branch", () => {
-      expect(canAccessBranch("branch_manager", "branch-1", "branch-1")).toBe(
+    it("allows admin_company to access their own branch", () => {
+      expect(canAccessBranch("admin_company", "branch-1", "branch-1")).toBe(
         true,
       );
     });
 
-    it("prevents branch_manager from accessing other branches", () => {
-      expect(canAccessBranch("branch_manager", "branch-1", "branch-2")).toBe(
-        false,
+    it("allows admin_company to access any branch in their company", () => {
+      expect(canAccessBranch("admin_company", "branch-1", "branch-2")).toBe(
+        true,
       );
     });
 
@@ -175,69 +173,83 @@ describe("RBAC Utils", () => {
       expect(canAccessBranch("staff", "branch-1", "branch-2")).toBe(false);
     });
 
-    it("prevents access when user has no branch assigned", () => {
-      expect(canAccessBranch("branch_manager", null, "branch-1")).toBe(false);
+    it("allows admin_company to access branches even without branch assigned", () => {
+      expect(canAccessBranch("admin_company", null, "branch-1")).toBe(true);
       expect(canAccessBranch("staff", null, "branch-1")).toBe(false);
     });
   });
 
   describe("getAccessibleBranches", () => {
     const allBranches = [
-      { id: "branch-1", name: "Branch 1" },
-      { id: "branch-2", name: "Branch 2" },
-      { id: "branch-3", name: "Branch 3" },
+      { id: "branch-1", name: "Branch 1", company_id: "company-1" },
+      { id: "branch-2", name: "Branch 2", company_id: "company-1" },
+      { id: "branch-3", name: "Branch 3", company_id: "company-2" },
     ];
 
-    it("returns all branches for admin", () => {
+    it("returns all branches for admin_master", () => {
       const accessible = getAccessibleBranches(
-        "admin",
+        "admin_master",
         "branch-1",
+        "company-1",
         allBranches,
       );
       expect(accessible).toEqual(allBranches);
     });
 
-    it("returns only user branch for branch_manager", () => {
+    it("returns only company branches for admin_company", () => {
       const accessible = getAccessibleBranches(
-        "branch_manager",
+        "admin_company",
         "branch-2",
+        "company-1",
         allBranches,
       );
-      expect(accessible).toEqual([{ id: "branch-2", name: "Branch 2" }]);
+      expect(accessible).toEqual([
+        { id: "branch-1", name: "Branch 1", company_id: "company-1" },
+        { id: "branch-2", name: "Branch 2", company_id: "company-1" },
+      ]);
     });
 
     it("returns only user branch for staff", () => {
       const accessible = getAccessibleBranches(
         "staff",
         "branch-3",
+        "company-2",
         allBranches,
       );
-      expect(accessible).toEqual([{ id: "branch-3", name: "Branch 3" }]);
+      expect(accessible).toEqual([{ id: "branch-3", name: "Branch 3", company_id: "company-2" }]);
     });
 
     it("returns empty array when user has no branch assigned", () => {
       const accessible = getAccessibleBranches(
-        "branch_manager",
+        "admin_company",
         null,
+        "company-1",
         allBranches,
       );
-      expect(accessible).toEqual([]);
+      expect(accessible).toEqual([
+        { id: "branch-1", name: "Branch 1", company_id: "company-1" },
+        { id: "branch-2", name: "Branch 2", company_id: "company-1" },
+      ]);
     });
 
     it("returns empty array when user branch not found", () => {
       const accessible = getAccessibleBranches(
-        "branch_manager",
+        "admin_company",
         "nonexistent",
+        "company-1",
         allBranches,
       );
-      expect(accessible).toEqual([]);
+      expect(accessible).toEqual([
+        { id: "branch-1", name: "Branch 1", company_id: "company-1" },
+        { id: "branch-2", name: "Branch 2", company_id: "company-1" },
+      ]);
     });
   });
 
   describe("isMenuItemVisible", () => {
     it("returns true for menu items without permissions", () => {
       const menuItem = { path: "/dashboard" };
-      expect(isMenuItemVisible("admin", menuItem)).toBe(true);
+      expect(isMenuItemVisible("admin_master", menuItem)).toBe(true);
       expect(isMenuItemVisible("staff", menuItem)).toBe(true);
     });
 
@@ -250,12 +262,12 @@ describe("RBAC Utils", () => {
         ],
       };
 
-      expect(isMenuItemVisible("admin", menuItem)).toBe(true);
-      expect(isMenuItemVisible("branch_manager", menuItem)).toBe(true);
+      expect(isMenuItemVisible("admin_master", menuItem)).toBe(true);
+      expect(isMenuItemVisible("admin_company", menuItem)).toBe(true);
       expect(isMenuItemVisible("staff", menuItem)).toBe(true);
     });
 
-    it("returns false if user has no required permissions", () => {
+    it("returns true for admin_company with users permissions, false for staff", () => {
       const menuItem = {
         path: "/users",
         permissions: [
@@ -264,7 +276,7 @@ describe("RBAC Utils", () => {
         ],
       };
 
-      expect(isMenuItemVisible("branch_manager", menuItem)).toBe(false);
+      expect(isMenuItemVisible("admin_company", menuItem)).toBe(true);
       expect(isMenuItemVisible("staff", menuItem)).toBe(false);
     });
   });
@@ -286,7 +298,7 @@ describe("RBAC Utils", () => {
         { resource: "customers", action: "view" },
       ]);
 
-      const user = { role: "admin" as UserRole };
+      const user = { role: "admin_master" as UserRole };
       const { render } = require("@testing-library/react");
       render(React.createElement(ProtectedComponent, { user }));
 
@@ -340,7 +352,7 @@ describe("RBAC Utils", () => {
 
   describe("usePermissions hook", () => {
     it("returns permission checking functions", () => {
-      const permissions = usePermissions("admin");
+      const permissions = usePermissions("admin_master");
 
       expect(typeof permissions.hasPermission).toBe("function");
       expect(typeof permissions.hasAnyPermission).toBe("function");
@@ -350,10 +362,10 @@ describe("RBAC Utils", () => {
     });
 
     it("hasPermission works correctly", () => {
-      const permissions = usePermissions("branch_manager");
+      const permissions = usePermissions("admin_company");
 
       expect(permissions.hasPermission("customers", "view")).toBe(true);
-      expect(permissions.hasPermission("users", "view")).toBe(false);
+      expect(permissions.hasPermission("users", "view")).toBe(true);
     });
 
     it("hasAnyPermission works correctly", () => {
@@ -379,20 +391,20 @@ describe("RBAC Utils", () => {
     });
 
     it("getRolePermissions works correctly", () => {
-      const permissions = usePermissions("admin");
+      const permissions = usePermissions("admin_master");
       const rolePermissions = permissions.getRolePermissions();
 
       expect(Array.isArray(rolePermissions)).toBe(true);
-      expect(rolePermissions.every((p) => p.roles.includes("admin"))).toBe(
+      expect(rolePermissions.every((p) => p.roles.includes("admin_master"))).toBe(
         true,
       );
     });
 
     it("canAccessBranch works correctly", () => {
-      const permissions = usePermissions("branch_manager");
+      const permissions = usePermissions("admin_company");
 
       expect(permissions.canAccessBranch("branch-1", "branch-1")).toBe(true);
-      expect(permissions.canAccessBranch("branch-1", "branch-2")).toBe(false);
+      expect(permissions.canAccessBranch("branch-1", "branch-2")).toBe(true);
     });
   });
 
@@ -405,13 +417,14 @@ describe("RBAC Utils", () => {
         (p) => p.resource === "dashboard" && p.action === "view",
       );
       expect(dashboardView).toBeDefined();
-      expect(dashboardView?.roles).toContain("admin");
+      expect(dashboardView?.roles).toContain("admin_master");
 
       const customersDelete = PERMISSIONS.find(
         (p) => p.resource === "customers" && p.action === "delete",
       );
       expect(customersDelete).toBeDefined();
-      expect(customersDelete?.roles).toEqual(["admin"]);
+      expect(customersDelete?.roles).toContain("admin_master");
+      expect(customersDelete?.roles).toContain("admin_company");
     });
 
     it("has valid permission structure", () => {
@@ -426,23 +439,23 @@ describe("RBAC Utils", () => {
 
   describe("ROLE_HIERARCHY constant", () => {
     it("contains all user roles", () => {
-      expect(ROLE_HIERARCHY.admin).toBeDefined();
-      expect(ROLE_HIERARCHY.branch_manager).toBeDefined();
+      expect(ROLE_HIERARCHY.admin_master).toBeDefined();
+      expect(ROLE_HIERARCHY.admin_company).toBeDefined();
       expect(ROLE_HIERARCHY.staff).toBeDefined();
     });
 
     it("has correct role hierarchy", () => {
-      expect(ROLE_HIERARCHY.admin).toContain("admin");
-      expect(ROLE_HIERARCHY.admin).toContain("branch_manager");
-      expect(ROLE_HIERARCHY.admin).toContain("staff");
+      expect(ROLE_HIERARCHY.admin_master).toContain("admin_master");
+      expect(ROLE_HIERARCHY.admin_master).toContain("admin_company");
+      expect(ROLE_HIERARCHY.admin_master).toContain("staff");
 
-      expect(ROLE_HIERARCHY.branch_manager).toContain("branch_manager");
-      expect(ROLE_HIERARCHY.branch_manager).toContain("staff");
-      expect(ROLE_HIERARCHY.branch_manager).not.toContain("admin");
+      expect(ROLE_HIERARCHY.admin_company).toContain("admin_company");
+      expect(ROLE_HIERARCHY.admin_company).toContain("staff");
+      expect(ROLE_HIERARCHY.admin_company).not.toContain("admin_master");
 
       expect(ROLE_HIERARCHY.staff).toContain("staff");
-      expect(ROLE_HIERARCHY.staff).not.toContain("admin");
-      expect(ROLE_HIERARCHY.staff).not.toContain("branch_manager");
+      expect(ROLE_HIERARCHY.staff).not.toContain("admin_master");
+      expect(ROLE_HIERARCHY.staff).not.toContain("admin_company");
     });
   });
 });

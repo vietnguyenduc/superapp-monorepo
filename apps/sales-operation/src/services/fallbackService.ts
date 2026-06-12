@@ -99,7 +99,7 @@ export interface FallbackListResponse<T> {
   count?: number;
 }
 
-class FallbackService {
+export class FallbackService {
   private isUsingFallback = false;
 
   // Check if we should use fallback mode

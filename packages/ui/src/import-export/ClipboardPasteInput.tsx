@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useCallback, useRef } from 'react';
 
 export interface PasteData {
@@ -32,7 +34,7 @@ const ClipboardPasteInput: React.FC<ClipboardPasteInputProps> = ({
     }
 
     // First line as headers
-    const headers = lines[0].split('\t').map(header => header.trim());
+    const headers = (lines[0] || '').split('\t').map(header => header.trim());
     
     // Remaining lines as data rows
     const rows = lines.slice(1).map(line => 
