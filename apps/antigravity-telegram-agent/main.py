@@ -13,6 +13,9 @@ import json
 import logging
 import threading
 import time
+import smtplib
+import random
+from email.mime.text import MIMEText
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -121,6 +124,182 @@ if not BOT_TOKEN:
 bot = telebot.TeleBot(BOT_TOKEN)
 agent = AntigravityAgent()
 ctx_logger = context_manager.LocalNotebookContext()
+
+# --- Login & OTP Session Management ---
+import secrets
+PENDING_LOGINS = {}
+LOGIN_ATTEMPTS = {}
+SESSION_FILE = Path(__file__).parent / "telegram_sessions.json"
+
+def get_valid_sessions() -> dict:
+    if not SESSION_FILE.exists():
+        return {}
+    try:
+        with open(SESSION_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            # Filter expired sessions
+            now = time.time()
+            return {k: v for k, v in data.items() if v.get("expires_at", 0) > now}
+    except Exception as e:
+        logger.error(f"Error reading sessions: {e}")
+        return {}
+
+def save_session(telegram_id: str, email: str):
+    sessions = get_valid_sessions()
+    sessions[str(telegram_id)] = {
+        "email": email,
+        "expires_at": time.time() + (30 * 24 * 3600)  # 30 days
+    }
+    try:
+        with open(SESSION_FILE, "w", encoding="utf-8") as f:
+            json.dump(sessions, f, indent=4)
+    except Exception as e:
+        logger.error(f"Error saving session: {e}")
+
+def send_otp_email(to_email: str, otp: str):
+    smtp_email = os.environ.get("SMTP_EMAIL")
+    smtp_pass = os.environ.get("SMTP_PASSWORD")
+    if not smtp_email or not smtp_pass:
+        logger.warning(f"Mocking email to {to_email}. OTP: {otp} (SMTP not configured in .env)")
+        return True
+    try:
+        msg = MIMEText(f"Mã OTP đăng nhập Telegram Admin của bạn là: {otp}\nMã này sẽ hết hạn trong 5 phút.")
+        msg['Subject'] = 'Mã xác nhận Telegram Bot Admin'
+        msg['From'] = smtp_email
+        msg['To'] = to_email
+
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.login(smtp_email, smtp_pass)
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        logger.error(f"Error sending email: {e}")
+        return False
+
+# --- Admin Onboarding Workflows ---
+
+@bot.message_handler(commands=['login'])
+def handle_login(message):
+    try:
+        email = message.text.split(' ', 1)[1].strip()
+    except IndexError:
+        return bot.reply_to(message, "👉 Cú pháp: `/login <email_trong_supabase>`")
+        
+    # Rate Limiting (chống Spam Email)
+    user_id = message.from_user.id
+    now = time.time()
+    attempts = LOGIN_ATTEMPTS.get(user_id, [])
+    # Xoá các log cũ hơn 1 giờ
+    attempts = [t for t in attempts if now - t < 3600]
+    if len(attempts) >= 5:
+        return bot.reply_to(message, "⛔ Bạn đã yêu cầu OTP quá nhiều lần. Vui lòng thử lại sau 1 giờ.")
+    attempts.append(now)
+    LOGIN_ATTEMPTS[user_id] = attempts
+    
+    # Check if email is an admin
+    user = db.get_user_by_email(email)
+    if not user or user.get("role") not in ["admin", "admin_company", "admin_master"]:
+        return bot.reply_to(message, "⛔ Email không tồn tại hoặc không có quyền truy cập.")
+        
+    otp = str(secrets.randbelow(900000) + 100000)
+    PENDING_LOGINS[user_id] = {
+        "email": email,
+        "otp": otp,
+        "expires_at": time.time() + 300 # 5 mins
+    }
+    
+    bot.reply_to(message, "⏳ Đang gửi mã OTP qua email...")
+    success = send_otp_email(email, otp)
+    
+    if success:
+        bot.reply_to(message, f"✅ Đã gửi mã OTP 6 số đến `{email}`.\nVui lòng kiểm tra email và nhập lệnh:\n`/verify <mã_otp>` (mã hết hạn sau 5 phút)", parse_mode="Markdown")
+    else:
+        bot.reply_to(message, "❌ Lỗi gửi email. Vui lòng kiểm tra cấu hình SMTP.")
+
+@bot.message_handler(commands=['verify'])
+def handle_verify(message):
+    try:
+        otp = message.text.split(' ', 1)[1].strip()
+    except IndexError:
+        return bot.reply_to(message, "👉 Cú pháp: `/verify <mã_otp>`")
+        
+    telegram_id = message.from_user.id
+    pending = PENDING_LOGINS.get(telegram_id)
+    
+    if not pending:
+        return bot.reply_to(message, "⛔ Không tìm thấy yêu cầu đăng nhập. Vui lòng gõ /login lại.")
+        
+    if time.time() > pending["expires_at"]:
+        del PENDING_LOGINS[telegram_id]
+        return bot.reply_to(message, "⛔ Mã OTP đã hết hạn. Vui lòng /login lại.")
+        
+    if str(pending["otp"]) != str(otp):
+        return bot.reply_to(message, "⛔ Mã OTP không chính xác.")
+        
+    email = pending["email"]
+    
+    # Notify Primary Admin
+    primary_id = str(ALLOWED_USER_ID).split(",")[0].strip() if ALLOWED_USER_ID else None
+    if not primary_id:
+        return bot.reply_to(message, "⛔ Hệ thống chưa cấu hình Primary Admin để duyệt yêu cầu.")
+        
+    from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+    markup = InlineKeyboardMarkup()
+    markup.add(
+        InlineKeyboardButton("✅ Duyệt", callback_data=f"approve_{telegram_id}"),
+        InlineKeyboardButton("❌ Từ chối", callback_data=f"reject_{telegram_id}")
+    )
+    
+    try:
+        bot.send_message(
+            primary_id,
+            f"🔔 **YÊU CẦU ĐĂNG NHẬP MỚI**\n\n- Telegram ID: `{telegram_id}`\n- Tên: `{message.from_user.first_name}`\n- Email: `{email}`\n\nBạn có đồng ý cấp quyền truy cập Telegram Bot không?",
+            parse_mode="Markdown",
+            reply_markup=markup
+        )
+        bot.reply_to(message, "✅ Xác thực email thành công! Đang chờ Admin chính phê duyệt...")
+    except Exception as e:
+        logger.error(f"Error notifying primary admin: {e}")
+        bot.reply_to(message, "❌ Lỗi: Không thể gửi yêu cầu phê duyệt tới Admin chính.")
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("approve_") or call.data.startswith("reject_"))
+def handle_approval_callback(call):
+    primary_id = str(ALLOWED_USER_ID).split(",")[0].strip() if ALLOWED_USER_ID else None
+    if str(call.from_user.id) != primary_id:
+        bot.answer_callback_query(call.id, "⛔ Bạn không có quyền duyệt!")
+        return
+        
+    action, target_id = call.data.split("_", 1)
+    target_id = int(target_id)
+    pending = PENDING_LOGINS.get(target_id)
+    
+    if not pending:
+        bot.edit_message_text("⛔ Yêu cầu này đã hết hạn hoặc không tồn tại.", call.message.chat.id, call.message.message_id)
+        return
+        
+    if action == "approve":
+        email = pending["email"]
+        # Link in DB
+        success = db.link_telegram_id(email, str(target_id))
+        if success:
+            save_session(str(target_id), email)
+            bot.edit_message_text(f"✅ Đã DUYỆT cho `{email}` (`{target_id}`).", call.message.chat.id, call.message.message_id, parse_mode="Markdown")
+            try:
+                bot.send_message(target_id, "🎉 Chúc mừng! Yêu cầu của bạn đã được phê duyệt. Bạn đã có thể bắt đầu sử dụng Bot.\nSử dụng lệnh `/manual` để xem hướng dẫn.")
+            except:
+                pass
+        else:
+            bot.edit_message_text(f"❌ Lỗi khi cập nhật database cho `{email}`.", call.message.chat.id, call.message.message_id, parse_mode="Markdown")
+    elif action == "reject":
+        bot.edit_message_text(f"❌ Đã TỪ CHỐI yêu cầu của `{target_id}`.", call.message.chat.id, call.message.message_id, parse_mode="Markdown")
+        try:
+            bot.send_message(target_id, "⛔ Yêu cầu đăng nhập của bạn đã bị từ chối bởi Admin.")
+        except:
+            pass
+            
+    # Clean up
+    del PENDING_LOGINS[target_id]
 
 # --- Super Scraper & RAG AI Commands ---
 
@@ -247,11 +426,18 @@ def get_user_role(telegram_id: int):
     if telegram_id in UAT_ROLES:
         return UAT_ROLES[telegram_id]
         
-    # 2. Check primary dev override
-    if ALLOWED_USER_ID and str(telegram_id) == str(ALLOWED_USER_ID):
-        return "admin"
+    # 2. Check primary dev override (supports comma-separated list)
+    if ALLOWED_USER_ID:
+        allowed_ids = [uid.strip() for uid in str(ALLOWED_USER_ID).split(",")]
+        if str(telegram_id) in allowed_ids:
+            return "admin"
+            
+    # 3. Check 30-day session expiry for secondary admins
+    sessions = get_valid_sessions()
+    if str(telegram_id) not in sessions:
+        return None # Session expired or not logged in
         
-    # 3. Check Supabase database
+    # 4. Check Supabase database
     user = db.get_user_by_telegram_id(str(telegram_id))
     if user:
         return user.get("role", "staff")
@@ -1784,7 +1970,9 @@ if __name__ == "__main__":
     # Setup scheduler for daily report at 18:00
     bg_scheduler = None
     if ALLOWED_USER_ID is not None:
-        bg_scheduler = scheduler.setup_scheduler(bot, ALLOWED_USER_ID, "18:00")
+        primary_id = str(ALLOWED_USER_ID).split(",")[0].strip()
+        bg_scheduler = scheduler.setup_scheduler(bot, primary_id, "18:00")
+        bg_scheduler.start()
         logger.info("Daily report scheduler started successfully.")
     
     logger.info("Telegram Bot service is listening (Polling)...")
