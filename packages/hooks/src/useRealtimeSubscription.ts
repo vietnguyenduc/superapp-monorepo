@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect } from 'react';
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { useSupabaseClient } from './useSupabaseClient';

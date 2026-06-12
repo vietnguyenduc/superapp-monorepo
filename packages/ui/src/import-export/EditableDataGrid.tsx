@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useCallback, useRef } from 'react';
 
 export interface ImportError {
@@ -112,15 +114,16 @@ const EditableDataGrid: React.FC<EditableDataGridProps> = ({
       } else if (e.key === 'Tab') {
         e.preventDefault();
         handleEditComplete();
-        // Move to next cell
         if (editingCell) {
           const currentColIndex = columns.findIndex(col => col.key === editingCell.col);
           const nextColIndex = (currentColIndex + 1) % columns.length;
           const nextRow = nextColIndex === 0 ? editingCell.row + 1 : editingCell.row;
-          
-          if (nextRow < data.length) {
+          const nextColumn = columns[nextColIndex];
+          if (nextColumn && nextRow < data.length) {
+            const nextRowData = data[nextRow];
+            const cellValue = nextRowData ? nextRowData[nextColumn.key] : '';
             setTimeout(() => {
-              handleCellClick(nextRow, columns[nextColIndex].key, data[nextRow][columns[nextColIndex].key] || '');
+              handleCellClick(nextRow, nextColumn.key, cellValue || '');
             }, 50);
           }
         }

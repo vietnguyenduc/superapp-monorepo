@@ -1,0 +1,381 @@
+{
+    "page_title": "Kết quả cào trích xuất dữ liệu",
+    "articles": [
+        {
+            "title": "Artemis 3 - nhiệm vụ giúp NASA đưa người lên Mặt Trăng",
+            "description": "Nhiệm vụ Artemis 3 của NASA sẽ là thử nghiệm quan trọng cho các hệ thống sẽ đưa con người hạ cánh xuống bề mặt Mặt Trăng.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Khoa học vũ trụ",
+            "publish_date": "2026-06-08",
+            "image_url": "https://vcdn1-vnexpress.vnecdn.net/2026/06/08/VNEArtemis-1780907107-8456-1780907318.jpg?w=500&h=300&q=100&dpr=1&fit=crop&s=exNUnNz33P9EsErmhl7uAA"
+        },
+        {
+            "title": "Robot hình người chinh phục đỉnh núi lửa cao 6.200 m",
+            "description": "Robot hình người chinh phục đỉnh núi lửa cao 6.200 m",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Robot",
+            "publish_date": "2026-06-09",
+            "image_url": "https://vcdn1-vnexpress.vnecdn.net/2026/06/09/VNERobot-1780977071-4230-1780977326.jpg?w=300&h=180&q=100&dpr=1&fit=crop&s=a-cpgL41Hftt4SqnCuChhQ"
+        },
+        {
+            "title": "Cách để thực hiện 'giấc mơ công nghệ lõi' từ hệ thống phòng thí nghiệm quốc gia",
+            "description": "Cách để thực hiện 'giấc mơ công nghệ lõi' từ hệ thống phòng thí nghiệm quốc gia",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-08",
+            "image_url": "https://vcdn1-vnexpress.vnecdn.net/2026/06/08/huy94071743739829-1780909511-2724-1780909830.webp?w=300&h=180&q=100&dpr=1&fit=crop&s=BGhWVBni3tUHNRQ8jbqQbw"
+        },
+        {
+            "title": "'Bán giọng nói' để dạy AI",
+            "description": "'Bán giọng nói' để dạy AI",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Trí tuệ nhân tạo",
+            "publish_date": "2026-06-08",
+            "image_url": "https://vcdn1-vnexpress.vnecdn.net/2026/06/08/giong-doc-ai-1780907158-9500-1780907198.jpg?w=300&h=180&q=100&dpr=1&fit=crop&s=IOOpRQ3RfJBffopQ1AV-fg"
+        },
+        {
+            "title": "Loạt điểm mới trên Siri AI",
+            "description": "Siri AI mới được Apple bổ sung hàng loạt tính năng trí tuệ nhân tạo theo hướng trợ lý giàu năng lực và cá nhân hóa hơn.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Trí tuệ nhân tạo",
+            "publish_date": "2026-06-09",
+            "image_url": "https://vcdn1-vnexpress.vnecdn.net/2026/06/09/apple-siri-ai-hero-big-mediumx-5897-5360-1780960495.jpg?w=180&h=108&q=100&dpr=1&fit=crop&s=yd88kn8BovU5OyrYqwQv6Q"
+        },
+        {
+            "title": "Apple tung loạt tính năng an toàn mới cho trẻ em",
+            "description": "Tại WWDC 2026, Apple giới thiệu loạt công cụ giúp bảo vệ trẻ an toàn trên môi trường số, cũng như giúp phụ huynh kiểm soát trẻ hiệu quả.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": "https://vcdn1-vnexpress.vnecdn.net/2026/06/09/apple-child-account-families-w-4784-2112-1780991368.png?w=180&h=108&q=100&dpr=1&fit=crop&s=Jak7PafKOgI_Pyxr5Hr6FQ"
+        },
+        {
+            "title": "OpenAI nộp đơn IPO",
+            "description": "OpenAI, công ty phát triển ChatGPT, cho biết đã nộp đơn phát hành cổ phiếu lần đầu ra công chúng (IPO) tại Mỹ.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Kinh doanh",
+            "publish_date": "2026-06-09",
+            "image_url": "https://vcdn1-vnexpress.vnecdn.net/2026/06/09/openaithachthuc175249135129441-7436-7020-1780980210.jpg?w=180&h=108&q=100&dpr=1&fit=crop&s=8vahXlktXvMMQz5L1yU3ug"
+        },
+        {
+            "title": "macOS 27 'nói không' với máy Mac dùng chip Intel",
+            "description": "Người dùng máy Mac chạy chip Intel sẽ không thể cập nhật macOS 27, khi phiên bản hệ điều hành mới chỉ tương thích với chip M-Series.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Tim Cook cảm ơn 21 lần khi phát biểu tại WWDC",
+            "description": "Trong bài phát biểu gần như cuối cùng trên cương vị CEO Apple, Tim Cook có những chia sẻ xúc động cùng nhiều lời cảm ơn đến mọi người.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "FPT và Nvidia phát hành tập dữ liệu tiếng Việt với 900.000 'hồ sơ nhân vật'",
+            "description": "Tập dữ liệu Nemotron-Personas-Vietnam, do FPT và Nvidia phát triển, nằm trong top 10 tập dữ liệu thịnh hành trên Hugging Face sau 5 ngày phát hành.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Trí tuệ nhân tạo",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Quan điểm trái ngược về nguy cơ khi chụp giơ ngón tay chữ V",
+            "description": "Một số chuyên gia cảnh báo người dùng có thể bị thu thập dấu vân tay khi chụp tạo dáng 'chữ V', nhưng nhiều chuyên gia khác gạt bỏ lo ngại.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "An ninh mạng",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Hình ảnh Việt Nam xuất hiện nhiều lần tại sự kiện Apple",
+            "description": "Sự kiện WWDC 2026 của Apple sử dụng món phở để minh họa AI đánh giá dinh dưỡng, hình ảnh Hà Nội cho tính năng nhận diện giọng nói, và tiếng Việt trong ngôn ngữ hỗ trợ.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Apple bắt tay Google để 'tái sinh' Siri",
+            "description": "Apple công bố hợp tác sâu với Google để xây dựng thế hệ Apple Intelligence mới, đồng thời trình làng Siri AI, phiên bản 'đại tu' lớn nhất kể từ ngày Siri ra mắt.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Trí tuệ nhân tạo",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Apple giới thiệu iOS 27, hỗ trợ từ iPhone 11",
+            "description": "MỹiOS 27 hỗ trợ từ iPhone 11, hứa hẹn nâng cấp ở tốc độ AirDrop lên 80%, cải thiện giao diện Liquid Glass, nâng cấp Siri.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Dấu hiệu El Nino mạnh nhất diễn ra trong năm nay",
+            "description": "Các nhà khí tượng dự đoán nhiệt độ mặt biển ấm hơn nhiều so với mức trung bình, báo hiệu El Nino năm nay có thể đạt mức mạnh nhất từng ghi nhận.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Môi trường",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Sẽ đào tạo kỹ năng số cho hơn 7,2 triệu nông dân",
+            "description": "Ít nhất 70% hội viên nông dân trên cả nước sẽ được trang bị kiến thức, kỹ năng số trong nhiệm kỳ 2026-2031, tương đương hơn 7,2 triệu người.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Xã hội",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Người máy VinRobotics hút khách xem tại sự kiện công nghệ quốc tế",
+            "description": "Người máy 'Make in Vietnam' VR-H3 gây ấn tượng với khách tham dự Computex 2026 và ICRA 2026, cho thấy kỹ sư Việt Nam của VinRobotics sẵn sàng bước vào cuộc đua công nghệ toàn cầu.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Robot",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Trải nghiệm màn hình LG UltraFine evo 6K giá gần 70 triệu đồng",
+            "description": "UltraFine evo 6K có thiết kế cao cấp, công nghệ Nano IPS Black hiển thị màu sắc chính xác cùng độ phân giải 6K với cổng Thunderbolt 5 đầu tiên trên thế giới nhưng tần số quét chỉ là 60 Hz.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Robot cầu thủ của Trung Quốc sút bóng lõm tường",
+            "description": "Booster T1, robot hình người cỡ nhỏ của Booster Robotics (Bắc Kinh), phô diễn lực sút mạnh cùng một số kỹ năng liên quan đến bóng đá.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Robot",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Cuộc đua phát triển máy tính AI làm việc thay con người",
+            "description": "Nvidia, Microsoft và Google đang phát triển công nghệ mới cho phép máy tính sử dụng tác nhân AI để thay thế con người làm những công việc phức tạp.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Trí tuệ nhân tạo",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Trung Quốc xuất xưởng động cơ eVTOL nội địa đầu tiên",
+            "description": "AEE25, động cơ dành cho máy bay điện cất hạ cánh thẳng đứng (eVTOL), có trọng lượng nhẹ, giúp máy bay chở được nhiều hành khách hoặc hàng hóa hơn.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Máy bay phản lực thương gia lập kỷ lục tốc độ",
+            "description": "Máy bay Global 8000 hoàn thành hành trình từ Montreal, Canada, tới Nice, Pháp chỉ trong 6 giờ thay vì 8 giờ như thông thường.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "CEO Microsoft: Tác nhân AI cần được 'đối xử như nhân viên'",
+            "description": "CEO Microsoft Satya Nadella cho rằng tác nhân AI phải được đối xử như nhân viên, với danh tính, quyền hạn và được kiểm toán.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Trí tuệ nhân tạo",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "iPhone gập lộ thiết kế, dự kiến chỉ có màu trắng",
+            "description": "Mô hình của iPhone gập vừa bị rò rỉ, cho thấy thiết kế chi tiết của sản phẩm với bộ khung màu trắng.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "'Hợp tác quốc tế giúp rút ngắn hành trình từ phòng thí nghiệm ra thị trường'",
+            "description": "Kết nối hệ sinh thái đổi mới sáng tạo quốc tế có thể giúp startup và tổ chức nghiên cứu tại Việt Nam kiểm chứng sản phẩm, rút ngắn hành trình thương mại hóa, theo đại diện Trung tâm Phát triển Công nghệ và Đổi mới sáng tạo Tây Ban Nha (CDTI).",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Đổi tư duy vận hành phòng thí nghiệm trọng điểm quốc gia",
+            "description": "Bộ Khoa học và Công nghệ cho rằng cần thay đổi tư duy từ 'đầu tư phòng thí nghiệm' sang 'xây dựng hạ tầng nghiên cứu quốc gia', trong đó con người, cơ chế vận hành và khả năng làm chủ công nghệ phải ở vị trí trung tâm.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Làn sóng AI đe dọa thế hệ kỳ lân tiền ChatGPT",
+            "description": "Hàng trăm kỳ lân công nghệ với mức định giá tỷ USD trước khi ChatGPT xuất hiện nay 'rớt đài', rơi vào tình cảnh khó gọi vốn, giá trị sụt giảm.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Kinh doanh",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Nguy cơ lộ thông tin cá nhân khi cha mẹ khoe con trên mạng",
+            "description": "Phụ huynh đăng ảnh, video về con trên mạng xã hội có xu hướng ít quan tâm đến việc bảo vệ quyền riêng tư của trẻ, theo nghiên cứu của Kaspersky và Viện Công nghệ Singapore.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "An ninh mạng",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Thiết bị kích sóng gây nhiễu mạng di động tại cửa khẩu Móng Cái",
+            "description": "Thiết bị kích sóng di động do cá nhân mua từ nước ngoài về lắp đặt đã gây nhiễu mạng viễn thông khu vực biên giới cửa khẩu Móng Cái.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Pin trữ năng lượng dưới độ sâu 27 m",
+            "description": "Thụy SĩCông ty Flexbase đang xây dựng cơ sở lưu trữ năng lượng sạch bằng pin dòng chảy ở độ sâu 27 m với dung lượng dự kiến lên đến 2,1 GWh.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Năng lượng",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Trung Quốc là nước đầu tiên đưa chip cấy não ra thị trường",
+            "description": "Trung Quốc muốn trở thành nước dẫn đầu về thiết bị cấy ghép não và dùng sự hỗ trợ của chính phủ để đẩy nhanh quá trình phát triển các thiết bị này.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "25 triệu thuê bao di động sắp bị khóa một chiều",
+            "description": "Theo Cục Viễn thông, 25 triệu thuê bao không xác nhận trạng thái sử dụng trên VNeID sẽ bị khóa sau ngày 15/6.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "'20 phút kinh hoàng' và những cuộc gọi giả mạo giọng nói",
+            "description": "MỹLiz Benz vẫn tin người gọi điện cho bà trong tình trạng hoảng loạn là con trai 16 tuổi, vì giọng điệu và cách phát âm đều trùng khớp.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "An ninh mạng",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Máy bay X-59 của NASA lần đầu đạt tốc độ siêu thanh",
+            "description": "MỹX-59, máy bay thử nghiệm giúp phát triển công nghệ bay siêu thanh yên tĩnh của NASA, đạt cột mốc quan trọng khi lần đầu vượt tốc độ âm thanh.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Khoa học vũ trụ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Laptop AI dùng chip AMD Ryzen, giá gần 40 triệu đồng",
+            "description": "Lenovo Yoga Slim 7a được trang bị xử lý tối ưu cho AI, thiết kế có tính di động cao, nhưng dung lượng bộ nhớ có phần khiêm tốn.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Hải ly xây đập cứu London khỏi ngập lụt",
+            "description": "AnhGia đình hải ly gồm 5 con, hoạt động như những 'kỹ sư tự nhiên', giúp khu vực phía tây London thoát khỏi ngập lụt do mưa lớn.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Môi trường",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Robot 'chú hề' đá trúng khán giả nhí",
+            "description": "Khi biểu diễn trước đám đông tại Tân Cương, robot hình người G1 của công ty Unitree vô tình đá vào bụng một cậu bé đứng xem.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Robot",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Rủi ro khi Mỹ rút 900 thiết bị giám sát đại dương",
+            "description": "Quyết định thu hẹp mạng lưới theo dõi đại dương gồm 900 thiết bị của Mỹ khiến nhiều chuyên gia lo ngại về nguy cơ thiếu dữ liệu quan trọng trong bối cảnh siêu El Nino có thể sắp xảy ra.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Môi trường",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Phi hành gia trạm ISS trú ẩn khẩn cấp do rò rỉ khí",
+            "description": "Rò rỉ khí nghiêm trọng trên Trạm Vũ trụ Quốc tế (ISS) khiến 5 phi hành gia phải vào tàu trú ẩn và sẵn sàng sơ tán trong hai tiếng.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Khoa học vũ trụ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Rò rỉ khung iPhone 18 Pro với ba màu mới",
+            "description": "Một số hình ảnh được cho là khung sườn của iPhone 18 Pro xuất hiện trên mạng, cho thấy các tùy chọn màu sắc thực tế của sản phẩm.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Những robot động vật giải quyết thách thức kỹ thuật",
+            "description": "Lấy cảm hứng thiết kế từ tự nhiên, một số robot động vật đáp ứng xuất sắc các nhiệm vụ khó khăn từ giám sát công nghiệp tới thám hiểm dưới nước.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Robot",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Startup kết hợp siêu máy tính và AI thắng giải khởi nghiệp châu Âu",
+            "description": "EarthScan của Mitiga kết hợp siêu máy tính và mô hình AI riêng giúp giảm rủi ro biến đổi khí hậu cho doanh nghiệp đã thắng giải Startup Competition 2026.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Kinh doanh",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Tái cấu trúc phòng thí nghiệm trọng điểm, làm chủ công nghệ chiến lược",
+            "description": "Việt Nam dự kiến xây dựng khoảng 10-15 trung tâm nghiên cứu và phòng thí nghiệm quốc gia quy mô lớn, tập trung vào AI, bán dẫn... phục vụ mục tiêu làm chủ công nghệ chiến lược.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Anthropic: Cần cơ chế dừng phát triển AI toàn cầu",
+            "description": "Startup Anthropic cho rằng thế giới cần chuẩn bị phương án giảm tốc hoặc dừng phát triển AI nếu các mô hình có khả năng tự nâng cấp quá nhanh.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Trí tuệ nhân tạo",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Máy bay chở khách có tầm bay xa nhất thế giới",
+            "description": "Máy bay A350-1000ULR của Airbus có thể bay liên tục 22 giờ với tầm bay tối đa lên tới trên 18.000 km.",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        },
+        {
+            "title": "Các mẫu laptop gaming nổi bật của ROG 20 năm qua",
+            "description": "Dòng Zephyrus G14 mỏng nhẹ, Zephyrus Duo với màn hình đôi, Flow Z13 thiết kế lai tablet là các mẫu laptop gaming đặc biệt",
+            "url": "https://vnexpress.net/khoa-hoc-cong-nghe",
+            "category": "Công nghệ",
+            "publish_date": "2026-06-09",
+            "image_url": ""
+        }
+    ],
+    "title": "Tin tức khoa học công nghệ từ VnExpress",
+    "inferred_categories": [
+        "Công nghệ",
+        "Trí tuệ nhân tạo",
+        "Khoa học vũ trụ"
+    ],
+    "confidence_score": 0.95,
+    "original_source_url": "https://vnexpress.net/khoa-hoc-cong-nghe"
+}

@@ -78,20 +78,20 @@ const ProductCatalogPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-4 sm:p-0">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Danh mục hàng hóa</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-xl sm:text-3xl font-bold text-gray-900">Danh mục hàng hóa</h1>
+          <p className="mt-1 sm:mt-2 text-xs sm:text-base text-gray-600">
             Quản lý danh mục, định mức, quy đổi (Bảng 2)
           </p>
         </div>
         {!showForm && (
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
             <button
               onClick={() => navigate('/product-import')}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
+              className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center gap-2 text-xs sm:text-sm"
             >
               📊 Nhập hàng loạt
             </button>

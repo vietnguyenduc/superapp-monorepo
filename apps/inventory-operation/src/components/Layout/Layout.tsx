@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Navigation from "./Navigation";
 import Sidebar from "./Sidebar";
+import BottomTabBar from "./BottomTabBar";
 import QuickAddMenu from "../QuickAddMenu";
 
 const Layout: React.FC = () => {
@@ -32,24 +33,26 @@ const Layout: React.FC = () => {
       )}
       <div className="flex w-full">
         {/* Desktop sidebar - sticky */}
-        <div className="hidden lg:block w-80 flex-shrink-0 sticky top-16 h-[calc(100vh-64px)]">
+        <div className="hidden lg:block w-72 xl:w-80 flex-shrink-0 sticky top-16 h-[calc(100vh-64px)]">
           <Sidebar />
         </div>
         {/* Mobile sidebar */}
         <div
-          className={`fixed inset-y-0 left-0 z-50 w-80 bg-white dark:bg-gray-900 shadow-lg transform transition-transform duration-300 ease-in-out lg:hidden no-scrollbar overflow-y-auto ${
+          className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-gray-900 shadow-lg transform transition-transform duration-300 ease-in-out lg:hidden no-scrollbar overflow-y-auto ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
           <Sidebar onClose={() => setSidebarOpen(false)} />
         </div>
         {/* Main content - full width, flush left */}
-        <main className="flex-1 min-w-0 w-full">
+        <main className="flex-1 min-w-0 w-full pb-20 lg:pb-0">
           <div className="p-4 sm:p-5 lg:p-6 w-full">
             <Outlet />
           </div>
         </main>
       </div>
+      {/* Mobile bottom tab bar */}
+      <BottomTabBar />
       <QuickAddMenu />
     </div>
   );

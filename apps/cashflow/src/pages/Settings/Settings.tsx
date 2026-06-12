@@ -2358,7 +2358,21 @@ const Settings: React.FC = () => {
 
           {/* Users & Permissions - admin, admin_master, and admin_company can access */}
           {activeTab === "users" && (user?.role === "admin" || user?.role === "admin_master" || user?.role === "admin_company") && (
-            <div className="p-4 sm:p-6">
+            <div className="p-4 sm:p-6 space-y-4">
+              <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 text-indigo-700 dark:text-indigo-400 p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-xs md:text-sm">
+                  <span className="font-bold">✨ Hợp nhất Phân quyền Trung tâm</span>. Để đảm bảo tính đồng bộ bảo mật, hệ thống khuyến nghị bạn quản lý vai trò tài khoản và phân quyền ứng dụng tập trung tại **Admin Portal**.
+                </div>
+                <a 
+                  href="http://localhost:5173/identity" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-1 shrink-0 shadow-md shadow-indigo-500/10"
+                >
+                  Mở Admin Portal ↗
+                </a>
+              </div>
+
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
                 <div>
                   <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">

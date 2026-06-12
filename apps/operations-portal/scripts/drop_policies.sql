@@ -1,0 +1,13 @@
+DROP POLICY IF EXISTS "Admin Master can view all users" ON public.users;
+DROP POLICY IF EXISTS "Admin Master can view all roles" ON public.roles;
+DROP POLICY IF EXISTS "Admin Master can view all permissions" ON public.permissions;
+DROP POLICY IF EXISTS "Admin Master can view all role_permissions" ON public.role_permissions;
+DROP POLICY IF EXISTS "Admin Master can view all user_roles" ON public.user_roles;
+DROP POLICY IF EXISTS "Admin Master can view all admin_roles" ON public.admin_roles;
+DROP POLICY IF EXISTS "Admin Master can view all admin_permissions" ON public.admin_permissions;
+DROP POLICY IF EXISTS "Admin Master can view all admin_role_permissions" ON public.admin_role_permissions;
+DROP POLICY IF EXISTS "Admin Master can view all admin_user_roles" ON public.admin_user_roles;
+DROP POLICY IF EXISTS "Admin Master can view all admin_audit_logs" ON public.admin_audit_logs;
+DROP POLICY IF EXISTS "Admin Master can view all admin_sessions" ON public.admin_sessions;
+DROP POLICY IF EXISTS "Admin Master can view all admin_settings" ON public.admin_settings;
+DROP POLICY IF EXISTS "Admin Master can view all admin_notifications" ON public.admin_notifications;

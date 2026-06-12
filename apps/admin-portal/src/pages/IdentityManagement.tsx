@@ -15,6 +15,9 @@ const APPS = [
   { id: 'cashflow', name: 'Cashflow', color: 'bg-blue-100 text-blue-800' },
   { id: 'inventory', name: 'Inventory', color: 'bg-amber-100 text-amber-800' },
   { id: 'sales', name: 'Sales', color: 'bg-emerald-100 text-emerald-800' },
+  { id: 'hr', name: 'HR & Payroll', color: 'bg-pink-100 text-pink-800' },
+  { id: 'accounting', name: 'Accounting', color: 'bg-purple-100 text-purple-800' },
+  { id: 'operations', name: 'Operations', color: 'bg-cyan-100 text-cyan-800' },
 ];
 
 export default function IdentityManagement() {

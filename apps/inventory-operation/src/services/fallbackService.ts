@@ -568,6 +568,19 @@ class FallbackService {
       message: 'Fallback service is running with mock data'
     };
   }
+
+  // ============ TESTING SUPPORT ============
+
+  /**
+   * Resets all in-memory mock data arrays to empty.
+   * Used by tests to ensure clean state between test cases.
+   */
+  resetData(): void {
+    mockProducts = [];
+    mockInventoryRecords = [];
+    mockSalesRecords = [];
+    mockSpecialOutboundRecords = [];
+  }
 }
 
 // Export singleton instance

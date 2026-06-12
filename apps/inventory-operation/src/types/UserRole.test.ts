@@ -24,8 +24,8 @@ function makeUser(role: UserRole, extraPermissions: Permission[] = []) {
 }
 
 describe('ROLE_PERMISSIONS', () => {
-  it('ADMIN has all permissions', () => {
-    const adminPerms = ROLE_PERMISSIONS[UserRole.ADMIN];
+  it('ADMIN_MASTER has all permissions', () => {
+    const adminPerms = ROLE_PERMISSIONS[UserRole.ADMIN_MASTER];
     const allPerms = Object.values(Permission);
     expect(adminPerms).toEqual(expect.arrayContaining(allPerms));
     expect(adminPerms.length).toBe(allPerms.length);
@@ -39,15 +39,15 @@ describe('ROLE_PERMISSIONS', () => {
     expect(perms).not.toContain(Permission.USER_MANAGEMENT);
   });
 
-  it('BUSINESS_OWNER has user management and audit', () => {
-    const perms = ROLE_PERMISSIONS[UserRole.BUSINESS_OWNER];
+  it('ADMIN_COMPANY has user management and audit', () => {
+    const perms = ROLE_PERMISSIONS[UserRole.ADMIN_COMPANY];
     expect(perms).toContain(Permission.USER_MANAGEMENT);
     expect(perms).toContain(Permission.AUDIT_LOG_VIEW);
     expect(perms).toContain(Permission.SETTINGS_EDIT);
   });
 
-  it('OPERATIONS_MANAGER can approve special outbound', () => {
-    const perms = ROLE_PERMISSIONS[UserRole.OPERATIONS_MANAGER];
+  it('WAREHOUSE_ACCOUNTANT can approve special outbound', () => {
+    const perms = ROLE_PERMISSIONS[UserRole.WAREHOUSE_ACCOUNTANT];
     expect(perms).toContain(Permission.SPECIAL_OUTBOUND_APPROVE);
     expect(perms).toContain(Permission.SPECIAL_OUTBOUND_REJECT);
     expect(perms).not.toContain(Permission.USER_MANAGEMENT);
@@ -85,7 +85,7 @@ describe('hasPermission', () => {
 
 describe('getRolePermissions', () => {
   it('returns permissions for known role', () => {
-    expect(getRolePermissions(UserRole.ADMIN).length).toBeGreaterThan(0);
+    expect(getRolePermissions(UserRole.ADMIN_MASTER).length).toBeGreaterThan(0);
   });
 
   it('returns empty array for unknown role', () => {
@@ -98,8 +98,8 @@ describe('getRoleDisplayName', () => {
     expect(getRoleDisplayName(UserRole.WAREHOUSE_KEEPER)).toBe('Thủ kho');
   });
 
-  it('returns Vietnamese name for ADMIN', () => {
-    expect(getRoleDisplayName(UserRole.ADMIN)).toBe('Quản trị viên');
+  it('returns Vietnamese name for ADMIN_MASTER', () => {
+    expect(getRoleDisplayName(UserRole.ADMIN_MASTER)).toBe('Admin toàn hệ thống');
   });
 
   it('falls back to role key for unknown', () => {
@@ -113,14 +113,14 @@ describe('RBAC separation of duties', () => {
     expect(hasPermission(user, Permission.SPECIAL_OUTBOUND_APPROVE)).toBe(false);
   });
 
-  it('operations manager can approve but cannot edit settings', () => {
-    const user = makeUser(UserRole.OPERATIONS_MANAGER);
+  it('warehouse accountant can approve but cannot edit settings', () => {
+    const user = makeUser(UserRole.WAREHOUSE_ACCOUNTANT);
     expect(hasPermission(user, Permission.SPECIAL_OUTBOUND_APPROVE)).toBe(true);
     expect(hasPermission(user, Permission.SETTINGS_EDIT)).toBe(false);
   });
 
-  it('business owner can do everything except system admin', () => {
-    const user = makeUser(UserRole.BUSINESS_OWNER);
+  it('admin company can do everything except system admin', () => {
+    const user = makeUser(UserRole.ADMIN_COMPANY);
     expect(hasPermission(user, Permission.SYSTEM_ADMIN)).toBe(false);
     expect(hasPermission(user, Permission.USER_MANAGEMENT)).toBe(true);
   });

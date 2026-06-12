@@ -75,7 +75,7 @@ const Navigation: React.FC<NavigationProps> = ({ onMenuClick }) => {
                     d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                   />
                 </svg>
-                <span className="hidden sm:inline max-w-[140px] truncate text-sm font-medium">
+                <span className="hidden sm:inline max-w-[100px] lg:max-w-[140px] truncate text-sm font-medium">
                   {selectedCompany?.name || "Chọn công ty"}
                 </span>
               </button>
@@ -108,7 +108,7 @@ const Navigation: React.FC<NavigationProps> = ({ onMenuClick }) => {
                   </svg>
                 </button>
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black/5 py-1 z-50 border border-gray-200 dark:border-gray-700">
+                  <div className="absolute right-0 mt-2 w-44 sm:w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black/5 py-1 z-50 border border-gray-200 dark:border-gray-700">
                     <Link
                       to="/profile"
                       onClick={() => setIsUserMenuOpen(false)}
@@ -132,8 +132,8 @@ const Navigation: React.FC<NavigationProps> = ({ onMenuClick }) => {
                     </button>
                   </div>
                 )}
-                <div className="hidden lg:block text-right mr-3 absolute -left-44 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate w-40">
+                <div className="hidden lg:block text-right mr-3 absolute -left-36 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate w-32">
                     {displayName}
                   </div>
                   <div className="text-[10px] text-gray-500 dark:text-gray-400">

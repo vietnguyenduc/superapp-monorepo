@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+﻿﻿﻿﻿﻿import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import "@testing-library/jest-dom";
 import TransactionImport from "../TransactionImport";
@@ -6,7 +6,10 @@ import { databaseService } from "../../../services/database";
 
 vi.mock("@superapp/iam", () => ({
   useAuthContext: () => ({
-    user: { id: "user-1", branch_id: "branch-1" },
+    user: { id: "user-1", branch_id: "branch-1", role: "admin_company", company_id: "company-1" },
+  }),
+  useCompany: () => ({
+    selectedCompany: null,
   }),
 }));
 
@@ -17,6 +20,20 @@ vi.mock("react-router-dom", async () => {
     useSearchParams: () => [new URLSearchParams(), vi.fn()],
   };
 });
+
+vi.mock("../../../contexts/TransactionTypeContext", () => ({
+  useTransactionTypes: () => ({
+    types: [],
+    typesForDropdown: [],
+    loading: false,
+    error: null,
+    refetch: vi.fn(),
+    findById: vi.fn(),
+    findByName: vi.fn(),
+    getNameById: vi.fn(),
+    getMathFactor: vi.fn(),
+  }),
+}));
 
 vi.mock("../../../components/Import/EditableTable", () => ({
   default: ({ onDataChange }: { onDataChange: (data: any[]) => void }) => (
@@ -70,17 +87,14 @@ describe("TransactionImport Integration", () => {
       },
     });
 
-    // Validate data
-    const validateBtn = screen.getByRole("button", { name: /import.validateData/i });
-    fireEvent.click(validateBtn);
+    // Validate & import data (combined button)
+    const importBtn = screen.getByRole("button", { name: /import.importData/i });
+    fireEvent.click(importBtn);
 
     // Show preview and import
     await waitFor(() => {
       expect(screen.getByText(/import.dataPreview/i)).toBeInTheDocument();
     });
-
-    const importBtn = screen.getByRole("button", { name: /import.importData/i });
-    fireEvent.click(importBtn);
 
     // Wait for import to complete
     await waitFor(() => {
@@ -103,9 +117,9 @@ describe("TransactionImport Integration", () => {
       },
     });
 
-    // Validate data
-    const validateBtn = screen.getByRole("button", { name: /import.validateData/i });
-    fireEvent.click(validateBtn);
+    // Validate & import data (combined button)
+    const importBtn = screen.getByRole("button", { name: /import.importData/i });
+    fireEvent.click(importBtn);
 
     // Should show validation errors
     await waitFor(() => {

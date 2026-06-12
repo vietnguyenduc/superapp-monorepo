@@ -228,23 +228,25 @@ const InventoryRecordsPage: React.FC = () => {
   const showVariance = !isAccountant && !isKeeper; // Only Admin sees Variance
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 transition-colors">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 sm:p-6 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        {/* Header Card */}
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 sm:p-6 transition-colors">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Quản lý Xuất Nhập Tồn</h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Quản lý Xuất Nhập Tồn</h1>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1">
                 Theo dõi giao dịch xuất - nhập - tồn, so sánh tồn sổ và tồn thật.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 transition-colors">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Filters Card */}
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 sm:p-6 transition-colors">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Trạng thái kho</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Trạng thái kho</label>
               <select
                 value={formFilter}
                 onChange={(e) => setFormFilter(e.target.value as any)}
@@ -257,11 +259,11 @@ const InventoryRecordsPage: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Chế độ xem</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Chế độ xem</label>
               <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => setViewMode('standard')}
-                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                  className={`flex-1 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium rounded-lg transition-all ${
                     viewMode === 'standard' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                   }`}
                 >
@@ -269,7 +271,7 @@ const InventoryRecordsPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setViewMode('equivalent')}
-                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                  className={`flex-1 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium rounded-lg transition-all ${
                     viewMode === 'equivalent' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                   }`}
                 >
@@ -279,12 +281,12 @@ const InventoryRecordsPage: React.FC = () => {
             </div>
 
             {viewMode === 'equivalent' && (
-              <div className="animate-in fade-in slide-in-from-left-2 duration-300">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Đơn vị quy đổi (Switcher)</label>
+              <div className="animate-in fade-in slide-in-from-left-2 duration-300 sm:col-span-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Đơn vị quy đổi</label>
                 <div className="flex bg-blue-50 dark:bg-blue-900/20 p-1 rounded-xl border border-blue-100 dark:border-blue-900/30">
                   <button
                     onClick={() => setTargetReportUnitMode('purchase')}
-                    className={`flex-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    className={`flex-1 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${
                       targetReportUnitMode === 'purchase' ? 'bg-blue-600 shadow-md text-white' : 'text-blue-400 hover:text-blue-600 dark:hover:text-blue-300'
                     }`}
                   >
@@ -292,7 +294,7 @@ const InventoryRecordsPage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setTargetReportUnitMode('intermediate')}
-                    className={`flex-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    className={`flex-1 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${
                       targetReportUnitMode === 'intermediate' ? 'bg-blue-600 shadow-md text-white' : 'text-blue-400 hover:text-blue-600 dark:hover:text-blue-300'
                     }`}
                   >
@@ -300,7 +302,7 @@ const InventoryRecordsPage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setTargetReportUnitMode('output')}
-                    className={`flex-1 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    className={`flex-1 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${
                       targetReportUnitMode === 'output' ? 'bg-blue-600 shadow-md text-white' : 'text-blue-400 hover:text-blue-600 dark:hover:text-blue-300'
                     }`}
                   >
@@ -312,60 +314,62 @@ const InventoryRecordsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 transition-colors">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Xuất</div>
-            <div className="mt-2 text-2xl font-bold text-red-600 dark:text-red-400">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-3 sm:p-5 transition-colors">
+            <div className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">Xuất</div>
+            <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold text-red-600 dark:text-red-400 truncate">
               {summaryDisplay.totalXuat.toLocaleString(undefined, { maximumFractionDigits: 1 })}
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 transition-colors">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Nhập</div>
-            <div className="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-3 sm:p-5 transition-colors">
+            <div className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">Nhập</div>
+            <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400 truncate">
               {summaryDisplay.totalNhap.toLocaleString(undefined, { maximumFractionDigits: 1 })}
             </div>
           </div>
           {showBookInventory && (
-            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 transition-colors">
-              <div className="text-sm text-gray-500 dark:text-gray-400">Tồn sổ</div>
-              <div className="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-3 sm:p-5 transition-colors">
+              <div className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">Tồn sổ</div>
+              <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400 truncate">
                 {summaryDisplay.totalTonSo.toLocaleString(undefined, { maximumFractionDigits: 1 })}
               </div>
             </div>
           )}
           {showActualInventory && (
-            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 transition-colors">
-              <div className="text-sm text-gray-500 dark:text-gray-400">Tồn thật</div>
-              <div className="mt-2 text-2xl font-bold text-amber-600 dark:text-amber-400">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-3 sm:p-5 transition-colors">
+              <div className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">Tồn thật</div>
+              <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold text-amber-600 dark:text-amber-400 truncate">
                 {summaryDisplay.totalTonThat.toLocaleString(undefined, { maximumFractionDigits: 1 })}
               </div>
             </div>
           )}
           {showVariance && (
-            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 transition-colors">
-              <div className="text-sm text-gray-500 dark:text-gray-400">Lệch kho</div>
-              <div className={`mt-2 text-2xl font-bold ${summaryDisplay.chenhlech === 0 ? 'text-gray-900 dark:text-gray-100' : 'text-rose-600 dark:text-rose-400'}`}>
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-3 sm:p-5 transition-colors">
+              <div className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">Lệch kho</div>
+              <div className={`mt-1 sm:mt-2 text-lg sm:text-2xl font-bold truncate ${summaryDisplay.chenhlech === 0 ? 'text-gray-900 dark:text-gray-100' : 'text-rose-600 dark:text-rose-400'}`}>
                 {summaryDisplay.chenhlech.toLocaleString(undefined, { maximumFractionDigits: 1 })}
               </div>
             </div>
           )}
         </div>
 
+        {/* Table Card */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors">
-          <div className="border-b border-gray-100 dark:border-gray-800 px-6 pt-4">
-            <div className="flex flex-col gap-4">
+          <div className="border-b border-gray-100 dark:border-gray-800 px-4 sm:px-6 pt-3 sm:pt-4">
+            <div className="flex flex-col gap-3 sm:gap-4">
               {/* Title */}
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Danh sách giao dịch</h2>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{filteredRecords.length} bản ghi</span>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">Danh sách giao dịch</h2>
+                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{filteredRecords.length} bản ghi</span>
               </div>
 
               {/* Role-based view selector */}
-              <div className="flex gap-2 pb-3">
+              <div className="flex gap-1 sm:gap-2 pb-2 sm:pb-3 overflow-x-auto">
                 <button
                   type="button"
                   onClick={() => setActiveView('operational_ledger')}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-sm font-medium transition-colors whitespace-nowrap ${
                     activeView === 'operational_ledger'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -376,7 +380,7 @@ const InventoryRecordsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveView('accounting_summary')}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-sm font-medium transition-colors whitespace-nowrap ${
                     activeView === 'accounting_summary'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -387,7 +391,7 @@ const InventoryRecordsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveView('variance_view')}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-sm font-medium transition-colors whitespace-nowrap ${
                     activeView === 'variance_view'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
@@ -406,35 +410,32 @@ const InventoryRecordsPage: React.FC = () => {
           ) : (
             <div className="overflow-x-auto">
               {error && (
-                <div className="px-6 pt-6 text-sm text-red-600 dark:text-red-400">{error}</div>
+                <div className="px-4 sm:px-6 pt-4 sm:pt-6 text-xs sm:text-sm text-red-600 dark:text-red-400">{error}</div>
               )}
             {isLoading ? (
-              <div className="p-12 text-center">
-                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                <p className="text-gray-500 mt-3 text-sm">Đang tải dữ liệu...</p>
+              <div className="p-8 sm:p-12 text-center">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p className="text-gray-500 mt-2 sm:mt-3 text-xs sm:text-sm">Đang tải dữ liệu...</p>
               </div>
             ) : (
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+              <table className="min-w-[700px] sm:min-w-full w-full divide-y divide-gray-200 dark:divide-gray-800">
                 <thead className="bg-gray-50 dark:bg-gray-800/50">
                   <tr>
-                    <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">Ngày</th>
-                    <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">Sản phẩm</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">Ngày</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">Sản phẩm</th>
                     {viewMode === 'standard' ? (
                       <>
-                        <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Tồn NVL</th>
-                        <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Tồn Sơ chế</th>
-                        <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Tồn TP</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Tồn NVL</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Tồn Sơ chế</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Tồn TP</th>
                       </>
                     ) : (
-                      <th className="px-6 py-3 text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider text-right">
-                        Tồn quy đổi ({
-                          targetReportUnitMode === 'purchase' ? '🛒 Nhập' : 
-                          targetReportUnitMode === 'intermediate' ? '🔪 Sơ chế' : '🍽️ Bán lẻ'
-                        })
+                      <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider text-right">
+                        Tồn quy đổi
                       </th>
                     )}
-                    <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Lệch kho</th>
-                    <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">Ghi chú</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Lệch kho</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">Ghi chú</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
@@ -449,43 +450,42 @@ const InventoryRecordsPage: React.FC = () => {
 
                     return (
                       <tr key={record.id || index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                        <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
                           {record.date ? new Date(record.date).toLocaleDateString('vi-VN') : '-'}
                         </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                          <div>{record.productName || '-'}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{record.productCode}</div>
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                          <div className="truncate max-w-[120px] sm:max-w-none">{record.productName || '-'}</div>
+                          <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">{record.productCode}</div>
                         </td>
                         
                         {viewMode === 'standard' ? (
                           <>
-                            <td className="px-6 py-4 text-sm text-right">
+                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm text-right whitespace-nowrap">
                               {allowedForms.includes('raw') ? (
-                                <span className="font-medium text-gray-900 dark:text-gray-100">{rawStock ?? 0} <span className="text-xs text-gray-400">{record.rawMaterialUnit}</span></span>
+                                <span className="font-medium text-gray-900 dark:text-gray-100">{rawStock ?? 0} <span className="text-[9px] sm:text-xs text-gray-400">{record.rawMaterialUnit}</span></span>
                               ) : (
-                                <span className="text-gray-300 dark:text-gray-600 italic text-xs">N/A</span>
+                                <span className="text-gray-300 dark:text-gray-600 italic text-[10px] sm:text-xs">N/A</span>
                               )}
                             </td>
-                            <td className="px-6 py-4 text-sm text-right">
+                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm text-right whitespace-nowrap">
                               {allowedForms.includes('processed') ? (
-                                <span className="font-medium text-gray-900 dark:text-gray-100">{processedStock ?? 0} <span className="text-xs text-gray-400">{record.processedUnit}</span></span>
+                                <span className="font-medium text-gray-900 dark:text-gray-100">{processedStock ?? 0} <span className="text-[9px] sm:text-xs text-gray-400">{record.processedUnit}</span></span>
                               ) : (
-                                <span className="text-gray-300 dark:text-gray-600 italic text-xs">N/A</span>
+                                <span className="text-gray-300 dark:text-gray-600 italic text-[10px] sm:text-xs">N/A</span>
                               )}
                             </td>
-                            <td className="px-6 py-4 text-sm text-right">
+                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm text-right whitespace-nowrap">
                               {allowedForms.includes('finished') ? (
-                                <span className="font-medium text-gray-900 dark:text-gray-100">{finishedStock ?? 0} <span className="text-xs text-gray-400">{record.finishedProductUnit}</span></span>
+                                <span className="font-medium text-gray-900 dark:text-gray-100">{finishedStock ?? 0} <span className="text-[9px] sm:text-xs text-gray-400">{record.finishedProductUnit}</span></span>
                               ) : (
-                                <span className="text-gray-300 dark:text-gray-600 italic text-xs">N/A</span>
+                                <span className="text-gray-300 dark:text-gray-600 italic text-[10px] sm:text-xs">N/A</span>
                               )}
                             </td>
                           </>
                         ) : (() => {
                           const product = products.find(p => p.id === record.productCode || p.businessCode === record.productCode);
-                          if (!product) return <td className="px-6 py-4 text-sm text-right text-gray-300 dark:text-gray-600 italic">N/A</td>;
+                          if (!product) return <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm text-right text-gray-300 dark:text-gray-600 italic">N/A</td>;
 
-                          // Dynamic calculation based on targetReportUnitMode
                           let targetUnit = product.inputUnit;
                           if (targetReportUnitMode === 'intermediate') targetUnit = product.intermediateUnits?.[0] || product.inputUnit;
                           else if (targetReportUnitMode === 'output') targetUnit = product.outputUnit || product.inputUnit;
@@ -497,17 +497,17 @@ const InventoryRecordsPage: React.FC = () => {
                           const totalEquivalent = rawVal + procVal + finVal;
 
                           return (
-                            <td className="px-6 py-4 text-sm text-right">
-                              <span className="font-black text-blue-600 dark:text-blue-400 text-lg">{totalEquivalent.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-                              <span className="ml-1 text-[10px] font-bold text-gray-400 uppercase">{targetUnit}</span>
+                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm text-right whitespace-nowrap">
+                              <span className="font-black text-blue-600 dark:text-blue-400 text-sm sm:text-lg">{totalEquivalent.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                              <span className="ml-0.5 sm:ml-1 text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase">{targetUnit}</span>
                             </td>
                           );
                         })()}
 
-                        <td className={`px-6 py-4 text-sm text-right font-medium ${record.variance === 0 ? 'text-gray-700 dark:text-gray-300' : 'text-rose-600 dark:text-rose-400'}`}>
+                        <td className={`px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm text-right font-medium whitespace-nowrap ${record.variance === 0 ? 'text-gray-700 dark:text-gray-300' : 'text-rose-600 dark:text-rose-400'}`}>
                           {record.variance || 0}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm text-gray-500 dark:text-gray-400 truncate max-w-[80px] sm:max-w-[150px]">
                           {record.notes || '-'}
                         </td>
                       </tr>
@@ -515,7 +515,7 @@ const InventoryRecordsPage: React.FC = () => {
                   })}
                   {!isLoading && filteredRecords.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                      <td colSpan={7} className="px-3 sm:px-6 py-8 sm:py-12 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                         Không có giao dịch phù hợp với bộ lọc hiện tại.
                       </td>
                     </tr>

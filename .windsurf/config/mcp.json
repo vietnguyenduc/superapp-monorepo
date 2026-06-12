@@ -5,7 +5,7 @@
       "args": ["@supabase/mcp-server-supabase"],
       "env": {
         "SUPABASE_URL": "https://peslmsctejmvkwzyohke.supabase.co",
-        "SUPABASE_ANON_KEY": "sb_publishable_k5IWV3YhSVXBgkvakCCMag_yZZ6J9pb"
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlc2xtc2N0ZWptdmt3enlvaGtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0NjY2MTIsImV4cCI6MjA4NjA0MjYxMn0.Ulua_wXmMGoWRvJ22DDWC8U_JE6g0L-EuAEhbBNhB-w"
       }
     }
   }

@@ -155,6 +155,7 @@ const SettingsPage: React.FC = () => {
     { key: 'price-variance', label: 'Phê duyệt Giá nhập', description: 'Cài đặt dung sai và ma trận duyệt giá vốn khi nhập kho.' },
     { key: 'conversion-settings', label: 'Cấu hình Quy đổi', description: 'Thiết lập cách quy đổi nguyên liệu (chỉ cho F&B/Sản xuất).' },
     { key: 'display-settings', label: 'Giao diện & Hệ thống', description: 'Dark Mode và quản lý dữ liệu toàn cục.' },
+    { key: 'permissions', label: 'Phân quyền & Tài khoản', description: 'Quản lý quyền hạn và ma trận truy cập của thành viên.' },
   ];
 
   const activeTab = searchParams.get('tab') || 'business-model';
@@ -636,6 +637,56 @@ const SettingsPage: React.FC = () => {
                   >
                     Reset & Xóa toàn bộ dữ liệu
                   </button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'permissions' && (
+              <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} rounded-2xl border shadow-sm p-6 space-y-6`}>
+                <div className="flex flex-col items-center justify-center py-8 text-center max-w-xl mx-auto space-y-4">
+                  <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center text-3xl">
+                    🛡️
+                  </div>
+                  <h3 className="text-xl font-bold">Hợp nhất & Phân quyền Tập trung</h3>
+                  <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} leading-relaxed`}>
+                    Để đảm bảo tính đồng bộ, bảo mật và ngăn ngừa rủi ro sai lệch dữ liệu, hệ thống Superapp sử dụng **Admin Portal** làm trung tâm kiểm soát phân quyền duy nhất (Single Source of Truth).
+                  </p>
+                  <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} max-w-md`}>
+                    Company Admin hoặc Master Admin có thể quản lý, cấp quyền truy cập ứng dụng (Sales, Inventory, Cashflow, HR,...) và thay đổi vai trò tài khoản thành viên ngay tại cổng quản trị.
+                  </p>
+                  
+                  <div className="pt-4">
+                    <a 
+                      href="http://localhost:5173/identity" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-indigo-500/20 transition-all duration-200"
+                    >
+                      <span>Quản lý Phân quyền tại Admin Portal</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+
+                <hr className={isDarkMode ? 'border-gray-700' : 'border-gray-100'} />
+
+                <div>
+                  <h4 className="text-sm font-bold mb-3">Thông tin phân quyền ứng dụng Bán hàng (Sales & POS)</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { roleName: 'Admin Master', auth: 'Toàn quyền', desc: 'Có toàn quyền thay đổi tất cả thiết lập hệ thống, mô hình và reset dữ liệu.' },
+                      { roleName: 'Branch Manager', auth: 'Quản lý Chi nhánh', desc: 'Có quyền quản lý Số dư đầu kỳ, Văn phòng, Kho và các Loại giao dịch XNT.' },
+                      { roleName: 'Staff / Nhân viên', auth: 'Quyền xem (Read-only)', desc: 'Chỉ có quyền xem thông tin báo cáo, không thể thay đổi thiết lập hệ thống.' }
+                    ].map(r => (
+                      <div key={r.roleName} className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-700/20 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                        <div className="font-bold text-sm text-indigo-500">{r.roleName}</div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mt-1">{r.auth}</div>
+                        <p className="text-xs text-gray-500 mt-2 leading-relaxed">{r.desc}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

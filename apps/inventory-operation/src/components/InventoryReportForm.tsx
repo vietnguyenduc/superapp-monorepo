@@ -36,6 +36,7 @@ const InventoryReportForm: React.FC<InventoryReportFormProps> = ({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoCalculate, setAutoCalculate] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Auto-fill unit when product is selected
   useEffect(() => {
@@ -79,6 +80,47 @@ const InventoryReportForm: React.FC<InventoryReportFormProps> = ({
     formData.actual_inventory,
     autoCalculate
   ]);
+
+  const handleSyncSalesData = async () => {
+    if (!formData.date || !formData.product_id) {
+      setErrors(prev => ({ 
+        ...prev, 
+        date: !formData.date ? 'Cần chọn ngày để đồng bộ' : '',
+        product_id: !formData.product_id ? 'Cần chọn sản phẩm để đồng bộ' : ''
+      }));
+      return;
+    }
+
+    try {
+      setIsSyncing(true);
+      // Import dynamically to avoid circular dependencies if any, or we can just import at top.
+      const { salesService } = await import('../services/salesService');
+      const response = await salesService.getSalesRecords({
+        dateFrom: formData.date,
+        dateTo: formData.date,
+        productId: formData.product_id
+      });
+
+      if (response.data) {
+        const totalSales = response.data.reduce((sum, record) => sum + (record.salesQuantity || 0), 0);
+        const totalPromotion = response.data.reduce((sum, record) => sum + (record.promotionQuantity || 0), 0);
+        
+        setFormData(prev => ({
+          ...prev,
+          sales_quantity: totalSales,
+          promotion_quantity: totalPromotion
+        }));
+
+        // Temporary success notification could go here, or we just let it update the inputs.
+        // Alert can be a bit intrusive, so maybe just visual change.
+      }
+    } catch (err) {
+      console.error('Lỗi khi đồng bộ số bán:', err);
+      // Fallback or show error
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -191,7 +233,28 @@ const InventoryReportForm: React.FC<InventoryReportFormProps> = ({
         </div>
         
         <div className="flex items-center space-x-3">
-          <label className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={handleSyncSalesData}
+            disabled={isSyncing || !formData.date || !formData.product_id}
+            className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              !formData.date || !formData.product_id 
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+            }`}
+            title={(!formData.date || !formData.product_id) ? "Vui lòng chọn Ngày và Sản phẩm trước" : "Lấy số xuất bán từ hệ thống"}
+          >
+            {isSyncing ? (
+              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            )}
+            <span>Đồng bộ xuất sổ</span>
+          </button>
+          
+          <label className="flex items-center space-x-2 border-l border-gray-200 pl-3">
             <input
               type="checkbox"
               checked={autoCalculate}

@@ -98,28 +98,28 @@ const SalesReportPage: React.FC = () => {
   const loading = salesLoading || productsLoading;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-soft p-6 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <span className="text-2xl">📊</span>
+        <div className="bg-white rounded-2xl shadow-soft p-4 sm:p-6 border border-gray-100">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-xl sm:text-2xl">📊</span>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Báo cáo bán hàng</h1>
-                <p className="text-gray-600">Quản lý nhập liệu bán hàng và xuất khuyến mãi (Bảng 3)</p>
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Báo cáo bán hàng</h1>
+                <p className="text-xs sm:text-base text-gray-600">Quản lý nhập liệu bán hàng và xuất khuyến mãi (Bảng 3)</p>
               </div>
             </div>
             
             {!showForm && (
               <button
                 onClick={handleAddNew}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors flex items-center space-x-2"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors flex items-center justify-center space-x-2 text-xs sm:text-sm"
                 disabled={loading}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
                 <span>Thêm báo cáo</span>

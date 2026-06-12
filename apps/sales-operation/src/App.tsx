@@ -13,6 +13,7 @@ import HelpPage from './pages/HelpPage';
 import SalesOrderCreatePage from './pages/SalesOrderCreatePage';
 import CustomerManagementPage from './pages/CustomerManagementPage';
 import SalesOrdersPage from './pages/SalesOrdersPage';
+import InvoiceManagementPage from './pages/InvoiceManagementPage';
 import OnboardingTour from './components/Help/OnboardingTour';
 import ContextHelp from './components/Help/ContextHelp';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -66,6 +67,7 @@ const App: FC = () => {
               <Route path="sales-order-create" element={<SalesOrderCreatePage />} />
               <Route path="customers" element={<CustomerManagementPage />} />
               <Route path="customer-create" element={<Navigate to="/customers?add=true" replace />} />
+              <Route path="invoices" element={<InvoiceManagementPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="help" element={<HelpPage />} />

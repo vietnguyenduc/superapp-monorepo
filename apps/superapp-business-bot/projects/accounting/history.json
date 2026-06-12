@@ -1,0 +1,10 @@
+[
+  {
+    "role": "user",
+    "content": "apps/"
+  },
+  {
+    "role": "model",
+    "content": "Path 'apps/' does not exist in accounting."
+  }
+]

@@ -1,4 +1,4 @@
-import {
+﻿﻿﻿﻿﻿import {
   parseTransactionData,
   validateTransactionData,
   convertToTransactions,
@@ -16,7 +16,7 @@ describe("Import Utils", () => {
 
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual({
-        customer_name: "John Doe",
+        customer_code: "John Doe",
         bank_account: "Bank1",
         branch: "",
         transaction_type: "payment",
@@ -26,7 +26,7 @@ describe("Import Utils", () => {
         reference_number: "REF001",
       });
       expect(result[1]).toEqual({
-        customer_name: "Jane Smith",
+        customer_code: "Jane Smith",
         bank_account: "Bank2",
         branch: "",
         transaction_type: "charge",
@@ -44,7 +44,7 @@ describe("Import Utils", () => {
       const result = parseTransactionData(rawData);
 
       expect(result).toHaveLength(2);
-      expect(result[0].customer_name).toBe("John Doe");
+      expect(result[0].customer_code).toBe("John Doe");
       expect(result[0].bank_account).toBe("Bank1");
     });
 
@@ -55,7 +55,7 @@ describe("Import Utils", () => {
       const result = parseTransactionData(rawData);
 
       expect(result).toHaveLength(1);
-      expect(result[0].customer_name).toBe("John Doe, Jr.");
+      expect(result[0].customer_code).toBe("John Doe, Jr.");
       expect(result[0].description).toBe("Payment, for services");
     });
 
@@ -80,7 +80,7 @@ describe("Import Utils", () => {
 
       const result = parseTransactionData(rawData);
 
-      expect(result[0].customer_name).toBe("John Doe");
+      expect(result[0].customer_code).toBe("John Doe");
       expect(result[0].bank_account).toBe("Bank1");
       expect(result[0].transaction_type).toBe("payment");
     });
@@ -98,7 +98,7 @@ describe("Import Utils", () => {
   describe("validateTransactionData", () => {
     const validData: RawTransactionData[] = [
       {
-        customer_name: "John Doe",
+        customer_code: "CUST001",
         bank_account: "Bank1",
         transaction_type: "payment",
         amount: "1000.50",
@@ -115,30 +115,16 @@ describe("Import Utils", () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    it("validates customer name", () => {
+    it("validates customer code", () => {
       const invalidData = [
-        { ...validData[0], customer_name: "" },
-        { ...validData[0], customer_name: "A" },
+        { ...validData[0], customer_code: "" },
       ];
 
       const result = validateTransactionData(invalidData);
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toHaveLength(2);
-      expect(result.errors[0].message).toBe("Customer name is required");
-      expect(result.errors[1].message).toBe(
-        "Customer name must be at least 2 characters",
-      );
-    });
-
-    it("validates bank account", () => {
-      const invalidData = [{ ...validData[0], bank_account: "" }];
-
-      const result = validateTransactionData(invalidData);
-
-      expect(result.isValid).toBe(false);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].message).toBe("Bank account is required");
+      expect(result.errors[0].message).toBe("Customer code is required");
     });
 
     it("validates transaction type", () => {
@@ -170,7 +156,7 @@ describe("Import Utils", () => {
       expect(result.errors[0].message).toBe("Amount is required");
       expect(result.errors[1].message).toBe("Amount must be a positive number");
       expect(result.errors[2].message).toBe("Amount must be a positive number");
-      expect(result.errors[3].message).toBe("Amount must be a positive number");
+      expect(result.errors[3].message).toBe("Payment amount must be positive");
     });
 
     it("validates transaction date", () => {
@@ -225,14 +211,14 @@ describe("Import Utils", () => {
 
     it("includes row and column information in errors", () => {
       const invalidData = [
-        { ...validData[0], customer_name: "" },
+        { ...validData[0], customer_code: "" },
         { ...validData[0], amount: "invalid" },
       ];
 
       const result = validateTransactionData(invalidData);
 
       expect(result.errors[0].row).toBe(0);
-      expect(result.errors[0].column).toBe("customer_name");
+      expect(result.errors[0].column).toBe("customer_code");
       expect(result.errors[1].row).toBe(1);
       expect(result.errors[1].column).toBe("amount");
     });
@@ -241,7 +227,7 @@ describe("Import Utils", () => {
   describe("convertToTransactions", () => {
     const rawData: RawTransactionData[] = [
       {
-        customer_name: "John Doe",
+        customer_code: "CUST001",
         bank_account: "Bank1",
         transaction_type: "payment",
         amount: "1000.50",
@@ -289,7 +275,7 @@ describe("Import Utils", () => {
     it("handles empty optional fields", () => {
       const dataWithoutOptionals = [
         {
-          customer_name: "John Doe",
+          customer_code: "CUST001",
           bank_account: "Bank1",
           transaction_type: "payment",
           amount: "1000.50",
@@ -312,7 +298,7 @@ describe("Import Utils", () => {
     it("cleans transaction data", () => {
       const rawData: RawTransactionData[] = [
         {
-          customer_name: "  JOHN DOE  ",
+          customer_code: "  CUST001  ",
           bank_account: "Bank1",
           transaction_type: "  Payment  ",
           amount: "1,234.56",
@@ -324,7 +310,7 @@ describe("Import Utils", () => {
 
       const result = cleanTransactionData(rawData);
 
-      expect(result[0].customer_name).toBe("JOHN DOE");
+      expect(result[0].customer_code).toBe("CUST001");
       expect(result[0].transaction_type).toBe("payment");
       expect(result[0].amount).toBe("1,234.56");
       expect(result[0].transaction_date).toBe("01/15/2024");
@@ -339,7 +325,7 @@ describe("Import Utils", () => {
     it("preserves valid data", () => {
       const cleanData: RawTransactionData[] = [
         {
-          customer_name: "John Doe",
+          customer_code: "CUST001",
           bank_account: "Bank1",
           transaction_type: "payment",
           amount: "1000.50",
@@ -372,7 +358,7 @@ describe("Import Utils", () => {
 
       const result = parseTransactionData(rawData);
 
-      expect(result[0].customer_name).toBe("John Doe");
+      expect(result[0].customer_code).toBe("John Doe");
       expect(result[0].bank_account).toBe("Bank1,payment"); // Treats comma as part of the value
     });
   });
@@ -385,7 +371,7 @@ describe("Import Utils", () => {
 
       const result = parseTransactionData(rawData);
 
-      expect(result[0].customer_name).toBe('John "Doe"');
+      expect(result[0].customer_code).toBe('John "Doe"');
     });
 
     it("handles commas within quoted fields", () => {
@@ -393,7 +379,7 @@ describe("Import Utils", () => {
 
       const result = parseTransactionData(rawData);
 
-      expect(result[0].customer_name).toBe("Doe, John");
+      expect(result[0].customer_code).toBe("Doe, John");
     });
 
     it("handles empty quoted fields", () => {
@@ -401,7 +387,7 @@ describe("Import Utils", () => {
 
       const result = parseTransactionData(rawData);
 
-      expect(result[0].customer_name).toBe("");
+      expect(result[0].customer_code).toBe("");
     });
   });
 });

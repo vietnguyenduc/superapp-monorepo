@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+﻿﻿import { vi } from 'vitest';
 import "@testing-library/jest-dom";
 
 // Mock i18next for tests
@@ -21,31 +21,36 @@ vi.mock("./services/supabase", () => ({
   supabase: {
     auth: {
       getSession: vi.fn(),
-      onAuthStateChange: vi.spyOn(() => ({
+      onAuthStateChange: vi.fn(() => ({
         data: { subscription: { unsubscribe: vi.fn() } },
       })),
       signInWithPassword: vi.fn(),
       signOut: vi.fn(),
     },
-    from: vi.spyOn(() => ({
-      select: vi.spyOn(() => ({
-        eq: vi.spyOn(() => ({
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        order: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            single: vi.fn(),
+          })),
+        })),
+        eq: vi.fn(() => ({
           single: vi.fn(),
         })),
       })),
-      insert: vi.spyOn(() => ({
-        select: vi.spyOn(() => ({
+      insert: vi.fn(() => ({
+        select: vi.fn(() => ({
           single: vi.fn(),
         })),
       })),
-      update: vi.spyOn(() => ({
-        eq: vi.spyOn(() => ({
-          select: vi.spyOn(() => ({
+      update: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          select: vi.fn(() => ({
             single: vi.fn(),
           })),
         })),
       })),
-      delete: vi.spyOn(() => ({
+      delete: vi.fn(() => ({
         eq: vi.fn(),
       })),
     })),

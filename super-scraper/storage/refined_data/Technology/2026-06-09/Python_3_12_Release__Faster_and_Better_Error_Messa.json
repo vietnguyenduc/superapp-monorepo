@@ -1,0 +1,12 @@
+{
+    "title": "Python 3.12 Release: Faster and Better Error Messages",
+    "is_list_page": false,
+    "description": "This article discusses the new Python 3.12 release, highlighting its improved speed, enhanced error messages, and significant memory optimizations. Written by John Doe on October 25, it provides a brief overview of the key updates in the latest version of Python.",
+    "inferred_categories": [
+        "Technology",
+        "Programming",
+        "Python"
+    ],
+    "confidence_score": 0.95,
+    "original_source_url": "https://tech-blog-example.com/python-3-12"
+}

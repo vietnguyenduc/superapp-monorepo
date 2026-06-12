@@ -13,7 +13,10 @@ const AppSwitcher = () => {
     ...(isAdmin ? [{ id: 'admin', name: 'Admin Portal', url: import.meta.env.VITE_ADMIN_PORTAL_URL || 'http://localhost:5173', color: 'bg-indigo-100 text-indigo-600' }] : []),
     { id: 'sales', name: 'Sales & POS', url: import.meta.env.VITE_SALES_APP_URL || 'http://localhost:5176', color: 'bg-orange-100 text-orange-600' },
     { id: 'inventory', name: 'Inventory', url: import.meta.env.VITE_INVENTORY_APP_URL || 'http://localhost:5175', color: 'bg-emerald-100 text-emerald-600' },
-    { id: 'cashflow', name: 'Cashflow', url: import.meta.env.VITE_CASHFLOW_APP_URL || 'http://localhost:5174', color: 'bg-blue-100 text-blue-600' }
+    { id: 'cashflow', name: 'Cashflow', url: import.meta.env.VITE_CASHFLOW_APP_URL || 'http://localhost:5174', color: 'bg-blue-100 text-blue-600' },
+    { id: 'hr', name: 'HR & Payroll', url: import.meta.env.VITE_HR_APP_URL || 'http://localhost:5177', color: 'bg-pink-100 text-pink-600' },
+    { id: 'accounting', name: 'Accounting', url: import.meta.env.VITE_ACCOUNTING_APP_URL || 'http://localhost:5178', color: 'bg-purple-100 text-purple-600' },
+    { id: 'operations', name: 'Operations', url: import.meta.env.VITE_OPERATIONS_APP_URL || 'http://localhost:3006', color: 'bg-cyan-100 text-cyan-600' }
   ];
 
   const getUrlWithSession = (baseUrl: string) => {
@@ -73,9 +76,15 @@ const AppSwitcher = () => {
                       {statuses[app.id] === undefined ? (
                         <span className="text-xs text-gray-400">Checking status...</span>
                       ) : statuses[app.id] ? (
-                        <><span className="w-2 h-2 rounded-full bg-green-500"></span><span className="text-xs text-green-600 dark:text-green-400">Operational</span></>
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                          <span className="text-xs text-green-600 dark:text-green-400">Operational</span>
+                        </span>
                       ) : (
-                        <><span className="w-2 h-2 rounded-full bg-red-500"></span><span className="text-xs text-red-600 dark:text-red-400">Offline</span></>
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                          <span className="text-xs text-red-600 dark:text-red-400">Offline</span>
+                        </span>
                       )}
                     </div>
                   </div>

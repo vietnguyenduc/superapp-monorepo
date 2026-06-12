@@ -1,0 +1,16 @@
+DROP POLICY IF EXISTS "Admin Master can view all users" ON public.users;
+DROP POLICY IF EXISTS "Admin Master can manage all users" ON public.users;
+DROP POLICY IF EXISTS "Admin Company can view company users" ON public.users;
+DROP POLICY IF EXISTS "Admin Company can manage company users" ON public.users;
+DROP POLICY IF EXISTS "Staff can view own profile" ON public.users;
+DROP POLICY IF EXISTS "Staff can update own profile" ON public.users;
+DROP POLICY IF EXISTS "Admin Master can manage all companies" ON public.companies;
+DROP POLICY IF EXISTS "Admin Company can view own company" ON public.companies;
+DROP POLICY IF EXISTS "Admin Company can update own company" ON public.companies;
+DROP POLICY IF EXISTS "Admin Master can manage all branches" ON public.branches;
+DROP POLICY IF EXISTS "Admin Company can manage own branches" ON public.branches;
+DROP POLICY IF EXISTS "Staff can view own branch" ON public.branches;
+DROP POLICY IF EXISTS "Admin Master can manage all roles" ON public.roles;
+DROP POLICY IF EXISTS "Admin Company can manage company roles" ON public.roles;
+DROP POLICY IF EXISTS "Admin Master can view all audit logs" ON public.audit_logs;
+DROP POLICY IF EXISTS "Admin Company can view company audit logs" ON public.audit_logs;

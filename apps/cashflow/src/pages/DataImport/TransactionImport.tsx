@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useSearchParams } from "react-router-dom";
@@ -173,7 +173,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   // Check if user can import transactions
   const canImportTransactions = useMemo(() => {
     if (!user) return false;
-    if (user.role === "admin" || user.role === "admin_master" || user.role === "branch_manager") return true;
+    if (user.role === "admin" || user.role === "admin_master" || user.role === "admin_company" || user.role === "branch_manager") return true;
     if (user.role === "staff") {
       return Boolean(user.staff_permissions?.import_transactions);
     }

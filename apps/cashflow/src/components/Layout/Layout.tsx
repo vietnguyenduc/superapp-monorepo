@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import Navigation from "./Navigation";
 import Sidebar from "./Sidebar";
 import TrialBanner from "./TrialBanner";
+import MobileBottomNav from "./MobileBottomNav";
 
 const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -73,7 +74,7 @@ const Layout: React.FC = () => {
         </div>
         {/* Main content - full width, flush left */}
         <main className="flex-1 min-w-0 w-full overflow-x-hidden">
-          <div className="p-4 sm:p-6 lg:p-8 w-full pb-24 sm:pb-8">
+          <div className="p-4 sm:p-6 lg:p-8 w-full pb-24 lg:pb-8">
             <OutletComponent />
             <div className="mt-10 border-t border-gray-200 dark:border-gray-700 pt-4 text-center text-xs text-gray-400 dark:text-gray-500">
               Quản lý công nợ - TPL
@@ -96,6 +97,7 @@ const Layout: React.FC = () => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 6v12m6-6H6" />
         </svg>
       </button>
+      <MobileBottomNav />
     </div>
   );
 };

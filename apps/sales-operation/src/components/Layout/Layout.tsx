@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import Navigation from "./Navigation";
 import Sidebar from "./Sidebar";
 import QuickAddMenu from "../QuickAddMenu";
+import BottomTabBar from "./BottomTabBar";
 
 const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -45,12 +46,13 @@ const Layout: React.FC = () => {
         </div>
         {/* Main content - full width, flush left */}
         <main className="flex-1 min-w-0 w-full">
-          <div className="p-4 sm:p-5 lg:p-6 w-full">
+          <div className="p-4 sm:p-5 lg:p-6 w-full pb-20 lg:pb-6">
             <Outlet />
           </div>
         </main>
       </div>
       <QuickAddMenu />
+      <BottomTabBar />
     </div>
   );
 };

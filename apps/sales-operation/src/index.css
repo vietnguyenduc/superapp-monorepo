@@ -13,6 +13,12 @@
   }
 }
 
+@layer utilities {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
 @layer components {
   .app-container {
     @apply max-w-4xl mx-auto bg-white rounded-2xl shadow-soft p-8;

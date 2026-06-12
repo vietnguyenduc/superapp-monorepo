@@ -127,123 +127,123 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
             Dashboard - Quản lý Xuất Nhập Tồn
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-sm sm:text-base text-gray-600 mt-0.5 sm:mt-1">
             Tổng quan hoạt động kho hàng hôm nay
           </p>
         </div>
-        <div className="text-sm text-gray-500">
+        <div className="text-xs sm:text-sm text-gray-500">
           Cập nhật lần cuối: {new Date().toLocaleString('vi-VN')}
         </div>
       </div>
 
       {/* Main Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Tổng Sản Phẩm</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalProducts}</p>
-              <p className="text-sm text-green-600 mt-1">+5 sản phẩm mới</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Tổng Sản Phẩm</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1 sm:mt-2">{stats.totalProducts}</p>
+              <p className="text-xs sm:text-sm text-green-600 mt-0.5 sm:mt-1">+5 sản phẩm mới</p>
             </div>
-            <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <ChartBarIcon className="h-6 w-6 text-blue-600" />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-3">
+              <ChartBarIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Sản Phẩm Hoạt Động</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">{stats.activeProducts}</p>
-              <p className="text-sm text-gray-500 mt-1">Đang có tồn kho</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Sản Phẩm Hoạt Động</p>
+              <p className="text-2xl sm:text-3xl font-bold text-green-600 mt-1 sm:mt-2">{stats.activeProducts}</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Đang có tồn kho</p>
             </div>
-            <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <ArrowTrendingUpIcon className="h-6 w-6 text-green-600" />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-3">
+              <ArrowTrendingUpIcon className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Cảnh Báo Lệch Kho</p>
-              <p className="text-3xl font-bold text-red-600 mt-2">{stats.lowStockAlerts}</p>
-              <p className="text-sm text-red-500 mt-1">Cần xử lý ngay</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Cảnh Báo Lệch Kho</p>
+              <p className="text-2xl sm:text-3xl font-bold text-red-600 mt-1 sm:mt-2">{stats.lowStockAlerts}</p>
+              <p className="text-xs sm:text-sm text-red-500 mt-0.5 sm:mt-1">Cần xử lý ngay</p>
             </div>
-            <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
-              <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-3">
+              <ExclamationTriangleIcon className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Giá Trị Tồn Kho</p>
-              <p className="text-3xl font-bold text-purple-600 mt-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Giá Trị Tồn Kho</p>
+              <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-purple-600 mt-1 sm:mt-2 truncate">
                 {formatCurrency(stats.totalValue)}
               </p>
-              <p className="text-sm text-purple-500 mt-1">Tổng tài sản</p>
+              <p className="text-xs sm:text-sm text-purple-500 mt-0.5 sm:mt-1">Tổng tài sản</p>
             </div>
-            <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <ChartBarIcon className="h-6 w-6 text-purple-600" />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-3">
+              <ChartBarIcon className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Secondary Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Nhập Kho Hôm Nay</p>
-              <p className="text-2xl font-bold text-green-600 mt-2">{stats.todayInbound}</p>
-              <p className="text-sm text-gray-500 mt-1">Lô hàng</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Nhập Kho Hôm Nay</p>
+              <p className="text-xl sm:text-2xl font-bold text-green-600 mt-1 sm:mt-2">{stats.todayInbound}</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Lô hàng</p>
             </div>
-            <TruckIcon className="h-8 w-8 text-green-600" />
+            <TruckIcon className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 flex-shrink-0 ml-3" />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Xuất Kho Hôm Nay</p>
-              <p className="text-2xl font-bold text-blue-600 mt-2">{stats.todayOutbound}</p>
-              <p className="text-sm text-gray-500 mt-1">Đơn hàng</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Xuất Kho Hôm Nay</p>
+              <p className="text-xl sm:text-2xl font-bold text-blue-600 mt-1 sm:mt-2">{stats.todayOutbound}</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Đơn hàng</p>
             </div>
-            <ArrowTrendingDownIcon className="h-8 w-8 text-blue-600" />
+            <ArrowTrendingDownIcon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0 ml-3" />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Báo Cáo Lệch Kho</p>
-              <p className="text-2xl font-bold text-orange-600 mt-2">{stats.varianceCount}</p>
-              <p className="text-sm text-gray-500 mt-1">Chờ xử lý</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Báo Cáo Lệch Kho</p>
+              <p className="text-xl sm:text-2xl font-bold text-orange-600 mt-1 sm:mt-2">{stats.varianceCount}</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Chờ xử lý</p>
             </div>
-            <ClipboardDocumentListIcon className="h-8 w-8 text-orange-600" />
+            <ClipboardDocumentListIcon className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600 flex-shrink-0 ml-3" />
           </div>
         </div>
       </div>
 
       {/* Recent Activities */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Hoạt Động Gần Đây</h2>
-          <p className="text-sm text-gray-600 mt-1">Theo dõi các thao tác mới nhất trong hệ thống</p>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Hoạt Động Gần Đây</h2>
+          <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Theo dõi các thao tác mới nhất trong hệ thống</p>
         </div>
-        <div className="p-6">
-          <div className="space-y-4">
+        <div className="p-4 sm:p-6">
+          <div className="space-y-2 sm:space-y-4">
             {recentActivities.map((activity) => {
               const IconComponent = getActivityIcon(activity.type);
               const iconColor = getActivityColor(activity.status);
@@ -251,18 +251,18 @@ const DashboardPage: React.FC = () => {
               const statusText = getStatusText(activity.type);
               
               return (
-                <div key={activity.id} className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-                    <IconComponent className={`h-5 w-5 ${iconColor}`} />
+                <div key={activity.id} className="flex items-center space-x-3 sm:space-x-4 p-2 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                    <IconComponent className={`h-4 w-4 sm:h-5 sm:w-5 ${iconColor}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                       {activity.description}
                     </p>
-                    <p className="text-sm text-gray-500">{activity.time}</p>
+                    <p className="text-xs sm:text-sm text-gray-500">{activity.time}</p>
                   </div>
                   <div className="flex-shrink-0">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeClass}`}>
+                    <span className={`inline-flex items-center px-1.5 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${badgeClass}`}>
                       {statusText}
                     </span>
                   </div>
@@ -270,8 +270,8 @@ const DashboardPage: React.FC = () => {
               );
             })}
           </div>
-          <div className="mt-6 text-center">
-            <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+          <div className="mt-4 sm:mt-6 text-center">
+            <button className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium">
               Xem tất cả hoạt động →
             </button>
           </div>
@@ -279,24 +279,24 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Thao Tác Nhanh</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center">
-            <TruckIcon className="h-8 w-8 text-green-600 mx-auto mb-2" />
-            <p className="text-sm font-medium text-gray-900">Nhập Kho</p>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Thao Tác Nhanh</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+          <button className="p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center">
+            <TruckIcon className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 mx-auto mb-1 sm:mb-2" />
+            <p className="text-xs sm:text-sm font-medium text-gray-900">Nhập Kho</p>
           </button>
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center">
-            <ArrowTrendingDownIcon className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-            <p className="text-sm font-medium text-gray-900">Xuất Kho</p>
+          <button className="p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center">
+            <ArrowTrendingDownIcon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 mx-auto mb-1 sm:mb-2" />
+            <p className="text-xs sm:text-sm font-medium text-gray-900">Xuất Kho</p>
           </button>
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center">
-            <ClipboardDocumentListIcon className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-            <p className="text-sm font-medium text-gray-900">Kiểm Kho</p>
+          <button className="p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center">
+            <ClipboardDocumentListIcon className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 mx-auto mb-1 sm:mb-2" />
+            <p className="text-xs sm:text-sm font-medium text-gray-900">Kiểm Kho</p>
           </button>
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center">
-            <ChartBarIcon className="h-8 w-8 text-orange-600 mx-auto mb-2" />
-            <p className="text-sm font-medium text-gray-900">Báo Cáo</p>
+          <button className="p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center">
+            <ChartBarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600 mx-auto mb-1 sm:mb-2" />
+            <p className="text-xs sm:text-sm font-medium text-gray-900">Báo Cáo</p>
           </button>
         </div>
       </div>
