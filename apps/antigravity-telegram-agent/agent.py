@@ -981,7 +981,7 @@ class AntigravityAgent:
         full_prompt: str,
         chat_history: list,
         task_type: str,
-        model_name: str = "gemini-2.5-flash",
+        model_name: str = "gemini-1.5-flash",
         task_state=None,
         on_progress=None,
         cancellation_event: Optional[threading.Event] = None,
@@ -1052,7 +1052,7 @@ class AntigravityAgent:
 
             turn_count = 0
             start_time = time.time()
-            TIMEOUT_SECONDS = 300
+            TIMEOUT_SECONDS = 1800 if max_turns >= 100 else 300
             reached_limit = False
 
             # Progress tracking for Gemini path

@@ -1,234 +1,42 @@
 {
-    "Politics": [
+    "Th_ thao": [
         {
-            "title": "Vietnam's President Tô Lâm on International Relations and Diverse National News",
-            "path": "c:\\Vibecoding\\superapp-monorepo\\super-scraper\\storage\\refined_data\\Politics\\2026-05-30\\Vietnam_s_President_T__L_m_on_International_Relati.json",
-            "date": "2026-05-30 23:54:08"
+            "title": "Phản ứng 'cạn lời' gây sốt của 3 danh thủ Nam Phi sau trận thua Mexico",
+            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Th_ thao\\2026-06-13\\Ph_n__ng__c_n_l_i__g_y_s_t_c_a_3_danh_th__Nam_Phi_.json",
+            "date": "2026-06-13 04:51:15"
+        },
+        {
+            "title": "Phản ứng 'cạn lời' gây sốt của 3 danh thủ Nam Phi sau trận thua Mexico",
+            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Th_ thao\\2026-06-13\\Ph_n__ng__c_n_l_i__g_y_s_t_c_a_3_danh_th__Nam_Phi_.json",
+            "date": "2026-06-13 04:51:21"
         }
     ],
-    "United States (US)": [
+    "Food": [
         {
-            "title": "Bản đồ thông tin: vnexpress.net",
-            "path": "c:\\Vibecoding\\superapp-monorepo\\super-scraper\\storage\\refined_data\\United States (US)\\2026-05-31\\B_n____th_ng_tin__vnexpress_net.json",
-            "date": "2026-05-31 00:08:19"
-        }
-    ],
-    "AI (Artificial Intelligence)": [
-        {
-            "title": "Bản đồ thông tin toàn diện: news.ycombinator.com",
-            "path": "c:\\Vibecoding\\superapp-monorepo\\super-scraper\\storage\\refined_data\\AI (Artificial Intelligence)\\2026-05-31\\B_n____th_ng_tin_to_n_di_n__news_ycombinator_com.json",
-            "date": "2026-05-31 23:14:43"
-        }
-    ],
-    "US-Iran Relations": [
-        {
-            "title": "Bản đồ thông tin toàn diện: vnexpress.net",
-            "path": "c:\\Vibecoding\\superapp-monorepo\\super-scraper\\storage\\refined_data\\US-Iran Relations\\2026-05-31\\B_n____th_ng_tin_to_n_di_n__vnexpress_net.json",
-            "date": "2026-05-31 23:45:26"
-        }
-    ],
-    "General": [
-        {
-            "title": "Bản đồ thông tin toàn diện: —deep vnexpress.net ý bạn là như thế này hả?",
-            "path": "c:\\Vibecoding\\superapp-monorepo\\super-scraper\\storage\\refined_data\\General\\2026-06-01\\B_n____th_ng_tin_to_n_di_n___deep_vnexpress_net___.json",
-            "date": "2026-06-01 00:15:41"
-        }
-    ],
-    "Technology": [
-        {
-            "title": "Hacker News Front Page",
-            "path": "c:\\Vibecoding\\superapp-monorepo\\super-scraper\\storage\\refined_data\\Technology\\2026-06-01\\Hacker_News_Front_Page.json",
-            "date": "2026-06-01 08:42:19"
-        },
-        {
-            "title": "Python 3.12 Release: Faster and Better Error Messages",
-            "path": "c:\\Vibecoding\\superapp-monorepo\\super-scraper\\storage\\refined_data\\Technology\\2026-06-02\\Python_3_12_Release__Faster_and_Better_Error_Messa.json",
-            "date": "2026-06-02 00:41:54"
-        },
-        {
-            "title": "Nginx Default Welcome Page",
-            "path": "c:\\Vibecoding\\superapp-monorepo\\super-scraper\\storage\\refined_data\\Technology\\2026-06-05\\Nginx_Default_Welcome_Page.json",
-            "date": "2026-06-05 05:04:11"
-        },
-        {
-            "title": "Python 3.12 Release: Faster and Better Error Messages",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Technology\\2026-06-09\\Python_3_12_Release__Faster_and_Better_Error_Messa.json",
-            "date": "2026-06-09 23:49:09"
-        },
-        {
-            "title": "Python 3.12 Release: Faster and Better Error Messages",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Technology\\2026-06-10\\Python_3_12_Release__Faster_and_Better_Error_Messa.json",
-            "date": "2026-06-10 00:17:11"
-        }
-    ],
-    "Tin t_c t_ng h_p": [
-        {
-            "title": "Tổng hợp tin tức từ VnExpress ngày 1/6/2025",
-            "path": "c:\\Vibecoding\\superapp-monorepo\\super-scraper\\storage\\refined_data\\Tin t_c t_ng h_p\\2026-06-01\\T_ng_h_p_tin_t_c_t__VnExpress_ng_y_1_6_2025.json",
-            "date": "2026-06-01 19:27:20"
-        },
-        {
-            "title": "Tổng hợp tin tức nổi bật ngày 1-2/6/2026",
-            "path": "c:\\Vibecoding\\superapp-monorepo\\super-scraper\\storage\\refined_data\\Tin t_c t_ng h_p\\2026-06-01\\T_ng_h_p_tin_t_c_n_i_b_t_ng_y_1_2_6_2026.json",
-            "date": "2026-06-01 19:34:01"
-        }
-    ],
-    "News": [
-        {
-            "title": "VnExpress - Tin nhanh Việt Nam",
-            "path": "c:\\Vibecoding\\superapp-monorepo\\super-scraper\\storage\\refined_data\\News\\2026-06-01\\VnExpress___Tin_nhanh_Vi_t_Nam.json",
-            "date": "2026-06-01 20:43:32"
-        },
-        {
-            "title": "VnExpress - Tin nhanh Việt Nam",
-            "path": "c:\\Vibecoding\\superapp-monorepo\\super-scraper\\storage\\refined_data\\News\\2026-06-05\\VnExpress___Tin_nhanh_Vi_t_Nam.json",
-            "date": "2026-06-05 04:42:11"
-        },
-        {
-            "title": "VnExpress - Tin nhanh Việt Nam",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\News\\2026-06-10\\VnExpress___Tin_nhanh_Vi_t_Nam.json",
-            "date": "2026-06-10 00:34:38"
-        },
-        {
-            "title": "VnExpress - Tin nhanh Việt Nam",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\News\\2026-06-10\\VnExpress___Tin_nhanh_Vi_t_Nam.json",
-            "date": "2026-06-10 01:04:09"
+            "title": "Nhãn sầu riêng giá hơn 2 triệu đồng một kg ở TP HCM",
+            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Food\\2026-06-13\\Nh_n_s_u_ri_ng_gi__h_n_2_tri_u___ng_m_t_kg___TP_HC.json",
+            "date": "2026-06-13 04:51:15"
         }
     ],
     "Tin t_c": [
         {
-            "title": "Tổng hợp tin tức ngày 1/6/2026",
-            "path": "c:\\Vibecoding\\superapp-monorepo\\super-scraper\\storage\\refined_data\\Tin t_c\\2026-06-01\\T_ng_h_p_tin_t_c_ng_y_1_6_2026.json",
-            "date": "2026-06-01 23:56:43"
+            "title": "Boston rúng động vì vụ nhóm trẻ bán nước chanh bị cướp tiền",
+            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Tin t_c\\2026-06-13\\Boston_r_ng___ng_v__v__nh_m_tr__b_n_n__c_chanh_b__.json",
+            "date": "2026-06-13 04:51:18"
         }
     ],
     "C_ng ngh_": [
         {
-            "title": "Tin tức Khoa học Công nghệ từ VnExpress",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\C_ng ngh_\\2026-06-10\\Tin_t_c_Khoa_h_c_C_ng_ngh__t__VnExpress.json",
-            "date": "2026-06-10 01:00:16"
-        },
-        {
-            "title": "Khoa học Công nghệ VnExpress",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\C_ng ngh_\\2026-06-10\\Khoa_h_c_C_ng_ngh__VnExpress.json",
-            "date": "2026-06-10 01:01:39"
-        },
-        {
-            "title": "Khoa học và Công nghệ - VnExpress",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\C_ng ngh_\\2026-06-10\\Khoa_h_c_v__C_ng_ngh____VnExpress.json",
-            "date": "2026-06-10 01:02:16"
-        },
-        {
-            "title": "Tin tức khoa học công nghệ từ VnExpress",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\C_ng ngh_\\2026-06-10\\Tin_t_c_khoa_h_c_c_ng_ngh__t__VnExpress.json",
-            "date": "2026-06-10 01:04:17"
-        }
-    ],
-    "B_t __ng s_n": [
-        {
-            "title": "Lao động không chịu nổi nếu thuê nhà vượt 25% thu nhập",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\B_t __ng s_n\\2026-06-10\\Lao___ng_kh_ng_ch_u_n_i_n_u_thu__nh__v__t_25__thu_.json",
-            "date": "2026-06-10 01:00:22"
-        },
-        {
-            "title": "Lao động không chịu nổi nếu thuê nhà vượt 25% thu nhập",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\B_t __ng s_n\\2026-06-10\\Lao___ng_kh_ng_ch_u_n_i_n_u_thu__nh__v__t_25__thu_.json",
-            "date": "2026-06-10 01:04:21"
-        },
-        {
-            "title": "Lao động không chịu nổi nếu thuê nhà vượt 25% thu nhập",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\B_t __ng s_n\\2026-06-10\\Lao___ng_kh_ng_ch_u_n_i_n_u_thu__nh__v__t_25__thu_.json",
-            "date": "2026-06-10 01:04:24"
-        },
-        {
-            "title": "Lao động không chịu nổi nếu thuê nhà vượt 25% thu nhập",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\B_t __ng s_n\\2026-06-10\\Lao___ng_kh_ng_ch_u_n_i_n_u_thu__nh__v__t_25__thu_.json",
-            "date": "2026-06-10 01:04:28"
+            "title": "Hành trình SpaceX trở thành công ty công nghệ trị giá 1.770 tỷ USD",
+            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\C_ng ngh_\\2026-06-13\\H_nh_tr_nh_SpaceX_tr__th_nh_c_ng_ty_c_ng_ngh__tr__.json",
+            "date": "2026-06-13 04:51:19"
         }
     ],
     "Ch_nh tr_": [
         {
-            "title": "Xung đột Trung Đông: Cuộc gọi phút chót ngăn Israel tấn công Iran",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Ch_nh tr_\\2026-06-10\\Xung___t_Trung___ng__Cu_c_g_i_ph_t_ch_t_ng_n_Israe.json",
-            "date": "2026-06-10 01:00:35"
-        },
-        {
-            "title": "Tổng Bí thư, Chủ tịch nước: Đổi mới và thích ứng là yêu cầu sát sườn với ASEAN",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Ch_nh tr_\\2026-06-10\\T_ng_B__th___Ch__t_ch_n__c____i_m_i_v__th_ch__ng_l.json",
-            "date": "2026-06-10 01:01:43"
-        },
-        {
-            "title": "Xung đột Trung Đông: Cuộc gọi phút chót ngăn phi đội tiêm kích Israel tấn công Iran",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Ch_nh tr_\\2026-06-10\\Xung___t_Trung___ng__Cu_c_g_i_ph_t_ch_t_ng_n_phi__.json",
-            "date": "2026-06-10 01:02:05"
-        },
-        {
-            "title": "Xung đột Trung Đông: Cuộc gọi phút chót ngăn Israel tấn công Iran",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Ch_nh tr_\\2026-06-10\\Xung___t_Trung___ng__Cu_c_g_i_ph_t_ch_t_ng_n_Israe.json",
-            "date": "2026-06-10 01:04:40"
-        }
-    ],
-    "Ph_p lu_t": [
-        {
-            "title": "Màn kịch của kẻ đầu độc vợ bằng 'lượng chì khổng lồ'",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Ph_p lu_t\\2026-06-10\\M_n_k_ch_c_a_k____u___c_v__b_ng__l__ng_ch__kh_ng_l.json",
-            "date": "2026-06-10 01:00:39"
-        },
-        {
-            "title": "Màn kịch của kẻ đầu độc vợ bằng 'lượng chì khổng lồ'",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Ph_p lu_t\\2026-06-10\\M_n_k_ch_c_a_k____u___c_v__b_ng__l__ng_ch__kh_ng_l.json",
-            "date": "2026-06-10 01:04:36"
-        }
-    ],
-    "Th_ thao": [
-        {
-            "title": "Việt Nam bị loại khỏi U19 Đông Nam Á 2026",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Th_ thao\\2026-06-10\\Vi_t_Nam_b__lo_i_kh_i_U19___ng_Nam___2026.json",
-            "date": "2026-06-10 01:00:44"
-        },
-        {
-            "title": "Phân tích giá vé World Cup 2026",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Th_ thao\\2026-06-10\\Ph_n_t_ch_gi__v__World_Cup_2026.json",
-            "date": "2026-06-10 01:00:56"
-        },
-        {
-            "title": "FIFA thu hồi suất mua vé World Cup của CĐV Iran",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Th_ thao\\2026-06-10\\FIFA_thu_h_i_su_t_mua_v__World_Cup_c_a_C_V_Iran.json",
-            "date": "2026-06-10 01:02:10"
-        },
-        {
-            "title": "FIFA thu hồi suất mua vé World Cup của CĐV Iran",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Th_ thao\\2026-06-10\\FIFA_thu_h_i_su_t_mua_v__World_Cup_c_a_C_V_Iran.json",
-            "date": "2026-06-10 01:04:44"
-        },
-        {
-            "title": "FIFA thu hồi suất mua vé World Cup của CĐV Iran",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Th_ thao\\2026-06-10\\FIFA_thu_h_i_su_t_mua_v__World_Cup_c_a_C_V_Iran.json",
-            "date": "2026-06-10 01:04:48"
-        },
-        {
-            "title": "Việt Nam bị loại khỏi U19 Đông Nam Á 2026",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Th_ thao\\2026-06-10\\Vi_t_Nam_b__lo_i_kh_i_U19___ng_Nam___2026.json",
-            "date": "2026-06-10 01:04:52"
-        }
-    ],
-    "Qu_n s_": [
-        {
-            "title": "Mỹ dùng xuồng không người lái giải cứu phi công trực thăng rơi gần Hormuz",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Qu_n s_\\2026-06-10\\M__d_ng_xu_ng_kh_ng_ng__i_l_i_gi_i_c_u_phi_c_ng_tr.json",
-            "date": "2026-06-10 01:00:48"
-        }
-    ],
-    "Th_ gi_i": [
-        {
-            "title": "Ông Trump: Iran bắn rơi trực thăng Apache, Mỹ phải đáp trả",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Th_ gi_i\\2026-06-10\\_ng_Trump__Iran_b_n_r_i_tr_c_th_ng_Apache__M__ph_i.json",
-            "date": "2026-06-10 01:01:57"
-        },
-        {
-            "title": "Ông Trump: Iran bắn rơi trực thăng Apache, Mỹ phải đáp trả",
-            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Th_ gi_i\\2026-06-10\\_ng_Trump__Iran_b_n_r_i_tr_c_th_ng_Apache__M__ph_i.json",
-            "date": "2026-06-10 01:04:32"
+            "title": "Mỹ - Iran đưa ra thông điệp mâu thuẫn về thỏa thuận tiềm năng",
+            "path": "C:\\Vibecoding\\superapp-monorepo\\super-scraper\\agent\\..\\storage\\refined_data\\Ch_nh tr_\\2026-06-13\\M____Iran___a_ra_th_ng__i_p_m_u_thu_n_v__th_a_thu_.json",
+            "date": "2026-06-13 04:51:21"
         }
     ]
 }

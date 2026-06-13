@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 import json
 import uuid
@@ -189,18 +189,26 @@ async def _async_crawl(url: str, user_intent: str, task_id: str):
             # --- BULK CRAWL ---
             task['message'] = 'Phát hiện trang chủ/danh sách. Đang thu thập link bài viết con...'
             article_links = []
-            seen_titles = set()
+            seen_urls = set()
             for a in soup.find_all('a'):
                 text = a.get_text(strip=True)
                 href = a.get('href', '')
                 if not text or len(text) < 15 or not href: continue
                 if text.lower() in ["video", "ảnh", "ý kiến", "đăng nhập", "mới nhất", "xem thêm"]: continue
-                if text in seen_titles: continue
                 
                 real_url = urllib.parse.urljoin(url, href)
+                # Normalize URL: remove trailing slash, fragment, and query params for dedup
+                norm_url = urllib.parse.urlunparse((
+                    urllib.parse.urlparse(real_url).scheme,
+                    urllib.parse.urlparse(real_url).netloc,
+                    urllib.parse.urlparse(real_url).path.rstrip('/'),
+                    '', '', ''
+                ))
+                if norm_url in seen_urls: continue
+                
                 # Check if it's a deep link (rough heuristic: path length > 15 or contains numbers)
                 if len(urllib.parse.urlparse(real_url).path) > 15 or re.search(r'\d{4,}', real_url):
-                    seen_titles.add(text)
+                    seen_urls.add(norm_url)
                     article_links.append({"title": text, "url": real_url})
                     if len(article_links) >= 10: # Limit to 10 articles
                         break
@@ -706,7 +714,14 @@ def api_preview():
         result.setdefault('links_count', len(result.get('headlines', [])) if isinstance(result.get('headlines'), list) else 0)
         result.setdefault('images_count', 0)
         result.setdefault('headlines', [])
-        result.setdefault('proposed_schema', result)
+        if 'proposed_schema' not in result:
+            result['proposed_schema'] = {}
+        
+        # Sanitize proposed_schema: ensure it's JSON-serializable (no circular refs, no custom objects)
+        try:
+            json.dumps(result['proposed_schema'])
+        except (TypeError, ValueError):
+            result['proposed_schema'] = {'raw': str(result['proposed_schema'])[:500]}
         
         return jsonify(result)
     except Exception as e:

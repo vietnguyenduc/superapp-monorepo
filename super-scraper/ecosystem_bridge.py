@@ -175,10 +175,27 @@ def fetch_proposed_schema(url: str, user_id: str) -> str:
             preview_text = preview_text[:1200] + "\n... (bản xem trước dài đã được cắt bớt) ...\n\n"
             display_schema = display_schema[:2000] + "\n  ... (dữ liệu cấu trúc dài được cắt bớt) ...\n}"
             
+    # Extract headlines list from preview_text for frontend
+    headline_list = []
+    for line in preview_text.split('\n'):
+        line = line.strip()
+        if line.startswith(('1.', '2.', '3.', '4.', '5.')) and '"' in line:
+            import re as _re
+            q_match = _re.search(r'"([^"]+)"', line)
+            if q_match:
+                headline_list.append(q_match.group(1))
+    
     # Return structured preview and base schema separately to support Telegram sub-message splitting
+    # Also include frontend-friendly fields for UI server
     return {
         "preview_text": preview_text,
-        "base_schema": display_schema
+        "base_schema": display_schema,
+        "title": page_title,
+        "links_count": link_count,
+        "images_count": img_count,
+        "potential_rows": potential_rows,
+        "headlines": headline_list,
+        "proposed_schema": display_schema
     }
 
 def get_usage(user_id: str) -> int:

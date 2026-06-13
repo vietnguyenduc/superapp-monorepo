@@ -323,7 +323,7 @@ def run_agentic_loop(
 
             reached_limit = False
             start_time = time.time()
-            TIMEOUT_SECONDS = 300  # 5 minutes timeout
+            TIMEOUT_SECONDS = 1800 if max_turns >= 100 else 300  # 30 minutes for heavy tasks, 5 minutes for normal
 
             while turn_count < max_turns:
                 # ── Cancellation check ──────────────────────────────────────

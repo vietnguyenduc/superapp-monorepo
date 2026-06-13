@@ -1,43 +1,81 @@
-# Phase 2 — Cashflow App: Fix Test Failures
+﻿# Phase 3 — QA/QE: operations-portal, hr-operation, admin-portal
 
-## Hiện trạng: 9 files failed, 46 tests failed (200 passed)
+## Mục tiêu
+Thiết lập test infrastructure + viết unit tests cho 3 app chưa có test.
 
-## Root causes & Fix plan
+---
 
-### 1. `dataCleaning.test.ts` — 20 failures
-- **Vấn đề**: Dùng `vi.expect(` thay vì `expect(` (không phải API hợp lệ của vitest)
-- **Fix**: Replace `vi.expect(` → `expect(` toàn bộ file
+## 1. operations-portal (20 files, 0 tests)
 
-### 2. `rbac.test.ts` — 8 failures
-- **Vấn đề 1**: Test kỳ vọng `admin_company` KHÔNG có `customers.delete` và `users.view`, nhưng source code CHO PHÉP
-- **Vấn đề 2**: Test kỳ vọng `canAccessBranch("admin_company", "branch-1", "branch-2")` = `false`, nhưng source code trả về `true` (admin_company có thể access mọi branch)
-- **Vấn đề 3**: Test kỳ vọng `canAccessBranch("admin_company", null, "branch-1")` = `false`, nhưng source code trả về `true`
-- **Fix**: Sửa test expectations để match source code
+### Trạng thái hiện tại
+- **package.json**: ❌ Không có `vitest` / `@testing-library/*` / `jsdom`
+- **vite.config.ts**: ❌ Không có `test` config
+- **Scripts**: ❌ Không có `test`, `test:watch`, `test:coverage`
 
-### 3. `importUtils.test.ts` — 5 failures
-- **Vấn đề 1**: Test dùng `result[0].customer_name` nhưng source code trả về `customer_code`
-- **Vấn đề 2**: Test kỳ vọng `"Amount must be a positive number"` nhưng source code trả về `"Payment amount must be positive"` cho payment type
-- **Fix**: Sửa test expectations
+### Công việc
+1. **Cài đặt dependencies**: `vitest`, `@testing-library/react`, `@testing-library/jest-dom`, `jsdom`
+2. **Thêm `test` config vào `vite.config.ts`** (giống cashflow pattern)
+3. **Thêm scripts** vào `package.json`: `test`, `test:watch`, `test:coverage`
+4. **Viết tests**:
+   - `src/lib/__tests__/supabase.test.ts` — mock supabase client
+   - `src/pages/__tests__/Dashboard.test.tsx` — render + navigation
+   - `src/pages/__tests__/CheckInPage.test.tsx` — render + basic interaction
+   - `src/components/Layout/__tests__/AppSwitcher.test.tsx` — render
 
-### 4. `errorHandling.test.tsx` — 1 failure
-- **Vấn đề**: Test kỳ vọng `ERROR_CODES.DATABASE_CONNECTION_FAILED` = `"database_connection_failed"`, nhưng ERROR_CODES trong cashflow EXTEND từ shared-utils, và shared-utils có thể không có code này
-- **Fix**: Kiểm tra shared-utils ERROR_CODES, nếu thiếu thì thêm vào cashflow's ERROR_CODES
+---
 
-### 5. `transactionTypeNames.test.tsx` — 3 failures
-- **Vấn đề**: Test dùng `useAuthContext` từ `@superapp/iam` nhưng không mock
-- **Fix**: Thêm `vi.mock("@superapp/iam")` trong test file
+## 2. hr-operation (16 files, 0 tests)
 
-### 6. `BalanceByBankChart.test.tsx` — 1 failure
-- **Vấn đề**: Test kỳ vọng text `"273.072.157"` (vi-VN format) nhưng component render `"273M"` (compact format)
-- **Fix**: Sửa expected text thành `"273M"`
+### Trạng thái hiện tại
+- **package.json**: ✅ ĐÃ có `vitest`, `@testing-library/*`, `jsdom`, `test` scripts
+- **vite.config.ts**: ❌ Không có `test` config
+- **Scripts**: ✅ `test`, `test:watch`, `test:coverage` đã có
 
-### 7. `dashboardMetrics.test.ts` — cần kiểm tra
-- **Vấn đề**: Test gọi `databaseService.dashboard.getDashboardMetrics()` nhưng service này có thể chưa implement đúng
-- **Fix**: Cần đọc source service và fix test hoặc mock
+### Công việc
+1. **Thêm `test` config vào `vite.config.ts`**
+2. **Viết tests**:
+   - `src/services/__tests__/hrService.test.ts` — mock supabase, test CRUD methods
+   - `src/pages/__tests__/EmployeeDirectory.test.tsx` — render + list
+   - `src/pages/__tests__/LeaveManagement.test.tsx` — render
+   - `src/pages/__tests__/ShiftManagement.test.tsx` — render
+   - `src/components/Layout/__tests__/AppSwitcher.test.tsx` — render
 
-### 8. `backupRecovery.test.ts` — cần kiểm tra
-- **Vấn đề**: Có thể ổn, cần chạy lại để xác nhận
+---
 
-### 9. `formatting.test.ts` — cần kiểm tra
-- **Vấn đề**: `formatUserRole("admin")` kỳ vọng `"Quản trị viên"` nhưng source code dùng role `"admin_master"` và `"admin_company"`
-- **Fix**: Sửa test expectations
+## 3. admin-portal (15 files, 0 tests)
+
+### Trạng thái hiện tại
+- **package.json**: ❌ Không có `vitest` / `@testing-library/*` / `jsdom`
+- **vite.config.ts**: ❌ Không có `test` config
+- **Scripts**: ❌ Không có `test` scripts
+
+### Công việc
+1. **Cài đặt dependencies**: `vitest`, `@testing-library/react`, `@testing-library/jest-dom`, `jsdom`
+2. **Thêm `test` config vào `vite.config.ts`**
+3. **Thêm scripts** vào `package.json`
+4. **Viết tests**:
+   - `src/contexts/__tests__/AdminContext.test.tsx` — mock supabase, test context
+   - `src/pages/__tests__/IdentityManagement.test.tsx` — render
+   - `src/pages/__tests__/CompanyManagement.test.tsx` — render
+   - `src/pages/__tests__/GlobalSettings.test.tsx` — render
+
+---
+
+## Thứ tự thực hiện
+
+| Step | App | Action |
+|------|-----|--------|
+| 1 | operations-portal | Cài đặt deps + config + scripts |
+| 2 | operations-portal | Viết tests |
+| 3 | operations-portal | Chạy verify |
+| 4 | hr-operation | Thêm test config |
+| 5 | hr-operation | Viết tests |
+| 6 | hr-operation | Chạy verify |
+| 7 | admin-portal | Cài đặt deps + config + scripts |
+| 8 | admin-portal | Viết tests |
+| 9 | admin-portal | Chạy verify |
+| 10 | ALL | Chạy tổng thể, báo cáo kết quả |
+
+## Verification
+- Mỗi app: `cd apps/<app> && npx vitest run`
+- Tổng thể: `npx vitest run` từ root (nếu có workspace config)
