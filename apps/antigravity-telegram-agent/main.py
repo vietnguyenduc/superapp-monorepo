@@ -1947,22 +1947,6 @@ def handle_agent_photo(message):
             pass
 
 
-@bot.message_handler(func=lambda message: True)
-def handle_agent_chat(message):
-    user_id = message.from_user.id
-    role = get_user_role(user_id)
-    if role not in ["admin", "admin_master", "admin_company"]:
-        bot.reply_to(message, "⛔ Access Denied.")
-        return
-        
-    user_text = message.text
-    if user_text.startswith('/'):
-        return
-        
-    forced = USER_DEFAULT_PROVIDERS.get(user_id)
-    execute_chat_turn(message, user_text, force_provider=forced)
-
-
 # ─── AUTOPILOT & SETTINGS ────────────────────────────────────────────────────────
 
 
@@ -2065,6 +2049,23 @@ def handle_settings_callback(call):
         bot.answer_callback_query(call.id, "Đã cập nhật cài đặt!")
     except Exception as e:
         bot.answer_callback_query(call.id, "Lỗi khi cập nhật!")
+
+
+
+@bot.message_handler(func=lambda message: True)
+def handle_agent_chat(message):
+    user_id = message.from_user.id
+    role = get_user_role(user_id)
+    if role not in ["admin", "admin_master", "admin_company"]:
+        bot.reply_to(message, "⛔ Access Denied.")
+        return
+        
+    user_text = message.text
+    if user_text.startswith('/'):
+        return
+        
+    forced = USER_DEFAULT_PROVIDERS.get(user_id)
+    execute_chat_turn(message, user_text, force_provider=forced)
 
 
 
