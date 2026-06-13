@@ -2031,12 +2031,20 @@ def get_settings_markup():
     return markup
 
 @bot.message_handler(commands=['settings'])
-@require_auth
 def handle_settings(message):
+    user_id = message.from_user.id
+    if get_user_role(user_id) not in ["admin", "admin_master", "admin_company"]:
+        bot.reply_to(message, "⛔ Access Denied.")
+        return
     bot.reply_to(message, "⚙️ **TRUNG TÂM CÀI ĐẶT (SETTINGS)**\n\nBạn có thể điều chỉnh các thiết lập hệ thống ở đây:", parse_mode="Markdown", reply_markup=get_settings_markup())
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('settings_'))
 def handle_settings_callback(call):
+    user_id = call.from_user.id
+    if get_user_role(user_id) not in ["admin", "admin_master", "admin_company"]:
+        bot.answer_callback_query(call.id, "⛔ Access Denied.")
+        return
+        
     s = settings.load_settings()
     data = call.data
     
