@@ -900,7 +900,7 @@ class AntigravityAgent:
         is_nvidia_forced = (force_provider == "nvidia" and status.get("nvidia"))
 
         # ── Path 1: Gemini native tool-calling (if DeepSeek offline and Gemini available, and Claude/Nvidia not forced) ───────
-        if not is_claude_forced and not is_nvidia_forced and not status.get("deepseek") and status.get("gemini") and force_provider not in ["claude", "nvidia"]:
+        if not is_claude_forced and not is_nvidia_forced and not status.get("deepseek") and status.get("gemini") and force_provider not in ["claude", "nvidia", "deepseek"]:
             logger.info("[Agent] DeepSeek offline, using Gemini native SDK")
             return self._run_gemini_native(
                 full_prompt, chat_history, task_type,
@@ -952,7 +952,7 @@ class AntigravityAgent:
 
         except RuntimeError as e:
             # If the user explicitly forced a model, do not silently fallback to Gemini
-            if force_provider in ["nvidia", "claude", "deepseek_r1", "geminipro"]:
+            if force_provider in ["nvidia", "claude", "deepseek", "deepseek_r1", "geminipro"]:
                 return f"❌ *Lỗi kết nối API ({force_provider.upper()})*\n{e}", "none"
 
             # Full fallback: try Gemini as last resort if no forced provider
@@ -988,6 +988,7 @@ class AntigravityAgent:
         max_turns: int = 26,
     ) -> Tuple[str, str]:
         """Use Gemini SDK with native function calling."""
+        active_project_id = self.get_active_project()
         import time
         try:
             from google import genai
