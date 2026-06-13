@@ -2081,12 +2081,14 @@ def get_settings_markup():
     time_btns = [telebot.types.InlineKeyboardButton(f"{'✅ ' if current_report == t else ''}{t}", callback_data=f"settings_report_{t}") for t in times]
     markup.add(*time_btns)
     
-    # 3. Quota & Budget
+    # 3. Quota, Budget & Goal Limit
     b = s.get('daily_budget_limit', 1.0)
     q = s.get('daily_quota_limit', 1000)
+    g = s.get('goal_max_requests', 100)
     markup.add(
         telebot.types.InlineKeyboardButton(f"Budget: ${b} ✏️", callback_data="settings_edit_budget"),
-        telebot.types.InlineKeyboardButton(f"Quota: {q} ✏️", callback_data="settings_edit_quota")
+        telebot.types.InlineKeyboardButton(f"Quota: {q} ✏️", callback_data="settings_edit_quota"),
+        telebot.types.InlineKeyboardButton(f"Goal Max: {g} ✏️", callback_data="settings_edit_goal")
     )
     
     # 4. Fallback priority
@@ -2143,7 +2145,7 @@ def handle_settings_callback(call):
         # Call apply_daily_report_schedule() which we will define
     elif data == "settings_toggle_git":
         s["auto_push_git"] = not s.get("auto_push_git", True)
-    elif data in ["settings_edit_budget", "settings_edit_quota", "settings_edit_fallback", "settings_edit_branch"]:
+    elif data in ["settings_edit_budget", "settings_edit_quota", "settings_edit_fallback", "settings_edit_branch", "settings_edit_goal"]:
         bot.answer_callback_query(call.id, "Vui lòng nhập giá trị mới:")
         msg = bot.send_message(call.message.chat.id, f"Đang chờ cấu hình cho {data.split('_')[-1].upper()}... Nhập giá trị mới (nếu fallback thì nhập cách nhau dấu phẩy):")
         bot.register_next_step_handler(msg, process_settings_input, setting_key=data)
@@ -2174,6 +2176,8 @@ def process_settings_input(message, setting_key):
             s["daily_budget_limit"] = float(val)
         elif setting_key == "settings_edit_quota":
             s["daily_quota_limit"] = int(val)
+        elif setting_key == "settings_edit_goal":
+            s["goal_max_requests"] = int(val)
         elif setting_key == "settings_edit_branch":
             s["git_branch"] = val
         elif setting_key == "settings_edit_fallback":

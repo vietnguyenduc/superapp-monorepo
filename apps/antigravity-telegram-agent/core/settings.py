@@ -10,8 +10,9 @@ DEFAULT_SETTINGS = {
     "daily_report_time": "18:00",
     "auto_push_git": True,
     "git_branch": "viet",
-    "daily_budget_limit": 1.0,
-    "daily_quota_limit": 1000,
+    "daily_budget_limit": 1.0,         # USD
+    "daily_quota_limit": 1000,         # So requests
+    "goal_max_requests": 100,          # Giới hạn số requests tối đa cho mỗi lệnh /goal
     "fallback_order": ["deepseek", "gemini", "claude", "nvidia"]
 }
 

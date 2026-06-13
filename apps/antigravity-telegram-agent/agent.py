@@ -611,6 +611,10 @@ class AntigravityAgent:
         """
         if chat_history is None:
             chat_history = []
+            
+        import core.settings as settings
+        s = settings.load_settings()
+        goal_limit = s.get("goal_max_requests", 100)
 
         active_project_id = self.get_active_project()
         vault_dir, _ = self.get_project_paths(active_project_id)
@@ -892,7 +896,7 @@ class AntigravityAgent:
                 full_prompt, chat_history, task_type,
                 model_name="gemini-2.5-pro",
                 cancellation_event=cancellation_event,
-                max_turns=100 if is_goal else 26,
+                max_turns=goal_limit if is_goal else 26,
             )
             return f"✨ _[Gemini Pro]_\n\n{reply}", "geminipro"
 
@@ -906,7 +910,7 @@ class AntigravityAgent:
                 full_prompt, chat_history, task_type,
                 task_state=task_state, on_progress=on_progress,
                 cancellation_event=cancellation_event,
-                max_turns=100 if is_goal else 26,
+                max_turns=goal_limit if is_goal else 26,
             )
 
         # ── Path 2: DeepSeek → Gemini / Claude via OpenAI-compatible router ────────────
@@ -927,7 +931,7 @@ class AntigravityAgent:
                 force_provider=force_provider,
                 task_state=task_state,
                 cancellation_event=cancellation_event,
-                max_turns=100 if is_goal else 26,
+                max_turns=goal_limit if is_goal else 26,
             )
 
             # Label provider and active project so user knows which task/model answered
@@ -961,7 +965,7 @@ class AntigravityAgent:
                 return self._run_gemini_native(
                     full_prompt, chat_history, task_type,
                     cancellation_event=cancellation_event,
-                    max_turns=100 if is_goal else 26,
+                    max_turns=goal_limit if is_goal else 26,
                 )
             return (
                 f"❌ *Tất cả AI providers đều offline.*\n"
