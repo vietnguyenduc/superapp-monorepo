@@ -1681,18 +1681,43 @@ def handle_schedule_command(message):
     except (IndexError, ValueError):
         return bot.reply_to(message, "👉 Cú pháp: `/schedule <số_giây> <nhiệm vụ>`. VD: `/schedule 60 Check build status`", parse_mode="Markdown")
         
-    bot.reply_to(message, f"⏰ Đã lên lịch hẹn giờ ({delay_seconds}s) cho nhiệm vụ:\n_{user_text}_", parse_mode="Markdown")
-    
-    def delayed_execution():
-        bot.send_message(message.chat.id, f"🔔 *BÁO THỨC!* Đã đến giờ thực thi nhiệm vụ:\n_{user_text}_", parse_mode="Markdown")
-        # Reuse execute_chat_turn but we inject a prefix so agent knows it's a scheduled run
-        execute_chat_turn(message, f"/schedule {user_text}")
+    def delayed_execution(chat_id, text):
+        bot.send_message(chat_id, f"🔔 *BÁO THỨC!* Đã đến giờ thực thi nhiệm vụ:\n_{text}_", parse_mode="Markdown")
+        # Reuse execute_chat_turn
+        # Create a mock message to pass to execute_chat_turn
+        class MockMessage:
+            def __init__(self, cid, txt):
+                class MockChat:
+                    def __init__(self, _id):
+                        self.id = _id
+                self.chat = MockChat(cid)
+                self.text = txt
+                self.message_id = 0
+                self.from_user = type('obj', (object,), {'id': cid})
+        execute_chat_turn(MockMessage(chat_id, f"/schedule {text}"), f"/schedule {text}")
         
-    import threading
-    t = threading.Timer(delay_seconds, delayed_execution)
-    t.start()
+    from datetime import datetime, timedelta
+    run_date = datetime.now() + timedelta(seconds=delay_seconds)
+    job = bg_scheduler_instance.add_job(
+        delayed_execution,
+        'date',
+        run_date=run_date,
+        args=[message.chat.id, user_text],
+        name=f"Schedule: {user_text[:20]}..."
+    )
+    bot.reply_to(message, f"⏰ Đã lên lịch hẹn giờ ({delay_seconds}s) cho nhiệm vụ:\n_{user_text}_\nID: `{job.id}`", parse_mode="Markdown")
 
-
+@bot.message_handler(commands=['unschedule'])
+def handle_unschedule_command(message):
+    user_id = message.from_user.id
+    if get_user_role(user_id) not in ["admin", "admin_master", "admin_company"]:
+        return bot.reply_to(message, "⛔ Access Denied.")
+    try:
+        job_id = message.text.split(' ', 1)[1].strip()
+        bg_scheduler_instance.remove_job(job_id)
+        bot.reply_to(message, f"✅ Đã hủy lịch hẹn: `{job_id}`", parse_mode="Markdown")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Không tìm thấy hoặc không thể hủy lịch hẹn: `{message.text}`")
 @bot.message_handler(commands=['browser'])
 def handle_browser_command(message):
     """Forces browser automation task."""
@@ -1965,12 +1990,55 @@ def autopilot_tick():
                 self.text = text
                 self.message_id = 0
                 
-        mock_msg = MockMessage(primary_id, "/goal [AUTOPILOT] Hãy tự động chạy kiểm tra hệ thống, quét các thay đổi git (git status), kiểm tra lỗi và fix lỗi nếu có, sau đó tự push lên nhánh hiện tại và báo cáo kết quả.")
+        s = settings.load_settings()
+        git_push = s.get("auto_push_git", True)
+        branch = s.get("git_branch", "viet")
+        
+        prompt = "[AUTOPILOT] Hãy tự động chạy kiểm tra hệ thống, kiểm tra lỗi và fix lỗi nếu có."
+        if git_push:
+            prompt += f" Sau khi fix xong, HÃY tự động commit và push code lên nhánh `{branch}`. Báo cáo kết quả."
+        else:
+            prompt += " KHÔNG được tự ý commit hay push code lên Git. Chỉ sửa file nội bộ rồi báo cáo."
+
+        mock_msg = MockMessage(primary_id, f"/goal {prompt}")
         try:
             bot.send_message(primary_id, "🤖 *Autopilot Kích Hoạt* - Đang tiến hành quét và bảo trì hệ thống ngầm...", parse_mode="Markdown")
             execute_chat_turn(mock_msg, mock_msg.text)
         except Exception as e:
             logger.error(f"Autopilot tick failed: {e}")
+
+def apply_daily_report_schedule():
+    s = settings.load_settings()
+    report_time_str = s.get("daily_report_time", "18:00")
+    try:
+        hour, minute = map(int, report_time_str.split(":"))
+    except ValueError:
+        hour, minute = 18, 0
+    
+    try:
+        bg_scheduler_instance.reschedule_job('daily_report_job', trigger='cron', hour=hour, minute=minute)
+        logger.info(f"Daily report rescheduled to {report_time_str}")
+    except Exception as e:
+        logger.error(f"Failed to reschedule daily report: {e}")
+
+@bot.message_handler(commands=['schedules'])
+def handle_schedules_command(message):
+    user_id = message.from_user.id
+    if get_user_role(user_id) not in ["admin", "admin_master", "admin_company"]:
+        bot.reply_to(message, "⛔ Access Denied.")
+        return
+    
+    jobs = bg_scheduler_instance.get_jobs()
+    if not jobs:
+        bot.reply_to(message, "Không có lịch hẹn nào đang chạy.")
+        return
+        
+    msg = "🕒 **DANH SÁCH LỊCH HẸN ĐANG CHỜ**:\n"
+    for j in jobs:
+        msg += f"- `{j.id}` | {j.name} | Tiếp theo: {j.next_run_time.strftime('%Y-%m-%d %H:%M:%S') if j.next_run_time else 'N/A'}\n"
+        
+    msg += "\n👉 Gõ `/unschedule <ID>` để hủy lịch."
+    bot.reply_to(message, msg, parse_mode="Markdown")
 
 def apply_autopilot_schedule():
     global bg_scheduler_instance
@@ -1999,21 +2067,50 @@ def apply_autopilot_schedule():
 
 def get_settings_markup():
     s = settings.load_settings()
-    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+    markup = telebot.types.InlineKeyboardMarkup(row_width=4)
     
-    # Toggle Autopilot
-    status = "🟢 BẬT" if s.get("autopilot_enabled") else "🔴 TẮT"
-    markup.add(telebot.types.InlineKeyboardButton(f"Trạng thái Autopilot: {status}", callback_data="settings_toggle_autopilot"))
+    # 1. Model
+    current_model = s.get("default_ai_model", "deepseek")
+    models = ["deepseek", "gemini", "claude", "nvidia"]
+    model_btns = [telebot.types.InlineKeyboardButton(f"{'✅ ' if current_model == m else ''}{m.capitalize()}", callback_data=f"settings_model_{m}") for m in models]
+    markup.add(*model_btns)
     
-    # Interval options
+    # 2. Daily Report
+    current_report = s.get("daily_report_time", "18:00")
+    times = ["08:00", "12:00", "18:00", "22:00"]
+    time_btns = [telebot.types.InlineKeyboardButton(f"{'✅ ' if current_report == t else ''}{t}", callback_data=f"settings_report_{t}") for t in times]
+    markup.add(*time_btns)
+    
+    # 3. Quota & Budget
+    b = s.get('daily_budget_limit', 1.0)
+    q = s.get('daily_quota_limit', 1000)
+    markup.add(
+        telebot.types.InlineKeyboardButton(f"Budget: ${b} ✏️", callback_data="settings_edit_budget"),
+        telebot.types.InlineKeyboardButton(f"Quota: {q} ✏️", callback_data="settings_edit_quota")
+    )
+    
+    # 4. Fallback priority
+    fbo = s.get("fallback_order", ["deepseek", "gemini", "claude", "nvidia"])
+    fbo_str = " ➡️ ".join([m[:2].upper() for m in fbo[:3]])
+    markup.add(telebot.types.InlineKeyboardButton(f"Priority: {fbo_str} ✏️", callback_data="settings_edit_fallback"))
+
+    # 5. Git & Schedules
+    git_on = "🟢 BẬT" if s.get("auto_push_git", True) else "🔴 TẮT"
+    branch = s.get("git_branch", "viet")
+    markup.add(
+        telebot.types.InlineKeyboardButton(f"Auto Git: {git_on}", callback_data="settings_toggle_git"),
+        telebot.types.InlineKeyboardButton(f"Branch: [{branch}] ✏️", callback_data="settings_edit_branch")
+    )
+    markup.add(telebot.types.InlineKeyboardButton("Quản lý Lịch hẹn ⚙️", callback_data="settings_manage_schedules"))
+
+    # 6. Autopilot
+    ap_status = "🟢 BẬT" if s.get("autopilot_enabled") else "🔴 TẮT"
+    markup.add(telebot.types.InlineKeyboardButton(f"Autopilot: {ap_status}", callback_data="settings_toggle_autopilot"))
+    
     current_interval = s.get("autopilot_interval_hours", 6)
-    btn_1h = telebot.types.InlineKeyboardButton(f"{'✅ ' if current_interval == 1 else ''}1 Giờ", callback_data="settings_interval_1")
-    btn_6h = telebot.types.InlineKeyboardButton(f"{'✅ ' if current_interval == 6 else ''}6 Giờ", callback_data="settings_interval_6")
-    btn_12h = telebot.types.InlineKeyboardButton(f"{'✅ ' if current_interval == 12 else ''}12 Giờ", callback_data="settings_interval_12")
-    btn_24h = telebot.types.InlineKeyboardButton(f"{'✅ ' if current_interval == 24 else ''}24 Giờ", callback_data="settings_interval_24")
-    
-    markup.add(btn_1h, btn_6h)
-    markup.add(btn_12h, btn_24h)
+    intervals = [1, 6, 12, 24]
+    int_btns = [telebot.types.InlineKeyboardButton(f"{'✅ ' if current_interval == i else ''}{i}h", callback_data=f"settings_interval_{i}") for i in intervals]
+    markup.add(*int_btns)
     
     return markup
 
@@ -2038,17 +2135,54 @@ def handle_settings_callback(call):
     if data == "settings_toggle_autopilot":
         s["autopilot_enabled"] = not s.get("autopilot_enabled", False)
     elif data.startswith("settings_interval_"):
-        hours = int(data.split("_")[-1])
-        s["autopilot_interval_hours"] = hours
+        s["autopilot_interval_hours"] = int(data.split("_")[-1])
+    elif data.startswith("settings_model_"):
+        s["default_ai_model"] = data.replace("settings_model_", "")
+    elif data.startswith("settings_report_"):
+        s["daily_report_time"] = data.replace("settings_report_", "")
+        # Call apply_daily_report_schedule() which we will define
+    elif data == "settings_toggle_git":
+        s["auto_push_git"] = not s.get("auto_push_git", True)
+    elif data in ["settings_edit_budget", "settings_edit_quota", "settings_edit_fallback", "settings_edit_branch"]:
+        bot.answer_callback_query(call.id, "Vui lòng nhập giá trị mới:")
+        msg = bot.send_message(call.message.chat.id, f"Đang chờ cấu hình cho {data.split('_')[-1].upper()}... Nhập giá trị mới (nếu fallback thì nhập cách nhau dấu phẩy):")
+        bot.register_next_step_handler(msg, process_settings_input, setting_key=data)
+        return
+    elif data == "settings_manage_schedules":
+        bot.answer_callback_query(call.id)
+        # Call handle_schedules_command logic directly
+        handle_schedules_command(call.message)
+        return
         
     settings.save_settings(s)
-    apply_autopilot_schedule()
-    
+    if data.startswith("settings_interval_") or data == "settings_toggle_autopilot":
+        apply_autopilot_schedule()
+    elif data.startswith("settings_report_"):
+        apply_daily_report_schedule()
+        
     try:
         bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=get_settings_markup())
         bot.answer_callback_query(call.id, "Đã cập nhật cài đặt!")
     except Exception as e:
         bot.answer_callback_query(call.id, "Lỗi khi cập nhật!")
+
+def process_settings_input(message, setting_key):
+    s = settings.load_settings()
+    val = message.text.strip()
+    try:
+        if setting_key == "settings_edit_budget":
+            s["daily_budget_limit"] = float(val)
+        elif setting_key == "settings_edit_quota":
+            s["daily_quota_limit"] = int(val)
+        elif setting_key == "settings_edit_branch":
+            s["git_branch"] = val
+        elif setting_key == "settings_edit_fallback":
+            parts = [x.strip().lower() for x in val.split(',')]
+            s["fallback_order"] = parts
+        settings.save_settings(s)
+        bot.reply_to(message, f"✅ Đã lưu cấu hình mới. Bấm /settings để xem lại.")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Lỗi định dạng: {e}")
 
 
 
@@ -2065,6 +2199,9 @@ def handle_agent_chat(message):
         return
         
     forced = USER_DEFAULT_PROVIDERS.get(user_id)
+    if not forced:
+        forced = settings.load_settings().get("default_ai_model", "deepseek")
+        
     execute_chat_turn(message, user_text, force_provider=forced)
 
 

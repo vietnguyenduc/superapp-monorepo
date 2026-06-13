@@ -641,21 +641,32 @@ class ProviderRegistry:
         # Ordered by priority (cheapest/local first)
         self._chain = [self.ollama, self.deepseek, self.nvidia, self.deepseek_r1, self.gemini, self.geminipro, self.claude]
 
-    def get_best_provider(self, task_type: str = "medium"):
-        """
-        Returns first healthy provider for the given task type.
+    def get_provider_by_name(self, name: str):
+        name_map = {
+            "ollama": self.ollama,
+            "deepseek": self.deepseek,
+            "nvidia": self.nvidia,
+            "deepseek_r1": self.deepseek_r1,
+            "gemini": self.gemini,
+            "geminipro": self.geminipro,
+            "claude": self.claude,
+        }
+        return name_map.get(name.lower().replace("-", "_"))
 
-        task_type:
-          'simple'  → prefer Ollama
-          'medium'  → prefer DeepSeek (fallback Gemini)
-          'heavy'   → prefer Gemini (fallback DeepSeek)
-        """
-        if task_type == "simple":
-            ordered = [self.ollama, self.deepseek, self.gemini]
-        elif task_type == "heavy":
-            ordered = [self.gemini, self.deepseek, self.ollama]
-        else:  # medium
-            ordered = [self.ollama, self.deepseek, self.gemini]
+    def get_best_provider(self, task_type: str = "medium"):
+        import core.settings as settings
+        s = settings.load_settings()
+        fallback_order = s.get("fallback_order", ["deepseek", "gemini", "claude", "nvidia"])
+        
+        ordered = []
+        for p_name in fallback_order:
+            provider = self.get_provider_by_name(p_name)
+            if provider:
+                ordered.append(provider)
+                
+        # If nothing in settings or all invalid, use default
+        if not ordered:
+            ordered = [self.deepseek, self.gemini, self.claude]
 
         for provider in ordered:
             if provider.health_check():

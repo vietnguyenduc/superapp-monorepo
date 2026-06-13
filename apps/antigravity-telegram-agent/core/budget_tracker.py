@@ -29,7 +29,12 @@ class BudgetTracker:
     def __init__(self):
         DB_PATH.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
-        self.daily_limit = float(os.environ.get("DAILY_BUDGET_USD", "0.50"))
+
+    def get_limits(self):
+        # Prevent circular import if needed, but it's safe to import settings here
+        import core.settings as settings
+        s = settings.load_settings()
+        return s.get("daily_budget_limit", 1.0), s.get("daily_quota_limit", 1000)
 
     def _get_conn(self):
         return sqlite3.connect(str(DB_PATH))
@@ -73,12 +78,12 @@ class BudgetTracker:
         today = date.today().isoformat()
         with self._get_conn() as conn:
             rows = conn.execute(
-                "SELECT provider, SUM(input_tokens), SUM(output_tokens), SUM(cost_usd) "
+                "SELECT provider, SUM(input_tokens), SUM(output_tokens), SUM(cost_usd), COUNT(*) "
                 "FROM usage WHERE date=? GROUP BY provider",
                 (today,)
             ).fetchall()
             totals = conn.execute(
-                "SELECT SUM(input_tokens), SUM(output_tokens), SUM(cost_usd) FROM usage WHERE date=?",
+                "SELECT SUM(input_tokens), SUM(output_tokens), SUM(cost_usd), COUNT(*) FROM usage WHERE date=?",
                 (today,)
             ).fetchone()
 
@@ -88,23 +93,31 @@ class BudgetTracker:
                 "input_tokens": row[1] or 0,
                 "output_tokens": row[2] or 0,
                 "cost_usd": round(row[3] or 0, 5),
+                "requests": row[4] or 0
             }
+
+        daily_budget, daily_quota = self.get_limits()
+        total_cost = totals[2] or 0
+        total_requests = totals[3] or 0
 
         return {
             "date": today,
             "providers": providers,
             "total_input_tokens": totals[0] or 0,
             "total_output_tokens": totals[1] or 0,
-            "total_cost_usd": round(totals[2] or 0, 5),
-            "daily_limit_usd": self.daily_limit,
-            "budget_pct": round((totals[2] or 0) / self.daily_limit * 100, 1) if self.daily_limit > 0 else 0,
+            "total_cost_usd": round(total_cost, 5),
+            "total_requests": total_requests,
+            "daily_limit_usd": daily_budget,
+            "daily_quota": daily_quota,
+            "budget_pct": round(total_cost / daily_budget * 100, 1) if daily_budget > 0 else 0,
+            "quota_pct": round(total_requests / daily_quota * 100, 1) if daily_quota > 0 else 0
         }
 
     def is_over_budget(self) -> bool:
-        if self.daily_limit <= 0:
-            return False
         summary = self.get_today_summary()
-        return summary["total_cost_usd"] >= self.daily_limit
+        budget_exceeded = summary["daily_limit_usd"] > 0 and summary["total_cost_usd"] >= summary["daily_limit_usd"]
+        quota_exceeded = summary["daily_quota"] > 0 and summary["total_requests"] >= summary["daily_quota"]
+        return budget_exceeded or quota_exceeded
 
     def format_status_message(self) -> str:
         s = self.get_today_summary()

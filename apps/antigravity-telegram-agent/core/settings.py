@@ -5,7 +5,14 @@ SETTINGS_FILE = "settings.json"
 
 DEFAULT_SETTINGS = {
     "autopilot_enabled": False,
-    "autopilot_interval_hours": 6
+    "autopilot_interval_hours": 6,
+    "default_ai_model": "deepseek",
+    "daily_report_time": "18:00",
+    "auto_push_git": True,
+    "git_branch": "viet",
+    "daily_budget_limit": 1.0,
+    "daily_quota_limit": 1000,
+    "fallback_order": ["deepseek", "gemini", "claude", "nvidia"]
 }
 
 def load_settings():
