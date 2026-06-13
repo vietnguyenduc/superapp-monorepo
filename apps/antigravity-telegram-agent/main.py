@@ -1960,36 +1960,8 @@ def handle_agent_chat(message):
     execute_chat_turn(message, user_text, force_provider=forced)
 
 
-if __name__ == "__main__":
-    logger.info("Initializing Antigravity Autonomous Telegram Service...")
-    
-    # 1. Start the secure WebSocket + Flask server on port 8765
-    try:
-        socket_server.start_server_bridge(port=8765)
-        logger.info("Websocket Bridge Server initialized successfully on port 8765.")
-    except Exception as server_err:
-        logger.error(f"Could not start Websocket server: {server_err}", exc_info=True)
-    
-    # Setup scheduler for daily report at 18:00
-    bg_scheduler = None
-    if ALLOWED_USER_ID is not None:
-        primary_id = str(ALLOWED_USER_ID).split(",")[0].strip()
-        bg_scheduler = scheduler.setup_scheduler(bot, primary_id, "18:00")
-        bg_scheduler_instance = bg_scheduler
-        apply_autopilot_schedule()
-        logger.info("Daily report scheduler setup successfully.")
-    
-    logger.info("Telegram Bot service is listening (Polling)...")
-    try:
-        bot.infinity_polling()
-    except KeyboardInterrupt:
-        logger.info("Exiting application gracefully.")
-        if bg_scheduler:
-            bg_scheduler.shutdown()
-        sys.exit(0)
-
-
 # ─── AUTOPILOT & SETTINGS ────────────────────────────────────────────────────────
+
 
 def autopilot_tick():
     logger.info("Executing autopilot tick...")
@@ -2082,4 +2054,36 @@ def handle_settings_callback(call):
         bot.answer_callback_query(call.id, "Đã cập nhật cài đặt!")
     except Exception as e:
         bot.answer_callback_query(call.id, "Lỗi khi cập nhật!")
+
+
+
+if __name__ == "__main__":
+
+    logger.info("Initializing Antigravity Autonomous Telegram Service...")
+    
+    # 1. Start the secure WebSocket + Flask server on port 8765
+    try:
+        socket_server.start_server_bridge(port=8765)
+        logger.info("Websocket Bridge Server initialized successfully on port 8765.")
+    except Exception as server_err:
+        logger.error(f"Could not start Websocket server: {server_err}", exc_info=True)
+    
+    # Setup scheduler for daily report at 18:00
+    bg_scheduler = None
+    if ALLOWED_USER_ID is not None:
+        primary_id = str(ALLOWED_USER_ID).split(",")[0].strip()
+        bg_scheduler = scheduler.setup_scheduler(bot, primary_id, "18:00")
+        bg_scheduler_instance = bg_scheduler
+        apply_autopilot_schedule()
+        logger.info("Daily report scheduler setup successfully.")
+    
+    logger.info("Telegram Bot service is listening (Polling)...")
+    try:
+        bot.infinity_polling()
+    except KeyboardInterrupt:
+        logger.info("Exiting application gracefully.")
+        if bg_scheduler:
+            bg_scheduler.shutdown()
+        sys.exit(0)
+
 
