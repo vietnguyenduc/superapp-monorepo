@@ -230,33 +230,44 @@ class SystemWatchdog:
         
         try:
             logger.info(f"Running ESLint on {len(files_to_lint)} files...")
-            files_str = " ".join([f"'{f}'" for f in files_to_lint])
             
-            cmd = f"npx eslint {files_str}"
-            result = subprocess.run(
-                ["powershell", "-NoProfile", "-Command", cmd],
-                cwd=WORKSPACE_ROOT,
-                capture_output=True, text=True
-            )
+            chunk_size = 30
+            chunks = [files_to_lint[i:i + chunk_size] for i in range(0, len(files_to_lint), chunk_size)]
             
-            if result.returncode != 0 and self.bot and self.admin_chat_id:
-                error_summary = result.stdout[:3000]
-                if not error_summary:
-                    error_summary = result.stderr[:3000]
+            all_errors = ""
+            has_error = False
+            
+            for chunk in chunks:
+                files_str = " ".join([f"'{f}'" for f in chunk])
+                cmd = f"npx eslint {files_str}"
                 
-                # Filter out missing config noise in monorepos
-                if "couldn't find an eslint.config" in error_summary or "No ESLint configuration found" in error_summary:
-                    logger.info("ESLint config not found in root, skipping lint alert.")
-                    return
+                result = subprocess.run(
+                    ["powershell", "-NoProfile", "-Command", cmd],
+                    cwd=WORKSPACE_ROOT,
+                    capture_output=True, text=True
+                )
+                
+                if result.returncode != 0:
+                    error_summary = result.stdout
+                    if not error_summary:
+                        error_summary = result.stderr
                     
+                    if "couldn't find an eslint.config" in error_summary or "No ESLint configuration found" in error_summary:
+                        continue
+                        
+                    has_error = True
+                    all_errors += error_summary + "\n"
+            
+            if has_error and self.bot and self.admin_chat_id:
+                final_error = all_errors[:3000]
                 self.bot.send_message(
                     self.admin_chat_id,
                     f"⚠️ **Lint Watcher Alert**\n"
                     f"Phát hiện lỗi cú pháp sau khi sếp nghỉ tay (60s delay):\n"
-                    f"```text\n{error_summary}\n```",
+                    f"```text\n{final_error}\n```",
                     parse_mode="Markdown"
                 )
-            else:
+            elif not has_error:
                 logger.info("Lint Watcher passed successfully.")
         except Exception as e:
             logger.error(f"Lint Watcher failed: {e}")
