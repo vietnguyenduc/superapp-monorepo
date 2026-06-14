@@ -71,3 +71,29 @@ CREATE POLICY "x" ON public.users FOR SELECT USING (
 2. OR implement a quota-aware router that checks remaining quota before calling Gemini
 3. OR cache Gemini responses for repeated visual audits
 4. OR use Ollama (local, free) for visual analysis as fallback
+
+### Lesson Recorded on 2026-06-14 15:09
+## Git Push Protection — Secret Scanning Block
+
+**Problem:** GitHub push protection blocked a commit containing `SUPABASE_ACCESS_TOKEN=sbp_...` in a session memory vault file. The error was `GH013: Repository rule violations found`.
+
+**Fix:** 
+1. Find the secret: `git grep -n "sbp_" HEAD --`
+2. Replace the secret in the file content
+3. Amend the commit: `git add <file> && git commit --amend --no-edit`
+4. Push again
+
+**Lesson:** Never commit API keys, tokens, or secrets in any file — including memory vaults, logs, or documentation. Always use environment variables or `.env` files. If a secret is accidentally committed, use `git commit --amend` (if latest commit) or `git filter-branch` (if older commit) to remove it before pushing.
+
+### Lesson Recorded on 2026-06-15 02:05
+## Visual Audit Findings — 2026-06-15
+
+**Critical Issues Found via `run_visual_audit` on inventory-operation:**
+
+1. **Table Responsiveness (HIGH PRIORITY):** Dashboard + Product Management tables are broken on mobile (375px) and iPad (768px). Columns cut off (Status, Total, Stock, Actions). No horizontal scroll. Fix: wrap tables in `overflow-x: auto` container, or transform rows to card layout on mobile.
+
+2. **Sticky Bottom Navigation Overlap (HIGH PRIORITY):** On mobile, the bottom tab bar overlaps content on Dashboard, Product Management, and Settings pages. The "Save Settings" button is hidden. Fix: add `padding-bottom` to main content equal to bottom nav height (~80px).
+
+3. **Desktop Layout Underutilization (MEDIUM):** Main content area is constrained to fixed max-width, leaving large empty spaces on 1440px viewport. Consider allowing content to expand for data-heavy pages.
+
+**Pattern for future audits:** Always use `run_visual_audit` with `auth_click_selector="text=Dùng thử"` to bypass login. The tool auto-starts server, takes screenshots on 3 viewports, and runs Gemini Vision analysis.

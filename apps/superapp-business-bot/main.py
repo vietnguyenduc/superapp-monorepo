@@ -443,6 +443,8 @@ def get_user_role(telegram_id: int):
     # 4. Check Supabase database
     user = db.get_user_by_telegram_id(str(telegram_id))
     if user:
+        if user.get("status") == "inactive":
+            return None
         return user.get("role", "staff")
     return None
 
@@ -462,12 +464,16 @@ def check_rbac_permission(message, required_module: str) -> bool:
         bot.reply_to(message, welcome_text, parse_mode="Markdown")
         return False
         
-    allowed_modules = ROLE_PERMISSIONS.get(role, [])
+    roles = [r.strip() for r in role.split(",")]
+    allowed_modules = []
+    for r in roles:
+        allowed_modules.extend(ROLE_PERMISSIONS.get(r, []))
+        
     if required_module not in allowed_modules:
         denied_text = (
             f"⛔ **QUYỀN TRUY CẬP BỊ TỪ CHỐI**\n\n"
             f"Tài khoản của bạn (Vai trò: **{role}**) không có quyền thực hiện hành động thuộc phân hệ `{required_module.upper()}`.\n\n"
-            f"Nếu đây là một sự nhầm lẫn, vui lòng liên hệ Admin để cập nhật vai trò của bạn trên Admin Portal."
+            f"If this is a mistake, please contact your admin."
         )
         bot.reply_to(message, denied_text, parse_mode="Markdown")
         return False
@@ -481,45 +487,40 @@ def send_welcome(message):
     user_id = message.from_user.id
     role = get_user_role(user_id)
     
-    if role not in ["admin", "admin_master", "admin_company"]:
-        bot.reply_to(message, "🔒 **YÊU CẦU LIÊN KẾT TÀI KHOẢN DEVELOPER**\n\nTài khoản của bạn chưa được phân quyền Quản trị/Developer trên hệ thống Antigravity.")
+    if not role:
+        welcome_text = (
+            f"🔒 **YÊU CẦU LIÊN KẾT TÀI KHOẢN**\n\n"
+            f"Tài khoản Telegram này chưa được kích hoạt trên hệ thống Superapp.\n"
+            f"- **Telegram ID của bạn:** `{user_id}`\n\n"
+            f"Vui lòng gửi mã số này cho Quản trị viên của bạn để được liên kết tài khoản và cấp quyền trên Admin Portal."
+        )
+        bot.reply_to(message, welcome_text, parse_mode="Markdown")
         return
+
+    company_name = "Superapp Corp"
+    user_data = db.get_user_by_telegram_id(str(user_id))
+    if user_data:
+        company_name = user_data.get("company_name") or user_data.get("company") or "Superapp Corp"
 
     active_project = agent.get_active_project() or "Chưa chọn"
 
     welcome_text = (
-        f"🤖 **AI BUSINESS ASSISTANT PORTAL** 🤖\n"
-        f"Xin chào Anh/Chị! Tôi là Trợ lý AI Vận Hành. Tôi ở đây để giúp Anh/Chị xử lý dữ liệu, báo cáo, và tự động hóa các quy trình.\n\n"
+        f"🤖 **TELEGRAM BUSINESS ASSISTANT** 🤖\n"
+        f"Xin chào Anh/Chị! Tôi là Trợ lý Ảo Doanh Nghiệp. Tôi ở đây để giúp Anh/Chị xử lý dữ liệu, báo cáo, và tự động hóa các quy trình.\n\n"
+        f"🏢 **Doanh nghiệp**: `{company_name}`\n"
+        f"👤 **Vai trò**: `{role.upper()}`\n"
         f"📂 **Phân hệ đang làm việc**: `{active_project.upper()}`\n\n"
-        f"💬 **CÁCH TƯƠNG TÁC**:\n"
-        f"- Anh/Chị chỉ cần **nhắn tin bằng ngôn ngữ tự nhiên** để yêu cầu tôi. Ví dụ:\n"
-        f"  * \"Liệt kê doanh thu tháng này từ Supabase\"\n"
-        f"  * \"Lên lịch báo cáo tồn kho mỗi ngày lúc 8h sáng\"\n"
-        f"  * \"Đăng nhập hệ thống ERP và lấy dữ liệu khách hàng\"\n"
-        f"  * \"Kiểm tra xem quy trình xin nghỉ phép của công ty quy định thế nào\"\n\n"
-        f"⚙️ **CÁC LỆNH TIỆN ÍCH**:\n"
-        f"1️⃣ `/manual` (hoặc `/guide`) - Xem chi tiết hướng dẫn sử dụng bot.\n"
-        f"2️⃣ `/apps` - Chuyển đổi phân hệ làm việc (Kế toán, Nhân sự, Sales...).\n"
-        f"3️⃣ `/model <name>` - Quản lý mô hình AI.\n"
-        f"4️⃣ `/ask <câu hỏi>` - Hỏi đáp dựa trên tài liệu sổ tay công ty.\n"
-        f"5️⃣ `/session` - Xem trạng thái bộ nhớ của phiên làm việc.\n"
-        f"6️⃣ `/compress` - 🗜️ Nén bộ nhớ khi cần thiết.\n\n"
-        f"🚀 **(NÂNG CAO) TÍNH NĂNG TỰ ĐỘNG HÓA**:\n"
-        f"🔹 `/goal <yêu cầu>` - Tự động hóa 100%: Giao cho tôi một quy trình dài, tôi sẽ tự làm đến khi xong (VD: Trích xuất 100 hóa đơn).\n"
-        f"🔹 `/schedule <nhiệm vụ>` - Lên lịch hẹn giờ hoặc định kỳ (cron) thực hiện báo cáo.\n"
-        f"🔹 `/browser <yêu cầu>` - Mở trình duyệt ảo để tôi tự động thao tác trên web công ty thay Anh/Chị.\n"
-        f"🔟 `/task_status (ts)`, `/clear_task (ct)` - Quản lý Task Journal chạy dài.\n"
-        f"1️⃣1️⃣ `/run <cmd>` - Chạy trực tiếp PowerShell command trên host.\n"
-        f"1️⃣2️⃣ `/reboot`, `/botstat`, `/killbot` - Khởi động lại bot và quản lý Python process.\n"
-        f"1️⃣3️⃣ `/session` - Xem trạng thái context budget và lịch sử nén session.\n"
-        f"1️⃣4️⃣ `/compress` - 🗜️ Nén context thủ công (emergency escape khi budget > 80%).\n\n"
-        f"🚀 **(MỚI) TÍNH NĂNG TỰ TRỊ (AGENTIC & ORCHESTRATION)**:\n"
-        f"🔹 `/autopilot` - Quản lý trong `/settings`. Tự trị quét lỗi định kỳ.\n"
-        f"🔹 `/goal <yêu cầu>` - Tự trị 100%: Chạy liên tục, tự fix lỗi đến khi đạt mục tiêu lớn (không ngắt quãng).\n"
-        f"🔹 `/teamwork-preview <yêu cầu>` - Multi-agent: Kêu gọi các sub-agent chia việc và xử lý song song dự án lớn.\n"
-        f"🔹 `/schedule <nhiệm vụ>` - Lên lịch hẹn giờ hoặc định kỳ (cron) thực hiện task.\n"
-        f"🔹 `/browser <yêu cầu>` - Mở trình duyệt ẩn để search thông tin, đọc docs hoặc thao tác web tự động.\n"
-        f"🔹 `/grill-me <chủ đề>` - Bật chế độ 'phỏng vấn', AI sẽ hỏi sâu để chốt design/plan trước khi code."
+        f"💬 **CÁCH GIAO TIẾP VỚI TÔI**:\n"
+        f"- Anh/Chị chỉ cần **nhắn tin bằng ngôn ngữ tự nhiên** (giống hệt chat với đồng nghiệp). Ví dụ:\n"
+        f"  * \"Cho tôi xem báo cáo doanh thu ngày hôm nay.\"\n"
+        f"  * \"Quy trình xin nghỉ phép mới nhất quy định thế nào?\"\n"
+        f"  * \"Khách hàng tên Nguyễn Văn A hôm nay có mua hàng không?\"\n\n"
+        f"⚙️ **CÁC LỆNH CƠ BẢN**:\n"
+        f"1️⃣ `/manual` (hoặc `/guide`) - Mở cẩm nang hướng dẫn sử dụng chi tiết.\n"
+        f"2️⃣ `/apps` - Chuyển đổi phân hệ làm việc (Ví dụ: Chuyển sang app Kế toán, Nhân sự...).\n"
+        f"3️⃣ `/ask <câu hỏi>` - Hỏi đáp nhanh tài liệu nội bộ.\n"
+        f"4️⃣ `/crawl <link>` - Đọc và tóm tắt ngay 1 đường link web.\n"
+        f"5️⃣ `/login` - Đăng nhập vào hệ thống nội bộ.\n"
     )
     bot.reply_to(message, welcome_text, parse_mode="Markdown")
 
@@ -533,43 +534,45 @@ def send_manual(message):
         return
 
     manual_text = (
-        f"📖 **BÍ KÍP LÀM CHỦ ANTIGRAVITY AGENT (TINH HOA ĐIỀU PHỐI AI)**\n\n"
-        f"Chào mừng bạn đến với Kỷ nguyên Tự trị (Agentic Era). Đây không phải là một con Chatbot trả lời câu hỏi, đây là một **Senior Software Engineer & Tech Lead** thực thụ đang ngồi trong server của bạn.\n\n"
-        f"💡 **TƯ DUY CỐT LÕI (THE MINDSET)**\n"
-        f"Đừng dùng bot như Google. Hãy **GIAO VIỆC** (Delegate). Hãy nói cho bot biết **MỤC TIÊU CUỐI CÙNG**, bot sẽ tự phân rã (Breakdown), tự code (Execute), tự kiểm tra (Test) và tự sửa lỗi (Self-heal).\n\n"
+        f"📖 **CẨM NANG TRỢ LÝ DOANH NGHIỆP**\n\n"
+        f"Xin chào! Trợ lý Business Bot được thiết kế để biến mọi thao tác phần mềm phức tạp thành **Giao tiếp Tự nhiên**. Dưới đây là 3 quy tắc vàng để làm việc hiệu quả:\n\n"
         
-        f"🔥 **6 LỆNH QUYỀN NĂNG NHẤT BẠN PHẢI BIẾT:**\n\n"
+        f"🗣️ **1. CHAT TỰ NHIÊN (KHÔNG CẦN NHỚ LỆNH)**\n"
+        f"Bạn không cần gõ lệnh code phức tạp. Hãy nhắn tin như nói chuyện với người thật. Bạn cung cấp ngữ cảnh càng rõ, tôi trả lời càng chính xác.\n"
+        f"• **Ví dụ tốt**: `\"Gửi cho tôi báo cáo bán hàng của chi nhánh Quận 1 trong tuần trước nhé.\"`\n\n"
         
-        f"🎯 **1. `/goal` (Chế Độ Cắm Máy - Tự trị 100%)**\n"
-        f"• **Tinh hoa**: Thay vì ra lệnh từng bước và phải gõ 'tiếp tục' 50 lần, `/goal` ép bot thề không dừng lại cho đến khi xong việc. Nó sẽ tự fix bug, tự tìm file, tự google nếu bí. Dành cho các Epic Task lớn.\n"
-        f"• **Ví dụ**: `/goal Clone giao diện trang web apple.com bằng Tailwind và lưu vào thư mục frontend.`\n\n"
+        f"📂 **2. LÀM SAO ĐỂ KHÔNG BỊ RỐI GIỮA NHIỀU APP?**\n"
+        f"Hệ thống của chúng ta có nhiều phân hệ (Kế Toán, Nhân Sự, Sales...). Để đảm bảo cả bạn và Bot luôn nói về đúng 1 App:\n"
+        f"• **Cách 1 (Dùng nút bấm)**: Gõ lệnh `/apps`. Bot sẽ hiện ra menu để bạn click chọn chuyển sang App mong muốn. Bộ nhớ sẽ được cô lập riêng cho App đó.\n"
+        f"• **Cách 2 (Nhắc trực tiếp)**: Nếu bạn đang ở App HR nhưng muốn hỏi nhanh về Kế toán, chỉ cần nhắc tên app trong câu chat: `\"Trong phân hệ Kế toán, quy định hóa đơn mới nhất là gì?\"` Bot sẽ tự hiểu.\n"
+        f"*(Mẹo: Hãy luôn để ý dòng chữ `Phân hệ đang làm việc: [...]` mỗi khi gõ `/start`)*\n\n"
         
-        f"🗣️ **2. `/grill-me` (Kiến Trúc Sư Phản Biện)**\n"
-        f"• **Tinh hoa**: Đừng bao giờ code mù! Gõ lệnh này, bot sẽ đóng vai Tech Lead khó tính, vặn vẹo bạn bằng 3-5 câu hỏi hóc búa về quy mô, database, edge cases... Trả lời xong, bot sẽ tự ra `/plan` hoàn hảo.\n"
-        f"• **Ví dụ**: `/grill-me Mình muốn xây dựng hệ thống thanh toán Subscription như Netflix.`\n\n"
+        f"🔍 **3. HỎI ĐÁP TÀI LIỆU CÔNG TY**\n"
+        f"Dùng lệnh `/ask` để moi móc thông tin từ sổ tay nhân viên hoặc chính sách công ty một cách siêu tốc.\n"
+        f"• **Ví dụ**: `/ask Nghỉ ốm có cần giấy khám sức khỏe không?`\n\n"
         
-        f"👥 **3. `/teamwork-preview` (Thuật Phân Thân - Multi-Agent)**\n"
-        f"• **Tinh hoa**: Khi dự án quá lớn, 1 Agent dễ bị 'ngợp' Context. Lệnh này ép Agent chính lùi lại làm Project Manager, phân chia task cho các Sub-Agent (Frontend, Backend) làm song song.\n"
-        f"• **Ví dụ**: `/teamwork-preview Xây tính năng đăng nhập SSO Google. Cần 1 API supabase và 1 nút React.`\n\n"
-        
-        f"🌐 **4. `/browser` (Đôi Mắt Trực Tuyến - Playwright E2E)**\n"
-        f"• **Tinh hoa**: Bot có khả năng mở Google Chrome ẩn, đọc Docs mới nhất (vì data AI thường cũ) hoặc thao tác click vào UI để test lỗi giao diện thay vì đoán mò.\n"
-        f"• **Ví dụ**: `/browser Truy cập docs của React 19 và tóm tắt những thay đổi về Hook mới nhất.`\n\n"
-        
-        f"⏰ **5. `/schedule` (Lập Lịch Định Kỳ - Cronjob)**\n"
-        f"• **Tinh hoa**: Biến bot thành quản gia. Bạn có thể hẹn giờ để bot chạy test, kiểm tra log lỗi, hoặc cào dữ liệu định kỳ.\n"
-        f"• **Ví dụ**: `/schedule 3600 (Hẹn sau 1 tiếng) Chạy test toàn bộ app và báo cáo lỗi nếu có.`\n\n"
-        
-        f"🗺️ **6. `/plan` (Chế độ Phác Thảo Cẩn Thận)**\n"
-        f"• **Tinh hoa**: Bot sẽ không code mà chỉ dùng `read_file` để rà soát toàn bộ project, sau đó xuất ra file `implementation_plan.md` để bạn duyệt trước khi nó xuống tay.\n"
-        f"• **Ví dụ**: `/plan Nghiên cứu codebase hiện tại và đề xuất cách tối ưu tốc độ load.`\n\n"
-        
-        f"⚠️ **MẸO VÀNG CHO NEWBIE:**\n"
-        f"1. Dùng lệnh `/apps` để trỏ bot vào đúng dự án trước khi ra lệnh.\n"
-        f"2. Nếu bot làm sai, đừng chửi nó. Hãy gõ: `Bạn đang bị lỗi X ở file Y, dùng /browser để tra cứu lại docs đi`.\n"
-        f"3. Tận dụng tối đa `/grill-me` cho ý tưởng mới và `/goal` cho công việc nhàm chán!"
+        f"🔌 **4. ĐĂNG NHẬP HỆ THỐNG**\n"
+        f"Dùng lệnh `/login` nếu Bot yêu cầu bạn xác thực danh tính để xem các báo cáo mật."
     )
     bot.reply_to(message, manual_text, parse_mode="Markdown")
+
+@bot.message_handler(commands=['walkthrough', 'tutorial'])
+def handle_walkthrough(message):
+    user_id = message.from_user.id
+    role = get_user_role(user_id)
+    if role not in ["admin", "admin_master", "admin_company", "trial", "accountant", "hr_manager", "sales_agent", "warehouse_keeper"]:
+        bot.reply_to(message, "⛔ Access Denied.")
+        return
+        
+    walkthrough_text = (
+        f"🗺️ **HƯỚNG DẪN TỪNG BƯỚC CHO THÀNH VIÊN MỚI**\n\n"
+        f"Chào mừng bạn đến với Superapp Business Bot! Hãy làm theo 3 bước sau để bắt đầu:\n\n"
+        f"1️⃣ **Bước 1**: Xem danh sách ứng dụng khả dụng bằng lệnh `/apps` và chọn phân hệ muốn làm việc.\n"
+        f"2️⃣ **Bước 2**: Thử gửi một câu hỏi tiếng Việt tự nhiên (ví dụ: \"tạo hóa đơn 15 triệu từ nhà cung cấp A\") để Bot tự động xử lý.\n"
+        f"3️⃣ **Bước 3**: Truy cập trung tâm cài đặt bằng lệnh `/settings` để tùy chỉnh mô hình AI và cấu hình hệ thống.\n\n"
+        f"Chúc bạn có trải nghiệm tuyệt vời!"
+    )
+    bot.reply_to(message, walkthrough_text, parse_mode="Markdown")
 
 
 @bot.message_handler(commands=['awake'])
@@ -874,7 +877,20 @@ def handle_run_cmd(message):
 
 @bot.message_handler(commands=['apps'])
 def list_apps_switcher(message):
-    if not check_rbac_permission(message, "admin"):
+    user_id = message.from_user.id
+    role = get_user_role(user_id)
+    if role == "trial":
+        bot.reply_to(message, "⚠️ **TÀI KHOẢN TRẢI NGHIỆM (TRIAL)**\n\nBạn đang truy cập ở chế độ dùng thử. Các ứng dụng bị giới hạn:\n- Hotline liên hệ: `0901234567`\n- Link dùng thử: `https://trial-limited.example.com`\n- Vui lòng nâng cấp tài khoản để có quyền truy cập đầy đủ.")
+        return
+
+    if not role:
+        welcome_text = (
+            f"🔒 **YÊU CẦU LIÊN KẾT TÀI KHOẢN**\n\n"
+            f"Tài khoản Telegram này chưa được kích hoạt trên hệ thống Superapp.\n"
+            f"- **Telegram ID của bạn:** `{user_id}`\n\n"
+            f"Vui lòng gửi mã số này cho Quản trị viên của bạn để được liên kết tài khoản và cấp quyền trên Admin Portal."
+        )
+        bot.reply_to(message, welcome_text, parse_mode="Markdown")
         return
         
     settings_file = Path(__file__).parent / "config" / "settings.json"
@@ -890,11 +906,34 @@ def list_apps_switcher(message):
         bot.reply_to(message, "❌ No applications mapped in `settings.json` under `apps` array.")
         return
         
+    # Get user's company and filter apps
+    user_data = db.get_user_by_telegram_id(str(user_id))
+    user_company = None
+    if user_data:
+        user_company = user_data.get("company_name") or user_data.get("company")
+        
+    roles = [r.strip() for r in role.split(",")]
+    allowed_modules = []
+    for r in roles:
+        allowed_modules.extend(ROLE_PERMISSIONS.get(r, []))
+
+    filtered_apps = []
+    for app in apps:
+        app_name = app.get("name")
+        if app_name in allowed_modules:
+            app_company = app.get("company_name") or app.get("company")
+            if not app_company or not user_company or app_company.lower().strip() == user_company.lower().strip():
+                filtered_apps.append(app)
+            
+    if not filtered_apps:
+        bot.reply_to(message, "❌ Không có ứng dụng nào được cấu hình cho doanh nghiệp của bạn.")
+        return
+
     active_project = agent.get_active_project() or "default"
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     
     buttons = []
-    for app in apps:
+    for app in filtered_apps:
         name = app.get("name")
         tech = app.get("tech", "React")
         label = f"📁 {name} ({tech})"
@@ -951,7 +990,15 @@ def handle_switch_app_callback(call):
     
     # Prepare inline buttons and dynamic text
     markup = telebot.types.InlineKeyboardMarkup()
-    btn_cloud = telebot.types.InlineKeyboardButton("☁️ Vercel Link", url=production_url) if production_url else None
+    
+    is_valid_url = isinstance(production_url, str) and (production_url.startswith("http://") or production_url.startswith("https://"))
+    btn_cloud = None
+    url_warning = ""
+    if production_url:
+        if is_valid_url:
+            btn_cloud = telebot.types.InlineKeyboardButton("☁️ Vercel Link", url=production_url)
+        else:
+            url_warning = "⚠️ **Cảnh báo**: URL Production cấu hình không hợp lệ.\n\n"
     
     if port_active and active_tunnel:
         status_text = (
@@ -987,6 +1034,8 @@ def handle_switch_app_callback(call):
             markup.add(btn_awake, btn_cloud)
         else:
             markup.add(btn_awake)
+            
+    status_text = url_warning + status_text
         
     bot.edit_message_text(
         chat_id=call.message.chat.id,
@@ -2304,14 +2353,41 @@ def process_settings_input(message, setting_key):
 def handle_agent_chat(message):
     user_id = message.from_user.id
     role = get_user_role(user_id)
-    if role not in ["admin", "admin_master", "admin_company"]:
-        bot.reply_to(message, "⛔ Access Denied.")
+    if not role:
+        welcome_text = (
+            f"🔒 **YÊU CẦU LIÊN KẾT TÀI KHOẢN**\n\n"
+            f"Tài khoản Telegram này chưa được kích hoạt trên hệ thống Superapp.\n"
+            f"- **Telegram ID của bạn:** `{user_id}`\n\n"
+            f"Vui lòng gửi mã số này cho Quản trị viên của bạn để được liên kết tài khoản và cấp quyền trên Admin Portal."
+        )
+        bot.reply_to(message, welcome_text, parse_mode="Markdown")
         return
         
     user_text = message.text
     if user_text.startswith('/'):
         return
-        
+
+    # Enforce AI Routing permission gate
+    msg_lower = user_text.lower().strip()
+    target_module = None
+    if "tạo hóa đơn" in msg_lower or "invoice" in msg_lower:
+        target_module = "accounting"
+    elif "xin nghỉ phép" in msg_lower or "leave" in msg_lower:
+        target_module = "hr"
+    elif "bán hàng" in msg_lower or "sales" in msg_lower:
+        target_module = "sales"
+    elif "nhập kho" in msg_lower or "inventory" in msg_lower:
+        target_module = "inventory"
+
+    if target_module:
+        roles = [r.strip() for r in role.split(",")]
+        allowed_modules = []
+        for r in roles:
+            allowed_modules.extend(ROLE_PERMISSIONS.get(r, []))
+        if target_module not in allowed_modules:
+            bot.reply_to(message, f"⛔ Bạn không có quyền truy cập phân hệ `{target_module.upper()}`.")
+            return
+
     forced = USER_DEFAULT_PROVIDERS.get(user_id)
     if not forced:
         forced = settings.load_settings().get("default_ai_model", "deepseek")

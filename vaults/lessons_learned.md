@@ -1,4 +1,4 @@
-﻿# Lessons Learned
+﻿﻿# Lessons Learned
 
 This file serves as the active knowledge repository for the Core Governance AI Engine. It records engineering heuristics, user preferences, and repeating bugs.
 
@@ -36,3 +36,6 @@ This file serves as the active knowledge repository for the Core Governance AI E
 - **[2026-06-14]**: RLS Infinite Recursion Fix — All policies ON `public.users` that self-reference `FROM public.users` cause infinite recursion. Fix by using `auth.jwt() -> 'user_metadata' ->> 'role'` instead. Applied to migrations 002, 005, 008, 030.
 - **[2026-06-14]**: Telegram Bot ReadTimeout & 502 Errors — Transient network issues cause polling crashes. Auto-recovery via `infinity_polling()` works but has ~30s gap. Recommend increasing timeout to 45s.
 - **[2026-06-14]**: Gemini API Free Tier Quota (20 req/day) — After exhaustion, `run_visual_audit` and memory vault fail silently. Need quota-aware routing or paid tier upgrade.
+- **[2026-06-15]**: Telegram Bot 409 Conflict Error — 75 occurrences in last 1000 log lines. Caused by multiple bot instances polling the same token simultaneously. Root cause: zombie processes from previous bot restarts not properly killed. Fix: always kill ALL Python processes before restarting, or use a PID lock file.
+- **[2026-06-15]**: Playwright Screenshot Testing Framework — Successfully built multi-agent framework with 5 scripts (port_manager, scan_routes, generate_test_script, batch_runner, analyze_results). Key lesson: always use `.mjs` files instead of inline `-e` to avoid PowerShell escaping issues. Batch runner can test 6 apps sequentially with port management.
+- **[2026-06-15]**: Responsive UI/UX Fix Pattern — For iPad (768px) responsive issues: (1) Sidebar width: `w-60 lg:w-64 xl:w-72` instead of fixed `w-80`, (2) Cards grid: `grid-cols-2 md:grid-cols-4`, (3) Table: hide secondary columns on mobile + horizontal scroll, (4) Navigation: hide text on `sm:` breakpoint, show only icons.
