@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { useTranslation } from "react-i18next";
 
 interface FallbackUIProps {
@@ -60,6 +60,11 @@ export const ErrorFallback: React.FC<ErrorFallbackProps> = ({
   message,
   retry,
 }) => {
+  // Ensure message is a string to avoid "Objects are not valid as a React child" error
+  const safeMessage = typeof message === 'string' ? message : 
+    message instanceof Error ? message.message : 
+    message ? String(message) : 'Unknown error';
+
   return (
     <div className="text-center py-8">
       <div className="inline-flex items-center justify-center w-12 h-12 mb-4 bg-red-100 rounded-full">
@@ -78,7 +83,7 @@ export const ErrorFallback: React.FC<ErrorFallbackProps> = ({
         </svg>
       </div>
       <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
-      <p className="text-sm text-gray-500 mb-4">{message}</p>
+      <p className="text-sm text-gray-500 mb-4">{safeMessage}</p>
       {retry && (
         <button
           onClick={retry}

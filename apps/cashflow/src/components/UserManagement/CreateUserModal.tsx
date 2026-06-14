@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { useCompany } from "@superapp/iam";
 import { useAuthContext as useAuth } from "@superapp/iam";
 
@@ -157,7 +157,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
 
         {error && (
           <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-            {error}
+            {typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error'}
           </div>
         )}
 

@@ -1,5 +1,11 @@
 # Super Agents & Roles
 
+> 📜 **HIẾN PHÁP DỰ ÁN** (chi tiết đầy đủ tại `.agent/memory/CONSTITUTION.md`):
+> - **Nguyên Tắc I**: Xây đúng hơn sửa đúng — Đơn giản, bền vững, dễ maintain > phức tạp. Nếu gốc sai → rebuild, không workaround.
+> - **Nguyên Tắc II**: Testing là nghệ thuật — Test 5 chiều (Spec → Flow → UI/UX → Function → Data). Feature chưa test đủ 3 chiều = CHƯA XONG.
+
+---
+
 You have 27 granular skills in your `.agent/skills/` folder. To simplify your workflow, you don't need to remember all of them. Instead, you can simply call upon these **5 Super Agents**. Antigravity will automatically combine the granular skills listed under each role.
 
 ### 1. The Product Manager (PM)

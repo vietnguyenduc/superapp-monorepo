@@ -1,0 +1,505 @@
+{
+  "date": "2026-06-13T16:43:40.177Z",
+  "app": "inventory-operation",
+  "port": 3005,
+  "results": [
+    {
+      "page": "login",
+      "viewport": "desktop",
+      "status": "OK",
+      "file": "01-login-desktop.png"
+    },
+    {
+      "page": "dashboard",
+      "viewport": "desktop",
+      "status": "OK",
+      "file": "02-dashboard-desktop.png"
+    },
+    {
+      "page": "purchase-orders",
+      "viewport": "desktop",
+      "status": "OK",
+      "file": "03-purchase-orders-desktop.png"
+    },
+    {
+      "page": "product-catalog",
+      "viewport": "desktop",
+      "status": "OK",
+      "file": "04-product-catalog-desktop.png"
+    },
+    {
+      "page": "inventory-input",
+      "viewport": "desktop",
+      "status": "OK",
+      "file": "05-inventory-input-desktop.png"
+    },
+    {
+      "page": "settings",
+      "viewport": "desktop",
+      "status": "OK",
+      "file": "06-settings-desktop.png"
+    },
+    {
+      "page": "guide",
+      "viewport": "desktop",
+      "status": "OK",
+      "file": "07-guide-desktop.png"
+    },
+    {
+      "page": "inventory-mrp",
+      "viewport": "desktop",
+      "status": "OK",
+      "file": "08-inventory-mrp-desktop.png"
+    },
+    {
+      "page": "profile",
+      "viewport": "desktop",
+      "status": "OK",
+      "file": "09-profile-desktop.png"
+    },
+    {
+      "page": "login",
+      "viewport": "ipad",
+      "status": "OK",
+      "file": "01-login-ipad.png"
+    },
+    {
+      "page": "dashboard",
+      "viewport": "ipad",
+      "status": "OK",
+      "file": "02-dashboard-ipad.png"
+    },
+    {
+      "page": "purchase-orders",
+      "viewport": "ipad",
+      "status": "OK",
+      "file": "03-purchase-orders-ipad.png"
+    },
+    {
+      "page": "product-catalog",
+      "viewport": "ipad",
+      "status": "OK",
+      "file": "04-product-catalog-ipad.png"
+    },
+    {
+      "page": "inventory-input",
+      "viewport": "ipad",
+      "status": "OK",
+      "file": "05-inventory-input-ipad.png"
+    },
+    {
+      "page": "settings",
+      "viewport": "ipad",
+      "status": "OK",
+      "file": "06-settings-ipad.png"
+    },
+    {
+      "page": "guide",
+      "viewport": "ipad",
+      "status": "OK",
+      "file": "07-guide-ipad.png"
+    },
+    {
+      "page": "inventory-mrp",
+      "viewport": "ipad",
+      "status": "OK",
+      "file": "08-inventory-mrp-ipad.png"
+    },
+    {
+      "page": "profile",
+      "viewport": "ipad",
+      "status": "OK",
+      "file": "09-profile-ipad.png"
+    }
+  ],
+  "consoleErrors": {
+    "desktop": [
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "warning",
+        "text": "🔄 Using fallback mode (Supabase not configured)"
+      },
+      {
+        "type": "warning",
+        "text": "🔄 Using fallback mode (Supabase not configured)"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Error: <path> attribute d: Expected number, \"… 2 2v10m-6 0a2 2h2a2 2 0 0 0 2-2…\"."
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "warning",
+        "text": "🔄 Using fallback mode (Supabase not configured)"
+      },
+      {
+        "type": "warning",
+        "text": "🔄 Using fallback mode (Supabase not configured)"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Error: <path> attribute d: Expected number, \"… 2 2v10m-6 0a2 2h2a2 2 0 0 0 2-2…\"."
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "warning",
+        "text": "No routes matched location \"/product-catalog\" "
+      },
+      {
+        "type": "warning",
+        "text": "No routes matched location \"/product-catalog\" "
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Error fetching inventory variance reports, falling back to mock due to: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Error fetching inventory variance reports, falling back to mock due to: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "warning",
+        "text": "No routes matched location \"/guide\" "
+      },
+      {
+        "type": "warning",
+        "text": "No routes matched location \"/guide\" "
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      }
+    ],
+    "ipad": [
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "warning",
+        "text": "🔄 Using fallback mode (Supabase not configured)"
+      },
+      {
+        "type": "warning",
+        "text": "🔄 Using fallback mode (Supabase not configured)"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Error: <path> attribute d: Expected number, \"… 2 2v10m-6 0a2 2h2a2 2 0 0 0 2-2…\"."
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "warning",
+        "text": "🔄 Using fallback mode (Supabase not configured)"
+      },
+      {
+        "type": "warning",
+        "text": "🔄 Using fallback mode (Supabase not configured)"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Error: <path> attribute d: Expected number, \"… 2 2v10m-6 0a2 2h2a2 2 0 0 0 2-2…\"."
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "warning",
+        "text": "No routes matched location \"/product-catalog\" "
+      },
+      {
+        "type": "warning",
+        "text": "No routes matched location \"/product-catalog\" "
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Error fetching inventory variance reports, falling back to mock due to: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Error fetching inventory variance reports, falling back to mock due to: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 401 ()"
+      },
+      {
+        "type": "warning",
+        "text": "Database error, using fallback: {code: 42501, details: null, hint: null, message: permission denied for table users}"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "warning",
+        "text": "No routes matched location \"/guide\" "
+      },
+      {
+        "type": "warning",
+        "text": "No routes matched location \"/guide\" "
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client"
+      }
+    ]
+  }
+}

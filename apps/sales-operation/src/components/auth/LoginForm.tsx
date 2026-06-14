@@ -117,14 +117,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isLoading = false
 };
 
 // Role-based Access Control Component
-interface ProtectedRouteProps {
+interface RoleBasedRouteProps {
   children: React.ReactNode;
   requiredPermissions?: string[];
   requiredRoles?: string[];
   fallback?: React.ReactNode;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+export const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
   children,
   requiredPermissions = [],
   requiredRoles = [],

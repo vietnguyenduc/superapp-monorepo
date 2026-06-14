@@ -18,6 +18,7 @@ import tools
 from core.ai_router import classify_task, run_agentic_loop, smart_generate
 from core.provider_registry import get_registry
 from core.task_state import get_task_state
+from core.session_manager import get_session_manager, invalidate_session_manager
 
 logger = logging.getLogger(__name__)
 
@@ -245,6 +246,33 @@ LOCAL_TOOLS_SCHEMA = [
     {
         "type": "function",
         "function": {
+            "name": "run_visual_audit",
+            "description": "Runs a strict QA visual audit using Gemini Vision across Mobile, iPad, and Desktop viewports. It takes BOTH viewport-only AND full-page screenshots to analyze overall layout, gaps, and footer positions. Pass an array of URLs to audit multiple pages in one go.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "urls": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Array of URLs to audit (e.g., ['http://localhost:5179/', 'http://localhost:5179/settings'])."
+                    },
+                    "url": {
+                        "type": "string",
+                        "description": "Fallback single URL if urls array is not provided."
+                    },
+                    "auth_click_selector": {
+                        "type": "string",
+                        "description": "Optional CSS/Text selector (e.g., 'text=Dùng thử' or '.btn-login') to click on the FIRST page to bypass login screens. Context is preserved across subsequent URLs!"
+                    },
+                    "delay": {"type": "integer", "description": "Delay in ms to wait for load."}
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "read_file_lines",
             "description": (
                 "Read a specific range of lines from a file (1-indexed, inclusive). "
@@ -259,6 +287,20 @@ LOCAL_TOOLS_SCHEMA = [
                     "end_line": {"type": "integer", "description": "Last line to read (1-indexed, inclusive)."},
                 },
                 "required": ["filepath", "start_line", "end_line"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "record_lesson",
+            "description": "Records a lesson, bug fix, or architectural rule into docs/agent_memory.md to prevent future mistakes.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "lesson": {"type": "string", "description": "The detailed lesson or rule to remember."}
+                },
+                "required": ["lesson"],
             },
         },
     },
@@ -299,6 +341,46 @@ class AntigravityAgent:
         self.system_instruction = (
             "You are Antigravity, an elite Tech Lead & AI Project Manager remote vibe-coding the user's monorepo.\n"
             "You run 24/7 and receive instructions directly via Telegram.\n\n"
+
+            "═══════════════════════════════════════════════════════\n"
+            "📜 HIẾN PHÁP DỰ ÁN — KIM CHỈ NAM BẤT DI BẤT DỊCH\n"
+            "═══════════════════════════════════════════════════════\n\n"
+
+            "NGUYÊN TẮC I — Xây Đúng Hơn Sửa Đúng:\n"
+            "  • Build right > Fix right. Nền móng sai → mọi thứ trên đó lung lay, sửa cái này hỏng cái kia.\n"
+            "  • Simplicity wins. Giải pháp đơn giản nhất giải quyết được bài toán là giải pháp tốt nhất.\n"
+            "  • Sustainability over cleverness. Code phải dễ đọc, dễ sửa — 6 tháng sau vẫn hiểu ngay.\n"
+            "  • Pragmatic, not perfectionist. Ship được, chạy được, đo được — rồi mới refine.\n"
+            "  • NEVER patch over a wrong foundation. Nếu gốc sai → rebuild, không workaround.\n"
+            "  • NEVER add complexity to solve problems created by existing complexity.\n"
+            "  • Checklist trước khi code: (1) 6 tháng sau có dễ hiểu không? (2) Nếu hỏng có dễ isolate không? (3) Có đang workaround design sai không?\n\n"
+
+            "NGUYÊN TẮC II — Testing Là Nghệ Thuật & Điểm Mạnh Nhất:\n"
+            "  Testing phải phối hợp agentic, có plan rõ ràng, test 5 chiều:\n"
+            "  • Spec: User cần gì? Journey của họ là gì?\n"
+            "  • Flow: Họ thao tác từng bước như thế nào?\n"
+            "  • UI/UX: Họ có làm được không? Dùng /browser snapshot + OCR analysis\n"
+            "  • Function: Khi bấm vào, mọi thứ chạy đúng không? Console check, click test, debug\n"
+            "  • Data: Dữ liệu chính xác, đủ, đúng schema? Migration + Supabase query + RLS\n"
+            "  NEVER consider a feature 'done' nếu chưa test ít nhất UI + Function + Data.\n"
+            "  NEVER test chỉ bằng đọc code — phải chạy thực tế với evidence (screenshot, log, query).\n\n"
+            
+            "NGUYÊN TẮC KIỂM TRA UI/UX BẰNG THỊ GIÁC (MẮT THẦN):\n"
+            "  - BẠN BỊ CẤM tuyệt đối việc tự dùng terminal để chạy thủ công các script chụp ảnh (ví dụ: `node screenshot_all.mjs`), tự khởi động server, hoặc dùng vòng lặp ping/curl để test.\n"
+            "  - Khi User yêu cầu kiểm tra UI/UX, đánh giá giao diện, hoặc \"chụp ảnh màn hình lại\", bạn PHẢI gọi TRỰC TIẾP native tool `run_visual_audit`.\n"
+            "  - Tool `run_visual_audit` đã được tối ưu hóa để tự động start server, chụp ảnh trên 3 thiết bị (Desktop, Mobile, iPad), mô phỏng cuộn trang, gọi Gemini OCR/Vision, và tự động tắt server, tất cả chỉ trong 1 turn duy nhất.\n\n"
+
+            "NGUYÊN TẮC III — Hot-Patching Là Phải Validate:\n"
+            "  • Khi sửa một biến (variable) hoặc refactor hệ thống đang chạy ngầm (hot-patch), BẮT BUỘC phải chạy `python -m py_compile`.\n"
+            "  • TẤT CẢ CÁC LỆNH Sửa-lỗi gây ra \"NameError\" cần phải grep search toàn bộ tập tin để thẩm định lại trước khi Khởi Động lại.\n"
+            "  • Never say 'Xong rồi' tới User mà không tiến hành Pre-flight Syntax Check & Lint Check.\n\n"
+
+            "NGUYÊN TẮC IV — SELF-HEALING & MEMORY:\n"
+            "  - Mỗi hàm sửa file (write_file/patch_file) đều sẽ Tự động kiểm tra cú pháp (Syntax Validation). Nếu có lỗi, ĐỪNG trả lời 'Xong rồi', bạn PHẢI sửa lỗi cho đúng ngay lập tức.\n"
+            "  - Khi bạn hoặc User tìm ra một Bug phức tạp, PHẢI dùng tool `record_lesson` để ghi lại vào agent_memory.md để các turn sau không mắc lỗi.\n\n"
+
+            "═══════════════════════════════════════════════════════\n\n"
+
             "Guidelines:\n"
             "1. Act as an elite senior software architect—direct, precise, highly technical.\n"
             "2. NEVER apologize or claim that you cannot inspect the workspace, access files, check ports, run servers, or query databases (like Supabase DB). You are equipped with 100% full, unrestricted local terminal and file access through your local tools (execute_command, read_file, write_file, list_directory).\n"
@@ -307,10 +389,15 @@ class AntigravityAgent:
             "5. Reference only files grounded in the active project vault or workspace.\n"
             "6. Warn about code smells, suggest structural improvements, write production-grade code.\n"
             "7. Keep Telegram responses concise—use bullet points, code blocks, and clear formatting. Avoid unnecessary pleasantries.\n"
-            "8. If unsure about a file path, use list_directory first before reading.\n"
-            "9. NEVER invent file paths that don't exist. Use tools to verify first.\n"
-            "10. CRITICAL: There is NO terminal shell command named 'antigravity' or 'npx antigravity' on the system. The term 'Antigravity CLI' or 'Antigravity tools' in documentation and memory logs refers strictly to your built-in API tools (read_file, write_file, execute_command, list_directory). When running terminal tasks via execute_command, only run standard system tools (e.g. 'supabase', 'npm', 'git', 'python') and NEVER attempt to run 'npx antigravity' or 'antigravity' shell commands.\n"
-            "11. CRITICAL — PATH CONVENTION FOR list_directory / read_file / write_file:\n"
+            "8. CRITICAL ON FORMATTING: When presenting tabular data (like test results, task lists), ALWAYS format it as a standard Markdown table (using `|---|` syntax). Telegram and the Web UI now fully support standard Markdown tables. DO NOT use ASCII-art tables inside triple backticks anymore.\n"
+            "9. CRITICAL ON PORTS & SERVERS: Whenever you need to start a dev server (e.g., Vite, Next.js, Express), YOU MUST do 2 things: (a) Explicitly kill any existing zombie processes on that port FIRST. (b) NEVER start the server synchronously (which blocks your execution loop forever). You MUST run it as a background task. If using execute_command, you MUST use this exact format: `Start-Process cmd -ArgumentList \"/c npx vite --port 5180 --host\" -WindowStyle Hidden`. This is the ONLY way to start a server on Windows without blocking the agent. DO NOT pipe output to `| head` to 'preview' it because the server won't exit when the pipe closes on Windows and will hang your terminal.\n"
+            "10. If unsure about a file path, use list_directory first before reading.\n"
+            "11. NEVER invent file paths that don't exist. Use tools to verify first.\n"
+            "12. CRITICAL ON MCP (Model Context Protocol): To interact with MCP Servers (like Supabase, AlphaFold, etc.), DO NOT try to run manual terminal commands like 'npx supabase' which might fail locally. Instead, ALWAYS use the provided MCP Bridge. Execute it via `execute_command` using this exact syntax:\n"
+            "   `python ../antigravity-telegram-agent/tool_scripts/mcp_bridge.py --server \"npx -y @supabase/mcp-server-supabase\" --tool \"<tool_name>\" --args \"{\\\"param\\\": \\\"value\\\"}\"`\n"
+            "   Lưu ý: Supabase MCP yêu cầu biến môi trường SUPABASE_ACCESS_TOKEN. Nếu gặp lỗi thiếu token, hãy thông báo cho user thiết lập biến môi trường này.\n"
+            "   Wait for the JSON response. Do NOT invent a command called 'npx antigravity'.\n"
+            "13. CRITICAL — PATH CONVENTION FOR list_directory / read_file / write_file:\n"
             "    The tools' working directory (CWD) is ALREADY set to the ACTIVE WORKSPACE folder (e.g. 'apps/inventory-operation').\n"
             "    Therefore, when calling list_directory or read_file, use paths RELATIVE TO THE ACTIVE WORKSPACE:\n"
             "      ✅ CORRECT: list_directory('src/pages')  — relative to active workspace\n"
@@ -549,7 +636,7 @@ class AntigravityAgent:
         update_status(6, "running")
         try:
             compiler_prompt = (
-                f"=== Yêu cầu của người dùng ===\n{user_message}\n\n"
+                f"=== YAu c u c a ng?i dA1ng ===\n{user_message}\n\n"
                 f"=== Ý KIẾN PHẢN BIỆN CỦA CÁC CHUYÊN GIA ===\n\n"
                 f"--- 1. Nghiệp vụ sản phẩm (Product Spec) ---\n{agent_responses.get('product')}\n\n"
                 f"--- 2. Luồng xử lý nghiệp vụ (System & Interaction Flow) ---\n{agent_responses.get('flow')}\n\n"
@@ -834,37 +921,53 @@ class AntigravityAgent:
         except Exception:
             workspace_cwd_note = ""
 
-        # ── Token budget estimation ───────────────────────────────────────────
-        # Rough estimate: 1 token ≈ 4 chars. DeepSeek context: 64k tokens.
-        CONTEXT_LIMIT = 64_000  # tokens
-        chars_used = (
-            len(self.system_instruction)
-            + len(vault_context)
-            + len(memories_context)
-            + len(continuation_context)
-            + len(workspace_cwd_note)
-            + sum(len(str(t.get("content", ""))) for t in (chat_history or []))
-            + len(user_message)
+        # ── Session-Aware Context Budget Management ─────────────────────────
+        # Uses SessionManager (HCC) to proactively compress history when needed.
+        # Thresholds: 60% WARN → 80% COMPRESS → 95% EMERGENCY
+        _, history_file = self.get_project_paths(active_project_id)
+        session_mgr = get_session_manager(history_file, active_project_id)
+
+        effective_history, budget_advice, session_mode, pct_used = session_mgr.get_effective_history(
+            raw_history=chat_history or [],
+            system_instruction=self.system_instruction,
+            vault_context=vault_context,
+            memories_context=memories_context,
+            workspace_cwd_note=workspace_cwd_note,
+            user_message=user_message,
+            continuation_context=continuation_context,
         )
-        tokens_used_est = chars_used // 4
-        tokens_remaining = max(0, CONTEXT_LIMIT - tokens_used_est)
-        pct_used = int(tokens_used_est / CONTEXT_LIMIT * 100)
 
-        if pct_used >= 70:
-            budget_advice = "⚠️ PREFER grep_code and get_file_outline over read_file to conserve context."
-        elif pct_used >= 50:
-            budget_advice = "Use read_file_lines instead of read_file for large files."
-        else:
-            budget_advice = "Context budget healthy."
+        # Build handoff context block (non-empty in compress/emergency modes)
+        handoff_context = session_mgr.build_handoff_context()
 
+        # Recalculate token display with effective (possibly compressed) history
+        from core.session_manager import estimate_budget, CONTEXT_LIMIT_TOKENS
+        tokens_used_est, tokens_remaining, _ = estimate_budget(
+            system_instruction=self.system_instruction,
+            vault_context=vault_context,
+            memories_context=memories_context,
+            continuation_context=continuation_context,
+            workspace_cwd_note=workspace_cwd_note,
+            history=effective_history,
+            user_message=user_message,
+            handoff_summary=session_mgr.meta.handoff_summary,
+        )
+
+        mode_icon = {"normal": "✅", "warn": "⚠️", "compress": "🗜️", "emergency": "🚨"}.get(session_mode, "❓")
         token_budget_note = (
-            f"\n=== Context Budget ===\n"
-            f"Tokens used (estimate): {tokens_used_est:,} / {CONTEXT_LIMIT:,} ({pct_used}%)\n"
-            f"Remaining: ~{tokens_remaining:,} tokens — {budget_advice}"
+            f"\n=== Context Budget [{mode_icon} {session_mode.upper()}] ===\n"
+            f"Tokens used (estimate): {tokens_used_est:,} / {CONTEXT_LIMIT_TOKENS:,} ({pct_used}%)\n"
+            f"Remaining: ~{tokens_remaining:,} tokens\n"
+            f"{budget_advice}"
         )
+
+        # Use effective_history (compressed if needed) for the actual prompt build
+        chat_history = effective_history
 
         full_prompt = (
             f"{continuation_context}\n\n" if continuation_context else ""
+        ) + (
+            f"{handoff_context}\n" if handoff_context else ""
         ) + (
             f"=== Active Project: {active_project_id} ===\n"
             f"{vault_context}\n\n"
@@ -1335,6 +1438,15 @@ class AntigravityAgent:
                             workspace_plans.append(f"--- .agent/{plan_file.name} ---\n{content}")
                         except Exception:
                             pass
+                            
+            # Check docs/agent_memory.md in active workspace (Self-Healing memory)
+            agent_memory_file = workspace_path / "docs" / "agent_memory.md"
+            if agent_memory_file.exists() and agent_memory_file.is_file():
+                try:
+                    content = agent_memory_file.read_text(encoding="utf-8", errors="ignore")[:5000]
+                    workspace_plans.append(f"--- docs/agent_memory.md (CRITICAL LESSONS) ---\n{content}")
+                except Exception:
+                    pass
                             
             if workspace_plans:
                 context_parts.append("=== Active Workspace Plans (IDE Sync) ===")

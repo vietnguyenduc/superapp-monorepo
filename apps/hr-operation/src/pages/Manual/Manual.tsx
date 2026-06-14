@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { useTranslation } from "react-i18next";
+﻿import React, { useState } from "react";
 
 const Manual: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>("getting-started");

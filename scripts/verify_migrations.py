@@ -62,13 +62,13 @@ def check_sql_syntax(filepath):
 
 def main():
     if not os.path.exists(MIGRATIONS_DIR):
-        print(f"❌ Migrations directory not found: {MIGRATIONS_DIR}")
+        print("[FAIL] Migrations directory not found: " + MIGRATIONS_DIR)
         sys.exit(1)
     
     files = sorted(os.listdir(MIGRATIONS_DIR))
     sql_files = [f for f in files if f.endswith('.sql')]
     
-    print(f"Found {len(sql_files)} SQL migration files\n")
+    print("Found " + str(len(sql_files)) + " SQL migration files\n")
     
     passed = 0
     failed = 0
@@ -78,16 +78,16 @@ def main():
         errors = check_sql_syntax(filepath)
         
         if errors:
-            print(f"❌ {f}")
+            print("[FAIL] " + f)
             for err in errors:
-                print(f"   - {err}")
+                print("   - " + err)
             failed += 1
         else:
-            print(f"✅ {f}")
+            print("[OK] " + f)
             passed += 1
     
-    print(f"\n{'='*50}")
-    print(f"Results: {passed} passed, {failed} failed out of {len(sql_files)} files")
+    print("\n" + "=" * 50)
+    print("Results: " + str(passed) + " passed, " + str(failed) + " failed out of " + str(len(sql_files)) + " files")
     
     if failed > 0:
         sys.exit(1)

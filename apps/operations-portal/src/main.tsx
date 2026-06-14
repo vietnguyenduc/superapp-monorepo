@@ -1,7 +1,9 @@
-import { StrictMode } from 'react';
+﻿﻿import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+
+const routerFuture = { v7_startTransition: true, v7_relativeSplatPath: true };
 import './index.css';
 
 const rootElement = document.getElementById('root');
@@ -18,7 +20,7 @@ try {
   
   root.render(
     <StrictMode>
-      <BrowserRouter>
+      <BrowserRouter future={routerFuture}>
         <App />
       </BrowserRouter>
     </StrictMode>

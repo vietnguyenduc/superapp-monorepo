@@ -1,0 +1,128 @@
+[
+  {
+    "app": "sales-operation",
+    "route": "/",
+    "url": "http://localhost:5176/dashboard",
+    "title": "Sales Operation - Quản lý Bán Hàng F&B",
+    "status": "OK"
+  },
+  {
+    "app": "sales-operation",
+    "route": "/dashboard",
+    "url": "http://localhost:5176/dashboard",
+    "title": "Sales Operation - Quản lý Bán Hàng F&B",
+    "status": "OK"
+  },
+  {
+    "app": "sales-operation",
+    "route": "/products",
+    "url": "http://localhost:5176/products",
+    "title": "Sales Operation - Quản lý Bán Hàng F&B",
+    "status": "OK"
+  },
+  {
+    "app": "cashflow",
+    "route": "/",
+    "url": "http://localhost:5177/dashboard",
+    "title": "Quản lý Công nợ - CashFlow",
+    "status": "OK"
+  },
+  {
+    "app": "cashflow",
+    "route": "/dashboard",
+    "url": "http://localhost:5177/dashboard",
+    "title": "Quản lý Công nợ - CashFlow",
+    "status": "OK"
+  },
+  {
+    "app": "cashflow",
+    "route": "/transactions",
+    "url": "http://localhost:5177/transactions",
+    "title": "Quản lý Công nợ - CashFlow",
+    "status": "OK"
+  },
+  {
+    "app": "accounting",
+    "route": "/",
+    "url": "http://localhost:5178/dashboard",
+    "title": "Kế toán - Accounting",
+    "status": "OK"
+  },
+  {
+    "app": "accounting",
+    "route": "/dashboard",
+    "url": "http://localhost:5178/dashboard",
+    "title": "Kế toán - Accounting",
+    "status": "OK"
+  },
+  {
+    "app": "accounting",
+    "route": "/ledger",
+    "url": "http://localhost:5178/ledger",
+    "title": "Kế toán - Accounting",
+    "status": "OK"
+  },
+  {
+    "app": "operations-portal",
+    "route": "/",
+    "url": "http://localhost:5179/dashboard",
+    "title": "operations-portal",
+    "status": "OK"
+  },
+  {
+    "app": "operations-portal",
+    "route": "/dashboard",
+    "url": "http://localhost:5179/dashboard",
+    "title": "operations-portal",
+    "status": "OK"
+  },
+  {
+    "app": "operations-portal",
+    "route": "/operations",
+    "url": "http://localhost:5179/operations",
+    "title": "operations-portal",
+    "status": "OK"
+  },
+  {
+    "app": "hr-operation",
+    "route": "/",
+    "url": "http://localhost:5180/employees",
+    "title": "Inventory Operation - Quản lý Xuất Nhập Tồn F&B",
+    "status": "OK"
+  },
+  {
+    "app": "hr-operation",
+    "route": "/dashboard",
+    "url": "http://localhost:5180/dashboard",
+    "title": "Inventory Operation - Quản lý Xuất Nhập Tồn F&B",
+    "status": "OK"
+  },
+  {
+    "app": "hr-operation",
+    "route": "/employees",
+    "url": "http://localhost:5180/employees",
+    "title": "Inventory Operation - Quản lý Xuất Nhập Tồn F&B",
+    "status": "OK"
+  },
+  {
+    "app": "admin-portal",
+    "route": "/",
+    "url": "http://localhost:5181/login",
+    "title": "admin-portal",
+    "status": "OK"
+  },
+  {
+    "app": "admin-portal",
+    "route": "/dashboard",
+    "url": "http://localhost:5181/dashboard",
+    "title": "admin-portal",
+    "status": "OK"
+  },
+  {
+    "app": "admin-portal",
+    "route": "/users",
+    "url": "http://localhost:5181/users",
+    "title": "admin-portal",
+    "status": "OK"
+  }
+]

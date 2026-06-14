@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { LineChart, Search, Filter, AlertTriangle, ArrowRight, RefreshCw, ShoppingCart, TrendingDown } from 'lucide-react';
 
 const InventoryMRPPage = () => {
@@ -112,8 +112,8 @@ const InventoryMRPPage = () => {
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-          <div className="relative max-w-md w-full">
+        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row gap-3">
+          <div className="relative w-full sm:max-w-md">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
@@ -123,14 +123,15 @@ const InventoryMRPPage = () => {
               className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm transition-all"
             />
           </div>
-          <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-all text-sm font-medium">
-              <Filter className="w-4 h-4" />
-              Lọc
+          <div className="flex gap-2 sm:ml-auto">
+            <button className="inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-all text-sm font-medium">
+              <Filter className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Lọc</span>
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all text-sm font-medium shadow-sm">
-              <ShoppingCart className="w-4 h-4" />
-              Tạo PO hàng loạt
+            <button className="inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all text-sm font-medium shadow-sm whitespace-nowrap">
+              <ShoppingCart className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Tạo PO</span>
+              <span className="sm:hidden">PO</span>
             </button>
           </div>
         </div>

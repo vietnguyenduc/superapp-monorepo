@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Building, Plus, Search, MoreVertical, Briefcase, Calendar, CheckCircle } from 'lucide-react';
-import { hrService, Employee, Department } from '../services/hrService';
+﻿import React, { useState, useEffect } from 'react';
+import { Users, Building, Plus, Search, MoreVertical, Briefcase } from 'lucide-react';
+import { hrService, Employee } from '../services/hrService';
 
 const EmployeeDirectory = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 

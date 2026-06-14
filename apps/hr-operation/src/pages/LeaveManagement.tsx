@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FileText, Plus, CheckCircle, XCircle, Clock, Calendar, Filter } from 'lucide-react';
+﻿import React, { useState } from 'react';
+import { Plus, CheckCircle, XCircle, Clock, Calendar, Filter } from 'lucide-react';
 
 const MOCK_APPROVALS = [
   { id: 1, type: 'Xin đi trễ', name: 'Lê Văn Luyện', initial: 'L', time: '08:00 - 09:30 (20/06/2026)', reason: 'Đưa con đi khám bệnh', status: 'pending' },

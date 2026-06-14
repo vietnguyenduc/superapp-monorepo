@@ -28,13 +28,13 @@ def get_embedding(text: str) -> list:
         client = genai.Client(api_key=api_key)
         try:
             response = client.models.embed_content(
-                model="text-embedding-004",
+                model="gemini-embedding-2",
                 contents=text
             )
         except Exception:
-            # Fallback to older stable model if text-embedding-004 is not supported on this endpoint
+            # Fallback to older stable model if gemini-embedding-2 is not supported on this endpoint
             response = client.models.embed_content(
-                model="embedding-001",
+                model="gemini-embedding-001",
                 contents=text
             )
         if response.embeddings:
@@ -141,6 +141,8 @@ def get_relevant_memories(prompt: str) -> str:
     query_vector = get_embedding(prompt)
     
     ranked = []
+    missing_generated_count = 0
+    
     for f in files:
         try:
             content = f.read_text(encoding="utf-8")
@@ -161,13 +163,16 @@ def get_relevant_memories(prompt: str) -> str:
                         pass
                 else:
                     # Generate and cache embedding on the fly if it doesn't exist yet
-                    logger.info(f"Generating missing embedding vector for {f.name}...")
-                    vector = get_embedding(content)
-                    if vector:
-                        try:
-                            json_path.write_text(json.dumps({"vector": vector}), encoding="utf-8")
-                        except Exception:
-                            pass
+                    # Limit backfill to 3 per search to prevent bot from hanging if there are too many missing
+                    if missing_generated_count < 3:
+                        logger.info(f"Generating missing embedding vector for {f.name}...")
+                        vector = get_embedding(content)
+                        if vector:
+                            try:
+                                json_path.write_text(json.dumps({"vector": vector}), encoding="utf-8")
+                            except Exception:
+                                pass
+                        missing_generated_count += 1
                 
                 if vector:
                     semantic_score = cosine_similarity(query_vector, vector)

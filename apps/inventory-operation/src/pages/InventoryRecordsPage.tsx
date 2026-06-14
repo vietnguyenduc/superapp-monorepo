@@ -1,11 +1,11 @@
-import React, { useMemo, useState, useEffect } from 'react';
+﻿﻿﻿import React, { useMemo, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { inventoryVarianceService } from '../services/inventoryVarianceService';
 import { INVENTORY_VIEWS } from '../types/InventoryMovement';
 import { getTrialInventoryRecords, seedTrialDataIfNeeded } from '../data/trialMockData';
 import InventoryMovementLedger from '../components/InventoryMovementLedger';
 import { useProducts } from '../hooks/useProducts';
-import { useAuthContext } from '@superapp/iam';
+import { useAuthContext, useCompany } from '@superapp/iam';
 import { UserRole } from '../types/UserRole';
 import { ConversionEngine } from '../utils/conversionLogic';
 
@@ -14,6 +14,8 @@ const InventoryRecordsPage: React.FC = () => {
   const initialTab = searchParams.get('tab') || 'operational_ledger';
   const initialProductCode = searchParams.get('productCode') || '';
   const { user } = useAuthContext();
+  const { selectedCompany } = useCompany();
+  const companyId = selectedCompany?.id || 'trial-company';
   
   const [activeView, setActiveView] = useState<string>(initialTab);
   const [searchText, setSearchText] = useState(initialProductCode);
@@ -405,7 +407,7 @@ const InventoryRecordsPage: React.FC = () => {
 
           {activeView === 'operational_ledger' ? (
             <div className="border-t border-gray-100 dark:border-gray-800">
-              <InventoryMovementLedger companyId="1" productCode={searchParams.get('productCode') || undefined} />
+              <InventoryMovementLedger companyId={companyId} productCode={searchParams.get('productCode') || undefined} />
             </div>
           ) : (
             <div className="overflow-x-auto">

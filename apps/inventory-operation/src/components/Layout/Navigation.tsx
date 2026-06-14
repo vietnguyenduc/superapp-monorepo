@@ -1,4 +1,4 @@
-import { useNavigate, Link } from "react-router-dom";
+﻿﻿﻿import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 import { useAuthContext } from "@superapp/iam";
 import { useCompany } from "@superapp/iam";
@@ -46,14 +46,14 @@ const Navigation: React.FC<NavigationProps> = ({ onMenuClick }) => {
               </svg>
             </button>
 
-            <div className="flex items-center ml-4 lg:ml-0">
+            <div className="flex items-center ml-4 lg:ml-0 min-w-0">
               <div className="flex-shrink-0">
-                <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap">
                   Inventory Operation
                 </h1>
               </div>
-              <div className="hidden md:block ml-4">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+              <div className="hidden md:block ml-4 flex-shrink-0">
+                <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                   Quản lý Xuất Nhập Tồn F&B
                 </span>
               </div>
@@ -65,9 +65,10 @@ const Navigation: React.FC<NavigationProps> = ({ onMenuClick }) => {
             {canSwitchCompany && (
               <button
                 onClick={() => navigate("/company-selector")}
-                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 px-3 py-2 text-white shadow-sm transition-all duration-200 hover:from-indigo-600 hover:to-purple-700"
+                className="inline-flex items-center gap-1 sm:gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 p-2 sm:px-3 sm:py-2 text-white shadow-sm transition-all duration-200 hover:from-indigo-600 hover:to-purple-700"
+                title={selectedCompany?.name || "Chọn công ty"}
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -75,7 +76,7 @@ const Navigation: React.FC<NavigationProps> = ({ onMenuClick }) => {
                     d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                   />
                 </svg>
-                <span className="hidden sm:inline max-w-[100px] lg:max-w-[140px] truncate text-sm font-medium">
+                <span className="hidden sm:inline max-w-[80px] lg:max-w-[120px] truncate text-sm font-medium">
                   {selectedCompany?.name || "Chọn công ty"}
                 </span>
               </button>
@@ -132,14 +133,6 @@ const Navigation: React.FC<NavigationProps> = ({ onMenuClick }) => {
                     </button>
                   </div>
                 )}
-                <div className="hidden lg:block text-right mr-3 absolute -left-36 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate w-32">
-                    {displayName}
-                  </div>
-                  <div className="text-[10px] text-gray-500 dark:text-gray-400">
-                    {user.role}{isTrial ? " (Trial Mode)" : ""}
-                  </div>
-                </div>
               </div>
             )}
           </div>

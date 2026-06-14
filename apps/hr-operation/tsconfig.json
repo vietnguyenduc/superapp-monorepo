@@ -1,4 +1,4 @@
-{
+﻿{
   "compilerOptions": {
     "target": "ESNext",
     "lib": [
@@ -8,6 +8,7 @@
     ],
     "module": "ESNext",
     "skipLibCheck": true,
+    "types": ["react"],
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,

@@ -276,7 +276,7 @@ class GeminiProvider:
 
     def __init__(self):
         self.api_key = os.environ.get("GEMINI_API_KEY", "")
-        self.model = "gemini-1.5-flash"
+        self.model = "gemini-2.5-flash"
         self._healthy: Optional[bool] = None
         self._client = None
 

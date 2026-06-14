@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -15,11 +15,11 @@
 
 @layer components {
   .app-container {
-    @apply max-w-4xl mx-auto bg-white rounded-2xl shadow-soft p-8;
+    @apply max-w-4xl mx-auto bg-white rounded-2xl shadow-soft p-4 sm:p-6 lg:p-8;
   }
   
   .card {
-    @apply bg-white rounded-xl shadow-card border border-gray-200 p-6;
+    @apply bg-white rounded-xl shadow-card border border-gray-200 p-4 sm:p-6;
   }
   
   .btn-primary {
@@ -28,5 +28,26 @@
   
   .btn-secondary {
     @apply bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-lg transition-colors duration-200;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar but keep scroll functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Safe area padding for mobile bottom bars */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  
+  /* Responsive container padding */
+  .responsive-padding {
+    @apply px-3 sm:px-4 lg:px-6;
   }
 }

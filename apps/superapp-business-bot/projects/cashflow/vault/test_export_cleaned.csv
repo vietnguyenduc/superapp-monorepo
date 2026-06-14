@@ -1,0 +1,6 @@
+﻿employee_id,full_name,Department,Salary
+101,Alice,Sales,15000
+102,Bob,Sales,15000
+103,Charlie,Sales,0
+104,David,IT,16000
+105,Eve,HR,14000

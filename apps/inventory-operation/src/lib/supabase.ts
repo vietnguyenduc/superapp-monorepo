@@ -1,4 +1,4 @@
-import { createSupabaseClient as createSharedClient } from '@superapp/shared-utils';
+﻿﻿﻿import { createSupabaseClient as createSharedClient, getSupabaseClient } from '@superapp/shared-utils';
 import { createClient } from '@supabase/supabase-js';
 
 // Environment variables for Supabase configuration
@@ -19,10 +19,10 @@ if (!supabaseAnonKey) {
 }
 
 // Create Supabase client with enhanced configuration
-// Use placeholder values during build time if env vars are missing
-const createSupabaseClient = () => {
+const createSupabaseClientInstance = () => {
   if (envValidationError) {
-    throw new Error(envValidationError);
+    console.warn('⚠️ Supabase env vars missing, using placeholder client (will fail on real queries)');
+    return createClient('https://placeholder.supabase.co', 'placeholder-key');
   }
 
   return createSharedClient(supabaseUrl, supabaseAnonKey, {
@@ -42,10 +42,23 @@ const createSupabaseClient = () => {
   });
 };
 
-// Export the client - will throw error on first use if env vars are missing
-const rawSupabase = supabaseUrl && supabaseAnonKey 
-  ? createSupabaseClient() 
-  : createClient('https://placeholder.supabase.co', 'placeholder-key');
+// Initialize the shared Supabase instance IMMEDIATELY at module level
+// This MUST happen before any React component calls getSupabaseClient()
+const rawSupabase = createSupabaseClientInstance();
+
+// Verify the shared instance was set correctly
+// If createSharedClient's singleton check returned an existing instance,
+// that's fine — but we need to ensure getSupabaseClient() won't throw.
+try {
+  const verifyClient = getSupabaseClient();
+  if (verifyClient !== rawSupabase) {
+    console.log('ℹ️ Using existing shared Supabase client instance');
+  }
+} catch (e) {
+  // If getSupabaseClient() throws, it means createSharedClient didn't set the
+  // singleton (e.g., called during SSR). We'll use rawSupabase directly.
+  console.warn('⚠️ Shared Supabase instance not set by createSharedClient, using local instance');
+}
 
 // Trial Mode Interceptor: Prevents network egress when in trial mode
 export const supabase = new Proxy(rawSupabase, {

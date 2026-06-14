@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { Camera, MapPin, UploadCloud, Clock, CheckCircle2, History, AlertCircle, FileSpreadsheet } from 'lucide-react';
+﻿﻿import React, { useState, useRef } from 'react';
+import { Camera, MapPin, UploadCloud, Clock, CheckCircle2, History, FileSpreadsheet } from 'lucide-react';
 
 const AttendancePage = () => {
   const [activeTab, setActiveTab] = useState<'checkin' | 'import' | 'history'>('checkin');
@@ -120,7 +120,7 @@ const CheckInTab = () => {
           });
           setLocating(false);
         },
-        (error) => {
+        () => {
           setLocError("Không thể lấy vị trí. Vui lòng cấp quyền GPS.");
           setLocating(false);
         },

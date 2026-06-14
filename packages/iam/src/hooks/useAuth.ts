@@ -1,6 +1,6 @@
-// Real useAuth hook that uses Supabase authentication
+﻿﻿﻿﻿﻿﻿﻿// Real useAuth hook that uses Supabase authentication
 import { useState, useEffect, useCallback } from "react";
-import { getSupabaseClient } from "@superapp/shared-utils";
+import { getSupabaseClient, createSupabaseClient } from "@superapp/shared-utils";
 import { setTrialMode, clearTrialStore } from "../utils/trialManager";
 import type { User, TablesInsert } from "@repo/types";
 import type { Session } from "@supabase/supabase-js";
@@ -44,7 +44,20 @@ interface AuthState {
 }
 
 export const useAuth = () => {
-  const supabase = getSupabaseClient();
+  // Lazy-init: try getSupabaseClient first, fall back to createSupabaseClient if needed
+  let supabase: ReturnType<typeof getSupabaseClient>;
+  try {
+    supabase = getSupabaseClient();
+  } catch {
+    // If getSupabaseClient() throws, createSupabaseClient was never called.
+    // This shouldn't happen in normal flow (src/lib/supabase.ts calls it at module level),
+    // but we handle it gracefully to prevent the "Something went wrong" crash.
+    // Use the already-imported createSupabaseClient from the top of this file
+    const supabaseUrl = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) || '';
+    const supabaseAnonKey = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_ANON_KEY) || '';
+    supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey);
+    console.warn('⚠️ useAuth: createSupabaseClient was not called before useAuth, created fallback client');
+  }
   const [state, setState] = useState<AuthState>({
     user: null,
     session: null,
@@ -55,6 +68,26 @@ export const useAuth = () => {
 
   // Fetch user profile from public.users table
   const fetchUserProfile = useCallback(async (userId: string): Promise<User | null> => {
+    // Skip DB query for trial users — trial user IDs are non-UUID strings
+    // that would cause "invalid input syntax for type uuid" errors.
+    if (userId === "trial-user" || userId.startsWith("trial-")) {
+      const trial = readTrialFromStorage();
+      if (trial) {
+        return trial.user;
+      }
+      // Fallback: return a minimal trial user object
+      return {
+        id: userId,
+        email: "trial@example.com",
+        full_name: "Trial User",
+        role: "admin",
+        company_id: "trial-company",
+        branch_id: "trial-branch",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as unknown as User;
+    }
+
     // First fetch user without branch join to avoid RLS recursion
     const { data: userData, error: userError } = await supabase
       .from("users")
@@ -96,13 +129,13 @@ export const useAuth = () => {
   useEffect(() => {
     let isMounted = true;
 
-    // Safety-net timeout: only fires if Supabase init hangs completely
-    // (e.g. total network failure, Supabase project sleeping on free tier).
+    // Safety-net timeout: prevents infinite loading if Supabase init hangs
+    // (e.g. total network failure, Supabase project sleeping, cookie domain rejected).
     const initTimeout = setTimeout(() => {
       if (!isMounted) return;
       setState((prev) => {
         if (!prev.loading) return prev; // Already resolved — skip
-        console.warn("Auth initialization timeout — treating as unauthenticated");
+        console.warn("Auth initialization timeout (3s) — treating as unauthenticated");
         // Try trial mode (with expiry check) before giving up
         const trial = readTrialFromStorage();
         if (trial) {
@@ -123,7 +156,7 @@ export const useAuth = () => {
           isTrial: false,
         };
       });
-    }, 20000); // 20s — generous for cold-start Supabase projects
+    }, 3000); // 3s — fast fallback for ngrok / network issues
 
     // ─── Single Sign-On check (URL Params) ──────────────────────────────────
     if (typeof window !== "undefined") {

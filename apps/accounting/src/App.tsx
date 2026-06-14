@@ -1,10 +1,12 @@
-// React import not needed in React 18+ with JSX transform
+﻿﻿// React import not needed in React 18+ with JSX transform
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
 } from "react-router-dom";
+
+const routerFuture = { v7_startTransition: true, v7_relativeSplatPath: true };
 import "./App.css";
 import Layout from "./components/Layout/Layout";
 import Dashboard from "./pages/Dashboard/Dashboard";
@@ -27,7 +29,7 @@ import { CompanyProvider } from "@superapp/iam";
 function App() {
   return (
     <CompanyProvider>
-      <Router>
+      <Router future={routerFuture}>
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />

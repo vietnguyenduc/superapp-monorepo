@@ -1,6 +1,8 @@
-import React, { Suspense, lazy } from 'react';
+﻿﻿import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import type { FC } from 'react';
+
+const routerFuture = { v7_startTransition: true, v7_relativeSplatPath: true };
 import { AuthProvider, CompanyProvider } from '@superapp/iam';
 import Layout from './components/Layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -59,7 +61,7 @@ const App: FC = () => {
     <ErrorBoundary>
       <AuthProvider>
         <CompanyProvider>
-          <Router>
+          <Router future={routerFuture}>
             <Suspense fallback={<PageLoading />}>
             <Routes>
               {/* Public routes */}

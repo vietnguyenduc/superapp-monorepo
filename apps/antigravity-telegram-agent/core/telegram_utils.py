@@ -16,6 +16,50 @@ logger = logging.getLogger("ATA.telegram_utils")
 TELEGRAM_MAX_LEN = 4000  # Telegram hard limit is 4096, leave buffer for formatting
 
 
+def format_markdown_tables(text: str) -> str:
+    """Xử lý bảng Markdown thành định dạng monospace hiển thị đẹp trên Telegram."""
+    # Tìm các dòng liên tiếp có chứa ký tự '|' (ít nhất 3 dòng)
+    table_pattern = re.compile(r'(?:^.*\|.*$\n?){3,}', re.MULTILINE)
+    
+    def format_table_match(match):
+        table_text = match.group(0).strip()
+        try:
+            from tabulate import tabulate
+            lines = table_text.split('\n')
+            
+            # Kiểm tra xem có dòng divider không (chứa -, |, :, khoảng trắng)
+            has_divider = False
+            for line in lines:
+                if re.match(r'^[\s\-|:]+$', line) and '-' in line:
+                    has_divider = True
+                    break
+                    
+            if not has_divider:
+                return match.group(0) # Không phải là bảng hợp lệ
+                
+            # Làm sạch pipe ở đầu và cuối mỗi dòng
+            cleaned_lines = []
+            for line in lines:
+                l = line.strip()
+                if l.startswith('|'): l = l[1:]
+                if l.endswith('|'): l = l[:-1]
+                cleaned_lines.append(l)
+                
+            headers = [col.strip() for col in cleaned_lines[0].split('|')]
+            data = []
+            for line in cleaned_lines[2:]:
+                cols = [col.strip() for col in line.split('|')]
+                data.append(cols)
+                
+            pretty_table = tabulate(data, headers=headers, tablefmt="presto")
+            return f"\n```text\n{pretty_table}\n```\n"
+        except Exception:
+            pass
+        # Fallback
+        return f"\n```text\n{table_text}\n```\n"
+        
+    return table_pattern.sub(format_table_match, text)
+
 def process_markdown_extras(bot, chat_id: int, text: str) -> str:
     """
     Tiền xử lý text để trích xuất hình ảnh (gửi dạng photo) và format lại bảng Markdown
@@ -37,28 +81,7 @@ def process_markdown_extras(bot, chat_id: int, text: str) -> str:
     text = img_pattern.sub(send_img_match, text)
     
     # 2. Xử lý bảng Markdown
-    # Tìm các dòng liên tiếp có chứa ký tự '|'
-    table_pattern = re.compile(r'(?:^[ \t]*\|.*\|[ \t]*$\n?)+', re.MULTILINE)
-    
-    def format_table_match(match):
-        table_text = match.group(0).strip()
-        try:
-            from tabulate import tabulate
-            lines = table_text.split('\n')
-            if len(lines) >= 3 and '|---' in lines[1].replace(' ', ''):
-                headers = [col.strip() for col in lines[0].strip(' \t|').split('|')]
-                data = []
-                for line in lines[2:]:
-                    cols = [col.strip() for col in line.strip(' \t|').split('|')]
-                    data.append(cols)
-                pretty_table = tabulate(data, headers=headers, tablefmt="presto")
-                return f"\n```text\n{pretty_table}\n```\n"
-        except Exception:
-            pass
-        # Fallback
-        return f"\n```text\n{table_text}\n```\n"
-        
-    text = table_pattern.sub(format_table_match, text)
+    text = format_markdown_tables(text)
     return text
 
 

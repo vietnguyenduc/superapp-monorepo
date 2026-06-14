@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+﻿﻿import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { CheckBadgeIcon, DocumentTextIcon, ChatBubbleLeftRightIcon, BeakerIcon, WrenchScrewdriverIcon, ArchiveBoxIcon, PhoneIcon, AcademicCapIcon, BookOpenIcon, Bars3Icon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 import Dashboard from './pages/Dashboard';
@@ -10,6 +10,7 @@ import AssetsPage from './pages/AssetsPage';
 import EmergencyPage from './pages/EmergencyPage';
 import TrainingPage from './pages/TrainingPage';
 import Manual from './pages/Manual/Manual';
+import LoginPage from './pages/LoginPage';
 import AppSwitcher from './components/Layout/AppSwitcher';
 import MobileMenuDrawer from './components/Layout/MobileMenuDrawer';
 
@@ -146,6 +147,7 @@ const App = () => {
           <div className="max-w-6xl mx-auto">
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/login" element={<LoginPage />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/check-in" element={<CheckInPage />} />
               <Route path="/tickets" element={<TicketsPage />} />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const QuickAddMenu: React.FC = () => {
@@ -15,7 +15,7 @@ const QuickAddMenu: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-24 lg:bottom-6 right-6 z-40">
       <div className="relative">
         {/* Menu Items */}
         {isOpen && (

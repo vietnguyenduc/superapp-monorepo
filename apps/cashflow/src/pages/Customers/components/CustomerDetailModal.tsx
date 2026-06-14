@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { Customer, Transaction } from "../../../types";
 import { databaseService } from "../../../services/database";
@@ -321,7 +321,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                 />
               ) : error ? (
                 <div className="text-center py-3">
-                  <p className="text-xs sm:text-sm text-red-600">{error}</p>
+                  <p className="text-xs sm:text-sm text-red-600">{typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error'}</p>
                 </div>
               ) : transactions.length === 0 ? (
                 <div className="text-center py-6">

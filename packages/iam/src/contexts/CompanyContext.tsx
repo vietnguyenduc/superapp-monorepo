@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { getSupabaseClient } from "@superapp/shared-utils";
+﻿﻿﻿import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { getSupabaseClient, createSupabaseClient } from "@superapp/shared-utils";
 import type { Company } from "@repo/types";
 import { useAuthContext } from "./AuthProvider";
 
@@ -52,7 +52,16 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
         return;
       }
 
-      const supabase = getSupabaseClient();
+      // Lazy-init: try getSupabaseClient first, fall back to createSupabaseClient
+      let supabase: ReturnType<typeof getSupabaseClient>;
+      try {
+        supabase = getSupabaseClient();
+      } catch {
+        const supabaseUrl = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) || '';
+        const supabaseAnonKey = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_ANON_KEY) || '';
+        supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey);
+        console.warn('⚠️ CompanyContext: createSupabaseClient was not called before, created fallback client');
+      }
       const { data, error: fetchError } = await supabase
         .from("companies")
         .select("*")

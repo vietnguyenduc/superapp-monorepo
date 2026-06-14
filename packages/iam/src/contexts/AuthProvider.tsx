@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from "react";
+﻿﻿import React, { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { useAuth } from "../hooks/useAuth";
@@ -30,6 +30,8 @@ interface AuthContextType {
   isTokenExpired: () => boolean;
   isTrial: boolean;
   startTrial: () => void;
+  /** Check if the current user has a specific permission string */
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -62,6 +64,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return expiresAt.getTime() - now.getTime() < bufferTime;
   };
 
+  const hasPermission = (permission: string): boolean => {
+    if (!auth.user) return false;
+    const perms = (auth.user as any).permissions;
+    if (!Array.isArray(perms)) return false;
+    return perms.includes(permission);
+  };
+
   const contextValue: AuthContextType = {
     ...auth,
     getAccessToken,
@@ -70,6 +79,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isTrial: auth.isTrial,
     startTrial: auth.startTrial,
     signUp: auth.signUp,
+    hasPermission,
   };
 
   return (

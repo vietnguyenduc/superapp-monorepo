@@ -1,7 +1,8 @@
-import React from 'react';
+﻿import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
+import './i18n';
 
 // Add error handling for root element
 const rootElement = document.getElementById('root');

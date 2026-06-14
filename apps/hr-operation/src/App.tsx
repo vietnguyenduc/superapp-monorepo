@@ -1,5 +1,7 @@
-import React from 'react';
+﻿﻿﻿﻿import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+
+const routerFuture = { v7_startTransition: true, v7_relativeSplatPath: true };
 import { Users, CalendarDays, Clock, FileText, Banknote, ShieldCheck } from 'lucide-react';
 import EmployeeDirectory from './pages/EmployeeDirectory';
 import ShiftManagement from './pages/ShiftManagement';
@@ -9,6 +11,7 @@ import PayrollManagement from './pages/PayrollManagement';
 import PerformanceDashboard from './pages/PerformanceDashboard';
 import HRSettings from './pages/HRSettings';
 import Manual from './pages/Manual/Manual';
+import LoginPage from './pages/LoginPage';
 import { Target, Settings, BookOpen } from 'lucide-react';
 import AppSwitcher from './components/Layout/AppSwitcher';
 import MobileBottomNav from './components/Layout/MobileBottomNav';
@@ -64,7 +67,7 @@ const Sidebar = () => {
 
 const App = () => {
   return (
-    <BrowserRouter>
+    <BrowserRouter future={routerFuture}>
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
         {/* Simple Header */}
         <header className="bg-white border-b border-slate-200 h-16 fixed top-0 w-full z-10 flex items-center">
@@ -88,6 +91,7 @@ const App = () => {
             <div className="max-w-6xl mx-auto">
               <Routes>
                 <Route path="/" element={<Navigate to="/employees" replace />} />
+                <Route path="/login" element={<LoginPage />} />
                 <Route path="/employees" element={<EmployeeDirectory />} />
                 <Route path="/shifts" element={<ShiftManagement />} />
                 <Route path="/attendance" element={<AttendancePage />} />

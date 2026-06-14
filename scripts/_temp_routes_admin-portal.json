@@ -1,0 +1,10 @@
+﻿[
+  { "path": "/", "name": "home" },
+  { "path": "/companies", "name": "Companies" },
+  { "path": "/data", "name": "Data" },
+  { "path": "/identity", "name": "Identity" },
+  { "path": "/login", "name": "Login" },
+  { "path": "/manual", "name": "Manual" },
+  { "path": "/reports", "name": "Reports" },
+  { "path": "/settings", "name": "Settings" }
+]

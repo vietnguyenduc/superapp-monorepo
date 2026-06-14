@@ -35,6 +35,19 @@ def get_user_by_telegram_id(telegram_id: str):
         logger.error(f"Error querying Supabase: {e}", exc_info=True)
     return None
 
+def get_user_by_email(email: str):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return None
+    url = f"{SUPABASE_URL}/rest/v1/users?email=eq.{email}"
+    try:
+        res = requests.get(url, headers=get_headers(), timeout=10)
+        if res.status_code == 200:
+            users = res.json()
+            return users[0] if users else None
+    except Exception as e:
+        logger.error(f"Error querying user by email: {e}")
+    return None
+
 def link_telegram_id(email: str, telegram_id: str) -> bool:
     """Links a user email in public.users to their Telegram ID."""
     if not SUPABASE_URL or not SUPABASE_KEY:

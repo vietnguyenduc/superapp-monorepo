@@ -1,6 +1,6 @@
-import React from 'react';
+﻿import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Users, CalendarDays, Clock, FileText, Banknote, Target, Settings, BookOpen } from 'lucide-react';
+import { Users, CalendarDays, Clock, FileText, Banknote, Target } from 'lucide-react';
 
 const navItems = [
   { path: '/employees', label: 'Nhân sự', icon: Users },

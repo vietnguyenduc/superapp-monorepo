@@ -1,0 +1,154 @@
+{
+  "timestamp": "2026-06-14T01:15:15.990Z",
+  "total": 24,
+  "passed": 0,
+  "small": 12,
+  "blank": 12,
+  "failed": 0,
+  "results": [
+    {
+      "page": "01-login-desktop",
+      "status": "SMALL",
+      "size": "6.7KB",
+      "errors": 0
+    },
+    {
+      "page": "02-dashboard-desktop",
+      "status": "SMALL",
+      "size": "6.7KB",
+      "errors": 0
+    },
+    {
+      "page": "03-product-catalog-desktop",
+      "status": "SMALL",
+      "size": "6.7KB",
+      "errors": 0
+    },
+    {
+      "page": "04-inventory-records-desktop",
+      "status": "SMALL",
+      "size": "6.7KB",
+      "errors": 0
+    },
+    {
+      "page": "05-purchase-orders-desktop",
+      "status": "SMALL",
+      "size": "6.7KB",
+      "errors": 0
+    },
+    {
+      "page": "06-goods-receipts-desktop",
+      "status": "SMALL",
+      "size": "6.7KB",
+      "errors": 0
+    },
+    {
+      "page": "07-supplier-management-desktop",
+      "status": "SMALL",
+      "size": "6.7KB",
+      "errors": 0
+    },
+    {
+      "page": "08-supplier-returns-desktop",
+      "status": "SMALL",
+      "size": "6.7KB",
+      "errors": 0
+    },
+    {
+      "page": "09-inventory-mrp-desktop",
+      "status": "SMALL",
+      "size": "6.7KB",
+      "errors": 0
+    },
+    {
+      "page": "10-settings-desktop",
+      "status": "SMALL",
+      "size": "6.7KB",
+      "errors": 0
+    },
+    {
+      "page": "11-profile-desktop",
+      "status": "SMALL",
+      "size": "6.7KB",
+      "errors": 0
+    },
+    {
+      "page": "12-help-desktop",
+      "status": "SMALL",
+      "size": "6.7KB",
+      "errors": 0
+    },
+    {
+      "page": "01-login-mobile",
+      "status": "BLANK",
+      "size": "3.6KB",
+      "errors": 0
+    },
+    {
+      "page": "02-dashboard-mobile",
+      "status": "BLANK",
+      "size": "3.6KB",
+      "errors": 0
+    },
+    {
+      "page": "03-product-catalog-mobile",
+      "status": "BLANK",
+      "size": "3.6KB",
+      "errors": 0
+    },
+    {
+      "page": "04-inventory-records-mobile",
+      "status": "BLANK",
+      "size": "3.6KB",
+      "errors": 0
+    },
+    {
+      "page": "05-purchase-orders-mobile",
+      "status": "BLANK",
+      "size": "3.6KB",
+      "errors": 0
+    },
+    {
+      "page": "06-goods-receipts-mobile",
+      "status": "BLANK",
+      "size": "3.6KB",
+      "errors": 0
+    },
+    {
+      "page": "07-supplier-management-mobile",
+      "status": "BLANK",
+      "size": "3.6KB",
+      "errors": 0
+    },
+    {
+      "page": "08-supplier-returns-mobile",
+      "status": "BLANK",
+      "size": "3.6KB",
+      "errors": 0
+    },
+    {
+      "page": "09-inventory-mrp-mobile",
+      "status": "BLANK",
+      "size": "3.6KB",
+      "errors": 0
+    },
+    {
+      "page": "10-settings-mobile",
+      "status": "BLANK",
+      "size": "3.6KB",
+      "errors": 0
+    },
+    {
+      "page": "11-profile-mobile",
+      "status": "BLANK",
+      "size": "3.6KB",
+      "errors": 0
+    },
+    {
+      "page": "12-help-mobile",
+      "status": "BLANK",
+      "size": "3.6KB",
+      "errors": 0
+    }
+  ]
+}

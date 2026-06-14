@@ -76,15 +76,17 @@ def compile_daily_report() -> str:
     report += "🤖 Antigravity runs 24/7 in background. Send commands at any time to interact."
     return report
 
-def setup_scheduler(bot, chat_id, report_time_str: str = "21:00") -> BackgroundScheduler:
+def setup_scheduler(bot, chat_id, report_time_str: str = "18:00", kaizen_time_str: str = "02:00", kaizen_callback=None) -> BackgroundScheduler:
     """Sets up standard background tasks, e.g. daily compiled report to Telegram."""
     scheduler = BackgroundScheduler()
     
     # Parse report time HH:MM
     try:
         hour, minute = map(int, report_time_str.split(":"))
-    except ValueError:
-        hour, minute = 21, 0 # Default to 9:00 PM
+        if not (0 <= hour <= 23 and 0 <= minute <= 59):
+            raise ValueError("Time out of range")
+    except Exception:
+        hour, minute = 18, 0 # Default to 18:00
         
     def send_daily_report_job():
         logger.info("Executing scheduled daily report job...")
@@ -103,6 +105,32 @@ def setup_scheduler(bot, chat_id, report_time_str: str = "21:00") -> BackgroundS
         id='daily_report_job'
     )
     
+    # Parse kaizen time HH:MM
+    try:
+        k_hour, k_minute = map(int, kaizen_time_str.split(":"))
+        if not (0 <= k_hour <= 23 and 0 <= k_minute <= 59):
+            raise ValueError("Time out of range")
+    except Exception:
+        k_hour, k_minute = 2, 0 # Default to 02:00
+
+    def run_daily_kaizen_job():
+        logger.info("Executing scheduled daily Auto-Kaizen job...")
+        if kaizen_callback:
+            try:
+                kaizen_callback(chat_id)
+            except Exception as e:
+                logger.error(f"Error executing daily Auto-Kaizen: {e}")
+
+    if kaizen_callback:
+        scheduler.add_job(
+            run_daily_kaizen_job,
+            'cron',
+            hour=k_hour,
+            minute=k_minute,
+            id='daily_kaizen_job'
+        )
+        logger.info(f"Daily Auto-Kaizen job scheduled for {kaizen_time_str} everyday.")
+
     scheduler.start()
     logger.info(f"Daily report job scheduled for {report_time_str} everyday.")
     return scheduler

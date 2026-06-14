@@ -1,5 +1,7 @@
-import React from 'react';
+﻿﻿import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+
+const routerFuture = { v7_startTransition: true, v7_relativeSplatPath: true };
 import { Shield, Users, Settings, Database, Activity, LogOut, BookOpen, Menu, X } from 'lucide-react';
 import { AuthProvider, useAuthContext } from '@superapp/iam';
 import IdentityManagement from './pages/IdentityManagement';
@@ -503,7 +505,7 @@ const AppSwitcher = () => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <Router future={routerFuture}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Navigate to="/reports" replace />} />

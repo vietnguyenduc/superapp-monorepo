@@ -8,6 +8,7 @@ DEFAULT_SETTINGS = {
     "autopilot_interval_hours": 6,
     "default_ai_model": "deepseek",
     "daily_report_time": "18:00",
+    "daily_kaizen_time": "02:00",
     "auto_push_git": True,
     "git_branch": "viet",
     "daily_budget_limit": 1.0,         # USD

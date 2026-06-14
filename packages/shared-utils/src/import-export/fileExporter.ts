@@ -1,4 +1,4 @@
-/**
+﻿/**
  * File export utilities for Excel and CSV formats
  */
 
@@ -179,12 +179,6 @@ export function generateTemplate(
   if (columns.length === 0) {
     throw new Error('No columns provided');
   }
-
-  // Create a single row with column headers
-  const templateData = columns.reduce((acc, col) => {
-    acc[col] = '';
-    return acc;
-  }, {} as Record<string, string>);
 
   // Export as CSV
   const csv = columns.join(',') + '\n';

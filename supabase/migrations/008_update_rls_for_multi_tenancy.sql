@@ -1,4 +1,4 @@
--- Migration: 008_update_rls_for_multi_tenancy.sql
+﻿-- Migration: 008_update_rls_for_multi_tenancy.sql
 -- Description: Update RLS policies to filter by company_id for multi-tenancy
 -- Date: 2026-04-27
 
@@ -202,33 +202,21 @@ FOR UPDATE USING (auth.uid() = id);
 
 CREATE POLICY "Admin Master can view all users" ON public.users
 FOR SELECT USING (
-    EXISTS (
-        SELECT 1 FROM public.users 
-        WHERE id = auth.uid() AND role = 'admin_master'
-    )
+    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin_master'
 );
 
 CREATE POLICY "Admin Company can view company users" ON public.users
 FOR SELECT USING (
-    EXISTS (
-        SELECT 1 FROM public.users 
-        WHERE id = auth.uid() AND role = 'admin_company' 
-        AND company_id = (SELECT company_id FROM public.users WHERE id = auth.uid())
-    )
+    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin_company'
+    AND (auth.jwt() -> 'user_metadata' ->> 'company_id')::uuid = company_id
 );
 
 CREATE POLICY "Admin Master can manage all users" ON public.users
 FOR ALL USING (
-    EXISTS (
-        SELECT 1 FROM public.users 
-        WHERE id = auth.uid() AND role = 'admin_master'
-    )
+    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin_master'
 );
 
 CREATE POLICY "Admin Company can manage company users" ON public.users
 FOR ALL USING (
-    EXISTS (
-        SELECT 1 FROM public.users 
-        WHERE id = auth.uid() AND role = 'admin_company'
-    )
+    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin_company'
 );

@@ -1,4 +1,4 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+﻿import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@repo/types';
 
 let supabaseInstance: SupabaseClient<Database> | null = null;
@@ -13,22 +13,41 @@ const cookieStorage = {
     if (typeof document === 'undefined') return;
     const hostname = window.location.hostname;
     const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.localhost');
-    // For local dev, use localhost. For prod, use the root domain (e.g. .superapp.com)
-    const domain = isLocalhost
-      ? 'localhost'
-      : `.${hostname.split('.').slice(-2).join('.')}`; // Extracts root domain from sub.domain.com
+    const isNgrok = hostname.includes('ngrok');
     
-    document.cookie = `${encodeURIComponent(key)}=${encodeURIComponent(value)}; path=/; domain=${domain}; max-age=31536000; SameSite=Lax; ${!isLocalhost ? 'Secure' : ''}`;
+    // For ngrok, skip domain entirely (browsers reject public suffix cookies)
+    // For local dev, use localhost. For prod, use the root domain.
+    let cookieStr = `${encodeURIComponent(key)}=${encodeURIComponent(value)}; path=/; max-age=31536000; SameSite=Lax`;
+    
+    if (!isNgrok) {
+      const domain = isLocalhost
+        ? 'localhost'
+        : `.${hostname.split('.').slice(-2).join('.')}`;
+      cookieStr += `; domain=${domain}`;
+    }
+    
+    if (!isLocalhost && !isNgrok) {
+      cookieStr += '; Secure';
+    }
+    
+    document.cookie = cookieStr;
   },
   removeItem: (key: string) => {
     if (typeof document === 'undefined') return;
     const hostname = window.location.hostname;
     const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.localhost');
-    const domain = isLocalhost
-      ? 'localhost'
-      : `.${hostname.split('.').slice(-2).join('.')}`;
-      
-    document.cookie = `${encodeURIComponent(key)}=; path=/; domain=${domain}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    const isNgrok = hostname.includes('ngrok');
+    
+    let cookieStr = `${encodeURIComponent(key)}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    
+    if (!isNgrok) {
+      const domain = isLocalhost
+        ? 'localhost'
+        : `.${hostname.split('.').slice(-2).join('.')}`;
+      cookieStr += `; domain=${domain}`;
+    }
+    
+    document.cookie = cookieStr;
   }
 };
 

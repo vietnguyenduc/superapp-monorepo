@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React from 'react';
 import { Target, Plus, ChevronDown, CheckCircle2, Circle } from 'lucide-react';
 
 const MOCK_OBJECTIVES = [

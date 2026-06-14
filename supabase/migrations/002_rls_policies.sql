@@ -1,4 +1,4 @@
--- Migration: 002_rls_policies.sql
+﻿-- Migration: 002_rls_policies.sql
 -- Description: Row Level Security policies for debt repayment application
 -- Date: 2024-01-01
 
@@ -11,18 +11,12 @@ CREATE POLICY "Users can update their own profile" ON public.users
 
 CREATE POLICY "Admins can view all users" ON public.users
     FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE id = auth.uid() AND role = 'admin'
-        )
+        (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
     );
 
 CREATE POLICY "Admins can manage all users" ON public.users
     FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM public.users 
-            WHERE id = auth.uid() AND role = 'admin'
-        )
+        (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
     );
 
 -- Branches policies

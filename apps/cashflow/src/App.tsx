@@ -1,10 +1,12 @@
-import React, { Suspense, lazy } from "react";
+﻿﻿import React, { Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
 } from "react-router-dom";
+
+const routerFuture = { v7_startTransition: true, v7_relativeSplatPath: true };
 import "./App.css";
 import Layout from "./components/Layout/Layout";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
@@ -37,7 +39,7 @@ function App() {
   return (
     <CompanyProvider>
       <TransactionTypeProvider>
-        <Router>
+        <Router future={routerFuture}>
         <Suspense fallback={<PageLoading />}>
         <Routes>
           {/* Public routes */}

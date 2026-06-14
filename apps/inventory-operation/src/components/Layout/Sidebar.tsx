@@ -1,4 +1,4 @@
-import React from "react";
+﻿﻿import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthContext as useAuth } from "@superapp/iam";
 import AddButton from "../UI/AddButton";
@@ -132,7 +132,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   });
 
   return (
-    <div className="w-80 bg-white dark:bg-gray-900 shadow-sm border-r border-gray-200 dark:border-gray-800 min-h-screen flex flex-col transition-colors duration-300">
+    <div className="w-60 lg:w-64 xl:w-72 bg-white dark:bg-gray-900 shadow-sm border-r border-gray-200 dark:border-gray-800 min-h-screen flex flex-col transition-colors duration-300">
       {/* Mobile close button */}
       {onClose && (
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800 lg:hidden">

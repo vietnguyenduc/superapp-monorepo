@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import Button from "../../../components/UI/Button";
 import type { ReportType, ExportFormat } from "../../../types";
@@ -218,7 +218,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
                       <h3 className="text-sm font-medium text-red-800">
                         {t("reports.export.error")}
                       </h3>
-                      <p className="mt-1 text-sm text-red-700">{error}</p>
+                      <p className="mt-1 text-sm text-red-700">{typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error'}</p>
                     </div>
                   </div>
                 </div>

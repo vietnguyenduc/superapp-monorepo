@@ -43,9 +43,9 @@ test("GEMINI_API_KEY set", lambda: bool(os.environ.get("GEMINI_API_KEY")))
 test("DEEPSEEK_API_KEY set", lambda: os.environ.get("DEEPSEEK_API_KEY", "")[:8] + "...")
 test("DEEPSEEK_BASE_URL set", lambda: os.environ.get("DEEPSEEK_BASE_URL"))
 test("MONOREPO_ROOT_PATH set", lambda: os.environ.get("MONOREPO_ROOT_PATH"))
-test("active_project.json readable", lambda: json.loads(open("active_project.json").read()).get("active_project"))
-test("settings.json valid", lambda: list(json.loads(open("config/settings.json").read()).keys()))
-test("requirements.txt exists", lambda: len(open("requirements.txt").readlines()))
+test("active_project.json readable", lambda: json.loads(open("active_project.json", encoding="utf-8").read()).get("active_project"))
+test("settings.json valid", lambda: list(json.loads(open("config/settings.json", encoding="utf-8").read()).keys()))
+test("requirements.txt exists", lambda: len(open("requirements.txt", encoding="utf-8").readlines()))
 
 # ── 2. CORE MODULE IMPORTS ────────────────────────────────────
 print("\n[2/7] CORE MODULE IMPORTS")

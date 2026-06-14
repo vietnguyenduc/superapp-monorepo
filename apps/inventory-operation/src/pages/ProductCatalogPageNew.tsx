@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SearchableDropdown from '../components/SearchableDropdown';
 import BulkPasteValidationModal from '../components/BulkPasteValidationModal';
@@ -597,68 +597,66 @@ const ProductCatalogPageNew: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">📋 Danh mục hàng hóa</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-xl sm:text-3xl font-bold text-gray-900">📋 Danh mục hàng hóa</h1>
+          <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">
             Quản lý danh mục, định mức, quy đổi với inline editing
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => navigate('/product-catalog-settings')}
-            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 flex items-center gap-1 sm:gap-2"
           >
-            ⚙️ Cấu hình bảng
+            <span className="hidden sm:inline">⚙️</span> Cấu hình
           </button>
           <button
             onClick={() => navigate('/product-import')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 flex items-center gap-1 sm:gap-2"
           >
-            📊 Nhập hàng loạt
+            <span className="hidden sm:inline">📊</span> Nhập hàng loạt
           </button>
           <button
             onClick={handleAddProduct}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 flex items-center gap-1 sm:gap-2"
           >
-            ➕ Thêm sản phẩm
+            ➕ Thêm
           </button>
         </div>
       </div>
 
       {/* Search and Stats */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="🔍 Tìm kiếm sản phẩm..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-4 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-80"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            )}
-          </div>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+        <div className="relative w-full sm:w-auto">
+          <input
+            type="text"
+            placeholder="🔍 Tìm kiếm sản phẩm..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full sm:w-80 pl-4 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          )}
         </div>
         
-        <div className="flex items-center space-x-4 text-sm text-gray-600">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
           <span>📊 Tổng: <strong>{filteredProducts.length}</strong></span>
           <span>✅ Đang bán: <strong>{filteredProducts.filter(p => p.tinhTrang === 'Đang bán').length}</strong></span>
           <span>⏸️ Ngưng bán: <strong>{filteredProducts.filter(p => p.tinhTrang === 'Ngưng bán').length}</strong></span>
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      {/* Instructions - hidden on mobile to save space */}
+      <div className="hidden sm:block bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h4 className="font-medium text-blue-900 mb-2">💡 Hướng dẫn sử dụng:</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
           <div>
@@ -682,8 +680,8 @@ const ProductCatalogPageNew: React.FC = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white shadow rounded-lg overflow-hidden">
+      {/* Table - Desktop */}
+      <div className="hidden sm:block bg-white shadow rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -755,6 +753,81 @@ const ProductCatalogPageNew: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Mobile Card View */}
+      <div className="sm:hidden space-y-3">
+        {filteredProducts.length === 0 ? (
+          <div className="text-center py-8 bg-white rounded-lg shadow">
+            <div className="text-gray-400 text-4xl mb-3">📋</div>
+            <h3 className="text-base font-medium text-gray-900 mb-1">Không tìm thấy sản phẩm</h3>
+            <p className="text-sm text-gray-500 mb-3">
+              {searchTerm ? 'Thử thay đổi từ khóa tìm kiếm' : 'Chưa có sản phẩm nào'}
+            </p>
+            {!searchTerm && (
+              <button
+                onClick={handleAddProduct}
+                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+              >
+                ➕ Thêm sản phẩm đầu tiên
+              </button>
+            )}
+          </div>
+        ) : (
+          filteredProducts.map((product) => (
+            <div key={product.id} className="bg-white rounded-lg shadow-sm border border-gray-100 p-3 space-y-2">
+              {/* Product name + delete */}
+              <div className="flex justify-between items-start">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-gray-900 text-sm truncate">{product.tenThanhPham || '-'}</h3>
+                  <p className="text-xs text-gray-500">{product.maSPKD || '-'}</p>
+                </div>
+                <button
+                  onClick={() => handleDeleteProduct(product.id)}
+                  className="text-red-500 hover:text-red-700 text-sm ml-2 flex-shrink-0"
+                >
+                  🗑️
+                </button>
+              </div>
+              {/* Key fields as rows */}
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Loại:</span>
+                  <span className="font-medium text-gray-800 truncate ml-1">{product.loai || '-'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Mã NVL:</span>
+                  <span className="font-medium text-gray-800 truncate ml-1">{product.maNguyenVatLieu || '-'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Tên NVL:</span>
+                  <span className="font-medium text-gray-800 truncate ml-1">{product.tenNguyenVatLieu || '-'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Định lượng:</span>
+                  <span className="font-medium text-gray-800">{product.dinhLuongXuat}/{product.dinhLuongNhap}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">ĐVT:</span>
+                  <span className="font-medium text-gray-800">{product.dvtNhap}/{product.dvtXuat}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Trạng thái:</span>
+                  <span className={`font-medium text-xs px-1.5 py-0.5 rounded ${
+                    product.tinhTrang === 'Đang bán' ? 'bg-green-100 text-green-700' :
+                    product.tinhTrang === 'Ngưng bán' ? 'bg-red-100 text-red-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>{product.tinhTrang || '-'}</span>
+                </div>
+              </div>
+              {/* Ngày cập nhật */}
+              <div className="text-xs text-gray-400 pt-1 border-t border-gray-50">
+                📅 {product.ngayCapNhat || '-'}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
       {/* Bulk Paste Validation Modal */}
       <BulkPasteValidationModal
         isOpen={showBulkValidation}

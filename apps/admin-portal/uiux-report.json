@@ -1,0 +1,129 @@
+{
+  "app": "admin-portal",
+  "timestamp": "2026-06-13T16:23:14.895Z",
+  "screenshots": [
+    {
+      "route": "/login",
+      "viewport": "desktop",
+      "filename": "login_desktop.png",
+      "blank": false,
+      "url": "http://localhost:5180/login"
+    },
+    {
+      "route": "/login",
+      "viewport": "ipad",
+      "filename": "login_ipad.png",
+      "blank": false,
+      "url": "http://localhost:5180/login"
+    },
+    {
+      "route": "/reports",
+      "viewport": "desktop",
+      "filename": "consolidated-reports_desktop.png",
+      "blank": false,
+      "url": "http://localhost:5180/login"
+    },
+    {
+      "route": "/reports",
+      "viewport": "ipad",
+      "filename": "consolidated-reports_ipad.png",
+      "blank": false,
+      "url": "http://localhost:5180/login"
+    },
+    {
+      "route": "/companies",
+      "viewport": "desktop",
+      "filename": "company-management_desktop.png",
+      "blank": false,
+      "url": "http://localhost:5180/login"
+    },
+    {
+      "route": "/companies",
+      "viewport": "ipad",
+      "filename": "company-management_ipad.png",
+      "blank": false,
+      "url": "http://localhost:5180/login"
+    },
+    {
+      "route": "/identity",
+      "viewport": "desktop",
+      "filename": "identity-access_desktop.png",
+      "blank": false,
+      "url": "http://localhost:5180/login"
+    },
+    {
+      "route": "/identity",
+      "viewport": "ipad",
+      "filename": "identity-access_ipad.png",
+      "blank": false,
+      "url": "http://localhost:5180/login"
+    },
+    {
+      "route": "/data",
+      "viewport": "desktop",
+      "filename": "data-lifecycle_desktop.png",
+      "blank": false,
+      "url": "http://localhost:5180/login"
+    },
+    {
+      "route": "/data",
+      "viewport": "ipad",
+      "filename": "data-lifecycle_ipad.png",
+      "blank": false,
+      "url": "http://localhost:5180/login"
+    },
+    {
+      "route": "/settings",
+      "viewport": "desktop",
+      "filename": "global-settings_desktop.png",
+      "blank": false,
+      "url": "http://localhost:5180/login"
+    },
+    {
+      "route": "/settings",
+      "viewport": "ipad",
+      "filename": "global-settings_ipad.png",
+      "blank": false,
+      "url": "http://localhost:5180/login"
+    },
+    {
+      "route": "/manual",
+      "viewport": "desktop",
+      "filename": "user-manual_desktop.png",
+      "blank": false,
+      "url": "http://localhost:5180/login"
+    },
+    {
+      "route": "/manual",
+      "viewport": "ipad",
+      "filename": "user-manual_ipad.png",
+      "blank": false,
+      "url": "http://localhost:5180/login"
+    }
+  ],
+  "clickTests": [
+    {
+      "test": "login-click-without-credentials",
+      "passed": true,
+      "details": "No validation message (may use HTML5 validation)"
+    },
+    {
+      "test": "protected-route-redirect",
+      "passed": true,
+      "details": "Redirected to /login ✅"
+    },
+    {
+      "test": "login-invalid-credentials",
+      "passed": true,
+      "details": "No error message (may redirect)"
+    }
+  ],
+  "consoleErrors": [],
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0,
+    "blank": 0,
+    "consoleErrorCount": 0
+  }
+}

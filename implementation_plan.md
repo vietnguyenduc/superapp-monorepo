@@ -1,81 +1,45 @@
-﻿# Phase 3 — QA/QE: operations-portal, hr-operation, admin-portal
+﻿# Fix UI/UX Issues — Implementation Plan
 
-## Mục tiêu
-Thiết lập test infrastructure + viết unit tests cho 3 app chưa có test.
+## Tổng quan các lỗi cần fix
 
----
+### 1. 🔴 `hasPermission is not a function` — PermissionDemoPage (inventory-operation)
+- **Root cause:** `PermissionDemoPage` imports `useAuthContext as useAuth` from `@superapp/iam`, nhưng `AuthContextType` interface KHÔNG có `hasPermission`. `hasPermission` chỉ có trong `usePermissions` hook riêng.
+- **Fix:** Thêm `hasPermission` vào `AuthContextType` interface và implement trong `AuthProvider`.
 
-## 1. operations-portal (20 files, 0 tests)
+### 2. 🟡 `react-i18next:: useTranslation: You will need to pass in an i18next instance` (sales-operation, inventory-operation)
+- **Root cause:** Các app này dùng `useTranslation` từ `react-i18next` nhưng chưa gọi `initReactI18next` ở entry point.
+- **Fix:** Thêm i18n init vào `main.tsx` của sales-operation và inventory-operation.
 
-### Trạng thái hiện tại
-- **package.json**: ❌ Không có `vitest` / `@testing-library/*` / `jsdom`
-- **vite.config.ts**: ❌ Không có `test` config
-- **Scripts**: ❌ Không có `test`, `test:watch`, `test:coverage`
+### 3. 🟡 `No routes matched location "/login"` (operations-portal, hr-operation)
+- **Root cause:** Các app này không có route `/login` trong App.tsx, nhưng `ProtectedRoute` redirect về `/login`.
+- **Fix:** Thêm route `/login` vào App.tsx của operations-portal và hr-operation.
 
-### Công việc
-1. **Cài đặt dependencies**: `vitest`, `@testing-library/react`, `@testing-library/jest-dom`, `jsdom`
-2. **Thêm `test` config vào `vite.config.ts`** (giống cashflow pattern)
-3. **Thêm scripts** vào `package.json`: `test`, `test:watch`, `test:coverage`
-4. **Viết tests**:
-   - `src/lib/__tests__/supabase.test.ts` — mock supabase client
-   - `src/pages/__tests__/Dashboard.test.tsx` — render + navigation
-   - `src/pages/__tests__/CheckInPage.test.tsx` — render + basic interaction
-   - `src/components/Layout/__tests__/AppSwitcher.test.tsx` — render
+### 4. 🟡 `invalid input syntax for type uuid: "trial-company"` (cashflow, inventory-operation)
+- **Root cause:** Trial mode dùng `company_id = "trial-company"` (string), nhưng Supabase query dùng UUID type.
+- **Fix:** Sửa `fetchUserProfile` trong `useAuth` (packages/iam) để skip DB query khi là trial user.
 
----
+### 5. 🟡 `PGRST201 — Could not embed because more than one relationship` (hr-operation)
+- **Root cause:** Query `employees` với `departments` embed có nhiều relationships.
+- **Fix:** Sửa query để chỉ định relationship cụ thể.
 
-## 2. hr-operation (16 files, 0 tests)
+### 6. 🟡 React Router Future Flags (7/7 apps)
+- **Root cause:** Chưa thêm `future` flags vào `BrowserRouter`.
+- **Fix:** Thêm `future={{ v7_startTransition: true, v7_relativeSplatPath: true }}` vào tất cả BrowserRouter.
 
-### Trạng thái hiện tại
-- **package.json**: ✅ ĐÃ có `vitest`, `@testing-library/*`, `jsdom`, `test` scripts
-- **vite.config.ts**: ❌ Không có `test` config
-- **Scripts**: ✅ `test`, `test:watch`, `test:coverage` đã có
-
-### Công việc
-1. **Thêm `test` config vào `vite.config.ts`**
-2. **Viết tests**:
-   - `src/services/__tests__/hrService.test.ts` — mock supabase, test CRUD methods
-   - `src/pages/__tests__/EmployeeDirectory.test.tsx` — render + list
-   - `src/pages/__tests__/LeaveManagement.test.tsx` — render
-   - `src/pages/__tests__/ShiftManagement.test.tsx` — render
-   - `src/components/Layout/__tests__/AppSwitcher.test.tsx` — render
-
----
-
-## 3. admin-portal (15 files, 0 tests)
-
-### Trạng thái hiện tại
-- **package.json**: ❌ Không có `vitest` / `@testing-library/*` / `jsdom`
-- **vite.config.ts**: ❌ Không có `test` config
-- **Scripts**: ❌ Không có `test` scripts
-
-### Công việc
-1. **Cài đặt dependencies**: `vitest`, `@testing-library/react`, `@testing-library/jest-dom`, `jsdom`
-2. **Thêm `test` config vào `vite.config.ts`**
-3. **Thêm scripts** vào `package.json`
-4. **Viết tests**:
-   - `src/contexts/__tests__/AdminContext.test.tsx` — mock supabase, test context
-   - `src/pages/__tests__/IdentityManagement.test.tsx` — render
-   - `src/pages/__tests__/CompanyManagement.test.tsx` — render
-   - `src/pages/__tests__/GlobalSettings.test.tsx` — render
+### 7. 🟡 `Objects are not valid as a React child` (cashflow)
+- **Root cause:** Render error object trực tiếp trong JSX thay vì error.message.
+- **Fix:** Sửa component render error.
 
 ---
 
 ## Thứ tự thực hiện
 
-| Step | App | Action |
-|------|-----|--------|
-| 1 | operations-portal | Cài đặt deps + config + scripts |
-| 2 | operations-portal | Viết tests |
-| 3 | operations-portal | Chạy verify |
-| 4 | hr-operation | Thêm test config |
-| 5 | hr-operation | Viết tests |
-| 6 | hr-operation | Chạy verify |
-| 7 | admin-portal | Cài đặt deps + config + scripts |
-| 8 | admin-portal | Viết tests |
-| 9 | admin-portal | Chạy verify |
-| 10 | ALL | Chạy tổng thể, báo cáo kết quả |
-
-## Verification
-- Mỗi app: `cd apps/<app> && npx vitest run`
-- Tổng thể: `npx vitest run` từ root (nếu có workspace config)
+| Step | Issue | App(s) | Complexity |
+|------|-------|--------|:----------:|
+| 1 | hasPermission | inventory-operation | Low |
+| 2 | i18n init | sales-operation, inventory-operation | Low |
+| 3 | Login route | operations-portal, hr-operation | Low |
+| 4 | trial-company UUID | cashflow, inventory-operation (packages/iam) | Medium |
+| 5 | PGRST201 | hr-operation | Low |
+| 6 | React Router future flags | ALL 7 apps | Low |
+| 7 | Objects not valid child | cashflow | Low |

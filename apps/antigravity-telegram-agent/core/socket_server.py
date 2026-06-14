@@ -109,7 +109,10 @@ def handle_execute_command(command):
     with processes_lock:
         if sid in active_processes:
             try:
-                active_processes[sid].terminate()
+                proc = active_processes[sid]
+                # CRITICAL FIX: Kill entire process tree on Windows so orphans don't hold the pipe open
+                subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True)
+                proc.terminate()
             except Exception:
                 pass
             del active_processes[sid]

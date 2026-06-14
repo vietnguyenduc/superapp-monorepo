@@ -140,10 +140,17 @@ def smart_generate(
 
 
 def _get_ordered_providers(registry, task_type: str) -> list:
-    """Return providers in priority order for given task type.
-    Ollama disabled — uses DeepSeek (primary) → Nvidia → Gemini (fallback).
-    """
-    return [registry.deepseek, registry.nvidia, registry.gemini]
+    import core.settings as settings
+    s = settings.load_settings()
+    fallback_order = s.get("fallback_order", ["deepseek", "gemini", "claude", "nvidia"])
+    ordered = []
+    for p_name in fallback_order:
+        p = registry.get_provider_by_name(p_name)
+        if p and p not in ordered:
+            ordered.append(p)
+    if not ordered:
+        ordered = [registry.deepseek, registry.nvidia, registry.gemini]
+    return ordered
 
 
 def _get_recovery_hint(tool_name: str, args: dict, error: str) -> str:
@@ -300,14 +307,18 @@ def run_agentic_loop(
             last_reply = ""
 
             # Progress tracking — accumulated steps list
-            executed_steps = []
+            progress_lines = []
 
-            def update_progress(msg: str):
-                executed_steps.append(msg)
+            def update_progress(msg: str, replace_last: bool = False):
+                nonlocal progress_lines
+                if replace_last and progress_lines:
+                    progress_lines[-1] = msg
+                else:
+                    progress_lines.append(msg)
                 if on_progress:
                     progress_text = (
                         "⚡ *Hệ thống đang thực thi các bước sau:*\n\n"
-                        + "\n".join(executed_steps[-20:])  # Keep last 20 steps
+                        + "\n".join(progress_lines[-20:])  # Keep last 20 steps
                     )
                     on_progress(progress_text)
 
@@ -316,7 +327,7 @@ def run_agentic_loop(
                 if on_thinking:
                     on_thinking(
                         f"⏳ *Model đang suy nghĩ{dots}* (~{elapsed_s}s)\n\n"
-                        + "\n".join(executed_steps[-10:])
+                        + "\n".join(progress_lines[-10:])
                     )
 
             update_progress(f"🧠 Bot đang bắt đầu phân tích với mô hình *{provider.NAME.upper()}*...")
@@ -539,7 +550,8 @@ def run_agentic_loop(
                         recent = "\n".join(output_lines_buffer[-5:])
                         update_progress(
                             f"⚙️ *Đang chạy:* {step_label}\n"
-                            f"```\n{recent[:500]}\n```"
+                            f"```\n{recent[:500]}\n```",
+                            replace_last=True
                         )
 
                     # Try to pass streaming kwargs to tool executor
@@ -567,8 +579,10 @@ def run_agentic_loop(
 
                     is_error = result_str.lower().startswith("error") or result_str.lower().startswith("intercepted") or "[SELF-CORRECTION TRIGGERED]" in result_str
                     first_line = result_str.strip().split("\n")[0][:80]
+                    # Fix Markdown parsing errors by stripping out problematic characters
+                    safe_first_line = first_line.replace("*", "").replace("_", "").replace("`", "").replace("[", "").replace("]", "")
                     status_icon = "❌" if is_error else "✅"
-                    update_progress(f"{status_icon} *Xong:* {step_label}\n   ↳ _{first_line}_")
+                    update_progress(f"{status_icon} *Xong:* {step_label}\n   ↳ _{safe_first_line}_")
 
                     # ── Circuit breaker: stop infinite retry loops ───────────
                     _fc = run_agentic_loop._failure_counts if hasattr(run_agentic_loop, '_failure_counts') else {}

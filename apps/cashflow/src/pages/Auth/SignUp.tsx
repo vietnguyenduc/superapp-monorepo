@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthContext } from "@superapp/iam";
@@ -209,7 +209,7 @@ const SignUp: React.FC = () => {
 
           {error && (
             <div className="alert-danger">
-              <p>{error}</p>
+              <p>{typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error'}</p>
             </div>
           )}
 

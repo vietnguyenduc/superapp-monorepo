@@ -1,4 +1,15 @@
 {
     "autopilot_enabled": true,
-    "autopilot_interval_hours": 6
+    "autopilot_interval_hours": 6,
+    "default_ai_model": "deepseek",
+    "daily_report_time": "18:00",
+    "daily_kaizen_time": "02:00",
+    "auto_push_git": true,
+    "git_branch": "viet",
+    "daily_budget_limit": 1.0,
+    "daily_quota_limit": 1000,
+    "goal_max_requests": 100,
+    "fallback_order": [
+        "/settings"
+    ]
 }

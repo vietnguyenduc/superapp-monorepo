@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 import json
 import logging
-from tool_scripts.browser import read_browser_page, click_element, take_screenshot
+from tool_scripts.browser import read_browser_page, click_element, take_screenshot, run_visual_audit
 from tool_scripts.semantic_search import semantic_search
 logger = logging.getLogger("ATA.tools")
 
@@ -125,6 +125,8 @@ def execute_command(
         timeout_sec = 120
         def _kill_proc():
             try:
+                # CRITICAL FIX: Kill entire process tree on Windows so orphans don't hold the pipe open
+                subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True)
                 proc.kill()
                 output_lines.append(f"\n[ERROR: Command killed after exceeding {timeout_sec}s timeout]")
             except Exception:
@@ -139,6 +141,7 @@ def execute_command(
                 # Check cancellation
                 if cancellation_event and cancellation_event.is_set():
                     try:
+                        subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True)
                         proc.kill()
                     except Exception:
                         pass
@@ -157,7 +160,11 @@ def execute_command(
         proc.stdout.close()
         return_code = proc.wait(timeout=5)
 
-        full_output = header + "".join(output_lines)
+        raw_output = "".join(output_lines)
+        if len(raw_output) > 2000:
+            raw_output = raw_output[:1000] + f"\n\n...[OUTPUT TRUNCATED: Original size {len(raw_output)} chars]...\n\n" + raw_output[-1000:]
+            
+        full_output = header + raw_output
         if return_code != 0:
             full_output += f"\n[Exit code: {return_code}]"
         if not output_lines:
@@ -225,6 +232,26 @@ def read_file(filepath: str) -> str:
         return f"Error reading file: {str(e)}"
 
 
+def _validate_syntax(filepath: Path, workspace: Path) -> str:
+    """Runs a quick syntax check on the file if supported. Returns error string or empty string."""
+    ext = filepath.suffix.lower()
+    try:
+        if ext == ".py":
+            result = subprocess.run(["python", "-m", "py_compile", str(filepath)], capture_output=True, text=True, timeout=10, cwd=workspace)
+            if result.returncode != 0:
+                return result.stderr.strip() or result.stdout.strip()
+        elif ext in [".ts", ".tsx", ".js", ".jsx"]:
+            # Try running tsc or eslint
+            result = subprocess.run(["npx", "eslint", str(filepath)], capture_output=True, text=True, timeout=15, cwd=workspace)
+            if result.returncode != 0:
+                out = result.stdout.strip() or result.stderr.strip()
+                # If eslint is missing or not configured, ignore
+                if "could not be resolved" not in out and "ENOENT" not in out and "command not found" not in out:
+                    return out
+    except Exception:
+        pass
+    return ""
+
 def write_file(filepath: str, content: str) -> str:
     """Writes content to a file. Accepts both workspace-relative and monorepo-root-relative paths."""
     try:
@@ -234,12 +261,19 @@ def write_file(filepath: str, content: str) -> str:
             return "Error: Access denied. Cannot write files outside the monorepo bounds."
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8-sig")
-        # Show path relative to monorepo root for clarity
+        
+        # Self-Healing: Validate syntax immediately
+        validation_err = _validate_syntax(target, workspace)
+        
         try:
             display = target.relative_to(MONOREPO_ROOT).as_posix()
         except ValueError:
             display = str(target)
-        return f"Successfully wrote {len(content)} characters to '{display}'."
+            
+        success_msg = f"Successfully wrote {len(content)} characters to '{display}'."
+        if validation_err:
+            return f"{success_msg}\n\n🚨 CRITICAL SYNTAX ERROR DETECTED:\n{validation_err}\n\nYou MUST fix this error before proceeding."
+        return success_msg
     except Exception as e:
         return f"Error writing file: {str(e)}"
 
@@ -340,6 +374,9 @@ def patch_file(filepath: str, old_str: str, new_str: str, expected_count: int = 
         # Apply the replacement
         new_content = original.replace(old_str, new_str, 1 if expected_count == 1 else count)
         target.write_text(new_content, encoding="utf-8-sig")
+        
+        # Self-Healing: Validate syntax immediately
+        validation_err = _validate_syntax(target, workspace)
 
         # Find the line number of the change for the success message
         try:
@@ -354,10 +391,13 @@ def patch_file(filepath: str, old_str: str, new_str: str, expected_count: int = 
         except ValueError:
             rel = filepath
 
-        return (
+        success_msg = (
             f"✅ Patched '{rel}' at line ~{change_line} "
             f"({delta} lines, {len(new_str) - len(old_str):+d} chars)."
         )
+        if validation_err:
+            return f"{success_msg}\n\n🚨 CRITICAL SYNTAX ERROR DETECTED:\n{validation_err}\n\nYou MUST fix this error before proceeding."
+        return success_msg
     except Exception as e:
         return f"Error patching file: {str(e)}"
 
@@ -912,3 +952,28 @@ def manage_port(action: str, port: int = None) -> str:
 
     else:
         return f"Error: Unknown action '{action}'. Valid actions are check, find_free, kill."
+
+def record_lesson(lesson: str = None, **kwargs) -> str:
+    """Records a lesson or bug fix into the project's agent_memory.md file."""
+    if not lesson:
+        return "Error: You must provide a 'lesson' parameter containing the text to record."
+        
+    try:
+        workspace = get_active_workspace()
+        docs_dir = workspace / "docs"
+        docs_dir.mkdir(exist_ok=True)
+        memory_file = docs_dir / "agent_memory.md"
+        
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        entry = f"\n### Lesson Recorded on {timestamp}\n{lesson}\n"
+        
+        if not memory_file.exists():
+            memory_file.write_text("# Project Agent Memory\n\nThis file contains learned lessons, bug fixes, and architectural rules discovered during development. The AI should read this to avoid repeating mistakes.\n" + entry, encoding="utf-8")
+        else:
+            with open(memory_file, "a", encoding="utf-8") as f:
+                f.write(entry)
+                
+        return f"Successfully recorded lesson to 'docs/agent_memory.md'."
+    except Exception as e:
+        return f"Error recording lesson: {e}"

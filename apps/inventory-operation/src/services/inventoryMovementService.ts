@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+﻿﻿﻿import { supabase } from '../lib/supabase';
 import { getTrialInventoryRecords, seedTrialDataIfNeeded, getTrialProducts } from '../data/trialMockData';
 import { BaseService, ServiceResponse } from './baseService';
 
@@ -186,6 +186,12 @@ export class InventoryMovementService extends BaseService {
   }
 
   static async getMovements(filters: any = {}): Promise<ServiceResponse<InventoryMovement[]>> {
+    // Guard: if companyId is not a valid UUID (e.g. 'trial-company' fallback), use mock data immediately
+    // to avoid "invalid input syntax for type uuid" errors from Supabase
+    const companyId = filters.companyId;
+    if (companyId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(companyId)) {
+      return this.getMockMovements(filters);
+    }
     return this.execute(
       async () => {
         let query = supabase.from('inventory_movements').select('*').order('movement_date', { ascending: false }).order('movement_time', { ascending: false });
@@ -237,6 +243,17 @@ export class InventoryMovementService extends BaseService {
   }
 
   static async getCurrentBalance(companyId: string, productId: string): Promise<ServiceResponse<{ quantity: number; value?: number }>> {
+    // Guard: if companyId is not a valid UUID, use mock data immediately
+    if (companyId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(companyId)) {
+      const trialRecords = getTrialInventoryRecords();
+      const productRecords = trialRecords.filter(r => r.productCode === productId);
+      if (productRecords.length > 0) {
+        productRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const latest = productRecords[0];
+        return { success: true, data: { quantity: (latest.rawMaterialStock || 0) + (latest.processedStock || 0) + (latest.finishedProductStock || 0) }, error: null };
+      }
+      return { success: true, data: { quantity: 0 }, error: null };
+    }
     return this.execute(
       async () => {
         const { data, error } = await supabase.from('inventory_movements').select('running_balance, running_value').eq('company_id', companyId).eq('product_id', productId).order('movement_date', { ascending: false }).order('movement_time', { ascending: false }).limit(1).single();
@@ -257,6 +274,16 @@ export class InventoryMovementService extends BaseService {
   }
 
   static async getVarianceReport(companyId: string, dateFrom: string, dateTo: string): Promise<ServiceResponse<any[]>> {
+    // Guard: if companyId is not a valid UUID, use mock data immediately
+    if (companyId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(companyId)) {
+      seedTrialDataIfNeeded();
+      const records = getTrialInventoryRecords();
+      const products = getTrialProducts();
+      const varianceRecords = records.filter(r => r.notes?.toLowerCase().includes('kiểm kê')).map(r => ({
+        id: r.id, count_date: r.date, product_id: r.productCode, book_quantity: (r.rawMaterialStock || 0) + (r.processedStock || 0) + (r.finishedProductStock || 0), counted_quantity: (r.rawMaterialStock || 0) + (r.processedStock || 0) + (r.finishedProductStock || 0), variance: 0, variance_percentage: 0, reconciliation_status: 'approved', unit: r.rawMaterialUnit || 'pcs', notes: r.notes, products: { name: r.productName, business_code: r.productCode }
+      }));
+      return { success: true, data: varianceRecords, error: null };
+    }
     return this.execute(
       async () => {
         return await supabase.from('stock_count_entries').select('*, products(id, name, business_code)').eq('company_id', companyId).gte('count_date', dateFrom).lte('count_date', dateTo).order('count_date', { ascending: false });

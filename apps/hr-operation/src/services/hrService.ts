@@ -1,4 +1,4 @@
-import { supabase, TABLES } from '../lib/supabase';
+﻿﻿﻿import { supabase, TABLES } from '../lib/supabase';
 
 // Types
 export interface Department {
@@ -54,7 +54,7 @@ export const hrService = {
     const { data: userDetails } = await supabase
       .from(TABLES.USERS)
       .select('company_id')
-      .eq('id', userData.user?.id)
+      .eq('id', userData.user?.id ?? '')
       .single();
 
     if (!userDetails?.company_id) throw new Error('Company ID not found for user');
@@ -75,7 +75,7 @@ export const hrService = {
       .from(TABLES.EMPLOYEES)
       .select(`
         *,
-        department:departments(*)
+        department:departments!employees_department_id_fkey(*)
       `)
       .order('full_name');
     
@@ -88,7 +88,7 @@ export const hrService = {
     const { data: userDetails } = await supabase
       .from(TABLES.USERS)
       .select('company_id')
-      .eq('id', userData.user?.id)
+      .eq('id', userData.user?.id ?? '')
       .single();
 
     if (!userDetails?.company_id) throw new Error('Company ID not found for user');

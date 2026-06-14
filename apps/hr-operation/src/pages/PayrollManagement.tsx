@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Banknote, Calculator, Download, CheckCircle, Search, ChevronRight, FileDown, Filter, X } from 'lucide-react';
+﻿import React, { useState } from 'react';
+import { Calculator, Download, Search, FileDown, Filter } from 'lucide-react';
 
 const PayrollManagement = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<string>('06/2026');

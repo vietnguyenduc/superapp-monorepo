@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿﻿﻿﻿﻿﻿﻿// @ts-nocheck
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import * as XLSX from "xlsx";
@@ -332,7 +332,7 @@ const DashboardPageEnhanced: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 w-full relative transition-colors duration-300">
       {/* Sticky Filter Header - Higher z-index and forced top-16 */}
-      <div className="sticky top-16 z-[40] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md px-4 sm:px-6 lg:px-8 py-3 border-b border-gray-200 dark:border-gray-800 shadow-md w-full -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-5 lg:-mt-6 !max-w-none mb-6">
+      <div className="sticky top-16 z-[40] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md px-4 sm:px-6 lg:px-8 py-2 sm:py-3 border-b border-gray-200 dark:border-gray-800 shadow-md w-full -mx-4 sm:-mx-6 lg:-mx-8 -mt-2 sm:-mt-3 lg:-mt-4 !max-w-none mb-2 sm:mb-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="text-sm font-bold text-gray-800 dark:text-gray-200">Dashboard Tồn Kho</div>
@@ -422,16 +422,16 @@ const DashboardPageEnhanced: React.FC = () => {
         </div>
       
       {/* Main Content Body */}
-      <div className="px-4 sm:px-6 lg:px-8 w-full max-w-7xl mx-auto py-6 space-y-6 transition-colors">
+      <div className="px-4 sm:px-6 lg:px-8 w-full max-w-7xl mx-auto py-3 sm:py-4 space-y-4 sm:space-y-6 transition-colors">
         
         {/* Page Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard Tồn Kho</h1>
-          <p className="text-gray-600 dark:text-gray-400">Tổng quan tình hình tồn kho và giao dịch</p>
+        <div className="mb-2 sm:mb-4">
+          <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard Tồn Kho</h1>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Tổng quan tình hình tồn kho và giao dịch</p>
         </div>
 
         {/* Tabs */}
-        <div className="mb-6 border-b border-gray-200 dark:border-gray-800">
+        <div className="mb-2 sm:mb-4 border-b border-gray-200 dark:border-gray-800">
           <div className="flex gap-2">
             <button type="button" onClick={() => setSearchParams(new URLSearchParams())}
               className={`px-4 py-2 rounded-t-xl text-sm font-medium transition-all ${activeTab === "overview" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"}`}>
@@ -454,7 +454,7 @@ const DashboardPageEnhanced: React.FC = () => {
         {activeTab === "overview" && (
           <>
             {/* Metric Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-6 w-full min-w-0 overflow-hidden">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4 w-full min-w-0 overflow-hidden">
               <InventoryMetricsCard title="Tổng sản phẩm" value={formatNumber(metrics.totalProducts)} change={metrics.totalProducts > 0 ? 2 : 0} changeType="increase" icon="products" color="primary" />
               <InventoryMetricsCard title="Sản phẩm hoạt động" value={formatNumber(metrics.activeProducts)} change={metrics.activeProducts > 0 ? 5 : 0} changeType="increase" icon="inventory" color="success" />
               <InventoryMetricsCard title="Giá trị tồn kho" value={formatNumber(metrics.totalInventoryValue)} change={metrics.totalInventoryValue > 0 ? 12 : 0} changeType="increase" icon="warehouse" color="warning" />
@@ -462,7 +462,7 @@ const DashboardPageEnhanced: React.FC = () => {
             </div>
 
             {/* Quick Actions */}
-            <div className="mb-6 w-full">
+            <div className="mb-3 sm:mb-4 w-full">
               <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 w-full overflow-hidden transition-colors">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
                   <h3 className="text-base font-bold text-gray-900 dark:text-gray-100">Thao tác nhanh</h3>
@@ -491,7 +491,7 @@ const DashboardPageEnhanced: React.FC = () => {
             </div>
 
             {/* ═══════ CHARTS ═══════ */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6 w-full transition-colors">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 sm:gap-4 mb-3 sm:mb-4 w-full transition-colors">
               {/* Waterfall Chart: Nhập vs Xuất */}
               <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 w-full overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
@@ -562,7 +562,7 @@ const DashboardPageEnhanced: React.FC = () => {
             </div>
 
             {/* ═══════ TWO TABLES ═══════ */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 w-full transition-colors">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4 w-full transition-colors">
 
               {/* Table 1: Giao dịch gần đây */}
               <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 w-full overflow-hidden">

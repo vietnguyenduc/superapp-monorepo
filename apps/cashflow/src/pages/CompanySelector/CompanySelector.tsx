@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useCompany } from "@superapp/iam";
 import type { Company } from "../../types/database.types";
@@ -23,7 +23,7 @@ const CompanySelector: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <div className="text-red-400 text-xl">Error: {error}</div>
+        <div className="text-red-400 text-xl">Error: {typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error'}</div>
       </div>
     );
   }
