@@ -1003,6 +1003,37 @@ def handle_devin_status(message):
     safe_send(bot, message.chat.id, f"📊 *Devin session* `{session_id}`\nTrạng thái: *{status}*\n\n{output}")
 
 
+@bot.message_handler(commands=['devin_send'])
+def handle_devin_send(message):
+    """Send a follow-up message to a running Devin session."""
+    if not check_rbac_permission(message, "admin"):
+        return
+    try:
+        parts = message.text.split(' ', 2)
+        session_id = parts[1].strip()
+        msg_text = parts[2].strip()
+    except (IndexError, ValueError):
+        bot.reply_to(
+            message,
+            "Cú pháp: `/devin_send <session_id> <message>`\nVD: `/devin_send devin-abc123 Hãy thêm unit tests`",
+            parse_mode="Markdown",
+        )
+        return
+
+    from core import devin_client
+    try:
+        devin_client.send_message(session_id, msg_text)
+    except Exception as e:
+        bot.reply_to(message, f"❌ Không gửi được message: {e}")
+        return
+
+    bot.reply_to(
+        message,
+        f"✅ Đã gửi message vào session `{session_id}`.\nDùng /devin\\_status {session_id} để xem phản hồi.",
+        parse_mode="Markdown",
+    )
+
+
 @bot.message_handler(commands=['devin_list'])
 def handle_devin_list(message):
     """List the 5 most recent Devin sessions."""
