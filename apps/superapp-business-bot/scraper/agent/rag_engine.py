@@ -38,7 +38,7 @@ class RAGEngine:
                 base_url=os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"),
                 api_key=nvidia_key
             )
-            self.model_name = os.environ.get("NVIDIA_MODEL", "meta/llama-3.1-405b-instruct")
+            self.model_name = os.environ.get("NVIDIA_MODEL", "meta/llama-3.1-70b-instruct")
         else:
             # No keys configured yet; default to DeepSeek so a clear auth error surfaces.
             self.client = OpenAI(
@@ -175,7 +175,7 @@ class RAGEngine:
                     base_url=os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"),
                     api_key=nvidia_key
                 )
-                model = os.environ.get("NVIDIA_MODEL", "meta/llama-3.1-405b-instruct")
+                model = os.environ.get("NVIDIA_MODEL", "meta/llama-3.1-70b-instruct")
             else:
                 continue
 
