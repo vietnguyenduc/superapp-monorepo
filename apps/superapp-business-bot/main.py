@@ -21,6 +21,39 @@ from config import ALLOWED_USER_ID
 # For routing models per-user
 USER_DEFAULT_PROVIDERS = {}
 
+# In-memory state for user's selected app and data entry flow
+# { user_id: { "selected_app": "inventory-operation", "step": "awaiting_data", "data_type": "..." } }
+USER_APP_STATE = {}
+
+# Data entry guidance per app
+APP_DATA_ENTRY_GUIDE = {
+    "inventory-operation": {
+        "types": ["📦 Nhập tồn kho", "📥 Nhập hàng", "📤 Xuất hàng"],
+        "format": "Excel/CSV hoặc paste từ Google Sheets",
+        "fields": "Ngày, Mã sản phẩm, Số lượng, Tồn thực tế, Ghi chú",
+    },
+    "cashflow": {
+        "types": ["💰 Thu tiền", "💸 Chi tiền", "🔄 Chuyển khoản nội bộ"],
+        "format": "Excel/CSV hoặc paste từ Google Sheets",
+        "fields": "Ngày, Loại giao dịch, Số tiền, Đối tác, Ghi chú",
+    },
+    "accounting": {
+        "types": ["📄 Hóa đơn đầu vào", "📄 Hóa đơn đầu ra", "📋 Bút toán điều chỉnh"],
+        "format": "Excel/CSV hoặc paste từ Google Sheets",
+        "fields": "Ngày, Số hóa đơn, Đối tác, Số tiền, Thuế VAT, Ghi chú",
+    },
+    "hr-operation": {
+        "types": ["👤 Thông tin nhân viên", "📅 Chấm công", "🏖️ Nghỉ phép"],
+        "format": "Excel/CSV hoặc paste từ Google Sheets",
+        "fields": "Mã NV, Họ tên, Ngày, Giờ vào, Giờ ra, Ghi chú",
+    },
+    "sales-operation": {
+        "types": ["🛒 Đơn hàng mới", "📦 Cập nhật trạng thái đơn", "🔄 Trả hàng"],
+        "format": "Excel/CSV hoặc paste từ Google Sheets",
+        "fields": "Mã đơn, SĐT khách, Mã SP, Số lượng, Đơn giá, Ghi chú",
+    },
+}
+
 # Initialize logging
 logging.basicConfig(
     level=logging.INFO,
@@ -425,9 +458,14 @@ def send_welcome(message):
         "- `/logout` hoặc `/dang_xuat` - Đăng xuất tài khoản hiện tại\n"
     )
 
-    bot.reply_to(message, welcome_text, parse_mode="Markdown")
-
-    bot.reply_to(message, welcome_text, parse_mode="Markdown")
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        telebot.types.InlineKeyboardButton("📱 Chọn App cụ thể", callback_data="action:select_app"),
+        telebot.types.InlineKeyboardButton("📋 Nhập liệu", callback_data="action:data_entry"),
+        telebot.types.InlineKeyboardButton("📊 Xem báo cáo", callback_data="action:report"),
+        telebot.types.InlineKeyboardButton("⏰ Tạo job tự động", callback_data="action:schedule"),
+    )
+    bot.send_message(message.chat.id, welcome_text, reply_markup=markup, parse_mode="Markdown")
 
 @bot.message_handler(commands=['model', 'provider'])
 def handle_model_switch(message):
@@ -1032,6 +1070,285 @@ def handle_switch_app_callback(call):
         parse_mode="Markdown"
     )
 
+@bot.callback_query_handler(func=lambda call: call.data == "action:select_app")
+def handle_select_app_action(call):
+    """Displays available apps as inline buttons based on user permissions."""
+    bot.answer_callback_query(call.id)
+    user_id = call.from_user.id
+    role = get_user_role(user_id)
+    if not role:
+        bot.send_message(call.message.chat.id, "⛔ Bạn chưa xác thực. Gõ /start để bắt đầu.")
+        return
+
+    settings_file = Path(__file__).parent / "config" / "settings.json"
+    apps = []
+    if settings_file.exists():
+        try:
+            config = json.loads(settings_file.read_text(encoding="utf-8"))
+            apps = config.get("apps", [])
+        except Exception:
+            pass
+
+    # Filter apps user has permission to access
+    user_modules = ROLE_PERMISSIONS.get(role, [])
+    is_admin = role in ["admin", "admin_master", "admin_company"]
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+    for app in apps:
+        app_name = app.get("name", "")
+        production_url = app.get("production_url", "")
+        # Skip monorepo-root and super-scraper for non-admins
+        if app_name in ["monorepo-root", "super-scraper"] and not is_admin:
+            continue
+        # Check module-level permission (simplified mapping)
+        module_map = {
+            "accounting": "accounting", "cashflow": "accounting",
+            "hr-operation": "hr", "inventory-operation": "inventory",
+            "sales-operation": "sales", "admin-portal": "admin",
+            "operations-portal": "admin", "web": "admin",
+        }
+        required_module = module_map.get(app_name)
+        if required_module and not is_admin and required_module not in user_modules:
+            continue
+
+        btn_select = telebot.types.InlineKeyboardButton(
+            f"✅ Chọn: {app_name}", callback_data=f"select_app:{app_name}"
+        )
+        btn_web = telebot.types.InlineKeyboardButton(
+            "🌐 Mở Web", url=production_url if production_url else "https://superapp.vercel.app"
+        )
+        markup.row(btn_select, btn_web)
+
+    markup.add(telebot.types.InlineKeyboardButton("🏠 Quay về", callback_data="action:back_home"))
+    bot.send_message(
+        call.message.chat.id,
+        "📱 **CHỌN ỨNG DỤNG**\n\nChọn app bạn muốn làm việc:",
+        reply_markup=markup,
+        parse_mode="Markdown"
+    )
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("select_app:"))
+def handle_select_app_confirm(call):
+    """Saves selected app to USER_APP_STATE and shows confirmation with action buttons."""
+    bot.answer_callback_query(call.id)
+    user_id = call.from_user.id
+    app_name = call.data.split(":", 1)[1]
+
+    # Save to state
+    if user_id not in USER_APP_STATE:
+        USER_APP_STATE[user_id] = {}
+    USER_APP_STATE[user_id]["selected_app"] = app_name
+    USER_APP_STATE[user_id].pop("step", None)
+    USER_APP_STATE[user_id].pop("data_type", None)
+
+    # Get app description from settings
+    settings_file = Path(__file__).parent / "config" / "settings.json"
+    production_url = ""
+    tech = ""
+    if settings_file.exists():
+        try:
+            config = json.loads(settings_file.read_text(encoding="utf-8"))
+            app_meta = next((a for a in config.get("apps", []) if a.get("name") == app_name), None)
+            if app_meta:
+                production_url = app_meta.get("production_url", "")
+                tech = app_meta.get("tech", "")
+        except Exception:
+            pass
+
+    confirm_text = (
+        f"✅ **Đã chọn: {app_name.upper()}**\n\n"
+        f"- **Công nghệ:** {tech}\n"
+        f"- **URL:** {production_url}\n\n"
+        f"Bạn muốn làm gì tiếp?"
+    )
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        telebot.types.InlineKeyboardButton("📋 Nhập liệu", callback_data="action:data_entry"),
+        telebot.types.InlineKeyboardButton("📊 Xem báo cáo", callback_data="action:report"),
+    )
+    markup.add(
+        telebot.types.InlineKeyboardButton("🔄 Đổi app", callback_data="action:select_app"),
+        telebot.types.InlineKeyboardButton(
+            "🌐 Mở Web", url=production_url if production_url else "https://superapp.vercel.app"
+        ),
+    )
+    markup.add(telebot.types.InlineKeyboardButton("🏠 Quay về", callback_data="action:back_home"))
+
+    bot.send_message(call.message.chat.id, confirm_text, reply_markup=markup, parse_mode="Markdown")
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "action:data_entry")
+def handle_data_entry_action(call):
+    """Shows data entry options for user's selected app."""
+    bot.answer_callback_query(call.id)
+    user_id = call.from_user.id
+    role = get_user_role(user_id)
+    if not role:
+        bot.send_message(call.message.chat.id, "⛔ Bạn chưa xác thực. Gõ /start để bắt đầu.")
+        return
+
+    state = USER_APP_STATE.get(user_id, {})
+    selected_app = state.get("selected_app")
+
+    if not selected_app:
+        # No app selected yet — redirect to select_app
+        handle_select_app_action(call)
+        return
+
+    guide = APP_DATA_ENTRY_GUIDE.get(selected_app)
+    if not guide:
+        bot.send_message(
+            call.message.chat.id,
+            f"⚠️ App `{selected_app}` chưa có hướng dẫn nhập liệu. Vui lòng chọn app khác.",
+            parse_mode="Markdown"
+        )
+        return
+
+    text = (
+        f"📋 **NHẬP LIỆU — {selected_app.upper()}**\n\n"
+        f"📁 **Định dạng hỗ trợ:** {guide['format']}\n"
+        f"📝 **Các trường cần nhập:** {guide['fields']}\n\n"
+        f"Chọn loại dữ liệu bạn muốn nhập:"
+    )
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    for dtype in guide["types"]:
+        markup.add(telebot.types.InlineKeyboardButton(
+            dtype, callback_data=f"data_type:{selected_app}:{dtype}"
+        ))
+    markup.add(
+        telebot.types.InlineKeyboardButton("🔄 Đổi app", callback_data="action:select_app"),
+        telebot.types.InlineKeyboardButton("🏠 Quay về", callback_data="action:back_home"),
+    )
+
+    bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("data_type:"))
+def handle_data_type_selection(call):
+    """Handles data type selection and sets up next-step handler for data input."""
+    bot.answer_callback_query(call.id)
+    user_id = call.from_user.id
+
+    parts = call.data.split(":", 2)
+    if len(parts) < 3:
+        return
+    app_name = parts[1]
+    data_type = parts[2]
+
+    # Save state
+    if user_id not in USER_APP_STATE:
+        USER_APP_STATE[user_id] = {}
+    USER_APP_STATE[user_id]["selected_app"] = app_name
+    USER_APP_STATE[user_id]["data_type"] = data_type
+    USER_APP_STATE[user_id]["step"] = "awaiting_data"
+
+    guide = APP_DATA_ENTRY_GUIDE.get(app_name, {})
+
+    # Get production_url
+    settings_file = Path(__file__).parent / "config" / "settings.json"
+    production_url = ""
+    if settings_file.exists():
+        try:
+            config = json.loads(settings_file.read_text(encoding="utf-8"))
+            app_meta = next((a for a in config.get("apps", []) if a.get("name") == app_name), None)
+            if app_meta:
+                production_url = app_meta.get("production_url", "")
+        except Exception:
+            pass
+
+    text = (
+        f"📝 **HƯỚNG DẪN NHẬP: {data_type}**\n"
+        f"📱 App: `{app_name}`\n\n"
+        f"📁 **Định dạng:** {guide.get('format', 'Excel/CSV')}\n"
+        f"📝 **Các trường:** {guide.get('fields', 'N/A')}\n\n"
+        f"**Cách gửi dữ liệu:**\n"
+        f"1️⃣ Gửi file Excel/CSV trực tiếp\n"
+        f"2️⃣ Hoặc paste text (mỗi dòng = 1 bản ghi, cách nhau bởi dấu phẩy hoặc tab)\n\n"
+        f"👇 Gửi dữ liệu ngay bên dưới:"
+    )
+
+    markup = telebot.types.InlineKeyboardMarkup()
+    if production_url:
+        markup.add(telebot.types.InlineKeyboardButton(
+            "🌐 Mở Web App để nhập", url=production_url
+        ))
+    markup.add(telebot.types.InlineKeyboardButton("🏠 Quay về", callback_data="action:back_home"))
+
+    msg = bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
+    bot.register_next_step_handler(msg, process_data_entry_input, app_name, data_type)
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "action:report")
+def handle_report_action(call):
+    """Placeholder for report viewing."""
+    bot.answer_callback_query(call.id)
+    user_id = call.from_user.id
+    state = USER_APP_STATE.get(user_id, {})
+    selected_app = state.get("selected_app", "chưa chọn")
+
+    markup = telebot.types.InlineKeyboardMarkup()
+    markup.add(telebot.types.InlineKeyboardButton("🏠 Quay về", callback_data="action:back_home"))
+    bot.send_message(
+        call.message.chat.id,
+        f"📊 **XEM BÁO CÁO**\n\nApp hiện tại: `{selected_app}`\n\n"
+        f"Sử dụng các lệnh báo cáo tương ứng:\n"
+        f"- `/accounting_report` — Báo cáo kế toán\n"
+        f"- `/cashflow_report` — Báo cáo dòng tiền\n"
+        f"- `/hr_report` — Báo cáo nhân sự\n"
+        f"- `/sales_report` — Báo cáo bán hàng\n"
+        f"- `/inventory_report` — Báo cáo kho\n",
+        reply_markup=markup,
+        parse_mode="Markdown"
+    )
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "action:schedule")
+def handle_schedule_action(call):
+    """Placeholder for schedule job creation."""
+    bot.answer_callback_query(call.id)
+    markup = telebot.types.InlineKeyboardMarkup()
+    markup.add(telebot.types.InlineKeyboardButton("🏠 Quay về", callback_data="action:back_home"))
+    bot.send_message(
+        call.message.chat.id,
+        "⏰ **TẠO JOB TỰ ĐỘNG**\n\n"
+        "Tính năng tạo job tự động đang được phát triển.\n"
+        "Hiện tại, báo cáo tự động được gửi lúc 18:00 hàng ngày cho Admin.",
+        reply_markup=markup,
+        parse_mode="Markdown"
+    )
+
+
+@bot.callback_query_handler(func=lambda call: call.data == "action:back_home")
+def handle_back_home_action(call):
+    """Returns user to the welcome/home screen."""
+    bot.answer_callback_query(call.id)
+    user_id = call.from_user.id
+    role = get_user_role(user_id)
+    chat_id = call.message.chat.id
+
+    if not role:
+        bot.send_message(chat_id, "Gõ /start để bắt đầu.")
+        return
+
+    welcome_text = (
+        f"🤖 **Superapp Business Assistant Online 24/7**\n"
+        f"Vai trò của bạn: **{role.upper()}**\n\n"
+        f"Chọn chức năng bên dưới hoặc gõ /help để xem danh sách lệnh đầy đủ."
+    )
+
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        telebot.types.InlineKeyboardButton("📱 Chọn App cụ thể", callback_data="action:select_app"),
+        telebot.types.InlineKeyboardButton("📋 Nhập liệu", callback_data="action:data_entry"),
+        telebot.types.InlineKeyboardButton("📊 Xem báo cáo", callback_data="action:report"),
+        telebot.types.InlineKeyboardButton("⏰ Tạo job tự động", callback_data="action:schedule"),
+    )
+    bot.send_message(chat_id, welcome_text, reply_markup=markup, parse_mode="Markdown")
+
+
 @bot.callback_query_handler(func=lambda call: call.data == "rag_search_init")
 def handle_rag_search_callback(call):
     bot.answer_callback_query(call.id)
@@ -1103,6 +1420,65 @@ def process_rag_search_input(message):
     import threading
     threading.Thread(target=run_query).start()
 
+
+def process_data_entry_input(message, app_name, data_type):
+    """Handles data input from user after selecting a data type."""
+    user_id = message.from_user.id
+
+    # If user sends a command, cancel the flow
+    if message.text and message.text.startswith('/'):
+        # Clear awaiting state
+        if user_id in USER_APP_STATE:
+            USER_APP_STATE[user_id].pop("step", None)
+        return
+
+    # If user sends a file/document
+    if message.document:
+        filename = message.document.file_name or "file"
+        # Clear awaiting state
+        if user_id in USER_APP_STATE:
+            USER_APP_STATE[user_id].pop("step", None)
+
+        markup = telebot.types.InlineKeyboardMarkup()
+        markup.add(
+            telebot.types.InlineKeyboardButton("📋 Nhập thêm dữ liệu", callback_data="action:data_entry"),
+            telebot.types.InlineKeyboardButton("🏠 Quay về", callback_data="action:back_home"),
+        )
+        bot.reply_to(
+            message,
+            f"✅ **Đã nhận file: `{filename}`**\n\n"
+            f"📦 App: `{app_name}`\n"
+            f"📝 Loại: {data_type}\n\n"
+            f"File sẽ được xử lý và nhập vào hệ thống.",
+            reply_markup=markup,
+            parse_mode="Markdown"
+        )
+        return
+
+    # If user sends text data (not a command)
+    if message.text:
+        lines = [l for l in message.text.strip().split('\n') if l.strip()]
+        line_count = len(lines)
+
+        # Clear awaiting state
+        if user_id in USER_APP_STATE:
+            USER_APP_STATE[user_id].pop("step", None)
+
+        markup = telebot.types.InlineKeyboardMarkup()
+        markup.add(
+            telebot.types.InlineKeyboardButton("📋 Nhập thêm dữ liệu", callback_data="action:data_entry"),
+            telebot.types.InlineKeyboardButton("🏠 Quay về", callback_data="action:back_home"),
+        )
+        bot.reply_to(
+            message,
+            f"✅ **Đã nhận {line_count} dòng dữ liệu**\n\n"
+            f"📦 App: `{app_name}`\n"
+            f"📝 Loại: {data_type}\n\n"
+            f"Dữ liệu sẽ được xử lý và nhập vào hệ thống.",
+            reply_markup=markup,
+            parse_mode="Markdown"
+        )
+        return
 
 
 @bot.message_handler(content_types=['document'])
@@ -1253,6 +1629,14 @@ def handle_agent_chat(message):
         bot.reply_to(message, "⛔ Access Denied.")
         return
         
+    # Check if user has an active data entry state
+    app_state = USER_APP_STATE.get(user_id, {})
+    if app_state.get("step") == "awaiting_data":
+        app_name = app_state.get("selected_app", "")
+        data_type = app_state.get("data_type", "")
+        process_data_entry_input(message, app_name, data_type)
+        return
+
     # Route natural language queries automatically to the RAG Search engine for a highly responsive, zero-friction UX
     process_rag_search_input(message)
 
