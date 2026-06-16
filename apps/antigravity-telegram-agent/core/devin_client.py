@@ -19,7 +19,7 @@ import requests
 logger = logging.getLogger("ATA.devin_client")
 
 DEVIN_API_KEY = os.getenv("DEVIN_API_KEY", "")
-BASE_URL = os.getenv("DEVIN_API_BASE_URL", "https://api.cognition.ai/v1")
+BASE_URL = os.getenv("DEVIN_API_BASE_URL", "https://api.devin.ai/v1")
 
 # Terminal session states reported by the API.
 _TERMINAL_STATES = {"blocked", "stopped", "finished", "expired", "completed", "suspended"}
@@ -76,12 +76,21 @@ def send_message(session_id: str, message: str) -> dict:
     return _request("POST", f"/session/{session_id}/message", json={"message": message})
 
 
+def _latest_devin_message(data: dict) -> str:
+    """Extract the most recent message authored by Devin from a session payload."""
+    messages = data.get("messages") or []
+    for msg in reversed(messages):
+        if msg.get("type") in ("devin_message", "assistant_message"):
+            return msg.get("message", "")
+    return ""
+
+
 def get_session_status(session_id: str) -> dict:
     """Poll session status: {status, output, structured_output}."""
     data = _request("GET", f"/session/{session_id}")
     return {
         "status": data.get("status_enum") or data.get("status", "unknown"),
-        "output": data.get("output", ""),
+        "output": data.get("output") or _latest_devin_message(data),
         "structured_output": data.get("structured_output", {}),
     }
 
