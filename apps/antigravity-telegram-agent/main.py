@@ -936,6 +936,99 @@ def handle_clear_task(message):
         bot.reply_to(message, f"❌ Error clearing task state: {e}")
 
 
+@bot.message_handler(commands=['devin'])
+def handle_devin(message):
+    """Delegate a complex task to a cloud Devin session."""
+    if not check_rbac_permission(message, "admin"):
+        return
+    try:
+        task = message.text.split(' ', 1)[1].strip()
+    except IndexError:
+        bot.reply_to(
+            message,
+            "Vui lòng nhập task. VD: `/devin refactor toàn bộ module auth`",
+            parse_mode="Markdown",
+        )
+        return
+
+    bot.send_chat_action(message.chat.id, 'typing')
+
+    def run_devin():
+        from core import devin_client
+        try:
+            session = devin_client.create_session(task)
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Không tạo được Devin session: {e}")
+            return
+
+        session_id = session.get("session_id", "")
+        url = session.get("url", "")
+        safe_send(
+            bot,
+            message.chat.id,
+            f"🤖 Devin đang xử lý: {url}\n"
+            f"Session ID: {session_id}\n"
+            f"Dùng /devin_status {session_id} để kiểm tra.",
+        )
+
+        try:
+            result = devin_client.wait_for_completion(session_id)
+            safe_send(bot, message.chat.id, f"✅ *Devin hoàn thành* (`{session_id}`):\n\n{result}")
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Lỗi khi chờ Devin hoàn thành (`{session_id}`): {e}")
+
+    threading.Thread(target=run_devin, daemon=True).start()
+
+
+@bot.message_handler(commands=['devin_status'])
+def handle_devin_status(message):
+    """Check the status of a running Devin session."""
+    if not check_rbac_permission(message, "admin"):
+        return
+    try:
+        session_id = message.text.split(' ', 1)[1].strip()
+    except IndexError:
+        bot.reply_to(message, "Vui lòng nhập session ID. VD: `/devin_status <session_id>`", parse_mode="Markdown")
+        return
+
+    from core import devin_client
+    try:
+        info = devin_client.get_session_status(session_id)
+    except Exception as e:
+        bot.reply_to(message, f"❌ Lỗi khi lấy trạng thái: {e}")
+        return
+
+    status = info.get("status", "unknown")
+    output = info.get("output") or info.get("structured_output") or "_(chưa có output)_"
+    safe_send(bot, message.chat.id, f"📊 *Devin session* `{session_id}`\nTrạng thái: *{status}*\n\n{output}")
+
+
+@bot.message_handler(commands=['devin_list'])
+def handle_devin_list(message):
+    """List the 5 most recent Devin sessions."""
+    if not check_rbac_permission(message, "admin"):
+        return
+
+    from core import devin_client
+    try:
+        sessions = devin_client.list_sessions(limit=5)
+    except Exception as e:
+        bot.reply_to(message, f"❌ Lỗi khi liệt kê sessions: {e}")
+        return
+
+    if not sessions:
+        bot.reply_to(message, "Không có Devin session nào gần đây.")
+        return
+
+    lines = ["🗂️ *5 Devin sessions gần nhất:*", ""]
+    for s in sessions[:5]:
+        sid = s.get("session_id", "?")
+        status = s.get("status_enum") or s.get("status", "unknown")
+        title = s.get("title") or s.get("name") or ""
+        lines.append(f"• `{sid}` — *{status}*" + (f"\n  {title}" if title else ""))
+    safe_send(bot, message.chat.id, "\n".join(lines))
+
+
 @bot.message_handler(commands=['botstat'])
 def handle_botstat(message):
     """Show all Python/bot processes currently running on the machine."""
