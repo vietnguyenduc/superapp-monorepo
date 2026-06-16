@@ -4,8 +4,6 @@ import glob
 import re
 from openai import OpenAI
 
-import os
-import requests
 from dotenv import load_dotenv
 
 def load_unified_env():
@@ -21,38 +19,33 @@ def load_unified_env():
 
 class RAGEngine:
     def __init__(self, use_local_ollama: bool = True):
+        # `use_local_ollama` is kept for backward compatibility with existing callers,
+        # but Ollama/Gemini are no longer used. We always use DeepSeek -> Nvidia.
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'storage', 'refined_data')
         load_unified_env()
-        self.use_local_ollama = use_local_ollama
-        
-        ollama_running = False
-        if use_local_ollama:
-            try:
-                res = requests.get("http://localhost:11434/api/tags", timeout=1.5)
-                if res.status_code == 200:
-                    ollama_running = True
-            except Exception:
-                pass
-                
-        if use_local_ollama and ollama_running:
+
+        deepseek_key = os.environ.get("DEEPSEEK_API_KEY")
+        nvidia_key = os.environ.get("NVIDIA_API_KEY")
+
+        if deepseek_key:
             self.client = OpenAI(
-                base_url="http://localhost:11434/v1",
-                api_key="ollama"
+                base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
+                api_key=deepseek_key
             )
-            self.model_name = "qwen2.5-coder"
+            self.model_name = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+        elif nvidia_key:
+            self.client = OpenAI(
+                base_url=os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"),
+                api_key=nvidia_key
+            )
+            self.model_name = os.environ.get("NVIDIA_MODEL", "meta/llama-3.1-405b-instruct")
         else:
-            gemini_key = os.environ.get("GEMINI_API_KEY")
-            if gemini_key:
-                self.client = OpenAI(
-                    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-                    api_key=gemini_key
-                )
-                self.model_name = "gemini-2.5-flash"
-            else:
-                self.client = OpenAI(
-                    api_key=os.environ.get("OPENAI_API_KEY", "YOUR_API_KEY_HERE")
-                )
-                self.model_name = "gpt-3.5-turbo"
+            # No keys configured yet; default to DeepSeek so a clear auth error surfaces.
+            self.client = OpenAI(
+                base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
+                api_key="MISSING_DEEPSEEK_API_KEY"
+            )
+            self.model_name = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
 
     def ask(self, question: str, provider: str = "default") -> str:
         # Tải tất cả file JSON để làm context (Giới hạn 10 file gần nhất để tránh quá tải token)
@@ -158,60 +151,49 @@ class RAGEngine:
                 seen_urls.add(img["url"])
                 unique_images.append(img)
         
-        try:
-            target_model = self.model_name
-            target_client = self.client
-            
-            gemini_key = os.environ.get("GEMINI_API_KEY")
-            deepseek_key = os.environ.get("DEEPSEEK_API_KEY")
-            nvidia_key = os.environ.get("NVIDIA_API_KEY")
-            
-            if provider == "nvidia" and nvidia_key:
-                target_client = OpenAI(
-                    base_url=os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"),
-                    api_key=nvidia_key
-                )
-                target_model = os.environ.get("NVIDIA_MODEL", "meta/llama-3.1-405b-instruct")
-            elif provider == "deepseek" and deepseek_key:
-                target_client = OpenAI(
+        deepseek_key = os.environ.get("DEEPSEEK_API_KEY")
+        nvidia_key = os.environ.get("NVIDIA_API_KEY")
+
+        # Provider chain: DeepSeek (primary) -> Nvidia (fallback). The `provider`
+        # argument can force a specific starting provider, otherwise default order.
+        chain = []
+        if provider == "nvidia":
+            chain = ["nvidia", "deepseek"]
+        else:
+            chain = ["deepseek", "nvidia"]
+
+        last_error = None
+        for prov in chain:
+            if prov == "deepseek" and deepseek_key:
+                client = OpenAI(
                     base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
                     api_key=deepseek_key
                 )
-                target_model = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
-            elif provider == "gemini" and gemini_key:
-                target_client = OpenAI(
-                    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-                    api_key=gemini_key
+                model = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+            elif prov == "nvidia" and nvidia_key:
+                client = OpenAI(
+                    base_url=os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"),
+                    api_key=nvidia_key
                 )
-                target_model = "gemini-2.5-flash"
+                model = os.environ.get("NVIDIA_MODEL", "meta/llama-3.1-405b-instruct")
+            else:
+                continue
 
             try:
-                response = target_client.chat.completions.create(
-                    model=target_model,
+                response = client.chat.completions.create(
+                    model=model,
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.3
                 )
-            except Exception as outer_e:
-                if target_model == "qwen2.5-coder" and gemini_key:
-                    print(f"[!] Local Ollama call failed ({outer_e}). Falling back to Gemini Cloud API in RAG...")
-                    fallback_client = OpenAI(
-                        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-                        api_key=gemini_key
-                    )
-                    response = fallback_client.chat.completions.create(
-                        model="gemini-2.5-flash",
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=0.3
-                    )
-                else:
-                    raise outer_e
-            
-            return {
-                "answer": response.choices[0].message.content.strip(),
-                "images": unique_images[:10]
-            }
-        except Exception as e:
-            return {
-                "answer": f"Xin lỗi, có lỗi khi gọi LLM để trả lời: {e}",
-                "images": []
-            }
+                return {
+                    "answer": response.choices[0].message.content.strip(),
+                    "images": unique_images[:10]
+                }
+            except Exception as e:
+                last_error = e
+                print(f"[!] {prov} RAG call failed ({e}). Trying next provider...")
+
+        return {
+            "answer": f"Xin lỗi, có lỗi khi gọi LLM để trả lời: {last_error or 'Chưa cấu hình DEEPSEEK_API_KEY/NVIDIA_API_KEY.'}",
+            "images": []
+        }

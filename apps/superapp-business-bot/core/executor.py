@@ -85,16 +85,8 @@ class SelfHealingExecutor:
                     f"Chat background context: {chat_context}"
                 )
                 
-                # Use AI router to generate corrective actions
-                heal_strategy_raw = ""
-                if ai_router.check_ollama_status():
-                    try:
-                        heal_strategy_raw = ai_router.query_ollama(heal_prompt, system_prompt=heal_sys)
-                    except Exception:
-                        pass
-                
-                if not heal_strategy_raw:
-                    heal_strategy_raw = ai_router.query_gemini(heal_prompt, system_prompt=heal_sys)
+                # Use AI router to generate corrective actions (DeepSeek -> Nvidia fallback)
+                heal_strategy_raw = ai_router.query_ai(heal_prompt, system_prompt=heal_sys)
                 
                 # Parse strategy
                 cleaned = heal_strategy_raw.strip()

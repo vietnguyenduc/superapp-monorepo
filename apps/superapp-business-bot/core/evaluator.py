@@ -96,21 +96,13 @@ def evaluate_codebase() -> str:
         
     stats_prompt += "Please evaluate this codebase and provide your expert review."
     
-    # Query Ollama (0-token cloud consumption)
+    # Generate the audit using DeepSeek (primary) -> Nvidia (fallback)
     report_text = ""
-    if ai_router.check_ollama_status():
-        try:
-            report_text = ai_router.query_ollama(stats_prompt, system_prompt=eval_sys)
-        except Exception as e:
-            logger.warning(f"Ollama evaluation failed: {e}")
-            
-    if not report_text:
-        # Fallback to Gemini if Ollama is not active
-        try:
-            report_text = ai_router.query_gemini(stats_prompt, system_prompt=eval_sys)
-        except Exception as e:
-            logger.error(f"Fallback Gemini codebase audit failed: {e}")
-            report_text = (
+    try:
+        report_text = ai_router.query_ai(stats_prompt, system_prompt=eval_sys)
+    except Exception as e:
+        logger.error(f"Codebase audit via DeepSeek/Nvidia failed: {e}")
+        report_text = (
                 f"### 📊 Codebase Overview ({cwd.name})\n"
                 f"- **Total lines sampled**: `{total_lines}` lines\n"
                 f"- **Dependencies**: `{list(deps.keys())[:5]}`\n"

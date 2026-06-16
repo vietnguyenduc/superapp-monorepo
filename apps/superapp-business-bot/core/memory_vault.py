@@ -52,19 +52,12 @@ def save_memory(prompt: str, result: str, success: bool, complexity: str):
     )
     
     memory_content = ""
-    if ai_router.check_ollama_status():
-        try:
-            memory_content = ai_router.query_ollama(task_context, system_prompt=sys_instruction)
-        except Exception:
-            pass
-            
-    if not memory_content:
-        try:
-            memory_content = ai_router.query_gemini(task_context, system_prompt=sys_instruction)
-        except Exception as e:
-            logger.error(f"Failed to generate memory content via Gemini: {e}")
-            # Fallback local generate
-            memory_content = (
+    try:
+        memory_content = ai_router.query_ai(task_context, system_prompt=sys_instruction)
+    except Exception as e:
+        logger.error(f"Failed to generate memory content via DeepSeek/Nvidia: {e}")
+        # Fallback local generate
+        memory_content = (
                 f"# Task Objective\n{prompt}\n\n"
                 f"# Strategy Used\nDirect self-healing command execution.\n\n"
                 f"# Code Snippets (Skills)\n{result[:500]}\n\n"
