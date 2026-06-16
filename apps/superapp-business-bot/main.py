@@ -416,7 +416,7 @@ def send_welcome(message):
             "- `/crawl2 <URL>` - Cào nâng cao có AI phân tích, lọc ảnh & RAG\n"
             "- `/ask <câu_hỏi>` - Truy vấn RAG AI tìm kiếm thông tin trong cơ sở dữ liệu đã cào\n\n"
             "🧠 **Cấu hình AI**:\n"
-            "- `/model <name>`, `/nvidia`, `/deepseek` - Chuyển đổi mô hình AI (Nvidia, Deepseek, Gemini, v.v.)\n\n"
+            "- `/model <name>`, `/nvidia`, `/deepseek` - Chuyển đổi mô hình AI (DeepSeek, Nvidia)\n\n"
         )
 
     welcome_text += (
@@ -439,21 +439,20 @@ def handle_model_switch(message):
         
     parts = message.text.split(' ', 1)
     if len(parts) < 2:
-        current = USER_DEFAULT_PROVIDERS.get(user_id, "default (gemini/deepseek)")
+        current = USER_DEFAULT_PROVIDERS.get(user_id, "default (deepseek/nvidia)")
         bot.reply_to(
             message, 
             f"🤖 *MÔ HÌNH HIỆN TẠI:* `{current.upper().replace('_', '-')}`\n\n"
             f"👉 Cú pháp đổi mô hình mặc định:\n"
             f"• `/model deepseek` — Sử dụng DeepSeek\n"
             f"• `/model nvidia` — Sử dụng Nvidia AI\n"
-            f"• `/model gemini` — Sử dụng Gemini\n"
             f"• `/model default` — Quay lại hệ thống tự động",
             parse_mode="Markdown"
         )
         return
         
     choice = parts[1].strip().lower()
-    if choice in ["deepseek", "nvidia", "gemini", "default"]:
+    if choice in ["deepseek", "nvidia", "default"]:
         if choice == "default":
             USER_DEFAULT_PROVIDERS.pop(user_id, None)
             bot.reply_to(message, "✅ Đã quay về định tuyến AI tự động.")
@@ -461,7 +460,7 @@ def handle_model_switch(message):
             USER_DEFAULT_PROVIDERS[user_id] = choice
             bot.reply_to(message, f"✅ Đã đổi mô hình sang: *{choice.upper()}*", parse_mode="Markdown")
     else:
-        bot.reply_to(message, "❌ Mô hình không hợp lệ. Chọn: `deepseek`, `nvidia`, `gemini`, hoặc `default`.")
+        bot.reply_to(message, "❌ Mô hình không hợp lệ. Chọn: `deepseek`, `nvidia`, hoặc `default`.")
 
 @bot.message_handler(commands=['nvidia', 'deepseek'])
 def handle_quick_model_switch(message):
