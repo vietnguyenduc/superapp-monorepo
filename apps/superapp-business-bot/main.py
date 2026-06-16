@@ -11,6 +11,7 @@ if sys.platform.startswith('win'):
 
 import json
 import logging
+import subprocess
 import threading
 import time
 from pathlib import Path
@@ -1030,6 +1031,33 @@ def list_apps_switcher(message):
         reply_markup=markup,
         parse_mode="Markdown"
     )
+
+@bot.message_handler(commands=['update'])
+def handle_update(message):
+    user_id = message.from_user.id
+    role = get_user_role(user_id)
+    if role not in ["admin", "admin_master", "admin_company"]:
+        bot.reply_to(message, "⛔ Bạn không có quyền dùng lệnh này.")
+        return
+
+    bot.reply_to(message, "🔄 Đang pull code mới từ GitHub...")
+
+    repo_root = Path(__file__).parent.parent.parent
+    result = subprocess.run(
+        ["git", "pull", "origin", "main"],
+        cwd=repo_root,
+        capture_output=True,
+        text=True
+    )
+
+    output = result.stdout + result.stderr
+    bot.reply_to(message, f"```\n{output[:3000]}\n```", parse_mode="Markdown")
+
+    if result.returncode == 0:
+        bot.reply_to(message, "✅ Đã cập nhật! Bot sẽ tự restart trong 5 giây...")
+        sys.exit(0)
+    else:
+        bot.reply_to(message, "❌ Git pull thất bại. Xem output ở trên.")
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("switch_app:"))
 def handle_switch_app_callback(call):
