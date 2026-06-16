@@ -8,6 +8,7 @@ Routing chain: Ollama (local, free) → DeepSeek → Gemini (cloud)
 import os
 import json
 import logging
+import re
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
@@ -20,6 +21,35 @@ from core.provider_registry import get_registry
 from core.task_state import get_task_state
 
 logger = logging.getLogger(__name__)
+
+# Keywords that signal a heavy task worth delegating to a cloud Devin session.
+DEVIN_DELEGATE_KEYWORDS = [
+    "refactor toàn bộ", "visual audit", "qa toàn bộ",
+    "regression test", "migrate", "rewrite",
+]
+
+
+def _should_delegate_to_devin(user_message: str) -> bool:
+    """
+    Decide whether a message should be delegated to a cloud Devin session.
+
+    Only returns True when the user has *explicitly* opted in via a `/devin` or
+    `@devin` prefix — we never auto-delegate, to avoid unexpected behavior.
+    """
+    if not user_message:
+        return False
+    msg = user_message.strip()
+    msg_lower = msg.lower()
+
+    has_explicit_prefix = msg_lower.startswith("/devin") or msg_lower.startswith("@devin")
+    if not has_explicit_prefix:
+        return False
+
+    if len(msg) <= 100:
+        return False
+
+    return any(kw in msg_lower for kw in DEVIN_DELEGATE_KEYWORDS)
+
 
 # Tools available to the agent (OpenAI-compatible schema)
 LOCAL_TOOLS_SCHEMA = [
@@ -703,11 +733,33 @@ class AntigravityAgent:
                     if updated_at.tzinfo is None:
                         updated_at = updated_at.replace(tzinfo=timezone.utc)
                     age_hours = (datetime.now(timezone.utc) - updated_at).total_seconds() / 3600
-                    if age_hours > 2:
+                    if age_hours > 0.5:
                         logger.info(f"[Agent] Task journal expired (age={age_hours:.1f}h). Auto-clearing.")
                         task_state.clear()
             except Exception as exp_err:
                 logger.warning(f"[Agent] Journal expiry check failed: {exp_err}")
+
+        # Smart task detection: if a substantial new message is on a clearly different
+        # topic than the active task, auto-clear the stale journal to avoid resuming
+        # an unrelated task by mistake.
+        if task_state.is_active() and not is_continuation and len(user_message.strip()) > 30:
+            try:
+                prev_desc = task_state._state.get("task_description", "")
+                if prev_desc:
+                    def _keywords(text: str) -> set:
+                        return {w for w in re.findall(r"\w+", text.lower()) if len(w) > 3}
+
+                    new_kw = _keywords(user_message)
+                    old_kw = _keywords(prev_desc)
+                    if new_kw and old_kw:
+                        overlap = len(new_kw & old_kw) / len(new_kw | old_kw)
+                        if overlap < 0.2:
+                            logger.info(f"[Agent] Topic shift detected (overlap={overlap:.0%}). Clearing old task.")
+                            task_state.clear()
+                            if on_progress:
+                                on_progress("🔄 Đã xóa task cũ, bắt đầu task mới.")
+            except Exception as topic_err:
+                logger.warning(f"[Agent] Smart task detection failed: {topic_err}")
 
         # Hook: Trigger Multi-Agent collaborative planning pipeline if planning is requested and it's a new task
         if not is_continuation and is_plan_requested:
@@ -845,6 +897,17 @@ class AntigravityAgent:
         tokens_used_est = chars_used // 4
         tokens_remaining = max(0, CONTEXT_LIMIT - tokens_used_est)
         pct_used = int(tokens_used_est / CONTEXT_LIMIT * 100)
+
+        if pct_used >= 80 and chat_history and len(chat_history) > 6:
+            # Auto-compress: keep only last 4 messages + summarize the rest
+            old_turns = chat_history[:-4]
+            recent_turns = chat_history[-4:]
+            summary_prompt = "Tóm tắt ngắn gọn (< 200 từ) những gì đã thảo luận: " + str(old_turns)
+            try:
+                compressed, _ = smart_generate(summary_prompt, system="Summarize concisely.")
+                chat_history = [{"role": "assistant", "content": f"[Context compressed]: {compressed}"}] + recent_turns
+            except Exception:
+                chat_history = recent_turns  # fallback: just keep last 4
 
         if pct_used >= 70:
             budget_advice = "⚠️ PREFER grep_code and get_file_outline over read_file to conserve context."
