@@ -1,0 +1,4 @@
+{
+    "telegram_ids": [],
+    "note": "Add Telegram user IDs here to receive emergency alerts from the watchdog. The primary admin is read from ALLOWED_TELEGRAM_USER_ID env var."
+}

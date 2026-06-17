@@ -27,9 +27,9 @@ MAX_CRAWLS = 3
 # Cache schema để lưu tạm state của user
 _schema_cache = {}
 
-def ask_rag_engine(question: str) -> str:
+def ask_rag_engine(question: str, provider: str = "default") -> dict:
     engine = RAGEngine(use_local_ollama=True)
-    return engine.ask(question)
+    return engine.ask(question, provider)
 
 def fetch_proposed_schema(url: str, user_id: str) -> str:
     """Lấy snippet, trích xuất thông tin xem trước và đề xuất schema"""

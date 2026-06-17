@@ -1,20 +1,34 @@
 @echo off
-title ATA Bot — Developer Agent
+title ATA Bot — Developer Agent (Resilient)
 cd /d "%~dp0"
+set MAX_RESTART=20
+set RESTART_COUNT=0
 
 :loop
-echo [ATA] Checking for stale bot instances...
-:: Kill only python processes that are running main.py in this folder (not all python)
+set /a RESTART_COUNT+=1
+if %RESTART_COUNT% GTR %MAX_RESTART% (
+    echo [ATA] Max restart reached. Cooling down 5 minutes...
+    echo [ATA] %date% %time% - COOLDOWN >> crash_log.txt
+    timeout /t 300 /nobreak >nul
+    set RESTART_COUNT=0
+)
+
+:: Kill stale instances
 for /f "tokens=1" %%i in ('wmic process where "name like '%%python%%' and commandline like '%%antigravity-telegram-agent%%main.py%%'" get processid ^| findstr /r "[0-9]"') do (
     echo [ATA] Killing stale PID %%i
     taskkill /F /PID %%i >nul 2>&1
 )
-timeout /t 2 /nobreak >nul
+:: Kill zombie node (older than 30min)
+powershell -NoProfile -Command "Get-Process node -EA 0 | ? {$_.StartTime -lt (Get-Date).AddMinutes(-30)} | Stop-Process -Force" 2>nul
 
-echo [ATA] Starting bot (PID will be saved)...
+timeout /t 2 /nobreak >nul
+echo [ATA] Starting bot (attempt %RESTART_COUNT%)...
+echo [ATA] %date% %time% - Start #%RESTART_COUNT% >> crash_log.txt
+
 python main.py
 
-echo.
-echo [ATA] Bot exited. Restarting in 3s... (Ctrl+C to stop)
-timeout /t 3 /nobreak >nul
+set EXIT_CODE=%ERRORLEVEL%
+echo [ATA] %date% %time% - Exit code %EXIT_CODE% >> crash_log.txt
+
+if %EXIT_CODE% EQU 0 (set RESTART_COUNT=0 & timeout /t 3 /nobreak >nul) else (timeout /t 10 /nobreak >nul)
 goto loop

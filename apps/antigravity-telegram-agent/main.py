@@ -50,7 +50,8 @@ for p in sys_paths_to_clean:
     while p in sys.path:
         sys.path.remove(p)
 
-sys.path.insert(0, r'c:\Vibecoding\superapp-monorepo\super-scraper')
+_scraper_path = os.environ.get("MONOREPO_ROOT_PATH", os.path.join(os.path.dirname(__file__), "..", "..", "super-scraper"))
+sys.path.insert(0, os.path.abspath(_scraper_path) if not os.path.isabs(_scraper_path) else _scraper_path)
 
 try:
     from ecosystem_bridge import trigger_dynamic_crawl, fetch_proposed_schema, ask_rag_engine, clean_vault, trigger_simple_crawl
@@ -834,7 +835,6 @@ def process_rag_search_input(message):
     
     def run_query():
         try:
-            from ecosystem_bridge import ask_rag_engine
             res_dict = ask_rag_engine(question)
             answer = res_dict.get("answer", "")
             images = res_dict.get("images", [])
@@ -1898,6 +1898,14 @@ def handle_agent_chat(message):
 if __name__ == "__main__":
     logger.info("Initializing Antigravity Autonomous Telegram Service...")
     
+    # 0. Start health monitoring HTTP endpoint
+    try:
+        from health import start_health_server
+        start_health_server(port=8766)
+        logger.info("Health endpoint started on port 8766.")
+    except Exception as health_err:
+        logger.warning(f"Could not start health endpoint: {health_err}")
+    
     # 1. Start the secure WebSocket + Flask server on port 8765
     try:
         socket_server.start_server_bridge(port=8765)
@@ -1911,11 +1919,53 @@ if __name__ == "__main__":
         bg_scheduler = scheduler.setup_scheduler(bot, ALLOWED_USER_ID, "18:00")
         logger.info("Daily report scheduler started successfully.")
     
-    logger.info("Telegram Bot service is listening (Polling)...")
-    try:
-        bot.infinity_polling()
-    except KeyboardInterrupt:
-        logger.info("Exiting application gracefully.")
-        if bg_scheduler:
-            bg_scheduler.shutdown()
-        sys.exit(0)
+    # Heartbeat file for watchdog monitoring
+    def heartbeat_loop():
+        hb_file = Path(__file__).parent / "heartbeat.txt"
+        while True:
+            try:
+                hb_file.write_text(str(time.time()))
+            except Exception:
+                pass
+            time.sleep(10)
+    threading.Thread(target=heartbeat_loop, daemon=True).start()
+    
+    # Robust polling with emergency recovery
+    MAX_CONSECUTIVE_ERRORS = 10
+    error_count = 0
+    
+    while True:
+        try:
+            logger.info("Starting infinity_polling...")
+            bot.infinity_polling(
+                timeout=60,
+                long_polling_timeout=30,
+                allowed_updates=["message", "callback_query", "inline_query"],
+                logger_level=logging.WARNING,
+                restart_on_change=False
+            )
+        except KeyboardInterrupt:
+            logger.info("Graceful shutdown.")
+            if bg_scheduler:
+                bg_scheduler.shutdown()
+            break
+        except Exception as poll_err:
+            error_count += 1
+            logger.error(f"Polling crashed (attempt {error_count}): {poll_err}")
+            
+            if error_count >= MAX_CONSECUTIVE_ERRORS:
+                logger.critical("Max polling errors reached. Exiting for bat restart.")
+                sys.exit(1)
+            
+            # Exponential backoff: 5s, 10s, 20s, 40s... max 120s
+            wait_time = min(5 * (2 ** (error_count - 1)), 120)
+            logger.info(f"Reconnecting in {wait_time}s...")
+            time.sleep(wait_time)
+            
+            # Recreate bot instance if token might have been invalidated
+            try:
+                BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+                bot = telebot.TeleBot(BOT_TOKEN)
+                error_count = 0
+            except Exception as reinit_err:
+                logger.critical(f"Failed to reinitialize bot: {reinit_err}")

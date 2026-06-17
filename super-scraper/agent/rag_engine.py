@@ -61,7 +61,7 @@ class RAGEngine:
         )
         print(f"[RAGEngine] Đã đẩy dữ liệu vào ChromaDB thành công. ID: {doc_id}")
 
-    def ask(self, question: str) -> dict:
+    def ask(self, question: str, provider: str = "default") -> dict:
         # Truy vấn Semantic Search từ ChromaDB lấy 10 kết quả gần nhất
         results = self.collection.query(
             query_texts=[question],
@@ -167,14 +167,52 @@ class RAGEngine:
                 unique_images.append(img)
         
         try:
+            target_model = self.model_name
+            target_client = self.client
+
+            gemini_key = os.environ.get("GEMINI_API_KEY")
+            deepseek_key = os.environ.get("DEEPSEEK_API_KEY")
+            nvidia_key = os.environ.get("NVIDIA_API_KEY")
+
+            if provider == "nvidia" and nvidia_key:
+                target_client = OpenAI(
+                    base_url=os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"),
+                    api_key=nvidia_key
+                )
+                target_model = os.environ.get("NVIDIA_MODEL", "meta/llama-3.1-405b-instruct")
+            elif provider == "deepseek" and deepseek_key:
+                target_client = OpenAI(
+                    base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
+                    api_key=deepseek_key
+                )
+                target_model = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+            elif provider == "gemini" and gemini_key:
+                target_client = OpenAI(
+                    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+                    api_key=gemini_key
+                )
+                target_model = "gemini-2.5-flash"
+
             try:
-                response = self.client.chat.completions.create(
-                    model=self.model_name,
+                response = target_client.chat.completions.create(
+                    model=target_model,
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.3
                 )
             except Exception as outer_e:
-                raise outer_e
+                if target_model == "qwen2.5-coder" and gemini_key:
+                    print(f"[!] Local Ollama call failed ({outer_e}). Falling back to Gemini Cloud API in RAG...")
+                    fallback_client = OpenAI(
+                        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+                        api_key=gemini_key
+                    )
+                    response = fallback_client.chat.completions.create(
+                        model="gemini-2.5-flash",
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=0.3
+                    )
+                else:
+                    raise outer_e
             
             return {
                 "answer": response.choices[0].message.content.strip(),

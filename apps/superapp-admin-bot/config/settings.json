@@ -1,0 +1,50 @@
+{
+    "bots": {
+        "antigravity": {
+            "name": "Antigravity Telegram Agent",
+            "path": "apps/antigravity-telegram-agent",
+            "bat_file": "run.bat",
+            "main_file": "main.py",
+            "heartbeat_file": "heartbeat.txt",
+            "health_port": 8766,
+            "process_pattern": "antigravity-telegram-agent"
+        },
+        "business": {
+            "name": "SuperApp Business Bot",
+            "path": "apps/superapp-business-bot",
+            "bat_file": "run.bat",
+            "main_file": "main.py",
+            "heartbeat_file": "heartbeat.txt",
+            "health_port": null,
+            "process_pattern": "superapp-business-bot"
+        },
+        "admin": {
+            "name": "SuperApp Admin Bot",
+            "path": "apps/superapp-admin-bot",
+            "bat_file": "run.bat",
+            "main_file": "main.py",
+            "heartbeat_file": "heartbeat.txt",
+            "health_port": null,
+            "process_pattern": "superapp-admin-bot"
+        }
+    },
+    "watchdog": {
+        "check_interval_seconds": 30,
+        "heartbeat_timeout_seconds": 60,
+        "ram_alert_percent": 80,
+        "disk_alert_mb": 500,
+        "zombie_max_hours": 2,
+        "zombie_max_ram_mb": 500
+    },
+    "scheduler": {
+        "health_check_minutes": 30,
+        "auto_commit_hours": 2,
+        "backup_hours": 6,
+        "daily_inspect_time": "06:00",
+        "daily_error_summary_time": "18:00"
+    },
+    "git": {
+        "default_branch": "viet",
+        "remote": "origin"
+    }
+}
