@@ -10,6 +10,8 @@
     "daily_quota_limit": 1000,
     "goal_max_requests": 100,
     "fallback_order": [
-        "/settings"
+        "deepseek",
+        "nvidia",
+        "gemini"
     ]
 }

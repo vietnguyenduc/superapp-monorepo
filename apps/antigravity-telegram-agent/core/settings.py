@@ -14,7 +14,7 @@ DEFAULT_SETTINGS = {
     "daily_budget_limit": 1.0,         # USD
     "daily_quota_limit": 1000,         # So requests
     "goal_max_requests": 100,          # Giới hạn số requests tối đa cho mỗi lệnh /goal
-    "fallback_order": ["deepseek", "gemini", "claude", "nvidia"]
+    "fallback_order": ["deepseek", "nvidia", "gemini"]
 }
 
 def load_settings():

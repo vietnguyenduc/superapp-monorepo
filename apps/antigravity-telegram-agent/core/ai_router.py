@@ -1,7 +1,7 @@
 """
 ai_router.py
 ============
-Smart AI router: Ollama (local) → DeepSeek → Gemini
+Smart AI router: DeepSeek (primary) → Nvidia (secondary) → Gemini (visual/emergency)
 Uses rule-based task classification (no LLM call for routing itself).
 
 Usage:
@@ -93,8 +93,8 @@ def smart_generate(
 
     # Check daily budget
     if tracker.is_over_budget():
-        logger.warning("[Router] Daily budget exceeded, routing to Gemini (free tier).")
-        force_provider = "gemini"
+        logger.warning("[Router] Daily budget exceeded, routing to DeepSeek (cheapest).")
+        force_provider = "deepseek"
 
     # Build ordered provider list
     if force_provider:
@@ -135,20 +135,18 @@ def smart_generate(
 
     raise RuntimeError(
         f"All providers failed. Last error: {last_error}\n"
-        "Check Ollama is running (`ollama serve`), DeepSeek key is valid, and Gemini key is set."
+        "Check DeepSeek key is valid, Nvidia key is set, and Gemini key is configured."
     )
 
 
 def _get_ordered_providers(registry, task_type: str) -> list:
-    import core.settings as settings
-    s = settings.load_settings()
-    fallback_order = s.get("fallback_order", ["deepseek", "gemini", "claude", "nvidia"])
-    ordered = []
-    for p_name in fallback_order:
-        p = registry.get_provider_by_name(p_name)
-        if p and p not in ordered:
-            ordered.append(p)
-    if not ordered:
+    if task_type == "simple":
+        ordered = [registry.deepseek, registry.nvidia, registry.gemini]
+    elif task_type == "heavy":
+        ordered = [registry.nvidia, registry.deepseek, registry.gemini]
+    elif task_type == "visual":
+        ordered = [registry.gemini, registry.deepseek, registry.nvidia]
+    else:  # medium
         ordered = [registry.deepseek, registry.nvidia, registry.gemini]
     return ordered
 

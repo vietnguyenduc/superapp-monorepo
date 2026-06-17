@@ -962,15 +962,24 @@ class AntigravityAgent:
         is_claude_forced = (force_provider == "claude" and status.get("claude"))
         is_nvidia_forced = (force_provider == "nvidia" and status.get("nvidia"))
 
-        # ── Path 1: Gemini native tool-calling (if DeepSeek offline and Gemini available, and Claude/Nvidia not forced) ───────
-        if not is_claude_forced and not is_nvidia_forced and not status.get("deepseek") and status.get("gemini") and force_provider not in ["claude", "nvidia"]:
-            logger.info("[Agent] DeepSeek offline, using Gemini native SDK")
-            return self._run_gemini_native(
-                full_prompt, chat_history, task_type,
-                task_state=task_state, on_progress=on_progress,
-                cancellation_event=cancellation_event,
-                max_turns=100 if is_goal else 26,
-            )
+        # ── Path 1: Gemini native (ONLY for visual/multimodal tasks, or if BOTH DeepSeek+Nvidia dead) ───
+        if not is_claude_forced and not is_nvidia_forced:
+            if task_type == "visual" and status.get("gemini"):
+                logger.info("[Agent] Visual task → Gemini native SDK")
+                return self._run_gemini_native(
+                    full_prompt, chat_history, task_type,
+                    task_state=task_state, on_progress=on_progress,
+                    cancellation_event=cancellation_event,
+                    max_turns=100 if is_goal else 26,
+                )
+            elif not status.get("deepseek") and not status.get("nvidia") and status.get("gemini"):
+                logger.warning("[Agent] EMERGENCY: DeepSeek+Nvidia both offline, using Gemini")
+                return self._run_gemini_native(
+                    full_prompt, chat_history, task_type,
+                    task_state=task_state, on_progress=on_progress,
+                    cancellation_event=cancellation_event,
+                    max_turns=100 if is_goal else 26,
+                )
 
         # ── Path 2: DeepSeek → Gemini / Claude via OpenAI-compatible router ────────────
         messages = [{"role": "system", "content": self.system_instruction}]

@@ -2,7 +2,8 @@
 provider_registry.py
 ====================
 Unified multi-provider AI client registry.
-Priority chain: Ollama (local, free) → DeepSeek (cheap) → Gemini (cloud)
+Priority chain: DeepSeek (primary, cheapest) → Nvidia (secondary, fast) → Gemini (visual/emergency only)
+Ollama: disabled (PC resource constraint)
 
 Each provider exposes:
   - health_check() → bool
@@ -27,7 +28,7 @@ class OllamaProvider:
     NAME = "ollama"
     COST_PER_1M_INPUT = 0.0
     COST_PER_1M_OUTPUT = 0.0
-    PRIORITY = 1  # Try first
+    PRIORITY = 99  # Disabled
 
     def __init__(self):
         self.base_url = os.environ.get("FALLBACK_API_BASE", "http://127.0.0.1:11434/v1").rstrip("/v1").rstrip("/")
@@ -36,17 +37,8 @@ class OllamaProvider:
         self._last_check: float = 0
 
     def health_check(self) -> bool:
-        """Cached 30s health check."""
-        now = time.time()
-        if now - self._last_check < 30 and self._healthy is not None:
-            return self._healthy
-        try:
-            r = requests.get(f"{self.base_url}/api/tags", timeout=3)
-            self._healthy = r.status_code == 200
-        except Exception:
-            self._healthy = False
-        self._last_check = now
-        return self._healthy
+        """Ollama disabled — PC resource constraint."""
+        return False
 
     def list_models(self) -> List[str]:
         try:
@@ -100,7 +92,7 @@ class DeepSeekProvider:
     NAME = "deepseek"
     COST_PER_1M_INPUT = 0.14   # deepseek-chat / v4-flash
     COST_PER_1M_OUTPUT = 0.28
-    PRIORITY = 2
+    PRIORITY = 1  # Primary provider (cheapest)
     # NOTE: DeepSeek API enables Context Caching by default (disk-based).
     # No explicit 'cache_control' parameters are needed.
 
@@ -121,7 +113,6 @@ class DeepSeekProvider:
         try:
             headers = {"Authorization": f"Bearer {self.api_key}"}
             r = requests.get(f"{self.base_url}/models", headers=headers, timeout=5)
-            self._healthy = r.status_code in (200, 401)  # 401 = key valid but unauth — API is up
             self._healthy = r.status_code == 200
         except Exception:
             self._healthy = False
@@ -186,7 +177,7 @@ class NvidiaProvider:
     NAME = "nvidia"
     COST_PER_1M_INPUT = 0.50
     COST_PER_1M_OUTPUT = 1.00
-    PRIORITY = 2.5
+    PRIORITY = 2  # Secondary provider (fast)
 
     def __init__(self):
         self.api_key = os.environ.get("NVIDIA_API_KEY", "")
@@ -206,7 +197,6 @@ class NvidiaProvider:
         try:
             headers = {"Authorization": f"Bearer {self.api_key}"}
             r = requests.get(f"{self.base_url}/models", headers=headers, timeout=5)
-            self._healthy = r.status_code in (200, 401)
             self._healthy = r.status_code == 200
         except Exception:
             self._healthy = False
@@ -638,8 +628,8 @@ class ProviderRegistry:
         self.gemini = GeminiProvider()
         self.geminipro = GeminiProProvider()
         self.claude = ClaudeProvider()
-        # Ordered by priority (cheapest/local first)
-        self._chain = [self.ollama, self.deepseek, self.nvidia, self.deepseek_r1, self.gemini, self.geminipro, self.claude]
+        # Ordered by priority: DeepSeek (primary) → Nvidia (secondary) → Gemini (visual/emergency)
+        self._chain = [self.deepseek, self.nvidia, self.gemini, self.deepseek_r1, self.geminipro, self.claude, self.ollama]
 
     def get_provider_by_name(self, name: str):
         name_map = {
@@ -654,19 +644,14 @@ class ProviderRegistry:
         return name_map.get(name.lower().replace("-", "_"))
 
     def get_best_provider(self, task_type: str = "medium"):
-        import core.settings as settings
-        s = settings.load_settings()
-        fallback_order = s.get("fallback_order", ["deepseek", "gemini", "claude", "nvidia"])
-        
-        ordered = []
-        for p_name in fallback_order:
-            provider = self.get_provider_by_name(p_name)
-            if provider:
-                ordered.append(provider)
-                
-        # If nothing in settings or all invalid, use default
-        if not ordered:
-            ordered = [self.deepseek, self.gemini, self.claude]
+        if task_type == "simple":
+            ordered = [self.deepseek, self.nvidia, self.gemini]
+        elif task_type == "heavy":
+            ordered = [self.nvidia, self.deepseek, self.gemini]
+        elif task_type == "visual":
+            ordered = [self.gemini, self.deepseek, self.nvidia]
+        else:  # medium
+            ordered = [self.deepseek, self.nvidia, self.gemini]
 
         for provider in ordered:
             if provider.health_check():
@@ -698,3 +683,31 @@ def get_registry() -> ProviderRegistry:
     if _registry is None:
         _registry = ProviderRegistry()
     return _registry
+
+
+def startup_connectivity_test() -> dict:
+    """Run at bot startup to verify DeepSeek + Nvidia are reachable."""
+    registry = get_registry()
+    results = {}
+
+    # Test DeepSeek
+    try:
+        reply = registry.deepseek.generate("ping", system="Reply with 'pong' only.")
+        results["deepseek"] = {"status": "OK", "response": reply[:20]}
+    except Exception as e:
+        results["deepseek"] = {"status": "FAILED", "error": str(e)[:100]}
+
+    # Test Nvidia
+    try:
+        reply = registry.nvidia.generate("ping", system="Reply with 'pong' only.")
+        results["nvidia"] = {"status": "OK", "response": reply[:20]}
+    except Exception as e:
+        results["nvidia"] = {"status": "FAILED", "error": str(e)[:100]}
+
+    # Test Gemini (quick health only, no generate to save quota)
+    results["gemini"] = {"status": "OK" if registry.gemini.health_check() else "NO_KEY"}
+
+    # Ollama — skip, disabled
+    results["ollama"] = {"status": "DISABLED"}
+
+    return results

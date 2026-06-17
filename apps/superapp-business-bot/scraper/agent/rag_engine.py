@@ -20,39 +20,38 @@ def load_unified_env():
             load_dotenv(dotenv_path=path)
 
 class RAGEngine:
-    def __init__(self, use_local_ollama: bool = True):
+    def __init__(self, use_local_ollama: bool = False):
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'storage', 'refined_data')
         load_unified_env()
-        self.use_local_ollama = use_local_ollama
-        
-        ollama_running = False
-        if use_local_ollama:
-            try:
-                res = requests.get("http://localhost:11434/api/tags", timeout=1.5)
-                if res.status_code == 200:
-                    ollama_running = True
-            except Exception:
-                pass
-                
-        if use_local_ollama and ollama_running:
+        self.use_local_ollama = False  # Ollama disabled — PC resource constraint
+
+        deepseek_key = os.environ.get("DEEPSEEK_API_KEY")
+        nvidia_key = os.environ.get("NVIDIA_API_KEY")
+        gemini_key = os.environ.get("GEMINI_API_KEY")
+
+        if deepseek_key:
             self.client = OpenAI(
-                base_url="http://localhost:11434/v1",
-                api_key="ollama"
+                base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
+                api_key=deepseek_key
             )
-            self.model_name = "qwen2.5-coder"
+            self.model_name = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+        elif nvidia_key:
+            self.client = OpenAI(
+                base_url=os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"),
+                api_key=nvidia_key
+            )
+            self.model_name = os.environ.get("NVIDIA_MODEL", "meta/llama-3.1-405b-instruct")
+        elif gemini_key:
+            self.client = OpenAI(
+                base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+                api_key=gemini_key
+            )
+            self.model_name = "gemini-2.5-flash"
         else:
-            gemini_key = os.environ.get("GEMINI_API_KEY")
-            if gemini_key:
-                self.client = OpenAI(
-                    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-                    api_key=gemini_key
-                )
-                self.model_name = "gemini-2.5-flash"
-            else:
-                self.client = OpenAI(
-                    api_key=os.environ.get("OPENAI_API_KEY", "YOUR_API_KEY_HERE")
-                )
-                self.model_name = "gpt-3.5-turbo"
+            self.client = OpenAI(
+                api_key=os.environ.get("OPENAI_API_KEY", "YOUR_API_KEY_HERE")
+            )
+            self.model_name = "gpt-3.5-turbo"
 
     def ask(self, question: str, provider: str = "default") -> str:
         # Tải tất cả file JSON để làm context (Giới hạn 10 file gần nhất để tránh quá tải token)
@@ -161,11 +160,11 @@ class RAGEngine:
         try:
             target_model = self.model_name
             target_client = self.client
-            
+
             gemini_key = os.environ.get("GEMINI_API_KEY")
             deepseek_key = os.environ.get("DEEPSEEK_API_KEY")
             nvidia_key = os.environ.get("NVIDIA_API_KEY")
-            
+
             if provider == "nvidia" and nvidia_key:
                 target_client = OpenAI(
                     base_url=os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"),
@@ -184,6 +183,19 @@ class RAGEngine:
                     api_key=gemini_key
                 )
                 target_model = "gemini-2.5-flash"
+            elif provider == "default":
+                if deepseek_key:
+                    target_client = OpenAI(
+                        base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
+                        api_key=deepseek_key
+                    )
+                    target_model = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+                elif nvidia_key:
+                    target_client = OpenAI(
+                        base_url=os.environ.get("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"),
+                        api_key=nvidia_key
+                    )
+                    target_model = os.environ.get("NVIDIA_MODEL", "meta/llama-3.1-405b-instruct")
 
             try:
                 response = target_client.chat.completions.create(
@@ -192,8 +204,19 @@ class RAGEngine:
                     temperature=0.3
                 )
             except Exception as outer_e:
-                if target_model == "qwen2.5-coder" and gemini_key:
-                    print(f"[!] Local Ollama call failed ({outer_e}). Falling back to Gemini Cloud API in RAG...")
+                if deepseek_key and target_model != os.environ.get("DEEPSEEK_MODEL", "deepseek-chat"):
+                    print(f"[!] Provider call failed ({outer_e}). Falling back to DeepSeek in RAG...")
+                    fallback_client = OpenAI(
+                        base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
+                        api_key=deepseek_key
+                    )
+                    response = fallback_client.chat.completions.create(
+                        model=os.environ.get("DEEPSEEK_MODEL", "deepseek-chat"),
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=0.3
+                    )
+                elif gemini_key:
+                    print(f"[!] Provider call failed ({outer_e}). Falling back to Gemini in RAG...")
                     fallback_client = OpenAI(
                         base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
                         api_key=gemini_key

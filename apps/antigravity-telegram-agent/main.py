@@ -105,7 +105,7 @@ import core.evaluator as evaluator
 import core.db as db
 import core.socket_server as socket_server
 from core.telegram_utils import safe_send, send_json_result
-from core.provider_registry import get_registry
+from core.provider_registry import get_registry, startup_connectivity_test
 from core.budget_tracker import get_tracker
 
 
@@ -1897,7 +1897,16 @@ def handle_agent_chat(message):
 
 if __name__ == "__main__":
     logger.info("Initializing Antigravity Autonomous Telegram Service...")
-    
+
+    # 0. Provider connectivity test
+    try:
+        test_results = startup_connectivity_test()
+        logger.info(f"[STARTUP] Provider connectivity test: {test_results}")
+        if test_results.get("deepseek", {}).get("status") == "FAILED" and test_results.get("nvidia", {}).get("status") == "FAILED":
+            logger.critical("[STARTUP] CRITICAL: Both DeepSeek and Nvidia are OFFLINE! Bot will use Gemini fallback only.")
+    except Exception as e:
+        logger.error(f"[STARTUP] Provider connectivity test failed: {e}")
+
     # 1. Start the secure WebSocket + Flask server on port 8765
     try:
         socket_server.start_server_bridge(port=8765)
