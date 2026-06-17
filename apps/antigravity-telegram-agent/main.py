@@ -11,6 +11,7 @@ if sys.platform.startswith('win'):
 
 import json
 import logging
+import subprocess
 import threading
 import time
 from pathlib import Path
@@ -509,6 +510,118 @@ def handle_restart(message):
         f"Các thay đổi code mới nhất đã được apply thành công lên localhost:{port}.\n"
         f"Đường truyền Ngrok/Tailscale của bạn vẫn được giữ nguyên không thay đổi."
     )
+
+
+def _git_sync_viet(repo_root: Path) -> tuple:
+    """Shared helper: stash, checkout viet, pull --rebase, pop stash.
+    Returns (success: bool, log_lines: list[str])."""
+    log = []
+
+    branch_result = subprocess.run(
+        ["git", "branch", "--show-current"], cwd=repo_root, capture_output=True, text=True
+    )
+    current_branch = branch_result.stdout.strip()
+    log.append(f"Current branch: {current_branch}")
+
+    stash_result = subprocess.run(
+        ["git", "stash", "--include-untracked", "-m", "auto-stash before sync"],
+        cwd=repo_root, capture_output=True, text=True
+    )
+    had_stash = "No local changes" not in stash_result.stdout
+    if had_stash:
+        log.append("Stashed local changes.")
+
+    if current_branch != "viet":
+        co = subprocess.run(
+            ["git", "checkout", "viet"], cwd=repo_root, capture_output=True, text=True
+        )
+        if co.returncode != 0:
+            log.append(f"Checkout viet failed: {co.stderr.strip()}")
+            if had_stash:
+                subprocess.run(["git", "stash", "pop"], cwd=repo_root, capture_output=True, text=True)
+            return False, log
+        log.append("Switched to branch viet.")
+
+    pull = subprocess.run(
+        ["git", "pull", "origin", "viet", "--rebase"],
+        cwd=repo_root, capture_output=True, text=True
+    )
+    if pull.returncode != 0:
+        log.append(f"Rebase conflict: {pull.stderr.strip()[:500]}")
+        subprocess.run(["git", "rebase", "--abort"], cwd=repo_root, capture_output=True, text=True)
+        log.append("Aborted rebase. Trying merge...")
+        pull2 = subprocess.run(
+            ["git", "pull", "origin", "viet"],
+            cwd=repo_root, capture_output=True, text=True
+        )
+        if pull2.returncode != 0:
+            log.append(f"Merge also failed: {pull2.stderr.strip()[:500]}")
+            if had_stash:
+                subprocess.run(["git", "stash", "pop"], cwd=repo_root, capture_output=True, text=True)
+            return False, log
+        log.append("Merge pull succeeded.")
+    else:
+        log.append(f"Pull OK: {pull.stdout.strip()[:300]}")
+
+    if had_stash:
+        pop = subprocess.run(
+            ["git", "stash", "pop"], cwd=repo_root, capture_output=True, text=True
+        )
+        if pop.returncode != 0:
+            log.append(f"Stash pop conflict: {pop.stderr.strip()[:300]}")
+        else:
+            log.append("Restored stashed changes.")
+
+    return True, log
+
+
+@bot.message_handler(commands=['update'])
+def handle_update(message):
+    user_id = message.from_user.id
+    role = get_user_role(user_id)
+    if role not in ["admin", "admin_master", "admin_company"]:
+        bot.reply_to(message, "⛔ Access Denied.")
+        return
+
+    bot.reply_to(message, "🔄 Đang pull code mới từ branch `viet`...")
+    bot.send_chat_action(message.chat.id, 'typing')
+
+    repo_root = Path(__file__).parent.parent.parent
+    success, log = _git_sync_viet(repo_root)
+
+    log_text = "\n".join(log)
+    safe_send(bot, message.chat.id, f"```\n{log_text[:3000]}\n```")
+
+    if success:
+        bot.reply_to(message, "✅ Đã cập nhật! Bot sẽ tự restart trong 5 giây...")
+        sys.exit(0)
+    else:
+        bot.reply_to(message, "❌ Git pull thất bại. Xem output ở trên.")
+
+
+@bot.message_handler(commands=['sync'])
+def handle_sync(message):
+    """Git sync: fetch all, checkout viet, pull --rebase, report status."""
+    user_id = message.from_user.id
+    role = get_user_role(user_id)
+    if role not in ["admin", "admin_master", "admin_company"]:
+        bot.reply_to(message, "⛔ Access Denied.")
+        return
+
+    bot.reply_to(message, "🔄 Đang sync monorepo với branch `viet`...")
+    bot.send_chat_action(message.chat.id, 'typing')
+
+    repo_root = Path(__file__).parent.parent.parent
+    fetch = subprocess.run(
+        ["git", "fetch", "--all", "--prune"], cwd=repo_root, capture_output=True, text=True
+    )
+
+    success, log = _git_sync_viet(repo_root)
+    log.insert(0, f"Fetch: {fetch.stdout.strip()[:200]}")
+
+    log_text = "\n".join(log)
+    status = "✅ Sync thành công!" if success else "❌ Sync thất bại."
+    safe_send(bot, message.chat.id, f"{status}\n\n```\n{log_text[:3000]}\n```")
 
 
 @bot.message_handler(commands=['tunnel'])

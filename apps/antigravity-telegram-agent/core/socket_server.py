@@ -118,6 +118,8 @@ def handle_execute_command(command):
             del active_processes[sid]
             emit('terminal_data', '\r\n\x1b[1;33m[!] Interrupted previous running command.\x1b[0m\r\n')
 
+    COMMAND_TIMEOUT = 120  # seconds — force-kill if command runs longer
+
     def run_proc(sid_target):
         try:
             # Run command in Shell mode (PowerShell for Windows, bash for Linux)
@@ -155,10 +157,28 @@ def handle_execute_command(command):
             t_out.start()
             t_err.start()
             
-            # Wait for execution to finish
-            process.wait()
-            t_out.join()
-            t_err.join()
+            # Wait for execution with timeout
+            try:
+                process.wait(timeout=COMMAND_TIMEOUT)
+            except subprocess.TimeoutExpired:
+                logger.warning(f"Command timed out after {COMMAND_TIMEOUT}s for client {sid_target}. Force-killing.")
+                # Kill entire process tree on Windows
+                try:
+                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(process.pid)], capture_output=True)
+                except Exception:
+                    pass
+                process.kill()
+                socketio.emit(
+                    'terminal_data',
+                    f"\r\n\x1b[1;33m[Command timed out after {COMMAND_TIMEOUT}s — process killed]\x1b[0m\r\n",
+                    room=sid_target
+                )
+                with processes_lock:
+                    active_processes.pop(sid_target, None)
+                return
+
+            t_out.join(timeout=5)
+            t_err.join(timeout=5)
 
             with processes_lock:
                 if sid_target in active_processes:

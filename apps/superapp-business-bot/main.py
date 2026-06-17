@@ -918,6 +918,74 @@ def handle_run_cmd(message):
     safe_send(bot, message.chat.id, f"```\n{out}\n```")
 
 
+def _git_sync_viet(repo_root: Path) -> tuple:
+    """Shared helper: stash, checkout viet, pull --rebase, pop stash.
+    Returns (success: bool, log_lines: list[str])."""
+    log = []
+
+    # Detect current branch
+    branch_result = subprocess.run(
+        ["git", "branch", "--show-current"], cwd=repo_root, capture_output=True, text=True
+    )
+    current_branch = branch_result.stdout.strip()
+    log.append(f"Current branch: {current_branch}")
+
+    # Stash uncommitted changes
+    stash_result = subprocess.run(
+        ["git", "stash", "--include-untracked", "-m", "auto-stash before sync"],
+        cwd=repo_root, capture_output=True, text=True
+    )
+    had_stash = "No local changes" not in stash_result.stdout
+    if had_stash:
+        log.append("Stashed local changes.")
+
+    # Checkout viet if not already on it
+    if current_branch != "viet":
+        co = subprocess.run(
+            ["git", "checkout", "viet"], cwd=repo_root, capture_output=True, text=True
+        )
+        if co.returncode != 0:
+            log.append(f"Checkout viet failed: {co.stderr.strip()}")
+            if had_stash:
+                subprocess.run(["git", "stash", "pop"], cwd=repo_root, capture_output=True, text=True)
+            return False, log
+        log.append("Switched to branch viet.")
+
+    # Pull with rebase
+    pull = subprocess.run(
+        ["git", "pull", "origin", "viet", "--rebase"],
+        cwd=repo_root, capture_output=True, text=True
+    )
+    if pull.returncode != 0:
+        log.append(f"Rebase conflict: {pull.stderr.strip()[:500]}")
+        subprocess.run(["git", "rebase", "--abort"], cwd=repo_root, capture_output=True, text=True)
+        log.append("Aborted rebase. Trying merge...")
+        pull2 = subprocess.run(
+            ["git", "pull", "origin", "viet"],
+            cwd=repo_root, capture_output=True, text=True
+        )
+        if pull2.returncode != 0:
+            log.append(f"Merge also failed: {pull2.stderr.strip()[:500]}")
+            if had_stash:
+                subprocess.run(["git", "stash", "pop"], cwd=repo_root, capture_output=True, text=True)
+            return False, log
+        log.append("Merge pull succeeded.")
+    else:
+        log.append(f"Pull OK: {pull.stdout.strip()[:300]}")
+
+    # Pop stash
+    if had_stash:
+        pop = subprocess.run(
+            ["git", "stash", "pop"], cwd=repo_root, capture_output=True, text=True
+        )
+        if pop.returncode != 0:
+            log.append(f"Stash pop conflict: {pop.stderr.strip()[:300]}")
+        else:
+            log.append("Restored stashed changes.")
+
+    return True, log
+
+
 @bot.message_handler(commands=['update'])
 def handle_update(message):
     user_id = message.from_user.id
@@ -926,24 +994,323 @@ def handle_update(message):
         bot.reply_to(message, "⛔ Bạn không có quyền dùng lệnh này.")
         return
 
-    bot.reply_to(message, "🔄 Đang pull code mới từ GitHub...")
+    bot.reply_to(message, "🔄 Đang pull code mới từ branch `viet`...")
+    bot.send_chat_action(message.chat.id, 'typing')
 
     repo_root = Path(__file__).parent.parent.parent
-    result = subprocess.run(
-        ["git", "pull", "origin", "viet"],
-        cwd=repo_root,
-        capture_output=True,
-        text=True
-    )
+    success, log = _git_sync_viet(repo_root)
 
-    output = result.stdout + result.stderr
-    bot.reply_to(message, f"```\n{output[:3000]}\n```", parse_mode="Markdown")
+    log_text = "\n".join(log)
+    safe_send(bot, message.chat.id, f"```\n{log_text[:3000]}\n```")
 
-    if result.returncode == 0:
+    if success:
         bot.reply_to(message, "✅ Đã cập nhật! Bot sẽ tự restart trong 5 giây...")
         sys.exit(0)
     else:
         bot.reply_to(message, "❌ Git pull thất bại. Xem output ở trên.")
+
+
+@bot.message_handler(commands=['sync'])
+def handle_sync(message):
+    """Git sync: fetch all, checkout viet, pull --rebase, report status."""
+    user_id = message.from_user.id
+    role = get_user_role(user_id)
+    if role not in ["admin", "admin_master", "admin_company"]:
+        bot.reply_to(message, "⛔ Bạn không có quyền dùng lệnh này.")
+        return
+
+    bot.reply_to(message, "🔄 Đang sync monorepo với branch `viet`...")
+    bot.send_chat_action(message.chat.id, 'typing')
+
+    repo_root = Path(__file__).parent.parent.parent
+
+    # Fetch all remotes first
+    fetch = subprocess.run(
+        ["git", "fetch", "--all", "--prune"], cwd=repo_root, capture_output=True, text=True
+    )
+
+    success, log = _git_sync_viet(repo_root)
+    log.insert(0, f"Fetch: {fetch.stdout.strip()[:200]}")
+
+    log_text = "\n".join(log)
+    status = "✅ Sync thành công!" if success else "❌ Sync thất bại."
+    safe_send(bot, message.chat.id, f"{status}\n\n```\n{log_text[:3000]}\n```")
+
+
+# ─── Quick Data-Entry Commands ────────────────────────────────────────────────
+
+@bot.message_handler(commands=['chi'])
+def handle_chi(message):
+    """Quick expense entry: /chi <amount> <description> [date]"""
+    if not check_rbac_permission(message, "cashflow"):
+        return
+    parts = message.text.split(None, 3)
+    if len(parts) < 3:
+        bot.reply_to(message, "👉 Cú pháp: `/chi <số_tiền> <mô_tả> [ngày]`\nVD: `/chi 500000 Tiền điện 17/06/2026`", parse_mode="Markdown")
+        return
+    try:
+        amount = float(parts[1].replace(",", "").replace(".", ""))
+    except ValueError:
+        bot.reply_to(message, "❌ Số tiền không hợp lệ.")
+        return
+    description = parts[2]
+    date_str = parts[3] if len(parts) > 3 else None
+    result = db.create_accounting_invoice(amount, description, date_str or "", status="expense")
+    if result:
+        bot.reply_to(message, f"✅ Đã ghi nhận chi: **{amount:,.0f}đ** — {description}" + (f" ({date_str})" if date_str else ""), parse_mode="Markdown")
+    else:
+        bot.reply_to(message, "❌ Lỗi khi lưu dữ liệu. Kiểm tra kết nối Supabase.")
+
+
+@bot.message_handler(commands=['thu'])
+def handle_thu(message):
+    """Quick income entry: /thu <amount> <customer> <description>"""
+    if not check_rbac_permission(message, "cashflow"):
+        return
+    parts = message.text.split(None, 3)
+    if len(parts) < 3:
+        bot.reply_to(message, "👉 Cú pháp: `/thu <số_tiền> <khách_hàng> <mô_tả>`\nVD: `/thu 1000000 Khách_A Thanh_toán`", parse_mode="Markdown")
+        return
+    try:
+        amount = float(parts[1].replace(",", "").replace(".", ""))
+    except ValueError:
+        bot.reply_to(message, "❌ Số tiền không hợp lệ.")
+        return
+    customer = parts[2]
+    description = parts[3] if len(parts) > 3 else "Thu tiền"
+    result = db.create_accounting_invoice(amount, customer, "", status="income")
+    if result:
+        bot.reply_to(message, f"✅ Đã ghi nhận thu: **{amount:,.0f}đ** — {customer} ({description})", parse_mode="Markdown")
+    else:
+        bot.reply_to(message, "❌ Lỗi khi lưu dữ liệu. Kiểm tra kết nối Supabase.")
+
+
+@bot.message_handler(regexp=r'^/t[aạ][oơ]_[dđ][oơ][nờ]n?\b')
+def handle_tao_don(message):
+    """Quick sales order: /tạo_đơn <phone> <sku> <qty> [discount]"""
+    if not check_rbac_permission(message, "sales"):
+        return
+    parts = message.text.split(None, 4)
+    if len(parts) < 4:
+        bot.reply_to(message, "👉 Cú pháp: `/tạo_đơn <SĐT> <mã_SP> <SL> [giảm_giá]`\nVD: `/tạo_đơn 0901234567 SP-102 3 10%`", parse_mode="Markdown")
+        return
+    phone, sku = parts[1], parts[2]
+    try:
+        qty = int(parts[3])
+    except ValueError:
+        bot.reply_to(message, "❌ Số lượng không hợp lệ.")
+        return
+    discount = parts[4] if len(parts) > 4 else "0%"
+    result = db.create_sales_order(phone, sku, qty, discount)
+    if result:
+        bot.reply_to(message, f"✅ Đã tạo đơn hàng: {sku} x{qty} — KH: {phone} (Giảm: {discount})", parse_mode="Markdown")
+    else:
+        bot.reply_to(message, "❌ Lỗi khi tạo đơn hàng.")
+
+
+@bot.message_handler(regexp=r'^/nh[aâ]p_kho\b')
+def handle_nhap_kho(message):
+    """Quick inventory inbound: /nhập_kho <sku> <qty> [location]"""
+    if not check_rbac_permission(message, "inventory"):
+        return
+    parts = message.text.split(None, 3)
+    if len(parts) < 3:
+        bot.reply_to(message, "👉 Cú pháp: `/nhập_kho <mã_SP> <SL> [vị_trí]`\nVD: `/nhập_kho SP-201 100 Ke_A3`", parse_mode="Markdown")
+        return
+    sku = parts[1]
+    try:
+        qty = int(parts[2])
+    except ValueError:
+        bot.reply_to(message, "❌ Số lượng không hợp lệ.")
+        return
+    location = parts[3] if len(parts) > 3 else ""
+    result = db.create_inventory_record(sku, qty, location, record_type="inbound")
+    if result:
+        bot.reply_to(message, f"✅ Đã nhập kho: {sku} x{qty}" + (f" — Vị trí: {location}" if location else ""), parse_mode="Markdown")
+    else:
+        bot.reply_to(message, "❌ Lỗi khi nhập kho.")
+
+
+@bot.message_handler(regexp=r'^/xu[aâ]t_kho\b')
+def handle_xuat_kho(message):
+    """Quick inventory outbound: /xuất_kho <sku> <qty> [reason]"""
+    if not check_rbac_permission(message, "inventory"):
+        return
+    parts = message.text.split(None, 3)
+    if len(parts) < 3:
+        bot.reply_to(message, "👉 Cú pháp: `/xuất_kho <mã_SP> <SL> [lý_do]`\nVD: `/xuất_kho SP-201 50 Bán_hàng`", parse_mode="Markdown")
+        return
+    sku = parts[1]
+    try:
+        qty = int(parts[2])
+    except ValueError:
+        bot.reply_to(message, "❌ Số lượng không hợp lệ.")
+        return
+    reason = parts[3] if len(parts) > 3 else ""
+    result = db.create_inventory_record(sku, qty, reason, record_type="outbound")
+    if result:
+        bot.reply_to(message, f"✅ Đã xuất kho: {sku} x{qty}" + (f" — Lý do: {reason}" if reason else ""), parse_mode="Markdown")
+    else:
+        bot.reply_to(message, "❌ Lỗi khi xuất kho.")
+
+
+@bot.message_handler(regexp=r'^/xin_ngh[iỉ]\b')
+def handle_xin_nghi(message):
+    """Quick leave request: /xin_nghỉ <days> <start_date> <reason>"""
+    if not check_rbac_permission(message, "hr"):
+        return
+    parts = message.text.split(None, 3)
+    if len(parts) < 3:
+        bot.reply_to(message, "👉 Cú pháp: `/xin_nghỉ <số_ngày> <ngày_bắt_đầu> <lý_do>`\nVD: `/xin_nghỉ 2 20/06/2026 Việc_gia_đình`", parse_mode="Markdown")
+        return
+    try:
+        days = float(parts[1])
+    except ValueError:
+        bot.reply_to(message, "❌ Số ngày không hợp lệ.")
+        return
+    start_date = parts[2]
+    reason = parts[3] if len(parts) > 3 else ""
+    result = db.create_leave_request(str(message.from_user.id), days, start_date, reason)
+    if result:
+        bot.reply_to(message, f"✅ Đã gửi yêu cầu nghỉ phép: {days} ngày từ {start_date}" + (f" — {reason}" if reason else ""), parse_mode="Markdown")
+    else:
+        bot.reply_to(message, "❌ Lỗi khi tạo yêu cầu nghỉ phép.")
+
+
+# ─── Report Commands (placeholder — delegate to AI for actual report generation) ──
+
+@bot.message_handler(commands=['accounting_report'])
+def handle_accounting_report(message):
+    if not check_rbac_permission(message, "accounting"):
+        return
+    execute_chat_turn(message, "Hãy xuất báo cáo kế toán tổng hợp cho tháng hiện tại dưới dạng bảng.", force_provider="deepseek")
+
+@bot.message_handler(commands=['cashflow_report'])
+def handle_cashflow_report(message):
+    if not check_rbac_permission(message, "cashflow"):
+        return
+    execute_chat_turn(message, "Hãy xuất báo cáo dòng tiền (cashflow) cho tháng hiện tại.", force_provider="deepseek")
+
+@bot.message_handler(commands=['hr_report'])
+def handle_hr_report(message):
+    if not check_rbac_permission(message, "hr"):
+        return
+    execute_chat_turn(message, "Hãy xuất bảng công và thống kê nhân sự tháng hiện tại.", force_provider="deepseek")
+
+@bot.message_handler(commands=['sales_report'])
+def handle_sales_report(message):
+    if not check_rbac_permission(message, "sales"):
+        return
+    execute_chat_turn(message, "Hãy xuất báo cáo doanh số bán hàng tháng hiện tại.", force_provider="deepseek")
+
+@bot.message_handler(commands=['inventory_report'])
+def handle_inventory_report(message):
+    if not check_rbac_permission(message, "inventory"):
+        return
+    execute_chat_turn(message, "Hãy xuất báo cáo tồn kho hiện tại.", force_provider="deepseek")
+
+
+# ─── Admin User Management Commands ──────────────────────────────────────────
+
+@bot.message_handler(commands=['approve_user'])
+def handle_approve_user(message):
+    """Approve a user and assign role: /approve_user <telegram_id> <role>"""
+    user_id = message.from_user.id
+    role = get_user_role(user_id)
+    if role not in ["admin", "admin_master", "admin_company"]:
+        bot.reply_to(message, "⛔ Bạn không có quyền dùng lệnh này.")
+        return
+    parts = message.text.split(None, 2)
+    if len(parts) < 3:
+        bot.reply_to(message, "👉 Cú pháp: `/approve_user <telegram_id> <role>`\nVD: `/approve_user 123456789 accountant`", parse_mode="Markdown")
+        return
+    target_id = parts[1].strip()
+    target_role = parts[2].strip().lower()
+    valid_roles = list(ROLE_PERMISSIONS.keys()) + ["trial", "staff"]
+    if target_role not in valid_roles:
+        bot.reply_to(message, f"❌ Role không hợp lệ. Các role: {', '.join(valid_roles)}")
+        return
+    user = db.get_user_by_telegram_id(target_id)
+    if not user:
+        bot.reply_to(message, f"❌ Không tìm thấy user với Telegram ID `{target_id}`.", parse_mode="Markdown")
+        return
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        bot.reply_to(message, "❌ Supabase chưa được cấu hình.")
+        return
+    import requests as _req
+    url = f"{SUPABASE_URL}/rest/v1/users?telegram_id=eq.{target_id}"
+    res = _req.patch(url, json={"role": target_role, "status": "active"}, headers=db.get_headers(), timeout=10)
+    if res.status_code in [200, 201, 204]:
+        bot.reply_to(message, f"✅ Đã cấp quyền `{target_role}` cho user `{target_id}`.", parse_mode="Markdown")
+    else:
+        bot.reply_to(message, f"❌ Lỗi: {res.status_code} — {res.text[:200]}")
+
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY")
+
+
+@bot.message_handler(commands=['user_list'])
+def handle_user_list(message):
+    """List all registered users."""
+    user_id = message.from_user.id
+    role = get_user_role(user_id)
+    if role not in ["admin", "admin_master", "admin_company"]:
+        bot.reply_to(message, "⛔ Bạn không có quyền dùng lệnh này.")
+        return
+    users = db.get_users_list()
+    if not users:
+        bot.reply_to(message, "📋 Không có user nào đã liên kết Telegram.")
+        return
+    lines = ["📋 **DANH SÁCH USER**\n"]
+    for u in users[:50]:
+        tid = u.get("telegram_id", "?")
+        email = u.get("email", "?")
+        urole = u.get("role", "?")
+        status = u.get("status", "?")
+        lines.append(f"• `{tid}` — {email} — `{urole}` ({status})")
+    safe_send(bot, message.chat.id, "\n".join(lines))
+
+
+@bot.message_handler(commands=['logout'])
+def handle_logout(message):
+    """Clear user session."""
+    telegram_id = str(message.from_user.id)
+    sessions = get_valid_sessions()
+    if telegram_id in sessions:
+        del sessions[telegram_id]
+        try:
+            with open(SESSION_FILE, "w", encoding="utf-8") as f:
+                json.dump(sessions, f, indent=4)
+        except Exception:
+            pass
+    if message.from_user.id in USER_APP_STATE:
+        del USER_APP_STATE[message.from_user.id]
+    if message.from_user.id in UAT_ROLES:
+        del UAT_ROLES[message.from_user.id]
+    bot.reply_to(message, "✅ Đã đăng xuất. Gõ /start để bắt đầu lại.")
+
+
+@bot.message_handler(commands=['uat_test'])
+def handle_uat_test(message):
+    """Simulate a specific role for UAT testing: /uat_test <role>"""
+    user_id = message.from_user.id
+    real_role = get_user_role(user_id)
+    if real_role not in ["admin", "admin_master", "admin_company"]:
+        bot.reply_to(message, "⛔ Chỉ Admin mới được phép test UAT.")
+        return
+    parts = message.text.split(None, 1)
+    if len(parts) < 2:
+        current = UAT_ROLES.get(user_id, "Không có (role thật)")
+        bot.reply_to(message, f"🧪 UAT role hiện tại: `{current}`\n\nCú pháp: `/uat_test <role>`\nXóa UAT: `/uat_test clear`", parse_mode="Markdown")
+        return
+    target = parts[1].strip().lower()
+    if target in ["clear", "reset", "off"]:
+        UAT_ROLES.pop(user_id, None)
+        bot.reply_to(message, "✅ Đã xóa UAT override. Quay về role thật.")
+    else:
+        UAT_ROLES[user_id] = target
+        bot.reply_to(message, f"🧪 Đã switch sang UAT role: `{target}`", parse_mode="Markdown")
 
 
 @bot.message_handler(commands=['apps'])
