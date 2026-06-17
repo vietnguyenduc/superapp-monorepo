@@ -413,3 +413,23 @@ in apps/cashflow/ for project context before making changes.
 I'm working in the "viet" branch and need to ensure mobile responsiveness
 and dark mode compatibility for all changes.
 ```
+
+---
+
+## Quy tắc cho AI/Devin Sessions
+
+### Git
+- LUÔN push lên branch `viet`, KHÔNG push trực tiếp lên `main`
+- KHÔNG tạo PR merge vào main trừ khi user yêu cầu
+- Nếu tạo PR, phải chờ user approve, KHÔNG auto-merge
+
+### Testing
+- CI trên GitHub Actions sẽ tự chạy khi push — đợi CI pass thật sự
+- Telegram bot KHÔNG test được trên Vercel — phải test local bằng run.bat
+- Trước khi báo "done", phải chạy `python -m py_compile main.py` để verify syntax
+
+### Báo cáo trung thực
+- KHÔNG được nói "CI pass" nếu không có CI workflow
+- KHÔNG được nói "test pass" nếu không có test nào chạy
+- KHÔNG được nói "verified on Vercel" cho Telegram bot
+- Nếu chưa test được → nói rõ "chưa test, cần user chạy local"
