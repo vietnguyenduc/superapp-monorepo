@@ -13,9 +13,6 @@ import json
 import logging
 import threading
 import time
-import smtplib
-import random
-from email.mime.text import MIMEText
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -107,10 +104,7 @@ import core.vercel_parser as vercel_parser
 import core.evaluator as evaluator
 import core.db as db
 import core.socket_server as socket_server
-import core.settings as settings
-
-bg_scheduler_instance = None
-from core.telegram_utils import safe_send, send_json_result, format_markdown_tables
+from core.telegram_utils import safe_send, send_json_result
 from core.provider_registry import get_registry
 from core.budget_tracker import get_tracker
 
@@ -127,182 +121,6 @@ if not BOT_TOKEN:
 bot = telebot.TeleBot(BOT_TOKEN)
 agent = AntigravityAgent()
 ctx_logger = context_manager.LocalNotebookContext()
-
-# --- Login & OTP Session Management ---
-import secrets
-PENDING_LOGINS = {}
-LOGIN_ATTEMPTS = {}
-SESSION_FILE = Path(__file__).parent / "telegram_sessions.json"
-
-def get_valid_sessions() -> dict:
-    if not SESSION_FILE.exists():
-        return {}
-    try:
-        with open(SESSION_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            # Filter expired sessions
-            now = time.time()
-            return {k: v for k, v in data.items() if v.get("expires_at", 0) > now}
-    except Exception as e:
-        logger.error(f"Error reading sessions: {e}")
-        return {}
-
-def save_session(telegram_id: str, email: str):
-    sessions = get_valid_sessions()
-    sessions[str(telegram_id)] = {
-        "email": email,
-        "expires_at": time.time() + (30 * 24 * 3600)  # 30 days
-    }
-    try:
-        with open(SESSION_FILE, "w", encoding="utf-8") as f:
-            json.dump(sessions, f, indent=4)
-    except Exception as e:
-        logger.error(f"Error saving session: {e}")
-
-def send_otp_email(to_email: str, otp: str):
-    smtp_email = os.environ.get("SMTP_EMAIL")
-    smtp_pass = os.environ.get("SMTP_PASSWORD")
-    if not smtp_email or not smtp_pass:
-        logger.warning(f"Mocking email to {to_email}. OTP: {otp} (SMTP not configured in .env)")
-        return True
-    try:
-        msg = MIMEText(f"Mã OTP đăng nhập Telegram Admin của bạn là: {otp}\nMã này sẽ hết hạn trong 5 phút.")
-        msg['Subject'] = 'Mã xác nhận Telegram Bot Admin'
-        msg['From'] = smtp_email
-        msg['To'] = to_email
-
-        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-        server.login(smtp_email, smtp_pass)
-        server.send_message(msg)
-        server.quit()
-        return True
-    except Exception as e:
-        logger.error(f"Error sending email: {e}")
-        return False
-
-# --- Admin Onboarding Workflows ---
-
-@bot.message_handler(commands=['login'])
-def handle_login(message):
-    try:
-        email = message.text.split(' ', 1)[1].strip()
-    except IndexError:
-        return bot.reply_to(message, "👉 Cú pháp: `/login <email_trong_supabase>`")
-        
-    # Rate Limiting (chống Spam Email)
-    user_id = message.from_user.id
-    now = time.time()
-    attempts = LOGIN_ATTEMPTS.get(user_id, [])
-    # Xoá các log cũ hơn 1 giờ
-    attempts = [t for t in attempts if now - t < 3600]
-    if len(attempts) >= 5:
-        return bot.reply_to(message, "⛔ Bạn đã yêu cầu OTP quá nhiều lần. Vui lòng thử lại sau 1 giờ.")
-    attempts.append(now)
-    LOGIN_ATTEMPTS[user_id] = attempts
-    
-    # Check if email is an admin
-    user = db.get_user_by_email(email)
-    if not user or user.get("role") not in ["admin", "admin_company", "admin_master"]:
-        return bot.reply_to(message, "⛔ Email không tồn tại hoặc không có quyền truy cập.")
-        
-    otp = str(secrets.randbelow(900000) + 100000)
-    PENDING_LOGINS[user_id] = {
-        "email": email,
-        "otp": otp,
-        "expires_at": time.time() + 300 # 5 mins
-    }
-    
-    bot.reply_to(message, "⏳ Đang gửi mã OTP qua email...")
-    success = send_otp_email(email, otp)
-    
-    if success:
-        bot.reply_to(message, f"✅ Đã gửi mã OTP 6 số đến `{email}`.\nVui lòng kiểm tra email và nhập lệnh:\n`/verify <mã_otp>` (mã hết hạn sau 5 phút)", parse_mode="Markdown")
-    else:
-        bot.reply_to(message, "❌ Lỗi gửi email. Vui lòng kiểm tra cấu hình SMTP.")
-
-@bot.message_handler(commands=['verify'])
-def handle_verify(message):
-    try:
-        otp = message.text.split(' ', 1)[1].strip()
-    except IndexError:
-        return bot.reply_to(message, "👉 Cú pháp: `/verify <mã_otp>`")
-        
-    telegram_id = message.from_user.id
-    pending = PENDING_LOGINS.get(telegram_id)
-    
-    if not pending:
-        return bot.reply_to(message, "⛔ Không tìm thấy yêu cầu đăng nhập. Vui lòng gõ /login lại.")
-        
-    if time.time() > pending["expires_at"]:
-        del PENDING_LOGINS[telegram_id]
-        return bot.reply_to(message, "⛔ Mã OTP đã hết hạn. Vui lòng /login lại.")
-        
-    if str(pending["otp"]) != str(otp):
-        return bot.reply_to(message, "⛔ Mã OTP không chính xác.")
-        
-    email = pending["email"]
-    
-    # Notify Primary Admin
-    primary_id = str(ALLOWED_USER_ID).split(",")[0].strip() if ALLOWED_USER_ID else None
-    if not primary_id:
-        return bot.reply_to(message, "⛔ Hệ thống chưa cấu hình Primary Admin để duyệt yêu cầu.")
-        
-    from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-    markup = InlineKeyboardMarkup()
-    markup.add(
-        InlineKeyboardButton("✅ Duyệt", callback_data=f"approve_{telegram_id}"),
-        InlineKeyboardButton("❌ Từ chối", callback_data=f"reject_{telegram_id}")
-    )
-    
-    try:
-        bot.send_message(
-            primary_id,
-            f"🔔 **YÊU CẦU ĐĂNG NHẬP MỚI**\n\n- Telegram ID: `{telegram_id}`\n- Tên: `{message.from_user.first_name}`\n- Email: `{email}`\n\nBạn có đồng ý cấp quyền truy cập Telegram Bot không?",
-            parse_mode="Markdown",
-            reply_markup=markup
-        )
-        bot.reply_to(message, "✅ Xác thực email thành công! Đang chờ Admin chính phê duyệt...")
-    except Exception as e:
-        logger.error(f"Error notifying primary admin: {e}")
-        bot.reply_to(message, "❌ Lỗi: Không thể gửi yêu cầu phê duyệt tới Admin chính.")
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("approve_") or call.data.startswith("reject_"))
-def handle_approval_callback(call):
-    primary_id = str(ALLOWED_USER_ID).split(",")[0].strip() if ALLOWED_USER_ID else None
-    if str(call.from_user.id) != primary_id:
-        bot.answer_callback_query(call.id, "⛔ Bạn không có quyền duyệt!")
-        return
-        
-    action, target_id = call.data.split("_", 1)
-    target_id = int(target_id)
-    pending = PENDING_LOGINS.get(target_id)
-    
-    if not pending:
-        bot.edit_message_text("⛔ Yêu cầu này đã hết hạn hoặc không tồn tại.", call.message.chat.id, call.message.message_id)
-        return
-        
-    if action == "approve":
-        email = pending["email"]
-        # Link in DB
-        success = db.link_telegram_id(email, str(target_id))
-        if success:
-            save_session(str(target_id), email)
-            bot.edit_message_text(f"✅ Đã DUYỆT cho `{email}` (`{target_id}`).", call.message.chat.id, call.message.message_id, parse_mode="Markdown")
-            try:
-                bot.send_message(target_id, "🎉 Chúc mừng! Yêu cầu của bạn đã được phê duyệt. Bạn đã có thể bắt đầu sử dụng Bot.\nSử dụng lệnh `/manual` để xem hướng dẫn.")
-            except:
-                pass
-        else:
-            bot.edit_message_text(f"❌ Lỗi khi cập nhật database cho `{email}`.", call.message.chat.id, call.message.message_id, parse_mode="Markdown")
-    elif action == "reject":
-        bot.edit_message_text(f"❌ Đã TỪ CHỐI yêu cầu của `{target_id}`.", call.message.chat.id, call.message.message_id, parse_mode="Markdown")
-        try:
-            bot.send_message(target_id, "⛔ Yêu cầu đăng nhập của bạn đã bị từ chối bởi Admin.")
-        except:
-            pass
-            
-    # Clean up
-    del PENDING_LOGINS[target_id]
 
 # --- Super Scraper & RAG AI Commands ---
 
@@ -429,18 +247,11 @@ def get_user_role(telegram_id: int):
     if telegram_id in UAT_ROLES:
         return UAT_ROLES[telegram_id]
         
-    # 2. Check primary dev override (supports comma-separated list)
-    if ALLOWED_USER_ID:
-        allowed_ids = [uid.strip() for uid in str(ALLOWED_USER_ID).split(",")]
-        if str(telegram_id) in allowed_ids:
-            return "admin"
-            
-    # 3. Check 30-day session expiry for secondary admins
-    sessions = get_valid_sessions()
-    if str(telegram_id) not in sessions:
-        return None # Session expired or not logged in
+    # 2. Check primary dev override
+    if ALLOWED_USER_ID and str(telegram_id) == str(ALLOWED_USER_ID):
+        return "admin"
         
-    # 4. Check Supabase database
+    # 3. Check Supabase database
     user = db.get_user_by_telegram_id(str(telegram_id))
     if user:
         return user.get("role", "staff")
@@ -498,22 +309,17 @@ def send_welcome(message):
         f"  * \"Push tất cả thay đổi hiện tại lên git với thông điệp refactor bot\"\n"
         f"  * \"Deploy phiên bản mới lên Vercel\"\n\n"
         f"⚙️ **CÁC LỆNH ĐIỀU KHIỂN & CLI**:\n"
-        f"1️⃣ `/settings` - Bảng điều khiển trung tâm (Bật/Tắt Autopilot).\n"
-        f"2️⃣ `/manual` (hoặc `/guide`) - Xem chi tiết hướng dẫn sử dụng toàn tập.\n"
-        f"3️⃣ `/apps` - Thay đổi tiêu điểm ứng dụng trong monorepo.\n"
-        f"4️⃣ `/model <name>`, `/pro`, `/claude`, `/nvidia` - Quản lý mô hình AI.\n"
-        f"5️⃣ `/crawl <URL>`, `/crawl2 <URL>` - Cào dữ liệu web cơ bản & nâng cao.\n"
-        f"6️⃣ `/ask <câu hỏi>`, `/clean_vault` - Truy vấn & quản lý kho RAG.\n"
-        f"7️⃣ `/check-rules` - Xem System Rules & Context hiện tại của bot.\n"
-        f"8️⃣ `/vault`, `/tunnel`, `/git`, `/deploy`, `/status` - Xem thông tin hệ thống (File/Network/Git/Cloud).\n"
-        f"9️⃣ `/awake`, `/restart` - Quản lý Local Dev Server & Ngrok Tunnel.\n"
-        f"🔟 `/task_status (ts)`, `/clear_task (ct)` - Quản lý Task Journal chạy dài.\n"
-        f"1️⃣1️⃣ `/run <cmd>` - Chạy trực tiếp PowerShell command trên host.\n"
-        f"1️⃣2️⃣ `/reboot`, `/botstat`, `/killbot` - Khởi động lại bot và quản lý Python process.\n"
-        f"1️⃣3️⃣ `/session` - Xem trạng thái context budget và lịch sử nén session.\n"
-        f"1️⃣4️⃣ `/compress` - 🗜️ Nén context thủ công (emergency escape khi budget > 80%).\n\n"
+        f"1️⃣ `/apps` - Thay đổi tiêu điểm ứng dụng trong monorepo.\n"
+        f"2️⃣ `/model <name>`, `/pro`, `/claude`, `/nvidia` - Quản lý mô hình AI.\n"
+        f"3️⃣ `/crawl <URL>`, `/crawl2 <URL>` - Cào dữ liệu web cơ bản & nâng cao.\n"
+        f"4️⃣ `/ask <câu hỏi>`, `/clean_vault` - Truy vấn & quản lý kho RAG.\n"
+        f"5️⃣ `/check-rules` - Xem System Rules & Context hiện tại của bot.\n"
+        f"6️⃣ `/vault`, `/tunnel`, `/git`, `/deploy`, `/status` - Xem thông tin hệ thống (File/Network/Git/Cloud).\n"
+        f"7️⃣ `/awake`, `/restart` - Quản lý Local Dev Server & Ngrok Tunnel.\n"
+        f"8️⃣ `/task_status (ts)`, `/clear_task (ct)` - Quản lý Task Journal chạy dài.\n"
+        f"9️⃣ `/run <cmd>` - Chạy trực tiếp PowerShell command trên host.\n"
+        f"🔟 `/reboot`, `/botstat`, `/killbot` - Khởi động lại bot và quản lý Python process.\n\n"
         f"🚀 **(MỚI) TÍNH NĂNG TỰ TRỊ (AGENTIC & ORCHESTRATION)**:\n"
-        f"🔹 `/autopilot` - Quản lý trong `/settings`. Tự trị quét lỗi định kỳ.\n"
         f"🔹 `/goal <yêu cầu>` - Tự trị 100%: Chạy liên tục, tự fix lỗi đến khi đạt mục tiêu lớn (không ngắt quãng).\n"
         f"🔹 `/teamwork-preview <yêu cầu>` - Multi-agent: Kêu gọi các sub-agent chia việc và xử lý song song dự án lớn.\n"
         f"🔹 `/schedule <nhiệm vụ>` - Lên lịch hẹn giờ hoặc định kỳ (cron) thực hiện task.\n"
@@ -537,7 +343,7 @@ def send_manual(message):
         f"💡 **TƯ DUY CỐT LÕI (THE MINDSET)**\n"
         f"Đừng dùng bot như Google. Hãy **GIAO VIỆC** (Delegate). Hãy nói cho bot biết **MỤC TIÊU CUỐI CÙNG**, bot sẽ tự phân rã (Breakdown), tự code (Execute), tự kiểm tra (Test) và tự sửa lỗi (Self-heal).\n\n"
         
-        f"🔥 **8 LỆNH QUYỀN NĂNG NHẤT BẠN PHẢI BIẾT:**\n\n"
+        f"🔥 **6 LỆNH QUYỀN NĂNG NHẤT BẠN PHẢI BIẾT:**\n\n"
         
         f"🎯 **1. `/goal` (Chế Độ Cắm Máy - Tự trị 100%)**\n"
         f"• **Tinh hoa**: Thay vì ra lệnh từng bước và phải gõ 'tiếp tục' 50 lần, `/goal` ép bot thề không dừng lại cho đến khi xong việc. Nó sẽ tự fix bug, tự tìm file, tự google nếu bí. Dành cho các Epic Task lớn.\n"
@@ -563,15 +369,7 @@ def send_manual(message):
         f"• **Tinh hoa**: Bot sẽ không code mà chỉ dùng `read_file` để rà soát toàn bộ project, sau đó xuất ra file `implementation_plan.md` để bạn duyệt trước khi nó xuống tay.\n"
         f"• **Ví dụ**: `/plan Nghiên cứu codebase hiện tại và đề xuất cách tối ưu tốc độ load.`\n\n"
         
-        f"🧠 **7. `/session` (Giám sát Não Bộ - Quản lý Context)**\n"
-        f"• **Tinh hoa**: Cung cấp cái nhìn trực quan (Progress Bar) về bộ nhớ Token đang bị chiếm dụng. Biết được khi nào não bot sắp 'đầy' để chuẩn bị nén.\n"
-        f"• **Ví dụ**: Gõ `/session` để xem bot đang tải bao nhiêu phần trăm ngân sách (Budget).\n\n"
-
-        f"🗜️ **8. `/compress` (Giải Phóng Ký Ức - Khẩn Cấp)**\n"
-        f"• **Tinh hoa**: Khi bot bắt đầu có dấu hiệu bị kẹt vòng lặp hoặc lặp lại câu trả lời (do context > 80%), lệnh này ép bot DỪNG LẠI, tóm tắt toàn bộ lịch sử thành 1 đoạn ngắn gọn và ném bỏ rác, giúp não bộ nhẹ nhàng và minh mẫn trở lại.\n"
-        f"• **Ví dụ**: Gõ `/compress` ngay khi thấy bot nói nhảm.\n\n"
-
-        f"⚠️ **MẸO VÀNG CHO NEWBIE:**\n"
+        f"⚠️ **MẸO VÀNG CHO NEWBIE:**\n"
         f"1. Dùng lệnh `/apps` để trỏ bot vào đúng dự án trước khi ra lệnh.\n"
         f"2. Nếu bot làm sai, đừng chửi nó. Hãy gõ: `Bạn đang bị lỗi X ở file Y, dùng /browser để tra cứu lại docs đi`.\n"
         f"3. Tận dụng tối đa `/grill-me` cho ý tưởng mới và `/goal` cho công việc nhàm chán!"
@@ -1138,98 +936,129 @@ def handle_clear_task(message):
         bot.reply_to(message, f"❌ Error clearing task state: {e}")
 
 
-@bot.message_handler(commands=['compress'])
-def handle_compress(message):
-    """Manually trigger context compression — emergency escape hatch."""
+@bot.message_handler(commands=['devin'])
+def handle_devin(message):
+    """Delegate a complex task to a cloud Devin session."""
     if not check_rbac_permission(message, "admin"):
         return
     try:
-        from core.session_manager import get_session_manager, invalidate_session_manager
-        active_project = agent.get_active_project() or "default"
-        _, history_file = agent.get_project_paths(active_project)
+        task = message.text.split(' ', 1)[1].strip()
+    except IndexError:
+        bot.reply_to(
+            message,
+            "Vui lòng nhập task. VD: `/devin refactor toàn bộ module auth`",
+            parse_mode="Markdown",
+        )
+        return
 
-        # Load current history
-        history = []
-        if history_file.exists():
-            try:
-                history = json.loads(history_file.read_text(encoding="utf-8"))
-            except Exception:
-                pass
+    bot.send_chat_action(message.chat.id, 'typing')
 
-        if not history:
-            bot.reply_to(message, "⚠️ Không có conversation history để nén.", parse_mode="Markdown")
+    def run_devin():
+        from core import devin_client
+        try:
+            session = devin_client.create_session(task)
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Không tạo được Devin session: {e}")
             return
 
-        bot.reply_to(message, f"🗜️ *Đang nén {len(history)} turns...* (có thể mất 15-30 giây)", parse_mode="Markdown")
+        session_id = session.get("session_id", "")
+        url = session.get("url", "")
+        safe_send(
+            bot,
+            message.chat.id,
+            f"🤖 Devin đang xử lý: {url}\n"
+            f"Session ID: {session_id}\n"
+            f"Dùng /devin_status {session_id} để kiểm tra.",
+        )
 
-        session_mgr = get_session_manager(history_file, active_project)
-        result_text = session_mgr.manual_compress(history)
-
-        # Save compressed history (only keep recent turns)
-        from core.session_manager import KEEP_RECENT_TURNS
-        compressed_history = history[-KEEP_RECENT_TURNS:] if len(history) > KEEP_RECENT_TURNS else history
         try:
-            history_file.write_text(
-                json.dumps(compressed_history, ensure_ascii=False, indent=2),
-                encoding="utf-8"
-            )
-        except Exception as save_err:
-            logger.error(f"Error saving compressed history: {save_err}")
+            result = devin_client.wait_for_completion(session_id)
+            safe_send(bot, message.chat.id, f"✅ *Devin hoàn thành* (`{session_id}`):\n\n{result}")
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Lỗi khi chờ Devin hoàn thành (`{session_id}`): {e}")
 
-        # Invalidate cached session manager so next turn gets fresh state
-        invalidate_session_manager(history_file)
-
-        safe_send(bot, message.chat.id, result_text)
-    except Exception as e:
-        logger.error(f"Error in /compress handler: {e}", exc_info=True)
-        bot.reply_to(message, f"❌ Lỗi khi nén context: {e}")
+    threading.Thread(target=run_devin, daemon=True).start()
 
 
-@bot.message_handler(commands=['session'])
-def handle_session_status(message):
-    """Show current context session status and compression stats."""
+@bot.message_handler(commands=['devin_status'])
+def handle_devin_status(message):
+    """Check the status of a running Devin session."""
     if not check_rbac_permission(message, "admin"):
         return
     try:
-        from core.session_manager import get_session_manager, estimate_budget, CONTEXT_LIMIT_TOKENS
-        active_project = agent.get_active_project() or "default"
-        _, history_file = agent.get_project_paths(active_project)
+        session_id = message.text.split(' ', 1)[1].strip()
+    except IndexError:
+        bot.reply_to(message, "Vui lòng nhập session ID. VD: `/devin_status <session_id>`", parse_mode="Markdown")
+        return
 
-        # Load current history
-        history = []
-        if history_file.exists():
-            try:
-                history = json.loads(history_file.read_text(encoding="utf-8"))
-            except Exception:
-                pass
-
-        session_mgr = get_session_manager(history_file, active_project)
-
-        # Rough estimate of current budget
-        _, _, pct_used = estimate_budget(
-            system_instruction="",
-            vault_context="",
-            memories_context="",
-            continuation_context="",
-            workspace_cwd_note="",
-            history=history,
-            user_message="",
-            handoff_summary=session_mgr.meta.handoff_summary,
-        )
-
-        status_text = session_mgr.get_status_text(pct_used)
-        history_info = (
-            f"\n\n📜 *Conversation History*\n"
-            f"  • Turns in memory: {len(history)}\n"
-            f"  • Turns in compressed summary: {session_mgr.meta.handoff_summary_turns}\n"
-            f"  • Total turns ever: {len(history) + session_mgr.meta.handoff_summary_turns}\n\n"
-            f"💡 _Dùng /compress để nén thủ công nếu context quá cao._"
-        )
-
-        safe_send(bot, message.chat.id, status_text + history_info)
+    from core import devin_client
+    try:
+        info = devin_client.get_session_status(session_id)
     except Exception as e:
-        logger.error(f"Error in /session handler: {e}", exc_info=True)
-        bot.reply_to(message, f"❌ Lỗi đọc session status: {e}")
+        bot.reply_to(message, f"❌ Lỗi khi lấy trạng thái: {e}")
+        return
+
+    status = info.get("status", "unknown")
+    output = info.get("output") or info.get("structured_output") or "_(chưa có output)_"
+    safe_send(bot, message.chat.id, f"📊 *Devin session* `{session_id}`\nTrạng thái: *{status}*\n\n{output}")
+
+
+@bot.message_handler(commands=['devin_send'])
+def handle_devin_send(message):
+    """Send a follow-up message to a running Devin session."""
+    if not check_rbac_permission(message, "admin"):
+        return
+    try:
+        parts = message.text.split(' ', 2)
+        session_id = parts[1].strip()
+        msg_text = parts[2].strip()
+    except (IndexError, ValueError):
+        bot.reply_to(
+            message,
+            "Cú pháp: `/devin_send <session_id> <message>`\nVD: `/devin_send devin-abc123 Hãy thêm unit tests`",
+            parse_mode="Markdown",
+        )
+        return
+
+    from core import devin_client
+    try:
+        devin_client.send_message(session_id, msg_text)
+    except Exception as e:
+        bot.reply_to(message, f"❌ Không gửi được message: {e}")
+        return
+
+    bot.reply_to(
+        message,
+        f"✅ Đã gửi message vào session `{session_id}`.\nDùng /devin\\_status {session_id} để xem phản hồi.",
+        parse_mode="Markdown",
+    )
+
+
+@bot.message_handler(commands=['devin_list'])
+def handle_devin_list(message):
+    """List the 5 most recent Devin sessions."""
+    if not check_rbac_permission(message, "admin"):
+        return
+
+    from core import devin_client
+    try:
+        sessions = devin_client.list_sessions(limit=5)
+    except Exception as e:
+        bot.reply_to(message, f"❌ Lỗi khi liệt kê sessions: {e}")
+        return
+
+    if not sessions:
+        bot.reply_to(message, "Không có Devin session nào gần đây.")
+        return
+
+    lines = ["🗂️ *5 Devin sessions gần nhất:*", ""]
+    for s in sessions[:5]:
+        sid = s.get("session_id", "?")
+        status = s.get("status_enum") or s.get("status", "unknown")
+        title = s.get("title") or s.get("name") or ""
+        lines.append(f"• `{sid}` — *{status}*" + (f"\n  {title}" if title else ""))
+    safe_send(bot, message.chat.id, "\n".join(lines))
+
 
 @bot.message_handler(commands=['botstat'])
 def handle_botstat(message):
@@ -1312,46 +1141,6 @@ def handle_killbot(message):
         parse_mode="Markdown"
     )
 
-@bot.message_handler(commands=['killnode'])
-def handle_killnode(message):
-    """Kill all stale Node.js/Vite instances to free up ports."""
-    if not check_rbac_permission(message, "admin"):
-        return
-
-    import subprocess
-    bot.reply_to(
-        message,
-        f"🔫 *Đang dọn dẹp tất cả các process Node.js bị treo...*",
-        parse_mode="Markdown"
-    )
-
-    try:
-        kill_cmd = (
-            f"$killed = 0; "
-            f"Get-WmiObject Win32_Process "
-            f"| Where-Object {{ $_.Name -like '*node*' }} "
-            f"| ForEach-Object {{ "
-            f"  $killed++; "
-            f"  Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue; "
-            f"  Write-Host ('Killed Node PID: ' + $_.ProcessId) "
-            f"}}; "
-            f"Write-Host ('Total killed: ' + $killed)"
-        )
-        result = subprocess.run(
-            ["powershell", "-NoProfile", "-Command", kill_cmd],
-            capture_output=True, text=True, timeout=10
-        )
-        output = result.stdout.strip() or "Không có Node.js process nào đang treo."
-    except Exception as e:
-        output = f"Lỗi: {e}"
-
-    safe_send(
-        bot, message.chat.id,
-        f"✅ *Kết quả dọn dẹp:*\n```\n{output}\n```\n\n"
-        f"Các port Dev Server đã được giải phóng!",
-        parse_mode="Markdown"
-    )
-
 @bot.message_handler(commands=['reboot'])
 def handle_reboot_bot(message):
     """Exit the Python process. run.bat will automatically restart it."""
@@ -1418,11 +1207,7 @@ def handle_status(message):
 def execute_chat_turn(message, user_text, force_provider=None):
     """Shared handler to execute a conversation turn, optionally forcing a specific AI provider."""
     # Show typing state immediately
-    try:
-        bot.send_chat_action(message.chat.id, 'typing')
-    except Exception as e:
-        logger.warning(f"Could not send typing action: {e}")
-        
+    bot.send_chat_action(message.chat.id, 'typing')
     chat_id = message.chat.id
 
     # ── Register a fresh cancellation event for this chat session ────────────
@@ -1511,13 +1296,10 @@ def execute_chat_turn(message, user_text, force_provider=None):
 
                 # Update the latest progress text for RAG/NotebookLM logging
                 latest_progress_text[0] = combined_text
-                
-                # Format tables to look nice in Telegram
-                formatted_combined = format_markdown_tables(combined_text)
 
                 try:
                     bot.edit_message_text(
-                        formatted_combined,
+                        combined_text,
                         chat_id=chat_id,
                         message_id=_current_msg_id[0],
                         parse_mode="Markdown",
@@ -1533,7 +1315,7 @@ def execute_chat_turn(message, user_text, force_provider=None):
                     )):
                         try:
                             new_msg = bot.send_message(
-                                chat_id, formatted_combined,
+                                chat_id, combined_text,
                                 parse_mode="Markdown",
                                 reply_markup=cancel_markup,
                             )
@@ -1659,10 +1441,7 @@ def execute_chat_turn(message, user_text, force_provider=None):
             safe_send(bot, chat_id, reply)
         except Exception as e:
             logger.error(f"Error in execute_chat_turn process: {e}", exc_info=True)
-            if getattr(message, 'message_id', 0) > 0:
-                bot.reply_to(message, f"❌ **Lỗi Agent**: {str(e)[:300]}")
-            else:
-                bot.send_message(chat_id, f"❌ **Lỗi Agent**: {str(e)[:300]}")
+            bot.reply_to(message, f"❌ **Lỗi Agent**: {str(e)[:300]}")
         finally:
             # Always deregister the cancel event when done
             with _cancel_events_lock:
@@ -1822,8 +1601,6 @@ def handle_teamwork_command(message):
 @bot.message_handler(commands=['schedule'])
 def handle_schedule_command(message):
     """Schedules a task."""
-    if not bg_scheduler_instance:
-        return bot.reply_to(message, "⚠️ Hệ thống lập lịch chưa được kích hoạt (thiếu ALLOWED_TELEGRAM_USER_ID).")
     user_id = message.from_user.id
     if get_user_role(user_id) not in ["admin", "admin_master", "admin_company"]:
         return bot.reply_to(message, "⛔ Access Denied.")
@@ -1836,45 +1613,18 @@ def handle_schedule_command(message):
     except (IndexError, ValueError):
         return bot.reply_to(message, "👉 Cú pháp: `/schedule <số_giây> <nhiệm vụ>`. VD: `/schedule 60 Check build status`", parse_mode="Markdown")
         
-    def delayed_execution(chat_id, text):
-        bot.send_message(chat_id, f"🔔 *BÁO THỨC!* Đã đến giờ thực thi nhiệm vụ:\n_{text}_", parse_mode="Markdown")
-        # Reuse execute_chat_turn
-        # Create a mock message to pass to execute_chat_turn
-        class MockMessage:
-            def __init__(self, cid, txt):
-                class MockChat:
-                    def __init__(self, _id):
-                        self.id = _id
-                self.chat = MockChat(cid)
-                self.text = txt
-                self.message_id = 0
-                self.from_user = type('obj', (object,), {'id': cid})
-        execute_chat_turn(MockMessage(chat_id, f"/schedule {text}"), f"/schedule {text}")
+    bot.reply_to(message, f"⏰ Đã lên lịch hẹn giờ ({delay_seconds}s) cho nhiệm vụ:\n_{user_text}_", parse_mode="Markdown")
+    
+    def delayed_execution():
+        bot.send_message(message.chat.id, f"🔔 *BÁO THỨC!* Đã đến giờ thực thi nhiệm vụ:\n_{user_text}_", parse_mode="Markdown")
+        # Reuse execute_chat_turn but we inject a prefix so agent knows it's a scheduled run
+        execute_chat_turn(message, f"/schedule {user_text}")
         
-    from datetime import datetime, timedelta
-    run_date = datetime.now() + timedelta(seconds=delay_seconds)
-    job = bg_scheduler_instance.add_job(
-        delayed_execution,
-        'date',
-        run_date=run_date,
-        args=[message.chat.id, user_text],
-        name=f"Schedule: {user_text[:20]}..."
-    )
-    bot.reply_to(message, f"⏰ Đã lên lịch hẹn giờ ({delay_seconds}s) cho nhiệm vụ:\n_{user_text}_\nID: `{job.id}`", parse_mode="Markdown")
+    import threading
+    t = threading.Timer(delay_seconds, delayed_execution)
+    t.start()
 
-@bot.message_handler(commands=['unschedule'])
-def handle_unschedule_command(message):
-    if not bg_scheduler_instance:
-        return bot.reply_to(message, "⚠️ Hệ thống lập lịch chưa được kích hoạt (thiếu ALLOWED_TELEGRAM_USER_ID).")
-    user_id = message.from_user.id
-    if get_user_role(user_id) not in ["admin", "admin_master", "admin_company"]:
-        return bot.reply_to(message, "⛔ Access Denied.")
-    try:
-        job_id = message.text.split(' ', 1)[1].strip()
-        bg_scheduler_instance.remove_job(job_id)
-        bot.reply_to(message, f"✅ Đã hủy lịch hẹn: `{job_id}`", parse_mode="Markdown")
-    except Exception as e:
-        bot.reply_to(message, f"❌ Không tìm thấy hoặc không thể hủy lịch hẹn: `{message.text}`")
+
 @bot.message_handler(commands=['browser'])
 def handle_browser_command(message):
     """Forces browser automation task."""
@@ -1964,7 +1714,50 @@ def handle_model_switch(message):
         bot.reply_to(message, "❌ Mô hình không hợp lệ. Vui lòng chọn: `deepseek`, `nvidia`, `r1`, `geminipro`, `claude`, hoặc `default`.")
 
 
-
+# Conversational developer chat interface (Vibe Coding Remote)
+@bot.message_handler(commands=['terminal'])
+def handle_terminal_command(message):
+    """Generates an online remote tunnel for the socket bridge and serves the Glassmorphism WebApp Terminal inside Telegram."""
+    user_id = message.from_user.id
+    role = get_user_role(user_id)
+    if role not in ["admin", "admin_master", "admin_company"]:
+        bot.reply_to(message, "⛔ Access Denied.")
+        return
+        
+    bot.reply_to(message, "🔌 **Đang đồng bộ Terminal Bridge & Cấu hình Ngrok Secure Tunnel...**")
+    bot.send_chat_action(message.chat.id, 'typing')
+    
+    # Check if a tunnel exists for port 8765, else create it dynamically
+    ws_port = 8765
+    active_tunnel = tunnel.get_active_tunnel_for_port(ws_port)
+    
+    if not active_tunnel:
+        try:
+            logger.info("Auto-initializing Ngrok tunnel for WebSocket terminal on port 8765")
+            active_tunnel = tunnel.start_tunnel_for_port(ws_port)
+        except Exception as err:
+            logger.error(f"Failed to start ngrok tunnel for terminal: {err}")
+            
+    is_valid_url = isinstance(active_tunnel, str) and (active_tunnel.startswith("http://") or active_tunnel.startswith("https://"))
+    
+    markup = telebot.types.InlineKeyboardMarkup()
+    if is_valid_url:
+        btn_link = telebot.types.InlineKeyboardButton("🌐 Mở rộng Trình duyệt (Online)", url=active_tunnel)
+        btn_webview = telebot.types.InlineKeyboardButton("📱 Mở Terminal trong Telegram", web_app=telebot.types.WebAppInfo(url=active_tunnel))
+        markup.add(btn_webview)
+        markup.add(btn_link)
+        
+    ts_status = tunnel.get_tailscale_status()
+    
+    resp_text = (
+        f"🛸 **ANTIGRAVITY REMOTE TERMINAL ACTIVATED** 🛸\n\n"
+        f"• **Port dịch vụ**: `{ws_port}`\n"
+        f"• **Ngrok Tunnel**: {active_tunnel if is_valid_url else f'`{active_tunnel}`'}\n"
+        f"• **Xác thực bảo mật**: Đã đồng bộ với Token của bạn (Zero-Trust).\n\n"
+        f"💡 *Mạng nội bộ (Tailscale IP)*: `{ts_status}`\n\n"
+        f"Bạn có thể bấm trực tiếp nút bấm bên dưới để mở giao diện Terminal Glassmorphism cực kỳ chuyên nghiệp ngay tại Telegram!"
+    )
+    safe_send(bot, message.chat.id, resp_text, reply_markup=markup, parse_mode="Markdown")
 
 
 @bot.message_handler(content_types=['photo'])
@@ -2022,8 +1815,8 @@ def handle_agent_photo(message):
             temperature=0.2,
         )
         
-        # Try primary model first, fallback to stable and lite models on 503/429 errors
-        vision_models = [registry.gemini.model, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash-lite", "gemini-flash-lite-latest"]
+        # Try primary model first, fallback to stable models on 503/429 errors
+        vision_models = [registry.gemini.model, "gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
         # Remove duplicates while preserving order
         seen = set()
         vision_models = [x for x in vision_models if not (x in seen or seen.add(x))]
@@ -2086,303 +1879,6 @@ def handle_agent_photo(message):
             pass
 
 
-# ─── AUTOPILOT & SETTINGS ────────────────────────────────────────────────────────
-
-
-def autopilot_tick():
-    logger.info("Executing autopilot tick...")
-    if ALLOWED_USER_ID:
-        primary_id = str(ALLOWED_USER_ID).split(',')[0].strip()
-        from types import SimpleNamespace
-        # Create a mock message
-        class MockChat:
-            def __init__(self, id):
-                self.id = id
-        class MockMessage:
-            def __init__(self, chat_id, text):
-                self.chat = MockChat(chat_id)
-                self.text = text
-                self.message_id = 0
-                
-        s = settings.load_settings()
-        git_push = s.get("auto_push_git", True)
-        branch = s.get("git_branch", "viet")
-        
-        prompt = "[AUTOPILOT] Hãy tự động chạy kiểm tra hệ thống, kiểm tra lỗi và fix lỗi nếu có."
-        if git_push:
-            prompt += f" Sau khi fix xong, HÃY tự động commit và push code lên nhánh `{branch}`. Báo cáo kết quả."
-        else:
-            prompt += " KHÔNG được tự ý commit hay push code lên Git. Chỉ sửa file nội bộ rồi báo cáo."
-
-        mock_msg = MockMessage(primary_id, f"/goal {prompt}")
-        try:
-            bot.send_message(primary_id, "🤖 *Autopilot Kích Hoạt* - Đang tiến hành quét và bảo trì hệ thống ngầm...", parse_mode="Markdown")
-            execute_chat_turn(mock_msg, mock_msg.text)
-        except Exception as e:
-            logger.error(f"Autopilot tick failed: {e}")
-
-def apply_daily_report_schedule():
-    if not bg_scheduler_instance:
-        return
-    s = settings.load_settings()
-    report_time_str = s.get("daily_report_time", "18:00")
-    try:
-        hour, minute = map(int, report_time_str.split(":"))
-    except ValueError:
-        hour, minute = 18, 0
-    
-    try:
-        bg_scheduler_instance.reschedule_job('daily_report_job', trigger='cron', hour=hour, minute=minute)
-        logger.info(f"Daily report rescheduled to {report_time_str}")
-    except Exception as e:
-        logger.error(f"Failed to reschedule daily report: {e}")
-
-KAIZEN_PROMPT = """/goal [SYSTEM DIRECTIVE: SELF-REFLECTION & AUDIT]
-Nhiệm vụ của bạn là thực hiện quy trình Tự Phản Chiếu & Kiểm Thử Hệ Thống (Self-Reflection & Audit) định kỳ cho monorepo:
-
-1. STATIC MIGRATION LINTING & AUTO-HEALING:
-   - Quét tất cả các tệp tin `supabase/migrations/*.sql` từ gốc monorepo.
-   - Tìm lỗi "RLS Infinite Recursion" (ví dụ: tạo POLICY SELECT trên bảng A có chứa câu truy vấn SELECT trực tiếp hoặc gián tiếp trên chính bảng A trong phần USING hoặc WITH CHECK).
-   - Nếu phát hiện lỗi này, hãy tự động sửa lỗi (self-heal) tệp tin migration bằng cách chuyển đổi sang sử dụng hàm `SECURITY DEFINER` (chạy với đặc quyền bypass RLS) hoặc sử dụng các thông tin xác thực JWT (`auth.jwt()`) thích hợp để tránh truy vấn đệ quy vô hạn.
-
-2. ĐĂNG NHẬP & PHÂN TÍCH NHẬT KÝ HOẠT ĐỘNG (LOGS):
-   - Đường dẫn file nhật ký: `c:/Vibecoding/superapp-monorepo/apps/antigravity-telegram-agent/agent_service.log`.
-   - Hãy trích xuất 24 giờ hoạt động gần nhất một cách an toàn. VÌ DUNG LƯỢNG FILE LOG RẤT LỚN (trên 20MB), bạn TUYỆT ĐỐI KHÔNG DÙNG `read_file` trực tiếp. Thay vào đó, hãy dùng `execute_command` để chạy lệnh trích xuất 1000 dòng cuối cùng (sử dụng PowerShell: `Get-Content -Path "c:/Vibecoding/superapp-monorepo/apps/antigravity-telegram-agent/agent_service.log" -Tail 1000`).
-   - Phân tích các lỗi (Error), cảnh báo (Warning), sự cố crash, hoặc các hành vi bất thường của agent.
-
-3. GHI NHẬN 3 BÀI HỌC KINH NGHIỆM:
-   - Dựa trên phân tích log trên, rút ra chính xác 3 bài học kinh nghiệm kỹ thuật cốt lõi.
-   - Đọc file bài học hiện tại: `c:/Vibecoding/superapp-monorepo/vaults/lessons_learned.md`.
-   - Dùng `patch_file` hoặc ghi đè để chèn thêm 3 bài học này dưới mục `## Daily Learnings` tương ứng với ngày hôm nay (định dạng: `- **[YYYY-MM-DD]**: <tóm tắt ngắn gọn bài học và giải pháp khắc phục>`).
-
-4. KIỂM THỬ GIAO DIỆN (VISUAL AUDIT) & TỰ PHỤC HỒI SERVER:
-   - Xác định dự án hiện tại đang hoạt động (active project) bằng cách đọc `c:/Vibecoding/superapp-monorepo/apps/antigravity-telegram-agent/active_project.json`. Tra cứu cổng (port) và công nghệ tương ứng của dự án đó trong `c:/Vibecoding/superapp-monorepo/apps/antigravity-telegram-agent/config/settings.json`.
-   - Kiểm tra xem cổng cục bộ (port) đó đã có dịch vụ chạy chưa. Nếu chưa hoặc hoạt động không phản hồi, hãy thực hiện dọn dẹp port cũ (dùng `manage_port` hoặc kill port) và tự động khởi động lại (auto-restart) máy chủ phát triển (dev server) dưới dạng tiến trình ngầm (sử dụng PowerShell `Start-Process` để chạy tiến trình ngầm, ví dụ: `Start-Process cmd -ArgumentList "/c npm run dev" -WindowStyle Hidden` trong thư mục của dự án đó).
-   - Khi máy chủ phát triển đã sẵn sàng tại `http://localhost:<port>`, hãy chạy công cụ native `run_visual_audit` với URL `http://localhost:<port>` để thực hiện kiểm thử tự động giao diện (UI/UX integrity audit) trên các thiết bị.
-
-5. BÁO CÁO KẾT QUẢ:
-   - Tổng hợp một báo cáo Markdown chi tiết gửi lại cho User qua Telegram, trình bày rõ: trạng thái log 24h qua, 3 bài học đã được ghi nhận vào `c:/Vibecoding/superapp-monorepo/vaults/lessons_learned.md`, kết quả kiểm tra server và báo cáo Visual Audit chi tiết.
-"""
-
-@bot.message_handler(commands=['kaizen_now'])
-def handle_kaizen_now(message):
-    user_id = message.from_user.id
-    if get_user_role(user_id) not in ["admin", "admin_master", "admin_company"]:
-        bot.reply_to(message, "⛔ Access Denied.")
-        return
-    # Inform the user and execute
-    bot.reply_to(message, "🤖 *Kích hoạt Self-Reflection & Audit* - Đang chạy quy trình tự phân tích & kiểm thử hệ thống...", parse_mode="Markdown")
-    execute_chat_turn(message, KAIZEN_PROMPT)
-
-def run_kaizen_reflection(chat_id):
-    class MockChat:
-        def __init__(self, id):
-            self.id = id
-    class MockMessage:
-        def __init__(self, chat_id, text):
-            self.chat = MockChat(chat_id)
-            self.text = text
-            self.message_id = 0
-            self.from_user = type('obj', (object,), {'id': chat_id})
-    
-    mock_msg = MockMessage(chat_id, KAIZEN_PROMPT)
-    try:
-        bot.send_message(chat_id, "⏰ *Lịch biểu Auto-Kaizen*: Đang tự động kích hoạt Self-Reflection & Audit...", parse_mode="Markdown")
-        execute_chat_turn(mock_msg, KAIZEN_PROMPT)
-    except Exception as e:
-        logger.error(f"Scheduled Kaizen job failed: {e}")
-
-def apply_daily_kaizen_schedule():
-    global bg_scheduler_instance
-    if not bg_scheduler_instance:
-        return
-    s = settings.load_settings()
-    kaizen_time_str = s.get("daily_kaizen_time", "02:00")
-    try:
-        hour, minute = map(int, kaizen_time_str.split(":"))
-    except ValueError:
-        hour, minute = 2, 0
-    try:
-        bg_scheduler_instance.reschedule_job('daily_kaizen_job', trigger='cron', hour=hour, minute=minute)
-        logger.info(f"Daily Kaizen rescheduled to {kaizen_time_str}")
-    except Exception as e:
-        logger.error(f"Failed to reschedule daily Kaizen: {e}")
-
-@bot.message_handler(commands=['schedules'])
-def handle_schedules_command(message):
-    if not bg_scheduler_instance:
-        return bot.reply_to(message, "⚠️ Hệ thống lập lịch chưa được kích hoạt (thiếu ALLOWED_TELEGRAM_USER_ID).")
-    user_id = message.from_user.id
-    if get_user_role(user_id) not in ["admin", "admin_master", "admin_company"]:
-        bot.reply_to(message, "⛔ Access Denied.")
-        return
-    
-    jobs = bg_scheduler_instance.get_jobs()
-    if not jobs:
-        bot.reply_to(message, "Không có lịch hẹn nào đang chạy.")
-        return
-        
-    msg = "🕒 **DANH SÁCH LỊCH HẸN ĐANG CHỜ**:\n"
-    for j in jobs:
-        msg += f"- `{j.id}` | {j.name} | Tiếp theo: {j.next_run_time.strftime('%Y-%m-%d %H:%M:%S') if j.next_run_time else 'N/A'}\n"
-        
-    msg += "\n👉 Gõ `/unschedule <ID>` để hủy lịch."
-    bot.reply_to(message, msg, parse_mode="Markdown")
-
-def apply_autopilot_schedule():
-    global bg_scheduler_instance
-    if not bg_scheduler_instance:
-        return
-        
-    s = settings.load_settings()
-    job_id = "autopilot_job"
-    
-    # Remove existing job if any
-    try:
-        bg_scheduler_instance.remove_job(job_id)
-    except Exception:
-        pass
-        
-    if s.get("autopilot_enabled"):
-        interval_hours = s.get("autopilot_interval_hours", 6)
-        bg_scheduler_instance.add_job(
-            autopilot_tick,
-            'interval',
-            hours=interval_hours,
-            id=job_id,
-            replace_existing=True
-        )
-        logger.info(f"Autopilot job scheduled every {interval_hours} hours.")
-
-def get_settings_markup():
-    s = settings.load_settings()
-    markup = telebot.types.InlineKeyboardMarkup(row_width=4)
-    
-    # 1. Model
-    current_model = s.get("default_ai_model", "deepseek")
-    models = ["deepseek", "gemini", "claude", "nvidia"]
-    model_btns = [telebot.types.InlineKeyboardButton(f"{'✅ ' if current_model == m else ''}{m.capitalize()}", callback_data=f"settings_model_{m}") for m in models]
-    markup.add(*model_btns)
-    
-    # 2. Daily Report
-    current_report = s.get("daily_report_time", "18:00")
-    times = ["08:00", "12:00", "18:00", "22:00"]
-    time_btns = [telebot.types.InlineKeyboardButton(f"{'✅ ' if current_report == t else ''}{t}", callback_data=f"settings_report_{t}") for t in times]
-    markup.add(*time_btns)
-    
-    # 3. Quota, Budget & Goal Limit
-    b = s.get('daily_budget_limit', 1.0)
-    q = s.get('daily_quota_limit', 1000)
-    g = s.get('goal_max_requests', 100)
-    markup.add(
-        telebot.types.InlineKeyboardButton(f"Budget: ${b} ✏️", callback_data="settings_edit_budget"),
-        telebot.types.InlineKeyboardButton(f"Quota: {q} ✏️", callback_data="settings_edit_quota"),
-        telebot.types.InlineKeyboardButton(f"Goal Max: {g} ✏️", callback_data="settings_edit_goal")
-    )
-    
-    # 4. Fallback priority
-    fbo = s.get("fallback_order", ["deepseek", "gemini", "claude", "nvidia"])
-    fbo_str = " ➡️ ".join([m[:2].upper() for m in fbo[:3]])
-    markup.add(telebot.types.InlineKeyboardButton(f"Priority: {fbo_str} ✏️", callback_data="settings_edit_fallback"))
-
-    # 5. Git & Schedules
-    git_on = "🟢 BẬT" if s.get("auto_push_git", True) else "🔴 TẮT"
-    branch = s.get("git_branch", "viet")
-    markup.add(
-        telebot.types.InlineKeyboardButton(f"Auto Git: {git_on}", callback_data="settings_toggle_git"),
-        telebot.types.InlineKeyboardButton(f"Branch: [{branch}] ✏️", callback_data="settings_edit_branch")
-    )
-    markup.add(telebot.types.InlineKeyboardButton("Quản lý Lịch hẹn ⚙️", callback_data="settings_manage_schedules"))
-
-    # 6. Autopilot
-    ap_status = "🟢 BẬT" if s.get("autopilot_enabled") else "🔴 TẮT"
-    markup.add(telebot.types.InlineKeyboardButton(f"Autopilot: {ap_status}", callback_data="settings_toggle_autopilot"))
-    
-    current_interval = s.get("autopilot_interval_hours", 6)
-    intervals = [1, 6, 12, 24]
-    int_btns = [telebot.types.InlineKeyboardButton(f"{'✅ ' if current_interval == i else ''}{i}h", callback_data=f"settings_interval_{i}") for i in intervals]
-    markup.add(*int_btns)
-    
-    return markup
-
-@bot.message_handler(commands=['settings'])
-def handle_settings(message):
-    user_id = message.from_user.id
-    if get_user_role(user_id) not in ["admin", "admin_master", "admin_company"]:
-        bot.reply_to(message, "⛔ Access Denied.")
-        return
-    bot.reply_to(message, "⚙️ **TRUNG TÂM CÀI ĐẶT (SETTINGS)**\n\nBạn có thể điều chỉnh các thiết lập hệ thống ở đây:", parse_mode="Markdown", reply_markup=get_settings_markup())
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith('settings_'))
-def handle_settings_callback(call):
-    user_id = call.from_user.id
-    if get_user_role(user_id) not in ["admin", "admin_master", "admin_company"]:
-        bot.answer_callback_query(call.id, "⛔ Access Denied.")
-        return
-        
-    s = settings.load_settings()
-    data = call.data
-    
-    if data == "settings_toggle_autopilot":
-        s["autopilot_enabled"] = not s.get("autopilot_enabled", False)
-    elif data.startswith("settings_interval_"):
-        s["autopilot_interval_hours"] = int(data.split("_")[-1])
-    elif data.startswith("settings_model_"):
-        s["default_ai_model"] = data.replace("settings_model_", "")
-    elif data.startswith("settings_report_"):
-        s["daily_report_time"] = data.replace("settings_report_", "")
-        # Call apply_daily_report_schedule() which we will define
-    elif data == "settings_toggle_git":
-        s["auto_push_git"] = not s.get("auto_push_git", True)
-    elif data in ["settings_edit_budget", "settings_edit_quota", "settings_edit_fallback", "settings_edit_branch", "settings_edit_goal"]:
-        bot.answer_callback_query(call.id, "Vui lòng nhập giá trị mới:")
-        msg = bot.send_message(call.message.chat.id, f"Đang chờ cấu hình cho {data.split('_')[-1].upper()}... Nhập giá trị mới (nếu fallback thì nhập cách nhau dấu phẩy):")
-        bot.register_next_step_handler(msg, process_settings_input, setting_key=data)
-        return
-    elif data == "settings_manage_schedules":
-        bot.answer_callback_query(call.id)
-        # Call handle_schedules_command logic directly
-        handle_schedules_command(call.message)
-        return
-        
-    settings.save_settings(s)
-    if data.startswith("settings_interval_") or data == "settings_toggle_autopilot":
-        apply_autopilot_schedule()
-    elif data.startswith("settings_report_"):
-        apply_daily_report_schedule()
-    apply_daily_kaizen_schedule()
-        
-    try:
-        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=get_settings_markup())
-        bot.answer_callback_query(call.id, "Đã cập nhật cài đặt!")
-    except Exception as e:
-        bot.answer_callback_query(call.id, "Lỗi khi cập nhật!")
-
-def process_settings_input(message, setting_key):
-    val = message.text.strip()
-    if val.startswith('/'):
-        bot.reply_to(message, "⚠️ Nhập cấu hình bị hủy do phát hiện lệnh mới.")
-        return
-    s = settings.load_settings()
-    try:
-        if setting_key == "settings_edit_budget":
-            s["daily_budget_limit"] = float(val)
-        elif setting_key == "settings_edit_quota":
-            s["daily_quota_limit"] = int(val)
-        elif setting_key == "settings_edit_goal":
-            s["goal_max_requests"] = int(val)
-        elif setting_key == "settings_edit_branch":
-            s["git_branch"] = val
-        elif setting_key == "settings_edit_fallback":
-            parts = [x.strip().lower() for x in val.split(',')]
-            s["fallback_order"] = parts
-        settings.save_settings(s)
-        bot.reply_to(message, f"✅ Đã lưu cấu hình mới. Bấm /settings để xem lại.")
-    except Exception as e:
-        bot.reply_to(message, f"❌ Lỗi định dạng: {e}")
-
-
-
 @bot.message_handler(func=lambda message: True)
 def handle_agent_chat(message):
     user_id = message.from_user.id
@@ -2396,15 +1892,10 @@ def handle_agent_chat(message):
         return
         
     forced = USER_DEFAULT_PROVIDERS.get(user_id)
-    if not forced:
-        forced = settings.load_settings().get("default_ai_model", "deepseek")
-        
     execute_chat_turn(message, user_text, force_provider=forced)
 
 
-
 if __name__ == "__main__":
-
     logger.info("Initializing Antigravity Autonomous Telegram Service...")
     
     # 1. Start the secure WebSocket + Flask server on port 8765
@@ -2414,24 +1905,12 @@ if __name__ == "__main__":
     except Exception as server_err:
         logger.error(f"Could not start Websocket server: {server_err}", exc_info=True)
     
-    # Setup scheduler for daily report and Auto-Kaizen
+    # Setup scheduler for daily report at 18:00
     bg_scheduler = None
     if ALLOWED_USER_ID is not None:
-        primary_id = str(ALLOWED_USER_ID).split(",")[0].strip()
-        s = settings.load_settings()
-        report_time = s.get("daily_report_time", "18:00")
-        kaizen_time = s.get("daily_kaizen_time", "02:00")
-        bg_scheduler = scheduler.setup_scheduler(
-            bot, 
-            primary_id, 
-            report_time_str=report_time, 
-            kaizen_time_str=kaizen_time,
-            kaizen_callback=run_kaizen_reflection
-        )
-        bg_scheduler_instance = bg_scheduler
-        apply_autopilot_schedule()
-        logger.info("Daily report and Auto-Kaizen scheduler setup successfully.")
-        
+        bg_scheduler = scheduler.setup_scheduler(bot, ALLOWED_USER_ID, "18:00")
+        logger.info("Daily report scheduler started successfully.")
+    
     logger.info("Telegram Bot service is listening (Polling)...")
     try:
         bot.infinity_polling()
@@ -2440,5 +1919,3 @@ if __name__ == "__main__":
         if bg_scheduler:
             bg_scheduler.shutdown()
         sys.exit(0)
-
-

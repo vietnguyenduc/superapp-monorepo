@@ -269,6 +269,9 @@ def run_agentic_loop(
     """
     registry = get_registry()
 
+    # Reset failure counts for this new session — prevent cross-task circuit breaker poisoning
+    run_agentic_loop._failure_counts = {}
+
     if force_provider:
         attr_name = force_provider.replace("-", "_")
         try:
@@ -485,8 +488,7 @@ def run_agentic_loop(
                     # ── Consecutive-failure circuit breaker ─────────────────
                     # Track (tool_name, filepath/command) failure count to stop loops
                     failure_key = f"{tool_name}:{args.get('filepath', args.get('command', ''))[:60]}"
-                    if not hasattr(run_agentic_loop, '_failure_counts'):
-                        run_agentic_loop._failure_counts = {}
+                    _fc = getattr(run_agentic_loop, '_failure_counts', {})
 
                     # Build a human-readable step label from actual arg values
                     def _step_label(tname, targs):
