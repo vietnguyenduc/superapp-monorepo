@@ -1,7 +1,7 @@
 {
-    "buildCommand": "npm run build",
+    "buildCommand": "cd ../.. && npx turbo run build --filter=accounting...",
     "outputDirectory": "dist",
-    "installCommand": "npm install",
+    "installCommand": "cd ../.. && npm install",
     "framework": "vite",
     "rewrites": [
         {
