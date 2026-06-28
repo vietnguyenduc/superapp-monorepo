@@ -1,5 +1,5 @@
 {
-    "buildCommand": "cd ../.. && npx turbo run build --filter=cashflow...",
+    "buildCommand": "cd ../.. && npx turbo run build --filter=hr-operation...",
     "outputDirectory": "dist",
     "installCommand": "cd ../.. && npm install",
     "framework": "vite",
