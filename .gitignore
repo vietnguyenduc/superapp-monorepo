@@ -53,3 +53,20 @@ telegram_sessions.json
 core/memory_vault/
 data/
 
+# Agent / AI runtime files (not needed for deployment)
+.agent/
+.agents/
+.openhands/
+conversations/
+screenshots/
+
+# Production env (managed via Vercel dashboard)
+.env.production
+.env.staging
+
+# Aider runtime/cache
+.aider.chat.history.md
+.aider.input.history
+.aider.tags*
+.aider.llm.history
+
