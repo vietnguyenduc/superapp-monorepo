@@ -71,3 +71,10 @@ bash_events/
 .aider.tags*
 .aider.llm.history
 
+super-scraper/
+vaults/
+scratch/
+node_modules/
+.turbo/
+dist/
+dev-apps.log

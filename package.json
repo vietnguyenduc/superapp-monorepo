@@ -4,6 +4,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev --concurrency=16",
+    "dev:apps": "turbo run dev --filter=accounting --filter=admin-portal --filter=cashflow --filter=hr-operation --filter=inventory-operation --filter=operations-portal --filter=sales-operation --concurrency=16",
     "lint": "turbo run lint",
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
