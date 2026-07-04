@@ -78,3 +78,4 @@ node_modules/
 .turbo/
 dist/
 dev-apps.log
+apps/superapp-business-bot/scraper/storage/refined_data/
