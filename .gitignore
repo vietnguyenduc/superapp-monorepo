@@ -59,6 +59,7 @@ data/
 .openhands/
 conversations/
 screenshots/
+bash_events/
 
 # Production env (managed via Vercel dashboard)
 .env.production

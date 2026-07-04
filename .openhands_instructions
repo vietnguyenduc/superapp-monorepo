@@ -1,0 +1,191 @@
+# OpenHands Instructions — InsForge Local Ecosystem
+
+## Core Architecture
+- **Backend**: InsForge Local chạy tại `http://host.docker.internal:7130` qua giao thức MCP
+- **Database**: PostgreSQL local qua InsForge (không dùng Supabase trừ khi được yêu cầu)
+- **Auth**: Sử dụng module Auth của InsForge (JWT-based)
+- **Frontend**: React + TailwindCSS + Vite
+- **Deploy**: Vercel (qua MCP Vercel)
+
+## MCP Servers Available
+- `insforge` — InsForge Local (database, auth, storage)
+- `supabase` — Supabase cloud (chỉ dùng khi cần production)
+- `playwright` — Browser automation & testing
+- `tavily` — Web search
+- `vercel` — Deploy frontend
+- `postgres` — Direct PostgreSQL access
+- `sequential-thinking` — Complex reasoning
+
+## Database Rules
+- LUÔN dùng InsForge MCP để tạo bảng, migration, query
+- Khi tạo schema cho nhiều user: dùng multi-tenant pattern (schema per user hoặc RLS)
+- Tự động tạo migration file khi thay đổi cấu trúc bảng
+- Dùng `insforge db rollback` nếu cần undo thay đổi database
+
+## Agent Behavior
+- Dùng Groq_DeepSeek_R1 cho các task phức tạp (reasoning, architecture, SQL)
+- Dùng Groq_Llama_3.3 cho UI/HTML/Tailwind
+- Khi gặp query SQL phức tạp: spawn sub-agent chuyên trách
+- Tối đa 5 lần retry nếu gặp lỗi, sau đó dừng và báo cáo
+- Luôn xin confirmation trước khi sửa database production
+
+## Git Workflow
+- Branch chính: `viet`
+- Tự động commit sau mỗi tính năng hoàn chỉnh
+- Push lên `origin/viet` sau khi test OK
+
+## Code Style
+- Tiếng Việt cho UI text, documentation
+- Tiếng Anh cho code, variable names, comments
+- Ưu tiên functional components, hooks
+- Dùng TypeScript strict mode
+
+---
+
+## Advanced Automation Patterns (Cách 11-20)
+
+### 11. Multi-Agent Swarm
+- Khi task lớn: tự động chia thành 3 sub-agent:
+  - **Agent 1 (Orchestrator)**: Nhận yêu cầu tiếng Việt, phân tích, điều phối
+  - **Agent 2 (Backend)**: Chuyên gọi InsForge MCP tạo bảng, auth, migration
+  - **Agent 3 (Frontend)**: Chuyên viết UI React/Tailwind, dùng Groq_Llama_3.3
+- Các agent tự phối hợp, chia sẻ context qua file tạm trong `/tmp/`
+
+### 12. Multi-Tenant Schema (20 Users)
+- Khi tạo app cho nhiều user: tự động tạo schema riêng biệt trên Postgres
+- Pattern: `tenant_<user_id>.table_name` hoặc dùng Row Level Security
+- Dữ liệu user A không thể truy cập dữ liệu user B
+- Tự động tạo 20 schema khi khởi tạo project mới
+
+### 13. Database Rollback (Reversible Mappings)
+- Trước mỗi thay đổi database: tạo snapshot/backup
+- Nếu lỗi: gọi `insforge db rollback` để khôi phục trạng thái trước đó
+- Luôn test migration trên bản sao trước khi áp dụng thật
+
+### 14. Row Level Security (RLS) Tự Động
+- Mỗi bảng có dữ liệu user: tự động thêm RLS policy
+- Policy mặc định: `USING (auth.uid() = user_id)`
+- Dùng InsForge MCP để enable RLS và tạo policy
+
+### 15. Visual QA (Tự Động Kiểm Tra Giao Diện)
+- Dùng Playwright MCP để mở browser, chụp ảnh giao diện
+- Tự động phát hiện lỗi: text tràn, layout vỡ, màu sai, thiếu element
+- Nếu có lỗi: tự sửa và chụp lại để xác nhận đã fix
+
+### 16. Auto-Migrations
+- Mỗi lần đổi cấu trúc bảng: tự động tạo file migration
+- Đặt tên: `migrations/<timestamp>_<description>.sql`
+- Migration bao gồm cả `up` và `down` để rollback được
+- Tự động chạy migration khi deploy
+
+### 17. Auth Setup Tự Động
+- Khi user yêu cầu "làm tính năng đăng nhập":
+  1. Gọi InsForge Auth MCP tạo bảng users, sessions
+  2. Tạo form Login/Register với email + password
+  3. Cấu hình JWT token, refresh token
+  4. Thêm middleware bảo vệ route
+  5. Tạo trang profile, forgot password
+
+### 18. InsForge Boilerplate
+- Khi tạo project mới: dùng cấu trúc chuẩn:
+  ```
+  /backend        -> InsForge config + migrations
+  /frontend       -> React + Vite + Tailwind
+  /shared         -> Types, constants
+  ```
+- Không tự ý đổi cấu trúc boilerplate có sẵn
+- Chỉ thêm tính năng mới vào đúng thư mục
+
+### 19. Local Storage Management
+- Dùng InsForge Storage API để lưu file upload
+- Thư mục: `storage/<tenant_id>/<category>/`
+- Tự động resize ảnh trước khi lưu (max 2MB)
+- Tạo signed URL cho phép truy cập file an toàn
+
+### 20. Auto-Generated API Docs (Swagger)
+- Sau khi tạo xong database + API: tự động generate Swagger/OpenAPI docs
+- Docs bằng tiếng Việt, giải thích rõ từng endpoint
+- Lưu vào `/docs/api/` dưới dạng Markdown + OpenAPI JSON
+- Tự động cập nhật docs khi API thay đổi
+
+---
+
+## Operations & Maintenance (Cách 21-30)
+
+### 21. Critique Loop (Kỹ Sư Trưởng Phản Biện)
+- Trước khi ghi code: tự động review code qua verification system
+- Dùng Groq_DeepSeek_R1 để kiểm tra: SQL optimization, security, performance
+- Nếu critic score < 0.7: tự động refine (tối đa 2 lần)
+- Báo cáo rõ những gì đã sửa sau critique
+
+### 22. Self-Healing Backend (Tự Sửa Lỗi Từ Log)
+- Khi app lỗi: tự động đọc file log (`insforge.log`, `app.log`, Docker logs)
+- Phân tích nguyên nhân: sai port, sai config, missing env, connection refused
+- Tự sửa file cấu hình và restart service bị lỗi
+- Nếu không fix được sau 3 lần: báo cáo chi tiết cho user
+
+### 23. Memory (Ghi Nhớ Thói Quen)
+- Ghi nhớ preferences của user qua các session:
+  - UI: dark mode, font Roboto, màu primary
+  - Code: TypeScript strict, functional components
+  - Deploy: Vercel, branch viet
+- Lưu vào `.openhands/memory/` để dùng lại ở session sau
+- Khi bắt đầu project mới: tự động áp dụng preferences đã lưu
+
+### 24. Rate Limit Monitor (Giám Sát Groq)
+- Groq free: giới hạn ~30 requests/phút
+- Nếu gặp lỗi 429 (rate limit): tự động pause 60 giây rồi retry
+- Không bao giờ gửi quá 25 requests trong 1 phút
+- Nếu liên tục bị chặn: tự switch sang DeepSeek_Native làm fallback
+- Script giám sát: `scripts/monitor-groq-usage.ps1`
+
+### 25. Security Scanner (Quét Bảo Mật)
+- Sau mỗi lần viết code kết nối database: tự động kiểm tra:
+  - SQL injection vulnerabilities
+  - Hardcoded credentials
+  - Missing input validation
+  - Thiếu RLS policy
+- Dùng `semgrep` hoặc manual review qua Groq_DeepSeek_R1
+- Báo cáo lỗ hổng kèm cách fix
+
+### 26. Seed Data (Tạo Dữ Liệu Ảo)
+- Khi app mới chưa có data: tự động tạo dữ liệu mẫu
+- 20 user accounts với avatar, profile
+- 100+ records cho mỗi bảng chính
+- Dữ liệu tiếng Việt, thực tế (tên, địa chỉ, số điện thoại Việt Nam)
+- Lưu script seed vào `migrations/seed.sql`
+
+### 27. Git Auto-Push
+- Sau mỗi tính năng hoàn chỉnh + test OK:
+  1. `git add -A`
+  2. `git commit -m "feat: <mô tả tiếng Anh>"`
+  3. `git push origin viet`
+- Commit message format: Conventional Commits
+- Không push nếu test fail hoặc critic score thấp
+
+### 28. Local-to-Cloud Deploy
+- Khi user nói "deploy" hoặc "mang lên mạng":
+  1. Build frontend: `npm run build`
+  2. Deploy lên Vercel qua MCP Vercel
+  3. Deploy backend InsForge config lên cloud (nếu có)
+  4. Verify deploy thành công qua Playwright MCP
+  5. Báo URL cho user
+
+### 29. Auto User Guide (Hướng Dẫn Sử Dụng)
+- Sau khi deploy: tự động tạo `GUIDE.md` bằng tiếng Việt
+- Nội dung:
+  - Cách đăng ký / đăng nhập
+  - Hướng dẫn từng tính năng chính (có ảnh chụp màn hình)
+  - Câu hỏi thường gặp
+  - Thông tin liên hệ hỗ trợ
+- Dùng Playwright MCP để chụp ảnh minh họa
+
+### 30. Autonomous Maintenance (Tự Bảo Trì Định Kỳ)
+- Mỗi tuần (hoặc khi user yêu cầu "bảo trì"):
+  1. Check InsForge version → nếu có update: test rồi nâng cấp
+  2. Check npm packages → `npm outdated` → update an toàn
+  3. Check Docker images → pull latest nếu có
+  4. Chạy full test suite
+  5. Backup database
+  6. Báo cáo tình trạng hệ thống
+- Tự động tạo file `maintenance-report-<date>.md`
