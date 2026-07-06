@@ -2,8 +2,10 @@ name: OpenHands Auto Review
 
 on:
   pull_request:
-    branches: [develop, main]
-    types: [opened, synchronize]
+    branches: [viet, main]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [viet]
 
 jobs:
   code-review:
