@@ -1,11 +1,11 @@
 /**
- * AppSwitcher – thin wrapper around the shared @superapp/ui component.
+ * AppSwitcher – thin wrapper around the shared @repo/ui component.
  *
  * This file exists only to wire up the app's auth context.
  * All URL resolution logic lives in packages/ui/src/AppSwitcher.tsx.
  */
 import React from 'react';
-import { AppSwitcher as SharedAppSwitcher } from '@superapp/ui';
+import { AppSwitcher as SharedAppSwitcher } from '@repo/ui';
 
 /**
  * hr-operation does not use useAuthContext at the switcher level.

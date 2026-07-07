@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@repo/types": "*",
+    "@repo/ui": "*",
     "@superapp/iam": "*",
     "@superapp/shared-utils": "*",
     "lucide-react": "^0.344.0",

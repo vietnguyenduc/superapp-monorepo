@@ -1,11 +1,11 @@
 /**
- * AppSwitcher – thin wrapper around the shared @superapp/ui component.
+ * AppSwitcher – thin wrapper around the shared @repo/ui component.
  *
  * Admin Portal uses the shared AppSwitcher but does NOT show the Admin tile
  * (since the user is already in Admin Portal).
  */
 import React from 'react';
-import { AppSwitcher as SharedAppSwitcher } from '@superapp/ui';
+import { AppSwitcher as SharedAppSwitcher } from '@repo/ui';
 import { useAuthContext } from '@superapp/iam';
 
 const AppSwitcher: React.FC = () => {

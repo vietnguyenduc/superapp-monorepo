@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@repo/types": "*",
+    "@repo/ui": "*",
     "@supabase/supabase-js": "^2.38.0",
     "@superapp/iam": "*",
     "@superapp/shared-utils": "*",

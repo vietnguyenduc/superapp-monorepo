@@ -11,10 +11,11 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
-    "@supabase/supabase-js": "^2.38.0",
-    "@superapp/shared-utils": "*",
-    "@superapp/iam": "*",
     "@repo/types": "*",
+    "@repo/ui": "*",
+    "@supabase/supabase-js": "^2.38.0",
+    "@superapp/iam": "*",
+    "@superapp/shared-utils": "*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^6.26.0"
