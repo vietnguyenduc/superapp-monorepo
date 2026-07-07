@@ -10,6 +10,7 @@ export * from './DataTable';
 export * from './Modal';
 export * from './FormField';
 export * from './AuthProvider';
+export { default as AppSwitcher } from './AppSwitcher';
 
 // Import/Export Components - Shared across all apps
 export * from './import-export';

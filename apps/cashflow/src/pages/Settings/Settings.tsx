@@ -2364,7 +2364,7 @@ const Settings: React.FC = () => {
                   <span className="font-bold">✨ Hợp nhất Phân quyền Trung tâm</span>. Để đảm bảo tính đồng bộ bảo mật, hệ thống khuyến nghị bạn quản lý vai trò tài khoản và phân quyền ứng dụng tập trung tại **Admin Portal**.
                 </div>
                 <a 
-                  href="http://localhost:5173/identity" 
+                  href={`${import.meta.env.VITE_ADMIN_PORTAL_URL || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5173' : 'https://admin.appforyou.xyz')}/identity`} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-1 shrink-0 shadow-md shadow-indigo-500/10"

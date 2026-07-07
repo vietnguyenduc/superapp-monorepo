@@ -1,8 +1,8 @@
 /**
  * AppSwitcher – thin wrapper around the shared @superapp/ui component.
  *
- * This file exists only to wire up the app's auth context.
- * All URL resolution logic lives in packages/ui/src/AppSwitcher.tsx.
+ * Admin Portal uses the shared AppSwitcher but does NOT show the Admin tile
+ * (since the user is already in Admin Portal).
  */
 import React from 'react';
 import { AppSwitcher as SharedAppSwitcher } from '@superapp/ui';

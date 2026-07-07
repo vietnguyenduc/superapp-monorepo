@@ -730,7 +730,7 @@ const SettingsPage: React.FC = () => {
                   
                   <div className="pt-4">
                     <a 
-                      href="http://localhost:5173/identity" 
+                      href={`${import.meta.env.VITE_ADMIN_PORTAL_URL || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5173' : 'https://admin.appforyou.xyz')}/identity`} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-indigo-500/20 transition-all duration-200"
