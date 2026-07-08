@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { Shield, Users, Settings, Database, Activity, LogOut, BookOpen, Menu, X } from 'lucide-react';
 import { AuthProvider, useAuthContext } from '@superapp/iam';
-import AppSwitcher from './components/AppSwitcher';
 import IdentityManagement from './pages/IdentityManagement';
 import ConsolidatedReports from './pages/ConsolidatedReports';
 import DataLifecycle from './pages/DataLifecycle';
@@ -410,8 +409,96 @@ const CompanySelector = () => {
   );
 };
 
-// AppSwitcher is now imported from ./components/AppSwitcher
-// (uses shared @superapp/ui component with environment-aware URL routing)
+const AppSwitcher = () => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [statuses, setStatuses] = React.useState<Record<string, boolean>>({});
+  const { session } = useAuthContext();
+
+  const apps = [
+    { id: 'sales', name: 'Sales & POS', url: import.meta.env.VITE_SALES_APP_URL || 'http://localhost:5176', color: 'bg-orange-100 text-orange-600' },
+    { id: 'inventory', name: 'Inventory', url: import.meta.env.VITE_INVENTORY_APP_URL || 'http://localhost:5175', color: 'bg-emerald-100 text-emerald-600' },
+    { id: 'cashflow', name: 'Cashflow', url: import.meta.env.VITE_CASHFLOW_APP_URL || 'http://localhost:5174', color: 'bg-blue-100 text-blue-600' },
+    { id: 'hr', name: 'HR & Payroll', url: import.meta.env.VITE_HR_APP_URL || 'http://localhost:5177', color: 'bg-pink-100 text-pink-600' },
+    { id: 'accounting', name: 'Accounting', url: import.meta.env.VITE_ACCOUNTING_APP_URL || 'http://localhost:5178', color: 'bg-purple-100 text-purple-600' },
+    { id: 'operations', name: 'Operations', url: import.meta.env.VITE_OPERATIONS_APP_URL || 'http://localhost:3006', color: 'bg-cyan-100 text-cyan-600' }
+  ];
+
+  const getUrlWithSession = (baseUrl: string) => {
+    if (!session) return baseUrl;
+    return `${baseUrl}?access_token=${session.access_token}&refresh_token=${session.refresh_token}`;
+  };
+
+  React.useEffect(() => {
+    // Quick ping to check if the apps are locally reachable
+    // In production, this would hit a real /health endpoint
+    if (isOpen) {
+      apps.forEach(app => {
+        fetch(app.url, { mode: 'no-cors' })
+          .then(() => setStatuses(prev => ({ ...prev, [app.id]: true })))
+          .catch(() => setStatuses(prev => ({ ...prev, [app.id]: false })));
+      });
+    }
+  }, [isOpen]);
+
+  return (
+    <div className="relative">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+        title="App Launcher & Status"
+      >
+        <LayoutGrid className="w-5 h-5" />
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)}></div>
+          <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="font-semibold text-gray-800">App Ecosystem</h3>
+            </div>
+            <div className="p-2 grid grid-cols-1 gap-1">
+              {apps.map(app => (
+                <a 
+                  key={app.id}
+                  href={getUrlWithSession(app.url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors group"
+                >
+                  <div className={`w-10 h-10 rounded-lg ${app.color} flex items-center justify-center font-bold text-lg`}>
+                    {app.name[0]}
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <div className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 flex items-center gap-1">
+                      {app.name}
+                      <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {statuses[app.id] === undefined ? (
+                        <span className="text-xs text-gray-400">Checking status...</span>
+                      ) : statuses[app.id] ? (
+                        <span className="flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-green-500" />
+                          <span className="text-xs text-green-600">Operational</span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          <XCircle className="w-3 h-3 text-red-500" />
+                          <span className="text-xs text-red-600">Offline / Unreachable</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 function App() {
   return (
