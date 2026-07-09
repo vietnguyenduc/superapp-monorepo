@@ -36,7 +36,7 @@ export const APP_DEFINITIONS: AppDefinition[] = [
   {
     id: 'sales',
     name: 'Sales & POS',
-    key: 'sales-operation',
+    key: 'sales',
     devPort: 5176,
     envVar: 'VITE_SALES_APP_URL',
     color: 'bg-orange-100 text-orange-600',
@@ -44,7 +44,7 @@ export const APP_DEFINITIONS: AppDefinition[] = [
   {
     id: 'inventory',
     name: 'Inventory',
-    key: 'inventory-operation',
+    key: 'inventory',
     devPort: 5175,
     envVar: 'VITE_INVENTORY_APP_URL',
     color: 'bg-emerald-100 text-emerald-600',
@@ -60,7 +60,7 @@ export const APP_DEFINITIONS: AppDefinition[] = [
   {
     id: 'hr',
     name: 'HR & Payroll',
-    key: 'hr-operation',
+    key: 'hr',
     devPort: 5177,
     envVar: 'VITE_HR_APP_URL',
     color: 'bg-pink-100 text-pink-600',
@@ -76,7 +76,7 @@ export const APP_DEFINITIONS: AppDefinition[] = [
   {
     id: 'operations',
     name: 'Operations',
-    key: 'operations-portal',
+    key: 'ops',
     devPort: 3006,
     envVar: 'VITE_OPERATIONS_APP_URL',
     color: 'bg-cyan-100 text-cyan-600',
