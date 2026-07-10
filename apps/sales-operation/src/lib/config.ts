@@ -27,7 +27,7 @@ const getEnvVar = (key: string, required = true): string => {
 
 export const config: AppConfig = {
   apiUrl: getEnvVar('VITE_API_URL'),
-  appName: getEnvVar('VITE_APP_NAME', false) || 'Inventory Operation',
+  appName: getEnvVar('VITE_APP_NAME', false) || 'Sales Operation',
   
   supabase: {
     url: getEnvVar('VITE_SUPABASE_URL'),
