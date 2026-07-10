@@ -80,6 +80,7 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
     } else {
       setCompanies([]);
       setSelectedCompanyState(null);
+      setLoading(false);
     }
   }, [session, isTrial]);
 
