@@ -16,7 +16,7 @@ Single source of truth for task tracking, milestones, and decisions.
 
 ## Next Priorities
 
-1. [ ] Review remaining root deploy scripts (`deploy-cashflow.sh`, `deploy-cashflow-vercel.sh`) for reuse
+1. [ ] Review deploy scripts (`scripts/deploy-cashflow.sh`, `scripts/deploy-cashflow-vercel.sh`) for reuse
 2. [ ] Consolidate duplicate documentation across `docs/` root and `apps/cashflow/docs/`
 3. [ ] Verify `supabase/migrations/` are all applied to production DB
 4. [ ] Add automated cleanup guard (e.g. `.gitignore` or pre-commit hook) to prevent temp scripts from being committed
