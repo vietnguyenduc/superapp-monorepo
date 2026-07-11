@@ -288,3 +288,45 @@
 - Nếu IP Tailscale đổi, chạy lại `generate-apps-dashboard.ps1` để cập nhật link.
 - Có thể dùng skill `.devin/skills/superapp-port-forward/SKILL.md` để thực hiện nhanh.
 
+---
+
+## Remote Dev / Tailscale Dashboard Context
+
+> Mục tiêu: Agent phải biết dashboard nào, app nào chạy ở port nào, nằm ở host nào — không đoán mò.
+
+### Hai host
+
+| Host | Vai trò | Tailscale hostname |
+|------|---------|--------------------|
+| Windows (`desktop-u5m9dgp`) | Tailscale daemon, dashboard server, port forwarding, OpenHands launcher | `desktop-u5m9dgp` |
+| WSL2 Ubuntu container | OpenHands agent-server, Vite dev apps, API server | (dùng chung IP Tailscale của Windows) |
+
+### Apps Dashboard
+
+- **URL**: `http://desktop-u5m9dgp:8080/apps-dashboard.html` (hoặc `http://<TAILSCALE_IP>:8080/apps-dashboard.html`)
+- **Chạy từ**: Windows host (KHÔNG phải từ WSL/OpenHands container). Python HTTP server trên port `8080` serve file HTML tĩnh.
+- **Sinh bởi**: `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\generate-apps-dashboard.ps1` (nằm trong project `openhands`, không nằm trong repo này).
+- **Start bởi**: `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\start-all.bat` khi Windows boot.
+- **Mục đích**: Trang duy nhất liệt kê tất cả app đang chạy + status check live. **Mở dashboard này trước** khi cần biết app nào ở port nào.
+
+### App → Port mapping (local dev)
+
+| App | Port | Đường dẫn Vite app |
+|-----|------|---------------------|
+| OpenHands | 3000 | (agent-server, không phải Vite) |
+| Admin Portal | 5173 | `apps/admin-portal` |
+| Cashflow | 5174 | `apps/cashflow` |
+| Inventory Operation | 5175 | `apps/inventory-operation` |
+| Sales Operation | 5176 | `apps/sales-operation` |
+| HR Operation | 5177 | `apps/hr-operation` |
+| Accounting | 5178 | `apps/accounting` |
+| Operations Portal | 3006 | `apps/operations-portal` |
+| API server | 3001 | `packages/api` |
+
+### Lưu ý quan trọng
+
+- Dashboard `apps-dashboard.html` **không nằm trong repo này** — nó nằm trong project `openhands` trên Windows. Đừng tìm nó trong workspace.
+- Tailscale daemon chạy **trên Windows**, không phải trong WSL. WSL container dùng IP Tailscale của Windows host.
+- Từ WSL, truy cập Windows host qua `desktop-u5m9dgp` (Magic DNS) hoặc IP Tailscale.
+- Nếu IP Tailscale đổi, chạy lại `generate-apps-dashboard.ps1` để cập nhật link trên dashboard.
+
