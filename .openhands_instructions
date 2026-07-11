@@ -330,3 +330,45 @@
 - Từ WSL, truy cập Windows host qua `desktop-u5m9dgp` (Magic DNS) hoặc IP Tailscale.
 - Nếu IP Tailscale đổi, chạy lại `generate-apps-dashboard.ps1` để cập nhật link trên dashboard.
 
+### KIẾN TRÚC MẠNG — ĐỪNG NHẦM LẪN
+
+```
+Phone (Tailscale)
+    │
+    ▼ 100.83.x.x = Tailscale IP của Windows (KHÔNG PHẢI IP nội bộ Docker!)
+Windows host (desktop-u5m9dgp)
+    │ ├── Port 8080: Dashboard (Python HTTP server trên Windows)
+    │ ├── Port 3000: OpenHands UI (→ Docker -p 3000:3000)
+    │ └── Port proxy (netsh portproxy): 3006, 5173-5178, 3001 → WSL IP
+    │
+    ▼
+WSL2 Ubuntu
+    │ ├── Vite dev apps (npm run dev:apps) ← DEV SERVER CHẠY Ở ĐÂY
+    │ ├── API server (port 3001)
+    │ └── Docker
+    │       └── openhands-app container (port 3000 mapped)
+    │             └── Sandbox containers (OpenHands sửa code ở đây)
+    │                   └── Nếu Vite chạy ở đây → PORT KHÔNG ĐƯỢC EXPOSE RA WSL/Windows
+```
+
+### NGUYÊN TẮC SỐ 1: Vite dev servers chạy trên WSL, KHÔNG trong sandbox container
+
+- **Vite apps được start bởi `start-all.bat`** (step 4): `wsl -d Ubuntu -- bash -c "cd /home/dev/projects/superapp-monorepo && npm run dev:apps"`.
+- Vite chạy **trực tiếp trên WSL2**, port được forward từ Windows qua `forward-wsl-app-ports.ps1` (netsh portproxy).
+- **KHÔNG start Vite bên trong sandbox container** của OpenHands. Sandbox container là Docker container riêng biệt, port của nó KHÔNG được map ra WSL hay Windows.
+- Nếu bạn chạy `npm run dev` trong sandbox, app sẽ không truy cập được từ Windows/phone/dashboard.
+- **Nhiệm vụ của OpenHands**: sửa code trong sandbox, KHÔNG host dev server. Dev server đã chạy sẵn trên WSL.
+
+### NGUYÊN TẮC SỐ 2: 100.83.x.x là Tailscale IP, không phải IP nội bộ Docker
+
+- `100.83.130.115` là **Tailscale IP** của Windows host (range `100.64.0.0/10` là CGNAT của Tailscale).
+- **KHÔNG PHẢI** IP ảo nội bộ Docker container. Đừng nhầm lẫn.
+- Dashboard trỏ link đến `http://<TAILSCALE_IP>:<PORT>` — đây là URL đúng để truy cập từ phone qua Tailscale.
+- Chain: `Phone → Tailscale IP (Windows) → netsh portproxy → WSL IP → Vite app`.
+
+### NGUYÊN TẮC SỐ 3: Không đổi port Vite
+
+- Dashboard đã hardcode port cho từng app (3006, 5173-5178). Đừng đổi port Vite sang 8011 hay bất kỳ port nào khác.
+- Nếu app không truy cập được, vấn đề là **port forwarding chưa chạy** hoặc **Vite chưa start trên WSL**, không phải sai port.
+- Fix: chạy `run-forward-wsl-ports.bat` trên Windows + đảm bảo `npm run dev:apps` đang chạy trên WSL.
+

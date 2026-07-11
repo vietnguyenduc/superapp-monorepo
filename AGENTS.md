@@ -86,3 +86,45 @@ The user works from anywhere (cafe, mobile, laptop) via **Tailscale**. The dev e
 - Dashboard `apps-dashboard.html` **không nằm trong repo này** — nó nằm trong project `openhands` trên Windows. Đừng tìm nó trong workspace.
 - Nếu IP Tailscale đổi, chạy lại `generate-apps-dashboard.ps1` để cập nhật link.
 - Từ WSL, truy cập Windows host qua `desktop-u5m9dgp` (Magic DNS) hoặc IP Tailscale. Đảm bảo WSL resolve được hostname.
+
+### CRITICAL: Network architecture — do NOT confuse
+
+```
+Phone (Tailscale)
+    │
+    ▼ 100.83.x.x = Tailscale IP of Windows (NOT Docker internal IP!)
+Windows host (desktop-u5m9dgp)
+    │ ├── Port 8080: Dashboard (Python HTTP server on Windows)
+    │ ├── Port 3000: OpenHands UI (→ Docker -p 3000:3000)
+    │ └── Port proxy (netsh portproxy): 3006, 5173-5178, 3001 → WSL IP
+    │
+    ▼
+WSL2 Ubuntu
+    │ ├── Vite dev apps (npm run dev:apps) ← DEV SERVERS RUN HERE
+    │ ├── API server (port 3001)
+    │ └── Docker
+    │       └── openhands-app container (port 3000 mapped)
+    │             └── Sandbox containers (OpenHands edits code here)
+    │                   └── If Vite runs here → PORTS NOT EXPOSED to WSL/Windows
+```
+
+### RULE 1: Vite dev servers run on WSL, NOT inside sandbox containers
+
+- Vite apps are started by `start-all.bat` (step 4): `wsl -d Ubuntu -- bash -c "cd /home/dev/projects/superapp-monorepo && npm run dev:apps"`.
+- Vite runs **directly on WSL2**, ports forwarded from Windows via `forward-wsl-app-ports.ps1` (netsh portproxy).
+- **Do NOT start Vite inside OpenHands sandbox containers.** Sandbox containers are separate Docker containers whose ports are NOT mapped to WSL or Windows.
+- If you run `npm run dev` inside a sandbox, the app will NOT be accessible from Windows/phone/dashboard.
+- **OpenHands job**: edit code in sandbox, do NOT host dev servers. Dev servers already run on WSL.
+
+### RULE 2: 100.83.x.x is Tailscale IP, NOT Docker internal IP
+
+- `100.83.130.115` is the **Tailscale IP** of the Windows host (range `100.64.0.0/10` is Tailscale CGNAT).
+- It is **NOT** a Docker container internal IP. Do not confuse them.
+- Dashboard links point to `http://<TAILSCALE_IP>:<PORT>` — this is the correct URL for phone access via Tailscale.
+- Chain: `Phone → Tailscale IP (Windows) → netsh portproxy → WSL IP → Vite app`.
+
+### RULE 3: Do not change Vite ports
+
+- Dashboard hardcodes ports per app (3006, 5173-5178). Do not change Vite port to 8011 or any other port.
+- If an app is unreachable, the issue is **port forwarding not running** or **Vite not started on WSL**, not wrong port.
+- Fix: run `run-forward-wsl-ports.bat` on Windows + ensure `npm run dev:apps` is running on WSL.
