@@ -189,3 +189,56 @@
   5. Backup database
   6. Báo cáo tình trạng hệ thống
 - Tự động tạo file `maintenance-report-<date>.md`
+
+---
+
+## Superapp Deployment Protocol (Git + Vercel + Browser Verification)
+
+> Mục tiêu: Không bao giờ nói "không truy cập được Vercel" khi `VERCEL_TOKEN` và `GH_TOKEN` đã được inject.
+
+### Environment variables
+- `VERCEL_TOKEN` — đã inject vào agent-server qua `OH_AGENT_SERVER_ENV`.
+- `GH_TOKEN` — đã inject; `gh` CLI dùng token này để push, check hooks, tạo PR.
+- `WORKSPACE_BASE`/`WORKSPACE_MOUNT_PATH` — mount repo `superapp-monorepo`.
+
+### Khi user yêu cầu deploy / redeploy / check Vercel
+1. **Commit + push** (nếu có thay đổi):
+   ```bash
+   cd /workspace/project/*superapp-monorepo
+   git status --short
+   git add <file_cần_thiết>
+   git commit -m "fix: <mô tả>"
+   git push origin viet
+   ```
+2. **Trigger / monitor Vercel deployment**:
+   ```bash
+   # List deployments
+   vercel list --token "$VERCEL_TOKEN" --scope personal sales-operation
+   # Hoặc tạo deployment mới từ build cục bộ
+   cd apps/sales-operation
+   vercel --token "$VERCEL_TOKEN" --prod --yes
+   ```
+3. **Wait for READY**:
+   ```bash
+   vercel list --token "$VERCEL_TOKEN" sales-operation | grep -E "READY|BUILDING|ERROR"
+   ```
+4. **Verify via browser**:
+   ```
+   browser_navigate: { "url": "https://sales.appforyou.xyz/login" }
+   browser_get_state: { "include_screenshot": true }
+   browser_get_content: {}
+   ```
+   - Nếu thấy màn hình đăng nhập / nội dung app → deploy thành công.
+   - Nếu spinner / trắng → đọc console, check Vercel build logs.
+
+### Khi user yêu cầu check GitHub webhook
+- Dùng `gh` CLI với `GH_TOKEN`:
+  ```bash
+  gh api repos/vietnguyenduc/superapp-monorepo/hooks
+  ```
+- Kết quả `[]` là bình thường nếu Vercel dùng GitHub App; không dùng nó để kết luận Vercel mất kết nối.
+
+### Các lỗi sơ đẳng cần tránh
+- Không nói "không có quyền truy cập Vercel" khi `VERCEL_TOKEN` đã tồn tại.
+- Không kết thúc task sau khi push mà chưa verify bằng browser.
+- Không dùng `2>/dev/null` để giấu lỗi khi debug; luôn in stderr để biết root cause.
