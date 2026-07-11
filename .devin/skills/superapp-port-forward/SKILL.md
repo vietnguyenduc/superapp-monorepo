@@ -35,7 +35,9 @@ Use this skill when the user reports mobile/phone cannot access local dev apps v
    - Run `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\run-forward-wsl-ports.bat` (it auto-elevates as admin). This:
      - Forwards `5173-5178, 3001, 3006, 7130` from Windows `0.0.0.0` to WSL2.
      - Adds firewall rules for WSL dev ports, OpenHands (`3000`), and Dashboard (`8080`).
+     - Configures `winnat` dynamic ports to start at `60000` and restarts `winnat` to prevent Docker `ports are not available` errors when OpenHands starts sandbox containers.
    - If the script fails, fall back to `netsh interface portproxy add v4tov4 listenport=<port> listenaddress=0.0.0.0 connectport=<port> connectaddress=<wslIp>` and add a `New-NetFirewallRule` for each missing port.
+   - If OpenHands still fails with `500 ports are not available`, manually restart `winnat`: `Restart-Service -Name winnat` (PowerShell admin) or `net stop winnat && net start winnat`.
 
 3. **Ensure core services are running**
    - **OpenHands (3000)**: check `http://localhost:3000`. If not responding, run `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\start-openhands-wsl.sh` in WSL, or `start-all.bat`.

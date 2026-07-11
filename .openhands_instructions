@@ -261,9 +261,10 @@
    - Nếu rỗng: `tailscale up` hoặc `sc start tailscale` → đợi 5s → retry.
    - Nếu vẫn fail: báo user "Tailscale chưa login trên Windows, cần mở Tailscale app đăng nhập".
 
-2. **Mở port forwarding và firewall**
+2. **Mở port forwarding, firewall và fix winnat**
    - Chạy `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\run-forward-wsl-ports.bat` (script này auto-elevate admin).
-   - Nó forward WSL ports `5173-5178, 3001, 3006, 7130` và mở firewall cho `3000` (OpenHands) + `8080` (dashboard).
+   - Nó forward WSL ports `5173-5178, 3001, 3006, 7130`, mở firewall cho `3000` (OpenHands) + `8080` (dashboard), đồng thời cấu hình `winnat` dynamic port range bắt đầu từ `60000` và restart `winnat` để tránh lỗi Docker `500 ports are not available` khi OpenHands khởi động sandbox container.
+   - Nếu vẫn gặp lỗi `500 ports are not available`, thủ công restart `winnat`: `Restart-Service -Name winnat` (PowerShell admin) hoặc `net stop winnat && net start winnat`.
 
 3. **Khởi động lại service nếu cần**
    - **OpenHands (3000)**: `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\start-openhands-wsl.sh` trong WSL.
