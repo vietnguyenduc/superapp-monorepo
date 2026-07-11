@@ -372,3 +372,19 @@ WSL2 Ubuntu
 - Nếu app không truy cập được, vấn đề là **port forwarding chưa chạy** hoặc **Vite chưa start trên WSL**, không phải sai port.
 - Fix: chạy `run-forward-wsl-ports.bat` trên Windows + đảm bảo `npm run dev:apps` đang chạy trên WSL.
 
+### NGUYÊN TẮC SỐ 4: Làm việc trong /workspace/project/ (repo chính), KHÔNG trong bản sao
+
+- Sandbox mount `/home/dev/projects/superapp-monorepo` → `/workspace/project/`.
+- **LUÔN làm việc trong `/workspace/project/`** — đây là repo chính, code sửa ở đây sẽ được Vite trên WSL pick up qua HMR.
+- **KHÔNG tạo hay sử dụng thư mục `/workspace/project/project/<hash>/superapp-monorepo/`** — đây là bản sao snapshot cũ từ session trước, code sửa ở đó KHÔNG reach được Vite trên WSL.
+- Nếu thấy thư mục `project/<hash>/` tồn tại trong workspace, **xóa nó ngay** (có thể cần chạy `rm -rf` với quyền container user).
+- Kiểm tra: sau khi sửa file, chạy `git diff` trong `/workspace/project/` để xác nhận thay đổi đã ghi xuống repo chính.
+- **KHÔNG chạy `npm run dev` hay `vite` trong sandbox** — dev server đã chạy sẵn trên WSL (qua `start-all.bat`). Chỉ sửa code + commit.
+
+### NGUYÊN TẮC SỐ 5: Port 60xxx là preview tạm, KHÔNG phải deployment
+
+- OpenHands sandbox map port nội bộ ra `localhost:60xxx` (vd `localhost:60865`). Đây là **preview tạm thời**.
+- Khi sandbox chết → port 60xxx biến mất → fix mất.
+- **KHÔNG dùng port 60xxx để verify deployment**. Luôn verify qua `http://<TAILSCALE_IP>:<PORT>` (vd `http://100.83.130.115:3006`).
+- Workflow đúng: sửa code trong `/workspace/project/` → commit → Vite trên WSL tự HMR → verify qua Tailscale IP.
+

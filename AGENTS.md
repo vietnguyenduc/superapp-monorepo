@@ -128,3 +128,19 @@ WSL2 Ubuntu
 - Dashboard hardcodes ports per app (3006, 5173-5178). Do not change Vite port to 8011 or any other port.
 - If an app is unreachable, the issue is **port forwarding not running** or **Vite not started on WSL**, not wrong port.
 - Fix: run `run-forward-wsl-ports.bat` on Windows + ensure `npm run dev:apps` is running on WSL.
+
+### RULE 4: Work in /workspace/project/ (main repo), NOT in snapshot copies
+
+- Sandbox mounts `/home/dev/projects/superapp-monorepo` → `/workspace/project/`.
+- **ALWAYS work in `/workspace/project/`** — this is the main repo. Code changes here are picked up by WSL Vite via HMR.
+- **Do NOT create or use `/workspace/project/project/<hash>/superapp-monorepo/`** — this is an old snapshot copy from a previous session. Code changed there does NOT reach WSL Vite.
+- If you see a `project/<hash>/` directory inside the workspace, **delete it immediately** (may need `rm -rf` with container user permissions).
+- Verify: after editing files, run `git diff` in `/workspace/project/` to confirm changes landed in the main repo.
+- **Do NOT run `npm run dev` or `vite` inside sandbox** — dev servers already run on WSL (via `start-all.bat`). Only edit code + commit.
+
+### RULE 5: Port 60xxx is temporary preview, NOT deployment
+
+- OpenHands sandbox maps internal ports to `localhost:60xxx` (e.g. `localhost:60865`). This is a **temporary preview**.
+- When sandbox dies → port 60xxx disappears → fix is lost.
+- **Do NOT use port 60xxx to verify deployment.** Always verify via `http://<TAILSCALE_IP>:<PORT>` (e.g. `http://100.83.130.115:3006`).
+- Correct workflow: edit code in `/workspace/project/` → commit → WSL Vite auto-HMR → verify via Tailscale IP.

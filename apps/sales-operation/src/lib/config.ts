@@ -26,7 +26,7 @@ const getEnvVar = (key: string, required = true): string => {
 };
 
 export const config: AppConfig = {
-  apiUrl: getEnvVar('VITE_API_URL'),
+  apiUrl: getEnvVar('VITE_API_URL', false),
   appName: getEnvVar('VITE_APP_NAME', false) || 'Sales Operation',
   
   supabase: {
@@ -40,8 +40,8 @@ export const config: AppConfig = {
   
   app: {
     defaultLocale: getEnvVar('VITE_DEFAULT_LOCALE', false) || 'vi-VN',
-    currency: getEnvVar('VITE_CURRENCY', false) || 'VND',
-    timezone: getEnvVar('VITE_TIMEZONE', false) || 'Asia/Ho_Chi_Minh',
+    currency: getEnvVar('VITE_DEFAULT_CURRENCY', false) || 'VND',
+    timezone: getEnvVar('VITE_DEFAULT_TIMEZONE', false) || 'Asia/Ho_Chi_Minh',
   },
 };
 
