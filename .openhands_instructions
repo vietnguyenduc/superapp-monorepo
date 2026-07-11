@@ -242,3 +242,48 @@
 - Không nói "không có quyền truy cập Vercel" khi `VERCEL_TOKEN` đã tồn tại.
 - Không kết thúc task sau khi push mà chưa verify bằng browser.
 - Không dùng `2>/dev/null` để giấu lỗi khi debug; luôn in stderr để biết root cause.
+
+---
+
+## Local Dev Port / Tailscale Self-Healing Protocol
+
+> Mục tiêu: Khi user ở quán cafe dùng điện thoại qua Tailscale bị mất port, agent phải tự mở lại port và verify — không hỏi user "bạn tự mở lại đi".
+
+### Triggers
+
+- User nói: "mở lại port", "Tailscale sập", "điện thoại không vào được", "port mất", "dashboard không mở", "OpenHands unreachable".
+- Bất kỳ URL nào dạng `http://<TAILSCALE_HOST>:<PORT>` trả về lỗi / timeout.
+
+### Workflow
+
+1. **Verify Tailscale trên Windows**
+   - `tailscale ip -4`
+   - Nếu rỗng: `tailscale up` hoặc `sc start tailscale` → đợi 5s → retry.
+   - Nếu vẫn fail: báo user "Tailscale chưa login trên Windows, cần mở Tailscale app đăng nhập".
+
+2. **Mở port forwarding và firewall**
+   - Chạy `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\run-forward-wsl-ports.bat` (script này auto-elevate admin).
+   - Nó forward WSL ports `5173-5178, 3001, 3006, 7130` và mở firewall cho `3000` (OpenHands) + `8080` (dashboard).
+
+3. **Khởi động lại service nếu cần**
+   - **OpenHands (3000)**: `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\start-openhands-wsl.sh` trong WSL.
+   - **Dashboard (8080)**: `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\generate-apps-dashboard.ps1`.
+   - **Vite apps**: `npm run dev:apps` trong `/home/dev/projects/superapp-monorepo`.
+   - **API**: `npm run dev -w packages/api`.
+
+4. **Verify từ Tailscale IP**
+   - `curl -s -o /dev/null -w "%{http_code}" http://<TAILSCALE_IP>:8080`
+   - `curl -s -o /dev/null -w "%{http_code}" http://<TAILSCALE_IP>:3000`
+   - `browser_navigate` đến `http://<TAILSCALE_HOSTNAME>:8080` để xác nhận dashboard mở được.
+
+5. **Báo user URLs**
+   - Dashboard: `http://<TAILSCALE_HOSTNAME>:8080`
+   - OpenHands: `http://<TAILSCALE_HOSTNAME>:3000`
+   - Vite apps: `http://<TAILSCALE_HOSTNAME>:5173` đến `:5178`, `:3006`
+
+### Notes
+
+- Tailscale daemon chạy trên Windows, không phải trong WSL.
+- Nếu IP Tailscale đổi, chạy lại `generate-apps-dashboard.ps1` để cập nhật link.
+- Có thể dùng skill `.devin/skills/superapp-port-forward/SKILL.md` để thực hiện nhanh.
+

@@ -33,3 +33,15 @@ When the user asks to deploy, redeploy, or verify a frontend app:
 
 - Auto-commit and auto-push are fine for small, safe fixes.
 - Ask the user before: force-push, database migration, deleting files, or exposing secrets.
+
+## 6. Port Forwarding / Tailscale Self-Healing
+
+When the user is on mobile and says Tailscale is down, ports are unreachable, or asks to open/reopen ports:
+
+1. Verify Tailscale on Windows: `tailscale ip -4`. If empty, `tailscale up` or `sc start tailscale`.
+2. Run `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\run-forward-wsl-ports.bat` (auto-elevates as admin) to forward WSL ports and open firewall for `3000` (OpenHands) and `8080` (dashboard).
+3. Restart any missing service: OpenHands (`start-openhands-wsl.sh`), dashboard (`generate-apps-dashboard.ps1`), Vite apps (`npm run dev:apps`), API (`npm run dev -w packages/api`).
+4. Verify from the Tailscale IP with `curl` and `browser_navigate`.
+5. Report the live URLs: `http://<TAILSCALE_HOSTNAME>:8080` (dashboard), `http://<TAILSCALE_HOSTNAME>:3000` (OpenHands).
+
+Use the `superapp-port-forward` skill in `.devin/skills/superapp-port-forward/SKILL.md` for the full workflow.
