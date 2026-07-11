@@ -50,7 +50,7 @@ telegram_sessions.json
 *.db
 *.sqlite3
 *.log
-core/memory_vault/
+**/core/memory_vault/
 /data/
 
 # Agent / AI runtime files (not needed for deployment)
