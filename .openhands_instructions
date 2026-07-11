@@ -376,8 +376,9 @@ WSL2 Ubuntu
 
 - Sandbox mount `/home/dev/projects/superapp-monorepo` → `/workspace/project/`.
 - **LUÔN làm việc trong `/workspace/project/`** — đây là repo chính, code sửa ở đây sẽ được Vite trên WSL pick up qua HMR.
-- **KHÔNG tạo hay sử dụng thư mục `/workspace/project/project/<hash>/superapp-monorepo/`** — đây là bản sao snapshot cũ từ session trước, code sửa ở đó KHÔNG reach được Vite trên WSL.
-- Nếu thấy thư mục `project/<hash>/` tồn tại trong workspace, **xóa nó ngay** (có thể cần chạy `rm -rf` với quyền container user).
+- **KHÔNG tạo hay sử dụng thư mục `/workspace/project/project/<hash>/superapp-monorepo/`** — đây là bản sao clone từ GitHub, code sửa ở đó KHÔNG reach được Vite trên WSL.
+- **Lý do OpenHands tạo bản sao**: Khi tạo conversation, nếu chọn "Repository" = `vietnguyenduc/superapp-monorepo`, OpenHands sẽ `git clone` repo vào `/workspace/project/<hash>/superapp-monorepo/`. **KHÔNG chọn repository khi tạo conversation** — để trống, OpenHands sẽ dùng trực tiếp `/workspace/project/` (repo đã mount).
+- Nếu thấy thư mục `project/<hash>/` tồn tại trong workspace, **xóa nó ngay**: `rm -rf /workspace/project/project/`.
 - Kiểm tra: sau khi sửa file, chạy `git diff` trong `/workspace/project/` để xác nhận thay đổi đã ghi xuống repo chính.
 - **KHÔNG chạy `npm run dev` hay `vite` trong sandbox** — dev server đã chạy sẵn trên WSL (qua `start-all.bat`). Chỉ sửa code + commit.
 
@@ -387,4 +388,21 @@ WSL2 Ubuntu
 - Khi sandbox chết → port 60xxx biến mất → fix mất.
 - **KHÔNG dùng port 60xxx để verify deployment**. Luôn verify qua `http://<TAILSCALE_IP>:<PORT>` (vd `http://100.83.130.115:3006`).
 - Workflow đúng: sửa code trong `/workspace/project/` → commit → Vite trên WSL tự HMR → verify qua Tailscale IP.
+
+### NGUYÊN TẮC SỐ 6: Sau mỗi conversation phải git push lên origin/viet
+
+- OpenHands sửa code trực tiếp trong `/workspace/project/` (repo đã mount).
+- **Sau khi hoàn thành task, LUÔN commit + push** lên `origin/viet`:
+  ```bash
+  cd /workspace/project
+  git add -A
+  git commit -m "fix: <mô tả>"
+  git push origin viet
+  ```
+- Điều này đảm bảo:
+  1. Code fix không mất khi sandbox chết.
+  2. WSL Vite có code mới nhất (nếu cần restart).
+  3. Vercel auto-deploy nhận được fix.
+  4. Session sau có code mới nhất.
+- **KHÔNG chỉ commit mà không push** — commit lokal không đủ, cần push lên remote.
 

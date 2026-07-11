@@ -133,8 +133,9 @@ WSL2 Ubuntu
 
 - Sandbox mounts `/home/dev/projects/superapp-monorepo` → `/workspace/project/`.
 - **ALWAYS work in `/workspace/project/`** — this is the main repo. Code changes here are picked up by WSL Vite via HMR.
-- **Do NOT create or use `/workspace/project/project/<hash>/superapp-monorepo/`** — this is an old snapshot copy from a previous session. Code changed there does NOT reach WSL Vite.
-- If you see a `project/<hash>/` directory inside the workspace, **delete it immediately** (may need `rm -rf` with container user permissions).
+- **Do NOT create or use `/workspace/project/project/<hash>/superapp-monorepo/`** — this is a clone from GitHub. Code changed there does NOT reach WSL Vite.
+- **Why OpenHands creates copies**: When creating a conversation, if you select "Repository" = `vietnguyenduc/superapp-monorepo`, OpenHands will `git clone` the repo into `/workspace/project/<hash>/superapp-monorepo/`. **Do NOT select a repository when creating a conversation** — leave it empty, OpenHands will use `/workspace/project/` directly (the mounted repo).
+- If you see a `project/<hash>/` directory inside the workspace, **delete it immediately**: `rm -rf /workspace/project/project/`.
 - Verify: after editing files, run `git diff` in `/workspace/project/` to confirm changes landed in the main repo.
 - **Do NOT run `npm run dev` or `vite` inside sandbox** — dev servers already run on WSL (via `start-all.bat`). Only edit code + commit.
 
@@ -144,3 +145,20 @@ WSL2 Ubuntu
 - When sandbox dies → port 60xxx disappears → fix is lost.
 - **Do NOT use port 60xxx to verify deployment.** Always verify via `http://<TAILSCALE_IP>:<PORT>` (e.g. `http://100.83.130.115:3006`).
 - Correct workflow: edit code in `/workspace/project/` → commit → WSL Vite auto-HMR → verify via Tailscale IP.
+
+### RULE 6: Always git push after completing a task
+
+- OpenHands edits code directly in `/workspace/project/` (mounted repo).
+- **After completing a task, ALWAYS commit + push** to `origin/viet`:
+  ```bash
+  cd /workspace/project
+  git add -A
+  git commit -m "fix: <description>"
+  git push origin viet
+  ```
+- This ensures:
+  1. Code fix survives sandbox death.
+  2. WSL Vite has the latest code (if restart needed).
+  3. Vercel auto-deploy receives the fix.
+  4. Next session starts with latest code.
+- **Do NOT only commit without pushing** — local commit is not enough, must push to remote.
