@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
+// Initialize Supabase client before any component that uses useAuth
+import './lib/supabase';
 
 // Add error handling for root element
 const rootElement = document.getElementById('root');
