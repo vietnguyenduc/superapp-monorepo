@@ -6,5 +6,6 @@ export * from './cleaning';
 export * from './import-export';
 export * from './services/base';
 export * from './app-urls';
+export * from './types';
 
 // Trigger HMR

@@ -11,6 +11,7 @@ export function transformRawCustomer(raw: any, useUuidId = false): any {
     phone: raw.phone || null,
     email: raw.email || null,
     address: raw.address || null,
+    nguoi_dai_dien: raw.nguoi_dai_dien || null,
     opening_balance: raw.opening_balance ?? 0,
     total_balance: raw.total_balance ?? 0,
     created_at: raw.created_at || now,

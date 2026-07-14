@@ -94,6 +94,7 @@ export interface Customer {
   updated_by?: string | null;
   updated_by_email?: string | null;
   partner_type?: string | null; // 'customer' | 'supplier' | 'both'
+  nguoi_dai_dien?: string | null; // Representative / Người đại diện
 }
 
 export interface Transaction {
