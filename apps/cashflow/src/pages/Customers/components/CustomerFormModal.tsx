@@ -16,6 +16,7 @@ interface FormData {
   phone: string;
   address: string;
   working_method: string;
+  nguoi_dai_dien: string;
   is_active: boolean;
   create_transactions: boolean;
 }
@@ -41,6 +42,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     phone: "",
     address: "",
     working_method: "",
+    nguoi_dai_dien: "",
     is_active: true,
     create_transactions: false,
   });
@@ -56,6 +58,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         phone: customer.phone || "",
         address: customer.address || "",
         working_method: customer.working_method || "",
+        nguoi_dai_dien: customer.nguoi_dai_dien || "",
         is_active: customer.is_active,
         create_transactions: false,
       });
@@ -272,6 +275,25 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     }
                     className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     placeholder={t("customers.form.addressPlaceholder")}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="nguoi_dai_dien"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Người đại diện
+                  </label>
+                  <input
+                    type="text"
+                    id="nguoi_dai_dien"
+                    value={formData.nguoi_dai_dien}
+                    onChange={(e) =>
+                      handleInputChange("nguoi_dai_dien", e.target.value)
+                    }
+                    className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    placeholder="Người đại diện"
                   />
                 </div>
 
