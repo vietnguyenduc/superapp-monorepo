@@ -20,6 +20,7 @@ interface RawCustomerData {
   customer_code?: string;
   working_method?: string;
   notes?: string;
+  nguoi_dai_dien?: string;
 }
 
 const INITIAL_SINGLE_CUSTOMER: RawCustomerData = {
@@ -29,6 +30,7 @@ const INITIAL_SINGLE_CUSTOMER: RawCustomerData = {
   address: "",
   customer_code: "",
   notes: "",
+  nguoi_dai_dien: "",
 };
 
 const MAX_BULK_ROWS = 200;
@@ -74,6 +76,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       "address",
       "customer_code",
       "notes",
+      "nguoi_dai_dien",
     ].some((field) => {
       const key = field as keyof RawCustomerData;
       return (singleCustomer[key] || "") !== (INITIAL_SINGLE_CUSTOMER[key] || "");
@@ -823,6 +826,18 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
               onChange={(e) => handleSingleInputChange("address", e.target.value)}
               className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
               placeholder="Địa chỉ"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Người đại diện
+            </label>
+            <input
+              type="text"
+              value={singleCustomer.nguoi_dai_dien ?? ""}
+              onChange={(e) => handleSingleInputChange("nguoi_dai_dien", e.target.value)}
+              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
+              placeholder="Người đại diện"
             />
           </div>
           <div className="sm:col-span-2">
