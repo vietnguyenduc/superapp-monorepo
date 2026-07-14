@@ -199,6 +199,15 @@ const CustomerDetail: React.FC = () => {
                 </div>
               )}
 
+              {customer.nguoi_dai_dien && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Người đại diện
+                  </label>
+                  <p className="text-sm text-gray-900 dark:text-white">{customer.nguoi_dai_dien}</p>
+                </div>
+              )}
+
               <div>
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                   Trạng thái

@@ -202,6 +202,17 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                     </div>
                   )}
 
+                  {customer.nguoi_dai_dien && (
+                    <div>
+                      <dt className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Người đại diện
+                      </dt>
+                      <dd className="mt-0.5 text-xs sm:text-sm text-gray-900 dark:text-gray-100">
+                        {customer.nguoi_dai_dien}
+                      </dd>
+                    </div>
+                  )}
+
                   <div>
                     <dt className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">
                       Trạng thái
