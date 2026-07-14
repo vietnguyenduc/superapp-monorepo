@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../../services/supabase";
-import CompanySwitcher from "./CompanySwitcher";
+import { CompanyBadge } from "@superapp/iam";
 import AppSwitcher from "./AppSwitcher";
 import { useAuthContext } from "@superapp/iam";
 
@@ -116,8 +116,8 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
           <div className="hidden sm:block text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">
             {formatToday()}
           </div>
-          {/* Company Switcher - for admin users */}
-          <CompanySwitcher />
+          {/* Company badge - shows current company context */}
+          <CompanyBadge />
           <AppSwitcher />
           <button
             onClick={handleLanguageChange}

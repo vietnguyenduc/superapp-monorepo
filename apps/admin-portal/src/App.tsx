@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { Shield, Users, Settings, Database, Activity, LogOut, BookOpen, Menu, X } from 'lucide-react';
-import { AuthProvider, useAuthContext } from '@superapp/iam';
+import { AuthProvider, CompanyProvider, CompanyBadge, useAuthContext } from '@superapp/iam';
 import IdentityManagement from './pages/IdentityManagement';
 import ConsolidatedReports from './pages/ConsolidatedReports';
 import DataLifecycle from './pages/DataLifecycle';
@@ -271,6 +271,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
             </h2>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
+            <CompanyBadge allCompaniesLabel="All Companies (Consolidated)" />
             <AppSwitcher />
             <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
             <CompanySelector />
@@ -503,18 +504,20 @@ const AppSwitcher = () => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Navigate to="/reports" replace />} />
-          <Route path="/companies" element={<ProtectedAdminRoute><CompanyManagement /></ProtectedAdminRoute>} />
-          <Route path="/identity" element={<ProtectedAdminRoute><IdentityManagement /></ProtectedAdminRoute>} />
-          <Route path="/reports" element={<ProtectedAdminRoute><ConsolidatedReports /></ProtectedAdminRoute>} />
-          <Route path="/data" element={<ProtectedAdminRoute><DataLifecycle /></ProtectedAdminRoute>} />
-          <Route path="/settings" element={<ProtectedAdminRoute><GlobalSettings /></ProtectedAdminRoute>} />
-          <Route path="/manual" element={<ProtectedAdminRoute><Manual /></ProtectedAdminRoute>} />
-        </Routes>
-      </Router>
+      <CompanyProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<Navigate to="/reports" replace />} />
+            <Route path="/companies" element={<ProtectedAdminRoute><CompanyManagement /></ProtectedAdminRoute>} />
+            <Route path="/identity" element={<ProtectedAdminRoute><IdentityManagement /></ProtectedAdminRoute>} />
+            <Route path="/reports" element={<ProtectedAdminRoute><ConsolidatedReports /></ProtectedAdminRoute>} />
+            <Route path="/data" element={<ProtectedAdminRoute><DataLifecycle /></ProtectedAdminRoute>} />
+            <Route path="/settings" element={<ProtectedAdminRoute><GlobalSettings /></ProtectedAdminRoute>} />
+            <Route path="/manual" element={<ProtectedAdminRoute><Manual /></ProtectedAdminRoute>} />
+          </Routes>
+        </Router>
+      </CompanyProvider>
     </AuthProvider>
   );
 }

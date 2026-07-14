@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { CheckBadgeIcon, DocumentTextIcon, ChatBubbleLeftRightIcon, BeakerIcon, WrenchScrewdriverIcon, ArchiveBoxIcon, PhoneIcon, AcademicCapIcon, BookOpenIcon, Bars3Icon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
+import { CompanyBadge } from '@superapp/iam';
 import Dashboard from './pages/Dashboard';
 import CheckInPage from './pages/CheckInPage';
 import DocumentsPage from './pages/DocumentsPage';
@@ -135,6 +136,7 @@ const App = () => {
             <span className="text-lg font-bold text-slate-800 tracking-tight">Cổng Thông tin <span className="font-medium text-slate-400 ml-2 hidden sm:inline">Vận hành</span></span>
           </div>
           <div className="flex items-center gap-4">
+            <CompanyBadge />
             <AppSwitcher />
           </div>
         </div>

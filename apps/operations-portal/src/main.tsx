@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider, CompanyProvider } from '@superapp/iam';
 import App from './App';
 import './index.css';
 
@@ -18,9 +19,13 @@ try {
   
   root.render(
     <StrictMode>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <AuthProvider>
+        <CompanyProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </CompanyProvider>
+      </AuthProvider>
     </StrictMode>
   );
 } catch (error) {
