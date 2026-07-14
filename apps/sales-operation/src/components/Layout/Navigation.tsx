@@ -1,7 +1,6 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
-import { useAuthContext } from "@superapp/iam";
-import { useCompany } from "@superapp/iam";
+import { useAuthContext, CompanyBadge } from "@superapp/iam";
 import AppSwitcher from "./AppSwitcher";
 
 interface NavigationProps {
@@ -11,10 +10,8 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ onMenuClick }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user, signOut, isTrial } = useAuthContext();
-  const { selectedCompany } = useCompany();
   const navigate = useNavigate();
   const appSwitcherTarget = import.meta.env.VITE_APP_SWITCHER_TARGET;
-  const canSwitchCompany = user?.role === "admin_master" || user?.role === "admin";
 
   const handleSignOut = async () => {
     await signOut();
@@ -62,24 +59,8 @@ const Navigation: React.FC<NavigationProps> = ({ onMenuClick }) => {
 
           {/* Right side - User info and actions */}
           <div className="flex items-center space-x-4">
-            {canSwitchCompany && (
-              <button
-                onClick={() => navigate("/company-selector")}
-                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 px-3 py-2 text-white shadow-sm transition-all duration-200 hover:from-indigo-600 hover:to-purple-700"
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                  />
-                </svg>
-                <span className="hidden sm:inline max-w-[140px] truncate text-sm font-medium">
-                  {selectedCompany?.name || "Chọn công ty"}
-                </span>
-              </button>
-            )}
+            {/* Company badge - shows current company context */}
+            <CompanyBadge />
             <AppSwitcher />
             {user && (
               <div className="relative">

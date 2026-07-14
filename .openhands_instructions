@@ -189,3 +189,220 @@
   5. Backup database
   6. Báo cáo tình trạng hệ thống
 - Tự động tạo file `maintenance-report-<date>.md`
+
+---
+
+## Superapp Deployment Protocol (Git + Vercel + Browser Verification)
+
+> Mục tiêu: Không bao giờ nói "không truy cập được Vercel" khi `VERCEL_TOKEN` và `GH_TOKEN` đã được inject.
+
+### Environment variables
+- `VERCEL_TOKEN` — đã inject vào agent-server qua `OH_AGENT_SERVER_ENV`.
+- `GH_TOKEN` — đã inject; `gh` CLI dùng token này để push, check hooks, tạo PR.
+- `WORKSPACE_BASE`/`WORKSPACE_MOUNT_PATH` — mount repo `superapp-monorepo`.
+
+### Khi user yêu cầu deploy / redeploy / check Vercel
+1. **Commit + push** (nếu có thay đổi):
+   ```bash
+   cd /workspace/project/*superapp-monorepo
+   git status --short
+   git add <file_cần_thiết>
+   git commit -m "fix: <mô tả>"
+   git push origin viet
+   ```
+2. **Trigger / monitor Vercel deployment**:
+   ```bash
+   # List deployments
+   vercel list --token "$VERCEL_TOKEN" --scope personal sales-operation
+   # Hoặc tạo deployment mới từ build cục bộ
+   cd apps/sales-operation
+   vercel --token "$VERCEL_TOKEN" --prod --yes
+   ```
+3. **Wait for READY**:
+   ```bash
+   vercel list --token "$VERCEL_TOKEN" sales-operation | grep -E "READY|BUILDING|ERROR"
+   ```
+4. **Verify via browser**:
+   ```
+   browser_navigate: { "url": "https://sales.appforyou.xyz/login" }
+   browser_get_state: { "include_screenshot": true }
+   browser_get_content: {}
+   ```
+   - Nếu thấy màn hình đăng nhập / nội dung app → deploy thành công.
+   - Nếu spinner / trắng → đọc console, check Vercel build logs.
+
+### Khi user yêu cầu check GitHub webhook
+- Dùng `gh` CLI với `GH_TOKEN`:
+  ```bash
+  gh api repos/vietnguyenduc/superapp-monorepo/hooks
+  ```
+- Kết quả `[]` là bình thường nếu Vercel dùng GitHub App; không dùng nó để kết luận Vercel mất kết nối.
+
+### Các lỗi sơ đẳng cần tránh
+- Không nói "không có quyền truy cập Vercel" khi `VERCEL_TOKEN` đã tồn tại.
+- Không kết thúc task sau khi push mà chưa verify bằng browser.
+- Không dùng `2>/dev/null` để giấu lỗi khi debug; luôn in stderr để biết root cause.
+
+---
+
+## Local Dev Port / Tailscale Self-Healing Protocol
+
+> Mục tiêu: Khi user ở quán cafe dùng điện thoại qua Tailscale bị mất port, agent phải tự mở lại port và verify — không hỏi user "bạn tự mở lại đi".
+
+### Triggers
+
+- User nói: "mở lại port", "Tailscale sập", "điện thoại không vào được", "port mất", "dashboard không mở", "OpenHands unreachable".
+- Bất kỳ URL nào dạng `http://<TAILSCALE_HOST>:<PORT>` trả về lỗi / timeout.
+
+### Workflow
+
+1. **Verify Tailscale trên Windows**
+   - `tailscale ip -4`
+   - Nếu rỗng: `tailscale up` hoặc `sc start tailscale` → đợi 5s → retry.
+   - Nếu vẫn fail: báo user "Tailscale chưa login trên Windows, cần mở Tailscale app đăng nhập".
+
+2. **Mở port forwarding, firewall và fix winnat**
+   - Chạy `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\run-forward-wsl-ports.bat` (script này auto-elevate admin).
+   - Nó forward WSL ports `5173-5178, 3001, 3006, 7130`, mở firewall cho `3000` (OpenHands) + `8080` (dashboard), đồng thời cấu hình `winnat` dynamic port range bắt đầu từ `60000` và restart `winnat` để tránh lỗi Docker `500 ports are not available` khi OpenHands khởi động sandbox container.
+   - Nếu vẫn gặp lỗi `500 ports are not available`, thủ công restart `winnat`: `Restart-Service -Name winnat` (PowerShell admin) hoặc `net stop winnat && net start winnat`.
+
+3. **Khởi động lại service nếu cần**
+   - **OpenHands (3000)**: `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\start-openhands-wsl.sh` trong WSL.
+   - **Dashboard (8080)**: `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\generate-apps-dashboard.ps1`.
+   - **Vite apps**: `npm run dev:apps` trong `/home/dev/projects/superapp-monorepo`.
+   - **API**: `npm run dev -w packages/api`.
+
+4. **Verify từ Tailscale IP**
+   - `curl -s -o /dev/null -w "%{http_code}" http://<TAILSCALE_IP>:8080`
+   - `curl -s -o /dev/null -w "%{http_code}" http://<TAILSCALE_IP>:3000`
+   - `browser_navigate` đến `http://<TAILSCALE_HOSTNAME>:8080` để xác nhận dashboard mở được.
+
+5. **Báo user URLs**
+   - Dashboard: `http://<TAILSCALE_HOSTNAME>:8080`
+   - OpenHands: `http://<TAILSCALE_HOSTNAME>:3000`
+   - Vite apps: `http://<TAILSCALE_HOSTNAME>:5173` đến `:5178`, `:3006`
+
+### Notes
+
+- Tailscale daemon chạy trên Windows, không phải trong WSL.
+- Nếu IP Tailscale đổi, chạy lại `generate-apps-dashboard.ps1` để cập nhật link.
+- Có thể dùng skill `.devin/skills/superapp-port-forward/SKILL.md` để thực hiện nhanh.
+
+---
+
+## Remote Dev / Tailscale Dashboard Context
+
+> Mục tiêu: Agent phải biết dashboard nào, app nào chạy ở port nào, nằm ở host nào — không đoán mò.
+
+### Hai host
+
+| Host | Vai trò | Tailscale hostname |
+|------|---------|--------------------|
+| Windows (`desktop-u5m9dgp`) | Tailscale daemon, dashboard server, port forwarding, OpenHands launcher | `desktop-u5m9dgp` |
+| WSL2 Ubuntu container | OpenHands agent-server, Vite dev apps, API server | (dùng chung IP Tailscale của Windows) |
+
+### Apps Dashboard
+
+- **URL**: `http://desktop-u5m9dgp:8080/apps-dashboard.html` (hoặc `http://<TAILSCALE_IP>:8080/apps-dashboard.html`)
+- **Chạy từ**: Windows host (KHÔNG phải từ WSL/OpenHands container). Python HTTP server trên port `8080` serve file HTML tĩnh.
+- **Sinh bởi**: `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\generate-apps-dashboard.ps1` (nằm trong project `openhands`, không nằm trong repo này).
+- **Start bởi**: `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\start-all.bat` khi Windows boot.
+- **Mục đích**: Trang duy nhất liệt kê tất cả app đang chạy + status check live. **Mở dashboard này trước** khi cần biết app nào ở port nào.
+
+### App → Port mapping (local dev)
+
+| App | Port | Đường dẫn Vite app |
+|-----|------|---------------------|
+| OpenHands | 3000 | (agent-server, không phải Vite) |
+| Admin Portal | 5173 | `apps/admin-portal` |
+| Cashflow | 5174 | `apps/cashflow` |
+| Inventory Operation | 5175 | `apps/inventory-operation` |
+| Sales Operation | 5176 | `apps/sales-operation` |
+| HR Operation | 5177 | `apps/hr-operation` |
+| Accounting | 5178 | `apps/accounting` |
+| Operations Portal | 3006 | `apps/operations-portal` |
+| API server | 3001 | `packages/api` |
+
+### Lưu ý quan trọng
+
+- Dashboard `apps-dashboard.html` **không nằm trong repo này** — nó nằm trong project `openhands` trên Windows. Đừng tìm nó trong workspace.
+- Tailscale daemon chạy **trên Windows**, không phải trong WSL. WSL container dùng IP Tailscale của Windows host.
+- Từ WSL, truy cập Windows host qua `desktop-u5m9dgp` (Magic DNS) hoặc IP Tailscale.
+- Nếu IP Tailscale đổi, chạy lại `generate-apps-dashboard.ps1` để cập nhật link trên dashboard.
+
+### KIẾN TRÚC MẠNG — ĐỪNG NHẦM LẪN
+
+```
+Phone (Tailscale)
+    │
+    ▼ 100.83.x.x = Tailscale IP của Windows (KHÔNG PHẢI IP nội bộ Docker!)
+Windows host (desktop-u5m9dgp)
+    │ ├── Port 8080: Dashboard (Python HTTP server trên Windows)
+    │ ├── Port 3000: OpenHands UI (→ Docker -p 3000:3000)
+    │ └── Port proxy (netsh portproxy): 3006, 5173-5178, 3001 → WSL IP
+    │
+    ▼
+WSL2 Ubuntu
+    │ ├── Vite dev apps (npm run dev:apps) ← DEV SERVER CHẠY Ở ĐÂY
+    │ ├── API server (port 3001)
+    │ └── Docker
+    │       └── openhands-app container (port 3000 mapped)
+    │             └── Sandbox containers (OpenHands sửa code ở đây)
+    │                   └── Nếu Vite chạy ở đây → PORT KHÔNG ĐƯỢC EXPOSE RA WSL/Windows
+```
+
+### NGUYÊN TẮC SỐ 1: Vite dev servers chạy trên WSL, KHÔNG trong sandbox container
+
+- **Vite apps được start bởi `start-all.bat`** (step 4): `wsl -d Ubuntu -- bash -c "cd /home/dev/projects/superapp-monorepo && npm run dev:apps"`.
+- Vite chạy **trực tiếp trên WSL2**, port được forward từ Windows qua `forward-wsl-app-ports.ps1` (netsh portproxy).
+- **KHÔNG start Vite bên trong sandbox container** của OpenHands. Sandbox container là Docker container riêng biệt, port của nó KHÔNG được map ra WSL hay Windows.
+- Nếu bạn chạy `npm run dev` trong sandbox, app sẽ không truy cập được từ Windows/phone/dashboard.
+- **Nhiệm vụ của OpenHands**: sửa code trong sandbox, KHÔNG host dev server. Dev server đã chạy sẵn trên WSL.
+
+### NGUYÊN TẮC SỐ 2: 100.83.x.x là Tailscale IP, không phải IP nội bộ Docker
+
+- `100.83.130.115` là **Tailscale IP** của Windows host (range `100.64.0.0/10` là CGNAT của Tailscale).
+- **KHÔNG PHẢI** IP ảo nội bộ Docker container. Đừng nhầm lẫn.
+- Dashboard trỏ link đến `http://<TAILSCALE_IP>:<PORT>` — đây là URL đúng để truy cập từ phone qua Tailscale.
+- Chain: `Phone → Tailscale IP (Windows) → netsh portproxy → WSL IP → Vite app`.
+
+### NGUYÊN TẮC SỐ 3: Không đổi port Vite
+
+- Dashboard đã hardcode port cho từng app (3006, 5173-5178). Đừng đổi port Vite sang 8011 hay bất kỳ port nào khác.
+- Nếu app không truy cập được, vấn đề là **port forwarding chưa chạy** hoặc **Vite chưa start trên WSL**, không phải sai port.
+- Fix: chạy `run-forward-wsl-ports.bat` trên Windows + đảm bảo `npm run dev:apps` đang chạy trên WSL.
+
+### NGUYÊN TẮC SỐ 4: Làm việc trong /workspace/project/ (repo chính), KHÔNG trong bản sao
+
+- Sandbox mount `/home/dev/projects/superapp-monorepo` → `/workspace/project/`.
+- **LUÔN làm việc trong `/workspace/project/`** — đây là repo chính, code sửa ở đây sẽ được Vite trên WSL pick up qua HMR.
+- **KHÔNG tạo hay sử dụng thư mục `/workspace/project/project/<hash>/superapp-monorepo/`** — đây là bản sao clone từ GitHub, code sửa ở đó KHÔNG reach được Vite trên WSL.
+- **Lý do OpenHands tạo bản sao**: Khi tạo conversation, nếu chọn "Repository" = `vietnguyenduc/superapp-monorepo`, OpenHands sẽ `git clone` repo vào `/workspace/project/<hash>/superapp-monorepo/`. **KHÔNG chọn repository khi tạo conversation** — để trống, OpenHands sẽ dùng trực tiếp `/workspace/project/` (repo đã mount).
+- Nếu thấy thư mục `project/<hash>/` tồn tại trong workspace, **xóa nó ngay**: `rm -rf /workspace/project/project/`.
+- Kiểm tra: sau khi sửa file, chạy `git diff` trong `/workspace/project/` để xác nhận thay đổi đã ghi xuống repo chính.
+- **KHÔNG chạy `npm run dev` hay `vite` trong sandbox** — dev server đã chạy sẵn trên WSL (qua `start-all.bat`). Chỉ sửa code + commit.
+
+### NGUYÊN TẮC SỐ 5: Port 60xxx là preview tạm, KHÔNG phải deployment
+
+- OpenHands sandbox map port nội bộ ra `localhost:60xxx` (vd `localhost:60865`). Đây là **preview tạm thời**.
+- Khi sandbox chết → port 60xxx biến mất → fix mất.
+- **KHÔNG dùng port 60xxx để verify deployment**. Luôn verify qua `http://<TAILSCALE_IP>:<PORT>` (vd `http://100.83.130.115:3006`).
+- Workflow đúng: sửa code trong `/workspace/project/` → commit → Vite trên WSL tự HMR → verify qua Tailscale IP.
+
+### NGUYÊN TẮC SỐ 6: Sau mỗi conversation phải git push lên origin/viet
+
+- OpenHands sửa code trực tiếp trong `/workspace/project/` (repo đã mount).
+- **Sau khi hoàn thành task, LUÔN commit + push** lên `origin/viet`:
+  ```bash
+  cd /workspace/project
+  git add -A
+  git commit -m "fix: <mô tả>"
+  git push origin viet
+  ```
+- Điều này đảm bảo:
+  1. Code fix không mất khi sandbox chết.
+  2. WSL Vite có code mới nhất (nếu cần restart).
+  3. Vercel auto-deploy nhận được fix.
+  4. Session sau có code mới nhất.
+- **KHÔNG chỉ commit mà không push** — commit lokal không đủ, cần push lên remote.
+

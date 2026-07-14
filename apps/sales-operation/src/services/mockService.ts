@@ -264,7 +264,7 @@ export const mockExportService = {
 };
 
 // Environment flag to use mock services
-export const USE_MOCK_SERVICES = process.env.NODE_ENV === 'development' || !process.env.VITE_SUPABASE_URL;
+export const USE_MOCK_SERVICES = import.meta.env.DEV || !import.meta.env.VITE_SUPABASE_URL;
 
 // Export all mock services
 export const mockServices = {

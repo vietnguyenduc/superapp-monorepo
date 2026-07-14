@@ -164,7 +164,7 @@ export const testConnection = async (): Promise<boolean> => {
 
 // Log initialization
 if (import.meta.env.VITE_DEBUG_MODE === 'true') {
-  console.log('🔗 Supabase client initialized for Inventory Operation');
+  console.log('🔗 Supabase client initialized for Sales Operation');
   console.log('📍 Supabase URL:', supabaseUrl);
   console.log('🌍 Environment:', import.meta.env.VITE_APP_ENV || 'development');
   console.log('🔄 Realtime enabled:', import.meta.env.VITE_ENABLE_REALTIME !== 'false');

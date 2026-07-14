@@ -36,7 +36,7 @@ const DebugTestPage: React.FC = () => {
     addTestResult('Bắt đầu kiểm tra debug cơ bản...', 'info');
     
     // Test 1: Environment check
-    addTestResult(`Environment: ${process.env.NODE_ENV || 'development'}`, 'info');
+    addTestResult(`Environment: ${import.meta.env.MODE || 'development'}`, 'info');
     addTestResult(`Using mock services: ${USE_MOCK_SERVICES}`, 'info');
     
     // Test 2: Mock data check

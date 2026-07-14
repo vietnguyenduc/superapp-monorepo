@@ -27,7 +27,31 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
   const [selectedCompany, setSelectedCompanyState] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { session, isTrial } = useAuthContext();
+  const { session, isTrial, user } = useAuthContext();
+
+  /**
+   * Attempt to resolve the user's assigned company from their profile.
+   * This is used as a fallback when the companies table query fails (e.g., due to RLS).
+   */
+  const resolveCompanyFromUser = (): Company | null => {
+    if (!user?.company_id) return null;
+    // user.company is populated by useAuth hook during profile fetch
+    const companyFromProfile = (user as any).company as Company | undefined;
+    if (companyFromProfile) {
+      return companyFromProfile;
+    }
+    // If we have company_id but no resolved company object,
+    // create a minimal placeholder so the badge can still render
+    return {
+      id: user.company_id,
+      name: (user as any).company_name || "",
+      code: "",
+      is_active: true,
+      logo_url: null,
+      created_at: "",
+      updated_at: "",
+    } as Company;
+  };
 
   const fetchCompanies = async () => {
     setLoading(true);
@@ -53,18 +77,47 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
       }
 
       const supabase = getSupabaseClient();
+      let companyList: Company[] = [];
+
+      // Strategy 1: Direct query (works for admin_master — allowed by RLS)
       const { data, error: fetchError } = await supabase
         .from("companies")
         .select("*")
         .eq("is_active", true)
         .order("name");
 
-      if (fetchError) {
+      if (!fetchError && data && data.length > 0) {
+        companyList = data;
+      }
+
+      // Strategy 2: Fallback to RPC for roles where RLS blocks direct query
+      if (companyList.length === 0) {
+        try {
+          const { data: rpcData, error: rpcError } = await supabase
+            .rpc("admin_get_companies");
+
+          if (!rpcError && rpcData && rpcData.length > 0) {
+            companyList = rpcData as Company[];
+          }
+        } catch (rpcErr) {
+          console.warn("RPC admin_get_companies fallback failed:", rpcErr);
+        }
+      }
+
+      // Strategy 3: Extract from user profile as last resort
+      if (companyList.length === 0) {
+        const userCompany = resolveCompanyFromUser();
+        if (userCompany) {
+          companyList = [userCompany];
+        }
+      }
+
+      if (companyList.length === 0 && fetchError) {
         console.error("Error fetching companies:", fetchError);
         setError(fetchError.message);
-      } else {
-        setCompanies(data || []);
       }
+
+      setCompanies(companyList);
     } catch (err) {
       console.error("Error calling Supabase:", err);
       setError(err instanceof Error ? err.message : String(err));
@@ -80,6 +133,7 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
     } else {
       setCompanies([]);
       setSelectedCompanyState(null);
+      setLoading(false);
     }
   }, [session, isTrial]);
 

@@ -63,7 +63,13 @@ export function createSupabaseClient(
 
 export function getSupabaseClient(): SupabaseClient<Database> {
   if (!supabaseInstance) {
-    throw new Error('Supabase client has not been initialized. Call createSupabaseClient first.');
+    // Auto-initialize from Vite env vars if available (lazy init)
+    const url = typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL;
+    const key = typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_ANON_KEY;
+    if (url && key) {
+      return createSupabaseClient(url, key);
+    }
+    throw new Error('Supabase client has not been initialized. Call createSupabaseClient first, or set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY env vars.');
   }
   return supabaseInstance;
 }

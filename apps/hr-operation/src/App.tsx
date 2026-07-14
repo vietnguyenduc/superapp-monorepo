@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { Users, CalendarDays, Clock, FileText, Banknote, ShieldCheck } from 'lucide-react';
+import { AuthProvider, CompanyProvider, CompanyBadge } from '@superapp/iam';
 import EmployeeDirectory from './pages/EmployeeDirectory';
 import ShiftManagement from './pages/ShiftManagement';
 import AttendancePage from './pages/AttendancePage';
@@ -64,47 +65,52 @@ const Sidebar = () => {
 
 const App = () => {
   return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
-        {/* Simple Header */}
-        <header className="bg-white border-b border-slate-200 h-16 fixed top-0 w-full z-10 flex items-center">
-          <div className="w-full px-4 sm:px-6 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-sm">
-                <Users className="w-4 h-4 text-white" />
+    <AuthProvider>
+      <CompanyProvider>
+        <BrowserRouter>
+          <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
+            {/* Simple Header */}
+            <header className="bg-white border-b border-slate-200 h-16 fixed top-0 w-full z-10 flex items-center">
+              <div className="w-full px-4 sm:px-6 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-sm">
+                    <Users className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-lg font-bold text-slate-800 tracking-tight">HR & Payroll <span className="font-medium text-slate-400 ml-2">Operation</span></span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <CompanyBadge />
+                  <AppSwitcher />
+                </div>
               </div>
-              <span className="text-lg font-bold text-slate-800 tracking-tight">HR & Payroll <span className="font-medium text-slate-400 ml-2">Operation</span></span>
+            </header>
+
+            {/* Main Layout */}
+            <div className="flex pt-16 flex-1 h-full">
+              <Sidebar />
+              <main className="flex-1 lg:ml-64 p-6 sm:p-8 pb-20 lg:pb-8">
+                <div className="max-w-6xl mx-auto">
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/employees" replace />} />
+                    <Route path="/employees" element={<EmployeeDirectory />} />
+                    <Route path="/shifts" element={<ShiftManagement />} />
+                    <Route path="/attendance" element={<AttendancePage />} />
+                    <Route path="/leaves" element={<LeaveManagement />} />
+                    <Route path="/payroll" element={<PayrollManagement />} />
+                    <Route path="/performance" element={<PerformanceDashboard />} />
+                    <Route path="/settings" element={<HRSettings />} />
+                    <Route path="/manual" element={<Manual />} />
+                  </Routes>
+                </div>
+              </main>
             </div>
-            <div className="flex items-center gap-4">
-              <AppSwitcher />
-            </div>
+
+            {/* Mobile Bottom Navigation */}
+            <MobileBottomNav />
           </div>
-        </header>
-
-        {/* Main Layout */}
-        <div className="flex pt-16 flex-1 h-full">
-          <Sidebar />
-          <main className="flex-1 lg:ml-64 p-6 sm:p-8 pb-20 lg:pb-8">
-            <div className="max-w-6xl mx-auto">
-              <Routes>
-                <Route path="/" element={<Navigate to="/employees" replace />} />
-                <Route path="/employees" element={<EmployeeDirectory />} />
-                <Route path="/shifts" element={<ShiftManagement />} />
-                <Route path="/attendance" element={<AttendancePage />} />
-                <Route path="/leaves" element={<LeaveManagement />} />
-                <Route path="/payroll" element={<PayrollManagement />} />
-                <Route path="/performance" element={<PerformanceDashboard />} />
-                <Route path="/settings" element={<HRSettings />} />
-                <Route path="/manual" element={<Manual />} />
-              </Routes>
-            </div>
-          </main>
-        </div>
-
-        {/* Mobile Bottom Navigation */}
-        <MobileBottomNav />
-      </div>
-    </BrowserRouter>
+        </BrowserRouter>
+      </CompanyProvider>
+    </AuthProvider>
   );
 };
 
