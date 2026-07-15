@@ -1316,14 +1316,7 @@ function validateCustomerData(data: RawCustomerData[]): {
         value: raw.full_name,
       });
     }
-    if (!row.phone) {
-      errors.push({
-        row: index,
-        column: "phone",
-        message: "Số điện thoại là bắt buộc",
-        value: raw.phone,
-      });
-    } else if (!PHONE_REGEX.test(row.phone)) {
+    if (row.phone && !PHONE_REGEX.test(row.phone)) {
       errors.push({
         row: index,
         column: "phone",
