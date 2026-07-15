@@ -34,6 +34,94 @@
 - Tự động commit sau mỗi tính năng hoàn chỉnh
 - Push lên `origin/viet` sau khi test OK
 
+## Browser Verification Protocol (BẮT BUỘC)
+
+### Nguyên tắc cốt lõi
+**KHÔNG BAO GIỜ báo "task hoàn thành" mà chưa mở URL phù hợp bằng browser tool.**
+
+### QUAN TRỌNG: URL verify phụ thuộc vào Git branch!
+
+| Tình huống | Branch | Vercel làm gì | URL cần verify |
+|-----------|--------|---------------|----------------|
+| Local dev (chưa push) | — | Không gì | `http://<TAILSCALE_IP>:<PORT>` (vd `http://100.83.130.115:5174`) |
+| Push lên `viet` | `viet` | Tạo **preview deployment** | Vercel preview URL (từ `vercel ls`) |
+| Merge vào `main` | `main` | Deploy **production** | `https://<app>.appforyou.xyz` |
+
+**SAI LẦM PHỔ BIẾN: Push lên `viet` rồi verify trên appforyou.xyz → production CHƯA đổi!**
+- Push `viet` → Vercel tạo **preview URL** (vd `https://cashflow-git-viet.vercel.app` hoặc URL tạm khác).
+- Production (appforyou.xyz) chỉ update khi merge `viet` → `main`.
+- Lấy preview URL: `vercel ls --token "$VERCEL_TOKEN" <app-name>` → tìm deployment mới nhất.
+
+### Browser tool fix (OpenHands #14779)
+Nếu browser tool báo "Root CDP client not initialized":
+- Nguyên nhân: agent-server chạy không phải root → Chromium sandbox bật → crash trong Docker
+- Fix đã áp dụng: Dockerfile.agent-server dùng `USER root` → `os.getuid()==0` → `chromium_sandbox=False`
+- Env vars đã bake vào image: `IN_DOCKER=true`, `BROWSER_USE_DISABLE_EXTENSIONS=1`, `CHROME_ARGS=--no-sandbox...`
+- Extensions repo đã pre-clone để tránh timeout download
+- Nếu lỗi tái diễn: rebuild image → `docker build -t openhands-agent-server-with-node:latest -f Dockerfile.agent-server .`
+
+### Local dev URLs (test không cần push)
+| App | URL (Tailscale) | Port |
+|-----|-----------------|------|
+| Admin Portal | http://100.83.130.115:5173 | 5173 |
+| Cashflow | http://100.83.130.115:5174 | 5174 |
+| Inventory | http://100.83.130.115:5175 | 5175 |
+| Sales | http://100.83.130.115:5176 | 5176 |
+| HR | http://100.83.130.115:5177 | 5177 |
+| Accounting | http://100.83.130.115:5178 | 5178 |
+| Operations | http://100.83.130.115:3006 | 3006 |
+
+### Production URLs (CHỈ sau merge vào main)
+| App | URL |
+|-----|-----|
+| Admin Portal | https://admin.appforyou.xyz |
+| Cashflow | https://cashflow.appforyou.xyz |
+| Inventory | https://inventory.appforyou.xyz |
+| Sales | https://sales.appforyou.xyz |
+| HR | https://hr.appforyou.xyz |
+| Accounting | https://accounting.appforyou.xyz |
+| Operations | https://ops.appforyou.xyz |
+
+### Workflow A: Local dev (không push)
+1. Code changes → Vite HMR tự reload trên WSL
+2. `browser_navigate` đến `http://<TAILSCALE_IP>:<PORT>`
+3. Screenshot + verify feature
+4. Báo: "Verified locally at [URL]: [feature] OK"
+
+### Workflow B: Push lên `viet` (preview deployment)
+1. `git push origin viet` → Vercel auto-build preview
+2. `vercel ls --token "$VERCEL_TOKEN" <app-name>` → tìm preview URL mới nhất
+3. `browser_navigate` đến **preview URL** (KHÔNG PHẢI appforyou.xyz!)
+4. Screenshot + verify feature
+5. Báo: "Verified preview at [URL]: [feature] OK"
+6. **KHÔNG báo "production đã update" — nó chưa update cho đến khi merge main.**
+
+### Workflow C: Merge vào `main` (production deployment)
+1. Merge `viet` → `main` → Vercel deploy production
+2. Wait for READY
+3. `browser_navigate` đến `https://<app>.appforyou.xyz`
+4. Screenshot + verify feature
+5. Báo: "Verified production at [URL]: [feature] OK"
+
+### Khi nào KHÔNG cần browser verify
+- Task chỉ sửa file config, không ảnh hưởng UI (vd: `.env`, `vite.config.ts`)
+- Task chỉ sửa backend API, không có UI để check → dùng `curl` thay thế
+- Task chỉ sửa documentation
+
+### Khi browser verify FAIL
+1. Đọc console logs: `browser_get_console_logs`
+2. Đọc network requests: `browser_get_network_requests`
+3. Phân tích lỗi → fix code → push lại → verify lại
+4. **KHÔNG báo "xong" nếu browser vẫn lỗi**
+
+### Audit pass (grep + browser)
+Sau khi làm xong tất cả subtask, thực hiện audit:
+1. `grep -r '<field_name>' apps/<app>/src/` — tìm tất cả file liên quan
+2. Kiểm tra từng file có thay đổi cần thiết chưa
+3. Fix file nào thiếu
+4. **Mở browser verify** từng trang có liên quan (dùng URL phù hợp: local/preview/production)
+5. Báo cáo: "Audit xong. N files checked, M files fixed. Browser verify: OK at [URL]"
+
 ## Code Style
 - Tiếng Việt cho UI text, documentation
 - Tiếng Anh cho code, variable names, comments

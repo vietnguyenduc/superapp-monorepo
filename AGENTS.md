@@ -6,6 +6,78 @@
 - After any deployment, open the live URL with the browser tool and confirm the UI renders.
 - Do not finish a task with "it should work" or "you can check it".
 
+## 1b. BROWSER VERIFICATION IS MANDATORY — not optional
+
+- **Every task that changes UI MUST end with browser verification.**
+- Do NOT report "task completed" without first opening a URL in browser.
+- Use `browser_navigate` → `browser_screenshot` → `browser_get_content` to verify.
+- If the feature is not visible in the browser → the task is NOT done. Fix and retry.
+
+### CRITICAL: Which URL to verify depends on the Git branch
+
+| Scenario | Branch | What Vercel does | URL to verify |
+|----------|--------|------------------|---------------|
+| Local dev (no push) | — | Nothing | `http://<TAILSCALE_IP>:<PORT>` (e.g. `http://100.83.130.115:5174`) |
+| Pushed to `viet` | `viet` | Creates **preview deployment** | Vercel preview URL (from `vercel ls` output) |
+| Merged to `main` | `main` | Deploys to **production** | `https://<app>.appforyou.xyz` |
+
+**DO NOT verify on production URL (appforyou.xyz) after pushing to `viet` — production hasn't changed yet!**
+- After `git push origin viet` → Vercel builds a **preview** deployment → verify the **preview URL**.
+- Production URLs only update when `viet` is merged into `main`.
+- To get the preview URL: `vercel ls --token "$VERCEL_TOKEN" <app-name>` → find the latest deployment URL.
+
+### Local dev URLs (for testing without push)
+| App | Local URL (Tailscale) | Port |
+|-----|----------------------|------|
+| Admin Portal | http://100.83.130.115:5173 | 5173 |
+| Cashflow | http://100.83.130.115:5174 | 5174 |
+| Inventory | http://100.83.130.115:5175 | 5175 |
+| Sales | http://100.83.130.115:5176 | 5176 |
+| HR | http://100.83.130.115:5177 | 5177 |
+| Accounting | http://100.83.130.115:5178 | 5178 |
+| Operations | http://100.83.130.115:3006 | 3006 |
+
+### Production URLs (ONLY after merge to main)
+| App | Production URL |
+|-----|---------------|
+| Admin Portal | https://admin.appforyou.xyz |
+| Cashflow | https://cashflow.appforyou.xyz |
+| Inventory | https://inventory.appforyou.xyz |
+| Sales | https://sales.appforyou.xyz |
+| HR | https://hr.appforyou.xyz |
+| Accounting | https://accounting.appforyou.xyz |
+| Operations | https://ops.appforyou.xyz |
+
+### Verification workflow (choose the right one)
+
+**Scenario A: Local dev only (no push)**
+1. Code changes → Vite HMR auto-reloads on WSL
+2. `browser_navigate` to `http://<TAILSCALE_IP>:<PORT>`
+3. Screenshot + verify feature
+4. Report: "Verified locally at [URL]: [feature] OK"
+
+**Scenario B: Pushed to `viet` (preview deployment)**
+1. `git push origin viet` → Vercel auto-builds preview
+2. `vercel ls --token "$VERCEL_TOKEN" <app-name>` → find latest preview URL
+3. `browser_navigate` to the **preview URL** (NOT appforyou.xyz!)
+4. Screenshot + verify feature
+5. Report: "Verified preview at [URL]: [feature] OK"
+6. **Do NOT claim production is updated — it isn't until merge to main.**
+
+**Scenario C: Merged to `main` (production deployment)**
+1. Merge `viet` → `main` → Vercel deploys to production
+2. Wait for READY
+3. `browser_navigate` to `https://<app>.appforyou.xyz`
+4. Screenshot + verify feature
+5. Report: "Verified production at [URL]: [feature] OK"
+
+### Common excuses that are NOT accepted
+- "I can't access the URL" → Use the correct URL for the scenario (local/preview/production).
+- "Browser tool not available" → It is. Use `browser_navigate`.
+- "The change is backend only" → Still verify: check API response via browser or curl.
+- "Vercel is still building" → Wait for READY, then verify. Don't report done before deploy finishes.
+- "Production URL doesn't show the change" → Of course not, you pushed to `viet` not `main`. Verify the preview URL instead.
+
 ## 2. Git + Vercel workflow
 
 When the user asks to deploy, redeploy, or verify a frontend app:
