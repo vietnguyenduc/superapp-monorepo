@@ -219,6 +219,11 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     ];
 
     const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+
+    // Đổi tên header thành tiếng Việt thân thiện với người dùng
+    XLSX.utils.sheet_add_aoa(worksheet, [
+      ["Họ và tên", "Số điện thoại", "Địa chỉ", "Mã khách hàng", "Cách làm việc công nợ", "Ghi chú", "Người đại diện"],
+    ], { origin: "A1" });
     
     // Đảm bảo cột số điện thoại (B) và mã khách hàng (D) luôn là định dạng Text để không mất số 0 ở đầu
     for (const key in worksheet) {
@@ -1217,32 +1222,50 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
               case "full_name":
               case "name":
               case "customer_name":
+              case "họ và tên":
+              case "họ tên":
+              case "tên khách hàng":
+              case "tên":
                 customerData.full_name = String(value).trim();
                 break;
               case "phone":
               case "telephone":
               case "mobile":
+              case "số điện thoại":
+              case "điện thoại":
+              case "sđt":
                 customerData.phone = String(value).trim();
                 break;
               case "address":
+              case "địa chỉ":
                 customerData.address = String(value).trim();
                 break;
               case "customer_code":
               case "code":
               case "id":
+              case "mã khách hàng":
+              case "mã kh":
+              case "mã":
                 customerData.customer_code = String(value).trim();
                 break;
               case "working_method":
               case "working":
               case "note":
               case "policy":
+              case "cách làm việc công nợ":
+              case "cách làm việc":
+              case "phương thức":
+              case "chính sách công nợ":
                 customerData.working_method = String(value).trim();
                 break;
               case "notes":
+              case "ghi chú":
                 customerData.notes = String(value).trim();
                 break;
               case "nguoi_dai_dien":
               case "representative":
+              case "người đại diện":
+              case "đại diện":
                 customerData.nguoi_dai_dien = String(value).trim();
                 break;
             }
