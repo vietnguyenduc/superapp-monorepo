@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import Button from "../../../components/UI/Button";
 import { format } from "date-fns";
-import { ReportType, ReportFilters as ReportFiltersType } from "../../../types";
+import type { ReportType, ReportFilters as ReportFiltersType } from "../../../types";
 
 interface ReportFiltersProps {
   filters: ReportFiltersType;

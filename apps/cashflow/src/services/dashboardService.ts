@@ -1,7 +1,7 @@
 import { BaseService } from "@superapp/shared-utils";
 import { supabase } from "./supabase";
 import { getTrialMode, trialGet } from "./trialMockStore";
-import { Transaction, TimeRange, Customer } from "../types";
+import type { Transaction, TimeRange, Customer } from "../types";
 
 function getNowIso() {
   return new Date().toISOString();

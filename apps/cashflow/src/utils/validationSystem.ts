@@ -1,4 +1,4 @@
-import { ImportError } from "../types";
+import type { ImportError } from "../types";
 import {
   cleanTransactionType,
   cleanAmount,

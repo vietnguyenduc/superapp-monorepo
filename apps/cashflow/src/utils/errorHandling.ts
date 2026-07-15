@@ -1,12 +1,12 @@
 ﻿import React from "react";
 import type { ImportError } from "../types";
 import {
-  AppError as SharedAppError,
+  type AppError as SharedAppError,
   ERROR_CODES as SharedErrorCodes,
   createError as sharedCreateError,
   isRetryableError as sharedIsRetryableError,
   defaultRetryConfig as sharedDefaultRetryConfig,
-  RetryConfig as SharedRetryConfig,
+  type RetryConfig as SharedRetryConfig,
 } from "@superapp/shared-utils";
 
 // Re-export shared types and functions for backward compatibility

@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import { ApiResponse, PaginatedResponse } from "../types";
+import type { ApiResponse, PaginatedResponse } from "../types";
 // import { API_CONFIG } from '../utils/constants' // Unused for now
 
 // Base API service class

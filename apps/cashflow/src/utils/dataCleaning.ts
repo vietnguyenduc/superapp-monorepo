@@ -1,4 +1,4 @@
-import { TransactionType } from "../types";
+import type { TransactionType } from "../types";
 import {
   trimWhitespaceRule,
   normalizeDatesRule,

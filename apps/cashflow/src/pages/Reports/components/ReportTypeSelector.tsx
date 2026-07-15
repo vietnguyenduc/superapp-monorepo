@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { ReportType } from "../../../types";
+import type { ReportType } from "../../../types";
 
 interface ReportTypeSelectorProps {
   selectedType: ReportType | null;

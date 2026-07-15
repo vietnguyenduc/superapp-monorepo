@@ -338,3 +338,5 @@ export interface EnvironmentConfig {
     googleAnalyticsId?: string;
   };
 }
+
+export type TimeRange = "day" | "week" | "month" | "quarter" | "year";

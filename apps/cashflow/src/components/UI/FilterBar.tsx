@@ -2,7 +2,7 @@ import React from "react";
 import SearchInput from "./SearchInput";
 import DateRangeFilter, { DateRange } from "./DateRangeFilter";
 import TransactionTypeFilter from "./TransactionTypeFilter";
-import { TransactionType } from "../../types";
+import type { TransactionType } from "../../types";
 
 export interface FilterBarProps {
   searchValue: string;
