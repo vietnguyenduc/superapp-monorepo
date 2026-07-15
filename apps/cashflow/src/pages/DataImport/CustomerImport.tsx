@@ -33,7 +33,7 @@ const INITIAL_SINGLE_CUSTOMER: RawCustomerData = {
   nguoi_dai_dien: "",
 };
 
-const MAX_BULK_ROWS = 200;
+const MAX_BULK_ROWS = 2000;
 const PHONE_REGEX = /^[+]?[-0-9 ()]{8,15}$/;
 
 const CustomerImport: React.FC<CustomerImportProps> = ({

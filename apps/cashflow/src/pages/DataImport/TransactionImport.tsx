@@ -162,7 +162,7 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
   );
 };
 
-const MAX_BULK_ROWS = 200;
+const MAX_BULK_ROWS = 2000;
 
 const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   const { t } = useTranslation();
