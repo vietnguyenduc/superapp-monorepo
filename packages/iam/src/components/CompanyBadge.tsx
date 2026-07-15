@@ -40,6 +40,16 @@ const CompanyBadge: React.FC = () => {
 
     if (canSwitch) {
       if (!selectedCompany) {
+        // Ưu tiên khôi phục từ localStorage trước (tránh race condition với
+        // CompanyContext khi effect chạy trong cùng một commit phase)
+        const savedCompanyId = localStorage.getItem("selectedCompanyId");
+        if (savedCompanyId) {
+          const savedCompany = companies.find((c) => c.id === savedCompanyId);
+          if (savedCompany) {
+            setSelectedCompany(savedCompany);
+            return;
+          }
+        }
         setSelectedCompany(companies[0]);
       }
       return;

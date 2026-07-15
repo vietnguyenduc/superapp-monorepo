@@ -103,7 +103,9 @@ const Settings: React.FC = () => {
   const { user } = useAuth();
   const companyId = useCompanyId();
   const navigate = useNavigate();
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem("darkMode") === "true";
+  });
   const [activeTab, setActiveTab] = useState("interface");
   const [activeOpeningSubTab, setActiveOpeningSubTab] = useState<"list" | "file">("list");
   const [autoApproveExternal, setAutoApproveExternal] = useState(() => {
@@ -485,24 +487,18 @@ const Settings: React.FC = () => {
     }
   };
 
-  // Apply dark mode to document
+  // Apply dark mode to document and persist to localStorage
   useEffect(() => {
-    console.log('Dark mode changed to:', darkMode);
-    console.log('Current document classes:', document.documentElement.className);
+    localStorage.setItem("darkMode", String(darkMode));
     if (darkMode) {
       document.documentElement.classList.add('dark');
-      console.log('Added dark class to document');
-      // Force a re-render to ensure styles are applied
       document.body.style.backgroundColor = '#111827';
       document.body.style.color = '#f3f4f6';
     } else {
       document.documentElement.classList.remove('dark');
-      console.log('Removed dark class from document');
-      // Force a re-render to ensure styles are applied
       document.body.style.backgroundColor = '#ffffff';
       document.body.style.color = '#213547';
     }
-    console.log('Dark mode changed:', darkMode);
   }, [darkMode]);
 
   const loadCustomerBalances = useCallback(async () => {
