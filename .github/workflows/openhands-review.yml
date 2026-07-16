@@ -7,6 +7,11 @@ on:
   push:
     branches: [viet]
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   # Job 1: Build + type-check + lint + test — FAILS the workflow if any step fails.
   # This is the required status check for branch protection on `main`.
