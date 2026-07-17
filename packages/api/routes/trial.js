@@ -9,8 +9,8 @@
  */
 
 export default async function trialRoutes(fastify, _opts) {
-  const { pool } = await import("../dist/db.js");
-  const { verifySupabaseToken } = await import("../dist/auth.js");
+  const { pool } = await import("../db.js");
+  const { verifySupabaseToken } = await import("../auth.js");
 
   // ── GET /api/trial/:table ──────────────────────────────────────
   fastify.get("/api/trial/:table", async (request, reply) => {
