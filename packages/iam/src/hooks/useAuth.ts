@@ -139,6 +139,33 @@ export const useAuth = () => {
           refresh_token: refreshToken,
         }).catch(err => console.error("Error setting session from URL:", err));
       }
+
+      // ─── Trial preview mode (from admin Trial Seed Editor) ─────────────
+      // ?trial_preview=true → auto-start trial so admin can preview seed data
+      const trialPreview = urlParams.get("trial_preview");
+      if (trialPreview === "true") {
+        const trial = readTrialFromStorage();
+        if (trial) {
+          // Trial already active — keep it
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+          // Start trial immediately
+          const now = new Date().toISOString();
+          const trialUser = {
+            id: "trial-user",
+            email: "trial@example.com",
+            full_name: "Trial User",
+            role: "admin",
+            company_id: "trial-company",
+            branch_id: "trial-branch",
+            created_at: now,
+            updated_at: now,
+          };
+          localStorage.setItem(TRIAL_STORAGE_KEY, JSON.stringify({ user: trialUser, started_at: now }));
+          window.history.replaceState({}, document.title, window.location.pathname);
+          // Don't set state here — the primary init flow below will pick it up
+        }
+      }
     }
 
     // ─── Primary init: getSession() ─────────────────────────────────────────
