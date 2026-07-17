@@ -51,8 +51,3 @@ create trigger trg_trial_seed_data_updated_at
   before update on trial_seed.data
   for each row
   execute function trial_seed.update_updated_at();
-
--- Expose trial_seed schema to PostgREST REST API
--- (required for Supabase JS client to query trial_seed.data)
-alter role postgres set search_path to public, trial_seed;
-notify pgrst, 'reload schema';
