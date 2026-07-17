@@ -1,10 +1,31 @@
 // Trial mode mock store - in-memory + localStorage-backed seed data
 // This provides a complete offline demo experience without touching Supabase
+//
+// NOTE: When the trial API is reachable, this store will merge API-loaded
+// seed data on top of the hardcoded defaults so that admin-edited trial
+// data flows through to the app automatically.
 
 import { dashboardMockData } from "./mockData";
 
 const TRIAL_STORE_KEY = "cashflow_trial_store";
 const TRIAL_MODE_KEY = "cashflow_trial_mode_enabled";
+const TRIAL_API_FETCHED_KEY = "cashflow_trial_api_fetched";
+
+// API base URL (mirrors trialClient.ts logic)
+const getTrialApiUrl = (): string => {
+  try {
+    const env = (import.meta as any).env;
+    return env?.VITE_TRIAL_API_URL || "http://localhost:3001";
+  } catch {
+    return "http://localhost:3001";
+  }
+};
+
+// Tables this store cares about (subset of all trial tables)
+const STORE_TABLES = [
+  "companies", "branches", "customers", "transactions",
+  "transaction_types", "bank_accounts", "users",
+];
 
 // Seed data for trial mode
 const seedData = {
@@ -149,11 +170,39 @@ export const setTrialMode = (enabled: boolean) => {
       if (saved) {
         store = JSON.parse(saved);
       } else {
-        store = { ...seedData };
+        store = JSON.parse(JSON.stringify(seedData)); // deep clone
         saveStore();
       }
     } catch {
-      store = { ...seedData };
+      store = JSON.parse(JSON.stringify(seedData));
+    }
+    // Try to merge API-loaded seed data (fire-and-forget)
+    tryFetchAndMergeFromApi();
+  }
+};
+
+// ── Background API fetch ──────────────────────────────────────
+
+const tryFetchAndMergeFromApi = async () => {
+  if (typeof window === "undefined") return;
+
+  // Only fetch once per session
+  if (sessionStorage.getItem(TRIAL_API_FETCHED_KEY) === "true") return;
+  sessionStorage.setItem(TRIAL_API_FETCHED_KEY, "true");
+
+  const apiUrl = getTrialApiUrl();
+  for (const table of STORE_TABLES) {
+    try {
+      const res = await fetch(`${apiUrl}/api/trial/${table}`);
+      if (!res.ok) continue;
+      const json = await res.json();
+      const records = json.data || [];
+      if (records.length > 0) {
+        store[table] = records;
+        saveStore();
+      }
+    } catch {
+      // API unavailable — keep hardcoded seed data
     }
   }
 };
@@ -174,10 +223,10 @@ export const getTrialMode = () => {
         if (storeData) {
           store = JSON.parse(storeData);
         } else {
-          store = { ...seedData };
+          store = JSON.parse(JSON.stringify(seedData));
         }
       } catch {
-        store = { ...seedData };
+        store = JSON.parse(JSON.stringify(seedData));
       }
     }
   }

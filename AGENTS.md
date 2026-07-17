@@ -218,6 +218,32 @@ WSL2 Ubuntu
 - **Do NOT use port 60xxx to verify deployment.** Always verify via `http://<TAILSCALE_IP>:<PORT>` (e.g. `http://100.83.130.115:3006`).
 - Correct workflow: edit code in `/workspace/project/` → commit → WSL Vite auto-HMR → verify via Tailscale IP.
 
+## Trial Seed System
+
+### Architecture
+
+```
+trial_seed.data (Supabase table)
+  → API GET /api/trial/:table (packages/api/dist/routes/trial.js)
+    → trialClient.ts (packages/trial-client/src/index.ts + duplicated in each app)
+      → UI components
+```
+
+- **Seed data**: stored in `trial_seed.data` table (schema: `table_name`, `record` jsonb, `sort_order`)
+- **API**: `GET /api/trial/:table` (public), `PUT /api/trial/:table` (admin auth required)
+- **Import script**: `scripts/import-trial-seeds.mjs` — extracts mock data from `trialMockStore.ts`, `trialData.ts`, `trialMockData.ts` and inserts into Supabase
+- **Admin editor**: `/admin/trial-seeds` in admin-portal — grid editor with validation, preview, and "Open in trial" links
+
+### App ↔ Table mapping
+
+See `TRIAL_TABLES` in `packages/trial-client/src/index.ts` for all 30+ tables.
+Admin editor groups tables by app in `APP_TABLES` constant in `apps/admin-portal/src/pages/TrialSeedEditor.tsx`.
+
+### Migration
+
+Run `supabase/migrations/038_trial_seed_data.sql` in Supabase Dashboard SQL Editor first.
+Then run `node scripts/import-trial-seeds.mjs` to populate seed data.
+
 ### RULE 6: Always git push after completing a task
 
 - OpenHands edits code directly in `/workspace/project/` (mounted repo).
