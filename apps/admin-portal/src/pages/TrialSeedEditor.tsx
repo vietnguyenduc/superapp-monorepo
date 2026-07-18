@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { FlaskConical, Save, Eye, Plus, Trash2, Undo2, Check, AlertCircle, X, Search, ExternalLink, Columns } from 'lucide-react';
+import { FlaskConical, Save, Eye, Plus, Trash2, Undo2, Check, AlertCircle, X, Search, ExternalLink, Columns, Upload } from 'lucide-react';
 import { useAuthContext } from '@superapp/iam';
 
 const genId = () => crypto.randomUUID?.()?.slice(0, 8) || Math.random().toString(36).slice(2, 10);
@@ -266,6 +266,9 @@ export default function TrialSeedEditor() {
   const [search, setSearch] = useState('');
   const [side, setSide] = useState(true);
   const [showSchema, setShowSchema] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importErrors, setImportErrors] = useState<string[]>([]);
 
   const avail = useMemo(() => {
     const s = new Set<string>();
@@ -334,6 +337,62 @@ export default function TrialSeedEditor() {
     setSaving(false);
   };
 
+  const handleImport = () => {
+    setImportErrors([]);
+    let data: any[];
+    try {
+      // Support both JSON array and TSV (tab-separated)
+      const trimmed = importText.trim();
+      if (trimmed.startsWith('[')) {
+        data = JSON.parse(trimmed);
+        if (!Array.isArray(data)) throw new Error('Phải là mảng JSON');
+      } else {
+        // TSV: first line = headers, rest = rows
+        const lines = trimmed.split('\n').map((l) => l.trim()).filter(Boolean);
+        if (lines.length < 2) throw new Error('Cần ít nhất header + 1 dòng dữ liệu');
+        const headers = lines[0].split('\t');
+        data = lines.slice(1).map((line) => {
+          const vals = line.split('\t');
+          const obj: Record<string, string> = {};
+          headers.forEach((h, i) => { obj[h.trim()] = vals[i]?.trim() || ''; });
+          return obj;
+        });
+      }
+    } catch (e: any) {
+      setImportErrors(['Lỗi parse: ' + e.message]);
+      return;
+    }
+
+    // Validate & merge
+    const schema = SCHEMA[table] || [];
+    const errors: string[] = [];
+    const valid: Record<string, any>[] = [];
+    data.forEach((item, i) => {
+      // Auto-generate id if missing
+      if (!item.id) item.id = 'imp-' + genId();
+      // Type coercion for schema fields
+      schema.forEach((f) => {
+        if (item[f.name] !== undefined && f.type === 'number') {
+          const n = Number(item[f.name]);
+          if (isNaN(n)) errors.push('Dòng ' + (i + 1) + ': "' + f.name + '" không phải số');
+          else item[f.name] = n;
+        }
+      });
+      valid.push(item);
+    });
+
+    if (errors.length > 0) {
+      setImportErrors(errors);
+      return;
+    }
+
+    setRows((prev) => [...prev, ...valid]);
+    setImportErrors([]);
+    setImportText('');
+    setShowImport(false);
+    setMsg({ ok: true, text: 'Đã thêm ' + valid.length + ' records từ import' });
+  };
+
   const selected = rows.find((r) => r.id === selId);
   const pvUrls: Record<string, string> = {
     Cashflow: import.meta.env.VITE_CASHFLOW_APP_URL || 'http://localhost:5174',
@@ -396,9 +455,64 @@ export default function TrialSeedEditor() {
         </button>
         <button onClick={handleAdd}
           className="flex items-center gap-1 px-3 py-1.5 text-sm bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100">
-          <Plus className="w-3.5 h-3.5" /> Thêm record
+          <Plus className="w-3.5 h-3.5" /> Thêm
+        </button>
+        <button onClick={() => { setShowImport(!showImport); setImportErrors([]); setImportText(''); }}
+          className="flex items-center gap-1 px-3 py-1.5 text-sm bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100">
+          <Upload className="w-3.5 h-3.5" /> Nhập hàng loạt
         </button>
       </div>
+
+      {/* Import panel */}
+      {showImport && (
+        <div className="bg-white border border-emerald-200 rounded-xl overflow-hidden">
+          <div className="bg-emerald-50 px-4 py-2 flex items-center justify-between border-b border-emerald-100">
+            <span className="text-sm font-medium text-emerald-700 flex items-center gap-1.5">
+              <Upload className="w-4 h-4" /> Nhập hàng loạt — {ALL_TBL.find((t) => t.name === table)?.label || table}
+            </span>
+            <button onClick={() => setShowImport(false)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+          </div>
+          <div className="p-4 space-y-3">
+            <p className="text-xs text-gray-500">
+              Paste <strong>JSON array</strong> hoặc <strong>TSV (tab-separated)</strong> từ Excel/Google Sheets.
+              Dòng đầu tiên là tên trường (theo schema bên cạnh).
+            </p>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <textarea value={importText} onChange={(e) => setImportText(e.target.value)}
+                  placeholder={'[' +
+  '\n  {"product_id":"prod-1","product_code":"SP001","product_name":"Bưởi","warehouse":"Kho chính","quantity":100}' +
+  '\n]}'}
+                  className="w-full h-40 px-3 py-2 text-xs font-mono border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  spellCheck={false} />
+              </div>
+              <div className="w-48 shrink-0 bg-gray-50 rounded-lg p-2 text-xs text-gray-500 overflow-y-auto max-h-40">
+                <div className="font-medium text-gray-700 mb-1">Các trường:</div>
+                {(SCHEMA[table] || []).map((f) => (
+                  <div key={f.name} className="flex items-center gap-1">
+                    <span className="font-mono text-indigo-600">{f.name}</span>
+                    <span className="text-gray-400">({f.type})</span>
+                    {f.required && <span className="text-red-400">*</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+            {importErrors.length > 0 && (
+              <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600 space-y-0.5">
+                {importErrors.map((e, i) => <div key={i}>{e}</div>)}
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <button onClick={() => { setImportText(''); setImportErrors([]); }}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">Xoá</button>
+              <button onClick={handleImport} disabled={!importText.trim()}
+                className="px-4 py-1.5 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed">
+                Import
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Schema panel */}
       {showSchema && SCHEMA[table] && (
