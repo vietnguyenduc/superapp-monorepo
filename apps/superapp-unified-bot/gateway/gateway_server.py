@@ -1,12 +1,16 @@
 """
-Insforge Model Gateway - OpenRouter Proxy with Routing Logic
+Insforge Model Gateway - DeepSeek Proxy with Routing Logic
 
-Routes requests to different LLM providers based on task type:
-- code_generation -> deepseek-r1
-- quick_answer -> gpt-4o-mini
-- vision -> claude-3.5-sonnet
-- cheap_batch -> qwen-2.5-coder
-- default -> openrouter/auto
+Routes requests to DeepSeek models based on task type:
+- code_generation -> deepseek-reasoner (R1, strong reasoning)
+- quick_answer -> deepseek-chat (fast, cheap)
+- vision -> deepseek-chat (DeepSeek has no vision model; fallback)
+- cheap_batch -> deepseek-chat
+- architect -> deepseek-reasoner
+- debug -> deepseek-chat
+- default -> deepseek-chat
+
+OpenRouter removed — DeepSeek-only as per user decision (2026-07).
 """
 
 import os
@@ -19,21 +23,20 @@ import httpx
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("insforge-gateway")
 
-app = FastAPI(title="Insforge Model Gateway", version="1.0.0")
+app = FastAPI(title="Insforge Model Gateway", version="2.0.0")
 
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-OPENROUTER_BASE = "https://openrouter.ai/api/v1"
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
-DEEPSEEK_BASE = "https://api.deepseek.com"
+DEEPSEEK_BASE = os.environ.get("DEEPSEEK_BASE", "https://api.deepseek.com")
 
+# Routing table — DeepSeek only (OpenRouter removed)
 ROUTING_TABLE = {
-    "code_generation": "deepseek/deepseek-r1",
-    "quick_answer": "openai/gpt-4o-mini",
-    "vision": "anthropic/claude-3.5-sonnet",
-    "cheap_batch": "qwen/qwen-2.5-coder-32b-instruct",
-    "architect": "deepseek/deepseek-r1",
-    "debug": "qwen/qwen-2.5-coder-32b-instruct",
-    "default": "openrouter/auto",
+    "code_generation": "deepseek-reasoner",
+    "quick_answer": "deepseek-chat",
+    "vision": "deepseek-chat",
+    "cheap_batch": "deepseek-chat",
+    "architect": "deepseek-reasoner",
+    "debug": "deepseek-chat",
+    "default": "deepseek-chat",
 }
 
 
@@ -46,22 +49,24 @@ def resolve_model(model: str) -> str:
 
 
 def get_provider_config(model: str) -> dict:
-    if model.startswith("deepseek/") and DEEPSEEK_API_KEY:
-        return {
-            "base_url": DEEPSEEK_BASE,
-            "api_key": DEEPSEEK_API_KEY,
-            "model": model.replace("deepseek/", ""),
-        }
+    # All models route to DeepSeek now
     return {
-        "base_url": OPENROUTER_BASE,
-        "api_key": OPENROUTER_API_KEY,
+        "base_url": DEEPSEEK_BASE,
+        "api_key": DEEPSEEK_API_KEY,
         "model": model,
     }
 
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "service": "insforge-gateway", "version": "1.0.0"}
+    return {"status": "ok", "service": "insforge-gateway", "version": "2.0.0"}
+
+
+@app.get("/health")
+async def health():
+    if not DEEPSEEK_API_KEY:
+        return {"status": "unhealthy", "error": "DEEPSEEK_API_KEY not set"}
+    return {"status": "healthy", "provider": "deepseek"}
 
 
 @app.get("/v1/models")
@@ -72,9 +77,8 @@ async def list_models():
             {"id": k, "object": "model", "owned_by": "insforge"}
             for k in ROUTING_TABLE.keys()
         ]
-        + [{"id": "openrouter/auto", "object": "model", "owned_by": "openrouter"},
-           {"id": "deepseek/deepseek-chat", "object": "model", "owned_by": "deepseek"},
-           {"id": "deepseek/deepseek-r1", "object": "model", "owned_by": "deepseek"}],
+        + [{"id": "deepseek-chat", "object": "model", "owned_by": "deepseek"},
+           {"id": "deepseek-reasoner", "object": "model", "owned_by": "deepseek"}],
     }
 
 
@@ -92,9 +96,6 @@ async def chat_completions(request: Request):
         "Authorization": f"Bearer {provider['api_key']}",
         "Content-Type": "application/json",
     }
-    if provider["base_url"] == OPENROUTER_BASE:
-        headers["HTTP-Referer"] = "https://insforge.local"
-        headers["X-Title"] = "Insforge Gateway"
 
     stream = body.get("stream", False)
 

@@ -44,7 +44,7 @@ app = FastAPI(title="Insforge DeepWiki", version="1.0.0")
 
 DB_URL = os.environ.get("DB_URL", "postgresql://postgres:postgres@localhost:5432/insforge")
 MONOREPO_PATH = os.environ.get("MONOREPO_PATH", "/workspace")
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+OPENROUTER_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")  # Reuse DeepSeek key (OpenRouter removed)
 
 # File extensions to index
 INDEXABLE_EXTENSIONS = {
@@ -340,19 +340,19 @@ Answer based on the codebase structure above. Be specific about file paths and f
         if not OPENROUTER_API_KEY:
             return {
                 "question": req.question,
-                "answer": "No OPENROUTER_API_KEY set. Here are relevant files:\n" + file_summaries[:2000],
+                "answer": "No DEEPSEEK_API_KEY set. Here are relevant files:\n" + file_summaries[:2000],
                 "context_files": len(rows),
             }
 
         async with httpx.AsyncClient(timeout=60) as client:
             response = await client.post(
-                "https://openrouter.ai/api/v1/chat/completions",
+                "https://api.deepseek.com/chat/completions",
                 headers={
                     "Authorization": f"Bearer {OPENROUTER_API_KEY}",
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": "openrouter/openai/gpt-4o-mini",
+                    "model": "deepseek-chat",
                     "messages": [
                         {"role": "system", "content": "You are a codebase analysis assistant. Answer concisely."},
                         {"role": "user", "content": context},
