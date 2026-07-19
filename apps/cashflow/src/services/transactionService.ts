@@ -1,5 +1,5 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase } from "./supabase";
+import { supabase , apiClient} from "./supabase";
 import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 import { validateTransactionData, transformRawTransaction } from "./businessLogic";
 import { v4 as uuid } from "uuid";
@@ -159,7 +159,7 @@ export class TransactionService extends BaseService {
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
         
         const transformed = transformRawTransaction(transactionData, true);
-        const { data, error } = await supabase.from("transactions").insert(transformed as any).select().single();
+        const { data, error } = await apiClient.from("transactions").insert(transformed as any).select().single();
         return { data, error };
       },
       async () => {
@@ -180,7 +180,7 @@ export class TransactionService extends BaseService {
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
         
         const transformed = transformRawTransaction(transactionData, true);
-        const { data, error } = await supabase.from("transactions").update(transformed as any).eq("id", id).select().single();
+        const { data, error } = await apiClient.from("transactions").update(transformed as any).eq("id", id).select().single();
         return { data, error };
       },
       async () => {
@@ -197,7 +197,7 @@ export class TransactionService extends BaseService {
   static async deleteTransaction(id: string) {
     return this.execute(
       async () => {
-        const { error } = await supabase.from("transactions").delete().eq("id", id);
+        const { error } = await apiClient.from("transactions").delete().eq("id", id);
         return { data: null, error };
       },
       async () => {
@@ -214,13 +214,13 @@ export class TransactionService extends BaseService {
         const raw = Array.isArray(rawData) ? rawData : [];
         const now = getNowIso();
 
-        const { data: validTypes, error: typeErr } = await supabase.from("transaction_types").select("id, name").eq("is_active", true);
+        const { data: validTypes, error: typeErr } = await apiClient.from("transaction_types").select("id, name").eq("is_active", true);
         if (typeErr || !validTypes?.length) return { data: null, error: { message: "Failed to fetch transaction types" } };
 
         const validTypeNames = new Set(validTypes.map((t: any) => t.name.toLowerCase()));
         
         let customerMap: Record<string, string> = {};
-        const { data: customers } = await supabase.from('customers').select('id, customer_code');
+        const { data: customers } = await apiClient.from('customers').select('id, customer_code');
         if (customers) {
           customerMap = customers.reduce((acc, c) => {
             if (c.customer_code) acc[c.customer_code.toLowerCase().trim()] = c.id;
@@ -261,7 +261,7 @@ export class TransactionService extends BaseService {
           };
         });
 
-        const { data, error } = await supabase.from("transactions").insert(body as any).select();
+        const { data, error } = await apiClient.from("transactions").insert(body as any).select();
         return { data: data || [], error };
       },
       async () => {

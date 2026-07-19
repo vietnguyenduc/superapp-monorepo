@@ -1,10 +1,10 @@
-import { supabase } from './supabase';
+import { supabase , apiClient} from "./supabase";
 import type { TablesUpdate } from '../types/database.types';
 
 // RBAC user service for Settings
 export const userService = {
   async getUsers(branchId?: string) {
-    let query = supabase.from('users').select('*');
+    let query = apiClient.from('users').select('*');
     if (branchId) {
       query = query.eq('branch_id', branchId);
     }

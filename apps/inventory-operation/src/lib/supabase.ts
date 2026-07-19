@@ -1,3 +1,4 @@
+import { apiClient as _rawApiClient, configureApiClient as _configureApiClient } from "@superapp/shared-utils";
 import { createSupabaseClient as createSharedClient } from '@superapp/shared-utils';
 import { createClient } from '@supabase/supabase-js';
 
@@ -179,3 +180,19 @@ export const handleSupabaseSuccess = <T>(data: T) => {
 };
 
 export default supabase;
+
+// ── InsForge apiClient (drop-in for supabase.from() / supabase.rpc()) ──────
+// Data operations route through the InsForge API server instead of Supabase cloud.
+// Auth (supabase.auth.*) stays on Supabase. Only .from() and .rpc() move to apiClient.
+_configureApiClient({
+  tokenGetter: async () => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      return data.session?.access_token || null;
+    } catch {
+      return null;
+    }
+  },
+});
+export const apiClient = _rawApiClient;
+// ── End InsForge apiClient ─────────────────────────────────────────────────

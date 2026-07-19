@@ -8,7 +8,12 @@ RUN pip install --no-cache-dir \
     asyncpg==0.29.0 \
     httpx==0.25.2 \
     tiktoken==0.5.2 \
-    pydantic==2.5.2
+    pydantic==2.5.2 \
+    fastembed==0.8.0
+
+# Pre-download the embedding model at build time so the first /embed call
+# doesn't have to fetch it over the network (and works offline afterward).
+RUN python -c "from fastembed import TextEmbedding; TextEmbedding(model_name='BAAI/bge-small-en-v1.5')"
 
 COPY deepwiki_server.py /app/
 

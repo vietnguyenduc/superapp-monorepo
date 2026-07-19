@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../services/supabase';
+import { supabase , apiClient} from "../../services/supabase";
 import { useAuthContext } from '@superapp/iam';
 import { FiEdit2, FiTrash2, FiPlus, FiX, FiCheck } from 'react-icons/fi';
 import { format } from 'date-fns';
@@ -174,7 +174,7 @@ const Transactions: React.FC = () => {
         if (updateError) throw updateError;
         
         // Delete old lines (simplest way to handle line updates)
-        await supabase.from('accounting_transaction_lines').delete().eq('transaction_id', editingTx.id);
+        await apiClient.from('accounting_transaction_lines').delete().eq('transaction_id', editingTx.id);
       } else {
         // Insert transaction
         const { data, error: insertError } = await supabase
@@ -214,7 +214,7 @@ const Transactions: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa chứng từ này?')) return;
     try {
-      const { error } = await supabase.from('accounting_transactions').delete().eq('id', id);
+      const { error } = await apiClient.from('accounting_transactions').delete().eq('id', id);
       if (error) throw error;
       loadData();
     } catch (err) {
@@ -226,7 +226,7 @@ const Transactions: React.FC = () => {
   const handlePost = async (id: string) => {
     if (!window.confirm('Ghi sổ chứng từ này? Sau khi ghi sổ sẽ không thể sửa xóa.')) return;
     try {
-      const { error } = await supabase.from('accounting_transactions').update({ status: 'POSTED' }).eq('id', id);
+      const { error } = await apiClient.from('accounting_transactions').update({ status: 'POSTED' }).eq('id', id);
       if (error) throw error;
       loadData();
     } catch (err) {

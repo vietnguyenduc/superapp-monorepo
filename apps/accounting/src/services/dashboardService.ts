@@ -1,5 +1,5 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase } from "./supabase";
+import { supabase , apiClient} from "./supabase";
 import { getTrialMode, trialGet } from "./trialMockStore";
 import { Transaction, TimeRange, Customer } from "../types";
 
@@ -282,10 +282,10 @@ export class DashboardService extends BaseService {
     }
 
     const [txResult, custResult, bankResult, branchResult] = await Promise.all([
-      supabase.from("transactions").select("*").order("transaction_date", { ascending: false }),
-      supabase.from("customers").select("*"),
-      supabase.from("bank_accounts").select("*"),
-      supabase.from("branches").select("id, name"),
+      apiClient.from("transactions").select("*").order("transaction_date", { ascending: false }),
+      apiClient.from("customers").select("*"),
+      apiClient.from("bank_accounts").select("*"),
+      apiClient.from("branches").select("id, name"),
     ]);
 
     const transactionsAll: Transaction[] = (txResult.data || []) as Transaction[];
@@ -448,8 +448,8 @@ export class DashboardService extends BaseService {
     }
 
     const [txResult, branchResult] = await Promise.all([
-      supabase.from("transactions").select("*").order("transaction_date", { ascending: false }),
-      supabase.from("branches").select("id, name"),
+      apiClient.from("transactions").select("*").order("transaction_date", { ascending: false }),
+      apiClient.from("branches").select("id, name"),
     ]);
 
     const transactionsAll: Transaction[] = (txResult.data || []) as Transaction[];

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../services/supabase';
+import { supabase , apiClient} from "../../services/supabase";
 import { useAuthContext } from '@superapp/iam';
 import { FiPlus, FiX, FiCheck, FiTrash2, FiInfo, FiFileText, FiSend } from 'react-icons/fi';
 import { format } from 'date-fns';
@@ -136,7 +136,7 @@ const Invoices: React.FC = () => {
   const handleApprove = async (id: string) => {
     if (!window.confirm('Duyệt hóa đơn này? Nếu ở Chế độ Kế toán, bút toán sẽ tự động được sinh ra.')) return;
     try {
-      const { error } = await supabase.from('accounting_invoices').update({ status: 'APPROVED' }).eq('id', id);
+      const { error } = await apiClient.from('accounting_invoices').update({ status: 'APPROVED' }).eq('id', id);
       if (error) throw error;
       loadData();
       alert('Đã duyệt thành công!');
@@ -149,7 +149,7 @@ const Invoices: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!window.confirm('Xóa hóa đơn bản nháp này?')) return;
     try {
-      const { error } = await supabase.from('accounting_invoices').delete().eq('id', id);
+      const { error } = await apiClient.from('accounting_invoices').delete().eq('id', id);
       if (error) throw error;
       loadData();
     } catch (err) {

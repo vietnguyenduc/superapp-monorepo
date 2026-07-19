@@ -4,6 +4,8 @@ Insforge DeepWiki - Local NotebookLM for Codebase
 Features:
 - Index codebase files into PostgreSQL
 - Full-text search across code
+- Semantic search via pgvector (real local embedding model via fastembed/ONNX,
+  no external API, no GPU needed — runs fully offline after first model download)
 - AI-powered Q&A about codebase
 - Knowledge graph (entities + relations)
 - Vibe coding session tracker
@@ -12,7 +14,9 @@ Features:
 
 API:
 - POST /index        - Index/re-index codebase
-- GET  /search       - Search codebase
+- POST /embed        - Generate embeddings for all indexed files
+- GET  /search       - Full-text search (ILIKE + pg_trgm)
+- GET  /semantic     - Semantic search (pgvector cosine similarity)
 - POST /ask          - Ask question about codebase (AI)
 - GET  /stats        - Codebase statistics
 - GET  /graph        - Knowledge graph
@@ -28,6 +32,9 @@ API:
 
 import os
 import json
+import re
+import math
+import hashlib
 import logging
 import asyncio
 from datetime import datetime
@@ -36,15 +43,20 @@ from fastapi import FastAPI, Request, HTTPException, Query
 from pydantic import BaseModel
 import asyncpg
 import httpx
+from fastembed import TextEmbedding
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("insforge-deepwiki")
 
-app = FastAPI(title="Insforge DeepWiki", version="1.0.0")
+app = FastAPI(title="Insforge DeepWiki", version="3.0.0")
 
 DB_URL = os.environ.get("DB_URL", "postgresql://postgres:postgres@localhost:5432/insforge")
 MONOREPO_PATH = os.environ.get("MONOREPO_PATH", "/workspace")
 OPENROUTER_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")  # Reuse DeepSeek key (OpenRouter removed)
+
+# Embedding dimension (must match schema: vector(384) — BAAI/bge-small-en-v1.5)
+EMBEDDING_DIM = 384
+EMBEDDING_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 
 # File extensions to index
 INDEXABLE_EXTENSIONS = {
@@ -70,6 +82,43 @@ LANG_MAP = {
 }
 
 MAX_FILE_SIZE = 100_000  # 100KB limit per file
+
+
+# ============================================================
+# EMBEDDING (real local model via fastembed/ONNX — no torch, no GPU,
+# no external API. Model weights are baked into the Docker image at
+# build time, so this works fully offline).
+# ============================================================
+# BAAI/bge-small-en-v1.5 is a proper sentence-transformer style model that
+# understands semantic meaning (synonyms, paraphrasing), unlike the previous
+# hash-based bag-of-words approach which only matched literal word overlap.
+
+_embedding_model: TextEmbedding | None = None
+
+def get_embedding_model() -> TextEmbedding:
+    global _embedding_model
+    if _embedding_model is None:
+        logger.info(f"Loading embedding model {EMBEDDING_MODEL_NAME}...")
+        _embedding_model = TextEmbedding(model_name=EMBEDDING_MODEL_NAME)
+        logger.info("Embedding model loaded.")
+    return _embedding_model
+
+def embed_text(text: str) -> list[float]:
+    """Generate a real semantic embedding using a local ONNX sentence model."""
+    model = get_embedding_model()
+    # fastembed's embed() returns a generator of numpy arrays; take the first.
+    vec = next(model.embed([text[:8192]]))  # truncate very long text for speed
+    return vec.tolist()
+
+def embed_texts_batch(texts: list[str]) -> list[list[float]]:
+    """Batch-embed multiple texts at once (much faster than one-by-one)."""
+    model = get_embedding_model()
+    truncated = [t[:8192] for t in texts]
+    return [vec.tolist() for vec in model.embed(truncated)]
+
+def embed_to_pg(vec: list[float]) -> str:
+    """Convert vector to PostgreSQL vector literal: '[0.1,0.2,...]'"""
+    return '[' + ','.join(f'{v:.6f}' for v in vec) + ']'
 
 
 async def get_db():
@@ -312,21 +361,110 @@ async def search_codebase(
         await conn.close()
 
 
-@app.post("/ask")
-async def ask_codebase(req: AskRequest):
-    """Ask a question about the codebase using AI + indexed data."""
+@app.post("/embed")
+async def embed_codebase(batch_size: int = Query(64, le=256)):
+    """Generate real semantic embeddings for all indexed files (local ONNX model, batched)."""
     conn = await get_db()
     try:
-        rows = await conn.fetch("""
-            SELECT file_path, language, summary, key_functions, key_classes
+        rows = await conn.fetch("SELECT id, summary, file_path FROM codebase_index")
+        embedded = 0
+        for i in range(0, len(rows), batch_size):
+            batch = rows[i:i + batch_size]
+            texts = [f"{r['file_path']} {r['summary']}" for r in batch]
+            # Run the (CPU-bound) embedding model in a worker thread so we
+            # don't block the FastAPI event loop for the whole /embed call.
+            vecs = await asyncio.to_thread(embed_texts_batch, texts)
+            for r, vec in zip(batch, vecs):
+                vec_str = embed_to_pg(vec)
+                await conn.execute(
+                    "UPDATE codebase_index SET embedding = $1::vector WHERE id = $2",
+                    vec_str, r['id']
+                )
+                embedded += 1
+            logger.info(f"Embedded {embedded}/{len(rows)} files...")
+        return {"status": "ok", "embedded": embedded, "dim": EMBEDDING_DIM, "model": EMBEDDING_MODEL_NAME}
+    finally:
+        await conn.close()
+
+
+@app.get("/semantic")
+async def semantic_search(
+    q: str = Query(..., description="Search query (semantic)"),
+    limit: int = Query(20, le=100),
+):
+    """Semantic search using pgvector cosine similarity."""
+    conn = await get_db()
+    try:
+        # Check if any embeddings exist
+        has_embeddings = await conn.fetchval(
+            "SELECT COUNT(*) FROM codebase_index WHERE embedding IS NOT NULL"
+        )
+        if has_embeddings == 0:
+            return {
+                "query": q,
+                "results": [],
+                "count": 0,
+                "note": "No embeddings yet. Run POST /embed first.",
+            }
+
+        q_vec = embed_to_pg(await asyncio.to_thread(embed_text, q))
+        rows = await conn.fetch(
+            """
+            SELECT file_path, language, lines_count, summary,
+                   key_functions, key_classes,
+                   1 - (embedding <=> $1::vector) AS similarity
             FROM codebase_index
-            ORDER BY indexed_at DESC
-            LIMIT 100
-        """)
+            WHERE embedding IS NOT NULL
+            ORDER BY embedding <=> $1::vector
+            LIMIT $2
+            """,
+            q_vec, limit
+        )
+        return {
+            "query": q,
+            "results": [dict(r) for r in rows],
+            "count": len(rows),
+            "method": "pgvector_cosine",
+        }
+    finally:
+        await conn.close()
+
+
+@app.post("/ask")
+async def ask_codebase(req: AskRequest):
+    """Ask a question about the codebase using AI + semantic search context."""
+    conn = await get_db()
+    try:
+        # Use semantic search if embeddings exist, else fall back to ILIKE
+        has_embeddings = await conn.fetchval(
+            "SELECT COUNT(*) FROM codebase_index WHERE embedding IS NOT NULL"
+        )
+
+        if has_embeddings > 0:
+            q_vec = embed_to_pg(await asyncio.to_thread(embed_text, req.question))
+            rows = await conn.fetch(
+                """
+                SELECT file_path, language, summary, key_functions, key_classes,
+                       1 - (embedding <=> $1::vector) AS similarity
+                FROM codebase_index
+                WHERE embedding IS NOT NULL
+                ORDER BY embedding <=> $1::vector
+                LIMIT $2
+                """,
+                q_vec, req.context_files
+            )
+        else:
+            # Fallback: ILIKE search on question keywords
+            rows = await conn.fetch("""
+                SELECT file_path, language, summary, key_functions, key_classes
+                FROM codebase_index
+                ORDER BY indexed_at DESC
+                LIMIT $1
+            """, req.context_files)
 
         file_summaries = "\n".join([
             f"- {r['file_path']} ({r['language']}): {r['summary'][:150]}"
-            for r in rows[:50]
+            for r in rows
         ])
 
         context = f"""You are a codebase expert. Here is the indexed codebase:

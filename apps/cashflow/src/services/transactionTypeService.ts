@@ -1,5 +1,5 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase } from "./supabase";
+import { supabase , apiClient} from "./supabase";
 import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 import { validateTransactionTypeData, transformRawTransactionType } from "./businessLogic";
 
@@ -7,7 +7,7 @@ export class TransactionTypeService extends BaseService {
   static async getTransactionTypes(companyId?: string) {
     return this.execute(
       async () => {
-        let query = supabase.from("transaction_types").select("*");
+        let query = apiClient.from("transaction_types").select("*");
         if (companyId) query = query.or(`company_id.eq.${companyId},company_id.is.null`);
         const { data, error } = await query;
         
@@ -53,17 +53,17 @@ export class TransactionTypeService extends BaseService {
         const transformed = transformRawTransactionType(payload, true);
         
         if (payload.company_id && !payload.id) {
-          const { data: existing } = await supabase.from("transaction_types").select("id").eq("company_id", payload.company_id).eq("name", payload.name);
+          const { data: existing } = await apiClient.from("transaction_types").select("id").eq("company_id", payload.company_id).eq("name", payload.name);
           if (existing && existing.length > 0) {
             return { data: null, error: { message: `Loại giao dịch "${payload.name}" đã tồn tại. Vui lòng chọn tên khác.` } };
           }
         }
         
         if (payload.id) {
-          const { data, error } = await supabase.from("transaction_types").update(transformed as any).eq("id", payload.id).select().single();
+          const { data, error } = await apiClient.from("transaction_types").update(transformed as any).eq("id", payload.id).select().single();
           return { data, error };
         } else {
-          const { data, error } = await supabase.from("transaction_types").insert(transformed as any).select().single();
+          const { data, error } = await apiClient.from("transaction_types").insert(transformed as any).select().single();
           return { data, error };
         }
       },
@@ -95,13 +95,13 @@ export class TransactionTypeService extends BaseService {
     return this.execute(
       async () => {
         if (!isActive) {
-          const { data: txs } = await supabase.from("transactions").select("id").eq("transaction_type", id).limit(1);
+          const { data: txs } = await apiClient.from("transactions").select("id").eq("transaction_type", id).limit(1);
           if (txs && txs.length > 0) {
             return { data: null, error: { message: "Không thể vô hiệu hóa loại giao dịch vì đang được sử dụng trong giao dịch." } };
           }
         }
         
-        const { error } = await supabase.from("transaction_types").update({ is_active: isActive }).eq("id", id);
+        const { error } = await apiClient.from("transaction_types").update({ is_active: isActive }).eq("id", id);
         return { data: null, error };
       },
       async () => {
@@ -120,12 +120,12 @@ export class TransactionTypeService extends BaseService {
   static async deleteTransactionType(id: string) {
     return this.execute(
       async () => {
-        const { data: txs } = await supabase.from("transactions").select("id").eq("transaction_type", id).limit(1);
+        const { data: txs } = await apiClient.from("transactions").select("id").eq("transaction_type", id).limit(1);
         if (txs && txs.length > 0) {
           return { data: null, error: { message: "Không thể xóa loại giao dịch vì đang được sử dụng trong giao dịch. Vui lòng vô hiệu hóa thay vì xóa." } };
         }
         
-        const { error } = await supabase.from("transaction_types").delete().eq("id", id);
+        const { error } = await apiClient.from("transaction_types").delete().eq("id", id);
         return { data: null, error };
       },
       async () => {

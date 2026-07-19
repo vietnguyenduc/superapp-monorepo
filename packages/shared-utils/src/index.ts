@@ -7,5 +7,6 @@ export * from './import-export';
 export * from './services/base';
 export * from './app-urls';
 export * from './types';
+export * from './api-client';
 
 // Trigger HMR

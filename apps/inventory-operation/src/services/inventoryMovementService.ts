@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase , apiClient} from "../lib/supabase";
 import { getTrialInventoryRecords, seedTrialDataIfNeeded, getTrialProducts } from '../data/trialMockData';
 import { BaseService, ServiceResponse } from './baseService';
 
@@ -82,7 +82,7 @@ export class InventoryMovementService extends BaseService {
   static async createMovement(movement: Omit<InventoryMovement, 'id' | 'created_at' | 'updated_at'>): Promise<ServiceResponse<InventoryMovement>> {
     return this.execute(
       async () => {
-        return await supabase.from('inventory_movements').insert([{ ...movement, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }]).select().single();
+        return await apiClient.from('inventory_movements').insert([{ ...movement, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }]).select().single();
       },
       async () => ({ success: true, data: { ...movement, id: 'mock-' + Date.now(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as InventoryMovement, error: null })
     );
@@ -188,7 +188,7 @@ export class InventoryMovementService extends BaseService {
   static async getMovements(filters: any = {}): Promise<ServiceResponse<InventoryMovement[]>> {
     return this.execute(
       async () => {
-        let query = supabase.from('inventory_movements').select('*').order('movement_date', { ascending: false }).order('movement_time', { ascending: false });
+        let query = apiClient.from('inventory_movements').select('*').order('movement_date', { ascending: false }).order('movement_time', { ascending: false });
         if (filters.companyId) query = query.eq('company_id', filters.companyId);
         const targetProduct = filters.productCode || filters.productId;
         if (targetProduct) query = query.eq('product_id', targetProduct);
@@ -206,7 +206,7 @@ export class InventoryMovementService extends BaseService {
   static async getMovementsByReference(referenceId: string, sourceType: string): Promise<ServiceResponse<InventoryMovement[]>> {
     return this.execute(
       async () => {
-        return await supabase.from('inventory_movements').select('*').eq('source_id', referenceId).eq('source_type', sourceType).order('movement_date', { ascending: false });
+        return await apiClient.from('inventory_movements').select('*').eq('source_id', referenceId).eq('source_type', sourceType).order('movement_date', { ascending: false });
       },
       async () => ({ success: true, data: [], error: null })
     );
@@ -215,7 +215,7 @@ export class InventoryMovementService extends BaseService {
   static async createBalanceSnapshot(snapshot: Omit<InventoryBalanceSnapshot, 'id' | 'created_at' | 'updated_at'>): Promise<ServiceResponse<InventoryBalanceSnapshot>> {
     return this.execute(
       async () => {
-        return await supabase.from('inventory_balance_snapshots').insert([{ ...snapshot, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }]).select().single();
+        return await apiClient.from('inventory_balance_snapshots').insert([{ ...snapshot, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }]).select().single();
       },
       async () => ({ success: true, data: { ...snapshot, id: 'mock-' + Date.now(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as InventoryBalanceSnapshot, error: null })
     );
@@ -224,7 +224,7 @@ export class InventoryMovementService extends BaseService {
   static async getBalanceSnapshots(filters: any = {}): Promise<ServiceResponse<InventoryBalanceSnapshot[]>> {
     return this.execute(
       async () => {
-        let query = supabase.from('inventory_balance_snapshots').select('*').order('snapshot_date', { ascending: false });
+        let query = apiClient.from('inventory_balance_snapshots').select('*').order('snapshot_date', { ascending: false });
         if (filters.companyId) query = query.eq('company_id', filters.companyId);
         if (filters.productId) query = query.eq('product_id', filters.productId);
         if (filters.snapshotType) query = query.eq('snapshot_type', filters.snapshotType);
@@ -239,7 +239,7 @@ export class InventoryMovementService extends BaseService {
   static async getCurrentBalance(companyId: string, productId: string): Promise<ServiceResponse<{ quantity: number; value?: number }>> {
     return this.execute(
       async () => {
-        const { data, error } = await supabase.from('inventory_movements').select('running_balance, running_value').eq('company_id', companyId).eq('product_id', productId).order('movement_date', { ascending: false }).order('movement_time', { ascending: false }).limit(1).single();
+        const { data, error } = await apiClient.from('inventory_movements').select('running_balance, running_value').eq('company_id', companyId).eq('product_id', productId).order('movement_date', { ascending: false }).order('movement_time', { ascending: false }).limit(1).single();
         if (error && error.code !== 'PGRST116') return { error };
         return { data: data ? { quantity: data.running_balance, value: data.running_value } : { quantity: 0 } };
       },
@@ -259,7 +259,7 @@ export class InventoryMovementService extends BaseService {
   static async getVarianceReport(companyId: string, dateFrom: string, dateTo: string): Promise<ServiceResponse<any[]>> {
     return this.execute(
       async () => {
-        return await supabase.from('stock_count_entries').select('*, products(id, name, business_code)').eq('company_id', companyId).gte('count_date', dateFrom).lte('count_date', dateTo).order('count_date', { ascending: false });
+        return await apiClient.from('stock_count_entries').select('*, products(id, name, business_code)').eq('company_id', companyId).gte('count_date', dateFrom).lte('count_date', dateTo).order('count_date', { ascending: false });
       },
       async () => {
         seedTrialDataIfNeeded();

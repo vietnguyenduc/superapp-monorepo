@@ -1,4 +1,4 @@
-import { supabase, getCurrentUserId } from '../lib/supabase';
+import { supabase, getCurrentUserId , apiClient} from "../lib/supabase";
 import { SpecialOutboundRecord, ApprovalLog } from '../types';
 import { BaseService, ServiceResponse } from './baseService';
 
@@ -89,8 +89,8 @@ export class SpecialOutboundService extends BaseService {
   static async deleteRecord(id: string): Promise<ServiceResponse<boolean>> {
     return this.execute(
       async () => {
-        await supabase.from('approval_logs').delete().eq('record_id', id);
-        const { error } = await supabase.from('special_outbound_records').delete().eq('id', id);
+        await apiClient.from('approval_logs').delete().eq('record_id', id);
+        const { error } = await apiClient.from('special_outbound_records').delete().eq('id', id);
         return { data: !error, error };
       },
       async () => ({ success: true, data: true, error: null })
@@ -148,7 +148,7 @@ export class SpecialOutboundService extends BaseService {
   static async getApprovalLogs(recordId?: string): Promise<ServiceResponse<ApprovalLog[]>> {
     return this.execute(
       async () => {
-        let query = supabase.from('approval_logs').select('*').order('created_at', { ascending: false });
+        let query = apiClient.from('approval_logs').select('*').order('created_at', { ascending: false });
         if (recordId) query = query.eq('record_id', recordId);
         return await query;
       },
@@ -159,7 +159,7 @@ export class SpecialOutboundService extends BaseService {
   static async createApprovalLog(logData: Omit<ApprovalLog, 'id' | 'created_at'>): Promise<ServiceResponse<ApprovalLog>> {
     return this.execute(
       async () => {
-        return await supabase.from('approval_logs').insert([logData]).select().single();
+        return await apiClient.from('approval_logs').insert([logData]).select().single();
       },
       async () => ({ success: true, data: null as any, error: null })
     );

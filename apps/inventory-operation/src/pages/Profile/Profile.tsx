@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuthContext } from "@superapp/iam";
-import { supabase } from "../../lib/supabase";
+import { supabase , apiClient} from "../../lib/supabase";
 
 const Profile: React.FC = () => {
   const { user, updateProfile } = useAuthContext();
@@ -79,7 +79,7 @@ const Profile: React.FC = () => {
 
         // Update company logo in database
         if (user?.company_id) {
-          await supabase.from("companies").update({ logo_url: logoUrl }).eq("id", user.company_id);
+          await apiClient.from("companies").update({ logo_url: logoUrl }).eq("id", user.company_id);
         }
       }
     }

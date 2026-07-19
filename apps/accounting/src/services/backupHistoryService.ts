@@ -1,5 +1,5 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase } from "./supabase";
+import { supabase , apiClient} from "./supabase";
 import { trialGet, trialDelete } from "./trialMockStore";
 import { customerService } from "./customerService";
 import { transactionService } from "./transactionService";
@@ -78,7 +78,7 @@ export class BackupHistoryService extends BaseService {
         
         if (backups && backups.length > 30) {
           const toDelete = backups.slice(30).map((b: any) => b.id);
-          await supabase.from("backup_history").delete().in("id", toDelete);
+          await apiClient.from("backup_history").delete().in("id", toDelete);
         }
         return { data: null, error: null };
       }
@@ -88,7 +88,7 @@ export class BackupHistoryService extends BaseService {
   static async getBackupHistory(companyId?: string, userId?: string) {
     return this.execute(
       async () => {
-        let query = supabase.from("backup_history").select("*").order("backup_timestamp", { ascending: false });
+        let query = apiClient.from("backup_history").select("*").order("backup_timestamp", { ascending: false });
         if (companyId) query = query.eq("company_id", companyId);
         if (userId) query = query.eq("created_by", userId);
         const { data, error } = await query;
@@ -107,7 +107,7 @@ export class BackupHistoryService extends BaseService {
   static async deleteBackupHistory(id: string) {
     return this.execute(
       async () => {
-        const { error } = await supabase.from("backup_history").delete().eq("id", id);
+        const { error } = await apiClient.from("backup_history").delete().eq("id", id);
         return { data: null, error };
       },
       async () => {

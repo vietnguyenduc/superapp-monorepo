@@ -1,5 +1,5 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase } from "./supabase";
+import { supabase , apiClient} from "./supabase";
 import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 import { validateCustomerData, transformRawCustomer } from "./businessLogic";
 import { normalizeTransactionType } from "./businessLogic";
@@ -8,7 +8,7 @@ export class CustomerService extends BaseService {
   static async getCustomers(filters?: any) {
     return this.execute(
       async () => {
-        let query = supabase.from("customers").select("*");
+        let query = apiClient.from("customers").select("*");
         if (filters?.company_id) {
           query = query.eq("company_id", filters.company_id);
         }
@@ -71,7 +71,7 @@ export class CustomerService extends BaseService {
   static async getCustomerById(id: string, companyId?: string) {
     return this.execute(
       async () => {
-        let query = supabase.from("customers").select("*").eq("id", id);
+        let query = apiClient.from("customers").select("*").eq("id", id);
         if (companyId) query = query.eq("company_id", companyId);
         
         const { data: customer, error } = await query.single();
@@ -79,11 +79,11 @@ export class CustomerService extends BaseService {
         
         let updatedByEmail = null;
         if (customer.updated_by) {
-          const { data: userData } = await supabase.from("users").select("email").eq("id", customer.updated_by).single();
+          const { data: userData } = await apiClient.from("users").select("email").eq("id", customer.updated_by).single();
           updatedByEmail = userData?.email || null;
         }
         
-        const { data: txData } = await supabase.from("transactions").select("transaction_type, amount").eq("customer_id", id);
+        const { data: txData } = await apiClient.from("transactions").select("transaction_type, amount").eq("customer_id", id);
         
         const parseAmount = (value: any) => {
           const num = Number(String(value ?? 0).replace(/[\s,]/g, ""));
@@ -167,7 +167,7 @@ export class CustomerService extends BaseService {
         const proposedCode = transformed.customer_code?.trim();
         
         if (proposedCode) {
-          let checkQ = supabase.from("customers").select("id").eq("customer_code", proposedCode);
+          let checkQ = apiClient.from("customers").select("id").eq("customer_code", proposedCode);
           if (transformed.company_id) checkQ = checkQ.eq("company_id", transformed.company_id);
           const { data: existing } = await checkQ;
           if (existing && existing.length > 0) {
@@ -175,7 +175,7 @@ export class CustomerService extends BaseService {
           }
         }
         
-        const { data, error } = await supabase.from("customers").insert(transformed as any).select().single();
+        const { data, error } = await apiClient.from("customers").insert(transformed as any).select().single();
         return { data, error };
       },
       async () => {
@@ -208,7 +208,7 @@ export class CustomerService extends BaseService {
         const proposedCode = transformed.customer_code?.trim();
         
         if (proposedCode) {
-          let checkQ = supabase.from("customers").select("id").eq("customer_code", proposedCode).neq("id", id);
+          let checkQ = apiClient.from("customers").select("id").eq("customer_code", proposedCode).neq("id", id);
           if (transformed.company_id) checkQ = checkQ.eq("company_id", transformed.company_id);
           const { data: existing } = await checkQ;
           if (existing && existing.length > 0) {
@@ -216,7 +216,7 @@ export class CustomerService extends BaseService {
           }
         }
         
-        const { data, error } = await supabase.from("customers").update(transformed as any).eq("id", id).select().single();
+        const { data, error } = await apiClient.from("customers").update(transformed as any).eq("id", id).select().single();
         return { data, error };
       },
       async () => {
@@ -242,7 +242,7 @@ export class CustomerService extends BaseService {
   static async deleteCustomer(id: string) {
     return this.execute(
       async () => {
-        const { error } = await supabase.from("customers").delete().eq("id", id);
+        const { error } = await apiClient.from("customers").delete().eq("id", id);
         return { data: null, error };
       },
       async () => {
@@ -255,7 +255,7 @@ export class CustomerService extends BaseService {
   static async updateCustomerOpeningBalance(customerId: string, newOpening: number, companyId?: string) {
     return this.execute(
       async () => {
-        let q = supabase.from("customers").select("*").eq("id", customerId);
+        let q = apiClient.from("customers").select("*").eq("id", customerId);
         if (companyId) q = q.eq("company_id", companyId);
         const { data: existing, error: fetchErr } = await q.single();
         if (fetchErr || !existing) return { data: null, error: fetchErr || { message: "Customer not found" } };
@@ -265,7 +265,7 @@ export class CustomerService extends BaseService {
         const delta = oldCurrent - oldOpening;
         const newCurrent = newOpening + delta;
         
-        const { data, error } = await supabase.from("customers").update({
+        const { data, error } = await apiClient.from("customers").update({
           opening_balance: newOpening,
           current_balance: newCurrent,
           updated_at: new Date().toISOString()
@@ -305,10 +305,10 @@ export class CustomerService extends BaseService {
           const opening = Number(row.opening_balance);
           if (!code) { errors.push({ row: i, message: "Missing customer_code" }); continue; }
           
-          const { data: customer } = await supabase.from("customers").select("*").eq("customer_code", code).single();
+          const { data: customer } = await apiClient.from("customers").select("*").eq("customer_code", code).single();
           if (!customer) { errors.push({ row: i, message: "Customer not found" }); continue; }
           
-          await supabase.from("customers").update({
+          await apiClient.from("customers").update({
             opening_balance: opening,
             current_balance: opening,
             updated_at: new Date().toISOString()

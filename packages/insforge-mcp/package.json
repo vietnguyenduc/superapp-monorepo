@@ -1,0 +1,14 @@
+{
+  "name": "@superapp/insforge-mcp",
+  "version": "2.0.0",
+  "description": "InsForge MCP server — AI-native database tools for OpenHands (list_tables, create_table, query, execute, search_codebase, memory, decisions)",
+  "type": "module",
+  "main": "index.mjs",
+  "bin": {
+    "insforge-mcp": "index.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "pg": "^8.11.3"
+  }
+}

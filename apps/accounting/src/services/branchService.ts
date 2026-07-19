@@ -1,5 +1,5 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase } from "./supabase";
+import { supabase , apiClient} from "./supabase";
 import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 import { validateBranchData, transformRawBranch } from "./businessLogic";
 
@@ -7,7 +7,7 @@ export class BranchService extends BaseService {
   static async getBranches(companyId?: string) {
     return this.execute(
       async () => {
-        let query = supabase.from("branches").select("*");
+        let query = apiClient.from("branches").select("*");
         if (companyId) query = query.eq("company_id", companyId);
         const { data, error } = await query;
         return { data, error };
@@ -23,7 +23,7 @@ export class BranchService extends BaseService {
   static async getBranchById(id: string, companyId?: string) {
     return this.execute(
       async () => {
-        let query = supabase.from("branches").select("*").eq("id", id);
+        let query = apiClient.from("branches").select("*").eq("id", id);
         if (companyId) query = query.eq("company_id", companyId);
         const { data, error } = await query.single();
         return { data, error };
@@ -44,10 +44,10 @@ export class BranchService extends BaseService {
         
         const transformed = transformRawBranch(payload, true);
         if (payload.id) {
-          const { data, error } = await supabase.from("branches").update(transformed as any).eq("id", payload.id).select().single();
+          const { data, error } = await apiClient.from("branches").update(transformed as any).eq("id", payload.id).select().single();
           return { data, error };
         } else {
-          const { data, error } = await supabase.from("branches").insert(transformed as any).select().single();
+          const { data, error } = await apiClient.from("branches").insert(transformed as any).select().single();
           return { data, error };
         }
       },
@@ -70,7 +70,7 @@ export class BranchService extends BaseService {
   static async deleteBranch(id: string, companyId?: string) {
     return this.execute(
       async () => {
-        let query = supabase.from("branches").delete().eq("id", id);
+        let query = apiClient.from("branches").delete().eq("id", id);
         if (companyId) query = query.eq("company_id", companyId);
         const { error } = await query;
         return { data: null, error };

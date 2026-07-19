@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, Plus, Power, Users, Activity } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase , apiClient} from "../lib/supabase";
 import { useAdminContext } from '../contexts/AdminContext';
 import { useAuthContext } from '@superapp/iam';
 
@@ -29,7 +29,7 @@ export default function CompanyManagement() {
 
   const fetchStats = async () => {
     setLoading(true);
-    const { data, error } = await supabase.rpc('admin_get_company_stats');
+    const { data, error } = await apiClient.rpc('admin_get_company_stats');
     if (!error && data) {
       setStats(data);
     } else if (error) {
@@ -43,7 +43,7 @@ export default function CompanyManagement() {
     if (!newCompany.name || !newCompany.code) return;
 
     setIsSubmitting(true);
-    const { data, error } = await supabase.rpc('admin_create_company', {
+    const { data, error } = await apiClient.rpc('admin_create_company', {
       p_name: newCompany.name,
       p_code: newCompany.code
     });
@@ -64,7 +64,7 @@ export default function CompanyManagement() {
     const action = currentStatus ? 'disable' : 'enable';
     if (!confirm(`Are you sure you want to ${action} this company?`)) return;
 
-    const { error } = await supabase.rpc('admin_toggle_company_status', {
+    const { error } = await apiClient.rpc('admin_toggle_company_status', {
       p_company_id: companyId,
       p_is_active: !currentStatus
     });
