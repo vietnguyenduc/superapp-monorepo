@@ -305,7 +305,12 @@ class QueryBuilder<T = any> {
 // ──────────────────────────────────────────────────────────────────────────
 
 class RpcBuilder<T = any> {
-  constructor(private name: string, private args: Record<string, any> = {}) {}
+  private name: string;
+  private args: Record<string, any>;
+  constructor(name: string, args: Record<string, any> = {}) {
+    this.name = name;
+    this.args = args;
+  }
 
   async run(): Promise<ApiResult<T>> {
     return postJson('/api/v1/query', {
