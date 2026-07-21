@@ -34,8 +34,6 @@ const INITIAL_SINGLE_CUSTOMER: RawCustomerData = {
 };
 
 const MAX_BULK_ROWS = 2000;
-const PHONE_REGEX = /^[+]?[-0-9 ()]{8,15}$/;
-
 const CustomerImport: React.FC<CustomerImportProps> = ({
   onImportComplete,
 }) => {
@@ -436,14 +434,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       setSingleError("Mã khách hàng là bắt buộc");
       return;
     }
-    if (!phone) {
-      setSingleError("Số điện thoại là bắt buộc");
-      return;
-    }
-    if (!PHONE_REGEX.test(phone)) {
-      setSingleError("Số điện thoại không hợp lệ");
-      return;
-    }
+    // Phone is optional and accepts free text
 
     const branchId = user?.branch_id || null;
     setSingleError(null);
@@ -1316,14 +1307,7 @@ function validateCustomerData(data: RawCustomerData[]): {
         value: raw.full_name,
       });
     }
-    if (row.phone && !PHONE_REGEX.test(row.phone)) {
-      errors.push({
-        row: index,
-        column: "phone",
-        message: "Số điện thoại không hợp lệ",
-        value: raw.phone,
-      });
-    }
+    // Phone is optional and accepts free text — no format validation
 
     if (row.customer_code) {
       if (seenCodes.has(row.customer_code)) {
