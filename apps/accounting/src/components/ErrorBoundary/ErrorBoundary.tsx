@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { captureException } from "@superapp/shared-utils";
 
 interface Props {
   children: ReactNode;

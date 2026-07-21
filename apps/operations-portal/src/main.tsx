@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider, CompanyProvider } from '@superapp/iam';
 import App from './App';
 import './index.css';
+import { initErrorTracking } from "@superapp/shared-utils";
 
 const rootElement = document.getElementById('root');
 

@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
+import { initErrorTracking } from "@superapp/shared-utils";
 
 // Add error handling for root element
 const rootElement = document.getElementById('root');
@@ -16,7 +17,9 @@ if (!rootElement) {
 }
 
 try {
-  const root = ReactDOM.createRoot(rootElement || document.getElementById('root')!);
+  const root = initErrorTracking({ appName: "sales-operation" });
+
+ReactDOM.createRoot(rootElement || document.getElementById('root')!);
   
   root.render(
     <React.StrictMode>
