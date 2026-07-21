@@ -80,12 +80,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       newErrors.email = t("customers.form.errors.emailInvalid");
     }
 
-    if (
-      formData.phone &&
-      !/^(?:\+?\d{1,3})?0?[1-9]\d{7,9}$/.test(formData.phone.replace(/\s/g, ""))
-    ) {
-      newErrors.phone = t("customers.form.errors.phoneInvalid");
-    }
+    // Phone is optional and accepts free text — no format validation
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;

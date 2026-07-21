@@ -1,5 +1,5 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase } from "./supabase";
+import { supabase , apiClient} from "./supabase";
 import { trialGet } from "./trialMockStore";
 
 
@@ -24,7 +24,7 @@ export class ColorSettingsService extends BaseService {
   static async getTransactionTypeColors() {
     return this.execute(
       async () => {
-        const { data, error } = await supabase.from("color_settings").select("*").eq("setting_key", "transaction_type_colors").single();
+        const { data, error } = await apiClient.from("color_settings").select("*").eq("setting_key", "transaction_type_colors").single();
         if (data?.setting_value) return { data: data.setting_value, error: null };
         return { data: this.getDefaultTransactionTypeColors(), error: null };
       },
@@ -40,7 +40,7 @@ export class ColorSettingsService extends BaseService {
   static async getCustomerBalanceColors() {
     return this.execute(
       async () => {
-        const { data, error } = await supabase.from("color_settings").select("*").eq("setting_key", "customer_balance_colors").single();
+        const { data, error } = await apiClient.from("color_settings").select("*").eq("setting_key", "customer_balance_colors").single();
         if (data?.setting_value) return { data: data.setting_value, error: null };
         return { data: this.getDefaultCustomerBalanceColors(), error: null };
       },
@@ -56,7 +56,7 @@ export class ColorSettingsService extends BaseService {
   static async updateTransactionTypeColors(colors: any) {
     return this.execute(
       async () => {
-        const { data, error } = await supabase.from("color_settings").upsert({
+        const { data, error } = await apiClient.from("color_settings").upsert({
           setting_key: "transaction_type_colors",
           setting_value: colors,
           description: "Màu sắc cho các loại giao dịch (payment, charge, adjustment, refund)",
@@ -71,7 +71,7 @@ export class ColorSettingsService extends BaseService {
   static async updateCustomerBalanceColors(colors: any) {
     return this.execute(
       async () => {
-        const { data, error } = await supabase.from("color_settings").upsert({
+        const { data, error } = await apiClient.from("color_settings").upsert({
           setting_key: "customer_balance_colors",
           setting_value: colors,
           description: "Màu sắc cho số dư khách hàng (danh sách và chi tiết)",

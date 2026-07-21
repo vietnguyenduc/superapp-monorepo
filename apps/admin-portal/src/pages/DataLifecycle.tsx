@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Database, AlertTriangle, RefreshCw, Trash2, HardDrive, ShieldAlert } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase , apiClient} from "../lib/supabase";
 import { useAdminContext } from '../contexts/AdminContext';
 
 export default function DataLifecycle() {
@@ -10,7 +10,7 @@ export default function DataLifecycle() {
   const handleWipeData = async () => {
     if (confirm('WARNING: This will permanently delete ALL trial data. Are you absolutely sure?')) {
       setIsWiping(true);
-      const { error } = await supabase.rpc('admin_wipe_operational_data', {
+      const { error } = await apiClient.rpc('admin_wipe_operational_data', {
         p_company_id: selectedCompanyId
       });
       if (error) {

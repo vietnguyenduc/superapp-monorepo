@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase , apiClient} from "../lib/supabase";
 import { useAuthContext } from '@superapp/iam';
 
 type Company = {
@@ -31,7 +31,7 @@ export const AdminProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchCompanies = async () => {
     setLoading(true);
-    const { data, error } = await supabase.rpc('admin_get_companies');
+    const { data, error } = await apiClient.rpc('admin_get_companies');
     if (!error && data) {
       setCompanies(data);
     }

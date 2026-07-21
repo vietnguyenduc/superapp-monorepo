@@ -1,0 +1,13 @@
+{
+  "type": "module",
+  "name": "superapp-api",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "fastify": "^4.24.3",
+    "@fastify/cors": "^8.4.1",
+    "pg": "^8.11.3",
+    "dotenv": "^16.3.1",
+    "jose": "^5.1.3"
+  }
+}

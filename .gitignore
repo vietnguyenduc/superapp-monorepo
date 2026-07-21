@@ -79,3 +79,10 @@ node_modules/
 dist/
 dev-apps.log
 apps/superapp-business-bot/scraper/storage/refined_data/
+
+# OpenHands runtime artifacts (should not be in repo)
+[0-9a-f]*/
+conversations/
+bash_events/
+
+superapp-monorepo/

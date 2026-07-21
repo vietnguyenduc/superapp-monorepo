@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../services/supabase';
+import { supabase , apiClient} from "../../services/supabase";
 import { useAuthContext } from '@superapp/iam';
 import { FiPlus, FiX, FiTrash2, FiPlayCircle, FiInfo } from 'react-icons/fi';
 import { format } from 'date-fns';
@@ -99,7 +99,7 @@ const Assets: React.FC = () => {
         status: 'ACTIVE'
       };
 
-      const { error: insertError } = await supabase.from('accounting_assets').insert([payload]);
+      const { error: insertError } = await apiClient.from('accounting_assets').insert([payload]);
       if (insertError) throw insertError;
       
       closeModal();
@@ -114,7 +114,7 @@ const Assets: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!window.confirm('Xóa tài sản này? Dữ liệu không thể khôi phục.')) return;
     try {
-      const { error } = await supabase.from('accounting_assets').delete().eq('id', id);
+      const { error } = await apiClient.from('accounting_assets').delete().eq('id', id);
       if (error) throw error;
       loadData();
     } catch (err) {

@@ -1,5 +1,5 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase } from "./supabase";
+import { supabase , apiClient} from "./supabase";
 import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 import { validateBankAccountData, transformRawBankAccount } from "./businessLogic";
 
@@ -7,7 +7,7 @@ export class BankAccountService extends BaseService {
   static async getBankAccounts(companyId?: string) {
     return this.execute(
       async () => {
-        let query = supabase.from("bank_accounts").select("*");
+        let query = apiClient.from("bank_accounts").select("*");
         if (companyId) query = query.eq("company_id", companyId);
         const { data, error } = await query;
         return { data, error };
@@ -23,7 +23,7 @@ export class BankAccountService extends BaseService {
   static async getBankAccount(id: string, companyId?: string) {
     return this.execute(
       async () => {
-        let query = supabase.from("bank_accounts").select("*").eq("id", id);
+        let query = apiClient.from("bank_accounts").select("*").eq("id", id);
         if (companyId) query = query.eq("company_id", companyId);
         const { data, error } = await query.single();
         return { data, error };
@@ -44,10 +44,10 @@ export class BankAccountService extends BaseService {
         
         const transformed = transformRawBankAccount(payload, true);
         if (payload.id) {
-          const { data, error } = await supabase.from("bank_accounts").update(transformed as any).eq("id", payload.id).select().single();
+          const { data, error } = await apiClient.from("bank_accounts").update(transformed as any).eq("id", payload.id).select().single();
           return { data, error };
         } else {
-          const { data, error } = await supabase.from("bank_accounts").insert(transformed as any).select().single();
+          const { data, error } = await apiClient.from("bank_accounts").insert(transformed as any).select().single();
           return { data, error };
         }
       },
@@ -70,7 +70,7 @@ export class BankAccountService extends BaseService {
   static async deleteBankAccount(id: string, companyId?: string) {
     return this.execute(
       async () => {
-        let query = supabase.from("bank_accounts").delete().eq("id", id);
+        let query = apiClient.from("bank_accounts").delete().eq("id", id);
         if (companyId) query = query.eq("company_id", companyId);
         const { error } = await query;
         return { data: null, error };

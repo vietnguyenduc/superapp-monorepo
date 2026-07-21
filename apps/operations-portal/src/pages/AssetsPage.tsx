@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, TABLES } from '../lib/supabase';
+import { supabase, TABLES , apiClient} from "../lib/supabase";
 import { isTrialMode, mockAssets, mockConsumables } from '../lib/trialData';
 
 const AssetsPage = () => {
@@ -23,7 +23,7 @@ const AssetsPage = () => {
       setLoading(false);
       return;
     }
-    const { data, error } = await supabase.from(TABLES.OPERATION_ASSETS).select('*');
+    const { data, error } = await apiClient.from(TABLES.OPERATION_ASSETS).select('*');
     if (!error) setAssets(data || []);
     setLoading(false);
   };
@@ -35,7 +35,7 @@ const AssetsPage = () => {
       setLoading(false);
       return;
     }
-    const { data, error } = await supabase.from(TABLES.OPERATION_CONSUMABLES).select('*');
+    const { data, error } = await apiClient.from(TABLES.OPERATION_CONSUMABLES).select('*');
     if (!error) setConsumables(data || []);
     setLoading(false);
   };

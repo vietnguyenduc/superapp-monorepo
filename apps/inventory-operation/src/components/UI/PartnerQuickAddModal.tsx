@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase , apiClient} from "../../lib/supabase";
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 interface PartnerQuickAddModalProps {
@@ -25,7 +25,7 @@ const PartnerQuickAddModal: React.FC<PartnerQuickAddModalProps> = ({ isOpen, onC
     setError('');
 
     try {
-      const { data, error: insertError } = await supabase.from('customers').insert([{
+      const { data, error: insertError } = await apiClient.from('customers').insert([{
         customer_code: partnerCode || `PTN-${Date.now().toString().slice(-6)}`,
         full_name: fullName,
         phone: phone,

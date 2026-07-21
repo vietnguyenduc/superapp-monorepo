@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Check, X, ShieldAlert, Loader2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase , apiClient} from "../lib/supabase";
 import { useAdminContext } from '../contexts/AdminContext';
 
 interface UserClaim {
@@ -29,7 +29,7 @@ export default function IdentityManagement() {
 
   const fetchUsers = async () => {
     setLoading(true);
-    const { data, error } = await supabase.rpc('admin_get_all_users', {
+    const { data, error } = await apiClient.rpc('admin_get_all_users', {
       p_company_id: selectedCompanyId
     });
     if (error) {
@@ -47,7 +47,7 @@ export default function IdentityManagement() {
 
   const handleSave = async (editingUser: UserClaim) => {
     setUpdatingId(editingUser.id);
-    const { error } = await supabase.rpc('admin_update_user_claims', {
+    const { error } = await apiClient.rpc('admin_update_user_claims', {
       target_user_id: editingUser.id,
       new_role: editingUser.role,
       new_app_permissions: editingUser.app_permissions,

@@ -1,4 +1,4 @@
-import { supabase, getCurrentUserId } from '../lib/supabase';
+import { supabase, getCurrentUserId , apiClient} from "../lib/supabase";
 import { InventoryRecord } from '../types';
 import { fallbackService } from './fallbackService';
 import { BaseService, ServiceResponse } from './baseService';
@@ -12,7 +12,7 @@ export class InventoryService extends BaseService {
   }): Promise<ServiceResponse<InventoryRecord[]>> {
     return this.execute(
       async () => {
-        let query = supabase.from('inventory_records').select(`
+        let query = apiClient.from('inventory_records').select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
         `).order('date', { ascending: false });
@@ -35,7 +35,7 @@ export class InventoryService extends BaseService {
   static async getInventoryRecord(id: string): Promise<ServiceResponse<InventoryRecord>> {
     return this.execute(
       async () => {
-        const res = await supabase.from('inventory_records').select(`
+        const res = await apiClient.from('inventory_records').select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
         `).eq('id', id).single();
@@ -50,11 +50,11 @@ export class InventoryService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const productRow = await supabase.from('products').select('id').eq('business_code', record.productCode).single();
+        const productRow = await apiClient.from('products').select('id').eq('business_code', record.productCode).single();
         if (productRow.error) throw new Error('Không tìm thấy sản phẩm: ' + record.productCode);
 
         const row = InventoryMapper.mapInventoryToDb({ ...record, productId: productRow.data.id, createdBy: userId, updatedBy: userId });
-        const res = await supabase.from('inventory_records').insert([row]).select(`
+        const res = await apiClient.from('inventory_records').insert([row]).select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
         `).single();
@@ -70,7 +70,7 @@ export class InventoryService extends BaseService {
       async () => {
         const userId = await getCurrentUserId();
         const row = InventoryMapper.mapInventoryToDb({ ...updates, updatedBy: userId, updatedAt: new Date() });
-        const res = await supabase.from('inventory_records').update(row).eq('id', id).select(`
+        const res = await apiClient.from('inventory_records').update(row).eq('id', id).select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
         `).single();
@@ -84,7 +84,7 @@ export class InventoryService extends BaseService {
   static async deleteInventoryRecord(id: string): Promise<ServiceResponse<boolean>> {
     return this.execute(
       async () => {
-        const { error } = await supabase.from('inventory_records').delete().eq('id', id);
+        const { error } = await apiClient.from('inventory_records').delete().eq('id', id);
         return { data: !error, error };
       },
       () => fallbackService.deleteProduct(id) // Note: using deleteProduct as placeholder if needed
@@ -93,7 +93,7 @@ export class InventoryService extends BaseService {
 
   static async getInventorySummary(dateFrom: Date, dateTo: Date): Promise<ServiceResponse<any[]>> {
     return this.execute(async () => {
-      const { data, error } = await supabase.from('inventory_records')
+      const { data, error } = await apiClient.from('inventory_records')
         .select('product_code, product_name, input_quantity, raw_material_stock, processed_stock, finished_product_stock')
         .gte('date', dateFrom.toISOString())
         .lte('date', dateTo.toISOString());
@@ -121,7 +121,7 @@ export class InventoryService extends BaseService {
       async () => {
         const userId = await getCurrentUserId();
         const rows = records.map(r => InventoryMapper.mapInventoryToDb({ ...r, createdBy: userId, updatedBy: userId }));
-        const res = await supabase.from('inventory_records').insert(rows).select(`
+        const res = await apiClient.from('inventory_records').insert(rows).select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
         `);

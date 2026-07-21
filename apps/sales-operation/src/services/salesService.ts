@@ -1,4 +1,4 @@
-import { supabase, getCurrentUserId } from '../lib/supabase';
+import { supabase, getCurrentUserId , apiClient} from "../lib/supabase";
 import { SalesRecord } from '../types';
 import { fallbackService } from './fallbackService';
 import { BaseService, ServiceResponse } from './baseService';
@@ -12,7 +12,7 @@ export class SalesService extends BaseService {
   }): Promise<ServiceResponse<SalesRecord[]>> {
     return this.execute(
       async () => {
-        let query = supabase.from('sales_records').select(`
+        let query = apiClient.from('sales_records').select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
         `).order('date', { ascending: false });
@@ -38,7 +38,7 @@ export class SalesService extends BaseService {
       async () => {
         const userId = await getCurrentUserId();
         const row = SalesMapper.mapSalesToDb({ ...record, createdBy: userId, updatedBy: userId });
-        const res = await supabase.from('sales_records').insert([row]).select(`
+        const res = await apiClient.from('sales_records').insert([row]).select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
         `).single();
@@ -54,7 +54,7 @@ export class SalesService extends BaseService {
       async () => {
         const userId = await getCurrentUserId();
         const row = SalesMapper.mapSalesToDb({ ...updates, updatedBy: userId, updatedAt: new Date() });
-        const res = await supabase.from('sales_records').update(row).eq('id', id).select(`
+        const res = await apiClient.from('sales_records').update(row).eq('id', id).select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
         `).single();
@@ -68,7 +68,7 @@ export class SalesService extends BaseService {
   static async deleteSalesRecord(id: string): Promise<ServiceResponse<boolean>> {
     return this.execute(
       async () => {
-        const { error } = await supabase.from('sales_records').delete().eq('id', id);
+        const { error } = await apiClient.from('sales_records').delete().eq('id', id);
         return { data: !error, error };
       },
       () => fallbackService.deleteSalesRecord(id)
@@ -78,7 +78,7 @@ export class SalesService extends BaseService {
   static async getSalesStatistics(startDate?: string, endDate?: string): Promise<ServiceResponse<any>> {
     return this.execute(
       async () => {
-        let query = supabase.from('sales_records').select(`
+        let query = apiClient.from('sales_records').select(`
           date, sales_quantity, promotion_quantity, product:products(name, category)
         `);
         if (startDate) query = query.gte('date', startDate);

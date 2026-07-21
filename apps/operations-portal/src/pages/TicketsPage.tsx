@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase, TABLES, getCurrentUserId } from '../lib/supabase';
+import { supabase, TABLES, getCurrentUserId , apiClient} from "../lib/supabase";
 import { isTrialMode, mockTickets } from '../lib/trialData';
 
 const TicketsPage = () => {
@@ -44,9 +44,9 @@ const TicketsPage = () => {
       const userId = await getCurrentUserId();
       if (!userId) return;
 
-      const { data: userRecord } = await supabase.from(TABLES.USERS).select('company_id').eq('id', userId).single();
+      const { data: userRecord } = await apiClient.from(TABLES.USERS).select('company_id').eq('id', userId).single();
       
-      const { error } = await supabase.from(TABLES.OPERATION_TICKETS).insert({
+      const { error } = await apiClient.from(TABLES.OPERATION_TICKETS).insert({
         company_id: userRecord?.company_id,
         title: newTitle,
         description: newDesc,

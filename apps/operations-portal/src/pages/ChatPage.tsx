@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PaperAirplaneIcon, PlusIcon } from '@heroicons/react/24/solid';
-import { supabase, TABLES, getCurrentUserId } from '../lib/supabase';
+import { supabase, TABLES, getCurrentUserId , apiClient} from "../lib/supabase";
 import { isTrialMode, mockChatGroups, mockChatMessages } from '../lib/trialData';
 
 const ChatPage = () => {
@@ -165,7 +165,7 @@ const ChatPage = () => {
 
       // Add current user to members
       if (data) {
-        await supabase.from(TABLES.OPERATION_CHAT_MEMBERS).insert({
+        await apiClient.from(TABLES.OPERATION_CHAT_MEMBERS).insert({
           group_id: data.id,
           user_id: userId
         });

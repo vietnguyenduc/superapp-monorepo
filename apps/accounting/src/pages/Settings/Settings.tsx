@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '../../services/supabase';
+import { supabase , apiClient} from "../../services/supabase";
 import { useAuthContext } from '@superapp/iam';
 
 const Settings: React.FC = () => {
@@ -97,7 +97,7 @@ const Settings: React.FC = () => {
             is_active: true
           }));
           
-          await supabase.from('accounting_accounts').insert(accountsToInsert);
+          await apiClient.from('accounting_accounts').insert(accountsToInsert);
           setMessage(`Cài đặt đã được lưu và sinh danh mục tự động theo chuẩn ${standard}!`);
           setSaving(false);
           setTimeout(() => setMessage(''), 5000);

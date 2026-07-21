@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { supabase , apiClient} from "./supabase";
 import type { ApiResponse, PaginatedResponse } from "../types";
 // import { API_CONFIG } from '../utils/constants' // Unused for now
 
@@ -27,7 +27,7 @@ export class ApiService {
     },
   ): Promise<ApiResponse<T[]>> {
     try {
-      let query = supabase.from(table).select(options?.select || "*");
+      let query = apiClient.from(table).select(options?.select || "*");
 
       // Apply filters
       if (options?.filters) {
@@ -185,7 +185,7 @@ export class ApiService {
   // Generic DELETE request
   async delete(table: string, id: string): Promise<ApiResponse<boolean>> {
     try {
-      const { error } = await supabase.from(table).delete().eq("id", id);
+      const { error } = await apiClient.from(table).delete().eq("id", id);
 
       if (error) {
         return {
@@ -318,7 +318,7 @@ export class ApiService {
     },
   ): Promise<ApiResponse<T[]>> {
     try {
-      let query = supabase.from(table).select(options?.select || "*");
+      let query = apiClient.from(table).select(options?.select || "*");
 
       // Apply full-text search
       if (searchTerm && searchColumns.length > 0) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, DollarSign, Package, AlertCircle, Download } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase , apiClient} from "../lib/supabase";
 import { useAdminContext } from '../contexts/AdminContext';
 
 const MOCK_METRICS = [
@@ -20,7 +20,7 @@ export default function ConsolidatedReports() {
 
   const fetchMetrics = async () => {
     setLoading(true);
-    const { data, error } = await supabase.rpc('admin_get_consolidated_metrics', {
+    const { data, error } = await apiClient.rpc('admin_get_consolidated_metrics', {
       p_company_id: selectedCompanyId
     });
     setLoading(false);
