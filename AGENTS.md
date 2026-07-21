@@ -1,5 +1,14 @@
 # Superapp Monorepo — Agent Rules
 
+## 0. CRITICAL: WSL repo is the source of truth — edit there directly
+
+- **Source of truth**: `\\wsl$\Ubuntu\home\dev\projects\superapp-monorepo\` (WSL ext4 filesystem).
+- **ALWAYS edit code directly on the WSL repo** via the `\\wsl$\Ubuntu\...` UNC path. Do NOT edit the Windows mirror at `C:\Vibecoding\superapp-monorepo\` and then rsync — that path is reserved for git push only (WSL has no internet until DNS tunneling is fixed).
+- **Commit on WSL**: `wsl -d Ubuntu -- bash -c "cd /home/dev/projects/superapp-monorepo && git add -A && git commit -m '...'"`.
+- **Push workflow** (until WSL internet is fixed): after committing on WSL, rsync only `.git/` + changed files to the Windows mirror, then `git push` from Windows. The dashboard's "Git Push" button already automates this.
+- **Never edit the Windows mirror for code changes** — it will be overwritten by the next rsync from WSL and causes divergence/conflicts.
+- **Verify before declaring success**: after editing, run `git diff` on WSL to confirm changes landed in the source-of-truth repo.
+
 ## 1. Always verify before declaring success
 
 - After any code change, run the relevant build / type-check / test.
