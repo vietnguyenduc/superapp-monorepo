@@ -6,6 +6,9 @@ import "./styles/components.css";
 import "./styles/apple-theme.css";
 import "./i18n";
 import { AuthProvider } from "@superapp/iam";
+import { initErrorTracking } from "@superapp/shared-utils";
+
+initErrorTracking({ appName: "accounting" });
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

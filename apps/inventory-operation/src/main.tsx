@@ -4,6 +4,7 @@ import App from './App';
 import './index.css';
 // Initialize Supabase client before any component that uses useAuth
 import './lib/supabase';
+import { initErrorTracking } from "@superapp/shared-utils";
 
 // Add error handling for root element
 const rootElement = document.getElementById('root');
@@ -18,7 +19,9 @@ if (!rootElement) {
 }
 
 try {
-  const root = ReactDOM.createRoot(rootElement || document.getElementById('root')!);
+  const root = initErrorTracking({ appName: "inventory-operation" });
+
+ReactDOM.createRoot(rootElement || document.getElementById('root')!);
   
   root.render(
     <React.StrictMode>

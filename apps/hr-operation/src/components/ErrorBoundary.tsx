@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
+import { captureException } from "@superapp/shared-utils";
 
 interface Props {
   children: ReactNode;
