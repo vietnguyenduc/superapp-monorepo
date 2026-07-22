@@ -86,5 +86,3 @@ conversations/
 bash_events/
 
 superapp-monorepo/
-# OpenHands snapshot dirs (auto-created, ignore)
-32-char hex dirs
