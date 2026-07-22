@@ -9,6 +9,14 @@
 - **Never edit the Windows mirror for code changes** — it will be overwritten by the next rsync from WSL and causes divergence/conflicts.
 - **Verify before declaring success**: after editing, run `git diff` on WSL to confirm changes landed in the source-of-truth repo.
 
+## 0b. CRITICAL: OpenHands sandbox_grouping_strategy MUST be NO_GROUPING
+
+- **Setting**: `sandbox_grouping_strategy = NO_GROUPING` (set via OpenHands Settings API).
+- **Why**: If set to `GROUP_BY_NEWEST` (the old default), OpenHands creates a subdirectory `/workspace/project/<conversation_id_hex>/` for each conversation and runs `git init` there → empty repo, no branch `viet`, no code. With `NO_GROUPING`, OpenHands uses `/workspace/project/` directly (the bind-mounted WSL repo with all branches and code).
+- **Verify**: In OpenHands, ask "what branch are you on?" — it should answer `main` or `viet` with commit `f66db69...`, NOT `master` with no commits.
+- **If OpenHands still creates hash dirs**: the setting reverted. Re-apply: `curl -X POST http://localhost:3000/api/v1/settings -H "Content-Type: application/json" -d '{"sandbox_grouping_strategy":"NO_GROUPING"}'`.
+- **Do NOT select a Repository when starting a conversation** — leave it empty. Selecting a repo triggers a `git clone` into a subdirectory, bypassing the bind mount.
+
 ## 1. Always verify before declaring success
 
 - After any code change, run the relevant build / type-check / test.
