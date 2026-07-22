@@ -1176,7 +1176,7 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
           return;
         }
 
-        const workbook = XLSX.read(data, { type: "binary" });
+        const workbook = XLSX.read(data, { type: "array" });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
 
@@ -1206,7 +1206,7 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
           };
 
           headers.forEach((header, colIndex) => {
-            const value = row[colIndex] || "";
+            const value = row[colIndex] ?? "";
             const normalizedHeader = header.toLowerCase().trim();
 
             switch (normalizedHeader) {
@@ -1222,9 +1222,18 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
               case "phone":
               case "telephone":
               case "mobile":
+              case "phone number":
+              case "phone no":
+              case "phone no.":
+              case "contact":
+              case "contact number":
+              case "tel":
               case "số điện thoại":
               case "điện thoại":
               case "sđt":
+              case "số đt":
+              case "số điện thoại di động":
+              case "di động":
                 customerData.phone = String(value).trim();
                 break;
               case "address":
@@ -1272,7 +1281,7 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
     };
 
     reader.onerror = () => reject(new Error("Failed to read file"));
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   });
 }
 
