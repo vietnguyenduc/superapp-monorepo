@@ -122,7 +122,7 @@ def index_repo(repo_path, embedder):
     try:
         for i, fpath in enumerate(files):
             try:
-                text = fpath.read_text(encoding='utf-8', errors='ignore')
+                text = fpath.read_text(encoding='utf-8', errors='ignore').replace('\x00', '')
             except Exception as e:
                 print(f"Skip {fpath}: {e}")
                 continue
