@@ -320,6 +320,71 @@ git ls-remote origin viet      # Should return SHA
 - **WSL subnet can change** after `wsl --shutdown` or Windows reboot. Always re-read the current subnet from `ip route` inside WSL before creating a new `NetNat` rule. The `/20` prefix is correct for the default WSL2 configuration.
 - **`wsl -u root` bypasses the sudo password** — use it for one-off root operations in WSL when the user has forgotten their sudo password. Do not change the user's password without explicit permission.
 - **Do NOT enable `networkingMode=mirrored` in `.wslconfig`** to fix DNS. It was tried before and breaks Tailscale port forwarding from the phone. Keep `networkingMode` at default (NAT) and fix DNS via `/etc/resolv.conf` + `NetNat` instead.
+## 9. Codebase Search — DeepWiki Vector Search
+
+The repo is large (7 apps + 8 packages + 38+ migrations). For fast semantic queries, use **DeepWiki vector search** instead of grep when you need to find code by concept (not by exact string).
+
+### 9.1 DeepWiki container
+
+- **Container**: `insforge-deepwiki` (defined in `docker-compose.yml`, port 7131).
+- **Status check**: `docker ps --filter "name=insforge-deepwiki" --format "{{.Names}}: {{.Status}}"`.
+- **Index**: built from the monorepo source — embeddings stored in local PostgreSQL (`postgresql://postgres:postgres@host.docker.internal:5432/insforge`).
+- **LLM for queries**: DeepSeek (via `DEEPSEEK_API_KEY` env var).
+
+### 9.2 Query syntax (verified working 2026-07-24)
+
+```bash
+# From Windows PowerShell or WSL — query the indexed codebase
+wsl -d Ubuntu -- bash -c 'docker exec insforge-deepwiki python3 /tmp/dw_search.py "QUERY" N'
+
+# Example: find trial seed system architecture
+wsl -d Ubuntu -- bash -c 'docker exec insforge-deepwiki python3 /tmp/dw_search.py "Trial seed system architecture" 15'
+```
+
+- `QUERY` — natural language (Vietnamese or English both work).
+- `N` — max results to return (default 15, use 3-5 for quick lookup, 15-30 for thorough exploration).
+
+Output format: `[<relevance_score>] <file_path> (<line_count>L) funcs=['<func1>', '<func2>', ...]`
+
+### 9.3 When to use which search tool
+
+```mermaid
+flowchart TD
+  QUERY[Need to find code] --> TYPE{What are you looking for?}
+  TYPE -->|Exact string<br/>symbol name<br/>import path| GREP[grep / find_file_by_name<br/>fast, exact]
+  TYPE -->|Concept / behavior<br/>"how does X work"<br/>"where is Y implemented"| DEEPWIKI[DeepWiki vector search<br/>semantic, ranked by relevance]
+  TYPE -->|File by name pattern| GLOB[find_file_by_name<br/>glob match]
+  GREP --> RESULT1[Exact matches with line numbers]
+  DEEPWIKI --> RESULT2[Ranked file list + funcs<br/>may miss rare terms]
+  GLOB --> RESULT3[File paths only]
+```
+
+| Tool | Best for | Limitation |
+|------|----------|-----------|
+| `grep` | Exact string, regex, symbol name | No semantic match |
+| `find_file_by_name` | File by glob pattern | Content-agnostic |
+| DeepWiki `dw_search.py` | "How is X implemented", "where does Y happen" | Needs container running; rare terms may not be indexed |
+| `insforge-mcp` `search_codebase` | Same as DeepWiki but via MCP (OpenHands only) | Only available inside OpenHands agent-server |
+
+### 9.4 Re-indexing (when code changes significantly)
+
+The index persists in local PostgreSQL. If you add a new app or rename directories, re-index:
+
+```bash
+# Trigger re-index (DeepWiki watches the monorepo path; restart container to force full reindex)
+docker restart insforge-deepwiki
+# Wait ~1-2 min for index rebuild, then verify:
+wsl -d Ubuntu -- bash -c 'docker exec insforge-deepwiki python3 /tmp/dw_search.py "test" 1'
+```
+
+### 9.5 Rules
+
+- **Prefer DeepWiki for conceptual queries** ("how does trial mode work", "where is RLS enforced") — faster than grep when you don't know the exact string.
+- **Prefer grep for exact matches** (symbol names, error messages, import paths).
+- **Always check container is running** before querying: `docker ps --filter "name=insforge-deepwiki"`. If stopped, `docker start insforge-deepwiki` and wait 30s.
+- **Combine both**: use DeepWiki to find candidate files, then grep within those files for exact lines.
+- **Do NOT rely on DeepWiki for secrets/env values** — `.env` files are not indexed (correctly excluded).
+
 ## Trial Seed System
 
 ### Architecture

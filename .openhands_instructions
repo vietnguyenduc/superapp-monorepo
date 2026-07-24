@@ -26,7 +26,9 @@
   - DB: `list_tables`, `describe_table`, `query` (read-only SELECT), `execute` (write, cần `confirm: true`),
     `create_table`, `alter_table`, `drop_table`, `insert_rows`
   - Migrations: `list_migrations`, `apply_migration`, `rollback_migration`
-  - Codebase: `search_codebase`, `ask_codebase`
+  - Codebase: `search_codebase`, `ask_codebase` (semantic search qua local embeddings)
+- `deepwiki` (`docker exec insforge-deepwiki python3 /tmp/dw_search.py "QUERY" N`) — vector search
+  codebase nhanh, không cần OpenHands. Xem `AGENTS.md` §9 cho syntax + khi nào dùng.
   - Memory: `read_memory`, `write_memory`, `log_decision`, `log_error_pattern`
   - **KHÔNG có** tool `auth`, `storage`, hay CLI `insforge db rollback` (đó là MCP tool `rollback_migration`).
 - `vercel` — CLI `vercel` (dùng `VERCEL_TOKEN` từ .env), không phải MCP server.
