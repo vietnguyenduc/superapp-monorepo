@@ -113,6 +113,7 @@ When the user is on mobile and says Tailscale is down, ports are unreachable, or
 1. Verify Tailscale on Windows: `tailscale ip -4`. If empty, `tailscale up` or `sc start tailscale`.
 2. Run `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\run-forward-wsl-ports.bat` (auto-elevates as admin) to forward WSL ports, open firewall for `3000` (OpenHands) and `8080` (dashboard), and fix `winnat` dynamic ports to prevent Docker `500 ports are not available` errors.
 3. If OpenHands still fails with `500 ports are not available`, restart `winnat`: `Restart-Service -Name winnat` (PowerShell admin) or `net stop winnat && net start winnat`.
+   > **WARNING (learned 2026-07-24):** `Restart-Service winnat` **deletes the `NetNat` rule for the WSL subnet**, which breaks WSL internet completely (WSL cannot reach gateway, DNS, or any external host). After restarting `winnat`, you MUST recreate the NAT rule — see section 8 below. Prefer fixing Docker port exhaustion by other means before restarting `winnat`.
 4. Restart any missing service: OpenHands (`start-openhands-wsl.sh`), dashboard (`generate-apps-dashboard.ps1`), Vite apps (`npm run dev:apps`), API (`npm run dev -w packages/api`).
 4. Verify from the Tailscale IP with `curl` and `browser_navigate`.
 5. Report the live URLs: `http://<TAILSCALE_HOSTNAME>:8080` (dashboard), `http://<TAILSCALE_HOSTNAME>:3000` (OpenHands).
@@ -218,6 +219,107 @@ WSL2 Ubuntu
 - **Do NOT use port 60xxx to verify deployment.** Always verify via `http://<TAILSCALE_IP>:<PORT>` (e.g. `http://100.83.130.115:3006`).
 - Correct workflow: edit code in `/workspace/project/` → commit → WSL Vite auto-HMR → verify via Tailscale IP.
 
+## 8. WSL2 Network / DNS / NetNat Recovery
+
+WSL2 uses a Hyper-V NAT bridge (`NetNat`) to route traffic from the WSL subnet (`172.29.128.0/20`) to the internet via the Windows host. If this bridge breaks, WSL loses **all** external connectivity (no DNS, no internet, cannot reach even the gateway `172.29.128.1`). Symptoms: `Could not resolve host: github.com`, `git push` fails from WSL, `npm install` fails, `curl` hangs, `ping 8.8.8.8` = 100% packet loss.
+
+### 8.1 Diagnosis flow
+
+```mermaid
+flowchart TD
+  START[WSL network fails] --> PING_IP{ping 8.8.8.8 from WSL?}
+  PING_IP -->|OK| DNS{getent hosts github.com?}
+  DNS -->|OK| DONE[Network OK — investigate app-specific issue]
+  DNS -->|FAIL| FIX_DNS[Fix DNS — see 8.3]
+  PING_IP -->|FAIL 100% loss| PING_GW{ping 172.29.128.1 from WSL?}
+  PING_GW -->|OK| NETNAT[Check NetNat — see 8.2]
+  PING_GW -->|FAIL| NETNAT[NetNat missing/broken — see 8.2]
+  NETNAT --> FIX_NAT[Recreate NetNat — see 8.4]
+  FIX_NAT --> VERIFY[Verify — see 8.5]
+  FIX_DNS --> VERIFY
+  VERIFY -->|OK| DONE
+  VERIFY -->|FAIL| ESCALATE[Escalate to user — needs admin PowerShell]
+```
+
+### 8.2 Check NetNat (Windows PowerShell, no admin needed to check)
+
+```powershell
+Get-NetNat | Format-List Name, InternalIPInterfaceAddressPrefix
+```
+
+- **Healthy**: Returns `Name: WSLNAT`, `InternalIPInterfaceAddressPrefix: 172.29.128.0/20` (or whatever the current WSL subnet is).
+- **Broken**: Returns empty — NAT rule was deleted (common after `Restart-Service winnat` or Windows update).
+
+Also check the WSL subnet (it can change after `wsl --shutdown`):
+```bash
+# In WSL
+ip -4 addr show eth0 | grep inet   # e.g. 172.29.141.188/20
+ip route | grep default             # e.g. default via 172.29.128.1
+```
+The NAT prefix is `<gateway_base>/20` — e.g. gateway `172.29.128.1` → prefix `172.29.128.0/20`.
+
+### 8.3 Fix DNS in WSL (run as root via `wsl -u root`, no sudo password needed)
+
+If `Get-NetNat` is healthy but DNS still fails, the issue is `systemd-resolved` stub (`127.0.0.53`) having no upstream DNS. Fix:
+
+```bash
+# Run from Windows PowerShell (bypasses sudo password)
+wsl -d Ubuntu -u root -- bash -c '
+  systemctl stop systemd-resolved
+  systemctl disable systemd-resolved
+  rm -f /etc/resolv.conf
+  cat > /etc/resolv.conf <<EOF
+nameserver 8.8.8.8
+nameserver 1.1.1.1
+nameserver 8.8.4.4
+options timeout:2 attempts:3
+EOF
+  chmod 644 /etc/resolv.conf
+  chattr +i /etc/resolv.conf 2>/dev/null || true
+  # Ensure nsswitch uses dns, not resolve plugin
+  sed -i "s/^hosts:.*/hosts:          files dns/" /etc/nsswitch.conf
+'
+```
+
+The `chattr +i` locks the file so WSL/systemd cannot overwrite it on restart. To edit it later, first `chattr -i /etc/resolv.conf`.
+
+### 8.4 Recreate NetNat (REQUIRES admin PowerShell)
+
+If `Get-NetNat` is empty, recreate the NAT rule. **Open PowerShell as Administrator** and run:
+
+```powershell
+# Get current WSL subnet first (in non-admin shell):
+#   wsl -d Ubuntu -- bash -c "ip route | grep default"
+# Then in admin shell, using the subnet from the gateway IP:
+New-NetNat -Name "WSLNAT" -InternalIPInterfaceAddressPrefix "172.29.128.0/20"
+```
+
+If it errors "object already exists" or the subnet changed:
+```powershell
+Get-NetNat | Remove-NetNat -Confirm:$false
+New-NetNat -Name "WSLNAT" -InternalIPInterfaceAddressPrefix "172.29.128.0/20"
+```
+
+After recreating, `wsl --shutdown` is NOT required — connectivity returns immediately.
+
+### 8.5 Verify
+
+```bash
+# In WSL
+ping -c 2 8.8.8.8              # Should be 0% loss
+getent hosts github.com        # Should resolve
+curl -sI https://github.com    # Should return HTTP/2 200
+git ls-remote origin viet      # Should return SHA
+```
+
+### 8.6 Rules
+
+- **NEVER run `Restart-Service winnat` to fix WSL network issues.** It deletes the `NetNat` rule and breaks WSL internet completely. This is the opposite of what AGENTS.md section 6 step 3 used to suggest — that advice is now superseded.
+- **If `winnat` was already restarted** (e.g. to fix Docker `500 ports are not available`), immediately verify `Get-NetNat` is non-empty. If empty, recreate per 8.4 before doing anything else.
+- **`netsh portproxy` rules survive `winnat` restart** — Tailscale port forwarding (3000, 5173-5178, 3006, 3001, 8081) is NOT affected. Do not re-run `run-forward-wsl-ports.bat` unless `netsh interface portproxy show v4tov4` is actually empty.
+- **WSL subnet can change** after `wsl --shutdown` or Windows reboot. Always re-read the current subnet from `ip route` inside WSL before creating a new `NetNat` rule. The `/20` prefix is correct for the default WSL2 configuration.
+- **`wsl -u root` bypasses the sudo password** — use it for one-off root operations in WSL when the user has forgotten their sudo password. Do not change the user's password without explicit permission.
+- **Do NOT enable `networkingMode=mirrored` in `.wslconfig`** to fix DNS. It was tried before and breaks Tailscale port forwarding from the phone. Keep `networkingMode` at default (NAT) and fix DNS via `/etc/resolv.conf` + `NetNat` instead.
 ## Trial Seed System
 
 ### Architecture
