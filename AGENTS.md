@@ -385,6 +385,135 @@ wsl -d Ubuntu -- bash -c 'docker exec insforge-deepwiki python3 /tmp/dw_search.p
 - **Combine both**: use DeepWiki to find candidate files, then grep within those files for exact lines.
 - **Do NOT rely on DeepWiki for secrets/env values** — `.env` files are not indexed (correctly excluded).
 
+## 10. OpenHands Agent Enhancements (verified 2026-07-24)
+
+OpenHands agent-server has been tuned with several enhancements beyond defaults. Config lives in `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\openhands-settings.json` (NOT in this repo — do NOT edit from inside WSL/sandbox).
+
+### 10.1 LLM profiles + model switching
+
+```mermaid
+flowchart LR
+  TASK[User task] --> ACTIVE{Active profile}
+  ACTIVE -->|default| V3[deepseek-v3<br/>deepseek-chat<br/>fast, cheap, 1M ctx]
+  ACTIVE -->|switch_llm_tool| R1[deepseek-r1<br/>deepseek-reasoner<br/>strong reasoning]
+  V3 --> COMPLEX{Complex task?<br/>agent decides}
+  COMPLEX -->|Yes| SWITCH[switch_llm_tool → r1]
+  COMPLEX -->|No| STAY[stay on v3]
+  SWITCH --> RUN_R1[run with R1]
+  STAY --> RUN_V3[run with V3]
+  RUN_R1 --> DONE
+  RUN_V3 --> DONE
+```
+
+- **2 profiles** defined in `llm_profiles`:
+  - `deepseek-v3` (active by default) — `deepseek/deepseek-chat`, fast/cheap, 1M context.
+  - `deepseek-r1` — `deepseek/deepseek-reasoner`, strong reasoning for complex tasks (SQL, architecture, debugging).
+- **`enable_switch_llm_tool: true`** — agent can switch profile mid-task via `switch_llm_tool` when it detects the task needs stronger reasoning.
+- Both profiles have `caching_prompt: true` + `prompt_cache_retention: 24h` (see §10.2).
+- `max_iterations: 500` per conversation (NOT 50 — the 50 in `.env` is overridden by settings.json).
+
+### 10.2 Context cache (prompt caching)
+
+- **`caching_prompt: true`** on both LLM profiles — DeepSeek API caches prompt prefix.
+- **`prompt_cache_retention: 24h`** — cache valid for 24 hours.
+- **Effect**: repeated system prompt + tool descriptions + early conversation = ~50% token cost reduction on subsequent turns.
+- **Implication for agents**: keep the system prompt stable across turns (don't rewrite it). Long sessions benefit most.
+
+### 10.3 Context condenser (LLM summarization)
+
+```mermaid
+flowchart LR
+  CONV[Conversation grows] --> CHECK{History > max_size 240?}
+  CHECK -->|No| KEEP[Keep full history]
+  CHECK -->|Yes| CONDENSE[LLM summarizing condenser]
+  CONDENSE --> KEEP_FIRST[Keep first 2 messages<br/>system + first user]
+  CONDENSE --> SUMMARIZE[Summarize middle<br/>LLM compresses to ~10%]
+  CONDENSE --> KEEP_RECENT[Keep recent messages]
+  KEEP_FIRST --> MERGE[Merged context]
+  SUMMARIZE --> MERGE
+  KEEP_RECENT --> MERGE
+  MERGE --> CONTINUE[Continue with compressed context]
+```
+
+- **`condenser.enabled: true`**, `condenser_kind: llm_summarizing`.
+- **`max_size: 240`** (tokens/messages) — when history exceeds this, condenser triggers.
+- **`keep_first: 2`** — always preserve system prompt + first user message.
+- **`minimum_progress: 0.1`** — don't condense if progress < 10% (avoid losing fresh context).
+- **Effect**: long conversations stay coherent without hitting context window limit. Agent can run 500 iterations without running out of context.
+
+### 10.4 Sub-agents
+
+- **`enable_sub_agents: true`** — OpenHands can spawn sub-agents for parallel/sub-tasks.
+- **`tool_concurrency_limit: 1`** — but only 1 tool call at a time per agent (sequential within an agent; sub-agents run in parallel).
+- Use case: split a large task into sub-agents (e.g. one writes backend, one writes frontend) — see `.openhands_instructions` §11 Multi-Agent Swarm.
+
+### 10.5 Task Splitter (dashboard feature)
+
+- **Location**: Apps Dashboard (`http://<TAILSCALE_IP>:8080/apps-dashboard.html`) → "Task Splitter" button.
+- **Purpose**: user pastes a large task → DeepSeek-chat splits into 3-6 subtasks → user copies each subtask to OpenHands.
+- **Why**: `MAX_ITERATIONS=50` per conversation means a single huge task will hit the limit. Splitting into 5-8 iteration subtasks ensures completion.
+- **API**: `POST /api/proxy/task-split` (proxied server-side via `dashboard-server.py` to keep DeepSeek API key off the browser).
+- **Token tracking**: dashboard shows "Da dung (Task Splitter)" — DeepSeek token usage from Task Splitter is tracked; OpenHands agent calls are NOT tracked here (separate billing).
+
+### 10.6 InsForge Agent Protocol (system_message_suffix)
+
+The `agent_context.system_message_suffix` in `openhands-settings.json` injects a mandatory protocol into every OpenHands session. **All 6 rules below are enforced**:
+
+1. **`read_memory` at session start** (no key) — load context from previous sessions before doing anything.
+2. **`log_decision`** when making architecture/tech decisions — title, context, decision, alternatives, consequences, tags.
+3. **`log_error_pattern`** when fixing errors — error_type, error_message, file_path, fix_description, fix_code.
+4. **`write_memory`** when discovering useful project context — descriptive key (e.g. `cashflow.schema`), category.
+5. **`list_tables` + `describe_table` + `search_codebase`** before writing SQL or touching DB.
+6. **Prefer `search_codebase` (semantic)** over guessing when asked about the codebase.
+
+**Forbidden** (also enforced in protocol):
+- `execute` with `confirm: true` without explicit user approval.
+- `drop_table` without explicit user confirmation.
+- Logging trivial decisions.
+- Skipping `read_memory` at session start — "context recall is the whole point".
+
+### 10.7 MCP servers (actual, not aspirational)
+
+```mermaid
+flowchart TD
+  OH[OpenHands agent-server] --> MCP{MCP config}
+  MCP --> SUPA[supabase MCP<br/>@supabase/mcp-server-supabase<br/>access-token + project-ref]
+  MCP --> VER[vercel MCP<br/>https://mcp.vercel.com<br/>Bearer VERCEL_TOKEN]
+  MCP --> FS[filesystem MCP<br/>@modelcontextprotocol/server-filesystem<br/>/workspace]
+  MCP --> INS[insforge MCP<br/>packages/insforge-mcp/index.mjs<br/>DB_URL + DEEPWIKI_URL]
+  SUPA --> SB[(Supabase cloud<br/>peslmsctejmvkwzyohke)]
+  VER --> VERC[Vercel deployments]
+  FS --> WKSP[/workspace/project/]
+  INS --> LOCAL[(local PostgreSQL<br/>localhost:5432/insforge)]
+  INS --> DW[DeepWiki<br/>host.docker.internal:7131]
+```
+
+4 MCP servers configured (NOT 7 as old `.openhands_instructions` claimed):
+- `supabase` — stdio, `@supabase/mcp-server-supabase` with access token + project ref.
+- `vercel` — SSE, `https://mcp.vercel.com` with Bearer token.
+- `filesystem` — stdio, `@modelcontextprotocol/server-filesystem` exposing `/workspace`.
+- `insforge` — stdio, `packages/insforge-mcp/index.mjs` with `DB_URL` + `DEEPWIKI_URL` env.
+
+### 10.8 Security analyzer
+
+- **`security_analyzer: llm`** — LLM-based security analyzer reviews code changes for vulnerabilities.
+- Runs as part of the agent loop (not a separate step).
+
+### 10.9 Sandbox grouping
+
+- **`sandbox_grouping_strategy: GROUP_BY_NEWEST`** — new conversations reuse the newest sandbox container (faster startup, preserves recent state).
+- **`confirmation_mode: false`** — agent does NOT ask for confirmation before each action (autonomous mode). Destructive ops still ask per `AGENTS.md` §5.
+
+### 10.10 Rules
+
+- **Do NOT edit `openhands-settings.json` from inside WSL/sandbox** — it lives on Windows at `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\`. Edit from Windows side, then restart OpenHands.
+- **`max_iterations: 500`** is the real limit (settings.json overrides `.env`'s 50). Plan tasks to fit in 500 iterations or use Task Splitter.
+- **`read_memory` at session start is mandatory** — do not skip even if you think you have enough context.
+- **Log decisions and error patterns** — they persist in local PostgreSQL (`ai_memory`, `decision_log`, `error_patterns` tables) and are loaded by next session's `read_memory`.
+- **Context cache is automatic** — don't rewrite system prompt mid-session; let the cache work.
+- **Condenser is automatic** — don't manually summarize; let it trigger at `max_size: 240`.
+- **Sub-agents run in parallel but tools are sequential** (`tool_concurrency_limit: 1`) — don't expect concurrent tool calls within one agent.
+
 ## Trial Seed System
 
 ### Architecture
