@@ -31,7 +31,7 @@ services:
   gateway:
     container_name: insforge-gateway
     build:
-      context: ./apps/superapp-unified-bot/gateway
+      context: ./apps/insforge-infra/gateway
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
@@ -45,7 +45,7 @@ services:
   deepwiki:
     container_name: insforge-deepwiki
     build:
-      context: ./apps/superapp-unified-bot/insforge/tools
+      context: ./apps/insforge-infra/insforge/tools
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:

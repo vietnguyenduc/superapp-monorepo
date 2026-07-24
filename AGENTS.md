@@ -20,6 +20,8 @@ A **multi-tenant SaaS superapp** for Vietnamese SMBs (small-medium businesses) i
 | **Accounting** | 5178 | `accounting.appforyou.xyz` | Accounting: journal entries, invoices, fixed assets, taxes, chart of accounts, **e-invoice** |
 | **Operations Portal** | 3006 | `ops.appforyou.xyz` | Operations portal: shift management, training & quizzes, branch-level ops dashboards |
 
+> **`apps/` directory contains 8 entries**: the 7 Vite apps above + `apps/insforge-infra/` (Docker infrastructure: InsForge Gateway port 7130 + DeepWiki port 7131, NOT a Vite app, NOT deployed to Vercel). Old `apps/archive/`, `apps/docs/`, `apps/web/`, `apps/superapp-business-bot/` were deleted 2026-07-24 (stale boilerplate / paused telegram bot).
+
 ### 0.3 The 13 packages (shared code)
 
 | Package | Purpose |
@@ -734,14 +736,4 @@ Then run `node scripts/import-trial-seeds.mjs` to populate seed data.
 | **InsForge MCP** (`packages/insforge-mcp`) | 17 tools: DB ops, migrations, codebase search, memory, decision log, error patterns. | Don't use raw SQL when an MCP tool exists. Always `read_memory` at session start. |
 | **OpenHands agent enhancements** (see §10) | LLM profiles, context cache, condenser, sub-agents, Task Splitter, InsForge Agent Protocol. | Don't edit `openhands-settings.json` from WSL. Don't skip `read_memory`. |
 | **NetNat recovery procedure** (§8) | Documented recovery after `winnat` restart deletes NetNat rule. | Don't restart `winnat` without recreating NetNat. |
-
-### 12.3 Telegram bot improvements (separate project, but related)
-
-| Improvement | What it did |
-|-------------|-------------|
-| **Circuit breaker reset per session** (`624bf3be`) | Telegram bot resets circuit breaker per session, smart task expiry. |
-| **Auto-compress context** (`624bf3be`) | Bot auto-compresses context to avoid hitting limits. |
-| **Devin API integration** (`624bf3be`) | Bot integrates with Devin API for task delegation. |
-
-> Telegram bot lives in `apps/superapp-unified-bot/` but is deployed separately. Don't confuse its config with the 7 frontend apps.
 
