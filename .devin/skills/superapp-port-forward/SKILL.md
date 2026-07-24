@@ -38,6 +38,7 @@ Use this skill when the user reports mobile/phone cannot access local dev apps v
      - Configures `winnat` dynamic ports to start at `60000` and restarts `winnat` to prevent Docker `ports are not available` errors when OpenHands starts sandbox containers.
    - If the script fails, fall back to `netsh interface portproxy add v4tov4 listenport=<port> listenaddress=0.0.0.0 connectport=<port> connectaddress=<wslIp>` and add a `New-NetFirewallRule` for each missing port.
    - If OpenHands still fails with `500 ports are not available`, manually restart `winnat`: `Restart-Service -Name winnat` (PowerShell admin) or `net stop winnat && net start winnat`.
+   - **WARNING (learned 2026-07-24):** `Restart-Service winnat` **deletes the `NetNat` rule for the WSL subnet**, breaking WSL internet completely (no DNS, no external connectivity). After restarting `winnat`, you MUST recreate the NAT rule — see `AGENTS.md` §8 (WSL2 Network / DNS / NetNat Recovery). Prefer fixing Docker port exhaustion by other means before restarting `winnat`.
 
 3. **Ensure core services are running**
    - **OpenHands (3000)**: check `http://localhost:3000`. If not responding, run `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\start-openhands-wsl.sh` in WSL, or `start-all.bat`.
