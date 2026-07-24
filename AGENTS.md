@@ -20,7 +20,7 @@ A **multi-tenant SaaS superapp** for Vietnamese SMBs (small-medium businesses) i
 | **Accounting** | 5178 | `accounting.appforyou.xyz` | Accounting: journal entries, invoices, fixed assets, taxes, chart of accounts, **e-invoice** |
 | **Operations Portal** | 3006 | `ops.appforyou.xyz` | Operations portal: shift management, training & quizzes, branch-level ops dashboards |
 
-> **`apps/` directory contains 8 entries**: the 7 Vite apps above + `apps/insforge-infra/` (Docker infrastructure: InsForge Gateway port 7130 + DeepWiki port 7131, NOT a Vite app, NOT deployed to Vercel). Old `apps/archive/`, `apps/docs/`, `apps/web/`, `apps/superapp-business-bot/` were deleted 2026-07-24 (stale boilerplate / paused telegram bot).
+> **`apps/` directory contains 8 entries**: the 7 Vite apps above + `apps/insforge-infra/` (Docker infrastructure for the agent — see §9 + §10, NOT a Vite app, NOT deployed to Vercel, NEVER related to telegram bot despite old name `superapp-unified-bot`). Old `apps/archive/`, `apps/docs/`, `apps/web/`, `apps/superapp-business-bot/` were deleted 2026-07-24 (stale boilerplate / paused telegram bot — separate from InsForge).
 
 ### 0.3 The 13 packages (shared code)
 
@@ -147,7 +147,27 @@ flowchart TD
 | Inventory | https://inventory.appforyou.xyz |
 | Sales | https://sales.appforyou.xyz |
 | HR | https://hr.appforyou.xyz |
-| Accounting | https://accounting.appforyou.xyz |
+| Accountin
+### 0.9 InsForge — your native grasp toolkit (use it to understand the project fast)
+
+InsForge is a **separate infrastructure** (its own Docker containers + local PostgreSQL `localhost:5432/insforge`) that exists so you can understand this codebase **fast, in your native way** — natural language queries, semantic search, direct DB introspection — instead of grep-reading 100 files. It has 3 components, all in `apps/insforge-infra/`:
+
+| Component | Port | What it does | When to use |
+|-----------|------|--------------|-------------|
+| **InsForge Gateway** | 7130 | DeepSeek LLM proxy with task-type routing (`code_generation`→reasoner, `quick_answer`→chat, `architect`→reasoner, `debug`→chat). | Automatic — OpenHands routes LLM calls through it. You don't call it directly. |
+| **DeepWiki** | 7131 | Vector search over the codebase (pgvector + BAAI/bge-small-en-v1.5 embeddings). Indexes all source files, exposes semantic search + AI Q&A + knowledge graph. | §9 — when you need to find code by concept ("how does trial mode work") in natural language (VN or EN). |
+| **InsForge MCP** | (stdio) | 17 tools: DB ops (`query`, `execute`, `create_table`...), migrations, codebase search, **memory** (`read_memory`, `write_memory`), **decision log** (`log_decision`), **error patterns** (`log_error_pattern`). | §10.6 + §10.7 — when you need to introspect DB schema, recall previous session context, or log decisions/errors. |
+
+**InsForge's local PostgreSQL** (`localhost:5432/insforge`, separate from Supabase cloud) stores 10 tables that power the above:
+- `codebase_index` + `codebase_relations` — DeepWiki's vector index (with HNSW index for fast ANN search)
+- `ai_memory` — key-value context store (loaded via `read_memory` at session start)
+- `decision_log` — architecture/tech decisions across sessions
+- `error_patterns` — errors you've fixed (so you don't re-debug the same issue)
+- `conversation_history`, `deployment_log`, `vibe_sessions`, `knowledge_entities`, `knowledge_relations`
+
+> **Why this matters**: without InsForge, you'd have to grep + read 100 files to understand the project. With it, you `read_memory` (recall context) + DeepWiki search (semantic find) + `describe_table` (DB schema) — 3 calls instead of 100 reads. **This is your native way to grasp the codebase. Use it.**
+
+g | https://accounting.appforyou.xyz |
 | Operations | https://ops.appforyou.xyz |
 
 ### Verification workflow (choose the right one)
@@ -422,9 +442,11 @@ git ls-remote origin viet      # Should return SHA
 - **WSL subnet can change** after `wsl --shutdown` or Windows reboot. Always re-read the current subnet from `ip route` inside WSL before creating a new `NetNat` rule. The `/20` prefix is correct for the default WSL2 configuration.
 - **`wsl -u root` bypasses the sudo password** — use it for one-off root operations in WSL when the user has forgotten their sudo password. Do not change the user's password without explicit permission.
 - **Do NOT enable `networkingMode=mirrored` in `.wslconfig`** to fix DNS. It was tried before and breaks Tailscale port forwarding from the phone. Keep `networkingMode` at default (NAT) and fix DNS via `/etc/resolv.conf` + `NetNat` instead.
-## 9. Codebase Search — DeepWiki Vector Search
+## 9. Codebase Search — DeepWiki Vector Search (your native way to find code)
 
-The repo is large (7 apps + 8 packages + 38+ migrations). For fast semantic queries, use **DeepWiki vector search** instead of grep when you need to find code by concept (not by exact string).
+> **DeepWiki is part of InsForge** (§0.9) — the agent's native grasp toolkit. It lets you query the codebase in natural language (Vietnamese or English) and get ranked results, instead of grep-reading 100 files.
+
+The repo is large (7 apps + 13 packages + 38+ migrations). For fast semantic queries, use **DeepWiki vector search** instead of grep when you need to find code by concept (not by exact string).
 
 ### 9.1 DeepWiki container
 
@@ -487,7 +509,9 @@ wsl -d Ubuntu -- bash -c 'docker exec insforge-deepwiki python3 /tmp/dw_search.p
 - **Combine both**: use DeepWiki to find candidate files, then grep within those files for exact lines.
 - **Do NOT rely on DeepWiki for secrets/env values** — `.env` files are not indexed (correctly excluded).
 
-## 10. OpenHands Agent Enhancements (verified 2026-07-24)
+## 10. OpenHands + InsForge Integration (verified 2026-07-24)
+
+> InsForge (§0.9) is wired into OpenHands so the agent can use it natively: MCP server for DB tools + memory, DeepWiki for vector search, Gateway for LLM routing. This section documents the actual integration.
 
 OpenHands agent-server has been tuned with several enhancements beyond defaults. Config lives in `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\openhands-settings.json` (NOT in this repo — do NOT edit from inside WSL/sandbox).
 
@@ -732,8 +756,8 @@ Then run `node scripts/import-trial-seeds.mjs` to populate seed data.
 |-------------|-------------|------------|
 | **WSL2 as dev host** | Vite + API run on WSL2, not in Docker sandbox. Code edited in sandbox → HMR on WSL. | Don't run Vite in sandbox (RULE 1). |
 | **Tailscale remote access** | Phone/laptop access dev apps via Tailscale IP. Dashboard at `:8080`. | Don't break Tailscale daemon on Windows. |
-| **DeepWiki vector search** (`insforge-deepwiki` container) | Semantic codebase search via `dw_search.py` — pgvector + BAAI/bge-small-en-v1.5 embeddings. | Don't delete `codebase_index` table. Re-index after major changes (`docker restart insforge-deepwiki`). |
-| **InsForge MCP** (`packages/insforge-mcp`) | 17 tools: DB ops, migrations, codebase search, memory, decision log, error patterns. | Don't use raw SQL when an MCP tool exists. Always `read_memory` at session start. |
+| **InsForge infrastructure** (`apps/insforge-infra/`, renamed from `superapp-unified-bot` 2026-07-24) | 3 components: Gateway (LLM routing, port 7130) + DeepWiki (vector search, port 7131) + local PostgreSQL (10 tables: codebase_index, ai_memory, decision_log, error_patterns, ...). Helps agent grasp codebase in native way — see §0.9. | Don't delete `codebase_index` table. Re-index after major changes (`docker restart insforge-deepwiki`). Don't confuse with Supabase cloud (apps backend) — InsForge is separate. |
+| **InsForge MCP** (`packages/insforge-mcp`) | 17 tools: DB ops, migrations, codebase search, memory, decision log, error patterns. Wired into OpenHands as MCP server (§10.7). | Don't use raw SQL when an MCP tool exists. Always `read_memory` at session start. |
 | **OpenHands agent enhancements** (see §10) | LLM profiles, context cache, condenser, sub-agents, Task Splitter, InsForge Agent Protocol. | Don't edit `openhands-settings.json` from WSL. Don't skip `read_memory`. |
 | **NetNat recovery procedure** (§8) | Documented recovery after `winnat` restart deletes NetNat rule. | Don't restart `winnat` without recreating NetNat. |
 
