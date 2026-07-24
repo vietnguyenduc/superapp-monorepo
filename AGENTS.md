@@ -1,5 +1,105 @@
 # Superapp Monorepo — Agent Rules
 
+## 0. Quick Start for new agents (read this first — 60 seconds)
+
+> **You are an agent working on the Superapp Monorepo.** This section orients you in 60 seconds. Read it before doing anything else. Then read §1-§10 for the rules that keep you out of trouble.
+
+### 0.1 What is this project?
+
+A **multi-tenant SaaS superapp** for Vietnamese SMBs (small-medium businesses) in F&B / retail. 7 frontend apps + shared backend on Supabase. One codebase, deployed to 7 Vercel production domains (`*.appforyou.xyz`). Multi-tenant via RLS + `company_id` (NOT schema-per-tenant).
+
+### 0.2 The 7 apps (what each does)
+
+| App | Port | Domain | Purpose |
+|-----|------|--------|---------|
+| **Admin Portal** | 5173 | `admin.appforyou.xyz` | Multi-company management, user/role admin, trial seed editor (`/admin/trial-seeds`), app switcher |
+| **Cashflow** | 5174 | `cashflow.appforyou.xyz` | Cash flow management: transactions, bank accounts, transaction types, branches, reports |
+| **Inventory Operation** | 5175 | `inventory.appforyou.xyz` | Inventory: products, categories, stock movements (import/export/transfer), variance reporting |
+| **Sales Operation** | 5176 | `sales.appforyou.xyz` | Sales orders + POS for F&B (fruit, dry goods, drinks): customers, sales reports, special outbound, bulk import |
+| **HR Operation** | 5177 | `hr.appforyou.xyz` | HR & **Payroll 3P** (Position-Person-Performance): employees, contracts, salary calculation |
+| **Accounting** | 5178 | `accounting.appforyou.xyz` | Accounting: journal entries, invoices, fixed assets, taxes, chart of accounts, **e-invoice** |
+| **Operations Portal** | 3006 | `ops.appforyou.xyz` | Operations portal: shift management, training & quizzes, branch-level ops dashboards |
+
+### 0.3 The 13 packages (shared code)
+
+| Package | Purpose |
+|---------|---------|
+| `@superapp/iam` | **Auth + multi-tenant context** — `AuthProvider`, `CompanyProvider`, `useAuth`, `useCompany`. Used by all 7 apps. |
+| `@superapp/ui` | Shared component library (buttons, modals, DataGrid, etc.) |
+| `@superapp/hooks` | Shared React hooks |
+| `@superapp/data-client` | Supabase client wrapper + data adapters (refactored shared business logic) |
+| `@superapp/trial-client` | Trial mode client — `trialClient.ts` reads from `trial_seed.data` table |
+| `@superapp/types` | Shared TypeScript types (User, Company, UserRole, etc.) |
+| `@superapp/api` | Fastify API server (port 3001) — routes for trial seeds, etc. |
+| `@superapp/einvoice` | E-invoice integration (for Accounting app) |
+| `@superapp/theme` | Tailwind theme tokens (Apple-inspired design) |
+| `@superapp/shared-utils` | Shared utility functions |
+| `@superapp/insforge-mcp` | InsForge MCP server (DB tools for OpenHands — see §10.7) |
+| `@superapp/eslint-config` | Shared ESLint config |
+| `@superapp/typescript-config` | Shared tsconfig |
+
+### 0.4 Stack
+
+- **Frontend**: React 18 + Vite 8 + TypeScript (strict) + Tailwind CSS (Apple-inspired)
+- **Backend**: Supabase cloud (`peslmsctejkwzyohke`) — PostgreSQL + RLS + Auth + Storage + Realtime
+- **API**: Fastify (`packages/api`, port 3001) — thin layer for trial seeds + utilities
+- **Local DB** (OpenHands only): PostgreSQL `localhost:5432/insforge` via `insforge-mcp`
+- **Deploy**: Vercel (preview on `viet` push, production on `main` merge)
+- **Monitoring**: Sentry (wired across all 7 apps)
+- **Docs**: 12 files per app in `apps/<app>/docs/` (OVERVIEW, ARCHITECTURE, API, FLOWS, DATA-MODEL, DATA-FLOW, UI-UX, PRD, ROLES-PERMISSIONS, RUNBOOK, AI-CONTEXT, CHANGELOG) + 9 root docs in `docs/`
+
+### 0.5 Read order for a new task
+
+```mermaid
+flowchart TD
+  START[New session] --> READ0[Read AGENTS.md §0<br/>this section — 60s]
+  READ0 --> READ_TASK{Task involves<br/>specific app?}
+  READ_TASK -->|Yes| APPDOC[Read apps/<app>/docs/OVERVIEW.md<br/>+ AI-CONTEXT.md — 2 min]
+  READ_TASK -->|No, cross-app| ROOTDOC[Read docs/ARCHITECTURE.md<br/>+ docs/AUTH-AND-RBAC.md — 3 min]
+  APPDOC --> MEMORY[Call read_memory via insforge-mcp<br/>load previous session context]
+  ROOTDOC --> MEMORY
+  MEMORY --> SEARCH[Use DeepWiki vector search<br/>for conceptual queries — §9]
+  SEARCH --> CODE[Now you have context.<br/>Start coding in /workspace/project/]
+  CODE --> RULES[Follow §1-§10 rules<br/>verify, push, etc.]
+```
+
+### 0.6 The 5 most important rules (don't forget these)
+
+1. **Verify in browser before reporting done** (§1b) — use the right URL (local/preview/production per branch).
+2. **Work in `/workspace/project/` only** (RULE 4) — never in `project/<hash>/` snapshot copies.
+3. **Don't start Vite in sandbox** (RULE 1) — dev servers run on WSL, you only edit code.
+4. **Always push to `origin/viet` after task** (RULE 6) — local commit is not enough.
+5. **Don't restart `winnat`** (§8) — it deletes the NetNat rule and breaks WSL internet.
+
+### 0.7 Top 10 DON'Ts (collected from all sections)
+
+| # | Don't | Why | Section |
+|---|-------|-----|---------|
+| 1 | Don't verify on `appforyou.xyz` after pushing to `viet` | Production hasn't changed — verify preview URL | §1b |
+| 2 | Don't work in `/workspace/project/project/<hash>/` | It's a git clone, not the mounted repo — changes won't reach Vite | RULE 4 |
+| 3 | Don't start `npm run dev` / `vite` in sandbox | Sandbox ports aren't mapped to WSL/Windows — use Tailscale IP instead | RULE 1 |
+| 4 | Don't change Vite ports (5173-5178, 3006) | Dashboard hardcodes them — fix port forwarding instead | RULE 3 |
+| 5 | Don't use port `60xxx` for verification | It's temporary sandbox preview, dies when sandbox dies | RULE 5 |
+| 6 | Don't restart `winnat` without recreating NetNat | Deletes WSL NAT rule → WSL loses internet | §8 |
+| 7 | Don't edit `openhands-settings.json` from WSL/sandbox | It lives on Windows — edit from Windows side, restart OpenHands | §10.10 |
+| 8 | Don't skip `read_memory` at session start | Context recall is the whole point of the InsForge Agent Protocol | §10.6 |
+| 9 | Don't call `execute` with `confirm: true` without user approval | Destructive DB writes need explicit confirmation | §10.6 |
+| 10 | Don't create schema-per-tenant (`tenant_<id>.`) | Project uses RLS + `company_id` — see `002_rls_policies.sql` | `.openhands_instructions` §12 |
+
+### 0.8 When you're stuck
+
+| Problem | Where to look |
+|---------|---------------|
+| "App unreachable from phone" | §6 Port Forwarding + §7 Tailscale architecture |
+| "WSL has no internet / DNS fails" | §8 WSL2 Network / DNS / NetNat Recovery |
+| "Need to find how X works" | §9 DeepWiki vector search (`docker exec insforge-deepwiki python3 /tmp/dw_search.py "X" 15`) |
+| "Don't know which MCP tool to use" | §10.7 MCP servers + §10.6 InsForge Agent Protocol |
+| "Conversation hitting context limit" | §10.3 Condenser handles it automatically — don't manually summarize |
+| "Task too big for 500 iterations" | §10.5 Task Splitter on dashboard |
+| "Need to know app's data model" | `apps/<app>/docs/DATA-MODEL.md` + `supabase/migrations/` |
+| "Need to know app's API" | `apps/<app>/docs/API.md` |
+| "Need to know user roles" | `apps/<app>/docs/ROLES-PERMISSIONS.md` + `apps/<app>/src/types/UserRole.ts` |
+
 ## 1. Always verify before declaring success
 
 - After any code change, run the relevant build / type-check / test.
@@ -556,3 +656,92 @@ Then run `node scripts/import-trial-seeds.mjs` to populate seed data.
   3. Vercel auto-deploy receives the fix.
   4. Next session starts with latest code.
 - **Do NOT only commit without pushing** — local commit is not enough, must push to remote.
+
+## 11. Project status & next steps (inferred 2026-07-24)
+
+> **Source**: inferred from `git log`, `apps/<app>/docs/CHANGELOG.md`, and TODO/FIXME scan. **Not authoritative** — confirm with user before starting major work.
+
+### 11.1 What's done (recent milestones)
+
+| When | What | Commit |
+|------|------|--------|
+| 2026-07-24 | Rules consolidation: AGENTS.md §8-§10, `.openhands_instructions` dedup | `9207c025` |
+| 2026-07-24 | Full documentation set: 84/84 app docs (12 files × 7 apps) + 9 root docs | `991a3d82` |
+| 2026-07-23 | Sentry error tracking wired across all 7 apps | `4ecb5830` |
+| 2026-07-22 | Vite 4 → 8 + plugin-react 4 → 6 + @types/react 18 → 19 (5 apps) | `978d0fda` |
+| 2026-07-22 | `nguoi_dai_dien` field added to customers (migration + type + forms + bulk import) | `9ba47de0`–`ac1b68b6` |
+| 2026-07-21 | CompanyBadge component showing company context across all 7 apps + RLS fix | `05330cd8`, `95334d65` |
+| 2026-07-20 | Bulk import: 200 → 2000 rows, Vietnamese column headers, phone optional, mobile AddButton | `f0ad459b`–`ab24c577` |
+| 2026-07-19 | AppSwitcher env-aware URL routing (production vs dev) | `7606affd` |
+| 2026-07-18 | Phase 1-6 architecture enhancements: RLS, cross-app auth, monorepo standardization | `41ed5982` |
+| 2026-07-15 | Trial mode services refactored to use data adapter (shared logic) | `90aa4034`–`2fec11ed` |
+
+### 11.2 Known TODOs (from code scan — 28 total)
+
+| App | TODOs | Theme |
+|-----|-------|-------|
+| sales-operation | 13 | `varianceReportingService` Supabase calls not implemented; `created_by`/`updated_by` hardcoded to `'current-user'` (should come from auth); `ProductBulkImportEnhanced` actual DB import not implemented; `SalesOrderCreatePage` missing form + DataGrid |
+| inventory-operation | 11 | Same `varianceReportingService` + `created_by`/`updated_by` + `ProductBulkImportEnhanced` pattern (shared with sales) |
+| cashflow | 2 | Email service not configured (CreateUserModal); monitoring service not configured (errorHandling.ts — but Sentry is wired, so this TODO may be stale) |
+| accounting | 2 | Same email + monitoring TODOs as cashflow |
+| admin-portal, hr-operation, operations-portal | 0 | — |
+
+**Top 3 unfinished features (by impact)**:
+1. **`varianceReportingService`** (sales + inventory, 8 TODOs) — Supabase calls stubbed, not implemented. Affects variance reporting UI.
+2. **`ProductBulkImportEnhanced`** (sales + inventory, 4 TODOs) — actual DB import not wired (UI exists, backend missing).
+3. **`SalesOrderCreatePage`** (sales, 2 TODOs) — page is a placeholder, missing `SalesOrderForm` + DataGrid.
+
+### 11.3 Suggested next steps (priority order — confirm with user)
+
+1. **Wire `created_by`/`updated_by` to real auth** (sales + inventory, 6 TODOs) — small change, replace `'current-user'` with `useAuth().user.id`. Quick win.
+2. **Implement `varianceReportingService` Supabase calls** (sales + inventory, 8 TODOs) — medium effort, unblocks variance reporting feature.
+3. **Wire `ProductBulkImportEnhanced` to DB** (sales + inventory, 4 TODOs) — medium effort, completes bulk import feature.
+4. **Build `SalesOrderCreatePage`** (sales, 2 TODOs) — larger effort, new form + DataGrid.
+5. **Stale TODO cleanup** — verify if cashflow/accounting email + monitoring TODOs are still relevant (Sentry is wired, so monitoring TODO may be obsolete).
+
+### 11.4 Documentation status
+
+- ✅ 84/84 app docs complete (12 files × 7 apps) — committed `991a3d82`.
+- ✅ 9 root docs in `docs/` (README, ARCHITECTURE, CODING-STANDARDS, DATABASE-SCHEMA, AUTH-AND-RBAC, TRIAL-SYSTEM, DEPLOYMENT, DATA-MIGRATION, DEV-ENVIRONMENT).
+- ✅ Rules consolidated (AGENTS.md §0-§12 + `.openhands_instructions`).
+- ⚠️ CHANGELOG `[Unreleased]` sections only mention "Full documentation set" — should be updated with actual feature changes when next version is cut.
+
+## 12. Improvement history (don't reinvent)
+
+> **Why this section exists**: past sessions have made significant architectural improvements. If you don't know about them, you might re-implement (waste) or break them (regression). This is a condensed log — see `git log` for full history.
+
+### 12.1 Architecture improvements
+
+| Improvement | What it did | Don't undo |
+|-------------|-------------|------------|
+| **RLS + `company_id` multi-tenancy** (`002_rls_policies.sql`, `006_multi_tenancy_company_id.sql`) | All tenant-scoped tables have `company_id` + RLS policy `USING (company_id = jwt.company_id)`. Single schema, not schema-per-tenant. | Don't create `tenant_<id>.` schemas. Don't add tables without `company_id` + RLS. |
+| **`@superapp/iam` shared auth** | `AuthProvider` + `CompanyProvider` in `packages/iam` — used by all 7 apps. Replaces per-app auth. | Don't create new auth context in apps. Use `useAuth()`, `useCompany()` from `@superapp/iam`. |
+| **`@superapp/data-client` shared business logic** | Transaction, customer, bank account, branch, transaction type services refactored to use shared logic + data adapter (`90aa4034`–`a8759d0f`). | Don't re-implement business logic in apps. Check `packages/data-client` first. |
+| **Trial mode data adapter** | Trial mode services use data adapter pattern — same UI works with both real Supabase and trial seed data. | Don't bypass the adapter. See `AGENTS.md` Trial Seed System. |
+| **AppSwitcher env-aware routing** (`7606affd`) | App switcher detects production vs dev and routes to `appforyou.xyz` vs `localhost:PORT`. | Don't hardcode URLs in app switcher. |
+| **CompanyBadge across all 7 apps** (`05330cd8`) | Shows current company context in header of every app. RLS-fixed (`95334d65`). | Don't remove CompanyBadge. Don't query `companies` table without RLS context. |
+| **Sentry error tracking** (`4ecb5830`) | Wired across all 7 apps. Errors flow to Sentry org `viet-duc`. | Don't remove Sentry. Don't add try/catch that swallows errors silently. |
+| **Vite 8 + React 19 types** (`978d0fda`) | Upgraded from Vite 4 + React 18 types. | Don't downgrade. Use Vite 8 plugin-react 6 APIs. |
+| **Bulk import 2000 rows + Vietnamese headers** (`f0ad459b`, `df035cdf`) | Increased limit 200→2000, added Vietnamese column header mapping. | Don't reduce limit. Don't assume English-only headers. |
+
+### 12.2 Dev environment improvements
+
+| Improvement | What it did | Don't undo |
+|-------------|-------------|------------|
+| **WSL2 as dev host** | Vite + API run on WSL2, not in Docker sandbox. Code edited in sandbox → HMR on WSL. | Don't run Vite in sandbox (RULE 1). |
+| **Tailscale remote access** | Phone/laptop access dev apps via Tailscale IP. Dashboard at `:8080`. | Don't break Tailscale daemon on Windows. |
+| **DeepWiki vector search** (`insforge-deepwiki` container) | Semantic codebase search via `dw_search.py` — pgvector + BAAI/bge-small-en-v1.5 embeddings. | Don't delete `codebase_index` table. Re-index after major changes (`docker restart insforge-deepwiki`). |
+| **InsForge MCP** (`packages/insforge-mcp`) | 17 tools: DB ops, migrations, codebase search, memory, decision log, error patterns. | Don't use raw SQL when an MCP tool exists. Always `read_memory` at session start. |
+| **OpenHands agent enhancements** (see §10) | LLM profiles, context cache, condenser, sub-agents, Task Splitter, InsForge Agent Protocol. | Don't edit `openhands-settings.json` from WSL. Don't skip `read_memory`. |
+| **NetNat recovery procedure** (§8) | Documented recovery after `winnat` restart deletes NetNat rule. | Don't restart `winnat` without recreating NetNat. |
+
+### 12.3 Telegram bot improvements (separate project, but related)
+
+| Improvement | What it did |
+|-------------|-------------|
+| **Circuit breaker reset per session** (`624bf3be`) | Telegram bot resets circuit breaker per session, smart task expiry. |
+| **Auto-compress context** (`624bf3be`) | Bot auto-compresses context to avoid hitting limits. |
+| **Devin API integration** (`624bf3be`) | Bot integrates with Devin API for task delegation. |
+
+> Telegram bot lives in `apps/superapp-unified-bot/` but is deployed separately. Don't confuse its config with the 7 frontend apps.
+

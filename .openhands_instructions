@@ -76,152 +76,42 @@
 
 ---
 
-## Advanced Automation Patterns (Cách 11-20)
+## Agent Capabilities & Patterns (reference)
 
-### 11. Multi-Agent Swarm
-- Khi task lớn: tự động chia thành sub-agent (Devin `run_subagent` hoặc OpenHands subagent):
-  - **Orchestrator**: Nhận yêu cầu tiếng Việt, phân tích, điều phối.
-  - **Backend**: Sửa `packages/api`, `supabase/migrations/`, services — dùng `insforge-mcp` cho local DB.
-  - **Frontend**: Sửa `apps/<app>/src/` — React + Tailwind + `@superapp/iam`.
-- Chia sẻ context qua file tạm trong `/tmp/` hoặc qua return value của subagent.
+> Các pattern dưới đây là **capabilities** (khả năng agent nên có), KHÔNG phải rules project-specific.
+> Rules project-specific đã chuyển sang `AGENTS.md` (§0-§12). Section này chỉ liệt kê tóm tắt để agent
+> biết project hỗ trợ/kỳ vọng gì.
 
-### 12. Multi-Tenant Pattern (RLS + company_id)
-- Project dùng **RLS + `company_id` column** trong cùng schema (KHÔNG dùng schema-per-tenant).
-- Mỗi table có RLS policy `USING (company_id = jwt_claim_company_id)`.
-- Admin master có thể truy cập nhiều company; admin company chỉ truy cập company của mình.
-- Xem `AGENTS.md` Trial Seed System + `supabase/migrations/002_rls_policies.sql` cho pattern thực tế.
-- **KHÔNG tạo schema-per-tenant** (`tenant_<user_id>.table_name`) — không phải pattern của project này.
+### Multi-agent & task splitting
+- **Sub-agents** (`AGENTS.md` §10.4): `enable_sub_agents: true`. Chia task lớn thành Orchestrator/Backend/Frontend.
+- **Task Splitter** (`AGENTS.md` §10.5): dashboard button, chia task thành 3-6 subtask × 5-8 iterations.
 
-### 13. Database Rollback (Reversible Mappings)
-- Trước mỗi thay đổi database: tạo snapshot/backup (Supabase Dashboard → Backup).
-- Rollback local DB: dùng `insforge-mcp` tool `rollback_migration` (KHÔNG có CLI `insforge db rollback`).
-- Rollback Supabase cloud: viết migration reverse thủ công (Supabase không auto-rollback).
-- Luôn test migration trên local PostgreSQL trước khi áp dụng lên Supabase cloud.
+### Database patterns
+- **Multi-tenant**: RLS + `company_id` (KHÔNG schema-per-tenant) — xem `AGENTS.md` §12.1 + `002_rls_policies.sql`.
+- **Migrations**: `supabase/migrations/NNN_<desc>.sql` (38+ files). Rollback local qua `insforge-mcp` `rollback_migration`.
+- **RLS policy**: `USING (company_id = (auth.jwt() ->> 'company_id')::uuid)`. Tạo qua migration file, KHÔNG qua InsForge MCP.
 
-### 14. Row Level Security (RLS)
-- Mỗi bảng có dữ liệu multi-tenant: thêm RLS policy dựa trên `company_id` (KHÔNG phải `user_id`).
-- Pattern thực tế: `USING (company_id = (auth.jwt() ->> 'company_id')::uuid)` — xem
-  `supabase/migrations/002_rls_policies.sql` + `006_multi_tenancy_company_id.sql`.
-- Tạo/sửa RLS qua Supabase Dashboard SQL Editor hoặc migration file, KHÔNG qua InsForge MCP.
+### App patterns
+- **Auth**: `@superapp/iam` + Supabase Auth (đã có sẵn). Roles: `admin_master`, `admin_company`, `warehouse_*`, `staff` — xem `apps/<app>/src/types/UserRole.ts`.
+- **Storage**: Supabase Storage (`supabase.storage.from(bucket)`), bucket `<app>-<category>`.
+- **Monorepo**: npm workspaces — `apps/` (7 Vite apps) + `packages/` (13 shared) + `supabase/migrations/` — xem `AGENTS.md` §0.2-§0.3.
+- **Docs**: 12 files/app trong `apps/<app>/docs/` + 9 root docs — viết tay, KHÔNG auto-generate.
 
-### 15. Visual QA (Tự Động Kiểm Tra Giao Diện)
-- Dùng Playwright MCP để mở browser, chụp ảnh giao diện
-- Tự động phát hiện lỗi: text tràn, layout vỡ, màu sai, thiếu element
-- Nếu có lỗi: tự sửa và chụp lại để xác nhận đã fix
+### Quality patterns
+- **Self-review** trước commit: logic, SQL, security, performance. DeepSeek-V4-Flash dùng chung cho implement + review.
+- **Security review**: SQL injection (dùng Supabase query builder), hardcoded credentials, missing validation, missing RLS.
+- **Browser verification**: BẮT BUỘC sau UI change — xem `AGENTS.md` §1b.
 
-### 16. Auto-Migrations
-- Mỗi lần đổi cấu trúc bảng: tự động tạo file migration
-- Đặt tên: `migrations/<timestamp>_<description>.sql`
-- Migration bao gồm cả `up` và `down` để rollback được
-- Tự động chạy migration khi deploy
+### Operational patterns
+- **Git auto-push**: sau task hoàn chỉnh → `git add -A` → commit (Conventional Commits) → `git push origin viet` — xem `AGENTS.md` RULE 6.
+- **Deploy**: `git push origin viet` → Vercel preview → verify → merge `main` → production — xem `AGENTS.md` §2.
+- **Maintenance** (khi user yêu cầu): `npm outdated`, `docker pull`, `npm run type-check`, backup Supabase — xem `AGENTS.md` §12.
+- **Memory & preferences**: lưu trong `AGENTS.md` (single source of truth), KHÔNG có `.openhands/memory/`. `read_memory` (insforge-mcp) at session start là mandatory.
+- **Rate limit / retry**: DeepSeek native API, auto-retry theo `openhands/.env` config (`LLM_NUM_RETRIES=8`, exponential backoff).
 
-### 17. Auth Setup (apps)
-- Apps đã có auth sẵn qua `@superapp/iam` (AuthProvider, CompanyProvider) + Supabase Auth.
-- KHÔNG tạo bảng users/sessions mới — Supabase Auth đã quản lý `auth.users`.
-- Khi thêm route protected: dùng `ProtectedRoute` từ `apps/<app>/src/components/auth/`.
-- Roles: xem `apps/<app>/src/types/UserRole.ts` (admin_master, admin_company, warehouse_*, staff).
-
-### 18. Monorepo Structure (npm workspaces)
-- Project là **monorepo npm workspaces**, KHÔNG phải /backend+/frontend+/shared:
-  ```
-  apps/<app-name>/          -> 7 Vite apps (admin-portal, cashflow, inventory, sales, hr, accounting, ops)
-  packages/<pkg-name>/      -> shared packages (iam, ui, hooks, shared-utils, types, trial-client, api, insforge-mcp)
-  supabase/migrations/      -> 38+ SQL migration files
-  scripts/                  -> utility scripts (import-trial-seeds.mjs, monitor-groq-usage.ps1, ...)
-  docker-compose.yml        -> InsForge Gateway (7130) + DeepWiki (7131)
-  ```
-- Không tự ý đổi cấu trúc monorepo. Thêm tính năng mới vào đúng app/package.
-
-### 19. File Storage
-- Apps dùng **Supabase Storage** (`supabase.storage.from(bucket)`) cho file upload, KHÔNG phải InsForge Storage.
-- Bucket pattern: `<app-name>-<category>` (vd `hr-avatars`, `inventory-products`).
-- Signed URL qua `supabase.storage.from(bucket).createSignedUrl(path, expiry)`.
-- Resize ảnh client-side trước khi upload (vd: `canvas` API, max 2MB).
-
-### 20. Documentation (apps)
-- Mỗi app có `apps/<app>/docs/` với 12 file chuẩn (OVERVIEW, ARCHITECTURE, API, FLOWS, DATA-MODEL,
-  DATA-FLOW, UI-UX, PRD, ROLES-PERMISSIONS, RUNBOOK, AI-CONTEXT, CHANGELOG) — tất cả có Mermaid diagrams.
-- `API.md` mô tả Supabase queries, RPCs, storage operations (bilingual VN/EN) — viết tay, KHÔNG auto-generate.
-- Root `docs/` có 9 file (README, ARCHITECTURE, CODING-STANDARDS, DATABASE-SCHEMA, AUTH-AND-RBAC,
-  TRIAL-SYSTEM, DEPLOYMENT, DATA-MIGRATION, DEV-ENVIRONMENT).
-- KHÔNG có `/docs/api/` hay Swagger/OpenAPI auto-generation.
-
----
-
-## Operations & Maintenance (Cách 21-30)
-
-### 21. Critique Loop (Self-Review)
-- Trước khi commit: self-review code (logic, SQL optimization, security, performance).
-- LLM hiện tại (DeepSeek-V4-Flash) có khả năng reasoning tốt — dùng chung cho cả implement và review.
-- Nếu phát hiện issue: fix trước khi commit, báo cáo rõ những gì đã sửa.
-- KHÔNG có "critic score < 0.7" numeric threshold — dùng judgment.
-
-### 22. Self-Healing Backend (Tự Sửa Lỗi Từ Log)
-- Khi app lỗi: tự động đọc file log (`insforge.log`, `app.log`, Docker logs)
-- Phân tích nguyên nhân: sai port, sai config, missing env, connection refused
-- Tự sửa file cấu hình và restart service bị lỗi
-- Nếu không fix được sau 3 lần: báo cáo chi tiết cho user
-
-### 23. Memory & Preferences
-- Project preferences đã được hardcode trong `AGENTS.md` (single source of truth):
-  - Code: TypeScript strict, functional components, React 18 + Vite 8.
-  - UI: Tailwind CSS, Apple-inspired design, Tiếng Việt cho UI text.
-  - Deploy: Vercel, branch `viet` (preview) → `main` (production).
-  - Backend: Supabase cloud + InsForge local DB.
-- KHÔNG có `.openhands/memory/` — preferences không lưu qua session, lưu trong `AGENTS.md` thay thế.
-- Khi bắt đầu session mới: đọc `AGENTS.md` đầu tiên.
-
-### 24. Rate Limit / Retry
-- LLM hiện tại: **DeepSeek native API** (KHÔNG còn Groq). DeepSeek tier 1: ~60 RPM.
-- Retry config trong `openhands/.env`: `LLM_NUM_RETRIES=8`, `LLM_RETRY_MIN_WAIT=10`,
-  `LLM_RETRY_MAX_WAIT=60`, exponential backoff (`LLM_RETRY_MULTIPLIER=2`).
-- Nếu lỗi 429: OpenHands auto-retry theo config trên, không cần can thiệp.
-- `scripts/monitor-groq-usage.ps1` còn tồn tại nhưng **outdated** (monitor Groq logs, không còn relevant).
-
-### 25. Security Review
-- Sau mỗi lần viết code kết nối database: kiểm tra:
-  - SQL injection (dùng Supabase query builder, không concat string).
-  - Hardcoded credentials (secrets phải nằm trong `.env`, không commit).
-  - Missing input validation (validate ở cả UI và service layer).
-  - Thiếu RLS policy (mọi table có `company_id` phải có RLS).
-- Review thủ công hoặc qua LLM (DeepSeek). `semgrep` nếu có cài đặt.
-
-### 26. Seed Data & Trial Mode
-- **Trial seed system** (xem `AGENTS.md` Trial Seed System): `trial_seed.data` table → API
-  `/api/trial/:table` → `trialClient.ts` → UI. Admin editor tại `/admin/trial-seeds`.
-- Import script: `scripts/import-trial-seeds.mjs` (extract từ `trialMockStore.ts` → Supabase).
-- Migration: `supabase/migrations/038_trial_seed_data.sql`.
-- KHÔNG có `migrations/seed.sql` — seed data nằm trong `trial_seed.data` table (Supabase cloud).
-- Dữ liệu tiếng Việt, thực tế (tên, địa chỉ, số điện thoại Việt Nam).
-
-### 27. Git Auto-Push
-- Sau mỗi tính năng hoàn chỉnh + test OK:
-  1. `git add -A`
-  2. `git commit -m "feat: <mô tả tiếng Anh>"`
-  3. `git push origin viet`
-- Commit message format: Conventional Commits
-- Không push nếu test fail hoặc critic score thấp
-
-### 28. Deploy
-- Khi user nói "deploy" hoặc "mang lên mạng": xem `AGENTS.md` §2 + `.devin/skills/superapp-deploy/SKILL.md`.
-- Workflow: `git push origin viet` → Vercel auto-build preview → verify preview URL → merge `main` → production.
-- Backend (Supabase) không cần "deploy" — schema changes qua migration files chạy trong Supabase Dashboard.
-- KHÔNG có "InsForge config cloud deploy" — InsForge là local-only.
-
-### 29. User Documentation
-- Mỗi app có `apps/<app>/docs/user-manuals/` (hoặc `user_manual_*.html`) — hướng dẫn sử dụng tiếng Việt.
-- Root `docs/` có 9 file documentation (README, ARCHITECTURE, DEPLOYMENT, ...).
-- KHÔNG có `GUIDE.md` auto-generated. User manual viết tay, screenshot thủ công.
-
-### 30. Maintenance (khi user yêu cầu)
-- Khi user yêu cầu "bảo trì" hoặc "maintenance":
-  1. `npm outdated` → review + update packages an toàn (tránh major version bump không test).
-  2. `docker images` → `docker pull` cho images cần update (openhands, insforge-gateway, deepwiki).
-  3. `npm run test` (nếu có test suite) hoặc `npm run type-check` + `npm run lint`.
-  4. Backup Supabase: Dashboard → Database → Backups (không có script local).
-  5. Báo cáo tình trạng hệ thống (không tự tạo file report).
-
----
+### Trial mode
+- `trial_seed.data` table → API `/api/trial/:table` → `trialClient.ts` → UI. Admin editor `/admin/trial-seeds`.
+- Import: `scripts/import-trial-seeds.mjs`. Migration: `038_trial_seed_data.sql`. Xem `AGENTS.md` Trial Seed System.
 
 ## Superapp Deployment Protocol (Git + Vercel + Browser Verification)
 
