@@ -20,13 +20,6 @@ export function validateCustomerData(data: any): ValidationResult {
   }
   
   // Optional fields with format validation
-  if (data.phone) {
-    const phoneRegex = /^[0-9+\-\s()]+$/;
-    if (!phoneRegex.test(data.phone)) {
-      errors.push("phone must be a valid phone number");
-    }
-  }
-  
   if (data.email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(data.email)) {

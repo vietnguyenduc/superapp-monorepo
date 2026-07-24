@@ -499,7 +499,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
           </p>
           <ul className="mt-2 space-y-1 text-sm text-blue-800 dark:text-blue-200">
             <li>• File Excel/CSV tối đa {MAX_BULK_ROWS} dòng. Nếu hơn, vui lòng tách nhỏ.</li>
-            <li>• Cột bắt buộc: <strong>Mã khách hàng</strong>, <strong>Họ và tên</strong>, <strong>Số điện thoại</strong>.</li>
+            <li>• Cột bắt buộc: <strong>Mã khách hàng</strong>, <strong>Họ và tên</strong>.</li>
             <li>• Không thể chỉnh sửa trực tiếp trong màn hình preview. Sửa file nguồn rồi tải lên lại khi có lỗi.</li>
           </ul>
         </div>
@@ -801,14 +801,14 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Số điện thoại *
+              Số điện thoại
             </label>
             <input
-              type="tel"
+              type="text"
               value={singleCustomer.phone}
               onChange={(e) => handleSingleInputChange("phone", e.target.value)}
               className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
-              placeholder="Số điện thoại"
+              placeholder="Số điện thoại (không bắt buộc)"
             />
           </div>
           <div>
@@ -885,7 +885,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
             variant="primary"
             size="md"
             onClick={handleCreateSingleCustomer}
-            disabled={isCreatingSingle || !singleCustomer.full_name || !singleCustomer.phone}
+            disabled={isCreatingSingle || !singleCustomer.full_name}
           >
             {isCreatingSingle ? t("common.saving") : "Thêm khách hàng"}
           </Button>
@@ -1225,6 +1225,9 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
               case "phone number":
               case "phone no":
               case "phone no.":
+              case "phone_number":
+              case "mobile number":
+              case "mobile phone":
               case "contact":
               case "contact number":
               case "tel":
@@ -1234,6 +1237,8 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
               case "số đt":
               case "số điện thoại di động":
               case "di động":
+              case "số phone":
+              case "phone contact":
                 customerData.phone = String(value).trim();
                 break;
               case "address":
