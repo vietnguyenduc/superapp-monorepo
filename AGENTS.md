@@ -200,6 +200,56 @@ g | https://accounting.appforyou.xyz |
 - "Vercel is still building" → Wait for READY, then verify. Don't report done before deploy finishes.
 - "Production URL doesn't show the change" → Of course not, you pushed to `viet` not `main`. Verify the preview URL instead.
 
+### 1c. Post-merge verification protocol (MANDATORY after claiming "merged to main")
+
+**Problem this solves**: OpenHands claims "pushed to viet, merged to main, deployed" but user sees no change on production. Root causes observed:
+1. OpenHands reports "merged" before Vercel deploy finishes → user visits stale production
+2. Browser caches old JS chunks (4h `max-age`) → user sees old UI even after deploy
+3. Squash merge creates new commit hash → `git log main | grep <commit>` fails → OpenHands wrongly reports "not merged"
+4. OpenHands skips browser verification → no evidence fix is actually live
+
+**Protocol** (run ALL steps before reporting "deployed to production"):
+
+1. **Verify merge actually happened** (don't rely on commit hash — squash changes it):
+   ```bash
+   git diff origin/main origin/viet -- <changed-files> | wc -l   # Should be 0
+   ```
+
+2. **Wait for Vercel production deploy READY**:
+   ```bash
+   npx vercel ls --token "$VERCEL_TOKEN" <app-name> --environment production
+   # Wait until latest deployment shows "Ready" (not "Queued"/"Building")
+   ```
+
+3. **Browser-verify production URL** (NOT preview):
+   - `browser_navigate` to `https://<app>.appforyou.xyz`
+   - `browser_screenshot` — attach to report
+   - `browser_get_content` or interact with the specific feature changed
+   - If feature not visible → **DO NOT report done**. Check:
+     - Is deploy actually READY? (step 2)
+     - Is browser loading cached version? (check `index-*.js` hash in page source vs latest deploy)
+     - Did the fix actually change UI? (some fixes are logic-only, no visual change)
+
+4. **Verify cache headers** (after vercel.json cache fix):
+   ```bash
+   curl -sI "https://<app>.appforyou.xyz/" | grep -i cache-control
+   # index.html should be: no-cache, no-store, must-revalidate
+   curl -sI "https://<app>.appforyou.xyz/assets/<chunk>.js" | grep -i cache-control
+   # JS chunks should be: public, max-age=31536000, immutable
+   ```
+
+5. **Report with evidence**:
+   - "Verified production at https://<app>.appforyou.xyz — [feature] works" + screenshot
+   - "Vercel deploy READY: <deploy-url>"
+   - "Cache headers: index.html no-cache, chunks immutable"
+   - NEVER report "deployed" without steps 1-4
+
+**If user reports "don't see change"**:
+1. Ask user to hard-refresh (Ctrl+Shift+R) or try incognito — bypasses browser cache
+2. Verify production bundle contains the fix: `curl -s https://<app>.appforyou.xyz/assets/<chunk>.js | grep "<pattern>"`
+3. If fix NOT in bundle → deploy didn't pick up the change → investigate Vercel build logs
+4. If fix IN bundle but user still doesn't see → browser cache issue → user needs hard refresh
+
 ## 2. Git + Vercel workflow
 
 When the user asks to deploy, redeploy, or verify a frontend app:
