@@ -86,3 +86,4 @@ conversations/
 bash_events/
 
 superapp-monorepo/
+*tsbuildinfo
