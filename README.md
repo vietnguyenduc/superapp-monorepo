@@ -1,30 +1,48 @@
 # Superapp Monorepo
 
-A comprehensive monorepo for F&B management applications built with Turborepo, featuring shared UI components, shared auth, standardized data migration capabilities, and multi-tenant capabilities.
+A comprehensive monorepo for F&B management applications built with npm workspaces, featuring shared UI components, shared auth, standardized data migration capabilities, and multi-tenant capabilities.
 
 ## Architecture Overview
 
-This monorepo leverages Turborepo to orchestrate a unified ecosystem of applications:
+This monorepo leverages npm workspaces to orchestrate a unified ecosystem of 7 applications + 13 shared packages:
 
-### Applications
-- **`apps/cashflow`**: Cash flow management application. Integrates securely with inventory and sales data.
-- **`apps/inventory-operation`**: Inventory management system for F&B operations.
-- **`apps/sales-operation`**: Sales tracking and POS management application.
-- **`apps/docs`**: Documentation site (planned).
+### Applications (7 Vite apps + 1 Docker infra)
 
-### Shared Packages
-- **`@repo/ui`**: Shared React component library with an Apple-like design system. Includes complex components like `DataTable` and `AuthProvider`.
-- **`@repo/hooks`**: Shared custom React hooks (`useDebounce`, `usePagination`, `useRealtimeSubscription`).
-- **`@repo/shared-utils`**: Common logic, utilities, API fetchers, and the shared Supabase authentication module.
-- **`@repo/theme`**: Shared styling definitions, tokens, and Tailwind configuration presets.
-- **`@repo/eslint-config`**: Standardized ESLint configurations for React and internal libraries.
-- **`@repo/typescript-config`**: Base TypeScript configurations used across all workspaces.
+| App | Port | Domain | Purpose |
+|-----|------|--------|---------|
+| `apps/admin-portal` | 5173 | `admin.appforyou.xyz` | Multi-company management, user/role admin, trial seed editor |
+| `apps/cashflow` | 5174 | `cashflow.appforyou.xyz` | Cash flow management: transactions, bank accounts, reports |
+| `apps/inventory-operation` | 5175 | `inventory.appforyou.xyz` | Inventory: products, stock movements, variance reporting |
+| `apps/sales-operation` | 5176 | `sales.appforyou.xyz` | Sales orders + POS for F&B: customers, sales reports, bulk import |
+| `apps/hr-operation` | 5177 | `hr.appforyou.xyz` | HR & Payroll 3P: employees, contracts, salary calculation |
+| `apps/accounting` | 5178 | `accounting.appforyou.xyz` | Accounting: journal entries, invoices, e-invoice, fixed assets |
+| `apps/operations-portal` | 3006 | `ops.appforyou.xyz` | Operations portal: shift management, training, quizzes |
+| `apps/insforge-infra` | 7130/7131 | (Docker, not Vercel) | InsForge Gateway (DeepSeek proxy) + DeepWiki (vector search) |
+
+### Shared Packages (13)
+
+| Package | Purpose |
+|---------|---------|
+| `@superapp/iam` | Auth + multi-tenant context (`AuthProvider`, `CompanyProvider`, `useAuth`, `useCompany`) |
+| `@superapp/ui` | Shared React component library (Apple-inspired design, `DataTable`, modals, etc.) |
+| `@superapp/hooks` | Shared React hooks (`useDebounce`, `usePagination`, `useRealtimeSubscription`) |
+| `@superapp/data-client` | Supabase client wrapper + shared business logic (data adapters) |
+| `@superapp/trial-client` | Trial mode client — reads from `trial_seed.data` table |
+| `@superapp/types` | Shared TypeScript types (User, Company, UserRole, etc.) |
+| `@superapp/api` | Fastify API server (port 3001) — trial seeds, utilities |
+| `@superapp/einvoice` | E-invoice integration (for Accounting app) |
+| `@superapp/theme` | Tailwind theme tokens (Apple-inspired) |
+| `@superapp/shared-utils` | Common logic, utilities, API fetchers |
+| `@superapp/insforge-mcp` | InsForge MCP server (DB tools for OpenHands) |
+| `@superapp/eslint-config` | Shared ESLint config |
+| `@superapp/typescript-config` | Shared tsconfig |
 
 ### Database & Security (Supabase)
-We use a centralized Supabase project. The `supabase/migrations/` folder manages the unified schema.
-- **Cross-app Triggers**: Database triggers automatically sync activities across apps (e.g., inventory imports or sales orders auto-create pending cashflow transactions).
-- **Multi-Tenancy**: The `company_id` column provides a secure, tenant-level isolation layer across all major tables using Row Level Security (RLS).
-- **Authentication**: Role-based access control (RBAC) securely restricts visibility based on `app_permissions` and `staff_permissions`.
+
+We use a centralized Supabase project (`peslmsctejkwzyohke`). The `supabase/migrations/` folder (38+ files) manages the unified schema.
+- **Multi-Tenancy**: `company_id` column + Row Level Security (RLS) — `USING (company_id = (auth.jwt() ->> 'company_id')::uuid)`. NOT schema-per-tenant.
+- **Authentication**: `@superapp/iam` + Supabase Auth (JWT-based). RBAC via `app_permissions` and `staff_permissions`.
+- **Cross-app Triggers**: Database triggers sync activities across apps (e.g., inventory imports auto-create pending cashflow transactions).
 
 ## Getting Started
 
@@ -47,52 +65,37 @@ cp .env.example apps/sales-operation/.env.local
 ```
 
 ### Monorepo Scripts
-We use Turborepo for efficient task execution. Run these from the root directory:
 
-- `npm run dev`: Start all apps in development mode concurrently.
+- `npm run dev:apps`: Start all 7 Vite apps in development mode concurrently.
 - `npm run build`: Build all apps and packages.
 - `npm run lint`: Run ESLint across all workspaces.
-- `npm run format`: Format code across the monorepo using Prettier.
 - `npm run type-check`: Run TypeScript compilation check.
 
-To run a task for a specific app, use the `--filter` flag:
+To run a task for a specific app, use the workspace flag:
 ```bash
-npx turbo run dev --filter=cashflow
+npm run dev -w apps/cashflow
 ```
 
-## Data Migration Hub
+## Documentation
 
-🚀 **NEW**: Comprehensive data migration system for seamless transition from manual/legacy workflows:
-- **Excel-like Interface**: Familiar grid editing experience
-- **Multi-source Import**: Excel, Google Sheets, CSV, manual input
-- **Smart Validation**: Real-time data validation with user-friendly messages
+- **Root docs** (`docs/`): 9 files — README, ARCHITECTURE, CODING-STANDARDS, DATABASE-SCHEMA, AUTH-AND-RBAC, TRIAL-SYSTEM, DEPLOYMENT, DATA-MIGRATION, DEV-ENVIRONMENT.
+- **App docs** (`apps/<app>/docs/`): 12 files per app — OVERVIEW, ARCHITECTURE, API, FLOWS, DATA-MODEL, DATA-FLOW, UI-UX, PRD, ROLES-PERMISSIONS, RUNBOOK, AI-CONTEXT, CHANGELOG.
+- **Agent rules** (`AGENTS.md`): Single source of truth for AI agents — read §0 first (60-second orientation).
 
-📚 **Documentation**:
-- [Data Migration Hub Architecture](./docs/DATA-MIGRATION-HUB.md)
-- [Development Rules & Standards](./docs/DATA-MIGRATION-RULES.md)
+## AI-Assisted Development
 
-## 🤖 AI-Assisted Development (Vibe Coding)
-
-This project is optimized for AI-assisted development. Each app contains an `AI_CONTEXT.md` file that helps AI assistants understand the project quickly.
+This project is optimized for AI-assisted development (OpenHands, Devin, Windsurf).
 
 ### Quick Start for AI Sessions
 ```text
-I'm working on the [app-name] app in the superapp-monorepo. 
-Please read AI_CONTEXT.md in apps/[app-name]/ for project context.
+Read AGENTS.md §0 (Quick Start for new agents) first.
+Then read apps/<app-name>/docs/AI-CONTEXT.md for the specific app.
 ```
 
 ### Key Documentation
 | Document | Purpose |
 |----------|---------|
-| `apps/*/AI_CONTEXT.md` | AI assistant context (read first!) |
+| `AGENTS.md` | Agent rules — single source of truth (read §0 first!) |
+| `apps/*/docs/AI-CONTEXT.md` | Per-app AI context |
 | `docs/ARCHITECTURE.md` | System architecture |
-| `docs/CODING_STANDARDS.md` | Code guidelines |
-| `CONTRIBUTING.md` | How to contribute |
-
-### After Each AI Session
-Update the `AI_CONTEXT.md` file with:
-- What was completed
-- Current issues
-- Next steps
-
-# test-dashboard-git-status
+| `docs/CODING-STANDARDS.md` | Code guidelines |

@@ -1,43 +1,44 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import type { FC } from 'react';
 import { AuthProvider, CompanyProvider } from '@superapp/iam';
+import { lazyWithRetry } from '@superapp/shared-utils';
 import Layout from './components/Layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import OnboardingTour from './components/Help/OnboardingTour';
 import ContextHelp from './components/Help/ContextHelp';
 import ErrorBoundary from './components/ErrorBoundary';
 
-// Lazy-loaded pages for code splitting
-const Login = lazy(() => import('./pages/Auth/Login'));
-const SignUp = lazy(() => import('./pages/Auth/SignUp'));
-const CompanySelector = lazy(() => import('./pages/CompanySelector/CompanySelector'));
-const DashboardPageEnhanced = lazy(() => import('./pages/DashboardPageEnhanced'));
-const InventoryInputPage = lazy(() => import('./pages/InventoryInputPage'));
-const ImportExportPage = lazy(() => import('./components/ImportExport/ImportExportPage'));
-const InventoryRecordsPage = lazy(() => import('./pages/InventoryRecordsPage'));
-const ProductCatalogPageEnhanced = lazy(() => import('./pages/ProductCatalogPageEnhanced'));
-const SupplierManagement = lazy(() => import('./pages/SupplierManagement'));
-const PurchaseOrderPage = lazy(() => import('./pages/PurchaseOrderPage'));
-const GoodsReceiptPage = lazy(() => import('./pages/GoodsReceiptPage'));
-const SupplierReturnPage = lazy(() => import('./pages/SupplierReturnPage'));
-const InventoryMRPPage = lazy(() => import('./pages/InventoryMRPPage'));
-const SpecialOutboundPage = lazy(() => import('./pages/SpecialOutboundPage'));
-const PermissionDemoPage = lazy(() => import('./pages/PermissionDemoPage'));
-const EditableGridDemoPage = lazy(() => import('./pages/EditableGridDemoPage'));
-const ProductCatalogDemoPage = lazy(() => import('./pages/ProductCatalogDemoPage'));
-const ExcelDataDemoPage = lazy(() => import('./pages/ExcelDataDemoPage'));
-const ProductBulkImportComplete = lazy(() => import('./pages/ProductBulkImportComplete'));
-const ImportSettingsPage = lazy(() => import('./pages/ImportSettingsPage'));
-const ProductCatalogSettingsPage = lazy(() => import('./pages/ProductCatalogSettingsPage'));
-const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const SettingsPage = lazy(() => import('./pages/SettingsPage'));
-const TestPage = lazy(() => import('./pages/TestPage'));
-const HelpPage = lazy(() => import('./pages/HelpPage'));
-const WarehouseKeeperImportPage = lazy(() => import('./pages/WarehouseKeeperImportPage'));
-const WarehouseAccountantImportPage = lazy(() => import('./pages/WarehouseAccountantImportPage'));
-const ProductCatalogImportPage = lazy(() => import('./pages/ProductCatalogImportPage'));
-const InventoryTransactionImportPage = lazy(() => import('./pages/InventoryTransactionImportPage'));
+// Lazy-loaded pages for code splitting (lazyWithRetry auto-reloads on stale chunk)
+const Login = lazyWithRetry(() => import('./pages/Auth/Login'));
+const SignUp = lazyWithRetry(() => import('./pages/Auth/SignUp'));
+const CompanySelector = lazyWithRetry(() => import('./pages/CompanySelector/CompanySelector'));
+const DashboardPageEnhanced = lazyWithRetry(() => import('./pages/DashboardPageEnhanced'));
+const InventoryInputPage = lazyWithRetry(() => import('./pages/InventoryInputPage'));
+const ImportExportPage = lazyWithRetry(() => import('./components/ImportExport/ImportExportPage'));
+const InventoryRecordsPage = lazyWithRetry(() => import('./pages/InventoryRecordsPage'));
+const ProductCatalogPageEnhanced = lazyWithRetry(() => import('./pages/ProductCatalogPageEnhanced'));
+const SupplierManagement = lazyWithRetry(() => import('./pages/SupplierManagement'));
+const PurchaseOrderPage = lazyWithRetry(() => import('./pages/PurchaseOrderPage'));
+const GoodsReceiptPage = lazyWithRetry(() => import('./pages/GoodsReceiptPage'));
+const SupplierReturnPage = lazyWithRetry(() => import('./pages/SupplierReturnPage'));
+const InventoryMRPPage = lazyWithRetry(() => import('./pages/InventoryMRPPage'));
+const SpecialOutboundPage = lazyWithRetry(() => import('./pages/SpecialOutboundPage'));
+const PermissionDemoPage = lazyWithRetry(() => import('./pages/PermissionDemoPage'));
+const EditableGridDemoPage = lazyWithRetry(() => import('./pages/EditableGridDemoPage'));
+const ProductCatalogDemoPage = lazyWithRetry(() => import('./pages/ProductCatalogDemoPage'));
+const ExcelDataDemoPage = lazyWithRetry(() => import('./pages/ExcelDataDemoPage'));
+const ProductBulkImportComplete = lazyWithRetry(() => import('./pages/ProductBulkImportComplete'));
+const ImportSettingsPage = lazyWithRetry(() => import('./pages/ImportSettingsPage'));
+const ProductCatalogSettingsPage = lazyWithRetry(() => import('./pages/ProductCatalogSettingsPage'));
+const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage'));
+const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage'));
+const TestPage = lazyWithRetry(() => import('./pages/TestPage'));
+const HelpPage = lazyWithRetry(() => import('./pages/HelpPage'));
+const WarehouseKeeperImportPage = lazyWithRetry(() => import('./pages/WarehouseKeeperImportPage'));
+const WarehouseAccountantImportPage = lazyWithRetry(() => import('./pages/WarehouseAccountantImportPage'));
+const ProductCatalogImportPage = lazyWithRetry(() => import('./pages/ProductCatalogImportPage'));
+const InventoryTransactionImportPage = lazyWithRetry(() => import('./pages/InventoryTransactionImportPage'));
 
 // Loading fallback component
 const PageLoading = () => (

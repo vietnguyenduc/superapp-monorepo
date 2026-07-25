@@ -41,10 +41,12 @@ You are an autonomous deployment engineer. DO NOT ask the user to manually check
      - `cd apps/<app-name>`
      - `vercel --token "$VERCEL_TOKEN" --prod --yes`
      - If `vercel` asks to link the project, use `--project <app-name>` as well.
-5. **Verify via browser**.
-   - `browser_navigate` to the production URL (e.g., `https://sales.appforyou.xyz/login`).
-   - `browser_get_state` and `browser_get_content` to confirm the UI rendered (login form, dashboard, etc.).
+5. **Verify via browser** — choose the correct URL per `AGENTS.md` §1b:
+   - **After push to `viet`** (this workflow): verify the **Vercel preview URL** (from `vercel list` output), NOT `appforyou.xyz`. Production has NOT changed yet.
+   - **After merge `viet` → `main`**: verify the **production URL** (e.g., `https://sales.appforyou.xyz/login`).
+   - `browser_navigate` → `browser_get_state` (with screenshot) → `browser_get_content` to confirm the UI rendered (login form, dashboard, etc.).
    - If the page is blank or spinner only, capture console logs and Vercel build logs.
+   - **NEVER report "production updated" after pushing to `viet`** — it isn't until `viet` is merged into `main`.
 6. **Report** the production URL, the Vercel deployment URL, and the verification result.
 
 ## Rules

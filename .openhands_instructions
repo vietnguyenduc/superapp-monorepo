@@ -1,33 +1,60 @@
-# OpenHands Instructions — InsForge Local Ecosystem
+# OpenHands Instructions — Superapp Monorepo
+
+> **NOTE (2026-07-24):** File này chứa rules OpenHands-specific (MCP servers, InsForge MCP, DeepSeek LLM).
+> Các rule chung của project (browser verification, git workflow, Tailscale, deploy, network) đã được
+> chuyển sang `AGENTS.md` làm **single source of truth**. Các phần trùng lặp ở dưới được thay bằng
+> reference tới `AGENTS.md` để tránh 3 nguồn sự thật gây nhiễu agent.
+> Khi có xung đột giữa file này và `AGENTS.md`, **`AGENTS.md` thắng**.
 
 ## Core Architecture
-- **Backend**: InsForge Local chạy tại `http://host.docker.internal:7130` qua giao thức MCP
-- **Database**: PostgreSQL local qua InsForge (không dùng Supabase trừ khi được yêu cầu)
-- **Auth**: Sử dụng module Auth của InsForge (JWT-based)
+- **Backend (apps)**: Supabase cloud (`peslmsctejmvkwzyohke`) — PostgreSQL + RLS + Auth + Storage + Realtime. Apps query qua `apiClient` (route qua InsForge API server port 3001) hoặc trực tiếp `supabase` client.
+- **InsForge Gateway** (port 7130): DeepSeek proxy, không phải backend của apps — chạy trong Docker cho OpenHands/DeepWiki.
+- **InsForge MCP** (`packages/insforge-mcp/`): MCP server cho OpenHands tương tác local PostgreSQL (`localhost:5432/insforge`).
+- **Database**: Dual-stack — apps dùng **Supabase cloud** (`peslmsctejmvkwzyohke`) làm backend chính (RLS, Auth, Storage); **InsForge** là local PostgreSQL (`localhost:5432/insforge`) + MCP server (`packages/insforge-mcp/`) cho OpenHands tương tác DB local khi dev. Cả hai đều dùng.
+- **Auth**: Apps dùng `@superapp/iam` (AuthProvider, CompanyProvider) + **Supabase Auth** (JWT, RLS). InsForge MCP không có tool auth.
 - **Frontend**: React + TailwindCSS + Vite
 - **Deploy**: Vercel (qua MCP Vercel)
 
 ## MCP Servers Available
-- `insforge` — InsForge Local (database, auth, storage)
-- `supabase` — Supabase cloud (chỉ dùng khi cần production)
-- `playwright` — Browser automation & testing
-- `tavily` — Web search
-- `vercel` — Deploy frontend
-- `postgres` — Direct PostgreSQL access
-- `sequential-thinking` — Complex reasoning
+
+> **Reality check (2026-07-24):** OpenHands `.env` không khai báo MCP_SSERVERS hay OH_AGENT_SERVER_ENV.
+> Chỉ `VERCEL_TOKEN`, `SENTRY_AUTH_TOKEN`, `TS_AUTHKEY` được inject. Danh sách dưới đây là **capability
+> thực của `packages/insforge-mcp/`** (chạy qua `npx @superapp/insforge-mcp`), KHÔNG phải MCP servers
+> auto-load. Các MCP server khác (playwright, tavily, sequential-thinking) **không có trong setup hiện tại**.
+
+- `insforge-mcp` (`packages/insforge-mcp/`) — MCP server với tools:
+  - DB: `list_tables`, `describe_table`, `query` (read-only SELECT), `execute` (write, cần `confirm: true`),
+    `create_table`, `alter_table`, `drop_table`, `insert_rows`
+  - Migrations: `list_migrations`, `apply_migration`, `rollback_migration`
+  - Codebase: `search_codebase`, `ask_codebase` (semantic search qua local embeddings)
+- `deepwiki` (`docker exec insforge-deepwiki python3 /tmp/dw_search.py "QUERY" N`) — vector search
+  codebase nhanh, không cần OpenHands. Xem `AGENTS.md` §9 cho syntax + khi nào dùng.
+  - Memory: `read_memory`, `write_memory`, `log_decision`, `log_error_pattern`
+  - **KHÔNG có** tool `auth`, `storage`, hay CLI `insforge db rollback` (đó là MCP tool `rollback_migration`).
+- `vercel` — CLI `vercel` (dùng `VERCEL_TOKEN` từ .env), không phải MCP server.
+- `gh` — CLI `gh` (dùng GitHub token từ remote URL hoặc `GH_TOKEN` nếu có).
+
+> Apps backend chính là **Supabase cloud** (`peslmsctejmvkwzyohke`), không phải InsForge.
+> InsForge MCP chỉ dùng khi OpenHands cần query/modify local PostgreSQL (`localhost:5432/insforge`).
 
 ## Database Rules
-- LUÔN dùng InsForge MCP để tạo bảng, migration, query
-- Khi tạo schema cho nhiều user: dùng multi-tenant pattern (schema per user hoặc RLS)
-- Tự động tạo migration file khi thay đổi cấu trúc bảng
-- Dùng `insforge db rollback` nếu cần undo thay đổi database
+- **Apps schema**: quản lý qua `supabase/migrations/*.sql` (38+ files, chạy bằng Supabase Dashboard SQL Editor
+  hoặc `supabase db push`). KHÔNG dùng InsForge MCP cho schema của apps.
+- **Local PostgreSQL** (`localhost:5432/insforge`): chỉ khi OpenHands cần query/modify DB local cho
+  debugging/experimentation — dùng `insforge-mcp` tools `query`/`execute`/`apply_migration`/`rollback_migration`.
+- Multi-tenant: dùng **RLS + `company_id`** (xem §12 bên dưới + `supabase/migrations/002_rls_policies.sql`).
+  KHÔNG dùng schema-per-tenant.
+- Migration files: đặt ở `supabase/migrations/NNN_<description>.sql` (NNN = số thứ tự 3 chữ số).
+  Có `down_sql` trong `insforge_migrations` table nếu muốn rollback qua `rollback_migration` MCP tool.
+- **Production DB**: luôn xin confirmation user trước khi sửa (Supabase cloud = production).
 
 ## Agent Behavior
-- Dùng Groq_DeepSeek_R1 cho các task phức tạp (reasoning, architecture, SQL)
-- Dùng Groq_Llama_3.3 cho UI/HTML/Tailwind
-- Khi gặp query SQL phức tạp: spawn sub-agent chuyên trách
-- Tối đa 5 lần retry nếu gặp lỗi, sau đó dừng và báo cáo
-- Luôn xin confirmation trước khi sửa database production
+- **LLM hiện tại**: `deepseek/deepseek-v4-flash` (DeepSeek native API, 1M context) — xem `openhands/.env`.
+  KHÔNG còn dùng Groq (Groq_DeepSeek_R1, Groq_Llama_3.3 đã retire).
+- Retry config: `LLM_NUM_RETRIES=8`, `LLM_RETRY_MIN_WAIT=10`, `LLM_RETRY_MAX_WAIT=60`, exponential backoff.
+- `MAX_ITERATIONS=50` mỗi conversation — Task Splitter chia task phức tạp thành 3-5 subtask.
+- Khi gặp query SQL phức tạp: spawn sub-agent chuyên trách.
+- Luôn xin confirmation trước khi sửa database production (Supabase cloud).
 
 ## Git Workflow
 - Branch chính: `viet`
@@ -36,91 +63,10 @@
 
 ## Browser Verification Protocol (BẮT BUỘC)
 
-### Nguyên tắc cốt lõi
-**KHÔNG BAO GIỜ báo "task hoàn thành" mà chưa mở URL phù hợp bằng browser tool.**
-
-### QUAN TRỌNG: URL verify phụ thuộc vào Git branch!
-
-| Tình huống | Branch | Vercel làm gì | URL cần verify |
-|-----------|--------|---------------|----------------|
-| Local dev (chưa push) | — | Không gì | `http://<TAILSCALE_IP>:<PORT>` (vd `http://100.83.130.115:5174`) |
-| Push lên `viet` | `viet` | Tạo **preview deployment** | Vercel preview URL (từ `vercel ls`) |
-| Merge vào `main` | `main` | Deploy **production** | `https://<app>.appforyou.xyz` |
-
-**SAI LẦM PHỔ BIẾN: Push lên `viet` rồi verify trên appforyou.xyz → production CHƯA đổi!**
-- Push `viet` → Vercel tạo **preview URL** (vd `https://cashflow-git-viet.vercel.app` hoặc URL tạm khác).
-- Production (appforyou.xyz) chỉ update khi merge `viet` → `main`.
-- Lấy preview URL: `vercel ls --token "$VERCEL_TOKEN" <app-name>` → tìm deployment mới nhất.
-
-### Browser tool fix (OpenHands #14779)
-Nếu browser tool báo "Root CDP client not initialized":
-- Nguyên nhân: agent-server chạy không phải root → Chromium sandbox bật → crash trong Docker
-- Fix đã áp dụng: Dockerfile.agent-server dùng `USER root` → `os.getuid()==0` → `chromium_sandbox=False`
-- Env vars đã bake vào image: `IN_DOCKER=true`, `BROWSER_USE_DISABLE_EXTENSIONS=1`, `CHROME_ARGS=--no-sandbox...`
-- Extensions repo đã pre-clone để tránh timeout download
-- Nếu lỗi tái diễn: rebuild image → `docker build -t openhands-agent-server-with-node:latest -f Dockerfile.agent-server .`
-
-### Local dev URLs (test không cần push)
-| App | URL (Tailscale) | Port |
-|-----|-----------------|------|
-| Admin Portal | http://100.83.130.115:5173 | 5173 |
-| Cashflow | http://100.83.130.115:5174 | 5174 |
-| Inventory | http://100.83.130.115:5175 | 5175 |
-| Sales | http://100.83.130.115:5176 | 5176 |
-| HR | http://100.83.130.115:5177 | 5177 |
-| Accounting | http://100.83.130.115:5178 | 5178 |
-| Operations | http://100.83.130.115:3006 | 3006 |
-
-### Production URLs (CHỈ sau merge vào main)
-| App | URL |
-|-----|-----|
-| Admin Portal | https://admin.appforyou.xyz |
-| Cashflow | https://cashflow.appforyou.xyz |
-| Inventory | https://inventory.appforyou.xyz |
-| Sales | https://sales.appforyou.xyz |
-| HR | https://hr.appforyou.xyz |
-| Accounting | https://accounting.appforyou.xyz |
-| Operations | https://ops.appforyou.xyz |
-
-### Workflow A: Local dev (không push)
-1. Code changes → Vite HMR tự reload trên WSL
-2. `browser_navigate` đến `http://<TAILSCALE_IP>:<PORT>`
-3. Screenshot + verify feature
-4. Báo: "Verified locally at [URL]: [feature] OK"
-
-### Workflow B: Push lên `viet` (preview deployment)
-1. `git push origin viet` → Vercel auto-build preview
-2. `vercel ls --token "$VERCEL_TOKEN" <app-name>` → tìm preview URL mới nhất
-3. `browser_navigate` đến **preview URL** (KHÔNG PHẢI appforyou.xyz!)
-4. Screenshot + verify feature
-5. Báo: "Verified preview at [URL]: [feature] OK"
-6. **KHÔNG báo "production đã update" — nó chưa update cho đến khi merge main.**
-
-### Workflow C: Merge vào `main` (production deployment)
-1. Merge `viet` → `main` → Vercel deploy production
-2. Wait for READY
-3. `browser_navigate` đến `https://<app>.appforyou.xyz`
-4. Screenshot + verify feature
-5. Báo: "Verified production at [URL]: [feature] OK"
-
-### Khi nào KHÔNG cần browser verify
-- Task chỉ sửa file config, không ảnh hưởng UI (vd: `.env`, `vite.config.ts`)
-- Task chỉ sửa backend API, không có UI để check → dùng `curl` thay thế
-- Task chỉ sửa documentation
-
-### Khi browser verify FAIL
-1. Đọc console logs: `browser_get_console_logs`
-2. Đọc network requests: `browser_get_network_requests`
-3. Phân tích lỗi → fix code → push lại → verify lại
-4. **KHÔNG báo "xong" nếu browser vẫn lỗi**
-
-### Audit pass (grep + browser)
-Sau khi làm xong tất cả subtask, thực hiện audit:
-1. `grep -r '<field_name>' apps/<app>/src/` — tìm tất cả file liên quan
-2. Kiểm tra từng file có thay đổi cần thiết chưa
-3. Fix file nào thiếu
-4. **Mở browser verify** từng trang có liên quan (dùng URL phù hợp: local/preview/production)
-5. Báo cáo: "Audit xong. N files checked, M files fixed. Browser verify: OK at [URL]"
+> **Đã chuyển sang `AGENTS.md` §1b** (single source of truth). Các bảng local/preview/production URL,
+> workflow A/B/C, audit pass, và common excuses đều ở đó. File này không lặp lại để tránh 3 nguồn sự thật.
+>
+> Tóm tắt: sau push `viet` → verify **preview URL** (không phải appforyou.xyz). Sau merge `main` → verify production.
 
 ## Code Style
 - Tiếng Việt cho UI text, documentation
@@ -130,367 +76,59 @@ Sau khi làm xong tất cả subtask, thực hiện audit:
 
 ---
 
-## Advanced Automation Patterns (Cách 11-20)
+## Agent Capabilities & Patterns (reference)
 
-### 11. Multi-Agent Swarm
-- Khi task lớn: tự động chia thành 3 sub-agent:
-  - **Agent 1 (Orchestrator)**: Nhận yêu cầu tiếng Việt, phân tích, điều phối
-  - **Agent 2 (Backend)**: Chuyên gọi InsForge MCP tạo bảng, auth, migration
-  - **Agent 3 (Frontend)**: Chuyên viết UI React/Tailwind, dùng Groq_Llama_3.3
-- Các agent tự phối hợp, chia sẻ context qua file tạm trong `/tmp/`
+> Các pattern dưới đây là **capabilities** (khả năng agent nên có), KHÔNG phải rules project-specific.
+> Rules project-specific đã chuyển sang `AGENTS.md` (§0-§12). Section này chỉ liệt kê tóm tắt để agent
+> biết project hỗ trợ/kỳ vọng gì.
 
-### 12. Multi-Tenant Schema (20 Users)
-- Khi tạo app cho nhiều user: tự động tạo schema riêng biệt trên Postgres
-- Pattern: `tenant_<user_id>.table_name` hoặc dùng Row Level Security
-- Dữ liệu user A không thể truy cập dữ liệu user B
-- Tự động tạo 20 schema khi khởi tạo project mới
+### Multi-agent & task splitting
+- **Sub-agents** (`AGENTS.md` §10.4): `enable_sub_agents: true`. Chia task lớn thành Orchestrator/Backend/Frontend.
+- **Task Splitter** (`AGENTS.md` §10.5): dashboard button, chia task thành 3-6 subtask × 5-8 iterations.
 
-### 13. Database Rollback (Reversible Mappings)
-- Trước mỗi thay đổi database: tạo snapshot/backup
-- Nếu lỗi: gọi `insforge db rollback` để khôi phục trạng thái trước đó
-- Luôn test migration trên bản sao trước khi áp dụng thật
+### Database patterns
+- **Multi-tenant**: RLS + `company_id` (KHÔNG schema-per-tenant) — xem `AGENTS.md` §12.1 + `002_rls_policies.sql`.
+- **Migrations**: `supabase/migrations/NNN_<desc>.sql` (38+ files). Rollback local qua `insforge-mcp` `rollback_migration`.
+- **RLS policy**: `USING (company_id = (auth.jwt() ->> 'company_id')::uuid)`. Tạo qua migration file, KHÔNG qua InsForge MCP.
 
-### 14. Row Level Security (RLS) Tự Động
-- Mỗi bảng có dữ liệu user: tự động thêm RLS policy
-- Policy mặc định: `USING (auth.uid() = user_id)`
-- Dùng InsForge MCP để enable RLS và tạo policy
+### App patterns
+- **Auth**: `@superapp/iam` + Supabase Auth (đã có sẵn). Roles: `admin_master`, `admin_company`, `warehouse_*`, `staff` — xem `apps/<app>/src/types/UserRole.ts`.
+- **Storage**: Supabase Storage (`supabase.storage.from(bucket)`), bucket `<app>-<category>`.
+- **Monorepo**: npm workspaces — `apps/` (7 Vite apps) + `packages/` (13 shared) + `supabase/migrations/` — xem `AGENTS.md` §0.2-§0.3.
+- **Docs**: 12 files/app trong `apps/<app>/docs/` + 9 root docs — viết tay, KHÔNG auto-generate.
 
-### 15. Visual QA (Tự Động Kiểm Tra Giao Diện)
-- Dùng Playwright MCP để mở browser, chụp ảnh giao diện
-- Tự động phát hiện lỗi: text tràn, layout vỡ, màu sai, thiếu element
-- Nếu có lỗi: tự sửa và chụp lại để xác nhận đã fix
+### Quality patterns
+- **Self-review** trước commit: logic, SQL, security, performance. DeepSeek-V4-Flash dùng chung cho implement + review.
+- **Security review**: SQL injection (dùng Supabase query builder), hardcoded credentials, missing validation, missing RLS.
+- **Browser verification**: BẮT BUỘC sau UI change — xem `AGENTS.md` §1b.
 
-### 16. Auto-Migrations
-- Mỗi lần đổi cấu trúc bảng: tự động tạo file migration
-- Đặt tên: `migrations/<timestamp>_<description>.sql`
-- Migration bao gồm cả `up` và `down` để rollback được
-- Tự động chạy migration khi deploy
+### Operational patterns
+- **Git auto-push**: sau task hoàn chỉnh → `git add -A` → commit (Conventional Commits) → `git push origin viet` — xem `AGENTS.md` RULE 6.
+- **Deploy**: `git push origin viet` → Vercel preview → verify → merge `main` → production — xem `AGENTS.md` §2.
+- **Maintenance** (khi user yêu cầu): `npm outdated`, `docker pull`, `npm run type-check`, backup Supabase — xem `AGENTS.md` §12.
+- **Memory & preferences**: lưu trong `AGENTS.md` (single source of truth), KHÔNG có `.openhands/memory/`. `read_memory` (insforge-mcp) at session start là mandatory.
+- **Rate limit / retry**: DeepSeek native API, auto-retry theo `openhands/.env` config (`LLM_NUM_RETRIES=8`, exponential backoff).
 
-### 17. Auth Setup Tự Động
-- Khi user yêu cầu "làm tính năng đăng nhập":
-  1. Gọi InsForge Auth MCP tạo bảng users, sessions
-  2. Tạo form Login/Register với email + password
-  3. Cấu hình JWT token, refresh token
-  4. Thêm middleware bảo vệ route
-  5. Tạo trang profile, forgot password
-
-### 18. InsForge Boilerplate
-- Khi tạo project mới: dùng cấu trúc chuẩn:
-  ```
-  /backend        -> InsForge config + migrations
-  /frontend       -> React + Vite + Tailwind
-  /shared         -> Types, constants
-  ```
-- Không tự ý đổi cấu trúc boilerplate có sẵn
-- Chỉ thêm tính năng mới vào đúng thư mục
-
-### 19. Local Storage Management
-- Dùng InsForge Storage API để lưu file upload
-- Thư mục: `storage/<tenant_id>/<category>/`
-- Tự động resize ảnh trước khi lưu (max 2MB)
-- Tạo signed URL cho phép truy cập file an toàn
-
-### 20. Auto-Generated API Docs (Swagger)
-- Sau khi tạo xong database + API: tự động generate Swagger/OpenAPI docs
-- Docs bằng tiếng Việt, giải thích rõ từng endpoint
-- Lưu vào `/docs/api/` dưới dạng Markdown + OpenAPI JSON
-- Tự động cập nhật docs khi API thay đổi
-
----
-
-## Operations & Maintenance (Cách 21-30)
-
-### 21. Critique Loop (Kỹ Sư Trưởng Phản Biện)
-- Trước khi ghi code: tự động review code qua verification system
-- Dùng Groq_DeepSeek_R1 để kiểm tra: SQL optimization, security, performance
-- Nếu critic score < 0.7: tự động refine (tối đa 2 lần)
-- Báo cáo rõ những gì đã sửa sau critique
-
-### 22. Self-Healing Backend (Tự Sửa Lỗi Từ Log)
-- Khi app lỗi: tự động đọc file log (`insforge.log`, `app.log`, Docker logs)
-- Phân tích nguyên nhân: sai port, sai config, missing env, connection refused
-- Tự sửa file cấu hình và restart service bị lỗi
-- Nếu không fix được sau 3 lần: báo cáo chi tiết cho user
-
-### 23. Memory (Ghi Nhớ Thói Quen)
-- Ghi nhớ preferences của user qua các session:
-  - UI: dark mode, font Roboto, màu primary
-  - Code: TypeScript strict, functional components
-  - Deploy: Vercel, branch viet
-- Lưu vào `.openhands/memory/` để dùng lại ở session sau
-- Khi bắt đầu project mới: tự động áp dụng preferences đã lưu
-
-### 24. Rate Limit Monitor (Giám Sát Groq)
-- Groq free: giới hạn ~30 requests/phút
-- Nếu gặp lỗi 429 (rate limit): tự động pause 60 giây rồi retry
-- Không bao giờ gửi quá 25 requests trong 1 phút
-- Nếu liên tục bị chặn: tự switch sang DeepSeek_Native làm fallback
-- Script giám sát: `scripts/monitor-groq-usage.ps1`
-
-### 25. Security Scanner (Quét Bảo Mật)
-- Sau mỗi lần viết code kết nối database: tự động kiểm tra:
-  - SQL injection vulnerabilities
-  - Hardcoded credentials
-  - Missing input validation
-  - Thiếu RLS policy
-- Dùng `semgrep` hoặc manual review qua Groq_DeepSeek_R1
-- Báo cáo lỗ hổng kèm cách fix
-
-### 26. Seed Data (Tạo Dữ Liệu Ảo)
-- Khi app mới chưa có data: tự động tạo dữ liệu mẫu
-- 20 user accounts với avatar, profile
-- 100+ records cho mỗi bảng chính
-- Dữ liệu tiếng Việt, thực tế (tên, địa chỉ, số điện thoại Việt Nam)
-- Lưu script seed vào `migrations/seed.sql`
-
-### 27. Git Auto-Push
-- Sau mỗi tính năng hoàn chỉnh + test OK:
-  1. `git add -A`
-  2. `git commit -m "feat: <mô tả tiếng Anh>"`
-  3. `git push origin viet`
-- Commit message format: Conventional Commits
-- Không push nếu test fail hoặc critic score thấp
-
-### 28. Local-to-Cloud Deploy
-- Khi user nói "deploy" hoặc "mang lên mạng":
-  1. Build frontend: `npm run build`
-  2. Deploy lên Vercel qua MCP Vercel
-  3. Deploy backend InsForge config lên cloud (nếu có)
-  4. Verify deploy thành công qua Playwright MCP
-  5. Báo URL cho user
-
-### 29. Auto User Guide (Hướng Dẫn Sử Dụng)
-- Sau khi deploy: tự động tạo `GUIDE.md` bằng tiếng Việt
-- Nội dung:
-  - Cách đăng ký / đăng nhập
-  - Hướng dẫn từng tính năng chính (có ảnh chụp màn hình)
-  - Câu hỏi thường gặp
-  - Thông tin liên hệ hỗ trợ
-- Dùng Playwright MCP để chụp ảnh minh họa
-
-### 30. Autonomous Maintenance (Tự Bảo Trì Định Kỳ)
-- Mỗi tuần (hoặc khi user yêu cầu "bảo trì"):
-  1. Check InsForge version → nếu có update: test rồi nâng cấp
-  2. Check npm packages → `npm outdated` → update an toàn
-  3. Check Docker images → pull latest nếu có
-  4. Chạy full test suite
-  5. Backup database
-  6. Báo cáo tình trạng hệ thống
-- Tự động tạo file `maintenance-report-<date>.md`
-
----
+### Trial mode
+- `trial_seed.data` table → API `/api/trial/:table` → `trialClient.ts` → UI. Admin editor `/admin/trial-seeds`.
+- Import: `scripts/import-trial-seeds.mjs`. Migration: `038_trial_seed_data.sql`. Xem `AGENTS.md` Trial Seed System.
 
 ## Superapp Deployment Protocol (Git + Vercel + Browser Verification)
 
-> Mục tiêu: Không bao giờ nói "không truy cập được Vercel" khi `VERCEL_TOKEN` và `GH_TOKEN` đã được inject.
-
-### Environment variables
-- `VERCEL_TOKEN` — đã inject vào agent-server qua `OH_AGENT_SERVER_ENV`.
-- `GH_TOKEN` — đã inject; `gh` CLI dùng token này để push, check hooks, tạo PR.
-- `WORKSPACE_BASE`/`WORKSPACE_MOUNT_PATH` — mount repo `superapp-monorepo`.
-
-### Khi user yêu cầu deploy / redeploy / check Vercel
-1. **Commit + push** (nếu có thay đổi):
-   ```bash
-   cd /workspace/project/*superapp-monorepo
-   git status --short
-   git add <file_cần_thiết>
-   git commit -m "fix: <mô tả>"
-   git push origin viet
-   ```
-2. **Trigger / monitor Vercel deployment**:
-   ```bash
-   # List deployments
-   vercel list --token "$VERCEL_TOKEN" --scope personal sales-operation
-   # Hoặc tạo deployment mới từ build cục bộ
-   cd apps/sales-operation
-   vercel --token "$VERCEL_TOKEN" --prod --yes
-   ```
-3. **Wait for READY**:
-   ```bash
-   vercel list --token "$VERCEL_TOKEN" sales-operation | grep -E "READY|BUILDING|ERROR"
-   ```
-4. **Verify via browser**:
-   ```
-   browser_navigate: { "url": "https://sales.appforyou.xyz/login" }
-   browser_get_state: { "include_screenshot": true }
-   browser_get_content: {}
-   ```
-   - Nếu thấy màn hình đăng nhập / nội dung app → deploy thành công.
-   - Nếu spinner / trắng → đọc console, check Vercel build logs.
-
-### Khi user yêu cầu check GitHub webhook
-- Dùng `gh` CLI với `GH_TOKEN`:
-  ```bash
-  gh api repos/vietnguyenduc/superapp-monorepo/hooks
-  ```
-- Kết quả `[]` là bình thường nếu Vercel dùng GitHub App; không dùng nó để kết luận Vercel mất kết nối.
-
-### Các lỗi sơ đẳng cần tránh
-- Không nói "không có quyền truy cập Vercel" khi `VERCEL_TOKEN` đã tồn tại.
-- Không kết thúc task sau khi push mà chưa verify bằng browser.
-- Không dùng `2>/dev/null` để giấu lỗi khi debug; luôn in stderr để biết root cause.
-
----
+> **Đã chuyển sang `AGENTS.md` §2** + `.devin/skills/superapp-deploy/SKILL.md`. File này không lặp lại.
+> Tóm tắt: `git push origin viet` → Vercel auto-build preview → verify preview URL (KHÔNG phải appforyou.xyz).
+> Merge `viet` → `main` → Vercel deploy production → verify appforyou.xyz.
 
 ## Local Dev Port / Tailscale Self-Healing Protocol
 
-> Mục tiêu: Khi user ở quán cafe dùng điện thoại qua Tailscale bị mất port, agent phải tự mở lại port và verify — không hỏi user "bạn tự mở lại đi".
-
-### Triggers
-
-- User nói: "mở lại port", "Tailscale sập", "điện thoại không vào được", "port mất", "dashboard không mở", "OpenHands unreachable".
-- Bất kỳ URL nào dạng `http://<TAILSCALE_HOST>:<PORT>` trả về lỗi / timeout.
-
-### Workflow
-
-1. **Verify Tailscale trên Windows**
-   - `tailscale ip -4`
-   - Nếu rỗng: `tailscale up` hoặc `sc start tailscale` → đợi 5s → retry.
-   - Nếu vẫn fail: báo user "Tailscale chưa login trên Windows, cần mở Tailscale app đăng nhập".
-
-2. **Mở port forwarding, firewall và fix winnat**
-   - Chạy `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\run-forward-wsl-ports.bat` (script này auto-elevate admin).
-   - Nó forward WSL ports `5173-5178, 3001, 3006, 7130`, mở firewall cho `3000` (OpenHands) + `8080` (dashboard), đồng thời cấu hình `winnat` dynamic port range bắt đầu từ `60000` và restart `winnat` để tránh lỗi Docker `500 ports are not available` khi OpenHands khởi động sandbox container.
-   - Nếu vẫn gặp lỗi `500 ports are not available`, thủ công restart `winnat`: `Restart-Service -Name winnat` (PowerShell admin) hoặc `net stop winnat && net start winnat`.
-
-3. **Khởi động lại service nếu cần**
-   - **OpenHands (3000)**: `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\start-openhands-wsl.sh` trong WSL.
-   - **Dashboard (8080)**: `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\generate-apps-dashboard.ps1`.
-   - **Vite apps**: `npm run dev:apps` trong `/home/dev/projects/superapp-monorepo`.
-   - **API**: `npm run dev -w packages/api`.
-
-4. **Verify từ Tailscale IP**
-   - `curl -s -o /dev/null -w "%{http_code}" http://<TAILSCALE_IP>:8080`
-   - `curl -s -o /dev/null -w "%{http_code}" http://<TAILSCALE_IP>:3000`
-   - `browser_navigate` đến `http://<TAILSCALE_HOSTNAME>:8080` để xác nhận dashboard mở được.
-
-5. **Báo user URLs**
-   - Dashboard: `http://<TAILSCALE_HOSTNAME>:8080`
-   - OpenHands: `http://<TAILSCALE_HOSTNAME>:3000`
-   - Vite apps: `http://<TAILSCALE_HOSTNAME>:5173` đến `:5178`, `:3006`
-
-### Notes
-
-- Tailscale daemon chạy trên Windows, không phải trong WSL.
-- Nếu IP Tailscale đổi, chạy lại `generate-apps-dashboard.ps1` để cập nhật link.
-- Có thể dùng skill `.devin/skills/superapp-port-forward/SKILL.md` để thực hiện nhanh.
-
----
+> **Đã chuyển sang `AGENTS.md` §6 + §8** + `.devin/skills/superapp-port-forward/SKILL.md`. File này không lặp lại.
+> Tóm tắt: Tailscale daemon chạy trên Windows. Port forwarding qua `run-forward-wsl-ports.bat`.
+> **WARNING**: không restart `winnat` (xóa NetNat → WSL mất internet) — xem `AGENTS.md` §8 cho NetNat recovery.
 
 ## Remote Dev / Tailscale Dashboard Context
 
-> Mục tiêu: Agent phải biết dashboard nào, app nào chạy ở port nào, nằm ở host nào — không đoán mò.
+> **Đã chuyển sang `AGENTS.md` §7** (Remote Dev / Tailscale Dashboard Context) + RULE 1-6. File này không lặp lại
+> để tránh 2 bản verbatim gây nhiễu agent. Tất cả network architecture diagram, app→port table, RULE 1-6
+> đều ở `AGENTS.md`.
 
-### Hai host
-
-| Host | Vai trò | Tailscale hostname |
-|------|---------|--------------------|
-| Windows (`desktop-u5m9dgp`) | Tailscale daemon, dashboard server, port forwarding, OpenHands launcher | `desktop-u5m9dgp` |
-| WSL2 Ubuntu container | OpenHands agent-server, Vite dev apps, API server | (dùng chung IP Tailscale của Windows) |
-
-### Apps Dashboard
-
-- **URL**: `http://desktop-u5m9dgp:8080/apps-dashboard.html` (hoặc `http://<TAILSCALE_IP>:8080/apps-dashboard.html`)
-- **Chạy từ**: Windows host (KHÔNG phải từ WSL/OpenHands container). Python HTTP server trên port `8080` serve file HTML tĩnh.
-- **Sinh bởi**: `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\generate-apps-dashboard.ps1` (nằm trong project `openhands`, không nằm trong repo này).
-- **Start bởi**: `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\start-all.bat` khi Windows boot.
-- **Mục đích**: Trang duy nhất liệt kê tất cả app đang chạy + status check live. **Mở dashboard này trước** khi cần biết app nào ở port nào.
-
-### App → Port mapping (local dev)
-
-| App | Port | Đường dẫn Vite app |
-|-----|------|---------------------|
-| OpenHands | 3000 | (agent-server, không phải Vite) |
-| Admin Portal | 5173 | `apps/admin-portal` |
-| Cashflow | 5174 | `apps/cashflow` |
-| Inventory Operation | 5175 | `apps/inventory-operation` |
-| Sales Operation | 5176 | `apps/sales-operation` |
-| HR Operation | 5177 | `apps/hr-operation` |
-| Accounting | 5178 | `apps/accounting` |
-| Operations Portal | 3006 | `apps/operations-portal` |
-| API server | 3001 | `packages/api` |
-
-### Lưu ý quan trọng
-
-- Dashboard `apps-dashboard.html` **không nằm trong repo này** — nó nằm trong project `openhands` trên Windows. Đừng tìm nó trong workspace.
-- Tailscale daemon chạy **trên Windows**, không phải trong WSL. WSL container dùng IP Tailscale của Windows host.
-- Từ WSL, truy cập Windows host qua `desktop-u5m9dgp` (Magic DNS) hoặc IP Tailscale.
-- Nếu IP Tailscale đổi, chạy lại `generate-apps-dashboard.ps1` để cập nhật link trên dashboard.
-
-### KIẾN TRÚC MẠNG — ĐỪNG NHẦM LẪN
-
-```
-Phone (Tailscale)
-    │
-    ▼ 100.83.x.x = Tailscale IP của Windows (KHÔNG PHẢI IP nội bộ Docker!)
-Windows host (desktop-u5m9dgp)
-    │ ├── Port 8080: Dashboard (Python HTTP server trên Windows)
-    │ ├── Port 3000: OpenHands UI (→ Docker -p 3000:3000)
-    │ └── Port proxy (netsh portproxy): 3006, 5173-5178, 3001 → WSL IP
-    │
-    ▼
-WSL2 Ubuntu
-    │ ├── Vite dev apps (npm run dev:apps) ← DEV SERVER CHẠY Ở ĐÂY
-    │ ├── API server (port 3001)
-    │ └── Docker
-    │       └── openhands-app container (port 3000 mapped)
-    │             └── Sandbox containers (OpenHands sửa code ở đây)
-    │                   └── Nếu Vite chạy ở đây → PORT KHÔNG ĐƯỢC EXPOSE RA WSL/Windows
-```
-
-### NGUYÊN TẮC SỐ 1: Vite dev servers chạy trên WSL, KHÔNG trong sandbox container
-
-- **Vite apps được start bởi `start-all.bat`** (step 4): `wsl -d Ubuntu -- bash -c "cd /home/dev/projects/superapp-monorepo && npm run dev:apps"`.
-- Vite chạy **trực tiếp trên WSL2**, port được forward từ Windows qua `forward-wsl-app-ports.ps1` (netsh portproxy).
-- **KHÔNG start Vite bên trong sandbox container** của OpenHands. Sandbox container là Docker container riêng biệt, port của nó KHÔNG được map ra WSL hay Windows.
-- Nếu bạn chạy `npm run dev` trong sandbox, app sẽ không truy cập được từ Windows/phone/dashboard.
-- **Nhiệm vụ của OpenHands**: sửa code trong sandbox, KHÔNG host dev server. Dev server đã chạy sẵn trên WSL.
-
-### NGUYÊN TẮC SỐ 2: 100.83.x.x là Tailscale IP, không phải IP nội bộ Docker
-
-- `100.83.130.115` là **Tailscale IP** của Windows host (range `100.64.0.0/10` là CGNAT của Tailscale).
-- **KHÔNG PHẢI** IP ảo nội bộ Docker container. Đừng nhầm lẫn.
-- Dashboard trỏ link đến `http://<TAILSCALE_IP>:<PORT>` — đây là URL đúng để truy cập từ phone qua Tailscale.
-- Chain: `Phone → Tailscale IP (Windows) → netsh portproxy → WSL IP → Vite app`.
-
-### NGUYÊN TẮC SỐ 3: Không đổi port Vite
-
-- Dashboard đã hardcode port cho từng app (3006, 5173-5178). Đừng đổi port Vite sang 8011 hay bất kỳ port nào khác.
-- Nếu app không truy cập được, vấn đề là **port forwarding chưa chạy** hoặc **Vite chưa start trên WSL**, không phải sai port.
-- Fix: chạy `run-forward-wsl-ports.bat` trên Windows + đảm bảo `npm run dev:apps` đang chạy trên WSL.
-
-### NGUYÊN TẮC SỐ 4: Làm việc trong /workspace/project/ (repo chính), KHÔNG trong bản sao
-
-- Sandbox mount `/home/dev/projects/superapp-monorepo` → `/workspace/project/`.
-- **LUÔN làm việc trong `/workspace/project/`** — đây là repo chính, code sửa ở đây sẽ được Vite trên WSL pick up qua HMR.
-- **KHÔNG tạo hay sử dụng thư mục `/workspace/project/project/<hash>/superapp-monorepo/`** — đây là bản sao clone từ GitHub, code sửa ở đó KHÔNG reach được Vite trên WSL.
-- **Lý do OpenHands tạo bản sao**: Khi tạo conversation, nếu chọn "Repository" = `vietnguyenduc/superapp-monorepo`, OpenHands sẽ `git clone` repo vào `/workspace/project/<hash>/superapp-monorepo/`. **KHÔNG chọn repository khi tạo conversation** — để trống, OpenHands sẽ dùng trực tiếp `/workspace/project/` (repo đã mount).
-- Nếu thấy thư mục `project/<hash>/` tồn tại trong workspace, **xóa nó ngay**: `rm -rf /workspace/project/project/`.
-- Kiểm tra: sau khi sửa file, chạy `git diff` trong `/workspace/project/` để xác nhận thay đổi đã ghi xuống repo chính.
-- **KHÔNG chạy `npm run dev` hay `vite` trong sandbox** — dev server đã chạy sẵn trên WSL (qua `start-all.bat`). Chỉ sửa code + commit.
-
-### NGUYÊN TẮC SỐ 5: Port 60xxx là preview tạm, KHÔNG phải deployment
-
-- OpenHands sandbox map port nội bộ ra `localhost:60xxx` (vd `localhost:60865`). Đây là **preview tạm thời**.
-- Khi sandbox chết → port 60xxx biến mất → fix mất.
-- **KHÔNG dùng port 60xxx để verify deployment**. Luôn verify qua `http://<TAILSCALE_IP>:<PORT>` (vd `http://100.83.130.115:3006`).
-- Workflow đúng: sửa code trong `/workspace/project/` → commit → Vite trên WSL tự HMR → verify qua Tailscale IP.
-
-### NGUYÊN TẮC SỐ 6: Sau mỗi conversation phải git push lên origin/viet
-
-- OpenHands sửa code trực tiếp trong `/workspace/project/` (repo đã mount).
-- **Sau khi hoàn thành task, LUÔN commit + push** lên `origin/viet`:
-  ```bash
-  cd /workspace/project
-  git add -A
-  git commit -m "fix: <mô tả>"
-  git push origin viet
-  ```
-- Điều này đảm bảo:
-  1. Code fix không mất khi sandbox chết.
-  2. WSL Vite có code mới nhất (nếu cần restart).
-  3. Vercel auto-deploy nhận được fix.
-  4. Session sau có code mới nhất.
-- **KHÔNG chỉ commit mà không push** — commit lokal không đủ, cần push lên remote.
-
+---

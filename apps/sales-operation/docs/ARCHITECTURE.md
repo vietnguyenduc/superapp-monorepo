@@ -1,461 +1,192 @@
-# Architecture - Inventory Operation System
+# Architecture — Sales Operation App
 
-## System Overview
+> Kiến trúc kỹ thuật, tech stack, cấu trúc thư mục và component.
 
-The Inventory Operation System is a web-based application for managing product catalogs, inventory tracking, sales records, and stock variance detection in food and beverage businesses.
+## Tech Stack
 
-## High-Level Architecture
+| Layer | Công nghệ |
+|-------|-----------|
+| Framework | React 18 + TypeScript |
+| Build tool | Vite 8 |
+| Styling | Tailwind CSS 3 (Apple-inspired design) |
+| Routing | react-router-dom 6 |
+| State | React Hooks + Custom hooks |
+| Backend | Supabase (PostgreSQL + Realtime) |
+| Auth | `@superapp/iam` (AuthProvider, CompanyProvider) |
+| Charts | Recharts 3 |
+| Icons | @heroicons/react 2 |
+| i18n | i18next + react-i18next |
+| Drag & drop | react-beautiful-dnd |
+| File upload | react-dropzone |
+| Excel | xlsx (SheetJS) |
+| E-invoice | @superapp/einvoice |
+| Shared utils | @superapp/shared-utils |
+| Shared types | @repo/types |
+| Shared UI | @repo/ui |
+| Testing | Vitest + Testing Library + jsdom |
+| Lint/Format | ESLint + Prettier |
+| Deployment | Vercel (production: sales.appforyou.xyz) |
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Client Layer                              │
-│  React 18 + TypeScript + Tailwind CSS + Vite               │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Service Layer                              │
-│  databaseService.ts - Business Logic & API Coordination     │
-│  - Validation                                                │
-│  - Data Transformation                                       │
-│  - Error Handling                                            │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│                Supabase Client Layer                         │
-│  - Authentication (@supabase/auth-js-react)                │
-│  - Database Client (@supabase/supabase-js)                │
-│  - Real-time Subscriptions                                  │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Supabase Backend (PostgreSQL)                   │
-│  - Database Tables (RLS Protected)                           │
-│  - Stored Functions                                          │
-│  - Triggers                                                 │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## Component Architecture
-
-### Frontend Components
+## Cấu trúc thư mục
 
 ```
-src/
-├── components/
-│   ├── UI/                  # Reusable UI components
-│   │   ├── Button.tsx
-│   │   ├── Input.tsx
-│   │   ├── Modal.tsx
-│   │   └── Table.tsx
-│   └── Layout/              # Layout components
-│       ├── Header.tsx
-│       ├── Sidebar.tsx
-│       └── Footer.tsx
-├── pages/                   # Page components
-│   ├── DashboardPage.tsx
-│   ├── ProductCatalogPage.tsx
-│   ├── InventoryInputPage.tsx
-│   ├── InventoryImport.tsx
-│   ├── SalesReportPage.tsx
-│   └── SettingsPage.tsx
-├── services/
-│   ├── databaseService.ts   # Main service layer
-│   └── supabase.ts         # Supabase client config
-├── types/
-│   ├── Product.ts
-│   ├── InventoryRecord.ts
-│   ├── SalesRecord.ts
-│   └── index.ts
-├── utils/
-│   ├── rbac.ts             # Role-based access control
-│   └── formatting.ts       # Data formatting utilities
-├── hooks/
-│   ├── useAuth.ts          # Authentication hook
-│   └── useDatabase.ts      # Database access hook
-└── lib/
-    └── supabase.ts         # Supabase client initialization
+apps/sales-operation/
+├── src/
+│   ├── App.tsx                    # Root: Router, AuthProvider, CompanyProvider
+│   ├── FixedApp.tsx               # Alternative root (debug)
+│   ├── pages/                     # Các trang chính
+│   │   ├── Auth/
+│   │   │   ├── Login.tsx
+│   │   │   └── SignUp.tsx
+│   │   ├── CompanySelector/
+│   │   │   └── CompanySelector.tsx
+│   │   ├── DashboardPageEnhanced.tsx      # Dashboard bán hàng
+│   │   ├── SalesOrdersPage.tsx            # Danh sách đơn hàng
+│   │   ├── SalesOrderCreatePage.tsx       # Tạo đơn (POS + bulk)
+│   │   ├── CustomerManagementPage.tsx     # Quản lý khách hàng
+│   │   ├── InvoiceManagementPage.tsx      # Hóa đơn điện tử
+│   │   ├── SalesReportPage.tsx            # Báo cáo bán hàng (Bảng 3)
+│   │   ├── SpecialOutboundPage.tsx        # Xuất đặc biệt (Bảng 3.1)
+│   │   ├── InventoryReportPage.tsx        # Báo cáo nhập xuất tồn (Bảng 4)
+│   │   ├── StockCheckPrintPage.tsx        # Phiếu kiểm kho (Bảng 5)
+│   │   ├── ProductCatalogPage.tsx         # Danh mục hàng hóa (Bảng 2)
+│   │   ├── InventoryInputPage.tsx         # Nhập liệu tồn kho (Bảng 1)
+│   │   ├── SettingsPage.tsx               # Cài đặt
+│   │   ├── ProfilePage.tsx / Profile/
+│   │   ├── HelpPage.tsx                   # Hướng dẫn
+│   │   └── ... (demo, import, test pages)
+│   ├── components/
+│   │   ├── Layout/
+│   │   │   ├── Layout.tsx          # Shell: Navigation + Sidebar + Outlet + BottomTabBar
+│   │   │   ├── Navigation.tsx      # Top bar
+│   │   │   ├── Sidebar.tsx         # Desktop sidebar (role-filtered)
+│   │   │   └── BottomTabBar.tsx    # Mobile bottom nav
+│   │   ├── auth/
+│   │   │   └── ProtectedRoute.tsx  # Route guard
+│   │   ├── UI/                     # Button, Card, PageHeader, SearchBar, AddButton...
+│   │   ├── ImportExport/           # EditableDataGrid, ClipboardPasteInput
+│   │   ├── Invoice/                # IssueInvoiceSlideOver, InvoicePreviewModal
+│   │   ├── Help/                   # OnboardingTour, ContextHelp
+│   │   ├── SpecialOutboundForm.tsx
+│   │   ├── SpecialOutboundTable.tsx
+│   │   ├── QuickAddMenu.tsx
+│   │   └── ErrorBoundary.tsx
+│   ├── hooks/
+│   │   ├── useSales.ts             # useSalesReport, useSpecialOutbound
+│   │   ├── useProductCatalog.ts
+│   │   ├── usePermissions.ts
+│   │   └── useAuth.test.ts
+│   ├── services/
+│   │   ├── salesService.ts         # CRUD sales_records
+│   │   ├── specialOutboundService.ts # CRUD + approve/reject + approval_logs
+│   │   ├── fallbackService.ts      # Trial/mock mode
+│   │   ├── baseService.ts          # BaseService.execute (supabase + fallback)
+│   │   ├── authService.ts
+│   │   └── ... (column settings, export templates, variance reporting)
+│   ├── utils/
+│   │   ├── rbac.ts                 # Role definitions & helpers
+│   │   ├── permissions.ts          # Granular permission checks
+│   │   └── ... (conversion, formatting, import/export)
+│   ├── types/
+│   │   ├── index.ts                # Re-export tất cả types
+│   │   ├── UserRole.ts             # UserRole enum, Permission enum, ROLE_PERMISSIONS
+│   │   ├── SalesRecord.ts          # SalesRecord, SpecialOutboundRecord, enums
+│   │   ├── ApprovalLog.ts          # ApprovalLog, ApprovalWorkflow, ApprovalStep
+│   │   ├── Product.ts
+│   │   ├── InventoryRecord.ts
+│   │   ├── InventoryReport.ts
+│   │   ├── import.ts
+│   │   └── database.types.ts       # Supabase generated types
+│   ├── lib/
+│   │   └── supabase.ts             # Supabase client, getCurrentUserId, apiClient
+│   └── styles/
+├── package.json
+├── vite.config.ts                  # port: 5176
+├── tailwind.config.js
+├── tsconfig.json
+├── README.md
+├── SUPABASE-SETUP.md
+└── docs/                           # Tài liệu này
 ```
 
-## Database Schema
+## Kiến trúc ứng dụng
 
-### Core Tables
-
-#### products
-Product catalog with conversion ratios for F&B operations.
-
-```sql
-CREATE TABLE products (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  businessCode TEXT UNIQUE NOT NULL,  -- Product code
-  name TEXT NOT NULL,
-  category TEXT NOT NULL,             -- ProductCategory enum
-  isFinishedProduct BOOLEAN DEFAULT false,
-  outputQuantity NUMERIC,
-  inputQuantity NUMERIC,
-  inputUnit TEXT,
-  outputUnit TEXT,
-  status TEXT DEFAULT 'active',        -- ProductStatus enum
-  businessStatus TEXT DEFAULT 'active',
-  conversions JSONB,                   -- ProductConversion[]
-  createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updatedAt TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  createdBy TEXT,
-  updatedBy TEXT
-);
-```
-
-#### inventory_records
-Stock tracking records across multiple stock types.
-
-```sql
-CREATE TABLE inventory_records (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  date DATE NOT NULL,
-  productCode TEXT NOT NULL,           -- References products.businessCode
-  productName TEXT NOT NULL,
-  inputQuantity NUMERIC DEFAULT 0,
-  rawMaterialStock NUMERIC DEFAULT 0,
-  rawMaterialUnit TEXT,
-  processedStock NUMERIC DEFAULT 0,
-  processedUnit TEXT,
-  finishedProductStock NUMERIC DEFAULT 0,
-  finishedProductUnit TEXT,
-  createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updatedAt TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  createdBy TEXT,
-  updatedBy TEXT,
-  notes TEXT
-);
-```
-
-#### sales_records
-Sales transaction tracking.
-
-```sql
-CREATE TABLE sales_records (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  date DATE NOT NULL,
-  productCode TEXT NOT NULL,
-  productName TEXT NOT NULL,
-  quantity NUMERIC NOT NULL,
-  unit TEXT NOT NULL,
-  price NUMERIC NOT NULL,
-  totalAmount NUMERIC NOT NULL,
-  createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updatedAt TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  createdBy TEXT,
-  updatedBy TEXT,
-  notes TEXT
-);
-```
-
-#### users
-User accounts with role-based permissions.
-
-```sql
-CREATE TABLE users (
-  id UUID PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  full_name TEXT,
-  role TEXT NOT NULL,                  -- UserRole enum
-  staff_permissions JSONB,             -- Granular permissions
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
-### Relationships
+### Routing & Auth Flow
 
 ```
-products (1) ──< (N) inventory_records
-products (1) ──< (N) sales_records
-companies (1) ──< (N) branches
-branches (1) ──< (N) users
+App.tsx
+  └── ErrorBoundary
+       └── AuthProvider (@superapp/iam)
+            └── CompanyProvider
+                 └── Router (BrowserRouter)
+                      ├── /login          (public)
+                      ├── /signup         (public)
+                      ├── /company-selector (ProtectedRoute, no layout)
+                      └── /               (ProtectedRoute + Layout)
+                           ├── index → redirect /dashboard
+                           ├── /dashboard
+                           ├── /sales-orders
+                           ├── /sales-order-create
+                           ├── /customers
+                           ├── /invoices
+                           ├── /settings
+                           ├── /profile
+                           └── /help
 ```
 
-## Security Architecture
-
-### Authentication Flow
+### Layout Shell
 
 ```
-1. User enters credentials
-2. Supabase Auth validates
-3. JWT token issued
-4. Token stored in localStorage
-5. Subsequent requests include token
-6. RLS policies enforce access based on user ID
+Layout.tsx
+  ├── Navigation (top bar — menu toggle, user info)
+  ├── Sidebar (desktop, sticky, role-filtered menu)
+  ├── Sidebar (mobile, slide-over)
+  ├── <Outlet /> (page content)
+  ├── QuickAddMenu (floating add button)
+  └── BottomTabBar (mobile only — 5 tabs)
 ```
 
-### Row-Level Security (RLS)
-
-**Policy Pattern:**
-```sql
--- User can access their own records
-CREATE POLICY user_own_data ON table_name
-FOR ALL TO authenticated
-USING (auth.uid()::uuid = user_id);
-
--- Admin can access all records
-CREATE POLICY admin_all_data ON table_name
-FOR ALL TO authenticated
-USING (auth.uid()::uuid IN (SELECT id FROM users WHERE role = 'admin'));
-```
-
-### Role-Based Access Control (RBAC)
-
-**Roles:**
-- **admin:** Full system access
-- **branch_manager:** Branch-level management
-- **staff:** Limited operations based on permissions
-
-**Permission Structure:**
-```typescript
-interface StaffPermissions {
-  import_products: boolean;
-  import_inventory: boolean;
-  view_reports: boolean;
-  manage_settings: boolean;
-}
-```
-
-## Data Flow
-
-### Product Creation Flow
+### Data Layer Pattern
 
 ```
-UI Form Entry
-    ↓
-Client Validation
-    ↓
-databaseService.createProduct()
-    ↓
-Server-Side Validation
-    ↓
-Duplicate Check (businessCode)
-    ↓
-Supabase Insert
-    ↓
-RLS Policy Check
-    ↓
-Database Write
-    ↓
-Return Result
+Page component
+  └── Custom hook (useSalesReport / useSpecialOutbound)
+       └── Service class (salesService / specialOutboundService)
+            └── BaseService.execute(supabaseQuery, fallbackFn)
+                 ├── Supabase client (production)
+                 └── fallbackService (trial/mock mode via localStorage)
 ```
 
-### Inventory Import Flow
+`BaseService.execute` là pattern cốt lõi: thử Supabase trước, nếu lỗi hoặc ở trial mode thì dùng fallback (mock data trong localStorage). Điều này cho phép app chạy mà không cần backend.
 
-```
-CSV/Excel File Upload
-    ↓
-File Parsing
-    ↓
-Row-by-Row Validation
-    ↓
-Duplicate Check (productCode + date)
-    ↓
-Foreign Key Check (product exists)
-    ↓
-Batch Insert (max 200 rows)
-    ↓
-Error Aggregation
-    ↓
-Return Import Result
-```
+### Multi-tenant
 
-## Service Layer Design
+- `AuthProvider` + `CompanyProvider` từ `@superapp/iam` cung cấp context công ty.
+- Mọi bảng có `company_id` để phân tách dữ liệu theo công ty.
+- `ProtectedRoute` đảm bảo chỉ user đã đăng nhập mới truy cập được.
 
-### databaseService.ts Architecture
+### Theme
 
-```typescript
-class DatabaseService {
-  // CRUD Operations
-  getProducts(filters?)
-  createProduct(product)
-  updateProduct(id, product)
-  deleteProduct(id)
-  
-  // Bulk Operations
-  bulkInsertProducts(products)
-  bulkInsertInventoryRecords(records)
-  
-  // Validation Helpers
-  validateProductData(product)
-  validateInventoryRecordData(record)
-  
-  // Duplicate Checks
-  checkProductCodeDuplicate(code)
-  checkInventoryRecordDuplicate(code, date)
-  
-  // Export Operations
-  exportProductsToCSV()
-  exportInventoryToCSV()
-}
-```
+- Dark mode qua `localStorage.getItem('theme')` + `prefers-color-scheme`.
+- Class `dark` trên `<html>`.
+- Tailwind dark: variants everywhere.
 
-### Validation Strategy
+## Dependencies chính (từ package.json)
 
-**Three-Layer Validation:**
-1. **Client-Side:** UX feedback, immediate response
-2. **Service Layer:** Business logic validation
-3. **Database Layer:** Constraint enforcement (RLS, unique constraints)
+- `@supabase/supabase-js` — Backend client
+- `@superapp/iam` — Auth & company context (shared package)
+- `@superapp/einvoice` — E-invoice integration
+- `@repo/types`, `@repo/ui` — Shared types & UI components
+- `recharts` — Charts
+- `react-beautiful-dnd` — Drag & drop (editable grids)
+- `xlsx` — Excel import/export
 
-## State Management
+## Build & Dev
 
-### React State Patterns
-
-**Local State:**
-```typescript
-const [data, setData] = useState<T[]>([]);
-const [loading, setLoading] = useState(false);
-const [error, setError] = useState<string | null>(null);
-```
-
-**Global State (Context):**
-```typescript
-<AuthContext.Provider value={{ user, session }}>
-  <App />
-</AuthContext.Provider>
-```
-
-**Server State (Supabase Real-time):**
-```typescript
-supabase
-  .from('table')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'table' }, payload => {
-    // Handle real-time updates
-  })
-  .subscribe();
-```
-
-## Error Handling
-
-### Error Types
-
-```typescript
-interface AppError {
-  type: 'validation' | 'network' | 'auth' | 'database';
-  message: string;
-  details?: any;
-}
-```
-
-### Error Handling Pattern
-
-```typescript
-try {
-  const result = await databaseService.createProduct(data);
-  if (result.error) {
-    setError(result.error);
-    return;
-  }
-  // Success handling
-} catch (error) {
-  setError('Unexpected error occurred');
-  // Log to monitoring service
-}
-```
-
-## Performance Considerations
-
-### Bulk Operations
-- **Limit:** 200 rows per bulk operation
-- **Reasoning:** Prevent timeout and memory issues
-- **Strategy:** Batch larger imports into chunks
-
-### Database Indexing
-```sql
-CREATE INDEX idx_products_business_code ON products(businessCode);
-CREATE INDEX idx_inventory_records_product_code ON inventory_records(productCode);
-CREATE INDEX idx_inventory_records_date ON inventory_records(date);
-```
-
-### Caching Strategy
-- **Client:** React Query for data fetching
-- **Service:** In-memory cache for reference data
-- **Database:** Supabase connection pooling
-
-## Deployment Architecture
-
-### Frontend (Vercel)
-```
-Git Push → Vercel Build → Deploy → CDN
-```
-
-### Backend (Supabase)
-```
-Supabase Dashboard → Migrations → Database
-```
-
-### Environment Variables
 ```bash
-VITE_SUPABASE_URL=your-project-url
-VITE_SUPABASE_ANON_KEY=your-anon-key
+npm run dev          # Vite dev server, port 5176
+npm run build        # Production build
+npm run type-check   # tsc --noEmit
+npm run test         # Vitest
+npm run lint         # ESLint
 ```
-
-## Monitoring & Observability
-
-### Logging Strategy
-- **Client:** Console errors sent to monitoring
-- **Service:** Error tracking in databaseService
-- **Database:** Supabase logs and query performance
-
-### Health Checks
-```typescript
-async getHealthStatus() {
-  // Database connectivity check
-  // Response time measurement
-  // Error rate tracking
-}
-```
-
-## Scalability Considerations
-
-### Horizontal Scaling
-- **Frontend:** Stateless, can scale horizontally
-- **Backend:** Supabase managed service, auto-scales
-- **Database:** PostgreSQL with connection pooling
-
-### Vertical Scaling
-- **Frontend:** Optimized bundle size, code splitting
-- **Backend:** Efficient queries, proper indexing
-- **Database:** Read replicas for reporting queries
-
-## Technology Rationale
-
-### Why Supabase?
-- Managed PostgreSQL with built-in features
-- Authentication out-of-the-box
-- Real-time subscriptions
-- Row-Level Security
-- Reduced infrastructure overhead
-
-### Why TypeScript?
-- Type safety at compile time
-- Better IDE support
-- Self-documenting code
-- Easier refactoring
-
-### Why Tailwind CSS?
-- Utility-first approach
-- Consistent design system
-- Small bundle size
-- Rapid development
-
-## Future Architecture Enhancements
-
-### Planned Improvements
-1. **GraphQL Layer:** For complex queries
-2. **Event Sourcing:** For audit trail
-3. **Microservices:** For specialized features
-4. **Caching Layer:** Redis for performance
-5. **Message Queue:** For async processing
-
-### Migration Path
-- Incremental refactoring
-- Feature flags for new architecture
-- Backward compatibility maintained
-- Comprehensive testing at each step

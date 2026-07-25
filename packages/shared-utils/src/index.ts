@@ -9,5 +9,6 @@ export * from './app-urls';
 export * from './types';
 export * from './api-client';
 export * from './error-tracking';
+export * from './lazy';
 
 // Trigger HMR
