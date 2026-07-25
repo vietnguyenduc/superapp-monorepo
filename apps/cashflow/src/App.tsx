@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from "react";
+import React, { Suspense } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -10,21 +10,22 @@ import Layout from "./components/Layout/Layout";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import { CompanyProvider } from "@superapp/iam";
 import { TransactionTypeProvider } from "./contexts/TransactionTypeContext";
+import { lazyWithRetry } from "@superapp/shared-utils";
 
-// Lazy-loaded pages for code splitting
-const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
-const CustomerList = lazy(() => import("./pages/Customers/CustomerList"));
-const CustomerDetail = lazy(() => import("./pages/Customers/CustomerDetail"));
-const Reports = lazy(() => import("./pages/Reports/Reports"));
-const TransactionList = lazy(() => import("./pages/Transactions/TransactionList"));
-const TransactionImport = lazy(() => import("./pages/DataImport/TransactionImport"));
-const CustomerImport = lazy(() => import("./pages/DataImport/CustomerImport"));
-const Settings = lazy(() => import("./pages/Settings/Settings"));
-const Profile = lazy(() => import("./pages/Profile/Profile"));
-const Manual = lazy(() => import("./pages/Manual/Manual"));
-const Login = lazy(() => import("./pages/Auth/Login"));
-const SignUp = lazy(() => import("./pages/Auth/SignUp"));
-const CompanySelector = lazy(() => import("./pages/CompanySelector/CompanySelector"));
+// Lazy-loaded pages for code splitting (lazyWithRetry auto-reloads on stale chunk)
+const Dashboard = lazyWithRetry(() => import("./pages/Dashboard/Dashboard"));
+const CustomerList = lazyWithRetry(() => import("./pages/Customers/CustomerList"));
+const CustomerDetail = lazyWithRetry(() => import("./pages/Customers/CustomerDetail"));
+const Reports = lazyWithRetry(() => import("./pages/Reports/Reports"));
+const TransactionList = lazyWithRetry(() => import("./pages/Transactions/TransactionList"));
+const TransactionImport = lazyWithRetry(() => import("./pages/DataImport/TransactionImport"));
+const CustomerImport = lazyWithRetry(() => import("./pages/DataImport/CustomerImport"));
+const Settings = lazyWithRetry(() => import("./pages/Settings/Settings"));
+const Profile = lazyWithRetry(() => import("./pages/Profile/Profile"));
+const Manual = lazyWithRetry(() => import("./pages/Manual/Manual"));
+const Login = lazyWithRetry(() => import("./pages/Auth/Login"));
+const SignUp = lazyWithRetry(() => import("./pages/Auth/SignUp"));
+const CompanySelector = lazyWithRetry(() => import("./pages/CompanySelector/CompanySelector"));
 
 // Loading fallback component
 const PageLoading = () => (
