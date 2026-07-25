@@ -198,6 +198,115 @@ export class CustomerService extends BaseService {
     );
   }
 
+
+  static async bulkCreateCustomers(customers: any[]) {
+    return this.execute(
+      async () => {
+        const errors: any[] = [];
+        const validRows: any[] = [];
+        const seenCodes = new Set<string>();
+
+        for (let i = 0; i < customers.length; i++) {
+          const raw = customers[i];
+          const validation = validateCustomerData(raw);
+          if (!validation.isValid) {
+            errors.push({ row: i, column: "general", message: validation.errors.join(", "), value: raw.customer_code });
+            continue;
+          }
+
+          const transformed = transformRawCustomer(raw, true);
+          if (raw.company_id) transformed.company_id = raw.company_id;
+          if (raw.branch_id !== undefined) transformed.branch_id = raw.branch_id;
+          if (raw.working_method) transformed.working_method = raw.working_method;
+          if (raw.notes) transformed.notes = raw.notes;
+
+          const code = transformed.customer_code?.trim();
+          if (code && seenCodes.has(code)) {
+            errors.push({ row: i, column: "customer_code", message: `Mã khách hàng trùng trong file: ${code}`, value: code });
+            continue;
+          }
+          if (code) seenCodes.add(code);
+          validRows.push({ index: i, transformed });
+        }
+
+        if (validRows.length === 0) {
+          return { data: [], error: null, errors };
+        }
+
+        // Check duplicate codes against existing DB records
+        const codes = [...seenCodes];
+        if (codes.length > 0) {
+          let checkQ = apiClient.from("customers").select("customer_code").in("customer_code", codes);
+          if (validRows[0].transformed.company_id) {
+            checkQ = checkQ.eq("company_id", validRows[0].transformed.company_id);
+          }
+          const { data: existing } = await checkQ;
+          if (existing && existing.length > 0) {
+            const existingCodes = new Set(existing.map((c: any) => c.customer_code));
+            for (let j = validRows.length - 1; j >= 0; j--) {
+              const code = validRows[j].transformed.customer_code?.trim();
+              if (code && existingCodes.has(code)) {
+                errors.push({ row: validRows[j].index, column: "customer_code", message: `Customer with code "${code}" already exists`, value: code });
+                validRows.splice(j, 1);
+              }
+            }
+          }
+        }
+
+        if (validRows.length === 0) {
+          return { data: [], error: null, errors };
+        }
+
+        const insertPayload = validRows.map((r) => r.transformed);
+        const { data, error } = await apiClient.from("customers").insert(insertPayload as any).select();
+
+        if (error) {
+          return { data: null, error, errors };
+        }
+
+        return { data: data || [], error: null, errors };
+      },
+      async () => {
+        const errors: any[] = [];
+        const inserted: any[] = [];
+        const seenCodes = new Set<string>();
+
+        for (let i = 0; i < customers.length; i++) {
+          const raw = customers[i];
+          const validation = validateCustomerData(raw);
+          if (!validation.isValid) {
+            errors.push({ row: i, column: "general", message: validation.errors.join(", "), value: raw.customer_code });
+            continue;
+          }
+
+          const transformed = transformRawCustomer(raw, false);
+          if (raw.company_id) transformed.company_id = raw.company_id;
+          if (raw.branch_id !== undefined) transformed.branch_id = raw.branch_id;
+          if (raw.working_method) transformed.working_method = raw.working_method;
+          if (raw.notes) transformed.notes = raw.notes;
+
+          const code = transformed.customer_code?.trim();
+          if (code && seenCodes.has(code)) {
+            errors.push({ row: i, column: "customer_code", message: `Mã khách hàng trùng trong file: ${code}`, value: code });
+            continue;
+          }
+
+          const existing = (trialGet("customers") || []).find((c: any) => c.customer_code === code && c.company_id === transformed.company_id);
+          if (existing) {
+            errors.push({ row: i, column: "customer_code", message: `Customer with code "${code}" already exists`, value: code });
+            continue;
+          }
+
+          if (code) seenCodes.add(code);
+          const result = trialInsert("customers", transformed);
+          if (result) inserted.push(result);
+        }
+
+        return { data: inserted, error: null, errors };
+      }
+    );
+  }
+
   static async updateCustomer(id: string, customerData: any) {
     return this.execute(
       async () => {
@@ -348,6 +457,7 @@ export const customerService = {
   getCustomers: CustomerService.getCustomers.bind(CustomerService),
   getCustomerById: CustomerService.getCustomerById.bind(CustomerService),
   createCustomer: CustomerService.createCustomer.bind(CustomerService),
+  bulkCreateCustomers: CustomerService.bulkCreateCustomers.bind(CustomerService),
   updateCustomer: CustomerService.updateCustomer.bind(CustomerService),
   deleteCustomer: CustomerService.deleteCustomer.bind(CustomerService),
   updateCustomerOpeningBalance: CustomerService.updateCustomerOpeningBalance.bind(CustomerService),
