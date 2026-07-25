@@ -893,3 +893,35 @@ Then run `node scripts/import-trial-seeds.mjs` to populate seed data.
 | **OpenHands agent enhancements** (see §10) | LLM profiles, context cache, condenser, sub-agents, Task Splitter, InsForge Agent Protocol. | Don't edit `openhands-settings.json` from WSL. Don't skip `read_memory`. |
 | **NetNat recovery procedure** (§8) | Documented recovery after `winnat` restart deletes NetNat rule. | Don't restart `winnat` without recreating NetNat. |
 
+
+### 12.2 Inventory + Sales are near-clones (2026-07-25 audit)
+
+**Finding**: `apps/inventory-operation/src/` and `apps/sales-operation/src/` share 207 of 207+ files. **121 files are byte-identical** (58% of src/), 86 differ only in branding (app name "Inventory Operation" vs "Sales Operation", Vietnamese title, sidebar width, accent color). No files are unique to either app.
+
+**Implication for agents**:
+- **When you fix a bug or add a feature in inventory-operation, CHECK sales-operation** — the same code likely exists there too. Use `diff apps/inventory-operation/src/<path> apps/sales-operation/src/<path>` to confirm.
+- **Sync both apps in the same PR** unless the change is inventory-specific (e.g. stock movements) or sales-specific (e.g. POS checkout).
+- **Do NOT assume they're fully independent** — a fix in one without syncing the other creates drift that future agents won't notice.
+
+**Identical files include** (sample, full list via `diff -rq apps/inventory-operation/src/ apps/sales-operation/src/`):
+- `components/auth/*` (LoginForm, ProtectedRoute, PermissionGuard, etc.)
+- `components/Dashboard/FeaturedProducts.tsx`, `InventoryWaterfallChart.tsx`
+- `components/Import/*` (BulkImport, ProductBulkImportEnhanced, ProductImportGrid)
+- `components/UI/*` (AddButton, ErrorFallback, LoadingFallback, PartnerQuickAddModal)
+- `hooks/*` (useAuth, useInventory, usePermissions, useProductCatalog, useProducts, useSales)
+- `lib/trialClient.ts`, `config/supabase.ts`
+- `data/*` (mockData, realInventoryData, realProductsData, realSalesData, trialMockData)
+- `pages/Auth/*`, `pages/CompanySelector/*`, many pages/*
+
+**Different files (86) are branding tweaks**:
+- `App.tsx`, `components/Layout/{Layout,Navigation,Sidebar,BottomTabBar}.tsx` — app name, title, sidebar width
+- `components/{ImportExport/ImportExportPage,EditableDataGrid}.tsx` — large files with mixed logic + branding
+- `pages/*` — some inventory-specific (InventoryInputPage, InventoryMRPPage) vs sales-specific (SalesOrderPage, POSPage)
+
+**Future refactor opportunity** (not done yet — risk vs scope):
+- Extract 121 identical files into `packages/inventory-sales-shared/` (or `@superapp/ops-shared`)
+- Parameterize 86 different files via props/env (appName, accentColor, sidebarWidth)
+- Update ~207 imports in each app
+- This is a large refactor — do in a dedicated PR with full test coverage, NOT as part of a cleanup batch.
+
+**Why we didn't extract in the 2026-07-25 cleanup**: risk of breaking 2 production apps at once, scope too large for a single cleanup pass, and pre-existing React Router type errors indicate the codebase needs stabilization first.
