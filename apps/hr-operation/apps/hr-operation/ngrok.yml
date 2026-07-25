@@ -1,7 +1,0 @@
-version: "2"
-authtoken: 3EPNdKAWNs4FVZHxt43M0DKCdMJ_XPL9xaQp2AtbMxD8Kbfh
-
-tunnels:
-  hr:
-    addr: 3003
-    proto: http
