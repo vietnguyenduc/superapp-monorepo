@@ -158,7 +158,7 @@ InsForge is a **separate infrastructure** (its own Docker containers + local Pos
 | **DeepWiki** | 7131 | Vector search over the codebase (pgvector + BAAI/bge-small-en-v1.5 embeddings). Indexes all source files, exposes semantic search + AI Q&A + knowledge graph. | §9 — when you need to find code by concept ("how does trial mode work") in natural language (VN or EN). |
 | **InsForge MCP** | (stdio) | 17 tools: DB ops (`query`, `execute`, `create_table`...), migrations, codebase search, **memory** (`read_memory`, `write_memory`), **decision log** (`log_decision`), **error patterns** (`log_error_pattern`). | §10.6 + §10.7 — when you need to introspect DB schema, recall previous session context, or log decisions/errors. |
 
-**InsForge's local PostgreSQL** (`localhost:5432/insforge`, separate from Supabase cloud) stores 10 tables that power the above:
+**InsForge's local PostgreSQL** (`localhost:5432/insforge`, Docker container `insforge-postgres`, separate from Supabase cloud) stores 10 tables that power the above:
 - `codebase_index` + `codebase_relations` — DeepWiki's vector index (with HNSW index for fast ANN search)
 - `ai_memory` — key-value context store (loaded via `read_memory` at session start)
 - `decision_log` — architecture/tech decisions across sessions
@@ -236,9 +236,24 @@ When the user is on mobile and says Tailscale is down, ports are unreachable, or
 2. Run `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\run-forward-wsl-ports.bat` (auto-elevates as admin) to forward WSL ports, open firewall for `3000` (OpenHands) and `8080` (dashboard), and fix `winnat` dynamic ports to prevent Docker `500 ports are not available` errors.
 3. If OpenHands still fails with `500 ports are not available`, restart `winnat`: `Restart-Service -Name winnat` (PowerShell admin) or `net stop winnat && net start winnat`.
    > **WARNING (learned 2026-07-24):** `Restart-Service winnat` **deletes the `NetNat` rule for the WSL subnet**, which breaks WSL internet completely (WSL cannot reach gateway, DNS, or any external host). After restarting `winnat`, you MUST recreate the NAT rule — see section 8 below. Prefer fixing Docker port exhaustion by other means before restarting `winnat`.
-4. Restart any missing service: OpenHands (`start-openhands-wsl.sh`), dashboard (`generate-apps-dashboard.ps1`), Vite apps (`npm run dev:apps`), API (`npm run dev -w packages/api`).
-4. Verify from the Tailscale IP with `curl` and `browser_navigate`.
-5. Report the live URLs: `http://<TAILSCALE_HOSTNAME>:8080` (dashboard), `http://<TAILSCALE_HOSTNAME>:3000` (OpenHands).
+4. Restart any missing service (DO NOT use `npm run dev:apps` — it conflicts with systemd services already running on the same ports):
+   - **Vite apps** (systemd, NOT npm): `wsl -d Ubuntu -u root -- bash -c "systemctl start vite-admin-portal vite-cashflow vite-inventory-operation vite-sales-operation vite-hr-operation vite-accounting vite-operations-portal"`
+   - **Utils server** (systemd): `wsl -d Ubuntu -u root -- bash -c "systemctl start superapp-utils"`
+   - **OpenHands**: `start-openhands-wsl.sh` (or `start-all.bat` from Windows)
+   - **Dashboard**: `generate-apps-dashboard.ps1` (Windows)
+   - **Docker containers** (auto-start via `restart: unless-stopped`): if stopped, `wsl -d Ubuntu -- bash -c "cd /home/dev/projects/superapp-monorepo && docker compose up -d"`
+5. Verify from the Tailscale IP with `curl` and `browser_navigate`.
+6. Report the live URLs: `http://<TAILSCALE_HOSTNAME>:8080` (dashboard), `http://<TAILSCALE_HOSTNAME>:3000` (OpenHands).
+
+### 6.1 Vite apps run as systemd services (NOT `npm run dev:apps`)
+
+- Each Vite app has a systemd service: `vite-admin-portal`, `vite-cashflow`, `vite-inventory-operation`, `vite-sales-operation`, `vite-hr-operation`, `vite-accounting`, `vite-operations-portal`.
+- Config: `/etc/systemd/system/vite-<app>.service` — `WorkingDirectory=/home/dev/projects/superapp-monorepo/apps/<app>`, `ExecStart=.../node .../vite.js --port <PORT> --host`.
+- **DO NOT run `npm run dev:apps`** — it will conflict with systemd services (port already in use → `EADDRINUSE`).
+- Status check: `wsl -d Ubuntu -- bash -c "systemctl is-active vite-cashflow vite-admin-portal ..."`
+- Restart one app: `wsl -d Ubuntu -u root -- bash -c "systemctl restart vite-cashflow"`
+- Logs: `wsl -d Ubuntu -- bash -c "tail -50 /tmp/vite-cashflow.log"`
+- `npm run dev:apps` still exists in `package.json` (uses `turbo run dev`) but is **not used in production** — only for one-off manual runs when systemd services are stopped.
 
 Use the `superapp-port-forward` skill in `.devin/skills/superapp-port-forward/SKILL.md` for the full workflow.
 
@@ -261,17 +276,23 @@ The user works from anywhere (cafe, mobile, laptop) via **Tailscale**. The dev e
 
 ### App → Port mapping (local dev)
 
-| App | Port | Vite app path |
-|-----|------|---------------|
-| OpenHands | 3000 | (agent-server, not Vite) |
-| Admin Portal | 5173 | `apps/admin-portal` |
-| Cashflow | 5174 | `apps/cashflow` |
-| Inventory Operation | 5175 | `apps/inventory-operation` |
-| Sales Operation | 5176 | `apps/sales-operation` |
-| HR Operation | 5177 | `apps/hr-operation` |
-| Accounting | 5178 | `apps/accounting` |
-| Operations Portal | 3006 | `apps/operations-portal` |
-| API server | 3001 | `packages/api` |
+| Service | Port | Type | Path / Container |
+|---------|------|------|-----------------|
+| OpenHands | 3000 | Docker | `openhands-app` container (agent-server, not Vite) |
+| Admin Portal | 5173 | systemd | `apps/admin-portal` (service `vite-admin-portal`) |
+| Cashflow | 5174 | systemd | `apps/cashflow` (service `vite-cashflow`) |
+| Inventory Operation | 5175 | systemd | `apps/inventory-operation` (service `vite-inventory-operation`) |
+| Sales Operation | 5176 | systemd | `apps/sales-operation` (service `vite-sales-operation`) |
+| HR Operation | 5177 | systemd | `apps/hr-operation` (service `vite-hr-operation`) |
+| Accounting | 5178 | systemd | `apps/accounting` (service `vite-accounting`) |
+| Operations Portal | 3006 | systemd | `apps/operations-portal` (service `vite-operations-portal`) |
+| API server | 3001 | Docker | `superapp-api` container (`packages/api`) |
+| **Utils server** | **8081** | **systemd** | **`superapp-utils` service** (`/home/dev/projects/openhands-utils-server.js`) — OpenHands management API: conversations, docker prune, disk usage, token logging |
+| **InsForge Gateway** | **7130** | **Docker** | **`insforge-gateway`** — DeepSeek LLM proxy (§0.9) |
+| **DeepWiki** | **7131** | **Docker** | **`insforge-deepwiki`** — vector search (§0.9, §9) |
+| **InsForge PostgreSQL** | **5432** | **Docker** | **`insforge-postgres`** — local DB for InsForge (10 tables, §0.9) |
+| **Dashboard** | **8080** | **Windows** | Python HTTP server on Windows (not in repo) |
+| **Cloudflare tunnel** | — | Docker | `superapp-tunnel` (optional, disabled via `DISABLE_CLOUDFLARE_TUNNEL=true`) |
 
 > Dashboard tự động lấy Tailscale IP/hostname khi sinh ra, nên URL trên dashboard luôn đúng. Khi cần kiểm tra app nào đang chạy, **mở dashboard trước** thay vì đoán port.
 
@@ -531,12 +552,13 @@ flowchart LR
   RUN_V3 --> DONE
 ```
 
-- **2 profiles** defined in `llm_profiles`:
+- **2 profiles** defined in `llm_profiles` (in `openhands-settings.json`):
   - `deepseek-v3` (active by default) — `deepseek/deepseek-chat`, fast/cheap, 1M context.
   - `deepseek-r1` — `deepseek/deepseek-reasoner`, strong reasoning for complex tasks (SQL, architecture, debugging).
 - **`enable_switch_llm_tool: true`** — agent can switch profile mid-task via `switch_llm_tool` when it detects the task needs stronger reasoning.
 - Both profiles have `caching_prompt: true` + `prompt_cache_retention: 24h` (see §10.2).
 - `max_iterations: 500` per conversation (NOT 50 — the 50 in `.env` is overridden by settings.json).
+- **Startup script** (`start-openhands-wsl.sh`): sets `LLM_MODEL=deepseek/deepseek-chat` (V3, matches settings.json default). Agent auto-switches to R1 via `switch_llm_tool` when needed. **Fixed 2026-07-24** — was previously hardcoded to `deepseek-reasoner` (R1, slower + 2x cost); now V3 for fast/cheap default.
 
 ### 10.2 Context cache (prompt caching)
 
