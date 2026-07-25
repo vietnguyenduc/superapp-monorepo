@@ -198,7 +198,6 @@ export class CustomerService extends BaseService {
     );
   }
 
-
   static async bulkCreateCustomers(customers: any[]) {
     return this.execute(
       async () => {
@@ -206,6 +205,7 @@ export class CustomerService extends BaseService {
         const validRows: any[] = [];
         const seenCodes = new Set<string>();
 
+        // Validate + transform each row
         for (let i = 0; i < customers.length; i++) {
           const raw = customers[i];
           const validation = validateCustomerData(raw);
@@ -215,6 +215,7 @@ export class CustomerService extends BaseService {
           }
 
           const transformed = transformRawCustomer(raw, true);
+          // Merge fields that transformRawCustomer doesn't include
           if (raw.company_id) transformed.company_id = raw.company_id;
           if (raw.branch_id !== undefined) transformed.branch_id = raw.branch_id;
           if (raw.working_method) transformed.working_method = raw.working_method;
@@ -233,7 +234,7 @@ export class CustomerService extends BaseService {
           return { data: [], error: null, errors };
         }
 
-        // Check duplicate codes against existing DB records
+        // Check duplicate codes against existing DB records (single batch query)
         const codes = [...seenCodes];
         if (codes.length > 0) {
           let checkQ = apiClient.from("customers").select("customer_code").in("customer_code", codes);
@@ -257,6 +258,7 @@ export class CustomerService extends BaseService {
           return { data: [], error: null, errors };
         }
 
+        // Batch insert
         const insertPayload = validRows.map((r) => r.transformed);
         const { data, error } = await apiClient.from("customers").insert(insertPayload as any).select();
 
