@@ -200,7 +200,67 @@ g | https://accounting.appforyou.xyz |
 - "Vercel is still building" → Wait for READY, then verify. Don't report done before deploy finishes.
 - "Production URL doesn't show the change" → Of course not, you pushed to `viet` not `main`. Verify the preview URL instead.
 
-### 1c. Post-merge verification protocol (MANDATORY after claiming "merged to main")
+### 1c. Pre-merge verification protocol (MANDATORY after pushing to viet)
+
+**Problem this solves**: Agent pushes to `viet`, claims "deployed to preview, verified" but user sees an OLD version on the preview URL. Root causes observed:
+1. **Branch alias `cashflow-git-viet-...` is NOT updated immediately** when deploy becomes READY — `aliasAssigned` can be null for several minutes after `readyState: READY`. User visits the alias → gets the PREVIOUS deployment.
+2. **Project is PRIVATE** → branch alias `cashflow-git-viet-...` redirects to Vercel SSO login page. User sees a login page, not the app — thinks "it's broken/old".
+3. **Each push creates a UNIQUE preview URL** (`cashflow-<hash>-...`) — the branch alias is stable but lags. The direct deployment URL is immediate but changes every push.
+4. Agent verifies on an OLD bookmarked preview URL instead of the latest one.
+
+**Protocol** (run ALL steps before reporting "verified on preview"):
+
+1. **Find the LATEST preview deployment URL** (not the branch alias):
+   ```bash
+   # Via Vercel API — returns the actual deployment URL with commit metadata
+   curl -s "https://api.vercel.com/v6/deployments?app=<app-name>&teamId=$VERCEL_TEAM_ID&limit=5" \
+     -H "Authorization: Bearer $VERCEL_TOKEN" | python3 -c "
+   import json, sys
+   d = json.load(sys.stdin)
+   for dep in d.get('deployments', []):
+       meta = dep.get('meta') or {}
+       ref = meta.get('githubCommitRef', '?')
+       sha = (meta.get('githubCommitSha') or '')[:7]
+       state = dep.get('readyState', '?')
+       target = dep.get('target') or 'preview'
+       url = dep.get('url', '?')
+       if ref == 'viet' and state == 'READY':
+           print(f'LATEST VIET PREVIEW: {url} (commit={sha})')
+           break
+   "
+   ```
+   - Use the **direct deployment URL** (`cashflow-<hash>-...`), NOT the branch alias (`cashflow-git-viet-...`).
+   - The branch alias may lag by several minutes or redirect to SSO for private projects.
+
+2. **Wait for the deployment to be READY**:
+   ```bash
+   npx vercel inspect --token "$VERCEL_TOKEN" <deployment-url>
+   # Wait until status shows "Ready" (not "Queued"/"Building")
+   ```
+
+3. **Verify the deployment is from the correct commit**:
+   - Check `githubCommitSha` in the deployment metadata matches your latest push.
+   - Check `githubCommitRef` is `viet`.
+   - If commit SHA doesn't match → you're looking at an old deployment → re-run step 1.
+
+4. **Browser-verify the direct deployment URL** (NOT production, NOT branch alias):
+   - `browser_navigate` to `https://<deployment-url>` (the `cashflow-<hash>-...` URL)
+   - `browser_screenshot` — attach to report
+   - Test the specific feature changed
+   - If feature not visible → DO NOT report done
+
+5. **Report with evidence**:
+   - "Verified preview at `https://cashflow-<hash>-...` (commit `<sha>` on viet) — [feature] works" + screenshot
+   - NEVER report "verified on preview" using the branch alias URL — it may be stale or redirect to SSO.
+   - NEVER report "verified on preview" without confirming the commit SHA matches.
+
+**If user reports "preview shows old version"**:
+1. Check if the branch alias `aliasAssigned` timestamp is newer than `readyAt` — if not, alias hasn't updated yet.
+2. Give the user the **direct deployment URL** (`cashflow-<hash>-...`), not the branch alias.
+3. If project is private, user must be logged into Vercel to access preview URLs.
+4. Verify the preview bundle contains the fix: `curl -s https://<deployment-url>/assets/<chunk>.js | grep "<pattern>"`
+
+### 1d. Post-merge verification protocol (MANDATORY after claiming "merged to main")
 
 **Problem this solves**: OpenHands claims "pushed to viet, merged to main, deployed" but user sees no change on production. Root causes observed:
 1. OpenHands reports "merged" before Vercel deploy finishes → user visits stale production
