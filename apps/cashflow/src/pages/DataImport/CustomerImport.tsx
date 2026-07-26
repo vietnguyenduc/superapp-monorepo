@@ -1172,6 +1172,7 @@ function normalizeHeaderKey(header: unknown): string {
   return String(header)
     .toLowerCase()
     .trim()
+    .replace(/đ/g, "d") // NFD không tách đ (U+0111) — xử lý riêng
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // bỏ combining diacritical marks
     .replace(/[^a-z0-9]/g, ""); // bỏ khoảng trắng, dấu câu, ký tự đặc biệt
@@ -1226,8 +1227,9 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
 
           headers.forEach((header, colIndex) => {
             const value = row[colIndex] ?? "";
-            // Chuẩn hóa header về dạng canonical không dấu để match, chịu được
-            // NFC/NFD, non-breaking space, dấu câu, viết hoa/thường khác nhau.
+            // Chuẩn hóa header về dạng canonical: lowercase + bỏ dấu + bỏ mọi
+            // ký tự không phải alphanumeric. Chịu được NFC/NFD, non-breaking
+            // space, dấu câu, và các biến thể viết hoa/thường.
             const normalizedHeader = normalizeHeaderKey(header);
 
             switch (normalizedHeader) {
