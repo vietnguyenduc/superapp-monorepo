@@ -1207,7 +1207,7 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
 
           headers.forEach((header, colIndex) => {
             const value = row[colIndex] ?? "";
-            const normalizedHeader = header.toLowerCase().trim();
+            const normalizedHeader = header.toLowerCase().trim().normalize("NFC");
 
             switch (normalizedHeader) {
               case "full_name":
