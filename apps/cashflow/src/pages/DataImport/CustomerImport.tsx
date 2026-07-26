@@ -1164,6 +1164,19 @@ function isValidFileType(file: File): boolean {
   );
 }
 
+// Chuẩn hóa header về dạng canonical để match: lowercase + NFD + strip dấu
+// + strip mọi ký tự không phải alphanumeric. Chịu được NFC/NFD, non-breaking
+// space, dấu câu, viết hoa/thường, "Số Điện Thoại" / "sodienthoai" / "SĐT"...
+function normalizeHeaderKey(header: unknown): string {
+  if (header == null) return "";
+  return String(header)
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // bỏ combining diacritical marks
+    .replace(/[^a-z0-9]/g, ""); // bỏ khoảng trắng, dấu câu, ký tự đặc biệt
+}
+
 function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -1180,7 +1193,13 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
 
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        // raw:false trả về giá trị theo định dạng hiển thị (giữ leading zero cho
+        // số điện thoại lưu dạng number nhưng được format text trong Excel).
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+          header: 1,
+          raw: false,
+          defval: "",
+        });
 
         if (jsonData.length < 2) {
           reject(
@@ -1207,70 +1226,73 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
 
           headers.forEach((header, colIndex) => {
             const value = row[colIndex] ?? "";
-            const normalizedHeader = header.toLowerCase().trim();
+            // Chuẩn hóa header về dạng canonical không dấu để match, chịu được
+            // NFC/NFD, non-breaking space, dấu câu, viết hoa/thường khác nhau.
+            const normalizedHeader = normalizeHeaderKey(header);
 
             switch (normalizedHeader) {
-              case "full_name":
+              case "fullname":
               case "name":
-              case "customer_name":
-              case "họ và tên":
-              case "họ tên":
-              case "tên khách hàng":
-              case "tên":
+              case "customername":
+              case "hovaten":
+              case "hoten":
+              case "tenkhachhang":
+              case "ten":
                 customerData.full_name = String(value).trim();
                 break;
               case "phone":
               case "telephone":
               case "mobile":
-              case "phone number":
-              case "phone no":
-              case "phone no.":
-              case "phone_number":
-              case "mobile number":
-              case "mobile phone":
+              case "phonenumber":
+              case "phoneno":
+              case "phonenumber":
+              case "mobilenumber":
+              case "mobilephone":
               case "contact":
-              case "contact number":
+              case "contactnumber":
               case "tel":
-              case "số điện thoại":
-              case "điện thoại":
-              case "sđt":
-              case "số đt":
-              case "số điện thoại di động":
-              case "di động":
-              case "số phone":
-              case "phone contact":
+              case "sodienthoai":
+              case "dienthoai":
+              case "sdt":
+              case "sodt":
+              case "sodienthoaididong":
+              case "didong":
+              case "sophone":
+              case "phonecontact":
+              case "lienhe":
+              case "lienhephone":
                 customerData.phone = String(value).trim();
                 break;
               case "address":
-              case "địa chỉ":
+              case "diachi":
                 customerData.address = String(value).trim();
                 break;
-              case "customer_code":
+              case "customercode":
               case "code":
               case "id":
-              case "mã khách hàng":
-              case "mã kh":
-              case "mã":
+              case "makhachhang":
+              case "makh":
+              case "ma":
                 customerData.customer_code = String(value).trim();
                 break;
-              case "working_method":
+              case "workingmethod":
               case "working":
               case "note":
               case "policy":
-              case "cách làm việc công nợ":
-              case "cách làm việc":
-              case "phương thức":
-              case "chính sách công nợ":
+              case "cachlamvieccongno":
+              case "cachlamviec":
+              case "phuongthuc":
+              case "chinsachcongno":
+              case "chinhsachcongno":
                 customerData.working_method = String(value).trim();
                 break;
               case "notes":
-              case "ghi chú":
+              case "ghichu":
                 customerData.notes = String(value).trim();
                 break;
-              case "nguoi_dai_dien":
+              case "nguoidaidien":
               case "representative":
-              case "người đại diện":
-              case "đại diện":
+              case "daidien":
                 customerData.nguoi_dai_dien = String(value).trim();
                 break;
             }
