@@ -1321,7 +1321,6 @@ function validateCustomerData(data: RawCustomerData[]): {
 } {
   const errors: ImportError[] = [];
   const seenCodes = new Map<string, number>();
-  const seenPhones = new Map<string, number>();
 
   data.forEach((raw, index) => {
     const row = {
@@ -1360,18 +1359,7 @@ function validateCustomerData(data: RawCustomerData[]): {
         seenCodes.set(row.customer_code, index);
       }
     }
-    if (row.phone) {
-      if (seenPhones.has(row.phone)) {
-        errors.push({
-          row: index,
-          column: "phone",
-          message: `Số điện thoại trùng với dòng ${seenPhones.get(row.phone)! + 1}`,
-          value: raw.phone,
-        });
-      } else {
-        seenPhones.set(row.phone, index);
-      }
-    }
+    // Phone duplicate check removed — phone is optional free-text, duplicates are allowed
   });
 
   return {
