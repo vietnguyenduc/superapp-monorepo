@@ -135,6 +135,8 @@ export type SupabaseClient = typeof supabase;
 // ── InsForge apiClient (drop-in for supabase.from() / supabase.rpc()) ──────
 // Data operations route through the InsForge API server instead of Supabase cloud.
 // Auth (supabase.auth.*) stays on Supabase. Only .from() and .rpc() move to apiClient.
+// On production (*.appforyou.xyz) the InsForge API server is not deployed, so we
+// fall back to the Supabase client directly to avoid 530 errors on every data op.
 _configureApiClient({
   tokenGetter: async () => {
     try {
