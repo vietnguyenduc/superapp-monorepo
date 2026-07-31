@@ -3,6 +3,7 @@ import React, { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useAuthContext } from "@superapp/iam";
+import { captureException } from "@superapp/shared-utils";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import type { Customer, ImportData, ImportError } from "../../types";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
@@ -373,6 +374,15 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       }
 
       if (!result.data || result.data.length === 0) {
+        // This should never happen if validRows.length > 0 and there's no error —
+        // it usually means the INSERT succeeded but the immediate .select() was
+        // blocked by an RLS policy mismatch (e.g. company_id doesn't match the
+        // authenticated user's own company_id). Report it so we can catch RLS
+        // regressions instead of silently losing data.
+        captureException(new Error("bulkCreateCustomers: insert succeeded but select() returned no rows"), {
+          extra: { companyId, branchId, rowCount: importData.data.length },
+          tags: { feature: "customer_import" },
+        });
         setImportData((prev) => ({
           ...prev,
           errors: [
@@ -404,10 +414,27 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       setCurrentStep(1);
     } catch (error) {
       console.error("Import failed:", error);
+      captureException(error, {
+        extra: { companyId, branchId, rowCount: importData.data.length },
+        tags: { feature: "customer_import" },
+      });
+      setImportData((prev) => ({
+        ...prev,
+        errors: [
+          {
+            row: 0,
+            column: "general",
+            message: error instanceof Error ? error.message : "Đã xảy ra lỗi không xác định khi import.",
+          },
+        ],
+        isValid: false,
+      }));
+      setShowPreview(true);
+      setCurrentStep(2);
     } finally {
       setIsProcessing(false);
     }
-  }, [importData, logImportAction, onImportComplete, user]);
+  }, [importData, logImportAction, onImportComplete, user, companyId]);
 
   const handleReset = useCallback(() => {
     setImportData({ file: null, data: [], errors: [], isValid: false });
@@ -453,17 +480,30 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
         setSingleError(result.error);
         return;
       }
-      if (result.data) {
-        onImportComplete?.([result.data as any]);
+      if (!result.data) {
+        captureException(new Error("createCustomer: insert succeeded but returned no data"), {
+          extra: { companyId, branchId },
+          tags: { feature: "customer_import_single" },
+        });
+        setSingleError("Supabase không trả về dữ liệu sau khi lưu. Vui lòng kiểm tra RLS hoặc thử lại.");
+        return;
       }
+      onImportComplete?.([result.data as any]);
       logImportAction({ type: "single_customer", successCount: 1 });
       setSuccessMessage("Đã thêm khách hàng thành công");
       setTimeout(() => setSuccessMessage(null), 3000);
       setSingleCustomer(INITIAL_SINGLE_CUSTOMER);
+    } catch (error) {
+      console.error("Create customer failed:", error);
+      captureException(error, {
+        extra: { companyId, branchId },
+        tags: { feature: "customer_import_single" },
+      });
+      setSingleError(error instanceof Error ? error.message : "Đã xảy ra lỗi không xác định khi lưu khách hàng.");
     } finally {
       setIsCreatingSingle(false);
     }
-  }, [logImportAction, onImportComplete, singleCustomer, t, user?.branch_id]);
+  }, [logImportAction, onImportComplete, singleCustomer, t, user?.branch_id, companyId]);
 
   const getErrorForRow = (rowIndex: number): ImportError[] => {
     return importData.errors.filter((error) => error.row === rowIndex);
@@ -1321,7 +1361,6 @@ function validateCustomerData(data: RawCustomerData[]): {
 } {
   const errors: ImportError[] = [];
   const seenCodes = new Map<string, number>();
-  const seenPhones = new Map<string, number>();
 
   data.forEach((raw, index) => {
     const row = {
@@ -1360,18 +1399,7 @@ function validateCustomerData(data: RawCustomerData[]): {
         seenCodes.set(row.customer_code, index);
       }
     }
-    if (row.phone) {
-      if (seenPhones.has(row.phone)) {
-        errors.push({
-          row: index,
-          column: "phone",
-          message: `Số điện thoại trùng với dòng ${seenPhones.get(row.phone)! + 1}`,
-          value: raw.phone,
-        });
-      } else {
-        seenPhones.set(row.phone, index);
-      }
-    }
+    // Phone duplicate check removed — phone is optional free-text, duplicates are allowed
   });
 
   return {

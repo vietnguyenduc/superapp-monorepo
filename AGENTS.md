@@ -316,10 +316,31 @@ When the user asks to deploy, redeploy, or verify a frontend app:
 
 1. `git status --short` to see local changes.
 2. `git add <relevant-files>` and `git commit -m "fix: <description>"`.
-3. `git push origin viet`.
-4. Use `vercel --token "$VERCEL_TOKEN"` to list deployments or trigger a new build.
-5. Wait for `READY` state.
-6. Use `browser_navigate` to the production URL and `browser_get_content` to verify.
+3. `git push origin viet` → Vercel **auto-deploys preview** (no manual trigger needed).
+4. To go to production: create PR `viet` → `main`, wait for CI, merge → Vercel **auto-deploys production** (no manual trigger needed).
+5. Wait for `READY` state via `vercel ls --token "$VERCEL_TOKEN" <app-name>` (read-only check, NOT a trigger).
+6. Use `browser_navigate` to verify (preview URL after viet push, production URL after main merge).
+
+### RULE: NEVER trigger Vercel deployments via API
+
+**Do NOT call `POST /v13/deployments` or use `forceNewBuild=1` or trigger deploy hooks manually.** This causes:
+1. **Vercel free plan limit exhaustion** (100 deployments/day via API → blocked for 24h)
+2. **Production alias pollution** (manual deploys from `viet` can be promoted to production by mistake, bypassing the `main` branch gate)
+3. **Confusion** (multiple deployments for the same commit, hard to track which is "latest")
+
+**The ONLY correct ways to deploy:**
+- Push to `viet` → Vercel auto-deploys preview
+- Merge PR `viet` → `main` → Vercel auto-deploys production
+
+**If Vercel auto-deploy doesn't trigger after a push:**
+1. Wait 5-10 minutes (GitHub webhook delivery can lag)
+2. Check Vercel dashboard → Settings → Git → verify GitHub integration is connected
+3. If still no deploy, push an empty commit to retrigger: `git commit --allow-empty -m "chore: retrigger deploy" && git push`
+4. **Do NOT** use the Vercel API to force a deployment
+
+**If bundle content doesn't change despite new commits (Turborepo cache hit):**
+- This is already fixed via `cache: false` in `turbo.json` + `rm -rf dist .turbo .vercel/cache node_modules/.vite` in Vercel buildCommand
+- Do NOT try to "fix" it by triggering more deployments — that just wastes the daily limit
 
 ## 3. Environment variables
 
