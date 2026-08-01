@@ -77,11 +77,20 @@ scratch/
 node_modules/
 .turbo/
 dist/
+# packages/api/dist is the source of truth for the API backend (no src/ dir);
+# it must be tracked so Docker/Vercel builds have the compiled code.
+!packages/api/dist/
+!packages/api/dist/**
 dev-apps.log
 apps/superapp-business-bot/scraper/storage/refined_data/
 
 # OpenHands runtime artifacts (should not be in repo)
 [0-9a-f]*/
+# The rule above also matches "api/" and "dist/" (a/d are hex chars);
+# re-include the API backend dist (source of truth, no src/ dir).
+!packages/api/
+!packages/api/dist/
+!packages/api/dist/**
 conversations/
 bash_events/
 
