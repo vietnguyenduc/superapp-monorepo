@@ -22,7 +22,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const { t } = useTranslation();
   const { user } = useAuthContext();
 
-  const isAdminOrManager = user?.role === 'admin_master' || user?.role === 'admin_company';
+  const isAdminOrManager = user?.role === 'admin_master' || user?.role === 'admin_company' || user?.role === 'admin';
   const canImportCustomers = isAdminOrManager || Boolean(user?.staff_permissions?.import_customers);
   const canImportTransactions = isAdminOrManager || Boolean(user?.staff_permissions?.import_transactions);
 
