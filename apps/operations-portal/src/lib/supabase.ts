@@ -157,5 +157,5 @@ _configureApiClient({
 const _isProd =
   typeof window !== "undefined" &&
   window.location?.hostname?.endsWith(".appforyou.xyz");
-export const apiClient = _isProd ? supabase : _rawApiClient;
+export const apiClient: any = _isProd ? supabase : _rawApiClient;
 // ── End InsForge apiClient ─────────────────────────────────────────────────
