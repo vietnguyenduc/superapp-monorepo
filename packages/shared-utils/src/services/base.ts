@@ -14,6 +14,16 @@ export abstract class BaseService {
            !!localStorage.getItem('cashflow_trial_user');
   }
 
+  // Normalize error to string — fallback operations may return { message: "..." }
+  // which React cannot render as a child (error #31).
+  private static normalizeError(err: any): string | undefined {
+    if (!err) return undefined;
+    if (typeof err === 'string') return err;
+    if (err.message && typeof err.message === 'string') return err.message;
+    if (err.message) return JSON.stringify(err.message);
+    return String(err);
+  }
+
   protected static async execute<T>(
     operation: () => Promise<any>,
     fallbackOperation?: () => Promise<any>
@@ -21,7 +31,8 @@ export abstract class BaseService {
     try {
       if (this.isTrial && fallbackOperation) {
         const res = await fallbackOperation();
-        return { success: !res.error, data: res.data, error: res.error, errors: res.errors };
+        const error = this.normalizeError(res.error);
+        return { success: !error, data: res.data, error, errors: res.errors };
       }
 
       const { data, error, errors } = await operation();
@@ -30,15 +41,16 @@ export abstract class BaseService {
         if (fallbackOperation) {
           console.warn('Database error, using fallback:', error);
           const res = await fallbackOperation();
-          return { success: !res.error, data: res.data, error: res.error, errors: res.errors };
+          const fbError = this.normalizeError(res.error);
+          return { success: !fbError, data: res.data, error: fbError, errors: res.errors };
         }
-        return { success: false, error: error.message, errors };
+        return { success: false, error: this.normalizeError(error), errors };
       }
 
       return { success: true, data, errors };
     } catch (err: any) {
       console.error('Service execution error:', err);
-      return { success: false, error: err.message || 'Đã xảy ra lỗi không xác định' };
+      return { success: false, error: this.normalizeError(err) || 'Đã xảy ra lỗi không xác định' };
     }
   }
 }

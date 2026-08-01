@@ -346,13 +346,14 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       );
 
       if (result.error) {
+        const errMsg = typeof result.error === 'string' ? result.error : (result.error?.message || 'Lỗi không xác định');
         setImportData((prev) => ({
           ...prev,
           errors: [
             {
               row: 0,
               column: "general",
-              message: result.error,
+              message: errMsg,
             },
           ],
           isValid: false,
@@ -424,7 +425,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
           {
             row: 0,
             column: "general",
-            message: error instanceof Error ? error.message : "Đã xảy ra lỗi không xác định khi import.",
+            message: error instanceof Error ? error.message : (typeof error === 'string' ? error : (error?.message || "Đã xảy ra lỗi không xác định khi import.")),
           },
         ],
         isValid: false,
@@ -477,7 +478,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       };
       const result = await databaseService.customers.createCustomer(payload);
       if (result.error) {
-        setSingleError(result.error);
+        setSingleError(typeof result.error === 'string' ? result.error : (result.error?.message || 'Lỗi không xác định'));
         return;
       }
       if (!result.data) {
