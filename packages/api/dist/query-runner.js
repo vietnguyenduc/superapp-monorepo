@@ -237,6 +237,12 @@ function buildLimit(limit, offset) {
     return sql;
 }
 function buildReturning(returning) {
+    if (returning === false)
+        return "";
+    if (returning === true)
+        return "RETURNING *";
+    if (typeof returning === "string")
+        returning = [returning];
     if (!returning || returning.length === 0)
         return "RETURNING *";
     returning.forEach(validateColumn);
