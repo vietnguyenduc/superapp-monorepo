@@ -241,12 +241,12 @@ const saveStore = () => {
 
 // Generic CRUD operations
 export const trialGet = (table: string) => {
-  if (!isTrialMode) return null;
+  if (!getTrialMode()) return null;
   return store[table as keyof typeof store] || [];
 };
 
 export const trialInsert = (table: string, record: any) => {
-  if (!isTrialMode) return null;
+  if (!getTrialMode()) return null;
   const tableData = store[table as keyof typeof store] || [];
   const newRecord = {
     ...record,
@@ -260,7 +260,7 @@ export const trialInsert = (table: string, record: any) => {
 };
 
 export const trialUpdate = (table: string, id: string, updates: any) => {
-  if (!isTrialMode) return null;
+  if (!getTrialMode()) return null;
   const tableData = store[table as keyof typeof store] || [];
   const index = tableData.findIndex((r: any) => r.id === id);
   if (index === -1) return null;
@@ -276,7 +276,7 @@ export const trialUpdate = (table: string, id: string, updates: any) => {
 };
 
 export const trialDelete = (table: string, id: string) => {
-  if (!isTrialMode) return null;
+  if (!getTrialMode()) return null;
   const tableData = store[table as keyof typeof store] || [];
   const index = tableData.findIndex((r: any) => r.id === id);
   if (index === -1) return null;
