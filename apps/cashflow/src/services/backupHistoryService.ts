@@ -1,5 +1,5 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase , apiClient} from "./supabase";
+import { apiClient } from "./supabase";
 import { trialGet, trialDelete } from "./trialMockStore";
 import { customerService } from "./customerService";
 import { transactionService } from "./transactionService";
@@ -70,7 +70,7 @@ export class BackupHistoryService extends BaseService {
   static async cleanupOldBackups(companyId: string) {
     return this.execute(
       async () => {
-        const { data: backups } = await supabase
+        const { data: backups } = await apiClient
           .from("backup_history")
           .select("id")
           .eq("company_id", companyId)
