@@ -1,240 +1,136 @@
-# SuperApp Monorepo - Architecture Documentation
+# Architecture — Superapp Monorepo
 
-> **Last Updated**: 2026-05-01
-> **Merged from:** `ARCHITECTURE.md` (root), `apps/cashflow/docs/architecture.md`
+> Tổng quan kiến trúc toàn hệ thống. Đọc file này trước khi làm việc với bất kỳ app nào.
 
----
+## High-Level Architecture
 
-## 📁 Repository Structure
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Browser / Phone                           │
+│  (Tailscale → Windows → netsh portproxy → WSL → Vite dev)       │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ HTTPS (prod) / HTTP (dev)
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     Vite Dev Servers (WSL)                       │
+│  apps/admin-portal:5173  apps/cashflow:5174                     │
+│  apps/inventory:5175     apps/sales:5176                        │
+│  apps/hr:5177            apps/accounting:5178                   │
+│  apps/operations:3006    packages/api:3001                      │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ Supabase JS Client (anon key)
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Supabase (PostgreSQL)                         │
+│  Auth · RLS · Triggers · RPCs · Realtime                         │
+│  50+ migrations · Multi-tenant (company_id)                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Monorepo Structure
 
 ```
 superapp-monorepo/
-├── apps/                    # Application packages
-│   ├── cashflow/           # Cash flow management app
-│   ├── inventory-operation/ # Inventory operations app
-│   └── [other-apps]/       # Future applications
-├── packages/               # Shared packages (if any)
-├── docs/                   # Documentation
-└── package.json            # Root package.json (workspaces)
+├── apps/                          # 7 production apps + web
+│   ├── admin-portal/              # 5173 — Company/staff/permission management
+│   ├── cashflow/                  # 5174 — Cash flow management
+│   ├── inventory-operation/       # 5175 — Inventory management (F&B)
+│   ├── sales-operation/           # 5176 — Sales & POS
+│   ├── hr-operation/              # 5177 — HR, payroll, attendance
+│   ├── accounting/                # 5178 — Accounting, invoices, assets
+│   ├── operations-portal/         # 3006 — Operations portal
+│   └── web/                       # Landing page / docs site
+├── packages/                      # Shared packages
+│   ├── shared-utils/              # @repo/shared-utils — Supabase client, API, types
+│   ├── ui/                        # @repo/ui — React component library
+│   ├── hooks/                     # @repo/hooks — Shared React hooks
+│   ├── iam/                       # @superapp/iam — Auth, permissions, company context
+│   ├── theme/                     # @repo/theme — Tailwind preset, design tokens
+│   ├── trial-client/              # @superapp/trial-client — Trial mode seed data
+│   ├── types/                     # @repo/types — TypeScript types, Database types
+│   ├── typescript-config/         # Shared tsconfig presets
+│   └── insforge-mcp/              # MCP server integration
+├── supabase/
+│   └── migrations/                # 50+ SQL migration files
+├── docs/                          # ← You are here
+├── AGENTS.md                      # AI agent rules
+├── turbo.json                     # Turborepo task config
+└── package.json                   # Root workspace config
 ```
 
----
+## Tech Stack
 
-## 🏗️ Monorepo Architecture
-
-### Workspace Management
-- **Tool**: npm workspaces
-- **Structure**: Each app is independent but can share packages
-
-### Running Individual Apps
-```bash
-# Run specific app
-npm run dev --workspace=cashflow
-npm run dev --workspace=inventory-operation
-
-# Build specific app
-npm run build --workspace=cashflow
-```
-
----
-
-## 📱 Application: Cashflow
-
-### Purpose
-Business cash flow management system for tracking:
-- Customer debts and payments
-- Income and expenses
-- Bank account balances
-- Multi-branch operations
-
-### Tech Stack
 | Layer | Technology |
-|-------|------------|
-| Frontend | React 18 + TypeScript |
-| Build | Vite |
-| Styling | TailwindCSS |
-| Charts | Recharts |
-| i18n | react-i18next |
-| Backend | Supabase (PostgreSQL + Auth + Edge Functions) |
+|-------|-----------|
+| Monorepo | Turborepo + npm workspaces |
+| Frontend | React 18 + TypeScript 5.8 + Vite 8 |
+| Styling | Tailwind CSS + Apple-inspired design system |
+| Backend | Supabase (PostgreSQL + Auth + Realtime + RLS) |
+| State | React hooks + custom hooks (no Redux) |
+| Components | `@repo/ui` shared library |
+| Auth | `@superapp/iam` (Supabase Auth + JWT claims + RBAC) |
+| Deployment | Vercel (per-app) |
+| Dev environment | WSL2 Ubuntu + Tailscale |
 
-### Directory Structure
+## Package Dependency Graph
+
 ```
-apps/cashflow/
-├── src/
-│   ├── components/         # Reusable UI components
-│   │   ├── UI/            # Basic UI elements (Button, Input, etc.)
-│   │   └── Layout/        # Layout components
-│   ├── pages/             # Page components
-│   │   ├── Dashboard/     # Main dashboard
-│   │   ├── Customers/     # Customer management
-│   │   └── Transactions/  # Transaction management
-│   ├── services/          # Data services
-│   │   ├── database.ts    # Main service exports (Supabase client)
-│   │   ├── supabase.ts    # Supabase client configuration
-│   │   ├── trialMockStore.ts  # Offline/demo fallback data
-│   │   └── businessLogic.ts   # Validation & transformers
-│   ├── hooks/             # Custom React hooks
-│   ├── utils/             # Utility functions
-│   ├── locales/           # i18n translations
-│   │   ├── en/           # English
-│   │   └── vi/           # Vietnamese
-│   └── types/             # TypeScript type definitions
-├── AI_CONTEXT.md          # AI assistant context file
-└── package.json
+@repo/types ←── @repo/shared-utils ←── apps/*
+                    ↑
+@superapp/iam ──────┘
+@repo/ui ──────────── apps/*
+@repo/hooks ───────── apps/*
+@repo/theme ───────── apps/*
+@superapp/trial-client ── apps/*
 ```
 
-### Data Flow
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
-│   UI Layer  │────▶│   Services   │────▶│    Supabase     │
-│  (React)    │◀────│ (database.ts)│◀────│ (PostgreSQL +   │
-│             │     │              │     │  Auth + RLS)    │
-└─────────────┘     └──────────────┘     └─────────────────┘
-                           │
-                           ▼ (offline / demo fallback)
-                    ┌──────────────┐
-                    │ trialMockStore│
-                    │ (localStorage)│
-                    └──────────────┘
-```
+**Key rule**: Apps depend on packages. Packages can depend on other packages (e.g., `iam` depends on `shared-utils`). Apps never depend on other apps directly — cross-app communication happens via Supabase (triggers, shared tables) or the App Switcher (URL navigation).
 
-### Service Interface
-```typescript
-// Main export from database.ts
-export const databaseService = {
-  dashboard: {
-    getDashboardMetrics(branchId?, timeRange): Promise<DashboardMetrics>
-  },
-  customers: {
-    getCustomers(filters?): Promise<Customer[]>
-    getCustomerById(id): Promise<Customer>
-    createCustomer(data): Promise<Customer>
-    updateCustomer(id, data): Promise<Customer>
-    deleteCustomer(id): Promise<void>
-  },
-  transactions: {
-    getTransactions(filters?): Promise<Transaction[]>
-    createTransaction(data): Promise<Transaction>
-    // ...
-  },
-  bankAccounts: {
-    getBankAccounts(): Promise<BankAccount[]>
-    // ...
-  },
-  branches: {
-    getBranches(): Promise<Branch[]>
-    // ...
-  }
-};
-```
+## Cross-App Integration
 
----
+Apps không gọi API của nhau trực tiếp. Thay vào đó:
 
-## 🔐 Security Considerations
+1. **Supabase triggers**: Khi inventory nhập kho → trigger tạo pending cashflow transaction
+2. **Shared tables**: `companies`, `branches`, `users` dùng chung qua tất cả apps
+3. **App Switcher**: `@repo/ui` export `AppSwitcher` component, dùng `@repo/shared-utils/app-urls.ts` để resolve URL
+4. **JWT claims**: User login 1 lần, JWT chứa `app_permissions` + `role` + `company_id`, tất cả apps đọc từ đó
 
-### Production (Active)
-- **Supabase Authentication** (`auth.users` ↔ `public.users` sync)
-- **Row-Level Security (RLS)** enabled on all tables; policies restrict data by `company_id` / `branch_id` / role
-- **API key management** via `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env.local`
-- **RBAC** granular permissions stored in `users.staff_permissions` JSONB
+## Turborepo Task Pipeline
 
-### Development / Trial Fallback
-- Offline demo mode uses `trialMockStore.ts` (localStorage) when Supabase is unreachable
-- No real auth in trial mode; do **not** use for production data
-
----
-
-## 🌐 Internationalization (i18n)
-
-### Supported Languages
-- English (en) - Default
-- Vietnamese (vi)
-
-### Translation Structure
 ```json
-// locales/en/translation.json
 {
-  "dashboard": {
-    "title": "Dashboard",
-    "cashFlowChart": "Cash Flow Chart",
-    "timeLabels": {
-      "months": {
-        "january": "January",
-        // ...
-      }
-    }
-  }
+  "build": { "dependsOn": ["^build"], "outputs": ["dist/**"] },
+  "lint": { "dependsOn": ["^lint"] },
+  "check-types": { "dependsOn": ["^check-types"] },
+  "test": { "dependsOn": [], "outputs": ["coverage/**"] },
+  "dev": { "cache": false, "persistent": true }
 }
 ```
 
-### Usage in Components
-```typescript
-const { t } = useTranslation();
-return <h1>{t("dashboard.title")}</h1>;
-```
+- `^build` = build dependencies first (packages before apps)
+- `dev` is persistent (long-running, not cached)
+- `dev:apps` runs all 7 apps concurrently with `--concurrency=16`
 
-### Consistency Rules
-- Always add new keys to **both** `vi.json` and `en.json`.
-- Missing keys will render the raw key string in UI; confirm in Vietnamese mode.
-- Avoid hardcoded Vietnamese in components; prefer `t("...")`.
+## Key Design Decisions
 
----
+### 1. Multi-tenancy via `company_id`
+Mọi table business đều có `company_id` column + RLS policy `auth.jwt() ->> 'company_id'`. Một Supabase project serve nhiều companies.
 
-## 📊 Dashboard Components
+### 2. Cookie-based session sharing
+`@repo/shared-utils/supabase/client.ts` dùng custom `cookieStorage` với domain `.appforyou.xyz` (prod) hoặc `localhost` (dev). Khi user login ở `admin.appforyou.xyz`, session cookie share sang `cashflow.appforyou.xyz` — không cần login lại.
 
-### CashFlowChart
-- **Purpose**: Visualize cash flow over time
-- **Features**:
-  - Time range filters (Day, Week, Month, Quarter, Year)
-  - Dynamic data aggregation
-  - Waterfall chart visualization
-  - Running total calculation
+### 3. Trial mode without backend
+`@superapp/trial-client` cho phép dùng app mà không cần Supabase. Seed data fetch từ API `localhost:3001/api/trial/:table`, mutations lưu in-memory. Toggle bằng `localStorage.setItem('isTrial', 'true')`.
 
-### MetricsCard
-- **Purpose**: Display key metrics with change indicators
-- **Data**: Outstanding balance, active customers, transactions
+### 4. No Redux / no global state library
+State management = React hooks (`useState`, `useReducer`, custom hooks trong `@repo/hooks`). Mỗi app tự quản lý state cục bộ. Cross-app state = Supabase Realtime subscriptions.
 
-### BalanceByBankChart
-- **Purpose**: Show balance distribution across bank accounts
+### 5. Vite, not Next.js
+Tất cả apps dùng Vite (SPA), không phải Next.js (SSR). Lý do: đơn giản, fast HMR, đủ cho dashboard apps. `next-env.d.ts` tồn tại trong một số apps là artifact cũ, không dùng.
 
----
+## See Also
 
-## 🧭 Layout & UI Guidelines
-
-### Sidebar + Layout Widths
-- Sidebar width is defined in `Layout.tsx` and `Sidebar.tsx`; keep them aligned to avoid clipped actions.
-- If updating `Sidebar` width, update:
-  - Desktop container width in `Layout.tsx`
-  - Mobile slide-over width in `Layout.tsx`
-  - Sidebar root width in `Sidebar.tsx`
-
-### Dark Mode Hygiene
-- Any `bg-white`/light background must include a `dark:` variant.
-- Check dashboard cards, tables, modals, and import pages for white blocks in dark mode.
-
----
-
-## 🔄 State Management
-
-### Current Approach
-- **React useState/useEffect** for local component state
-- **Context API** for global state: `AuthContext` (session, user profile), `TransactionTypeContext` (deduplicated type cache)
-- **Service layer** (`database.ts`) for all Supabase CRUD
-- **Trial mock store** (`trialMockStore.ts`) for offline/demo mode
-
-### Future Considerations
-- React Query (TanStack Query) for server state caching & deduplication
-- Zustand or Jotai if prop drilling becomes painful beyond current scope
-
----
-
-## 📝 Coding Standards
-
-See [CODING_STANDARDS.md](./CODING_STANDARDS.md) for detailed guidelines.
-
-### Quick Reference
-- TypeScript strict mode
-- Functional components with hooks
-- Named exports preferred
-- i18n for all user-facing text
-- TailwindCSS for styling
+- [DATABASE-SCHEMA.md](./DATABASE-SCHEMA.md) — Chi tiết schema và migrations
+- [AUTH-AND-RBAC.md](./AUTH-AND-RBAC.md) — Auth flow và permission system
+- [DEPLOYMENT.md](./DEPLOYMENT.md) — Vercel deployment
+- [DEV-ENVIRONMENT.md](./DEV-ENVIRONMENT.md) — WSL/Tailscale setup

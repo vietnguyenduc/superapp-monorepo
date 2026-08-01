@@ -1,100 +1,80 @@
-# SuperApp Monorepo Documentation
+# Superapp Monorepo — Documentation Index
 
-> **Single entry point for all project documentation.**
-> This monorepo contains multiple applications. Documentation is split into:
-> - **Root `docs/`** — cross-app shared docs (architecture, design, dev setup, testing, deployment)
-> - **`apps/cashflow/docs/`** — Cashflow app-specific docs (product spec, flows, database, UI/UX, user manuals)
+> Tài liệu tập trung cho toàn bộ monorepo. Mỗi app có thư mục `docs/` riêng (xem bên dưới).
 
----
+## Root Documentation
 
-## Quick Navigation
+| Document | Purpose | Audience |
+|----------|---------|----------|
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Monorepo architecture, Turborepo, package graph | Dev, AI |
+| [CODING-STANDARDS.md](./CODING-STANDARDS.md) | Code conventions, lint, format, commit rules | Dev, AI |
+| [DATABASE-SCHEMA.md](./DATABASE-SCHEMA.md) | Cross-app Supabase schema, 50+ migrations, RLS | Dev, DBA |
+| [AUTH-AND-RBAC.md](./AUTH-AND-RBAC.md) | Auth system, JWT claims, multi-tenancy, roles | Dev, AI |
+| [TRIAL-SYSTEM.md](./TRIAL-SYSTEM.md) | Trial seed system architecture | Dev, PM |
+| [DEPLOYMENT.md](./DEPLOYMENT.md) | Vercel deployment, CI/CD, env vars | DevOps |
+| [DATA-MIGRATION.md](./DATA-MIGRATION.md) | Data migration hub (import/export) | Dev, PM |
+| [DEV-ENVIRONMENT.md](./DEV-ENVIRONMENT.md) | WSL/Tailscale/dashboard dev setup | Dev, DevOps |
 
-### Getting Started
-| Doc | What it covers |
-|-----|---------------|
-| [QUICK-START.md](./QUICK-START.md) | First-time setup and running the project |
-| [CONTRIBUTING.md](./CONTRIBUTING.md) | How to contribute, branch strategy, PR checklist |
+## App Documentation
 
-### Architecture & Design
-| Doc | What it covers |
-|-----|---------------|
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | Monorepo structure, workspace management, Cashflow app stack |
-| [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) | Apple-style UI theme, Tailwind patterns, component classes, layout, responsive design |
+Mỗi app có 12 file docs chuẩn trong `apps/<app>/docs/`:
 
-### Development
-| Doc | What it covers |
-|-----|---------------|
-| [DEVELOPMENT.md](./DEVELOPMENT.md) | Dev environment setup, ESLint/Prettier/TypeScript config, coding standards, project structure, i18n setup |
-| [DATABASE.md](./DATABASE.md) | Supabase setup, schema overview, RLS policies, Edge Functions, seed data, data migration rules & tasks |
-| [API.md](./API.md) | API endpoints, TypeScript interfaces, service layer patterns |
+| File | Role |
+|------|------|
+| `OVERVIEW.md` | App là gì, mục đích, scope, target users |
+| `PRD.md` | Product Requirements: features, user stories, acceptance criteria |
+| `ARCHITECTURE.md` | Tech stack, component structure, folder layout |
+| `DATA-MODEL.md` | DB tables, schema, relationships, RLS policies |
+| `DATA-FLOW.md` | Data flow diagrams, state management, caching |
+| `UI-UX.md` | Pages, navigation, design system, components |
+| `FLOWS.md` | Business flows, user journeys, workflows |
+| `API.md` | API endpoints, Supabase RPCs, triggers |
+| `ROLES-PERMISSIONS.md` | RBAC roles, permissions matrix |
+| `RUNBOOK.md` | Run/debug/deploy/troubleshoot |
+| `AI-CONTEXT.md` | Quick context cho AI assistant |
+| `CHANGELOG.md` | Lịch sử thay đổi |
 
-### Testing & QA
-| Doc | What it covers |
-|-----|---------------|
-| [TESTING.md](./TESTING.md) | Testing strategy, unit/component/integration/E2E guides, UI QA checklist, data journey test plan |
+### Apps
 
-### Deployment & Operations
-| Doc | What it covers |
-|-----|---------------|
-| [DEPLOYMENT.md](./DEPLOYMENT.md) | Vercel deployment, environment variables, CI/CD, rollback procedures |
-| [PROJECT_MANAGEMENT.md](./PROJECT_MANAGEMENT.md) | Project tracking, milestone planning |
+| App | Port | Docs | Production URL |
+|-----|------|------|----------------|
+| Admin Portal | 5173 | [docs](../apps/admin-portal/docs/) | https://admin.appforyou.xyz |
+| Cashflow | 5174 | [docs](../apps/cashflow/docs/) | https://cashflow.appforyou.xyz |
+| Inventory | 5175 | [docs](../apps/inventory-operation/docs/) | https://inventory.appforyou.xyz |
+| Sales & POS | 5176 | [docs](../apps/sales-operation/docs/) | https://sales.appforyou.xyz |
+| HR & Payroll | 5177 | [docs](../apps/hr-operation/docs/) | https://hr.appforyou.xyz |
+| Accounting | 5178 | [docs](../apps/accounting/docs/) | https://accounting.appforyou.xyz |
+| Operations | 3006 | [docs](../apps/operations-portal/docs/) | https://ops.appforyou.xyz |
 
-### End-User Docs
-| Doc | Audience |
-|-----|----------|
-| [USER-GUIDE.md](./USER-GUIDE.md) | End users of the Cashflow app |
+## Package Documentation
 
----
+| Package | Docs |
+|---------|------|
+| `@repo/shared-utils` | [docs](../packages/shared-utils/docs/) |
+| `@repo/ui` | [docs](../packages/ui/docs/) |
+| `@repo/hooks` | [docs](../packages/hooks/docs/) |
+| `@superapp/iam` | [docs](../packages/iam/docs/) |
+| `@repo/theme` | [docs](../packages/theme/docs/) |
+| `@superapp/trial-client` | [docs](../packages/trial-client/docs/) |
+| `@repo/types` | [docs](../packages/types/docs/) |
 
-## Cashflow App Docs (`apps/cashflow/docs/`)
+## Quick Start
 
-| Doc | What it covers |
-|-----|---------------|
-| [CASHFLOW-README.md](../apps/cashflow/docs/CASHFLOW-README.md) | **Master index** for Cashflow app docs |
-| [current_state.md](../apps/cashflow/docs/current_state.md) | **Merged** — operational status, system constraints, database map |
-| [MULTI-LEVEL-ADMIN.md](../apps/cashflow/docs/MULTI-LEVEL-ADMIN.md) | **Merged** — RBAC architecture, spec, flows, UI/UX, database design |
-| [AI_WORKFLOW.md](../apps/cashflow/docs/AI_WORKFLOW.md) | **Merged** — AI-native development, 10-agent system, project rules |
-| [architecture.md](../apps/cashflow/docs/architecture.md) | App architecture, tech stack, data flow |
-| [product_spec.md](../apps/cashflow/docs/product_spec.md) | Product requirements, branch assignment spec |
-| [DATA_FLOW_MAP.md](../apps/cashflow/docs/DATA_FLOW_MAP.md) | Transaction types data flow, legacy vs new records |
-| [system_flows.md](../apps/cashflow/docs/system_flows.md) | System business flows |
-| [transaction-type-architecture.md](../apps/cashflow/docs/transaction-type-architecture.md) | Transaction type design, lessons learned, anti-patterns |
-| [user_manual_admin_company.md](../apps/cashflow/docs/user_manual_admin_company.md) | User manual — Admin Company role |
-| [user_manual_staff.md](../apps/cashflow/docs/user_manual_staff.md) | User manual — Staff role |
-| [trial-mode-feature-parity-analysis.md](../apps/cashflow/docs/trial-mode-feature-parity-analysis.md) | Trial mode analysis |
-| [AI_CONTEXT.md](../apps/cashflow/docs/AI_CONTEXT.md) | AI agent context and system knowledge |
-| [handover_checklist.md](../apps/cashflow/docs/handover_checklist.md) | Project handover checklist |
+```bash
+# Install
+npm install
 
----
+# Run all apps in dev mode
+npm run dev:apps
 
-## Inventory App Docs (`apps/inventory-operation/docs/`)
+# Run single app
+npx turbo run dev --filter=cashflow
 
-| Doc | What it covers |
-|-----|---------------|
-| [README.md](../apps/inventory-operation/docs/README.md) | **Master index** for Inventory app docs |
-| [CURRENT_STATE.md](../apps/inventory-operation/docs/CURRENT_STATE.md) | **Source of truth** — implementation status, phases, known issues |
-| [ARCHITECTURE.md](../apps/inventory-operation/docs/ARCHITECTURE.md) | System architecture, tech stack, data flow |
-| [AI_CONTEXT.md](../apps/inventory-operation/docs/AI_CONTEXT.md) | AI agent context, coding rules, anti-patterns |
-| [AI_WORKFLOW.md](../apps/inventory-operation/docs/AI_WORKFLOW.md) | Multi-agent development workflow (10-agent system) |
-| [PROJECT_RULES.md](../apps/inventory-operation/docs/PROJECT_RULES.md) | Coding rules specific to inventory app |
-| [DATA_FLOW_MAP.md](../apps/inventory-operation/docs/DATA_FLOW_MAP.md) | Product / inventory / sales data flow & anti-patterns |
-| [HANDOVER_CHECKLIST.md](../apps/inventory-operation/docs/HANDOVER_CHECKLIST.md) | Complete handover checklist |
-| [USER_GUIDE.md](../apps/inventory-operation/docs/USER_GUIDE.md) | End-user guide for inventory operations |
+# Build all
+npm run build
 
----
+# Type check
+npm run type-check
+```
 
-## For AI Agents / Automated Review
-
-**Start here** → read this `README.md`, then dive into the doc relevant to your task:
-- **Reviewing code** → [DEVELOPMENT.md](./DEVELOPMENT.md)
-- **Database changes** → [DATABASE.md](./DATABASE.md)
-- **UI/UX work** → [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md)
-- **Testing/QA** → [TESTING.md](./TESTING.md)
-- **Architecture questions** → [ARCHITECTURE.md](./ARCHITECTURE.md) + `apps/cashflow/docs/architecture.md` + `apps/inventory-operation/docs/ARCHITECTURE.md`
-- **Product requirements (Cashflow)** → `apps/cashflow/docs/product_spec.md` + `apps/cashflow/docs/current_state.md`
-- **Product requirements (Inventory)** → `apps/inventory-operation/docs/CURRENT_STATE.md`
-- **Multi-level admin** → `apps/cashflow/docs/MULTI-LEVEL-ADMIN.md`
-- **AI workflow** → `apps/cashflow/docs/AI_WORKFLOW.md` + `apps/inventory-operation/docs/AI_WORKFLOW.md`
-- **Data flow patterns** → `apps/cashflow/docs/DATA_FLOW_MAP.md` + `apps/inventory-operation/docs/DATA_FLOW_MAP.md`
-- **Inventory ADRs** → `apps/inventory-operation/docs/adr/*.md`
-- **Inventory user manuals** → `apps/inventory-operation/docs/user_manual_*.md`
+See [DEV-ENVIRONMENT.md](./DEV-ENVIRONMENT.md) for WSL/Tailscale setup.

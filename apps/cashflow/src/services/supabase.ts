@@ -133,7 +133,8 @@ export const refreshSession = async () => {
 export type SupabaseClient = typeof supabase;
 
 // ── InsForge apiClient (drop-in for supabase.from() / supabase.rpc()) ──────
-// Data operations route through the InsForge API server instead of Supabase cloud.
+// Data operations ALWAYS route through the InsForge API server (POST /api/v1/query)
+// which forwards to local InsForge Postgres — including on production.
 // Auth (supabase.auth.*) stays on Supabase. Only .from() and .rpc() move to apiClient.
 _configureApiClient({
   tokenGetter: async () => {
@@ -145,8 +146,5 @@ _configureApiClient({
     }
   },
 });
-const _isProd =
-  typeof window !== "undefined" &&
-  window.location?.hostname?.endsWith(".appforyou.xyz");
-export const apiClient = _isProd ? supabase : _rawApiClient;
+export const apiClient = _rawApiClient;
 // ── End InsForge apiClient ─────────────────────────────────────────────────

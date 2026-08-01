@@ -58,3 +58,17 @@ services:
       - MONOREPO_PATH=/workspace
     volumes:
       - /home/dev/projects/superapp-monorepo:/workspace:ro
+
+  # ── Cloudflare Tunnel (exposes api.appforyou.xyz → localhost:3001) ──
+  # Hostname config lives in Cloudflare Zero Trust dashboard (public hostname
+  # api.appforyou.xyz → http://localhost:3001). network_mode: host so that
+  # "localhost:3001" resolves to the WSL host where superapp-api listens.
+  # Stop/disable: docker compose stop tunnel
+  tunnel:
+    container_name: superapp-tunnel
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}

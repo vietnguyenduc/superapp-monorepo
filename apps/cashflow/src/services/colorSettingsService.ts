@@ -1,5 +1,5 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase , apiClient} from "./supabase";
+import { apiClient } from "./supabase";
 import { trialGet } from "./trialMockStore";
 
 
@@ -56,12 +56,20 @@ export class ColorSettingsService extends BaseService {
   static async updateTransactionTypeColors(colors: any) {
     return this.execute(
       async () => {
-        const { data, error } = await apiClient.from("color_settings").upsert({
+        // Local color_settings PK is id (TEXT) — upsert without id violates
+        // ON CONFLICT(id), so select existing row first, then update/insert.
+        const { data: existing } = await apiClient.from("color_settings").select("id").eq("setting_key", "transaction_type_colors").maybeSingle();
+        const payload = {
           setting_key: "transaction_type_colors",
           setting_value: colors,
           description: "Màu sắc cho các loại giao dịch (payment, charge, adjustment, refund)",
           updated_at: new Date().toISOString(),
-        }).select().single();
+        };
+        if (existing?.id) {
+          const { data, error } = await apiClient.from("color_settings").update(payload).eq("id", existing.id).select().single();
+          return { data, error };
+        }
+        const { data, error } = await apiClient.from("color_settings").insert({ ...payload, id: `cs-${Date.now()}` }).select().single();
         return { data, error };
       }
       // UI doesn't usually update settings in trial mode, so no fallback needed
@@ -71,12 +79,18 @@ export class ColorSettingsService extends BaseService {
   static async updateCustomerBalanceColors(colors: any) {
     return this.execute(
       async () => {
-        const { data, error } = await apiClient.from("color_settings").upsert({
+        const { data: existing } = await apiClient.from("color_settings").select("id").eq("setting_key", "customer_balance_colors").maybeSingle();
+        const payload = {
           setting_key: "customer_balance_colors",
           setting_value: colors,
           description: "Màu sắc cho số dư khách hàng (danh sách và chi tiết)",
           updated_at: new Date().toISOString(),
-        }).select().single();
+        };
+        if (existing?.id) {
+          const { data, error } = await apiClient.from("color_settings").update(payload).eq("id", existing.id).select().single();
+          return { data, error };
+        }
+        const { data, error } = await apiClient.from("color_settings").insert({ ...payload, id: `cs-${Date.now()}` }).select().single();
         return { data, error };
       }
     );

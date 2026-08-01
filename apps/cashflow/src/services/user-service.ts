@@ -1,7 +1,8 @@
-import { supabase , apiClient} from "./supabase";
+import { apiClient } from "./supabase";
 import type { TablesUpdate } from '../types/database.types';
 
 // RBAC user service for Settings
+// All data ops route through apiClient (local InsForge Postgres) — auth stays on Supabase.
 export const userService = {
   async getUsers(branchId?: string) {
     let query = apiClient.from('users').select('*');
@@ -13,7 +14,7 @@ export const userService = {
   },
 
   async updateUser(userId: string, updates: TablesUpdate<'users'>) {
-    const { data, error } = await supabase
+    const { data, error } = await apiClient
       .from('users')
       .update(updates)
       .eq('id', userId)

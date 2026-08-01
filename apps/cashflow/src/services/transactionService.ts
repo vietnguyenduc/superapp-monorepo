@@ -1,5 +1,5 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase , apiClient} from "./supabase";
+import { apiClient } from "./supabase";
 import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 import { validateTransactionData, transformRawTransaction } from "./businessLogic";
 import { v4 as uuid } from "uuid";
@@ -11,7 +11,7 @@ export class TransactionService extends BaseService {
   static async getTransactions(filters?: any) {
     return this.execute(
       async () => {
-        let query = supabase
+        let query = apiClient
           .from("transactions")
           .select(`
             *,
@@ -118,7 +118,7 @@ export class TransactionService extends BaseService {
   static async getTransactionById(id: string, companyId?: string) {
     return this.execute(
       async () => {
-        let query = supabase
+        let query = apiClient
           .from("transactions")
           .select("*, customers(full_name, customer_code), bank_accounts(account_name)")
           .eq("id", id);

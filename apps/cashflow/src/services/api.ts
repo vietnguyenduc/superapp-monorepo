@@ -1,4 +1,4 @@
-import { supabase , apiClient} from "./supabase";
+import { apiClient } from "./supabase";
 import type { ApiResponse, PaginatedResponse } from "../types";
 // import { API_CONFIG } from '../utils/constants' // Unused for now
 
@@ -87,7 +87,7 @@ export class ApiService {
     select?: string,
   ): Promise<ApiResponse<T>> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from(table)
         .select(select || "*")
         .eq("id", id)
@@ -118,7 +118,7 @@ export class ApiService {
   // Generic POST request
   async post<T>(table: string, data: Partial<T>): Promise<ApiResponse<T>> {
     try {
-      const { data: result, error } = await supabase
+      const { data: result, error } = await apiClient
         .from(table)
         .insert(data)
         .select()
@@ -153,7 +153,7 @@ export class ApiService {
     data: Partial<T>,
   ): Promise<ApiResponse<T>> {
     try {
-      const { data: result, error } = await supabase
+      const { data: result, error } = await apiClient
         .from(table)
         .update(data)
         .eq("id", id)
@@ -224,9 +224,7 @@ export class ApiService {
       const offset = (page - 1) * pageSize;
 
       // Get total count
-      let countQuery = supabase
-        .from(table)
-        .select("*", { count: "exact", head: true });
+      let countQuery = apiClient.from(table).select("*");
       if (options?.filters) {
         Object.entries(options.filters).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
@@ -234,7 +232,7 @@ export class ApiService {
           }
         });
       }
-      const { count } = await countQuery;
+      const { count } = await countQuery.count({ count: "exact" });
 
       // Get data
       const dataResponse = await this.get<T>(table, {
@@ -279,7 +277,7 @@ export class ApiService {
     data: Partial<T>[],
   ): Promise<ApiResponse<T[]>> {
     try {
-      const { data: result, error } = await supabase
+      const { data: result, error } = await apiClient
         .from(table)
         .insert(data)
         .select();

@@ -14,6 +14,9 @@ COPY dist/ ./dist/
 # Copy routes (git-tracked) vào dist/routes/ cho Docker build
 COPY routes/ ./dist/routes/
 
+# Copy migrations (áp dụng bằng `node dist/migrate.js` — không chạy tự động lúc start)
+COPY migrations/ ./migrations/
+
 # Expose port
 EXPOSE 3001
 
