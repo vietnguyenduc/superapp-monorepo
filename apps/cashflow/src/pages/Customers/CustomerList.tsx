@@ -215,6 +215,7 @@ const CustomerList: React.FC = () => {
         if (state.formMode === "create") {
           result = await databaseService.customers.createCustomer({
             ...customerData,
+            company_id: customerData.company_id ?? companyId ?? null,
             branch_id: customerData.branch_id ?? user?.branch_id ?? null,
           });
         } else {
