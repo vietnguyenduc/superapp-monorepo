@@ -87,6 +87,8 @@ flowchart TD
 | 8 | Don't skip `read_memory` at session start | Context recall is the whole point of the InsForge Agent Protocol | §10.6 |
 | 9 | Don't call `execute` with `confirm: true` without user approval | Destructive DB writes need explicit confirmation | §10.6 |
 | 10 | Don't create schema-per-tenant (`tenant_<id>.`) | Project uses RLS + `company_id` — see `002_rls_policies.sql` | `.openhands_instructions` §12 |
+| 11 | Don't use `localhost:3001` from sandbox | `localhost` = sandbox itself, not host — use `host.docker.internal:3001` | §10.11 |
+| 12 | Don't `cd apps/cashflow && vercel deploy` | Vercel `rootDirectory` is set — deploy from `/workspace/project` root | §10.13 |
 
 ### 0.8 When you're stuck
 
@@ -94,6 +96,9 @@ flowchart TD
 |---------|---------------|
 | "App unreachable from phone" | §6 Port Forwarding + §7 Tailscale architecture |
 | "WSL has no internet / DNS fails" | §8 WSL2 Network / DNS / NetNat Recovery |
+| "Sandbox can't reach API/Postgres" | §10.11 Sandbox network topology — use `host.docker.internal:<port>` |
+| "Docker socket broken after WSL restart" | §10.12 Native Docker Engine — `bash /home/dev/openhands-ctl.sh start` |
+| "Vercel deploy fails from sandbox" | §10.13 Vercel deploy — deploy from `/workspace/project` root |
 | "Need to find how X works" | §9 DeepWiki vector search (`docker exec insforge-deepwiki python3 /tmp/dw_search.py "X" 15`) |
 | "Don't know which MCP tool to use" | §10.7 MCP servers + §10.6 InsForge Agent Protocol |
 | "Conversation hitting context limit" | §10.3 Condenser handles it automatically — don't manually summarize |
@@ -370,7 +375,7 @@ When the user is on mobile and says Tailscale is down, ports are unreachable, or
 4. Restart any missing service (DO NOT use `npm run dev:apps` — it conflicts with systemd services already running on the same ports):
    - **Vite apps** (systemd, NOT npm): `wsl -d Ubuntu -u root -- bash -c "systemctl start vite-admin-portal vite-cashflow vite-inventory-operation vite-sales-operation vite-hr-operation vite-accounting vite-operations-portal"`
    - **Utils server** (systemd): `wsl -d Ubuntu -u root -- bash -c "systemctl start superapp-utils"`
-   - **OpenHands**: `start-openhands-wsl.sh` (or `start-all.bat` from Windows)
+   - **OpenHands**: `bash /home/dev/openhands-ctl.sh start` (or `start-all.bat` from Windows) — see §10.12
    - **Dashboard**: `generate-apps-dashboard.ps1` (Windows)
    - **Docker containers** (auto-start via `restart: unless-stopped`): if stopped, `wsl -d Ubuntu -- bash -c "cd /home/dev/projects/superapp-monorepo && docker compose up -d"`
 5. Verify from the Tailscale IP with `curl` and `browser_navigate`.
@@ -785,13 +790,93 @@ flowchart TD
 
 ### 10.10 Rules
 
-- **Do NOT edit `openhands-settings.json` from inside WSL/sandbox** — it lives on Windows at `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\`. Edit from Windows side, then restart OpenHands.
+- **Do NOT edit `openhands-settings.json` from inside WSL/sandbox** — it lives on Windows at `C:\Users\Lenovo ThinkBook 14\CascadeProjects\openhands\`. Edit from Windows side, then restart OpenHands via `bash /home/dev/openhands-ctl.sh restart` (§10.12).
 - **`max_iterations: 500`** is the real limit (settings.json overrides `.env`'s 50). Plan tasks to fit in 500 iterations or use Task Splitter.
 - **`read_memory` at session start is mandatory** — do not skip even if you think you have enough context.
 - **Log decisions and error patterns** — they persist in local PostgreSQL (`ai_memory`, `decision_log`, `error_patterns` tables) and are loaded by next session's `read_memory`.
 - **Context cache is automatic** — don't rewrite system prompt mid-session; let the cache work.
 - **Condenser is automatic** — don't manually summarize; let it trigger at `max_size: 240`.
 - **Sub-agents run in parallel but tools are sequential** (`tool_concurrency_limit: 1`) — don't expect concurrent tool calls within one agent.
+
+### 10.11 Sandbox network topology (verified 2026-08-02)
+
+You are running inside a **Docker sandbox container** on **WSL2** with **native Docker Engine** (NOT Docker Desktop). Understanding the network layout is critical for reaching host services.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Windows Host (Tailscale IP: 100.106.8.61)              │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │  WSL2 (Ubuntu) — Docker Engine native             │  │
+│  │  docker0 bridge gateway: 172.17.0.1               │  │
+│  │                                                   │  │
+│  │  ┌──────────────┐   ┌──────────────────────────┐  │  │
+│  │  │ openhands-app │   │ Sandbox (YOU are here)   │  │  │
+│  │  │ 172.17.0.3    │   │ 172.17.0.4              │  │  │
+│  │  │ port 3000     │   │ /workspace/project/      │  │  │
+│  │  └──────────────┘   └──────────────────────────┘  │  │
+│  │  ┌──────────────┐   ┌──────────────┐              │  │
+│  │  │ superapp-api │   │ insforge-pg  │              │  │
+│  │  │ 172.18.0.3   │   │ 172.18.0.2   │              │  │
+│  │  │ port 3001    │   │ port 5432    │              │  │
+│  │  └──────────────┘   └──────────────┘              │  │
+│  │  Vite apps (host, not Docker):                     │  │
+│  │    5173 (admin) 5174 (cashflow) 5175 (inventory)   │  │
+│  │    5176 (sales) 5177 (hr) 5178 (accounting)        │  │
+│  │    3006 (ops) 3001 (api) 8081 (utils)              │  │
+│  └───────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+**`host.docker.internal` resolves to `172.17.0.1`** (docker0 bridge gateway = WSL host). This lets you reach ALL host services from inside the sandbox:
+
+| Service | URL from sandbox | Notes |
+|---------|------------------|-------|
+| OpenHands app | `http://host.docker.internal:3000` | The app server that manages you |
+| Superapp API | `http://host.docker.internal:3001` | Fastify API (may return 503 if DB down) |
+| Postgres (local) | `host.docker.internal:5432` | `insforge-postgres` container |
+| Vite apps | `http://host.docker.internal:5173-5178,3006` | systemd services on WSL host |
+| Utils server | `http://host.docker.internal:8081` | systemd service |
+| InsForge Gateway | `http://host.docker.internal:7130` | DeepSeek proxy (Docker) |
+| DeepWiki | `http://host.docker.internal:7131` | Vector search (Docker) |
+
+**DO NOT** use `localhost:3001` from sandbox — `localhost` inside sandbox is the sandbox itself, not the host. Always use `host.docker.internal:<port>`.
+
+**Test reachability**:
+```bash
+curl -s http://host.docker.internal:3001/health --max-time 5
+curl -s http://host.docker.internal:5174/ --max-time 5  # cashflow Vite
+```
+
+### 10.12 Native Docker Engine (no Docker Desktop)
+
+As of 2026-08-02, WSL2 runs **Docker Engine natively** (not Docker Desktop integration). This is more stable — no more socket breakage on WSL restart.
+
+- **Docker socket**: `/var/run/docker.sock` (native, systemd-managed)
+- **Control plane**: `openhands-ctl.sh` at `/home/dev/openhands-ctl.sh` (NOT `start-openhands-wsl.sh` which was deleted)
+- **Commands**: `bash /home/dev/openhands-ctl.sh start|stop|restart|status`
+- **Image**: `openhands-agent-server-with-node:latest` (entrypoint = `openhands-agent-server` binary)
+- **Sandbox spec**: privileged mode + docker.sock mount + `host.docker.internal: host-gateway`
+
+### 10.13 Vercel deploy from sandbox
+
+**Deploy from monorepo root, NOT from `apps/<app>/`** — Vercel project settings have `rootDirectory: apps/<app>` configured, so it auto-detects.
+
+```bash
+cd /workspace/project  # monorepo root
+vercel deploy --token $VERCEL_TOKEN --yes
+# Vercel picks the project based on .vercel/project.json in monorepo root
+```
+
+**`.vercel/project.json`** exists at monorepo root AND each `apps/<app>/.vercel/`. The monorepo root one is used for `vercel deploy` from root.
+
+**Known issue**: `vercel ls` shows warning "Your Project was either deleted" — this is a Vercel CLI 57.0.0 bug, deployments still work. Upgrade CLI or ignore the warning.
+
+**Deploy from specific app** (alternative):
+```bash
+cd /workspace/project/apps/cashflow
+vercel deploy --token $VERCEL_TOKEN --yes
+# But this may fail with "path does not exist" if rootDirectory is set in Vercel dashboard
+```
 
 ## Trial Seed System
 
