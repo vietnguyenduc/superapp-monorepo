@@ -3,6 +3,7 @@ export interface ServiceResponse<T> {
   data?: T;
   error?: string;
   errors?: any[];
+  count?: number | null;
 }
 
 export abstract class BaseService {
@@ -32,22 +33,22 @@ export abstract class BaseService {
       if (this.isTrial && fallbackOperation) {
         const res = await fallbackOperation();
         const error = this.normalizeError(res.error);
-        return { success: !error, data: res.data, error, errors: res.errors };
+        return { success: !error, data: res.data, error, errors: res.errors, count: res.count };
       }
 
-      const { data, error, errors } = await operation();
+      const { data, error, errors, count } = await operation();
 
       if (error) {
         if (fallbackOperation) {
           console.warn('Database error, using fallback:', error);
           const res = await fallbackOperation();
           const fbError = this.normalizeError(res.error);
-          return { success: !fbError, data: res.data, error: fbError, errors: res.errors };
+          return { success: !fbError, data: res.data, error: fbError, errors: res.errors, count: res.count };
         }
         return { success: false, error: this.normalizeError(error), errors };
       }
 
-      return { success: true, data, errors };
+      return { success: true, data, errors, count };
     } catch (err: any) {
       console.error('Service execution error:', err);
       return { success: false, error: this.normalizeError(err) || 'Đã xảy ra lỗi không xác định' };

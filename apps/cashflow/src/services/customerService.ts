@@ -26,7 +26,10 @@ export class CustomerService extends BaseService {
           query = query.range(offset, offset + limit - 1);
         }
         
-        const { data, error, count } = await query;
+        // .count('exact') runs the paginated SELECT and a matching COUNT(*) (same
+        // filters/OR groups) in one request, so `count` is the true total, not
+        // just the current page size.
+        const { data, error, count } = await query.count({ count: "exact" });
         
         const mappedData = (data || []).map((c: any) => ({
           ...c,
