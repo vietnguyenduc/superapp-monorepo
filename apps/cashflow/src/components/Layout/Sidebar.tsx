@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AddButton from "../UI/AddButton";
 import { useAuthContext } from "@superapp/iam";
+import { canImportCustomers, canImportTransactions } from "../../utils/permissions";
 
 // Preload lazy route chunks on hover so navigation feels instant on click.
 // The import() is cached by the bundler — clicking later reuses the same chunk.
@@ -32,9 +33,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const { t } = useTranslation();
   const { user } = useAuthContext();
 
-  const isAdminOrManager = user?.role === 'admin_master' || user?.role === 'admin_company' || user?.role === 'admin';
-  const canImportCustomers = isAdminOrManager || Boolean(user?.staff_permissions?.import_customers);
-  const canImportTransactions = isAdminOrManager || Boolean(user?.staff_permissions?.import_transactions);
+  const showImportCustomers = user ? canImportCustomers(user) : false;
+  const showImportTransactions = user ? canImportTransactions(user) : false;
 
   const menuItems: MenuItem[] = [
     {
@@ -80,7 +80,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           />
         </svg>
       ),
-      hasAddButton: canImportCustomers,
+      hasAddButton: showImportCustomers,
       addAction: () => navigate("/import/customers"),
     },
     {
@@ -101,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           />
         </svg>
       ),
-      hasAddButton: canImportTransactions,
+      hasAddButton: showImportTransactions,
       addAction: () => navigate("/import/transactions"),
     },
     {

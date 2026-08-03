@@ -6,6 +6,7 @@ import { useAuthContext } from "@superapp/iam";
 import { captureException } from "@superapp/shared-utils";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import type { Customer, ImportData, ImportError } from "../../types";
+import { canImportCustomers } from "../../utils/permissions";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import { databaseService } from "../../services/database";
 import Button from "../../components/UI/Button";
@@ -59,14 +60,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const canImportCustomers = useMemo(() => {
-    if (!user) return false;
-    if (user.role === "admin" || user.role === "admin_master" || user.role === "branch_manager") return true;
-    if (user.role === "staff") {
-      return Boolean(user.staff_permissions?.import_customers);
-    }
-    return false;
-  }, [user]);
+  const canImport = useMemo(() => canImportCustomers(user), [user]);
 
   const hasSingleChanges = useMemo(() => {
     return [
@@ -950,7 +944,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     );
   }
 
-  if (!canImportCustomers) {
+  if (!canImport) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">

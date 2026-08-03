@@ -39,8 +39,8 @@ export function isAdmin(user?: { role?: string } | null): boolean {
 // Check if user can import customers (create and edit their own)
 export function canImportCustomers(user: User): boolean {
   if (!user) return false;
-  if (user.role === 'admin_master' || user.role === 'admin' || user.role === 'admin_company') return true;
-  return Boolean(user.staff_permissions?.customers?.import_own);
+  if (user.role === 'admin_master' || user.role === 'admin' || user.role === 'admin_company' || user.role === 'branch_manager') return true;
+  return Boolean(user.staff_permissions?.customers?.import_own) || Boolean((user.staff_permissions as any)?.import_customers);
 }
 
 // Check if user can manage all customers (edit/delete any customer)
@@ -80,8 +80,8 @@ export function canDeleteCustomer(user: User): boolean {
 // Check if user can import transactions (create and edit their own)
 export function canImportTransactions(user: User): boolean {
   if (!user) return false;
-  if (user.role === 'admin_master' || user.role === 'admin' || user.role === 'admin_company') return true;
-  return Boolean(user.staff_permissions?.transactions?.import_own);
+  if (user.role === 'admin_master' || user.role === 'admin' || user.role === 'admin_company' || user.role === 'branch_manager') return true;
+  return Boolean(user.staff_permissions?.transactions?.import_own) || Boolean((user.staff_permissions as any)?.import_transactions);
 }
 
 // Check if user can manage all transactions (edit/delete any transaction)

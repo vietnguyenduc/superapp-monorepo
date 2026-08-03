@@ -10,6 +10,7 @@ import {
   validateTransactionData,
   parseTransactionData,
 } from "../../utils/importUtils";
+import { canImportTransactions } from "../../utils/permissions";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import { databaseService } from "../../services/database";
 import Button from "../../components/UI/Button";
@@ -171,14 +172,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   const [searchParams] = useSearchParams();
 
   // Check if user can import transactions
-  const canImportTransactions = useMemo(() => {
-    if (!user) return false;
-    if (user.role === "admin" || user.role === "admin_master" || user.role === "admin_company" || user.role === "branch_manager") return true;
-    if (user.role === "staff") {
-      return Boolean(user.staff_permissions?.import_transactions);
-    }
-    return false;
-  }, [user]);
+  const canImport = useMemo(() => canImportTransactions(user), [user]);
 
   type TransactionInputRow = {
     transaction_code: string;
@@ -1022,7 +1016,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   }
 
   // Permission check
-  if (!canImportTransactions) {
+  if (!canImport) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
