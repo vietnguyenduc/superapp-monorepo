@@ -60,6 +60,9 @@ export default async function dataRoutes(fastify) {
         }
         try {
             const result = await withClient(async (client) => {
+                if (auth.payload) {
+                    await client.query("SELECT set_config($1, $2, false)", ['request.jwt.claims', JSON.stringify(auth.payload)]);
+                }
                 const r = await runQuery(client, query, auth);
                 if (!r.error) {
                     await logAudit(client, query, auth);
@@ -93,6 +96,9 @@ export default async function dataRoutes(fastify) {
         }
         try {
             const results = await withClient(async (client) => {
+                if (auth.payload) {
+                    await client.query("SELECT set_config($1, $2, false)", ['request.jwt.claims', JSON.stringify(auth.payload)]);
+                }
                 const out = [];
                 for (const query of queries) {
                     const r = await runQuery(client, query, auth);
@@ -130,6 +136,9 @@ export default async function dataRoutes(fastify) {
         }
         try {
             const result = await withClient(async (client) => {
+                if (auth.payload) {
+                    await client.query("SELECT set_config($1, $2, false)", ['request.jwt.claims', JSON.stringify(auth.payload)]);
+                }
                 const paramEntries = params ? Object.entries(params) : [];
                 const placeholders = paramEntries.map((_, i) => `$${i + 1}`).join(", ");
                 const sql = `SELECT * FROM ${fn}(${placeholders})`;

@@ -8,14 +8,17 @@ export async function verifySupabaseToken(token) {
             audience: "authenticated",
             clockTolerance: 60,
         });
-        const metadata = payload.user_metadata ?? {};
+        const appMetadata = payload.app_metadata ?? {};
+        const userMetadata = payload.user_metadata ?? {};
+        const metadata = { ...userMetadata, ...appMetadata };
         return {
             userId: payload.sub ?? "",
             email: payload.email,
-            role: metadata.role ?? "staff",
-            branchId: metadata.branch_id,
-            companyId: metadata.company_id,
+            role: metadata.role ?? appMetadata.role ?? userMetadata.role ?? "staff",
+            branchId: metadata.branch_id ?? userMetadata.branch_id,
+            companyId: metadata.company_id ?? userMetadata.company_id ?? appMetadata.company_id,
             metadata,
+            payload,
         };
     }
     catch (err) {
