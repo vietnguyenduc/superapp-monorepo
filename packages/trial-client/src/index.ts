@@ -4,6 +4,8 @@ export interface TrialMutations {
   deletes: string[];
 }
 
+import { DEFAULT_TRIAL_SEED } from './static-seed';
+
 const getTrialApiUrl = (): string => {
   try {
     const env = (import.meta as any).env;
@@ -55,16 +57,21 @@ const TRIAL_TABLES = [
 
 export const loadTrialSeed = async (): Promise<void> => {
   if (!isBrowser) return;
-  const seed: Record<string, any[]> = {};
+  // Start with the built-in static template so trial mode works even when
+  // the local InsForge API is not reachable. Remote seed (from the API) will
+  // override the matching table if it is available.
+  const seed: Record<string, any[]> = { ...DEFAULT_TRIAL_SEED };
   for (const table of TRIAL_TABLES) {
     try {
       const res = await fetch(`${getTrialApiUrl()}/api/trial/${table}`);
       if (!res.ok) throw new Error(`Trial API error: ${res.status}`);
       const json = await res.json();
-      seed[table] = json.data || [];
+      const records = json.data || [];
+      if (records.length > 0) {
+        seed[table] = records;
+      }
     } catch (err) {
-      console.error(`Failed to load trial seed for ${table}:`, err);
-      seed[table] = [];
+      console.warn(`[trial-client] Could not load remote trial seed for ${table}, using static template:`, err);
     }
   }
   setSeed(seed);

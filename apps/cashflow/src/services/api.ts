@@ -224,7 +224,7 @@ export class ApiService {
       const offset = (page - 1) * pageSize;
 
       // Get total count
-      let countQuery = apiClient.from(table).select("*");
+      let countQuery = apiClient.from(table).select("*", { count: "exact" });
       if (options?.filters) {
         Object.entries(options.filters).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
@@ -232,7 +232,7 @@ export class ApiService {
           }
         });
       }
-      const { count } = await countQuery.count({ count: "exact" });
+      const { count } = await countQuery;
 
       // Get data
       const dataResponse = await this.get<T>(table, {

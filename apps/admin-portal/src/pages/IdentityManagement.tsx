@@ -15,14 +15,41 @@ export default function IdentityManagement() {
 
   const fetchUsers = async () => {
     setLoading(true);
-    const { data, error } = await apiClient.rpc('admin_get_all_users', {
-      p_company_id: selectedCompanyId
+    let usersData: any[] | null = null;
+    let fetchError: any = null;
+
+    // Prefer the admin RPC, but fall back to a direct table query when the
+    // production RPC is still an older version that does not return
+    // staff_permissions (migration 039 not yet applied).
+    const { data: rpcData, error: rpcError } = await apiClient.rpc('admin_get_all_users', {
+      p_company_id: selectedCompanyId || null,
     });
-    if (error) {
-      console.error('Failed to fetch users:', error);
+
+    if (!rpcError && rpcData && rpcData.length > 0 && rpcData[0].staff_permissions !== undefined) {
+      usersData = rpcData;
+    } else {
+      if (rpcError) {
+        console.warn('[IdentityManagement] admin_get_all_users failed, falling back to users table:', rpcError);
+      }
+      let q = apiClient
+        .from('users')
+        .select('id,email,full_name,role,app_permissions,staff_permissions,company_id,branch_id,is_active,created_at');
+      if (selectedCompanyId) {
+        q = q.eq('company_id', selectedCompanyId);
+      }
+      const { data, error } = await q.order('created_at', { ascending: false });
+      if (error) {
+        fetchError = error;
+      } else {
+        usersData = data || [];
+      }
+    }
+
+    if (fetchError) {
+      console.error('Failed to fetch users:', fetchError);
       alert('Error fetching users. Are you sure you are a Master Admin?');
     } else {
-      setUsers((data || []).map((u: UserClaim) => ({
+      setUsers((usersData || []).map((u: any) => ({
         ...u,
         app_permissions: u.app_permissions || {},
         staff_permissions: u.staff_permissions || {},
@@ -50,8 +77,27 @@ export default function IdentityManagement() {
     const { error } = await apiClient.rpc('admin_update_user_claims', args);
 
     if (error) {
-      console.error('Failed to update claims:', error);
-      alert('Error updating claims: ' + error.message);
+      const msg = error.message || String(error);
+      // If the 5-arg RPC does not exist, the migration has not been applied.
+      // Try the legacy 4-arg RPC so role/app/company changes still work.
+      if (msg.toLowerCase().includes('does not exist')) {
+        const legacyArgs: Record<string, unknown> = {};
+        legacyArgs.target_user_id = editingUser.id;
+        legacyArgs.new_role = editingUser.role;
+        legacyArgs.new_app_permissions = editingUser.app_permissions;
+        legacyArgs.new_company_id = editingUser.company_id;
+        const { error: legacyError } = await apiClient.rpc('admin_update_user_claims', legacyArgs);
+        if (legacyError) {
+          console.error('Failed to update claims (legacy):', legacyError);
+          alert('Error updating claims: ' + (legacyError.message || String(legacyError)));
+        } else {
+          setUsers(users.map(u => u.id === editingUser.id ? editingUser : u));
+          alert('Role, app access and company saved. Granular staff permissions were NOT saved because migration 039 (admin_staff_permissions) has not been applied to the database. Please apply docs/migration 039.');
+        }
+      } else {
+        console.error('Failed to update claims:', error);
+        alert('Error updating claims: ' + msg);
+      }
     } else {
       setUsers(users.map(u => u.id === editingUser.id ? editingUser : u));
     }

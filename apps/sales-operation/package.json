@@ -22,6 +22,7 @@
     "@superapp/einvoice": "*",
     "@superapp/iam": "*",
     "@superapp/shared-utils": "*",
+    "@superapp/trial-client": "*",
     "@types/react-beautiful-dnd": "^13.1.8",
     "i18next": "^26.0.10",
     "react": "^18.2.0",

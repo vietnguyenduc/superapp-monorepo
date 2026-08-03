@@ -237,7 +237,11 @@ export default function PermissionEditor({
                     )}
                   </button>
                   {expanded && (
-                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-4 space-y-3">
+                    <div className="text-xs font-medium text-gray-500">
+                      {app.features.filter((f) => getStaffPermission(draft.staff_permissions, f.key)).length} / {app.features.length} quyền đã bật
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {app.features.map((feature) => {
                         const checked = getStaffPermission(
                           draft.staff_permissions,
@@ -271,7 +275,8 @@ export default function PermissionEditor({
                         );
                       })}
                     </div>
-                  )}
+                  </div>
+                )}
                 </div>
               );
             })}

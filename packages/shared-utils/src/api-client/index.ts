@@ -157,11 +157,17 @@ class QueryBuilder<T = any> {
   // ── SELECT ────────────────────────────────────────────────────────────
   // Also doubles as the RETURNING clause when chained after insert/update/upsert,
   // e.g. `.insert(data).select('id, name').single()`.
-  select(columns: string | string[] = '*'): QueryBuilder<T> {
+  select(
+    columns: string | string[] = '*',
+    opts?: { count?: 'exact' | 'planned' | 'estimated' },
+  ): QueryBuilder<T> {
     const cols = typeof columns === 'string'
       ? (columns === '*' ? [] : columns.split(',').map((c) => c.trim()))
       : columns;
     this.def.columns = cols;
+    if (opts?.count) {
+      this.def.count = opts.count;
+    }
     if (this.def.operation !== 'select') {
       this.def.returning = cols;
     }

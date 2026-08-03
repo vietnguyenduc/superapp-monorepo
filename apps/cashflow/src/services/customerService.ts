@@ -8,7 +8,7 @@ export class CustomerService extends BaseService {
   static async getCustomers(filters?: any) {
     return this.execute(
       async () => {
-        let query = apiClient.from("customers").select("*");
+        let query = apiClient.from("customers").select("*", { count: "exact" });
         if (filters?.company_id) {
           query = query.eq("company_id", filters.company_id);
         }
@@ -26,10 +26,10 @@ export class CustomerService extends BaseService {
           query = query.range(offset, offset + limit - 1);
         }
         
-        // .count('exact') runs the paginated SELECT and a matching COUNT(*) (same
-        // filters/OR groups) in one request, so `count` is the true total, not
-        // just the current page size.
-        const { data, error, count } = await query.count({ count: "exact" });
+        // select('*', { count: 'exact' }) runs the paginated SELECT and a matching
+        // COUNT(*) in one request, so `count` is the true total, not just the
+        // current page size. Works for both Supabase and InsForge apiClient.
+        const { data, error, count } = await query;
         
         const mappedData = (data || []).map((c: any) => ({
           ...c,
