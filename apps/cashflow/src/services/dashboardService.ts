@@ -1,6 +1,7 @@
 import { BaseService } from "@superapp/shared-utils";
 import { supabase , apiClient} from "./supabase";
 import { getTrialMode, trialGet } from "./trialMockStore";
+import { parseAmount } from "./businessLogic";
 import type { Transaction, TimeRange, Customer } from "../types";
 
 function getNowIso() {
@@ -321,11 +322,6 @@ export class DashboardService extends BaseService {
 
     const activeCustomers = new Set(currentTx.map((t) => t.customer_id).filter((id): id is string => id !== null)).size;
     const prevActiveCustomers = new Set(prevTx.map((t) => t.customer_id).filter((id): id is string => id !== null)).size;
-
-    const parseAmount = (value: any) => {
-      const num = Number(String(value ?? 0).replace(/[\s,]/g, ""));
-      return Number.isFinite(num) ? num : 0;
-    };
 
     const customersAll: Customer[] = (custResult.data || []) as Customer[];
     const balanceMap = new Map<string, number>();

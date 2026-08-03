@@ -30,6 +30,7 @@ export abstract class BaseService {
     fallbackOperation?: () => Promise<any>
   ): Promise<ServiceResponse<T>> {
     try {
+      // Trial mode uses localStorage mock data instead of the real backend.
       if (this.isTrial && fallbackOperation) {
         const res = await fallbackOperation();
         const error = this.normalizeError(res.error);
@@ -39,12 +40,6 @@ export abstract class BaseService {
       const { data, error, errors, count } = await operation();
 
       if (error) {
-        if (fallbackOperation) {
-          console.warn('Database error, using fallback:', error);
-          const res = await fallbackOperation();
-          const fbError = this.normalizeError(res.error);
-          return { success: !fbError, data: res.data, error: fbError, errors: res.errors, count: res.count };
-        }
         return { success: false, error: this.normalizeError(error), errors };
       }
 

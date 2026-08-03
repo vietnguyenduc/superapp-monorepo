@@ -2,7 +2,7 @@ import { BaseService } from "@superapp/shared-utils";
 import { supabase , apiClient} from "./supabase";
 import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 import { validateCustomerData, transformRawCustomer } from "./businessLogic";
-import { normalizeTransactionType } from "./businessLogic";
+import { normalizeTransactionType, parseAmount } from "./businessLogic";
 
 export class CustomerService extends BaseService {
   static async getCustomers(filters?: any) {
@@ -87,11 +87,6 @@ export class CustomerService extends BaseService {
         }
         
         const { data: txData } = await apiClient.from("transactions").select("transaction_type, amount").eq("customer_id", id);
-        
-        const parseAmount = (value: any) => {
-          const num = Number(String(value ?? 0).replace(/[\s,]/g, ""));
-          return Number.isFinite(num) ? num : 0;
-        };
 
         let calculatedBalance = parseAmount(customer.opening_balance) || 0;
         let transactionCount = 0;
@@ -127,11 +122,6 @@ export class CustomerService extends BaseService {
         
         const transactions = trialGet("transactions") || [];
         const txData = transactions.filter((t: any) => t.customer_id === id);
-        
-        const parseAmount = (value: any) => {
-          const num = Number(String(value ?? 0).replace(/[\s,]/g, ""));
-          return Number.isFinite(num) ? num : 0;
-        };
 
         let calculatedBalance = parseAmount(customer.opening_balance) || 0;
         let transactionCount = txData.length;

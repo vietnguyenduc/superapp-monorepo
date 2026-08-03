@@ -1,5 +1,5 @@
 import { apiClient as _rawApiClient, configureApiClient as _configureApiClient } from "@superapp/shared-utils";
-import { createSupabaseClient } from "@superapp/shared-utils";
+import { createSupabaseClient, getApiUrl } from "@superapp/shared-utils";
 import type { Database } from "@repo/types";
 
 // Environment variables for Supabase configuration
@@ -132,9 +132,10 @@ export const refreshSession = async () => {
 // Export types for better TypeScript support
 export type SupabaseClient = typeof supabase;
 
-// ── InsForge apiClient (drop-in for supabase.from() / supabase.rpc()) ──────
-// Data operations ALWAYS route through the InsForge API server (POST /api/v1/query)
-// which forwards to local InsForge Postgres — including on production.
+// ── apiClient (drop-in for supabase.from() / supabase.rpc()) ────────────────
+// Default to Supabase cloud as the single source of truth.
+// On local/dev environments we prefer InsForge (local Postgres) when it is
+// reachable, so AI agents and local tests can query the local schema.
 // Auth (supabase.auth.*) stays on Supabase. Only .from() and .rpc() move to apiClient.
 _configureApiClient({
   tokenGetter: async () => {
@@ -146,5 +147,42 @@ _configureApiClient({
     }
   },
 });
-export const apiClient = _rawApiClient;
-// ── End InsForge apiClient ─────────────────────────────────────────────────
+
+export let apiClient: any = supabase;
+
+function isProductionHost(): boolean {
+  return typeof window !== "undefined" && window.location.hostname.endsWith(".appforyou.xyz");
+}
+
+async function checkInsForgeHealth(apiUrl: string): Promise<boolean> {
+  if (apiUrl === supabaseUrl) return false;
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(`${apiUrl}/health`, { signal: controller.signal, method: "GET" });
+    clearTimeout(timeoutId);
+    return res.status === 200;
+  } catch {
+    return false;
+  }
+}
+
+async function initializeApiClient(): Promise<void> {
+  if (typeof window === "undefined") return;
+
+  // Production always uses Supabase.
+  if (isProductionHost()) return;
+
+  const apiUrl = getApiUrl();
+  if (apiUrl === supabaseUrl) return;
+
+  if (await checkInsForgeHealth(apiUrl)) {
+    console.info("[cashflow] Local InsForge API available; routing data through it.");
+    apiClient = _rawApiClient;
+  } else {
+    console.warn("[cashflow] Local InsForge API not reachable; using Supabase cloud.");
+  }
+}
+
+initializeApiClient().catch(() => {});
+// ── End apiClient ─────────────────────────────────────────────────────────

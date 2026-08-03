@@ -1,5 +1,6 @@
 import type { Transaction, ImportError, TransactionType } from "../types";
 import { parseFile } from "@superapp/shared-utils";
+import { parseAmount, normalizeTransactionType } from "../services/businessLogic";
 
 export interface RawTransactionData {
   customer_code: string;
@@ -67,22 +68,16 @@ export function parseTransactionData(rawData: string): RawTransactionData[] {
   });
 }
 
+const VALID_TRANSACTION_TYPES: TransactionType[] = ["payment", "charge", "refund", "adjustment"];
+
 function isTransactionTypeToken(value?: string): boolean {
-  const normalized = normalizeTransactionTypeLabel(value || "");
-  return Boolean(normalized);
+  const normalized = normalizeTransactionType(value || "");
+  return VALID_TRANSACTION_TYPES.includes(normalized as TransactionType);
 }
 
 function normalizeTransactionTypeLabel(value: string): TransactionType | "" {
-  const normalized = value.trim().toLowerCase();
-  if (["thu", "điều chỉnh giảm", "dieu chinh giam", "tiền vào", "tien vao", "payment", "thanh toán", "thanh toan"].includes(normalized)) return "payment";
-  if (["chi", "điều chỉnh tăng", "dieu chinh tang", "tiền ra", "tien ra", "charge", "cho nợ", "cho no"].includes(normalized)) return "charge";
-  if (normalized === "điều chỉnh" || normalized === "dieu chinh" || normalized === "adjustment") {
-    return "adjustment";
-  }
-  if (normalized === "hoàn tiền" || normalized === "hoan tien" || normalized === "refund") {
-    return "refund";
-  }
-  return "";
+  const normalized = normalizeTransactionType(value);
+  return VALID_TRANSACTION_TYPES.includes(normalized as TransactionType) ? (normalized as TransactionType) : "";
 }
 
 /**
@@ -316,23 +311,6 @@ export function validateTransactionData(
     isValid: errors.length === 0,
     errors,
   };
-}
-
-/**
- * Parse amount string to number, handling various formats
- */
-function parseAmount(amountStr: string): number {
-  // Remove currency symbols, commas, and spaces
-  const cleaned = amountStr.replace(/[$,€£¥₫\s]/g, "");
-
-  // Handle negative amounts
-  const isNegative = cleaned.startsWith("-") || cleaned.startsWith("(");
-  const positiveAmount = cleaned.replace(/[()-]/g, "");
-
-  // Parse as float
-  const amount = parseFloat(positiveAmount);
-
-  return isNegative ? -amount : amount;
 }
 
 /**

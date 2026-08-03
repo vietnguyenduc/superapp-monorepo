@@ -755,7 +755,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   };
 
   const renderValidationErrors = () => {
-    if (validationMode !== "bulk" || importData.errors.length === 0) {
+    if (importData.errors.length === 0) {
       return null;
     }
 

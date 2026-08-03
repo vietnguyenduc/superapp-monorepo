@@ -1,7 +1,7 @@
 import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
 import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
-import { validateTransactionData, transformRawTransaction } from "./businessLogic";
+import { validateTransactionData, transformRawTransaction, parseAmount, normalizeTransactionType } from "./businessLogic";
 import { v4 as uuid } from "uuid";
 
 // Mock helper to get current ISO string
@@ -251,8 +251,8 @@ export class TransactionService extends BaseService {
             branch_id: r.branch_id || branchId || null,
             company_id: companyId || null,
             created_by: createdBy || null,
-            transaction_type: r.transaction_type || 'payment', // Simplified mapping for brevity
-            amount: typeof r.amount === 'string' ? parseFloat(r.amount.replace(/[$,€£¥₫\s]/g, '')) : r.amount,
+            transaction_type: normalizeTransactionType(r.transaction_type || 'payment'),
+            amount: parseAmount(r.amount),
             description: r.description || null,
             reference_number: r.reference_number || null,
             transaction_date: parsedDate,
@@ -280,8 +280,8 @@ export class TransactionService extends BaseService {
           branch_id: branchId || "trial-branch",
           company_id: companyId || "trial-company",
           created_by: createdBy || "",
-          transaction_type: row.transaction_type || "payment",
-          amount: Number(row.amount) || 0,
+          transaction_type: normalizeTransactionType(row.transaction_type || "payment"),
+          amount: parseAmount(row.amount),
           description: row.description || null,
           reference_number: row.reference_number || null,
           transaction_date: row.transaction_date || now,
