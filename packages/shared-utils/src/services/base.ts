@@ -4,6 +4,7 @@ export interface ServiceResponse<T> {
   error?: string;
   errors?: any[];
   count?: number | null;
+  skipped?: any[];
 }
 
 export abstract class BaseService {
@@ -34,16 +35,16 @@ export abstract class BaseService {
       if (this.isTrial && fallbackOperation) {
         const res = await fallbackOperation();
         const error = this.normalizeError(res.error);
-        return { success: !error, data: res.data, error, errors: res.errors, count: res.count };
+        return { success: !error, data: res.data, error, errors: res.errors, count: res.count, skipped: res.skipped };
       }
 
-      const { data, error, errors, count } = await operation();
+      const { data, error, errors, count, skipped } = await operation();
 
       if (error) {
-        return { success: false, error: this.normalizeError(error), errors };
+        return { success: false, error: this.normalizeError(error), errors, skipped };
       }
 
-      return { success: true, data, errors, count };
+      return { success: true, data, errors, count, skipped };
     } catch (err: any) {
       console.error('Service execution error:', err);
       return { success: false, error: this.normalizeError(err) || 'Đã xảy ra lỗi không xác định' };

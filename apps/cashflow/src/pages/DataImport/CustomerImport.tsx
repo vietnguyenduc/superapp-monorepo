@@ -60,6 +60,9 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [duplicateRows, setDuplicateRows] = useState<Set<number>>(new Set());
+  const [skippedCount, setSkippedCount] = useState(0);
+  const [importedCount, setImportedCount] = useState(0);
   const canImport = useMemo(() => canImportCustomers(user), [user]);
 
   const hasSingleChanges = useMemo(() => {
@@ -165,7 +168,8 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     processFile();
   }, [importData.file]);
 
-  // Update import data when processed data changes
+  // Update import data when processed data changes; reset duplicate preview since
+  // a new file needs to be re-validated against the current DB state.
   React.useEffect(() => {
     setImportData((prev) => ({
       ...prev,
@@ -173,6 +177,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       errors: processedData.errors,
       isValid: processedData.isValid,
     }));
+    setDuplicateRows(new Set());
   }, [processedData]);
 
   const handleFileUpload = useCallback((file: File) => {
@@ -287,13 +292,46 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     [activeTab, hasSingleChanges],
   );
 
-  const handleValidateData = useCallback(() => {
+  const handleValidateData = useCallback(async () => {
     setShowPreview(true);
     setCurrentStep(2);
-  }, []);
+
+    if (processedData.data.length === 0) return;
+
+    // Pre-check existing customer codes in the current company so the preview
+    // can highlight duplicates and only offer to import the non-duplicate rows.
+    try {
+      const payload = processedData.data.map((row) => ({ ...row, company_id: companyId }));
+      const result = await databaseService.customers.checkDuplicateCustomers(payload, companyId);
+      const existingCodes = new Set<string>((result.data || []).map((c: any) => String(c.customer_code || "").trim()));
+      const dupRows = new Set<number>();
+      processedData.data.forEach((row, idx) => {
+        if (existingCodes.has(String(row.customer_code || "").trim())) dupRows.add(idx);
+      });
+      setDuplicateRows(dupRows);
+
+      const hasNewRows = processedData.data.some((_, idx) => !dupRows.has(idx));
+      setImportData((prev) => ({
+        ...prev,
+        data: processedData.data,
+        errors: processedData.errors,
+        isValid: processedData.isValid && hasNewRows,
+      }));
+    } catch (err) {
+      console.error("Duplicate check failed:", err);
+      setDuplicateRows(new Set());
+      setImportData((prev) => ({
+        ...prev,
+        data: processedData.data,
+        errors: processedData.errors,
+        isValid: processedData.isValid,
+      }));
+    }
+  }, [processedData, companyId]);
 
   const handleBackToUpload = useCallback(() => {
     setShowPreview(false);
+    setDuplicateRows(new Set());
     setCurrentStep(1);
   }, []);
 
@@ -327,16 +365,24 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
 
     const branchId = user?.branch_id || null; // Admin can have null branch_id
 
+    // Only import rows that are not already known duplicates. Duplicates that
+    // appeared between preview and import will be skipped gracefully by the
+    // service and reported in `result.skipped`.
+    const rowsToImport = importData.data
+      .filter((_, idx) => !duplicateRows.has(idx))
+      .map((customer) => ({
+        ...customer,
+        working_method: customer.working_method,
+        notes: customer.notes,
+        branch_id: branchId,
+        company_id: companyId,
+      }));
+
     setIsProcessing(true);
     try {
       const result = await databaseService.customers.bulkCreateCustomers(
-        importData.data.map((customer) => ({
-          ...customer,
-          working_method: customer.working_method,
-          notes: customer.notes,
-          branch_id: branchId,
-          company_id: companyId,
-        })),
+        rowsToImport,
+        { skipExisting: true },
       );
 
       if (result.error) {
@@ -368,14 +414,9 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
         return;
       }
 
-      if (!result.data || result.data.length === 0) {
-        // This should never happen if validRows.length > 0 and there's no error —
-        // it usually means the INSERT succeeded but the immediate .select() was
-        // blocked by an RLS policy mismatch (e.g. company_id doesn't match the
-        // authenticated user's own company_id). Report it so we can catch RLS
-        // regressions instead of silently losing data.
-        captureException(new Error("bulkCreateCustomers: insert succeeded but select() returned no rows"), {
-          extra: { companyId, branchId, rowCount: importData.data.length },
+      if (!result.data) {
+        captureException(new Error("bulkCreateCustomers: insert failed without error"), {
+          extra: { companyId, branchId, rowCount: rowsToImport.length },
           tags: { feature: "customer_import" },
         });
         setImportData((prev) => ({
@@ -384,7 +425,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
             {
               row: 0,
               column: "general",
-              message: "Supabase không trả về bản ghi nào sau khi import. Vui lòng kiểm tra RLS, constraint hoặc dữ liệu nhập.",
+              message: "Không nhận được dữ liệu sau khi import. Vui lòng kiểm tra RLS, constraint hoặc dữ liệu nhập.",
             },
           ],
           isValid: false,
@@ -397,20 +438,26 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       setCurrentStep(3);
       onImportComplete?.((result.data ?? []) as any);
 
+      const imported = result.data?.length ?? 0;
+      const newSkipped = (result.skipped?.length ?? 0) + duplicateRows.size;
+      setImportedCount(imported);
+      setSkippedCount(newSkipped);
+
       logImportAction({ type: "bulk_customer", successCount: result.data?.length ?? 0 });
 
       // Show success popup for 3s
-      setSuccessMessage("Đã nhập dữ liệu khách hàng thành công");
+      setSuccessMessage(`Đã nhập ${result.data?.length ?? 0} khách hàng, bỏ qua ${newSkipped} bản ghi trùng`);
       setTimeout(() => setSuccessMessage(null), 3000);
 
       // Reset form
       setImportData({ file: null, data: [], errors: [], isValid: false });
+      setDuplicateRows(new Set());
       setShowPreview(false);
       setCurrentStep(1);
     } catch (error) {
       console.error("Import failed:", error);
       captureException(error, {
-        extra: { companyId, branchId, rowCount: importData.data.length },
+        extra: { companyId, branchId, rowCount: rowsToImport.length },
         tags: { feature: "customer_import" },
       });
       setImportData((prev) => ({
@@ -429,10 +476,13 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     } finally {
       setIsProcessing(false);
     }
-  }, [importData, logImportAction, onImportComplete, user, companyId]);
+  }, [importData, duplicateRows, logImportAction, onImportComplete, user, companyId]);
 
   const handleReset = useCallback(() => {
     setImportData({ file: null, data: [], errors: [], isValid: false });
+    setDuplicateRows(new Set());
+    setSkippedCount(0);
+    setImportedCount(0);
     setShowPreview(false);
     setCurrentStep(1);
   }, []);
@@ -653,15 +703,20 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                 <th className="hidden md:table-cell px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Cách làm việc công nợ
                 </th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Trạng thái
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
               {importData.data.slice(0, 10).map((row, index) => {
                 const rowErrors = getErrorForRow(index);
                 const hasRowError = rowErrors.length > 0;
+                const isDuplicate = duplicateRows.has(index);
+                const rowClass = hasRowError ? "bg-red-50" : isDuplicate ? "bg-yellow-50" : "";
 
                 return (
-                  <tr key={index} className={hasRowError ? "bg-red-50" : ""}>
+                  <tr key={index} className={rowClass}>
                     <td
                       className={`px-3 py-2 text-sm ${getErrorForCell(index, "full_name") ? "bg-red-100" : ""}`}
                     >
@@ -691,6 +746,21 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                       className={`hidden md:table-cell px-3 py-2 text-sm ${getErrorForCell(index, "working_method") ? "bg-red-100" : ""}`}
                     >
                       {row.working_method || "-"}
+                    </td>
+                    <td className="px-3 py-2 text-sm">
+                      {isDuplicate ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200">
+                          Đã tồn tại
+                        </span>
+                      ) : hasRowError ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200">
+                          Lỗi
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200">
+                          OK
+                        </span>
+                      )}
                     </td>
                   </tr>
                 );
@@ -1095,7 +1165,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
             {activeTab === "bulk" && showPreview && (
               <div className="mt-8 space-y-6">
                 <div className="bg-gray-50 dark:bg-gray-800/60 rounded-lg p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">
                         {importData.data.length}
@@ -1106,10 +1176,18 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600">
-                        {importData.data.length - importData.errors.length}
+                        {Math.max(0, importData.data.length - importData.errors.length - duplicateRows.size)}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
                         {t("import.validRows")}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-yellow-600">
+                        {duplicateRows.size}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        Trùng trong hệ thống
                       </div>
                     </div>
                     <div className="text-center">
@@ -1122,6 +1200,14 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                     </div>
                   </div>
                 </div>
+
+                {duplicateRows.size > 0 && (
+                  <div className="rounded-md border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 px-4 py-3">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      {duplicateRows.size} bản ghi trùng mã khách hàng đã có trong hệ thống sẽ bị bỏ qua khi nhập.
+                    </p>
+                  </div>
+                )}
 
                 {renderDataPreview()}
                 {renderValidationErrors()}
@@ -1168,9 +1254,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                         {t("import.importSuccess")}
                       </h3>
                       <p className="mt-1 text-sm text-green-700 dark:text-green-300">
-                        {t("import.importedRows", {
-                          count: importData.data.length,
-                        })}
+                        Đã nhập {importedCount} khách hàng, bỏ qua {skippedCount} bản ghi trùng.
                       </p>
                     </div>
                   </div>

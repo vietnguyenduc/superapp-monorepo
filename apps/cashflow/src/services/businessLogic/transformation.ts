@@ -4,14 +4,20 @@
 // Generates a collision-resistant id for the real (non-trial) data path.
 // Uses ms timestamp + 8 random chars — avoids crypto.randomUUID() so it works
 // on non-secure contexts (e.g. dev over plain Tailscale HTTP).
-const genId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+const genId = (prefix: string) => {
+  const random =
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}-${Math.random().toString(36).slice(2, 12)}`;
+  return `${prefix}-${random}`;
+};
 
 // Customer Transformation
 export function transformRawCustomer(raw: any, useUuidId = false): any {
   const now = new Date().toISOString();
   return {
-    id: raw.id || (useUuidId ? genId("cust") : `cust-${Date.now()}`),
-    customer_code: raw.customer_code || `CUST${Date.now().toString().slice(-4)}`,
+    id: raw.id || genId("cust"),
+    customer_code: raw.customer_code || `CUST${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     full_name: raw.full_name,
     phone: raw.phone || null,
     email: raw.email || null,
@@ -30,8 +36,8 @@ export function transformRawCustomer(raw: any, useUuidId = false): any {
 export function transformRawTransaction(raw: any, useUuidId = false): any {
   const now = new Date().toISOString();
   return {
-    id: raw.id || (useUuidId ? genId("txn") : `txn-${Date.now()}`),
-    transaction_code: raw.transaction_code || `TXN${Date.now()}`,
+    id: raw.id || genId("txn"),
+    transaction_code: raw.transaction_code || `TXN${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     customer_id: raw.customer_id || null,
     bank_account_id: raw.bank_account_id || null,
     branch_id: raw.branch_id || null,
@@ -49,7 +55,7 @@ export function transformRawTransaction(raw: any, useUuidId = false): any {
 export function transformRawBankAccount(raw: any, useUuidId = false): any {
   const now = new Date().toISOString();
   return {
-    id: raw.id || (useUuidId ? genId("bank") : `bank-${Date.now()}`),
+    id: raw.id || genId("bank"),
     account_name: raw.account_name,
     account_number: raw.account_number,
     bank_name: raw.bank_name,
@@ -66,7 +72,7 @@ export function transformRawBankAccount(raw: any, useUuidId = false): any {
 export function transformRawBranch(raw: any, useUuidId = false): any {
   const now = new Date().toISOString();
   return {
-    id: raw.id || (useUuidId ? genId("branch") : `branch-${Date.now()}`),
+    id: raw.id || genId("branch"),
     name: raw.name,
     code: raw.code,
     logo_url: raw.logo_url || null,
@@ -81,7 +87,7 @@ export function transformRawBranch(raw: any, useUuidId = false): any {
 export function transformRawTransactionType(raw: any, useUuidId = false): any {
   const now = new Date().toISOString();
   return {
-    id: raw.id || (useUuidId ? genId("type") : `type-${Date.now()}`),
+    id: raw.id || genId("type"),
     name: raw.name.trim(),
     color: raw.color || "blue",
     math_factor: raw.math_factor ?? 1,
@@ -97,7 +103,7 @@ export function transformRawTransactionType(raw: any, useUuidId = false): any {
 export function transformRawBackupHistory(raw: any): any {
   const now = new Date().toISOString();
   return {
-    id: raw.id || `backup-${Date.now()}`,
+    id: raw.id || genId("backup"),
     company_id: raw.company_id ?? null,
     backup_name: raw.backup_name || `Backup ${now}`,
     backup_version: raw.backup_version || "1.0.0",

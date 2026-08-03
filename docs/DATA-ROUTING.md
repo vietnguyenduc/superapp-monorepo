@@ -83,7 +83,16 @@ export const { apiClient, initializeApiClient } = createApiClient(supabase);
 | Dữ liệu local và cloud khác nhau | Chưa sync schema hoặc seed khác nhau | `supabase db dump` + restore local |
 | `apiClient` undefined trong test | Mock `supabase.ts` chưa bao gồm `apiClient` | Thêm `apiClient: supabase` vào mock factory |
 
-## 8. See Also
+## 8. Cashflow customers — duplicate import & ID alignment
+
+- `customerService.bulkCreateCustomers(rows, { skipExisting: true })` skips rows whose `customer_code` already exists for the current company and returns them in `ServiceResponse.skipped`.
+- `customerService.checkDuplicateCustomers(rows, companyId)` is called from `CustomerImport.tsx` to preview duplicates before the user confirms import.
+- The Supabase schema was aligned with the app-generated string IDs (`cust-...`, `txn-...`, `bank-...`, `backup-...`):
+  - `public.customers.id` and related `customer_id`/`supplier_id` FKs → `text` (`041_customers_id_text.sql`).
+  - `public.transactions.id`, `bank_account_id` and `public.bank_accounts.id` → `text` (`040_cashflow_text_ids.sql`).
+  - `public.backup_history.id` and `public.color_settings.id` → `text`.
+
+## 9. See Also
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Tổng quan kiến trúc
 - [DEPLOYMENT.md](./DEPLOYMENT.md) — Vercel deployment

@@ -191,12 +191,13 @@ export class CustomerService extends BaseService {
     );
   }
 
-  static async bulkCreateCustomers(customers: any[]) {
+  static async bulkCreateCustomers(customers: any[], options?: { skipExisting?: boolean }) {
     return this.execute(
       async () => {
         const errors: any[] = [];
         const validRows: any[] = [];
         const seenCodes = new Set<string>();
+        const skipped: any[] = [];
 
         // Validate + transform each row
         for (let i = 0; i < customers.length; i++) {
@@ -224,7 +225,7 @@ export class CustomerService extends BaseService {
         }
 
         if (validRows.length === 0) {
-          return { data: [], error: null, errors };
+          return { data: [], error: null, errors, skipped };
         }
 
         // Check duplicate codes against existing DB records (single batch query)
@@ -240,7 +241,11 @@ export class CustomerService extends BaseService {
             for (let j = validRows.length - 1; j >= 0; j--) {
               const code = validRows[j].transformed.customer_code?.trim();
               if (code && existingCodes.has(code)) {
-                errors.push({ row: validRows[j].index, column: "customer_code", message: `Customer with code "${code}" already exists`, value: code });
+                if (options?.skipExisting) {
+                  skipped.push({ row: validRows[j].index, column: "customer_code", message: `Mã khách hàng "${code}" đã tồn tại`, value: code });
+                } else {
+                  errors.push({ row: validRows[j].index, column: "customer_code", message: `Customer with code "${code}" already exists`, value: code });
+                }
                 validRows.splice(j, 1);
               }
             }
@@ -248,7 +253,7 @@ export class CustomerService extends BaseService {
         }
 
         if (validRows.length === 0) {
-          return { data: [], error: null, errors };
+          return { data: [], error: null, errors, skipped };
         }
 
         // Batch insert
@@ -256,14 +261,15 @@ export class CustomerService extends BaseService {
         const { data, error } = await apiClient.from("customers").insert(insertPayload as any).select();
 
         if (error) {
-          return { data: null, error, errors };
+          return { data: null, error, errors, skipped };
         }
 
-        return { data: data || [], error: null, errors };
+        return { data: data || [], error: null, errors, skipped };
       },
       async () => {
         const errors: any[] = [];
         const inserted: any[] = [];
+        const skipped: any[] = [];
         const seenCodes = new Set<string>();
 
         for (let i = 0; i < customers.length; i++) {
@@ -288,7 +294,11 @@ export class CustomerService extends BaseService {
 
           const existing = (trialGet("customers") || []).find((c: any) => c.customer_code === code && c.company_id === transformed.company_id);
           if (existing) {
-            errors.push({ row: i, column: "customer_code", message: `Customer with code "${code}" already exists`, value: code });
+            if (options?.skipExisting) {
+              skipped.push({ row: i, column: "customer_code", message: `Mã khách hàng "${code}" đã tồn tại`, value: code });
+            } else {
+              errors.push({ row: i, column: "customer_code", message: `Customer with code "${code}" already exists`, value: code });
+            }
             continue;
           }
 
@@ -297,7 +307,43 @@ export class CustomerService extends BaseService {
           if (result) inserted.push(result);
         }
 
-        return { data: inserted, error: null, errors };
+        return { data: inserted, error: null, errors, skipped };
+      }
+    );
+  }
+
+  static async checkDuplicateCustomers(customers: any[], companyId?: string) {
+    return this.execute(
+      async () => {
+        const codes = [...new Set(customers.map((c) => String(c.customer_code || "").trim()).filter(Boolean))];
+        if (codes.length === 0) return { data: [], error: null };
+
+        const duplicates: any[] = [];
+        const chunkSize = 100;
+        for (let i = 0; i < codes.length; i += chunkSize) {
+          const chunk = codes.slice(i, i + chunkSize);
+          let q = apiClient.from("customers").select("id,customer_code").in("customer_code", chunk);
+          if (companyId) q = q.eq("company_id", companyId);
+          const { data, error } = await q;
+          if (error) return { data: null, error, errors: [error] };
+          duplicates.push(...(data || []));
+        }
+        return { data: duplicates, error: null };
+      },
+      async () => {
+        const trialCustomers = trialGet("customers") || [];
+        const seen = new Set<string>();
+        const duplicates: any[] = [];
+        for (const tc of trialCustomers) {
+          const match = customers.find(
+            (c: any) => String(c.customer_code || "").trim() === tc.customer_code && (!companyId || c.company_id === companyId)
+          );
+          if (match && !seen.has(tc.customer_code)) {
+            seen.add(tc.customer_code);
+            duplicates.push(tc);
+          }
+        }
+        return { data: duplicates, error: null };
       }
     );
   }
@@ -453,6 +499,7 @@ export const customerService = {
   getCustomerById: CustomerService.getCustomerById.bind(CustomerService),
   createCustomer: CustomerService.createCustomer.bind(CustomerService),
   bulkCreateCustomers: CustomerService.bulkCreateCustomers.bind(CustomerService),
+  checkDuplicateCustomers: CustomerService.checkDuplicateCustomers.bind(CustomerService),
   updateCustomer: CustomerService.updateCustomer.bind(CustomerService),
   deleteCustomer: CustomerService.deleteCustomer.bind(CustomerService),
   updateCustomerOpeningBalance: CustomerService.updateCustomerOpeningBalance.bind(CustomerService),
