@@ -26,6 +26,16 @@ export function validateCustomerData(data: any): ValidationResult {
       errors.push("email must be a valid email address");
     }
   }
+
+  if (data.phone) {
+    // Accept digits, spaces, +, -, () — typical phone number characters.
+    // Must contain at least 7 digits to be a plausible phone number.
+    const phoneRegex = /^[+\d\s()-]+$/;
+    const digitCount = (data.phone.match(/\d/g) || []).length;
+    if (!phoneRegex.test(data.phone) || digitCount < 7) {
+      errors.push("phone must be a valid phone number");
+    }
+  }
   
   // Numeric fields
   if (data.opening_balance !== undefined && data.opening_balance !== null) {

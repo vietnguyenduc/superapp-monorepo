@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCompanyId } from "../../hooks/useCompanyId";
+import { useDebounce } from "../../hooks/useDebounce";
 import { databaseService } from "../../services/database";
 import type { Transaction } from "../../types";
 import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../utils/formatting";
@@ -63,6 +64,9 @@ const TransactionList: React.FC = () => {
     groupBy: "",
   });
 
+  // Debounce search term so API isn't called on every keystroke (300ms delay)
+  const debouncedSearchTerm = useDebounce(state.searchTerm, 300);
+
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [editForm, setEditForm] = useState({
     transaction_type: "payment" as Transaction["transaction_type"],
@@ -105,7 +109,7 @@ const TransactionList: React.FC = () => {
 
     try {
       const filters = {
-        search: state.searchTerm || undefined,
+        search: debouncedSearchTerm || undefined,
         dateRange: state.dateRange || undefined,
         transaction_type: state.transactionType || undefined,
         customer_id: state.customerFilter?.id || undefined,
@@ -146,7 +150,7 @@ const TransactionList: React.FC = () => {
         loading: false,
       }));
     }
-  }, [state.searchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, state.currentPage, state.pageSize, companyId]);
+  }, [debouncedSearchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, state.currentPage, state.pageSize, companyId]);
 
   useEffect(() => {
     const loadFilters = async () => {
