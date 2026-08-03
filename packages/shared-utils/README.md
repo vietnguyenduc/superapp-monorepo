@@ -1,6 +1,6 @@
 # @superapp/shared-utils
 
-Shared utilities package for cashflow and inventory-operation applications.
+Shared utilities package for all Superapp frontend applications, including the Supabase client, the InsForge-compatible `apiClient`, and the `createApiClient` factory.
 
 ## Installation
 
@@ -282,6 +282,23 @@ if (result.success) {
   console.log(`Exported to ${result.filename}`);
 }
 ```
+
+## API Client (`createApiClient`)
+
+Use `createApiClient(supabase)` to get a drop-in replacement for `supabase.from()` / `supabase.rpc()` that routes data through an optional local InsForge API while keeping Supabase Auth untouched.
+
+```typescript
+import { createApiClient } from "@superapp/shared-utils";
+import { supabase } from "./supabase-client";
+
+export const { apiClient, initializeApiClient } = createApiClient(supabase);
+```
+
+- On production (`*.appforyou.xyz`) `apiClient` is always the Supabase client.
+- On local dev it health-checks `http://localhost:3001/health`; if the InsForge API is up, `apiClient` switches to the local gateway for `.from()` / `.rpc()` calls, otherwise it stays on Supabase.
+- `initializeApiClient()` is called automatically when the module loads.
+
+See [docs/DATA-ROUTING.md](../../docs/DATA-ROUTING.md) for the full workflow.
 
 ## Development
 

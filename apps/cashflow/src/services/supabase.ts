@@ -1,5 +1,4 @@
-import { apiClient as _rawApiClient, configureApiClient as _configureApiClient } from "@superapp/shared-utils";
-import { createSupabaseClient, getApiUrl } from "@superapp/shared-utils";
+import { createSupabaseClient, createApiClient } from "@superapp/shared-utils";
 import type { Database } from "@repo/types";
 
 // Environment variables for Supabase configuration
@@ -137,52 +136,5 @@ export type SupabaseClient = typeof supabase;
 // On local/dev environments we prefer InsForge (local Postgres) when it is
 // reachable, so AI agents and local tests can query the local schema.
 // Auth (supabase.auth.*) stays on Supabase. Only .from() and .rpc() move to apiClient.
-_configureApiClient({
-  tokenGetter: async () => {
-    try {
-      const { data } = await supabase.auth.getSession();
-      return data.session?.access_token || null;
-    } catch {
-      return null;
-    }
-  },
-});
-
-export let apiClient: any = supabase;
-
-function isProductionHost(): boolean {
-  return typeof window !== "undefined" && window.location.hostname.endsWith(".appforyou.xyz");
-}
-
-async function checkInsForgeHealth(apiUrl: string): Promise<boolean> {
-  if (apiUrl === supabaseUrl) return false;
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch(`${apiUrl}/health`, { signal: controller.signal, method: "GET" });
-    clearTimeout(timeoutId);
-    return res.status === 200;
-  } catch {
-    return false;
-  }
-}
-
-async function initializeApiClient(): Promise<void> {
-  if (typeof window === "undefined") return;
-
-  // Production always uses Supabase.
-  if (isProductionHost()) return;
-
-  const apiUrl = getApiUrl();
-  if (apiUrl === supabaseUrl) return;
-
-  if (await checkInsForgeHealth(apiUrl)) {
-    console.info("[cashflow] Local InsForge API available; routing data through it.");
-    apiClient = _rawApiClient;
-  } else {
-    console.warn("[cashflow] Local InsForge API not reachable; using Supabase cloud.");
-  }
-}
-
-initializeApiClient().catch(() => {});
+export const { apiClient, initializeApiClient } = createApiClient(supabase);
 // ── End apiClient ─────────────────────────────────────────────────────────

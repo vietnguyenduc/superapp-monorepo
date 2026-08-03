@@ -8,6 +8,7 @@ export * from './services/base';
 export * from './app-urls';
 export * from './types';
 export * from './api-client';
+export * from './api-client/select-client';
 export * from './error-tracking';
 export * from './lazy';
 

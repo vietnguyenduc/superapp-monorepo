@@ -1,5 +1,4 @@
-import { apiClient as _rawApiClient, configureApiClient as _configureApiClient } from "@superapp/shared-utils";
-import { createSupabaseClient as createSharedClient } from '@superapp/shared-utils';
+import { createSupabaseClient as createSharedClient, createApiClient } from '@superapp/shared-utils';
 import { createClient } from '@supabase/supabase-js';
 
 // Environment variables for Supabase configuration
@@ -184,23 +183,10 @@ export const handleSupabaseSuccess = <T>(data: T) => {
 
 export default supabase;
 
-// ── InsForge apiClient (drop-in for supabase.from() / supabase.rpc()) ──────
-// Data operations route through the InsForge API server instead of Supabase cloud.
+// ── apiClient (drop-in for supabase.from() / supabase.rpc()) ────────────────
+// Default to Supabase cloud as the single source of truth.
+// On local/dev environments we prefer InsForge (local Postgres) when it is
+// reachable, so AI agents and local tests can query the local schema.
 // Auth (supabase.auth.*) stays on Supabase. Only .from() and .rpc() move to apiClient.
-// On production (*.appforyou.xyz) the InsForge API server is not deployed, so we
-// fall back to the Supabase client directly to avoid 530 errors on every data op.
-_configureApiClient({
-  tokenGetter: async () => {
-    try {
-      const { data } = await supabase.auth.getSession();
-      return data.session?.access_token || null;
-    } catch {
-      return null;
-    }
-  },
-});
-const _isProd =
-  typeof window !== "undefined" &&
-  window.location?.hostname?.endsWith(".appforyou.xyz");
-export const apiClient = _isProd ? supabase : _rawApiClient;
-// ── End InsForge apiClient ─────────────────────────────────────────────────
+export const { apiClient, initializeApiClient } = createApiClient(supabase);
+// ── End apiClient ─────────────────────────────────────────────────

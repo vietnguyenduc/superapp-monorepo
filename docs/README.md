@@ -13,6 +13,7 @@
 | [TRIAL-SYSTEM.md](./TRIAL-SYSTEM.md) | Trial seed system architecture | Dev, PM |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Vercel deployment, CI/CD, env vars | DevOps |
 | [DATA-MIGRATION.md](./DATA-MIGRATION.md) | Data migration hub (import/export) | Dev, PM |
+| [DATA-ROUTING.md](./DATA-ROUTING.md) | Supabase primary + InsForge local mirror, AI workflow | Dev, AI, DevOps |
 | [DEV-ENVIRONMENT.md](./DEV-ENVIRONMENT.md) | WSL/Tailscale/dashboard dev setup | Dev, DevOps |
 
 ## App Documentation

@@ -96,6 +96,9 @@ apps/superapp-business-bot/scraper/storage/refined_data/
 !apps/**
 !docs/
 !docs/**
+# Re-include shared-utils api-client directory (starts with "a")
+!packages/shared-utils/src/api-client/
+!packages/shared-utils/src/api-client/**
 conversations/
 bash_events/
 

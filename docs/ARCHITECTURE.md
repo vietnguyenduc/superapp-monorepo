@@ -6,8 +6,8 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Browser / Phone                           │
-│  (Tailscale → Windows → netsh portproxy → WSL → Vite dev)       │
+│                        Browser / Phone                         │
+│  (Tailscale → Windows → netsh portproxy → WSL → Vite dev)     │
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTPS (prod) / HTTP (dev)
                              ▼
@@ -19,12 +19,26 @@
 │  apps/operations:3006    packages/api:3001                      │
 └────────────────────────────┬────────────────────────────────────┘
                              │ Supabase JS Client (anon key)
+                             │  Primary data source in production
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Supabase (PostgreSQL)                         │
 │  Auth · RLS · Triggers · RPCs · Realtime                         │
-│  50+ migrations · Multi-tenant (company_id)                     │
+│  50+ migrations · Multi-tenant (company_id)                      │
+│  Single source of truth for production                           │
 └─────────────────────────────────────────────────────────────────┘
+
+Local/AI development (optional):
+
+┌──────────────────┐      health-check       ┌──────────────────┐
+│   Vite dev app   │ ── /health on :3001 ──▶ │  packages/api    │
+│  (localhost)     │                         │  (InsForge local)│
+└──────────────────┘                         └────────┬─────────┘
+     │                                                │
+     │            if InsForge is healthy              │
+     │◀──────── route .from() / .rpc() via API ───────┘
+     │                                                │
+     └────────────────────►  local Postgres mirror  ──┘
 ```
 
 ## Monorepo Structure
@@ -68,7 +82,8 @@ superapp-monorepo/
 | Monorepo | Turborepo + npm workspaces |
 | Frontend | React 18 + TypeScript 5.8 + Vite 8 |
 | Styling | Tailwind CSS + Apple-inspired design system |
-| Backend | Supabase (PostgreSQL + Auth + Realtime + RLS) |
+| Backend | Supabase (PostgreSQL + Auth + Realtime + RLS) — primary |
+| Local AI/test gateway | `packages/api` (InsForge) + local Postgres mirror — optional |
 | State | React hooks + custom hooks (no Redux) |
 | Components | `@repo/ui` shared library |
 | Auth | `@superapp/iam` (Supabase Auth + JWT claims + RBAC) |
@@ -120,8 +135,12 @@ Mọi table business đều có `company_id` column + RLS policy `auth.jwt() ->>
 ### 2. Cookie-based session sharing
 `@superapp/shared-utils/supabase/client.ts` dùng custom `cookieStorage` với domain `.appforyou.xyz` (prod) hoặc `localhost` (dev). Khi user login ở `admin.appforyou.xyz`, session cookie share sang `cashflow.appforyou.xyz` — không cần login lại.
 
-### 3. Trial mode without backend
-`@superapp/trial-client` cho phép dùng app mà không cần Supabase. Seed data fetch từ API `localhost:3001/api/trial/:table`, mutations lưu in-memory. Toggle bằng `localStorage.setItem('isTrial', 'true')`.
+### 3. Supabase-first data routing with optional InsForge local mirror
+Apps use `apiClient` (from `@superapp/shared-utils/createApiClient`) which defaults to **Supabase cloud** in production. In local dev, if `packages/api` (InsForge) is running on `localhost:3001`, `apiClient` transparently switches to the local gateway so AI agents and dev experiments can query a local Postgres mirror without touching production data.
+
+- Production (`*.appforyou.xyz`): always Supabase.
+- Local dev: auto-detect InsForge; fallback to Supabase if not reachable.
+- Trial mode (`localStorage.setItem('isTrial', 'true')`) uses `@superapp/trial-client` and does not call either backend.
 
 ### 4. No Redux / no global state library
 State management = React hooks (`useState`, `useReducer`, custom hooks trong `@repo/hooks`). Mỗi app tự quản lý state cục bộ. Cross-app state = Supabase Realtime subscriptions.
@@ -131,6 +150,7 @@ Tất cả apps dùng Vite (SPA), không phải Next.js (SSR). Lý do: đơn gi�
 
 ## See Also
 
+- [DATA-ROUTING.md](./DATA-ROUTING.md) — Supabase primary + InsForge local mirror, workflow thêm schema, và cách AI dùng database
 - [DATABASE-SCHEMA.md](./DATABASE-SCHEMA.md) — Chi tiết schema và migrations
 - [AUTH-AND-RBAC.md](./AUTH-AND-RBAC.md) — Auth flow và permission system
 - [DEPLOYMENT.md](./DEPLOYMENT.md) — Vercel deployment
