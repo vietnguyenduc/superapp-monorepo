@@ -4690,6 +4690,7 @@ export type Database = {
           id: string
           is_active: boolean
           role: string
+          staff_permissions: Json
         }[]
       }
       admin_get_companies: {
@@ -4725,6 +4726,7 @@ export type Database = {
           new_app_permissions: Json
           new_company_id?: string
           new_role: string
+          new_staff_permissions?: Json
           target_user_id: string
         }
         Returns: Json
