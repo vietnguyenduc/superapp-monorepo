@@ -50,11 +50,11 @@ Mỗi app có 12 file docs chuẩn trong `apps/<app>/docs/`:
 
 | Package | Docs |
 |---------|------|
-| `@repo/shared-utils` | [docs](../packages/shared-utils/docs/) |
+| `@superapp/shared-utils` | [docs](../packages/shared-utils/docs/) |
 | `@repo/ui` | [docs](../packages/ui/docs/) |
 | `@repo/hooks` | [docs](../packages/hooks/docs/) |
 | `@superapp/iam` | [docs](../packages/iam/docs/) |
-| `@repo/theme` | [docs](../packages/theme/docs/) |
+| `@superapp/theme` | [docs](../packages/theme/docs/) |
 | `@superapp/trial-client` | [docs](../packages/trial-client/docs/) |
 | `@repo/types` | [docs](../packages/types/docs/) |
 

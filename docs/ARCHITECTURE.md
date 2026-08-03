@@ -31,7 +31,7 @@
 
 ```
 superapp-monorepo/
-├── apps/                          # 7 production apps + web
+├── apps/                          # 7 production apps + insforge-infra
 │   ├── admin-portal/              # 5173 — Company/staff/permission management
 │   ├── cashflow/                  # 5174 — Cash flow management
 │   ├── inventory-operation/       # 5175 — Inventory management (F&B)
@@ -39,17 +39,20 @@ superapp-monorepo/
 │   ├── hr-operation/              # 5177 — HR, payroll, attendance
 │   ├── accounting/                # 5178 — Accounting, invoices, assets
 │   ├── operations-portal/         # 3006 — Operations portal
-│   └── web/                       # Landing page / docs site
-├── packages/                      # Shared packages
-│   ├── shared-utils/              # @repo/shared-utils — Supabase client, API, types
+│   └── insforge-infra/            # InsForge infrastructure (gateway, deepwiki, mcp)
+├── packages/                      # 12 shared packages
+│   ├── shared-utils/              # @superapp/shared-utils — Supabase client, API, types
 │   ├── ui/                        # @repo/ui — React component library
 │   ├── hooks/                     # @repo/hooks — Shared React hooks
 │   ├── iam/                       # @superapp/iam — Auth, permissions, company context
-│   ├── theme/                     # @repo/theme — Tailwind preset, design tokens
+│   ├── theme/                     # @superapp/theme — Tailwind preset, design tokens
 │   ├── trial-client/              # @superapp/trial-client — Trial mode seed data
 │   ├── types/                     # @repo/types — TypeScript types, Database types
-│   ├── typescript-config/         # Shared tsconfig presets
-│   └── insforge-mcp/              # MCP server integration
+│   ├── typescript-config/         # @repo/typescript-config — Shared tsconfig presets
+│   ├── eslint-config/             # @repo/eslint-config — Shared ESLint config
+│   ├── api/                       # superapp-api — Fastify API server (port 3001)
+│   ├── einvoice/                  # @superapp/einvoice — E-invoice integration
+│   └── insforge-mcp/              # @superapp/insforge-mcp — MCP server for OpenHands
 ├── supabase/
 │   └── migrations/                # 50+ SQL migration files
 ├── docs/                          # ← You are here
@@ -69,18 +72,16 @@ superapp-monorepo/
 | State | React hooks + custom hooks (no Redux) |
 | Components | `@repo/ui` shared library |
 | Auth | `@superapp/iam` (Supabase Auth + JWT claims + RBAC) |
-| Deployment | Vercel (per-app) |
-| Dev environment | WSL2 Ubuntu + Tailscale |
 
 ## Package Dependency Graph
 
 ```
-@repo/types ←── @repo/shared-utils ←── apps/*
+@repo/types ←── @superapp/shared-utils ←── apps/*
                     ↑
 @superapp/iam ──────┘
 @repo/ui ──────────── apps/*
 @repo/hooks ───────── apps/*
-@repo/theme ───────── apps/*
+@superapp/theme ───── apps/*
 @superapp/trial-client ── apps/*
 ```
 
@@ -92,7 +93,7 @@ Apps không gọi API của nhau trực tiếp. Thay vào đó:
 
 1. **Supabase triggers**: Khi inventory nhập kho → trigger tạo pending cashflow transaction
 2. **Shared tables**: `companies`, `branches`, `users` dùng chung qua tất cả apps
-3. **App Switcher**: `@repo/ui` export `AppSwitcher` component, dùng `@repo/shared-utils/app-urls.ts` để resolve URL
+3. **App Switcher**: `@repo/ui` export `AppSwitcher` component, dùng `@superapp/shared-utils/app-urls.ts` để resolve URL
 4. **JWT claims**: User login 1 lần, JWT chứa `app_permissions` + `role` + `company_id`, tất cả apps đọc từ đó
 
 ## Turborepo Task Pipeline
@@ -117,7 +118,7 @@ Apps không gọi API của nhau trực tiếp. Thay vào đó:
 Mọi table business đều có `company_id` column + RLS policy `auth.jwt() ->> 'company_id'`. Một Supabase project serve nhiều companies.
 
 ### 2. Cookie-based session sharing
-`@repo/shared-utils/supabase/client.ts` dùng custom `cookieStorage` với domain `.appforyou.xyz` (prod) hoặc `localhost` (dev). Khi user login ở `admin.appforyou.xyz`, session cookie share sang `cashflow.appforyou.xyz` — không cần login lại.
+`@superapp/shared-utils/supabase/client.ts` dùng custom `cookieStorage` với domain `.appforyou.xyz` (prod) hoặc `localhost` (dev). Khi user login ở `admin.appforyou.xyz`, session cookie share sang `cashflow.appforyou.xyz` — không cần login lại.
 
 ### 3. Trial mode without backend
 `@superapp/trial-client` cho phép dùng app mà không cần Supabase. Seed data fetch từ API `localhost:3001/api/trial/:table`, mutations lưu in-memory. Toggle bằng `localStorage.setItem('isTrial', 'true')`.

@@ -91,6 +91,11 @@ apps/superapp-business-bot/scraper/storage/refined_data/
 !packages/api/
 !packages/api/dist/
 !packages/api/dist/**
+# Re-include apps/ and docs/ (matched by [0-9a-f]*/ because "a" and "d" are hex chars)
+!apps/
+!apps/**
+!docs/
+!docs/**
 conversations/
 bash_events/
 

@@ -1,6 +1,6 @@
-# Cashflow App (Monorepo Module)
+# Accounting App (Monorepo Module)
 
-This is the Cashflow module of the Superapp Monorepo, built with React + TypeScript + Vite.
+This is the Accounting module of the Superapp Monorepo, built with React + TypeScript + Vite.
 
 ---
 

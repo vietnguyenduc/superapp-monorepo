@@ -22,23 +22,22 @@ A **multi-tenant SaaS superapp** for Vietnamese SMBs (small-medium businesses) i
 
 > **`apps/` directory contains 8 entries**: the 7 Vite apps above + `apps/insforge-infra/` (Docker infrastructure for the agent — see §9 + §10, NOT a Vite app, NOT deployed to Vercel, NEVER related to telegram bot despite old name `superapp-unified-bot`). Old `apps/archive/`, `apps/docs/`, `apps/web/`, `apps/superapp-business-bot/` were deleted 2026-07-24 (stale boilerplate / paused telegram bot — separate from InsForge).
 
-### 0.3 The 13 packages (shared code)
+### 0.3 The 12 packages (shared code)
 
 | Package | Purpose |
 |---------|---------|
 | `@superapp/iam` | **Auth + multi-tenant context** — `AuthProvider`, `CompanyProvider`, `useAuth`, `useCompany`. Used by all 7 apps. |
-| `@superapp/ui` | Shared component library (buttons, modals, DataGrid, etc.) |
-| `@superapp/hooks` | Shared React hooks |
-| `@superapp/data-client` | Supabase client wrapper + data adapters (refactored shared business logic) |
+| `@repo/ui` | Shared component library (buttons, modals, DataGrid, etc.) |
+| `@repo/hooks` | Shared React hooks |
 | `@superapp/trial-client` | Trial mode client — `trialClient.ts` reads from `trial_seed.data` table |
-| `@superapp/types` | Shared TypeScript types (User, Company, UserRole, etc.) |
-| `@superapp/api` | Fastify API server (port 3001) — routes for trial seeds, etc. |
+| `@repo/types` | Shared TypeScript types (User, Company, UserRole, etc.) |
+| `superapp-api` | Fastify API server (port 3001) — routes for trial seeds, query proxy, etc. |
 | `@superapp/einvoice` | E-invoice integration (for Accounting app) |
 | `@superapp/theme` | Tailwind theme tokens (Apple-inspired design) |
-| `@superapp/shared-utils` | Shared utility functions |
+| `@superapp/shared-utils` | Shared utility functions (BaseService, apiClient, createSupabaseClient) |
 | `@superapp/insforge-mcp` | InsForge MCP server (DB tools for OpenHands — see §10.7) |
-| `@superapp/eslint-config` | Shared ESLint config |
-| `@superapp/typescript-config` | Shared tsconfig |
+| `@repo/eslint-config` | Shared ESLint config |
+| `@repo/typescript-config` | Shared tsconfig |
 
 ### 0.4 Stack
 
@@ -58,20 +57,24 @@ flowchart TD
   READ0 --> READ_TASK{Task involves<br/>specific app?}
   READ_TASK -->|Yes| APPDOC[Read apps/<app>/docs/OVERVIEW.md<br/>+ AI-CONTEXT.md — 2 min]
   READ_TASK -->|No, cross-app| ROOTDOC[Read docs/ARCHITECTURE.md<br/>+ docs/AUTH-AND-RBAC.md — 3 min]
-  APPDOC --> MEMORY[Call read_memory via insforge-mcp<br/>load previous session context]
+  APPDOC --> MEMORY[Call read_memory via insforge-mcp<br/>load previous session context — §13.1]
   ROOTDOC --> MEMORY
-  MEMORY --> SEARCH[Use DeepWiki vector search<br/>for conceptual queries — §9]
+  MEMORY --> GREP[Grep docs for task keywords<br/>§13.2 — what's already documented?]
+  GREP --> SEARCH[Use DeepWiki vector search<br/>for conceptual queries — §9]
   SEARCH --> CODE[Now you have context.<br/>Start coding in /workspace/project/]
-  CODE --> RULES[Follow §1-§10 rules<br/>verify, push, etc.]
+  CODE --> RULES[Follow §1-§13 rules<br/>verify, push, etc.]
+  RULES --> DOCS[Update docs + log findings<br/>§13.3-§13.4 — MANDATORY before commit]
+  DOCS --> COMMIT[Commit with doc updates<br/>§13.7 checklist]
 ```
 
-### 0.6 The 5 most important rules (don't forget these)
+### 0.6 The 6 most important rules (don't forget these)
 
 1. **Verify in browser before reporting done** (§1b) — use the right URL (local/preview/production per branch).
 2. **Work in `/workspace/project/` only** (RULE 4) — never in `project/<hash>/` snapshot copies.
 3. **Don't start Vite in sandbox** (RULE 1) — dev servers run on WSL, you only edit code.
 4. **Always push to `origin/viet` after task** (RULE 6) — local commit is not enough.
 5. **Don't restart `winnat`** (§8) — it deletes the NetNat rule and breaks WSL internet.
+6. **Read docs before coding, update docs after coding** (§13) — doc discipline is mandatory, not optional.
 
 ### 0.7 Top 10 DON'Ts (collected from all sections)
 
@@ -89,6 +92,9 @@ flowchart TD
 | 10 | Don't create schema-per-tenant (`tenant_<id>.`) | Project uses RLS + `company_id` — see `002_rls_policies.sql` | `.openhands_instructions` §12 |
 | 11 | Don't use `localhost:3001` from sandbox | `localhost` = sandbox itself, not host — use `host.docker.internal:3001` | §10.11 |
 | 12 | Don't `cd apps/cashflow && vercel deploy` | Vercel `rootDirectory` is set — deploy from `/workspace/project` root | §10.13 |
+| 13 | Don't code without reading docs first | §13.1 — 3 min of reading saves 30 min of re-discovery | §13 |
+| 14 | Don't commit without updating docs | §13.3 — stale docs mislead the next session | §13 |
+| 15 | Don't skip `log_decision` / `log_error_pattern` / `write_memory` | §13.4 — findings not logged are findings lost | §13 |
 
 ### 0.8 When you're stuck
 
@@ -106,6 +112,8 @@ flowchart TD
 | "Need to know app's data model" | `apps/<app>/docs/DATA-MODEL.md` + `supabase/migrations/` |
 | "Need to know app's API" | `apps/<app>/docs/API.md` |
 | "Need to know user roles" | `apps/<app>/docs/ROLES-PERMISSIONS.md` + `apps/<app>/src/types/UserRole.ts` |
+| "Need to find what previous sessions knew" | `read_memory` via insforge-mcp (§13.1) + `decision_log` table + `error_patterns` table |
+| "Don't know which doc to read" | §13.9 Quick reference table — maps every need to the right doc file |
 
 ## 1. Always verify before declaring success
 
@@ -163,12 +171,9 @@ InsForge is a **separate infrastructure** (its own Docker containers + local Pos
 | **DeepWiki** | 7131 | Vector search over the codebase (pgvector + BAAI/bge-small-en-v1.5 embeddings). Indexes all source files, exposes semantic search + AI Q&A + knowledge graph. | §9 — when you need to find code by concept ("how does trial mode work") in natural language (VN or EN). |
 | **InsForge MCP** | (stdio) | 17 tools: DB ops (`query`, `execute`, `create_table`...), migrations, codebase search, **memory** (`read_memory`, `write_memory`), **decision log** (`log_decision`), **error patterns** (`log_error_pattern`). | §10.6 + §10.7 — when you need to introspect DB schema, recall previous session context, or log decisions/errors. |
 
-**InsForge's local PostgreSQL** (`localhost:5432/insforge`, Docker container `insforge-postgres`, separate from Supabase cloud) stores 10 tables that power the above:
-- `codebase_index` + `codebase_relations` — DeepWiki's vector index (with HNSW index for fast ANN search)
-- `ai_memory` — key-value context store (loaded via `read_memory` at session start)
-- `decision_log` — architecture/tech decisions across sessions
-- `error_patterns` — errors you've fixed (so you don't re-debug the same issue)
-- `conversation_history`, `deployment_log`, `vibe_sessions`, `knowledge_entities`, `knowledge_relations`
+**InsForge's local PostgreSQL** (`localhost:5432/insforge`, Docker container `insforge-postgres`, separate from Supabase cloud) stores:
+- **Business data tables** (mirrors of Supabase cloud schema for local dev/testing): `companies`, `branches`, `users`, `customers`, `transactions`, `transaction_types`, `bank_accounts`, `backup_history`, `color_settings`, `audit_logs`
+- **AI metadata tables** (for InsForge MCP tools): `ai_memory` (key-value context store, loaded via `read_memory` at session start), `decision_log` (architecture/tech decisions across sessions), `error_patterns` (errors you've fixed, so you don't re-debug the same issue)
 
 > **Why this matters**: without InsForge, you'd have to grep + read 100 files to understand the project. With it, you `read_memory` (recall context) + DeepWiki search (semantic find) + `describe_table` (DB schema) — 3 calls instead of 100 reads. **This is your native way to grasp the codebase. Use it.**
 
@@ -980,7 +985,7 @@ Then run `node scripts/import-trial-seeds.mjs` to populate seed data.
 |-------------|-------------|------------|
 | **RLS + `company_id` multi-tenancy** (`002_rls_policies.sql`, `006_multi_tenancy_company_id.sql`) | All tenant-scoped tables have `company_id` + RLS policy `USING (company_id = jwt.company_id)`. Single schema, not schema-per-tenant. | Don't create `tenant_<id>.` schemas. Don't add tables without `company_id` + RLS. |
 | **`@superapp/iam` shared auth** | `AuthProvider` + `CompanyProvider` in `packages/iam` — used by all 7 apps. Replaces per-app auth. | Don't create new auth context in apps. Use `useAuth()`, `useCompany()` from `@superapp/iam`. |
-| **`@superapp/data-client` shared business logic** | Transaction, customer, bank account, branch, transaction type services refactored to use shared logic + data adapter (`90aa4034`–`a8759d0f`). | Don't re-implement business logic in apps. Check `packages/data-client` first. |
+| **`@superapp/shared-utils` BaseService pattern** | Transaction, customer, bank account, branch, transaction type services extend `BaseService` from `@superapp/shared-utils`. | Don't re-implement business logic in apps. Check `@superapp/shared-utils` first. |
 | **Trial mode data adapter** | Trial mode services use data adapter pattern — same UI works with both real Supabase and trial seed data. | Don't bypass the adapter. See `AGENTS.md` Trial Seed System. |
 | **AppSwitcher env-aware routing** (`7606affd`) | App switcher detects production vs dev and routes to `appforyou.xyz` vs `localhost:PORT`. | Don't hardcode URLs in app switcher. |
 | **CompanyBadge across all 7 apps** (`05330cd8`) | Shows current company context in header of every app. RLS-fixed (`95334d65`). | Don't remove CompanyBadge. Don't query `companies` table without RLS context. |
@@ -994,7 +999,7 @@ Then run `node scripts/import-trial-seeds.mjs` to populate seed data.
 |-------------|-------------|------------|
 | **WSL2 as dev host** | Vite + API run on WSL2, not in Docker sandbox. Code edited in sandbox → HMR on WSL. | Don't run Vite in sandbox (RULE 1). |
 | **Tailscale remote access** | Phone/laptop access dev apps via Tailscale IP. Dashboard at `:8080`. | Don't break Tailscale daemon on Windows. |
-| **InsForge infrastructure** (`apps/insforge-infra/`, renamed from `superapp-unified-bot` 2026-07-24) | 3 components: Gateway (LLM routing, port 7130) + DeepWiki (vector search, port 7131) + local PostgreSQL (10 tables: codebase_index, ai_memory, decision_log, error_patterns, ...). Helps agent grasp codebase in native way — see §0.9. | Don't delete `codebase_index` table. Re-index after major changes (`docker restart insforge-deepwiki`). Don't confuse with Supabase cloud (apps backend) — InsForge is separate. |
+| **InsForge infrastructure** (`apps/insforge-infra/`, renamed from `superapp-unified-bot` 2026-07-24) | 3 components: Gateway (LLM routing, port 7130) + DeepWiki (vector search, port 7131) + local PostgreSQL (business data + AI metadata tables: ai_memory, decision_log, error_patterns). Helps agent grasp codebase in native way — see §0.9. | Re-index DeepWiki after major changes (`docker restart insforge-deepwiki`). Don't confuse with Supabase cloud (apps backend) — InsForge is separate. |
 | **InsForge MCP** (`packages/insforge-mcp`) | 17 tools: DB ops, migrations, codebase search, memory, decision log, error patterns. Wired into OpenHands as MCP server (§10.7). | Don't use raw SQL when an MCP tool exists. Always `read_memory` at session start. |
 | **OpenHands agent enhancements** (see §10) | LLM profiles, context cache, condenser, sub-agents, Task Splitter, InsForge Agent Protocol. | Don't edit `openhands-settings.json` from WSL. Don't skip `read_memory`. |
 | **NetNat recovery procedure** (§8) | Documented recovery after `winnat` restart deletes NetNat rule. | Don't restart `winnat` without recreating NetNat. |
@@ -1031,3 +1036,157 @@ Then run `node scripts/import-trial-seeds.mjs` to populate seed data.
 - This is a large refactor — do in a dedicated PR with full test coverage, NOT as part of a cleanup batch.
 
 **Why we didn't extract in the 2026-07-25 cleanup**: risk of breaking 2 production apps at once, scope too large for a single cleanup pass, and pre-existing React Router type errors indicate the codebase needs stabilization first.
+
+## 13. Documentation Discipline — Read, Grep, Document (MANDATORY)
+
+> **Why this section exists**: Past sessions skipped docs entirely — coded blind, then left stale docs behind. New sessions started from scratch every time, re-discovering what previous sessions already knew. This section fixes that by making doc-reading and doc-writing **mandatory habits**, not optional.
+
+### 13.1 Session start protocol — ALWAYS do this first (3 min, not optional)
+
+Before writing any code, every session MUST:
+
+1. **Read AGENTS.md §0** (this file, first 108 lines) — 60s. Gives you project overview, 7 apps, 12 packages, stack, read order.
+2. **Read the relevant app docs** — 2 min:
+   - If task involves a specific app → `apps/<app>/docs/OVERVIEW.md` + `apps/<app>/docs/AI-CONTEXT.md`
+   - If cross-app → `docs/ARCHITECTURE.md` + `docs/AUTH-AND-RBAC.md`
+3. **Call `read_memory` via insforge-mcp** (§10.6) — loads context from previous sessions. If no memory exists yet, this is your first session — proceed but start writing memory.
+4. **Grep docs for keywords related to your task** — see §13.2 below.
+
+**Do NOT skip this.** Skipping = coding blind = re-discovering what previous sessions already knew = wasted time + duplicated effort + inconsistent changes.
+
+### 13.2 Grep docs before coding — MANDATORY pattern
+
+Before touching any code, grep the docs for keywords related to your task. This tells you what's already documented (and likely already implemented):
+
+```bash
+# Example: task is "add export feature to cashflow"
+# 1. Grep root docs
+grep -ri "export" docs/ --include="*.md" -l
+
+# 2. Grep app-specific docs
+grep -ri "export" apps/cashflow/docs/ --include="*.md" -l
+
+# 3. Grep all app docs (cross-app patterns)
+grep -ri "export" apps/*/docs/ --include="*.md" -l
+
+# 4. Grep AI-CONTEXT files (densest context per app)
+grep -ri "export" apps/*/docs/AI-CONTEXT.md
+
+# 5. Grep CHANGELOGs (what was recently changed?)
+grep -ri "export" apps/*/docs/CHANGELOG.md
+```
+
+**Why**: Docs often mention features that are already implemented, half-done, or planned. If you don't check, you'll either re-implement or contradict existing design.
+
+### 13.3 Document after every change — MANDATORY update list
+
+After making code changes, you MUST update the relevant docs **in the same commit**. This is not optional — stale docs are worse than no docs because they mislead the next session.
+
+| What you changed | Which docs to update |
+|-------------------|---------------------|
+| New feature / page / component | `apps/<app>/docs/OVERVIEW.md` (add to feature list) + `apps/<app>/docs/CHANGELOG.md` (add entry) |
+| API endpoint added/changed | `apps/<app>/docs/API.md` + `docs/DATABASE-SCHEMA.md` if DB changed |
+| Database schema (migration) | `docs/DATABASE-SCHEMA.md` + `apps/<app>/docs/DATA-MODEL.md` + `supabase/migrations/` (the migration itself) |
+| Auth/RLS/permissions | `docs/AUTH-AND-RBAC.md` + `apps/<app>/docs/ROLES-PERMISSIONS.md` |
+| UI/UX change (layout, flow) | `apps/<app>/docs/UI-UX.md` + `apps/<app>/docs/FLOWS.md` if user flow changed |
+| Shared package (`packages/*`) | `docs/ARCHITECTURE.md` § "Shared packages" + the package's own `README.md` |
+| Architecture decision (tech choice, pattern) | `docs/ARCHITECTURE.md` + call `log_decision` via insforge-mcp (§10.6) |
+| Bug fix (non-trivial) | `apps/<app>/docs/CHANGELOG.md` + call `log_error_pattern` via insforge-mcp (§10.6) |
+| Environment/config change | `docs/DEV-ENVIRONMENT.md` + `apps/<app>/docs/RUNBOOK.md` if it affects ops |
+| New dependency added | `apps/<app>/docs/ARCHITECTURE.md` (tech stack section) + `package.json` |
+| Refactor (file moves, renames) | `apps/<app>/docs/ARCHITECTURE.md` (directory structure) |
+
+**Rule of thumb**: If a new session would need to know about your change to understand the project, document it. If you're unsure whether to document — document. Over-documenting is cheap; under-documenting is expensive.
+
+### 13.4 Document new findings — even if you didn't change code
+
+When you discover something non-obvious about the codebase (a quirk, a pattern, a gotcha, a hidden dependency), you MUST record it:
+
+1. **If it's a reusable architectural insight** → call `log_decision` via insforge-mcp with `title`, `context`, `decision`, `tags`.
+2. **If it's an error you debugged and fixed** → call `log_error_pattern` via insforge-mcp with `error_type`, `error_message`, `fix_description`.
+3. **If it's general project context** (e.g. "inventory and sales share 121 identical files") → call `write_memory` via insforge-mcp with a descriptive key like `inventory-sales-shared-files`.
+4. **If it's important enough for future agents to see immediately** → also add it to `AGENTS.md` §12 (Improvement history) or the relevant `apps/<app>/docs/AI-CONTEXT.md`.
+
+**Why**: Next session calls `read_memory` at start (§13.1 step 3) and gets your findings instantly. Without this, they re-discover everything from scratch.
+
+### 13.5 CHANGELOG format — every app, every change
+
+Each `apps/<app>/docs/CHANGELOG.md` follows this format:
+
+```markdown
+## [Unreleased]
+
+### Added
+- New feature X for Y purpose
+
+### Changed
+- Refactored Z to use shared BaseService pattern
+
+### Fixed
+- Bug: RLS policy missing on table X (was leaking cross-tenant data)
+
+### Deprecated
+- Old API endpoint /api/v1/old-thing (replaced by /api/v2/thing)
+```
+
+**Update the `[Unreleased]` section with every commit.** When a version is cut (deployed to production), move `[Unreleased]` → `[v1.2.3 — 2026-08-01]` and start a new `[Unreleased]`.
+
+### 13.6 AI-CONTEXT.md — the "densest context" file
+
+Each `apps/<app>/docs/AI-CONTEXT.md` is the **single most important file for a new session**. It should contain:
+
+- **What this app does** (1 paragraph)
+- **Key files and their roles** (table: file → responsibility)
+- **Data model summary** (main tables, relationships)
+- **Current state** (what works, what's stubbed, what's TODO)
+- **Gotchas** (non-obvious things a new agent would trip on)
+- **Cross-app dependencies** (what this app imports from other apps/packages)
+
+**When you change code, update AI-CONTEXT.md too.** This file is what §13.1 step 2 tells the next session to read — if it's stale, the next session starts with wrong context.
+
+### 13.7 Doc quality checklist — before every commit
+
+Before `git commit`, verify:
+
+- [ ] Did I read the relevant docs before coding? (§13.1)
+- [ ] Did I grep docs for keywords related to my task? (§13.2)
+- [ ] Did I update all docs affected by my change? (§13.3 table)
+- [ ] Did I log new findings to insforge-mcp memory/decision_log/error_patterns? (§13.4)
+- [ ] Did I update the app's CHANGELOG.md `[Unreleased]` section? (§13.5)
+- [ ] Did I update the app's AI-CONTEXT.md if key files/state changed? (§13.6)
+
+If any answer is "no" — go back and do it. A commit with stale docs is incomplete.
+
+### 13.8 What NOT to document (avoid doc bloat)
+
+- **Trivial changes**: typo fixes, formatting, import reordering → skip CHANGELOG, skip docs.
+- **Auto-generated files**: `dist/`, `node_modules/`, `.turbo/` → never document these.
+- **Temporary debug code**: if you add `console.log` for debugging and remove it before commit → no doc needed.
+- **Duplicate info**: if it's already in `AI-CONTEXT.md`, don't also put it in `OVERVIEW.md` — link instead.
+- **Speculative future work**: don't document "we might do X" in docs — use `log_decision` with `alternatives` field instead.
+
+### 13.9 Quick reference — where to find each doc type
+
+| Need to know... | Read this |
+|------------------|-----------|
+| What an app does | `apps/<app>/docs/OVERVIEW.md` |
+| How an app is structured | `apps/<app>/docs/ARCHITECTURE.md` |
+| What API endpoints exist | `apps/<app>/docs/API.md` |
+| How data flows through the app | `apps/<app>/docs/DATA-FLOW.md` |
+| What tables the app uses | `apps/<app>/docs/DATA-MODEL.md` |
+| User roles and permissions | `apps/<app>/docs/ROLES-PERMISSIONS.md` |
+| UI layout and components | `apps/<app>/docs/UI-UX.md` |
+| User flows (step-by-step) | `apps/<app>/docs/FLOWS.md` |
+| Product requirements | `apps/<app>/docs/PRD.md` |
+- Densest context for AI | `apps/<app>/docs/AI-CONTEXT.md` |
+| What changed recently | `apps/<app>/docs/CHANGELOG.md` |
+| How to operate/debug the app | `apps/<app>/docs/RUNBOOK.md` |
+| Overall architecture | `docs/ARCHITECTURE.md` |
+| Auth and RLS | `docs/AUTH-AND-RBAC.md` |
+| Database schema (all apps) | `docs/DATABASE-SCHEMA.md` |
+| Coding standards | `docs/CODING-STANDARDS.md` |
+| Data migration procedures | `docs/DATA-MIGRATION.md` |
+| Dev environment setup | `docs/DEV-ENVIRONMENT.md` |
+| Deployment process | `docs/DEPLOYMENT.md` |
+| Trial seed system | `docs/TRIAL-SYSTEM.md` |
+| Agent rules (this file) | `AGENTS.md` |
