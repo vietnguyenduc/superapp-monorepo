@@ -2,7 +2,7 @@
 -- Description: Include staff_permissions in admin identity RPCs so Admin Portal can manage granular feature permissions.
 
 -- 1. Update admin_get_all_users to also return staff_permissions
-DROP FUNCTION IF EXISTS public.admin_get_all_users();
+DROP FUNCTION IF EXISTS public.admin_get_all_users(uuid);
 
 CREATE OR REPLACE FUNCTION public.admin_get_all_users(p_company_id UUID DEFAULT NULL)
 RETURNS TABLE (
@@ -55,7 +55,7 @@ END;
 $$;
 
 -- 2. Update admin_update_user_claims to also update staff_permissions
-DROP FUNCTION IF EXISTS public.admin_update_user_claims(UUID, TEXT, JSONB, UUID);
+DROP FUNCTION IF EXISTS public.admin_update_user_claims(uuid, text, jsonb, uuid);
 
 CREATE OR REPLACE FUNCTION public.admin_update_user_claims(
     target_user_id UUID,
