@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getCustomerListBalanceColor, getTransactionMathFactor } from "../../../utils/formatting";
-import type { Customer, Transaction } from "../../../types";
-import { databaseService } from "../../../services/database";
-import { useCompanyId } from "../../../hooks/useCompanyId";
+import { getCustomerListBalanceColor } from "../../../utils/formatting";
+import type { Customer } from "../../../types";
 import {
   formatCurrency,
   formatDate,
@@ -30,76 +28,12 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   loading = false,
 }) => {
   const { t } = useTranslation();
-  const companyId = useCompanyId();
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
-  const [customerBalances, setCustomerBalances] = useState<Map<string, number>>(new Map());
-  const [customerLastTxDates, setCustomerLastTxDates] = useState<Map<string, string>>(new Map());
-  const [loadingBalances, setLoadingBalances] = useState(false);
 
-  // Fetch transactions for all customers and calculate real-time balances
-  useEffect(() => {
-    const fetchCustomerBalances = async () => {
-      if (customers.length === 0) return;
-      
-      setLoadingBalances(true);
-      const balanceMap = new Map<string, number>();
-      const lastTxDateMap = new Map<string, string>();
-      
-      try {
-        // Fetch all transactions at once
-        const result = await databaseService.transactions.getTransactions({
-          limit: 1000, // Get recent transactions
-          company_id: companyId,
-        });
-        
-        if (result.data) {
-          // Group transactions by customer
-          const transactionsByCustomer = new Map<string, Transaction[]>();
-          result.data.forEach(tx => {
-            if (tx.customer_id) {
-              if (!transactionsByCustomer.has(tx.customer_id)) {
-                transactionsByCustomer.set(tx.customer_id, []);
-              }
-              transactionsByCustomer.get(tx.customer_id)!.push(tx);
-            }
-          });
-          
-          // Calculate balance for each customer
-          customers.forEach(customer => {
-            const customerTx = transactionsByCustomer.get(customer.id) || [];
-
-            // Calculate balance: opening_balance + transaction_amount * math_factor
-            const balance = customerTx.reduce((acc, tx) => {
-              const amount = Number(tx.amount) || 0;
-              const mathFactor = getTransactionMathFactor(tx.transaction_type);
-              return acc + (amount * mathFactor);
-            }, customer.opening_balance || 0);
-
-            balanceMap.set(customer.id, balance);
-            
-            // Find last transaction date
-            if (customerTx.length > 0) {
-              const lastTx = customerTx.reduce((latest, tx) => {
-                const txDate = new Date(tx.transaction_date);
-                const latestDate = new Date(latest.transaction_date);
-                return txDate > latestDate ? tx : latest;
-              });
-              lastTxDateMap.set(customer.id, lastTx.transaction_date);
-            }
-          });
-        }
-        
-        setCustomerBalances(balanceMap);
-        setCustomerLastTxDates(lastTxDateMap);
-      } catch (error) {
-        console.error("Failed to fetch customer balances:", error);
-      } finally {
-        setLoadingBalances(false);
-      }
-    };
-    
-    fetchCustomerBalances();
-  }, [customers, companyId]);
+  // Use balance + last_transaction_date directly from customer record.
+  // These fields are already populated by the API (customerService maps
+  // current_balance → total_balance). No need to fetch 1000 transactions
+  // client-side just to recompute them — that was a major perf bottleneck.
 
   const getSortIcon = (column: string) => {
     if (sortBy !== column) {
@@ -399,25 +333,25 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                   </div>
                   <div
                     className={`text-xs font-bold ${
-                      (customerBalances.get(customer.id) || 0) >= 0
+                      (customer.total_balance || 0) >= 0
                         ? "text-green-600 dark:text-green-300"
                         : "text-red-600 dark:text-red-300"
                     }`}
                   >
-                    {formatCurrency(customerBalances.get(customer.id) || 0)}
+                    {formatCurrency(customer.total_balance || 0)}
                   </div>
                 </div>
               </td>
               <td className="hidden md:table-cell px-3 py-2 whitespace-nowrap text-right">
                 <div
-                  className={`text-xs font-medium ${getCustomerListBalanceColor(customerBalances.get(customer.id) || 0)}`}
+                  className={`text-xs font-medium ${getCustomerListBalanceColor(customer.total_balance || 0)}`}
                 >
-                  {formatCurrency(customerBalances.get(customer.id) || 0)}
+                  {formatCurrency(customer.total_balance || 0)}
                 </div>
               </td>
               <td className="hidden lg:table-cell px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
-                {customerLastTxDates.get(customer.id)
-                  ? formatDate(customerLastTxDates.get(customer.id)!)
+                {customer.last_transaction_date
+                  ? formatDate(customer.last_transaction_date)
                   : t("customers.noTransactions")}
               </td>
               <td className="hidden sm:table-cell px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">

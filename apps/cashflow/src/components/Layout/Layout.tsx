@@ -11,10 +11,12 @@ const Layout: React.FC = () => {
   const navigate = useNavigate();
   const OutletComponent = Outlet as unknown as React.FC;
 
+  // Scroll to top on route change
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [location.pathname]);
 
+  // Prevent body scroll when sidebar is open
   useEffect(() => {
     if (typeof document === "undefined") return;
     if (sidebarOpen) {
@@ -34,12 +36,10 @@ const Layout: React.FC = () => {
       const isDarkMode = JSON.parse(savedDarkMode);
       if (isDarkMode) {
         document.documentElement.classList.add('dark');
-        // Force body styling for immediate visual feedback
         document.body.style.backgroundColor = '#111827';
         document.body.style.color = '#f3f4f6';
       } else {
         document.documentElement.classList.remove('dark');
-        // Force body styling for immediate visual feedback
         document.body.style.backgroundColor = '#ffffff';
         document.body.style.color = '#213547';
       }
@@ -75,7 +75,14 @@ const Layout: React.FC = () => {
         {/* Main content - full width, flush left */}
         <main className="flex-1 min-w-0 w-full overflow-x-hidden">
           <div className="p-4 sm:p-6 lg:p-8 w-full pb-24 lg:pb-8">
-            <OutletComponent />
+            {/* Page transition: fade-in + slight slide-up on route change.
+                Key on pathname so React remounts the wrapper, retriggering the CSS animation. */}
+            <div
+              key={location.pathname}
+              className="page-transition"
+            >
+              <OutletComponent />
+            </div>
             <div className="mt-10 border-t border-gray-200 dark:border-gray-700 pt-4 text-center text-xs text-gray-400 dark:text-gray-500">
               Quản lý công nợ - TPL
             </div>

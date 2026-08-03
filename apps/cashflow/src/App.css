@@ -22,3 +22,27 @@
   color: #666;
   font-size: 1.2rem;
 }
+
+/* Page transition: fade-in + slight slide-up on route change.
+   Triggered by key={location.pathname} in Layout.tsx which remounts the wrapper. */
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: page-fade-in 0.2s ease-out;
+}
+
+/* Respect reduced-motion preference for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .page-transition {
+    animation: none;
+  }
+}

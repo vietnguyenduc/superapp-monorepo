@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthContext as useAuth } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
+import { useDebounce } from "../../hooks/useDebounce";
 import { databaseService } from "../../services/database";
 import type { Customer } from "../../types";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
@@ -57,7 +58,10 @@ const CustomerList: React.FC = () => {
     formMode: "create",
   });
 
-  // Fetch customers
+  // Debounce search term so API isn't called on every keystroke (300ms delay)
+  const debouncedSearchTerm = useDebounce(state.searchTerm, 300);
+
+  // Fetch customers — uses debounced search term so typing doesn't spam the API
   const fetchCustomers = useCallback(async () => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
@@ -66,7 +70,7 @@ const CustomerList: React.FC = () => {
 
       const result = await databaseService.customers.getCustomers({
         company_id: companyId,
-        search: state.searchTerm || undefined,
+        search: debouncedSearchTerm || undefined,
         limit: state.pageSize,
         offset,
       });
@@ -88,7 +92,7 @@ const CustomerList: React.FC = () => {
         loading: false,
       }));
     }
-  }, [companyId, state.currentPage, state.pageSize, state.searchTerm]);
+  }, [companyId, state.currentPage, state.pageSize, debouncedSearchTerm]);
 
   // Load customers on mount and when filters change
   useEffect(() => {

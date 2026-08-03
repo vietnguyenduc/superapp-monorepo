@@ -4,6 +4,16 @@ import { useTranslation } from "react-i18next";
 import AddButton from "../UI/AddButton";
 import { useAuthContext } from "@superapp/iam";
 
+// Preload lazy route chunks on hover so navigation feels instant on click.
+// The import() is cached by the bundler — clicking later reuses the same chunk.
+const routePrefetch: Record<string, () => Promise<unknown>> = {
+  "/dashboard": () => import("../../pages/Dashboard/Dashboard"),
+  "/customers": () => import("../../pages/Customers/CustomerList"),
+  "/transactions": () => import("../../pages/Transactions/TransactionList"),
+  "/settings": () => import("../../pages/Settings/Settings"),
+  "/manual": () => import("../../pages/Manual/Manual"),
+};
+
 interface MenuItem {
   path: string;
   name: string;
@@ -182,6 +192,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                   e.preventDefault();
                   navigate(item.path);
                   if (onClose) onClose();
+                }}
+                onMouseEnter={() => {
+                  // Prefetch the route chunk on hover so click navigation is instant
+                  routePrefetch[item.path]?.();
                 }}
                 className={`flex items-center space-x-3 px-3 py-2.5 rounded-md text-base font-semibold transition-colors flex-1 ${
                   location.pathname === item.path
