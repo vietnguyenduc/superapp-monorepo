@@ -2,6 +2,8 @@
 import type { User as AppUser } from '../types';
 
 interface UserPermissions {
+  import_customers?: boolean; // legacy flat key
+  import_transactions?: boolean; // legacy flat key
   customers?: {
     import_own?: boolean;
     manage_all?: boolean;
@@ -40,7 +42,7 @@ export function isAdmin(user?: { role?: string } | null): boolean {
 export function canImportCustomers(user: User): boolean {
   if (!user) return false;
   if (user.role === 'admin_master' || user.role === 'admin' || user.role === 'admin_company' || user.role === 'branch_manager') return true;
-  return Boolean(user.staff_permissions?.customers?.import_own) || Boolean((user.staff_permissions as any)?.import_customers);
+  return Boolean(user.staff_permissions?.customers?.import_own) || Boolean(user.staff_permissions?.import_customers);
 }
 
 // Check if user can manage all customers (edit/delete any customer)
@@ -81,7 +83,7 @@ export function canDeleteCustomer(user: User): boolean {
 export function canImportTransactions(user: User): boolean {
   if (!user) return false;
   if (user.role === 'admin_master' || user.role === 'admin' || user.role === 'admin_company' || user.role === 'branch_manager') return true;
-  return Boolean(user.staff_permissions?.transactions?.import_own) || Boolean((user.staff_permissions as any)?.import_transactions);
+  return Boolean(user.staff_permissions?.transactions?.import_own) || Boolean(user.staff_permissions?.import_transactions);
 }
 
 // Check if user can manage all transactions (edit/delete any transaction)
