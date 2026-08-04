@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { logger } from "../../utils/logger";
 import { useCompany } from "@superapp/iam";
 import { useAuthContext as useAuth } from "@superapp/iam";
 
@@ -116,7 +117,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onSu
         //     text: `Mật khẩu của bạn là: ${finalPassword}`
         //   })
         // });
-        console.log('Email notification would be sent to:', formData.email);
+        logger.log('Email notification would be sent to:', formData.email);
       }
 
       onSuccess();

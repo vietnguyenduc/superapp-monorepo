@@ -1,3 +1,4 @@
+import { logger } from "../utils/logger";
 /**
  * Compression utility functions for backup data
  * Uses LZ4 compression for efficient storage
@@ -19,7 +20,7 @@ export async function compressJSON(data: any): Promise<string> {
     
     return encoded;
   } catch (error) {
-    console.error('Compression error:', error);
+    logger.error('Compression error:', error);
     throw new Error('Failed to compress data');
   }
 }
@@ -39,7 +40,7 @@ export async function decompressJSON(compressed: string): Promise<any> {
     
     return data;
   } catch (error) {
-    console.error('Decompression error:', error);
+    logger.error('Decompression error:', error);
     throw new Error('Failed to decompress data');
   }
 }

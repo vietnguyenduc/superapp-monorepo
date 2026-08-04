@@ -1,5 +1,7 @@
 ﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { logger } from "../../utils/logger";
+import { toast } from "../../utils/toast";
 import * as XLSX from "xlsx";
 import { useSearchParams } from "react-router-dom";
 import { useAuthContext } from "@superapp/iam";
@@ -482,12 +484,12 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
           setShowNewCustomerModal(false);
           setNewCustomerName("");
         } else if (result.error) {
-          console.error("Failed to create customer:", result.error);
-          alert("Không thể tạo khách hàng: " + result.error);
+          logger.error("Failed to create customer:", result.error);
+          toast.error("Không thể tạo khách hàng: " + result.error);
         }
       } catch (error) {
-        console.error("Failed to create customer:", error);
-        alert("Không thể tạo khách hàng: " + (error instanceof Error ? error.message : "Lỗi không xác định"));
+        logger.error("Failed to create customer:", error);
+        toast.error("Không thể tạo khách hàng: " + (error instanceof Error ? error.message : "Lỗi không xác định"));
       } finally {
         setIsCreatingCustomer(false);
       }
@@ -497,7 +499,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
 
   const logImportAction = useCallback(
     (payload: { type: string; successCount: number }) => {
-      console.info("Import action:", {
+      logger.info("Import action:", {
         user_id: user?.id || "",
         user_email: user?.email || "",
         action: payload.type,
@@ -575,7 +577,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         setUnmatchedCustomers(new Set());
         setDropInfo("");
       } catch (error) {
-        console.error("Import failed:", error);
+        logger.error("Import failed:", error);
         setImportError(`Lỗi nhập liệu: ${error instanceof Error ? error.message : "Không xác định"}`);
         setImportSuccess(null);
         setCurrentStep(2);

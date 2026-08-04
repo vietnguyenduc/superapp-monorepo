@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { toast } from "../../utils/toast";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
@@ -211,7 +212,7 @@ const CustomerList: React.FC = () => {
     caseSensitive: boolean;
   }) => {
     if (!companyId) {
-      alert("Không xác định được công ty");
+      toast.error("Không xác định được công ty");
       return;
     }
     setState((prev) => ({ ...prev, loading: true, showBulkEditModal: false }));
@@ -247,13 +248,13 @@ const CustomerList: React.FC = () => {
       }
 
       if (records.length === 0) {
-        alert("Không có khách hàng nào thay đổi");
+        toast.warning("Không có khách hàng nào thay đổi");
         return;
       }
 
       const updateRes = await databaseService.customers.bulkUpdateCustomerNames(records);
       if (updateRes.error) {
-        alert(updateRes.error);
+        toast.error(updateRes.error);
       } else {
         fetchCustomers();
       }
@@ -366,12 +367,12 @@ const CustomerList: React.FC = () => {
     try {
       const result = await databaseService.customers.deleteCustomer(customerId);
       if (result.error) {
-        alert(t("customers.deleteError"));
+        toast.error(t("customers.deleteError"));
       } else {
         fetchCustomers(); // Refresh the list
       }
     } catch (error) {
-      alert(t("customers.deleteError"));
+      toast.error(t("customers.deleteError"));
     }
   };
 
@@ -395,7 +396,7 @@ const CustomerList: React.FC = () => {
         }
 
         if (result.error) {
-          alert(t("customers.saveError"));
+          toast.error(t("customers.saveError"));
         } else {
           setState((prev) => ({
             ...prev,
@@ -414,7 +415,7 @@ const CustomerList: React.FC = () => {
           }
         }
       } catch (error) {
-        alert(t("customers.saveError"));
+        toast.error(t("customers.saveError"));
       }
     },
     [

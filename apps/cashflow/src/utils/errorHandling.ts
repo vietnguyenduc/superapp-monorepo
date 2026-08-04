@@ -1,5 +1,6 @@
 ﻿import React from "react";
 import type { ImportError } from "../types";
+import { logger } from "../utils/logger";
 import {
   type AppError as SharedAppError,
   ERROR_CODES as SharedErrorCodes,
@@ -284,7 +285,7 @@ export function createErrorBoundary(
     }
 
     componentDidCatch(error: any, errorInfo: any) {
-      console.error("Error caught by boundary:", error, errorInfo);
+      logger.error("Error caught by boundary:", error, errorInfo);
 
       // Log error to monitoring service
       this.logError(error, errorInfo);
@@ -306,7 +307,7 @@ export function createErrorBoundary(
       };
 
       // Console error (always available)
-      console.error("Error logged:", errorLog);
+      logger.error("Error logged:", errorLog);
 
       // Send to monitoring service if configured
       // TODO: Configure monitoring service (Sentry, LogRocket, etc.)

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { toast } from "../../utils/toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useDebounce } from "../../hooks/useDebounce";
@@ -309,12 +310,12 @@ const TransactionList: React.FC = () => {
       try {
         const result = await databaseService.transactions.deleteTransaction(transactionId);
         if (result.error) {
-          alert("Xóa giao dịch thất bại");
+          toast.error("Xóa giao dịch thất bại");
         } else {
           fetchTransactions();
         }
       } catch (e) {
-        alert("Xóa giao dịch thất bại");
+        toast.error("Xóa giao dịch thất bại");
       }
     },
     [fetchTransactions],
@@ -342,7 +343,7 @@ const TransactionList: React.FC = () => {
     if (!editingTx) return;
     let amt = parseAmount(editForm.amount);
     if (!Number.isFinite(amt)) {
-      alert("Số tiền không hợp lệ");
+      toast.error("Số tiền không hợp lệ");
       return;
     }
     // Payment/charge/refund are stored as absolute values; the sign convention is
@@ -369,13 +370,13 @@ const TransactionList: React.FC = () => {
         }
       );
       if (result.error) {
-        alert("Cập nhật giao dịch thất bại");
+        toast.error("Cập nhật giao dịch thất bại");
       } else {
         closeEditModal();
         fetchTransactions();
       }
     } catch (e) {
-      alert("Cập nhật giao dịch thất bại");
+      toast.error("Cập nhật giao dịch thất bại");
     }
   }, [closeEditModal, editForm.amount, editForm.bank_account_id, editForm.branch_id, editForm.customer_id, editForm.description, editForm.reference_number, editForm.transaction_date, editForm.transaction_type, editingTx, fetchTransactions]);
 
@@ -766,7 +767,7 @@ const TransactionList: React.FC = () => {
                             onClick={async () => {
                               if (!confirm("Xác nhận duyệt giao dịch vào công nợ?")) return;
                               const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: 'completed' });
-                              if (error) alert("Lỗi khi duyệt"); else fetchTransactions();
+                              if (error) toast.error("Lỗi khi duyệt"); else fetchTransactions();
                             }}
                           >
                             Duyệt

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthContext } from "@superapp/iam";
 import { validateEmail, validatePassword } from "../../utils/validation";
+import { supabase } from "../../services/supabase";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -19,8 +20,23 @@ const Login: React.FC = () => {
   });
   const navigate = useNavigate();
   const { i18n } = useTranslation();
-  const { signIn, loading, error, clearError, isAuthenticated, user, startTrial, isTrial } =
-    useAuthContext();
+  const {
+    signIn,
+    loading,
+    error,
+    clearError,
+    isAuthenticated,
+    user,
+    startTrial,
+    isTrial,
+  } = useAuthContext();
+  const [forgotMode, setForgotMode] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetStatus, setResetStatus] = useState<{
+    type: "success" | "error" | null;
+    message: string;
+  }>({ type: null, message: "" });
+  const [resetLoading, setResetLoading] = useState(false);
 
   const copy = {
     vi: {
@@ -101,6 +117,33 @@ const Login: React.FC = () => {
     // Navigation is handled by useEffect when isAuthenticated changes
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetStatus({ type: null, message: "" });
+
+    const emailError = validateEmail(resetEmail);
+    if (emailError) {
+      setResetStatus({ type: "error", message: "Email không hợp lệ" });
+      return;
+    }
+
+    setResetLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setResetLoading(false);
+
+    if (error) {
+      setResetStatus({ type: "error", message: error.message });
+    } else {
+      setResetStatus({
+        type: "success",
+        message: "Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư.",
+      });
+      setResetEmail("");
+    }
+  };
+
   const handleStartTrial = () => {
     clearError();
     startTrial();
@@ -160,87 +203,149 @@ const Login: React.FC = () => {
             </div>
           </div>
         )}
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-          <div className="space-y-4">
+        {!forgotMode ? (
+          <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="email" className="sr-only">
+                  {tCopy.email}
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  className={`form-input w-full ${emailError ? "border-red-500" : "border-gray-200"} dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-500 rounded-xl`}
+                  placeholder={tCopy.email}
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (emailError) setEmailError("");
+                  }}
+                />
+                {emailError && (
+                  <p className="text-red-500 text-sm mt-1">{emailError}</p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="password" className="sr-only">
+                  {tCopy.password}
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  className={`form-input w-full ${passwordError ? "border-red-500" : "border-gray-200"} dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-500 rounded-xl`}
+                  placeholder={tCopy.password}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (passwordError) setPasswordError("");
+                  }}
+                />
+                {passwordError && (
+                  <p className="text-red-500 text-sm mt-1">{passwordError}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  clearError();
+                  setForgotMode(true);
+                  setResetStatus({ type: null, message: "" });
+                }}
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+              >
+                {tCopy.forgotPassword}
+              </button>
+            </div>
+
+            {error && (
+              <div className="rounded-md border border-red-200 bg-red-50 dark:bg-red-900/30 dark:border-red-800 p-3 text-sm text-red-800 dark:text-red-200">
+                {error === "Invalid login credentials"
+                  ? "Email hoặc mật khẩu không đúng. Vui lòng thử lại."
+                  : error}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full inline-flex justify-center items-center gap-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              >
+                {loading ? tCopy.signingIn : tCopy.signIn}
+              </button>
+              <button
+                type="button"
+                onClick={handleStartTrial}
+                className="w-full rounded-xl border border-blue-200 dark:border-blue-500/40 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-medium text-blue-600 dark:text-blue-300 shadow-sm hover:bg-blue-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              >
+                {tCopy.trial}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form className="mt-8 space-y-6" onSubmit={handleForgotPassword}>
             <div>
-              <label htmlFor="email" className="sr-only">
+              <label htmlFor="reset-email" className="sr-only">
                 {tCopy.email}
               </label>
               <input
-                id="email"
+                id="reset-email"
                 name="email"
                 type="email"
                 autoComplete="email"
                 required
-                className={`form-input w-full ${emailError ? "border-red-500" : "border-gray-200"} dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-500 rounded-xl`}
+                className={`form-input w-full ${resetStatus.type === "error" ? "border-red-500" : "border-gray-200"} dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-500 rounded-xl`}
                 placeholder={tCopy.email}
-                value={email}
+                value={resetEmail}
                 onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (emailError) setEmailError("");
+                  setResetEmail(e.target.value);
+                  if (resetStatus.type) setResetStatus({ type: null, message: "" });
                 }}
               />
-              {emailError && (
-                <p className="text-red-500 text-sm mt-1">{emailError}</p>
-              )}
             </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                {tCopy.password}
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className={`form-input w-full ${passwordError ? "border-red-500" : "border-gray-200"} dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:placeholder-gray-500 rounded-xl`}
-                placeholder={tCopy.password}
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (passwordError) setPasswordError("");
+
+            {resetStatus.type && (
+              <div
+                className={`rounded-md border p-3 text-sm ${
+                  resetStatus.type === "success"
+                    ? "border-green-200 bg-green-50 text-green-800 dark:bg-green-900/30 dark:border-green-800 dark:text-green-200"
+                    : "border-red-200 bg-red-50 text-red-800 dark:bg-red-900/30 dark:border-red-800 dark:text-red-200"
+                }`}
+              >
+                {resetStatus.message}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <button
+                type="submit"
+                disabled={resetLoading}
+                className="w-full inline-flex justify-center items-center gap-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              >
+                {resetLoading ? "Đang gửi..." : "Gửi link đặt lại mật khẩu"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotMode(false);
+                  setResetStatus({ type: null, message: "" });
                 }}
-              />
-              {passwordError && (
-                <p className="text-red-500 text-sm mt-1">{passwordError}</p>
-              )}
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+                Quay lại đăng nhập
+              </button>
             </div>
-          </div>
-
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => window.location.href = "https://supabase.com/auth/reset-password"}
-              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
-            >
-              {tCopy.forgotPassword}
-            </button>
-          </div>
-
-          {error && (
-            <div className="alert-danger">
-              <p>{error}</p>
-            </div>
-          )}
-
-          <div className="space-y-3">
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full inline-flex justify-center items-center gap-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-            >
-              {loading ? tCopy.signingIn : tCopy.signIn}
-            </button>
-            <button
-              type="button"
-              onClick={handleStartTrial}
-              className="w-full rounded-xl border border-blue-200 dark:border-blue-500/40 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-medium text-blue-600 dark:text-blue-300 shadow-sm hover:bg-blue-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-            >
-              {tCopy.trial}
-            </button>
-          </div>
-        </form>
+          </form>
+        )}
       </div>
       <p className="absolute bottom-4 inset-x-0 text-center text-xs text-gray-500 dark:text-gray-400 select-none">
         Quản lý công nợ Ver 1.0 - 1 sản phẩm trong gói vận hành Doanh nghiệp theo yêu cầu.

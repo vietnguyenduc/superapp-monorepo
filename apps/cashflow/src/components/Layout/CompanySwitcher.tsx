@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
+import { logger } from "../../utils/logger";
+import { toast } from "../../utils/toast";
 import { useCompany } from "@superapp/iam";
 import { useAuthContext as useAuth } from "@superapp/iam";
 import { supabase } from "../../services/supabase";
@@ -313,8 +315,8 @@ const CompanySwitcher: React.FC = () => {
 
                       logoUrl = publicUrlData.publicUrl;
                     } catch (error) {
-                      console.error('Error uploading logo:', error);
-                      alert('Không thể tải lên logo. Vui lòng thử lại.');
+                      logger.error('Error uploading logo:', error);
+                      toast.warning('Không thể tải lên logo. Vui lòng thử lại.');
                       return;
                     }
                   }

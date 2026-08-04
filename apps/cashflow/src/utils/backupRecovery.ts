@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import { logger } from "../utils/logger";
 import type { Customer, Transaction, BankAccount, Branch } from "../types";
 import { databaseService } from "../services/database";
 import { createError, ERROR_CODES } from "./errorHandling";
@@ -752,7 +753,7 @@ export const backupService = {
           .in('id', ids);
       }
     } catch (error) {
-      console.error('Failed to cleanup old backups:', error);
+      logger.error('Failed to cleanup old backups:', error);
       // Don't throw error, cleanup is not critical
     }
   },
@@ -848,7 +849,7 @@ export const backupService = {
           restored++;
         }
       } catch (error) {
-        console.error(`Failed to restore customer ${customer.id}:`, error);
+        logger.error(`Failed to restore customer ${customer.id}:`, error);
       }
     }
     return restored;
@@ -872,7 +873,7 @@ export const backupService = {
           restored++;
         }
       } catch (error) {
-        console.error(`Failed to restore transaction ${transaction.id}:`, error);
+        logger.error(`Failed to restore transaction ${transaction.id}:`, error);
       }
     }
     return restored;
@@ -896,7 +897,7 @@ export const backupService = {
           restored++;
         }
       } catch (error) {
-        console.error(`Failed to restore bank account ${account.id}:`, error);
+        logger.error(`Failed to restore bank account ${account.id}:`, error);
       }
     }
     return restored;
@@ -920,7 +921,7 @@ export const backupService = {
           restored++;
         }
       } catch (error) {
-        console.error(`Failed to restore branch ${branch.id}:`, error);
+        logger.error(`Failed to restore branch ${branch.id}:`, error);
       }
     }
     return restored;

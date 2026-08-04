@@ -1,5 +1,7 @@
 // Force rebuild marker: 1785085381
 import React, { useState, useCallback, useMemo } from "react";
+import { logger } from "../../utils/logger";
+import { toast } from "../../utils/toast";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useAuthContext } from "@superapp/iam";
@@ -103,7 +105,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
 
   const logImportAction = useCallback(
     (payload: { type: string; successCount: number }) => {
-      console.info("Import action:", {
+      logger.info("Import action:", {
         user_id: user?.id ?? null,
         user_email: user?.email ?? null,
         timestamp: new Date().toISOString(),
@@ -259,7 +261,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
         if (isValidFileType(file)) {
           handleFileUpload(file);
         } else {
-          alert("Định dạng file không được hỗ trợ. Vui lòng sử dụng Excel (.xlsx, .xls) hoặc CSV.");
+          toast.warning("Định dạng file không được hỗ trợ. Vui lòng sử dụng Excel (.xlsx, .xls) hoặc CSV.");
         }
       }
     },
@@ -318,7 +320,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
         isValid: processedData.isValid && hasNewRows,
       }));
     } catch (err) {
-      console.error("Duplicate check failed:", err);
+      logger.error("Duplicate check failed:", err);
       setDuplicateRows(new Set());
       setImportData((prev) => ({
         ...prev,
@@ -455,7 +457,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       setShowPreview(false);
       setCurrentStep(1);
     } catch (error) {
-      console.error("Import failed:", error);
+      logger.error("Import failed:", error);
       captureException(error, {
         extra: { companyId, branchId, rowCount: rowsToImport.length },
         tags: { feature: "customer_import" },
@@ -539,7 +541,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
       setTimeout(() => setSuccessMessage(null), 3000);
       setSingleCustomer(INITIAL_SINGLE_CUSTOMER);
     } catch (error) {
-      console.error("Create customer failed:", error);
+      logger.error("Create customer failed:", error);
       captureException(error, {
         extra: { companyId, branchId },
         tags: { feature: "customer_import_single" },

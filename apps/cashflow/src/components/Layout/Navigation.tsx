@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { logger } from "../../utils/logger";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../../services/supabase";
@@ -30,7 +31,7 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
       await supabase.auth.signOut();
       navigate("/login");
     } catch (error) {
-      console.error("Error logging out:", error);
+      logger.error("Error logging out:", error);
     }
   };
 

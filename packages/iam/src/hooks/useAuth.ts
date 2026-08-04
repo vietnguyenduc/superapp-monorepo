@@ -227,7 +227,10 @@ export const useAuth = () => {
       })
       .catch((error: any) => {
         clearTimeout(initTimeout);
-        console.error("Error getting session:", error);
+        const msg = error?.message ?? "";
+        if (!msg.includes("Refresh Token")) {
+          console.error("Error getting session:", error);
+        }
         if (!isMounted) return;
         setState({
           user: null,

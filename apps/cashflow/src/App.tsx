@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import { CompanyProvider } from "@superapp/iam";
 import { TransactionTypeProvider } from "./contexts/TransactionTypeContext";
 import { lazyWithRetry } from "@superapp/shared-utils";
+import { ToastContainer } from "./components/UI/ToastContainer";
 
 // Lazy-loaded pages for code splitting (lazyWithRetry auto-reloads on stale chunk)
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard/Dashboard"));
@@ -25,6 +26,7 @@ const Profile = lazyWithRetry(() => import("./pages/Profile/Profile"));
 const Manual = lazyWithRetry(() => import("./pages/Manual/Manual"));
 const Login = lazyWithRetry(() => import("./pages/Auth/Login"));
 const SignUp = lazyWithRetry(() => import("./pages/Auth/SignUp"));
+const ResetPassword = lazyWithRetry(() => import("./pages/Auth/ResetPassword"));
 const CompanySelector = lazyWithRetry(() => import("./pages/CompanySelector/CompanySelector"));
 
 // Loading fallback component
@@ -38,12 +40,14 @@ function App() {
   return (
     <CompanyProvider>
       <TransactionTypeProvider>
+        <ToastContainer />
         <Router>
         <Suspense fallback={<PageLoading />}>
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Company selector for admins */}
           <Route
