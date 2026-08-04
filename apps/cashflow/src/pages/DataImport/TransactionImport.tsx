@@ -1138,7 +1138,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
                       {t("common.reset")}
                     </Button>
                     <Button variant="primary" size="sm" onClick={handleValidateAndImportInline}>
-                      {t("import.importData")}
+                      {t("import.importSingle")}
                     </Button>
                   </div>
                 </div>
@@ -1446,7 +1446,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
                             onClick={handleValidateAndImportBulk}
                             disabled={importData.data.length === 0}
                           >
-                            {t("import.importData")}
+                            {t("import.importBulk")}
                           </Button>
                         </div>
                       </div>

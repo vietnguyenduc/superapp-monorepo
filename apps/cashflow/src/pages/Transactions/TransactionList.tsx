@@ -846,7 +846,9 @@ const TransactionList: React.FC = () => {
                   onChange={(e) => setEditForm((p) => ({ ...p, transaction_type: e.target.value as any }))}
                 >
                   {transactionTypes.length ? transactionTypes.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
+                    <option key={t.id} value={t.id}>
+                      {getTransactionTypeName(t.id) === t.id ? t.name : getTransactionTypeName(t.id)}
+                    </option>
                   )) : (
                     <option value="" disabled>Không có loại giao dịch</option>
                   )}

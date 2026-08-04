@@ -450,6 +450,29 @@ export class TransactionService extends BaseService {
   }
 
   static async bulkImportTransactions(rawData: Record<string, unknown>[], branchId?: string, createdBy?: string, companyId?: string) {
+    // Only persist columns that exist in the live transactions table. Extra UI
+    // fields (e.g. bank_account_name, branch_name) must be stripped before the
+    // real insert so Supabase does not log 400 errors for missing columns.
+    const TRANSACTION_COLUMNS = new Set([
+      "id",
+      "transaction_code",
+      "customer_id",
+      "bank_account_id",
+      "branch_id",
+      "transaction_type",
+      "amount",
+      "description",
+      "reference_number",
+      "transaction_date",
+      "status",
+      "created_by",
+      "company_id",
+      "created_at",
+      "updated_at",
+    ]);
+    const pickTransactionColumns = (row: Record<string, unknown>) =>
+      Object.fromEntries(Object.entries(row).filter(([k]) => TRANSACTION_COLUMNS.has(k)));
+
     const resolveBankAccount = (label: string, accounts: Record<string, unknown>[]): { id: string | null; name: string | null } => {
       const raw = (label || "").trim();
       if (!raw) return { id: null, name: null };
@@ -576,7 +599,10 @@ export class TransactionService extends BaseService {
           };
         });
 
-        const { data, error } = await bulkInsertWithFallback("transactions", body as Record<string, unknown>[]);
+        const { data, error } = await bulkInsertWithFallback(
+          "transactions",
+          body.map(pickTransactionColumns) as Record<string, unknown>[],
+        );
         if (!error) {
           for (const row of body) {
             await this._syncTransactionBalance(null, row as Record<string, unknown>, companyId || null);

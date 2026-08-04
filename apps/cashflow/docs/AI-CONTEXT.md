@@ -75,6 +75,8 @@ Negative `total_balance` = debt. Positive = overpayment/credit.
 - **Trial store shallow copy:** `resetTrialStore()` does a shallow spread; tests should clear `localStorage`/`sessionStorage` and re-enable trial mode to force a deep clone from seed.
 - **Supabase `.single()`** returns an error when a row is missing; guard with `if (error || !data)`.
 - **`updateWithFallback`** retries updates with unknown columns stripped; useful for production schemas that lag migrations.
+- **Bulk import payloads:** sanitize to the known `transactions` columns before calling `bulkInsertWithFallback` so Supabase does not log 400 errors for UI-only fields (`bank_account_name`, `branch_name`).
+- **Transaction type labels:** dropdowns should use `useTransactionTypes()` canonical labels (`Phát sinh tăng/giảm`, `Điều chỉnh`, `Hoàn tiền`), not raw `transaction_types.name` values.
 
 ## How to test
 
