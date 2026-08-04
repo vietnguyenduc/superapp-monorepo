@@ -738,10 +738,17 @@ const Settings: React.FC = () => {
 
     // Tìm branch_id và company_id từ các nguồn có sẵn: tài khoản cũ, profile user, hoặc danh sách chi nhánh
     const fallbackBranchId = branches.length > 0 ? branches[0].id : undefined;
-    const fallbackCompanyId = branches.length > 0 ? branches[0].company_id : (bankAccounts.length > 0 ? bankAccounts[0].company_id : undefined);
+    const fallbackCompanyId = branches.length > 0
+      ? branches[0].company_id
+      : (bankAccounts.length > 0 ? bankAccounts[0].company_id : undefined);
 
     const finalBranchId = editingBankAccount?.branch_id || user?.branch_id || fallbackBranchId;
-    const finalCompanyId = editingBankAccount?.company_id || user?.branch?.company_id || fallbackCompanyId;
+    const finalCompanyId = editingBankAccount?.company_id || companyId || user?.company_id || user?.branch?.company_id || fallbackCompanyId;
+
+    if (!finalCompanyId) {
+      setError("Không xác định được công ty. Vui lòng chọn công ty hoặc liên hệ admin.");
+      return;
+    }
 
     try {
       const payload: any = {

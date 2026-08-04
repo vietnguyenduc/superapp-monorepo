@@ -5,6 +5,23 @@ import { createError, ERROR_CODES } from "./errorHandling";
 import { compressJSON, decompressJSON } from "./compression";
 import { supabase } from "../services/supabase";
 
+// Trigger a browser download for a Blob (works for Excel/CSV/JSON).
+export function downloadFile(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.style.position = "fixed";
+  link.style.left = "-9999px";
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(() => {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 100);
+}
+
 // Backup types
 export interface BackupData {
   version: string;
@@ -725,14 +742,7 @@ export const backupService = {
 
   // Download backup file
   downloadBackup(blob: Blob, filename: string): void {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadFile(blob, filename);
   },
 
   // Save backup to database

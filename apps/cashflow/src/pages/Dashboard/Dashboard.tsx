@@ -10,7 +10,7 @@ import { formatNumber } from "../../utils/formatting";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
 import Button from "../../components/UI/Button";
 import PageHeader from "../../components/UI/PageHeader";
-import { backupService } from "../../utils/backupRecovery";
+import { backupService, downloadFile } from "../../utils/backupRecovery";
 import {
   MetricsCard,
   BalanceBreakdown,
@@ -469,10 +469,16 @@ const Dashboard: React.FC = () => {
                             ]);
                             const workbook = XLSX.utils.book_new();
                             XLSX.utils.book_append_sheet(workbook, worksheet, "Receivable Ledger");
-                            XLSX.writeFile(
-                              workbook,
-                              `receivable_ledger_${timeRange}_${new Date().toISOString().split("T")[0]}.xlsx`,
-                            );
+                            try {
+                              const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+                              const blob = new Blob([excelBuffer], {
+                                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                              });
+                              downloadFile(blob, `receivable_ledger_${timeRange}_${new Date().toISOString().split("T")[0]}.xlsx`);
+                            } catch (err) {
+                              console.error("Excel export failed:", err);
+                              alert("Xuất Excel thất bại: " + (err instanceof Error ? err.message : "Unknown error"));
+                            }
 
                             setShowExportMenu(false);
                           }}
@@ -545,18 +551,13 @@ const Dashboard: React.FC = () => {
 
                             const csvContent = [...headerLines, headers.map(escapeCsv).join(","), ...rows].join("\n");
 
-                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                            const url = URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.setAttribute('href', url);
-                            link.setAttribute(
-                              'download',
-                              `receivable_ledger_${timeRange}_${new Date().toISOString().split('T')[0]}.csv`,
-                            );
-                            link.style.visibility = 'hidden';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                            try {
+                              const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                              downloadFile(blob, `receivable_ledger_${timeRange}_${new Date().toISOString().split('T')[0]}.csv`);
+                            } catch (err) {
+                              console.error("CSV export failed:", err);
+                              alert("Xuất CSV thất bại: " + (err instanceof Error ? err.message : "Unknown error"));
+                            }
 
                             setShowExportMenu(false);
                           }}
@@ -577,18 +578,13 @@ const Dashboard: React.FC = () => {
                               return;
                             }
 
-                            const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
-                            const url = URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.setAttribute('href', url);
-                            link.setAttribute(
-                              'download',
-                              `receivable_ledger_${timeRange}_${new Date().toISOString().split('T')[0]}.json`,
-                            );
-                            link.style.visibility = 'hidden';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                            try {
+                              const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
+                              downloadFile(blob, `receivable_ledger_${timeRange}_${new Date().toISOString().split('T')[0]}.json`);
+                            } catch (err) {
+                              console.error("JSON export failed:", err);
+                              alert("Xuất JSON thất bại: " + (err instanceof Error ? err.message : "Unknown error"));
+                            }
 
                             setShowExportMenu(false);
                           }}
