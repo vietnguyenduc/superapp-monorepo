@@ -18,11 +18,11 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      - DATABASE_URL=postgres://superapp:JMHGadL1H1xbjnmaZiaDbwluX9h8VWuL@host.docker.internal:5432/insforge
-      - SUPABASE_URL=https://peslmsctejmvkwzyohke.supabase.co
-      - SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlc2xtc2N0ZWptdmt3enlvaGtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0NjY2MTIsImV4cCI6MjA4NjA0MjYxMn0.Ulua_wXmMGoWRvJ22DDWC8U_JE6g0L-EuAEhbBNhB-w
-      - SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlc2xtc2N0ZWptdmt3enlvaGtlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDQ2NjYxMiwiZXhwIjoyMDg2MDQyNjEyfQ.-t-FKdUVQPY90ZypOFcKeYd-fCGzRcUHhtZZ0E18csQ
-      - SUPABASE_WEBHOOK_SECRET=superapp-webhook-secret-change-me
+      - DATABASE_URL=${DATABASE_URL:?DATABASE_URL is required}
+      - SUPABASE_URL=${SUPABASE_URL:?SUPABASE_URL is required}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:?SUPABASE_ANON_KEY is required}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY is required}
+      - SUPABASE_WEBHOOK_SECRET=${SUPABASE_WEBHOOK_SECRET:-superapp-webhook-secret-change-me}
       - API_PORT=3001
       - NODE_ENV=development
       - CORS_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:5177,http://localhost:5178,http://localhost:3006,https://admin.appforyou.xyz,https://cashflow.appforyou.xyz,https://inventory.appforyou.xyz,https://sales.appforyou.xyz,https://hr.appforyou.xyz,https://accounting.appforyou.xyz,https://ops.appforyou.xyz,https://api.appforyou.xyz

@@ -1,8 +1,12 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// Use hardcoded Supabase credentials from infrastructure recovery
-const supabaseUrl = 'https://peslmsctejmvkwzyohke.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlc2xtc2N0ZWptdmt3enlvaGtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDk4NzUzMzMsImV4cCI6MjAyNTQ1MTMzM30.qK7L0qN9E5T5J5oN5v7K9E8w5L5q5N5v7K9E8w5L5q';
+// Load Supabase credentials from environment variables
+const supabaseUrl = process.env.SUPABASE_URL || 'https://<your-project>.supabase.co';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || '<your-anon-key>';
+
+if (!supabaseUrl || supabaseUrl.includes('<your-project>') || !supabaseKey || supabaseKey.includes('<your-anon-key>')) {
+  throw new Error('Please set SUPABASE_URL and SUPABASE_ANON_KEY environment variables');
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
