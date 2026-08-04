@@ -216,9 +216,9 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   useEffect(() => {
     const loadOptions = async () => {
       const [customerResult, bankResult, branchResult] = await Promise.all([
-        databaseService.customers.getCustomers({ limit: 2000 }),
-        databaseService.bankAccounts.getBankAccounts(),
-        databaseService.branches.getBranches(),
+        databaseService.customers.getCustomers({ limit: 2000, company_id: companyId }),
+        databaseService.bankAccounts.getBankAccounts(companyId),
+        databaseService.branches.getBranches(companyId),
       ]);
 
       if (customerResult?.data) {
