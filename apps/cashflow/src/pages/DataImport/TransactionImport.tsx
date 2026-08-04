@@ -215,6 +215,12 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
 
   useEffect(() => {
     const loadOptions = async () => {
+      if (!companyId) {
+        setCustomerOptions([]);
+        setBankAccountOptions([]);
+        setBranchOptions([]);
+        return;
+      }
       const [customerResult, bankResult, branchResult] = await Promise.all([
         databaseService.customers.getCustomers({ limit: 2000, company_id: companyId }),
         databaseService.bankAccounts.getBankAccounts(companyId),
@@ -250,7 +256,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
             return [name, code].filter(Boolean).join(" - ");
           })
           .filter(Boolean);
-        
+
         if (branches.length > 0) {
           setBranchOptions(branches);
         }
@@ -259,7 +265,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     };
 
     loadOptions();
-  }, []);
+  }, [companyId]);
 
   // Import field configuration:
   const defaultImportFields: ImportField[] = [
@@ -509,6 +515,11 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
       const dataToImport = payload ?? importData.data;
       const isValid = payload ? true : importData.isValid;
       if (!isValid || dataToImport.length === 0) return;
+      if (!companyId) {
+        setImportError("Vui lòng chọn công ty trước khi nhập liệu.");
+        setImportSuccess(null);
+        return;
+      }
 
       const branchId = user?.branch_id || null;
       setImportSuccess(null);
@@ -519,7 +530,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
           dataToImport as any[],
           branchId ?? undefined,
           user?.id || "",
-          companyId ?? undefined,
+          companyId,
         );
 
         if ((result as any).error) {
@@ -572,7 +583,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         setIsProcessing(false);
       }
     },
-    [importData.data, importData.isValid, onImportComplete, user],
+    [importData.data, importData.isValid, onImportComplete, user, companyId],
   );
 
   const handleValidateAndImportInline = useCallback(async () => {

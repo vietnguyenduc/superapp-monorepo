@@ -5,7 +5,7 @@ import { useDebounce } from "../../hooks/useDebounce";
 import { databaseService } from "../../services/database";
 import type { Transaction } from "../../types";
 import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../utils/formatting";
-import { getCustomerBalanceDelta } from "../../services/businessLogic/balanceMath";
+import { getCustomerBalanceDelta, parseAmount } from "../../services/businessLogic";
 import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import Pagination from "../../components/UI/Pagination";
@@ -325,7 +325,7 @@ const TransactionList: React.FC = () => {
     setEditForm({
       transaction_type: tx.transaction_type,
       transaction_date: tx.transaction_date.slice(0, 10),
-      amount: String(tx.amount),
+      amount: tx.transaction_type === "adjustment" ? String(tx.amount) : String(Math.abs(tx.amount)),
       description: tx.description || "",
       bank_account_id: tx.bank_account_id || "",
       branch_id: tx.branch_id || "",
@@ -340,16 +340,15 @@ const TransactionList: React.FC = () => {
 
   const handleEditSubmit = useCallback(async () => {
     if (!editingTx) return;
-    let amt = Number(String(editForm.amount || "").replace(/[\s,]/g, ""));
+    let amt = parseAmount(editForm.amount);
     if (!Number.isFinite(amt)) {
       alert("Số tiền không hợp lệ");
       return;
     }
-    if (editForm.transaction_type === "payment" && amt < 0) {
+    // Payment/charge/refund are stored as absolute values; the sign convention is
+    // applied at display time by getCustomerBalanceDelta. Adjustments keep sign.
+    if (editForm.transaction_type !== "adjustment") {
       amt = Math.abs(amt);
-    }
-    if (editForm.transaction_type === "charge" && amt > 0) {
-      amt = -Math.abs(amt);
     }
     const dateIso = editForm.transaction_date ? new Date(editForm.transaction_date).toISOString() : editingTx.transaction_date;
     try {
@@ -359,12 +358,12 @@ const TransactionList: React.FC = () => {
           transaction_type: editForm.transaction_type,
           transaction_date: dateIso,
           amount: amt,
-          description: editForm.description,
-          bank_account_id: editForm.bank_account_id,
-          branch_id: editForm.branch_id,
-          reference_number: editForm.reference_number,
+          description: editForm.description.trim() || null,
+          bank_account_id: editForm.bank_account_id || null,
+          branch_id: editForm.branch_id || null,
+          reference_number: editForm.reference_number.trim() || null,
           transaction_code: editingTx.transaction_code,
-          customer_id: editForm.customer_id,
+          customer_id: editForm.customer_id || null,
           created_by: editingTx.created_by,
           company_id: editingTx.company_id,
         }

@@ -17,6 +17,8 @@ export function normalizeTransactionType(type: string): string {
       "tien vao",
       "điều chỉnh giảm",
       "dieu chinh giam",
+      "phát sinh giảm",
+      "phat sinh giam",
     ].includes(normalized)
   ) {
     return "payment";
@@ -31,6 +33,8 @@ export function normalizeTransactionType(type: string): string {
       "tien ra",
       "điều chỉnh tăng",
       "dieu chinh tang",
+      "phát sinh tăng",
+      "phat sinh tang",
     ].includes(normalized)
   ) {
     return "charge";

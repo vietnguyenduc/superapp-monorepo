@@ -1,7 +1,7 @@
 import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
 import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
-import { validateTransactionData, transformRawTransaction, parseAmount, normalizeTransactionType, getCustomerBalanceDelta, getBankAccountBalanceDelta } from "./businessLogic";
+import { validateTransactionData, validateTransactionUpdateData, transformRawTransaction, parseAmount, normalizeTransactionType, getCustomerBalanceDelta, getBankAccountBalanceDelta } from "./businessLogic";
 import { updateWithFallback, insertWithFallback, bulkInsertWithFallback } from "./updateHelpers";
 import { v4 as uuid } from "uuid";
 import type { Transaction, Customer, BankAccount, Branch, User } from "../types";
@@ -28,6 +28,40 @@ export class TransactionService extends BaseService {
       transaction_date: String(tx.transaction_date || getNowIso()),
       company_id: tx.company_id ? String(tx.company_id) : null,
     };
+  }
+
+  private static _normalizeTransactionPayload(payload: Record<string, unknown>): Record<string, unknown> {
+    const copy: Record<string, unknown> = { ...payload, updated_at: getNowIso() };
+
+    // Immutable / RLS fields must not be changed by an update payload.
+    delete copy.id;
+    delete copy.created_at;
+    delete copy.company_id;
+    delete copy.created_by;
+
+    // UUID fields must be null, not empty strings, to avoid "invalid input syntax for type uuid".
+    for (const key of ["customer_id", "bank_account_id", "branch_id"]) {
+      if (key in copy) {
+        const val = copy[key];
+        if (val === "" || val === undefined) {
+          copy[key] = null;
+        }
+      }
+    }
+
+    // Empty optional text fields are stored as null.
+    for (const key of ["description", "reference_number"]) {
+      if (key in copy && typeof copy[key] === "string" && String(copy[key]).trim() === "") {
+        copy[key] = null;
+      }
+    }
+
+    // Amount should be numeric; parse VN-formatted strings if necessary.
+    if ("amount" in copy && typeof copy.amount === "string") {
+      copy.amount = parseAmount(copy.amount);
+    }
+
+    return copy;
   }
 
   private static async _adjustCustomerBalance(
@@ -364,19 +398,12 @@ export class TransactionService extends BaseService {
   static async updateTransaction(id: string, transactionData: Record<string, unknown>) {
     return this.execute(
       async () => {
-        const validation = validateTransactionData(transactionData);
+        const validation = validateTransactionUpdateData(transactionData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
 
         const oldTx = await this._getTransactionForBalanceSync(id);
 
-        const updatePayload: Record<string, unknown> = {
-          ...transactionData,
-          updated_at: getNowIso(),
-        };
-        delete updatePayload.id;
-        delete updatePayload.created_at;
-        // company_id should never change after creation (RLS tenant field).
-        delete updatePayload.company_id;
+        const updatePayload = this._normalizeTransactionPayload(transactionData);
 
         const { data, error } = await updateWithFallback("transactions", id, updatePayload);
         if (error) return { data, error };
@@ -386,20 +413,13 @@ export class TransactionService extends BaseService {
         return { data, error };
       },
       async () => {
-        const validation = validateTransactionData(transactionData);
+        const validation = validateTransactionUpdateData(transactionData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
 
         const allTxs = (trialGet("transactions") || []) as Transaction[];
         const oldTx = allTxs.find((t) => t.id === id);
 
-        const updatePayload: Record<string, unknown> = {
-          ...transactionData,
-          updated_at: getNowIso(),
-        };
-        delete updatePayload.id;
-        delete updatePayload.created_at;
-        // company_id should never change after creation (RLS tenant field).
-        delete updatePayload.company_id;
+        const updatePayload = this._normalizeTransactionPayload(transactionData);
 
         const result = trialUpdate("transactions", id, updatePayload);
         const newTx = oldTx ? { ...oldTx, ...updatePayload } : updatePayload;
@@ -464,14 +484,22 @@ export class TransactionService extends BaseService {
 
     return this.execute(
       async () => {
+        if (!companyId) {
+          return { data: null, error: { message: "companyId is required to import transactions" } };
+        }
+
         const raw = Array.isArray(rawData) ? rawData : [];
         const now = getNowIso();
 
-        const { data: validTypes, error: typeErr } = await apiClient.from("transaction_types").select("id, name").eq("is_active", true);
+        const { data: validTypes, error: typeErr } = await apiClient
+          .from("transaction_types")
+          .select("id, name")
+          .eq("is_active", true)
+          .or(`company_id.eq.${companyId},company_id.is.null`);
         if (typeErr || !validTypes?.length) return { data: null, error: { message: "Failed to fetch transaction types" } };
 
         let customerMap: Record<string, string> = {};
-        const { data: customers } = await apiClient.from('customers').select('id, customer_code');
+        const { data: customers } = await apiClient.from('customers').select('id, customer_code').eq('company_id', companyId);
         if (customers) {
           const rows = customers as { id: string; customer_code?: string }[];
           customerMap = rows.reduce((acc, c) => {
@@ -481,17 +509,17 @@ export class TransactionService extends BaseService {
           }, {} as Record<string, string>);
         }
 
-        let bankAccounts: Record<string, unknown>[] = [];
-        let branches: Record<string, unknown>[] = [];
-        let bankQuery = apiClient.from("bank_accounts").select("id, account_name, bank_name, account_number, company_id");
-        let branchQuery = apiClient.from("branches").select("id, name, branch_name, code, company_id");
-        if (companyId) {
-          bankQuery = bankQuery.eq("company_id", companyId);
-          branchQuery = branchQuery.eq("company_id", companyId);
-        }
+        const bankQuery = apiClient
+          .from("bank_accounts")
+          .select("id, account_name, bank_name, account_number, company_id")
+          .eq("company_id", companyId);
+        const branchQuery = apiClient
+          .from("branches")
+          .select("id, name, branch_name, code, company_id")
+          .eq("company_id", companyId);
         const [{ data: bankData }, { data: branchData }] = await Promise.all([bankQuery, branchQuery]);
-        if (bankData) bankAccounts = bankData as Record<string, unknown>[];
-        if (branchData) branches = branchData as Record<string, unknown>[];
+        const bankAccounts = bankData as Record<string, unknown>[] || [];
+        const branches = branchData as Record<string, unknown>[] || [];
 
         const body = raw.map((r, idx) => {
           let cId: string | null = String(r.customer_id ?? "").trim() || null;

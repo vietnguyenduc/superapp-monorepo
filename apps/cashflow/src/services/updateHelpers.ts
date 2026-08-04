@@ -1,29 +1,18 @@
 import { apiClient } from "./supabase";
 
 /**
- * Remove columns that the live Supabase schema does not recognise yet and
- * append their original values to a `notes` field so no data is silently lost.
+ * Remove columns that the live Supabase schema does not recognise yet.
+ * Unknown fields are dropped rather than stuffed into a `notes` column, because
+ * most Cashflow tables do not have a `notes` text column and attempting to
+ * write to it causes an infinite retry loop.
  */
 export function sanitizePayload(
   payload: Record<string, unknown>,
   colsToRemove: string[],
 ): Record<string, unknown> {
   const copy = { ...payload };
-  const removedParts: string[] = [];
   for (const col of colsToRemove) {
-    if (col in copy) {
-      const val = copy[col];
-      if (val !== undefined && val !== null && val !== "") {
-        removedParts.push(`${col}: ${val}`);
-      }
-      delete copy[col];
-    }
-  }
-  if (removedParts.length > 0 && !colsToRemove.includes("notes")) {
-    const existing = copy.notes ? String(copy.notes) : "";
-    copy.notes = existing
-      ? `${existing}\n${removedParts.join("; ")}`
-      : removedParts.join("; ");
+    delete copy[col];
   }
   return copy;
 }
@@ -64,8 +53,8 @@ export function parseMissingColumn(
 
 /**
  * Update a row, retrying with the unknown column removed if Supabase complains
- * the schema is missing a field. This makes partial edits resilient against
- * stale production schemas without dropping data (it is appended to `notes`).
+ * the schema is missing a field. Unknown columns are dropped; they should not be
+ * silently appended to `notes` because many Cashflow tables lack that column.
  */
 export async function updateWithFallback(
   table: string,
@@ -93,6 +82,7 @@ export async function updateWithFallback(
 
 /**
  * Insert a single row with the same missing-column fallback as `updateWithFallback`.
+ * Unknown columns are dropped so the insert succeeds against the live schema.
  */
 export async function insertWithFallback(
   table: string,
@@ -118,6 +108,7 @@ export async function insertWithFallback(
 
 /**
  * Bulk insert rows with missing-column fallback.
+ * Unknown columns are dropped so the insert succeeds against the live schema.
  */
 export async function bulkInsertWithFallback(
   table: string,
