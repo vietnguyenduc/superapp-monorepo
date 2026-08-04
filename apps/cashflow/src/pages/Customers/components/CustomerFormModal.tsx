@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { logger } from "../../../utils/logger";
 import { useTranslation } from "react-i18next";
 import type { Customer } from "../../../types";
 
@@ -102,7 +103,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       const { create_transactions, ...payload } = formData;
       await onSubmit(payload, { createTransactions: create_transactions });
     } catch (error) {
-      console.error("Form submission error:", error);
+      logger.error("Form submission error:", error);
     } finally {
       setIsSubmitting(false);
     }

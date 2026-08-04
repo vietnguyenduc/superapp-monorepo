@@ -1,4 +1,5 @@
 import { createSupabaseClient, createApiClient } from "@superapp/shared-utils";
+import { logger } from "../utils/logger";
 import type { Database } from "@repo/types";
 
 // Environment variables for Supabase configuration
@@ -98,7 +99,7 @@ export const getAccessToken = async (): Promise<string | null> => {
     const sessionResult = await supabase.auth.getSession();
     return sessionResult.data.session?.access_token || null;
   } catch (error) {
-    console.error("Error getting access token:", error);
+    logger.error("Error getting access token:", error);
     return null;
   }
 };
@@ -109,7 +110,7 @@ export const isTokenValid = (token: string): boolean => {
     const now = Math.floor(Date.now() / 1000);
     return payload.exp > now;
   } catch (error) {
-    console.error("Error validating token:", error);
+    logger.error("Error validating token:", error);
     return false;
   }
 };
@@ -118,12 +119,12 @@ export const refreshSession = async () => {
   try {
     const { data, error } = await supabase.auth.refreshSession();
     if (error) {
-      console.error("Error refreshing session:", error);
+      logger.error("Error refreshing session:", error);
       return { error };
     }
     return { data, error: null };
   } catch (error) {
-    console.error("Error refreshing session:", error);
+    logger.error("Error refreshing session:", error);
     return { error };
   }
 };

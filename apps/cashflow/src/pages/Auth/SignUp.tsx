@@ -208,8 +208,8 @@ const SignUp: React.FC = () => {
           </div>
 
           {error && (
-            <div className="alert-danger">
-              <p>{error}</p>
+            <div className="rounded-md border border-red-200 bg-red-50 dark:bg-red-900/30 dark:border-red-800 p-3 text-sm text-red-800 dark:text-red-200">
+              {error}
             </div>
           )}
 

@@ -1,4 +1,5 @@
 import { format, parseISO } from "date-fns";
+import { logger } from "../utils/logger";
 import { vi } from "date-fns/locale";
 import { getCustomerBalanceDelta } from "../services/businessLogic/balanceMath";
 
@@ -79,7 +80,7 @@ export const formatDate = (
     const dateObj = typeof date === "string" ? parseISO(date) : date;
     return format(dateObj, formatString, { locale: vi });
   } catch (error) {
-    console.error("Error formatting date:", error);
+    logger.error("Error formatting date:", error);
     return "Invalid Date";
   }
 };
@@ -197,7 +198,7 @@ export const formatRelativeTime = (date: string | Date): string => {
       return formatDate(dateObj);
     }
   } catch (error) {
-    console.error("Error formatting relative time:", error);
+    logger.error("Error formatting relative time:", error);
     return "Invalid Date";
   }
 };
@@ -332,7 +333,7 @@ export async function fetchColorSettings() {
 
       colorsLoaded = true;
     } catch (err) {
-      console.error("Failed to fetch color settings, using defaults", err);
+      logger.error("Failed to fetch color settings, using defaults", err);
     } finally {
       colorLoadPromise = null;
     }
@@ -476,7 +477,7 @@ export const getTransactionTypeNameFromDB = (typeId: string, cachedTypes?: any[]
   if (!types || types.length === 0) {
     if (!_txTypeNameCacheMissWarned && typeof console !== "undefined") {
       _txTypeNameCacheMissWarned = true;
-      console.warn(
+      logger.warn(
         "[getTransactionTypeNameFromDB] cache miss — returning raw typeId. " +
           "Migrate caller to useTransactionTypes().getNameById() (see ADR-0001)."
       );

@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { logger } from "../../utils/logger";
+import { toast } from "../../utils/toast";
 import * as XLSX from "xlsx";
 import { ErrorFallback, LoadingFallback } from "../../components/UI/FallbackUI";
 import ToggleSwitch from "../../components/UI/ToggleSwitch";
@@ -210,7 +212,7 @@ const Settings: React.FC = () => {
           setBackupHistory(result.data);
         }
       } catch (err) {
-        console.error('Failed to load backup history:', err);
+        logger.error('Failed to load backup history:', err);
       } finally {
         setLoadingBackupHistory(false);
       }
@@ -255,8 +257,8 @@ const Settings: React.FC = () => {
       setSuccessMessage('Sao lưu thành công!');
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
-      console.error('Backup failed:', err);
-      alert('Sao lưu thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      logger.error('Backup failed:', err);
+      toast.error('Sao lưu thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setBackupLoading(false);
     }
@@ -287,8 +289,8 @@ const Settings: React.FC = () => {
       setSuccessMessage('Tải file thành công!');
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
-      console.error('Download backup failed:', err);
-      alert('Tải file thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      logger.error('Download backup failed:', err);
+      toast.error('Tải file thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setBackupLoading(false);
     }
@@ -297,7 +299,7 @@ const Settings: React.FC = () => {
   // Handle restore from file
   const handleRestore = async () => {
     if (!restoreFile) {
-      alert('Vui lòng chọn file để khôi phục');
+      toast.warning('Vui lòng chọn file để khôi phục');
       return;
     }
 
@@ -313,7 +315,7 @@ const Settings: React.FC = () => {
       );
 
       if (!validation.isValid) {
-        alert('Validation failed: ' + validation.errors.join(', '));
+        toast.error('Validation failed: ' + validation.errors.join(', '));
         return;
       }
 
@@ -332,14 +334,14 @@ const Settings: React.FC = () => {
       });
 
       if (result.errors.length > 0) {
-        alert('Khôi phục hoàn tất với lỗi: ' + result.errors.map(e => e.message).join(', '));
+        toast.error('Khôi phục hoàn tất với lỗi: ' + result.errors.map(e => e.message).join(', '));
       } else {
         setSuccessMessage('Khôi phục thành công!');
         setTimeout(() => setSuccessMessage(null), 3000);
       }
     } catch (err) {
-      console.error('Restore failed:', err);
-      alert('Khôi phục thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      logger.error('Restore failed:', err);
+      toast.error('Khôi phục thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setRestoreLoading(false);
     }
@@ -357,7 +359,7 @@ const Settings: React.FC = () => {
       const { data: backupData, error: loadError } = await databaseService.backupHistory.loadBackupData(backupId, companyId);
       
       if (loadError || !backupData) {
-        alert('Không thể tải dữ liệu sao lưu: ' + loadError);
+        toast.error('Không thể tải dữ liệu sao lưu: ' + loadError);
         return;
       }
 
@@ -376,7 +378,7 @@ const Settings: React.FC = () => {
       });
 
       if (result.errors.length > 0) {
-        alert('Khôi phục hoàn tất với lỗi: ' + result.errors.map(e => e.message).join(', '));
+        toast.error('Khôi phục hoàn tất với lỗi: ' + result.errors.map(e => e.message).join(', '));
       } else {
         setSuccessMessage('Khôi phục thành công!');
         setTimeout(() => setSuccessMessage(null), 3000);
@@ -388,8 +390,8 @@ const Settings: React.FC = () => {
         }
       }
     } catch (err) {
-      console.error('Restore from database failed:', err);
-      alert('Khôi phục thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      logger.error('Restore from database failed:', err);
+      toast.error('Khôi phục thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setRestoreLoading(false);
     }
@@ -403,7 +405,7 @@ const Settings: React.FC = () => {
     );
 
     if (selectedTables.length === 0) {
-      alert('Không có bảng nào được chọn');
+      toast.warning('Không có bảng nào được chọn');
       return;
     }
 
@@ -413,7 +415,7 @@ const Settings: React.FC = () => {
       const { data: backupData, error: loadError } = await databaseService.backupHistory.loadBackupData(backupId, companyId);
       
       if (loadError || !backupData) {
-        alert('Không thể tải dữ liệu sao lưu: ' + loadError);
+        toast.error('Không thể tải dữ liệu sao lưu: ' + loadError);
         return;
       }
 
@@ -432,7 +434,7 @@ const Settings: React.FC = () => {
       });
 
       if (result.errors.length > 0) {
-        alert('Khôi phục hoàn tất với lỗi: ' + result.errors.map(e => e.message).join(', '));
+        toast.error('Khôi phục hoàn tất với lỗi: ' + result.errors.map(e => e.message).join(', '));
       } else {
         setSuccessMessage('Khôi phục thành công!');
         setTimeout(() => setSuccessMessage(null), 3000);
@@ -444,8 +446,8 @@ const Settings: React.FC = () => {
         }
       }
     } catch (err) {
-      console.error('Selective restore failed:', err);
-      alert('Khôi phục thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      logger.error('Selective restore failed:', err);
+      toast.error('Khôi phục thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setRestoreLoading(false);
     }
@@ -468,7 +470,7 @@ const Settings: React.FC = () => {
       );
 
       if (error) {
-        alert('Revert thất bại: ' + error);
+        toast.error('Revert thất bại: ' + error);
       } else {
         setSuccessMessage(`Revert ${tableName} thành công!`);
         setTimeout(() => setSuccessMessage(null), 3000);
@@ -480,8 +482,8 @@ const Settings: React.FC = () => {
         }
       }
     } catch (err) {
-      console.error('Revert table failed:', err);
-      alert('Revert thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      logger.error('Revert table failed:', err);
+      toast.error('Revert thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setRestoreLoading(false);
     }
@@ -595,7 +597,7 @@ const Settings: React.FC = () => {
         // Load customers with balances for inline editing
         await loadCustomerBalances();
       } catch (err) {
-        console.error('Failed to load data:', err);
+        logger.error('Failed to load data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
         setLoading(false);
@@ -643,7 +645,7 @@ const Settings: React.FC = () => {
       if (error) throw error;
       setStaffUsers(data || []);
     } catch (err) {
-      console.error("Failed to load staff users:", err);
+      logger.error("Failed to load staff users:", err);
     } finally {
       setLoadingStaff(false);
     }
@@ -675,7 +677,7 @@ const Settings: React.FC = () => {
     }
 
     if (!companyId) {
-      alert("Không xác định được công ty. Vui lòng chọn công ty trước khi reset dữ liệu.");
+      toast.warning("Không xác định được công ty. Vui lòng chọn công ty trước khi reset dữ liệu.");
       return;
     }
 
@@ -703,24 +705,24 @@ const Settings: React.FC = () => {
         .eq("company_id", companyId);
 
       if (txResult.error || custResult.error || bankResult.error) {
-        console.error("Database deletion errors:", {
+        logger.error("Database deletion errors:", {
           txError: txResult.error,
           custError: custResult.error,
           bankError: bankResult.error,
         });
-        alert(`Có lỗi khi xóa dữ liệu từ database:\n${txResult.error?.message || custResult.error?.message || bankResult.error?.message}`);
+        toast.error(`Có lỗi khi xóa dữ liệu từ database:\n${txResult.error?.message || custResult.error?.message || bankResult.error?.message}`);
         return;
       }
 
-      console.log("✅ Database deletion successful");
+      logger.log("✅ Database deletion successful");
 
-      alert("Đã xóa toàn bộ dữ liệu thành công!");
+      toast.success("Đã xóa toàn bộ dữ liệu thành công!");
 
       // Navigate to dashboard instead of reload to preserve session
       navigate('/dashboard', { replace: true });
     } catch (error) {
-      console.error("Reset data failed:", error);
-      alert(`Có lỗi khi reset dữ liệu: ${error instanceof Error ? error.message : "Unknown error"}`);
+      logger.error("Reset data failed:", error);
+      toast.error(`Có lỗi khi reset dữ liệu: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
 
@@ -903,7 +905,7 @@ const Settings: React.FC = () => {
 
   const handleDeleteCustomerField = (field: CustomerField) => {
     if (field.isDefault) {
-      window.alert("Trường mặc định không thể xóa.");
+      toast.error("Trường mặc định không thể xóa.");
       return;
     }
     const confirmation = window.confirm(
@@ -1132,7 +1134,7 @@ const Settings: React.FC = () => {
         setOpeningErrors(errors);
         setOpeningRows(parsed);
       } catch (err) {
-        console.error("Failed to parse opening balance file", err);
+        logger.error("Failed to parse opening balance file", err);
         setOpeningErrors(["Không đọc được file. Vui lòng kiểm tra định dạng."]);
         setOpeningRows([]);
       }
@@ -1142,7 +1144,7 @@ const Settings: React.FC = () => {
 
   const handleImportOpeningBalance = async () => {
     if (!isAdmin(user)) {
-      alert("Bạn không có quyền thực hiện thao tác này.");
+      toast.warning("Bạn không có quyền thực hiện thao tác này.");
       return;
     }
     if (openingRows.length === 0) return;
@@ -1162,7 +1164,7 @@ const Settings: React.FC = () => {
       }
       setOpeningSuccess(`Đã cập nhật ${res.data?.updatedCount || 0} khách hàng.`);
     } catch (err) {
-      console.error("Import opening balance failed", err);
+      logger.error("Import opening balance failed", err);
       setOpeningErrors(["Có lỗi khi nhập số dư. Vui lòng thử lại."]);
     } finally {
       setIsOpeningProcessing(false);
@@ -1220,7 +1222,7 @@ const Settings: React.FC = () => {
       setEditingUser(null);
       setUserEditForm({ full_name: "", position: "", company_name: "" });
     } catch (err) {
-      console.error("Error updating user details:", err);
+      logger.error("Error updating user details:", err);
       setError("Không thể cập nhật thông tin người dùng");
     }
   };
@@ -1289,7 +1291,7 @@ const Settings: React.FC = () => {
       setSuccessMessage("Đã cập nhật quyền truy cập thành công");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
-      console.error("Failed to update staff permission:", err);
+      logger.error("Failed to update staff permission:", err);
       setError("Không cập nhật được quyền truy cập");
     }
   };
@@ -1302,7 +1304,7 @@ const Settings: React.FC = () => {
       if (error) throw new Error(String(error));
       setUsers(data || []);
     } catch (err) {
-      console.error('Failed to load users:', err);
+      logger.error('Failed to load users:', err);
     } finally {
       setLoadingUsers(false);
     }
@@ -1315,8 +1317,8 @@ const Settings: React.FC = () => {
       // Refresh users list
       await loadUsers();
     } catch (err) {
-      console.error('Failed to update user role:', err);
-      alert('Failed to update user role');
+      logger.error('Failed to update user role:', err);
+      toast.error('Failed to update user role');
     }
   };
 
@@ -1344,7 +1346,7 @@ const Settings: React.FC = () => {
       // Refresh users list
       await loadUsers();
     } catch (err) {
-      console.error('Failed to promote user to admin_master:', err);
+      logger.error('Failed to promote user to admin_master:', err);
       setError('Không thể promote user lên Admin Master');
     }
   };
@@ -1559,7 +1561,7 @@ const Settings: React.FC = () => {
                         disabled={isSavingCustomerBalances || customerBalances.filter(c => c.new_opening_balance !== c.opening_balance).length === 0}
                         onClick={async () => {
                           if (!isAdmin(user)) {
-                            alert("Bạn không có quyền thực hiện thao tác này.");
+                            toast.warning("Bạn không có quyền thực hiện thao tác này.");
                             return;
                           }
                           const modified = customerBalances.filter(c => c.new_opening_balance !== c.opening_balance);

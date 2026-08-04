@@ -52,6 +52,21 @@ export function initErrorTracking(opts: InitErrorTrackingOptions): void {
     },
     // Don't send events from local dev by default unless explicitly testing Sentry.
     enabled: environment !== 'development' || opts.dsn !== undefined,
+    beforeSend(event) {
+      // Ignore expected auth noise (stale refresh tokens, wrong passwords).
+      const message =
+        (event.exception?.values?.[0].value ?? "") ||
+        (event.message ?? "");
+      const ignored = [
+        "Invalid Refresh Token",
+        "Refresh Token Not Found",
+        "Invalid login credentials",
+      ];
+      if (ignored.some((m) => message.includes(m))) {
+        return null;
+      }
+      return event;
+    },
   });
 
   _initialized = true;

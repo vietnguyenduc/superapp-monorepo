@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
+import { logger } from "../../utils/logger";
 import { useTranslation } from "react-i18next";
 import { captureException } from "@superapp/shared-utils";
 
@@ -28,7 +29,7 @@ class ErrorBoundaryClass extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    logger.error("ErrorBoundary caught an error:", error, errorInfo);
 
     this.setState({
       error,

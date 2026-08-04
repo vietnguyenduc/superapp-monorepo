@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { logger } from "../../utils/logger";
+import { toast } from "../../utils/toast";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
@@ -71,10 +73,10 @@ const Dashboard: React.FC = () => {
         user.id
       );
 
-      alert('Sao lưu thành công!');
+      toast.success('Sao lưu thành công!');
     } catch (err) {
-      console.error('Quick backup failed:', err);
-      alert('Sao lưu thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      logger.error('Quick backup failed:', err);
+      toast.error('Sao lưu thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setQuickBackupLoading(false);
     }
@@ -107,10 +109,10 @@ const Dashboard: React.FC = () => {
       const filename = backupService.generateBackupFilename(undefined, 'xlsx');
       backupService.downloadBackup(blob, filename);
 
-      alert('Tải file thành công!');
+      toast.success('Tải file thành công!');
     } catch (err) {
-      console.error('Download backup failed:', err);
-      alert('Tải file thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      logger.error('Download backup failed:', err);
+      toast.error('Tải file thất bại: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setQuickBackupLoading(false);
     }
@@ -476,8 +478,8 @@ const Dashboard: React.FC = () => {
                               });
                               downloadFile(blob, `receivable_ledger_${timeRange}_${new Date().toISOString().split("T")[0]}.xlsx`);
                             } catch (err) {
-                              console.error("Excel export failed:", err);
-                              alert("Xuất Excel thất bại: " + (err instanceof Error ? err.message : "Unknown error"));
+                              logger.error("Excel export failed:", err);
+                              toast.error("Xuất Excel thất bại: " + (err instanceof Error ? err.message : "Unknown error"));
                             }
 
                             setShowExportMenu(false);
@@ -555,8 +557,8 @@ const Dashboard: React.FC = () => {
                               const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                               downloadFile(blob, `receivable_ledger_${timeRange}_${new Date().toISOString().split('T')[0]}.csv`);
                             } catch (err) {
-                              console.error("CSV export failed:", err);
-                              alert("Xuất CSV thất bại: " + (err instanceof Error ? err.message : "Unknown error"));
+                              logger.error("CSV export failed:", err);
+                              toast.error("Xuất CSV thất bại: " + (err instanceof Error ? err.message : "Unknown error"));
                             }
 
                             setShowExportMenu(false);
@@ -582,8 +584,8 @@ const Dashboard: React.FC = () => {
                               const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
                               downloadFile(blob, `receivable_ledger_${timeRange}_${new Date().toISOString().split('T')[0]}.json`);
                             } catch (err) {
-                              console.error("JSON export failed:", err);
-                              alert("Xuất JSON thất bại: " + (err instanceof Error ? err.message : "Unknown error"));
+                              logger.error("JSON export failed:", err);
+                              toast.error("Xuất JSON thất bại: " + (err instanceof Error ? err.message : "Unknown error"));
                             }
 
                             setShowExportMenu(false);

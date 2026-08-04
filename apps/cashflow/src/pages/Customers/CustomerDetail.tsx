@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { logger } from "../../utils/logger";
+import { toast } from "../../utils/toast";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Button from "../../components/UI/Button";
@@ -49,7 +51,7 @@ const CustomerDetail: React.FC = () => {
             company_id: companyId,
           });
         if (transactionsResult.error) {
-          console.error(
+          logger.error(
             "Failed to fetch transactions:",
             transactionsResult.error,
           );
@@ -140,7 +142,7 @@ const CustomerDetail: React.FC = () => {
             <Button
               variant="primary"
               size="md"
-              onClick={() => alert("Tính năng đang được phát triển")}
+              onClick={() => toast.info("Tính năng đang được phát triển")}
             >
               {t("common.edit")}
             </Button>
