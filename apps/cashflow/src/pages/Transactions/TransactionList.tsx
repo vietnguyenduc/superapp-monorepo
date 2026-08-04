@@ -5,6 +5,7 @@ import { useDebounce } from "../../hooks/useDebounce";
 import { databaseService } from "../../services/database";
 import type { Transaction } from "../../types";
 import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../utils/formatting";
+import { getCustomerBalanceDelta } from "../../services/businessLogic/balanceMath";
 import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import Pagination from "../../components/UI/Pagination";
@@ -362,7 +363,8 @@ const TransactionList: React.FC = () => {
           bank_account_id: editForm.bank_account_id,
           branch_id: editForm.branch_id,
           reference_number: editForm.reference_number,
-          customer_id: editingTx.customer_id,
+          transaction_code: editingTx.transaction_code,
+          customer_id: editForm.customer_id,
           created_by: editingTx.created_by,
           company_id: editingTx.company_id,
         }
@@ -376,7 +378,7 @@ const TransactionList: React.FC = () => {
     } catch (e) {
       alert("Cập nhật giao dịch thất bại");
     }
-  }, [closeEditModal, editForm.amount, editForm.bank_account_id, editForm.branch_id, editForm.description, editForm.reference_number, editForm.transaction_date, editForm.transaction_type, editingTx, fetchTransactions]);
+  }, [closeEditModal, editForm.amount, editForm.bank_account_id, editForm.branch_id, editForm.customer_id, editForm.description, editForm.reference_number, editForm.transaction_date, editForm.transaction_type, editingTx, fetchTransactions]);
 
   const getBranchName = (branchId: string): string => {
     const match = branches.find((branch) => branch.id === String(branchId));
@@ -712,9 +714,9 @@ const TransactionList: React.FC = () => {
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
                       <span
-                        className={`text-xs sm:text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type)}`}
+                        className={`text-xs sm:text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type, transaction.amount)}`}
                       >
-                        {formatCurrency(transaction.amount)}
+                        {formatCurrency(getCustomerBalanceDelta(transaction.transaction_type, transaction.amount))}
                       </span>
                     </td>
                     <td className="hidden sm:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">

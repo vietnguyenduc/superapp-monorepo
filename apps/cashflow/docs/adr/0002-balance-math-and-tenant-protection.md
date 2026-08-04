@@ -12,6 +12,7 @@ Cashflow money math was duplicated and inconsistent:
 2. `bank_accounts.balance` and `customers.total_balance` were exposed to user payloads in `update*` / `upsert*` paths, so a malformed or compromised form could overwrite `company_id`, `branch_id`, `total_balance`, `balance`, or `created_at`.
 3. `getCustomers` sorted and mapped against a `current_balance` column that does not exist in the current schema, silently falling back to `total_balance` and masking the real data source.
 4. `customers.total_balance` and `bank_accounts.balance` were not updated when transactions were created, edited, or deleted, so the customer list and bank account list could drift from the transaction ledger.
+5. UI color conventions were inconsistent: `CustomerDetailModal` and `RecentTransactions` treated a positive customer balance as debt (red), while the dashboard treated a negative balance as debt (red). Default transaction-type labels in `colorSettingsService` were stale (`Điều chỉnh tăng/giảm` instead of the business names `Phát sinh tăng`/`Phát sinh giảm`).
 
 ## Decision
 
@@ -23,6 +24,7 @@ Cashflow money math was duplicated and inconsistent:
 3. **Tenant field hardening**: every `update*` / `upsert*` path (`customerService.updateCustomer`, `transactionService.updateTransaction`, `bankAccountService.upsertBankAccount`, `branchService.upsertBranch`, `transactionTypeService.upsertTransactionType`) deletes `id`, `created_at`, and `company_id` from the update payload before sending it to Supabase. The `company_id` may still be read for duplicate-code / duplicate-name checks, but it is never written.
 4. **Column source of truth**: `getCustomers` now uses the existing `total_balance` column for both display and sorting.
 5. **Transaction write-time balance sync**: `transactionService.createTransaction`, `updateTransaction`, `deleteTransaction`, and `bulkImportTransactions` adjust the related `customers.total_balance` and `bank_accounts.balance` immediately after the transaction row is written. The same `balanceMath.ts` helpers compute the delta, the customer's `last_transaction_date` is bumped to the newest transaction date, and customer/bank-account changes on update are handled by reversing the old delta and applying the new one.
+6. **UI sign & color convention**: negative customer balance = debt (red); positive/zero = credit/overpayment (green). `formatting.ts` helpers (`getCustomerListBalanceColor`, `getCustomerDetailBalanceColor`, `getTransactionTypeAmountColor`) now use `balanceMath.ts` as the source of truth. `getTransactionTypeAmountColor` accepts an optional `amount` so `adjustment` rows render red or green based on the signed delta. `CustomerTable`, `CustomerDetail`, `CustomerDetailModal`, `RecentTransactions`, and `TransactionList` display transaction amounts as signed customer deltas. Default transaction-type labels in `colorSettingsService` are `Phát sinh tăng` (charge), `Phát sinh giảm` (payment), `Điều chỉnh` (adjustment), and `Hoàn tiền` (refund).
 
 ## Consequences
 
