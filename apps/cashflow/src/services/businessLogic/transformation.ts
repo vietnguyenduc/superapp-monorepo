@@ -3,15 +3,17 @@
 
 import { parseAmount } from "./parsers";
 
-// Generates a collision-resistant id for the real (non-trial) data path.
-// Uses ms timestamp + 8 random chars — avoids crypto.randomUUID() so it works
-// on non-secure contexts (e.g. dev over plain Tailscale HTTP).
-const genId = (prefix: string) => {
-  const random =
-    typeof crypto !== "undefined" && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}-${Math.random().toString(36).slice(2, 12)}`;
-  return `${prefix}-${random}`;
+// Generates a v4 UUID. Used for `id` columns which are typed as uuid in Supabase.
+const genId = () => {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for environments without crypto.randomUUID (tests / older Node).
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 };
 
 const strOrNull = (value: unknown) => {
@@ -28,7 +30,7 @@ const strOrDefault = (value: unknown, fallback: string) => {
 export function transformRawCustomer(raw: Record<string, unknown>): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
-    id: strOrDefault(raw.id, genId("cust")),
+    id: strOrDefault(raw.id, genId()),
     customer_code: strOrDefault(raw.customer_code, `CUST${Date.now()}-${Math.random().toString(36).slice(2, 6)}`),
     full_name: strOrDefault(raw.full_name, ""),
     phone: strOrNull(raw.phone),
@@ -48,7 +50,7 @@ export function transformRawCustomer(raw: Record<string, unknown>): Record<strin
 export function transformRawTransaction(raw: Record<string, unknown>): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
-    id: strOrDefault(raw.id, genId("txn")),
+    id: strOrDefault(raw.id, genId()),
     transaction_code: strOrDefault(raw.transaction_code, `TXN${Date.now()}-${Math.random().toString(36).slice(2, 6)}`),
     customer_id: strOrNull(raw.customer_id),
     customer_name: strOrNull(raw.customer_name),
@@ -72,7 +74,7 @@ export function transformRawTransaction(raw: Record<string, unknown>): Record<st
 export function transformRawBankAccount(raw: Record<string, unknown>): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
-    id: strOrDefault(raw.id, genId("bank")),
+    id: strOrDefault(raw.id, genId()),
     account_name: strOrDefault(raw.account_name, ""),
     account_number: strOrDefault(raw.account_number, ""),
     bank_name: strOrDefault(raw.bank_name, ""),
@@ -89,7 +91,7 @@ export function transformRawBankAccount(raw: Record<string, unknown>): Record<st
 export function transformRawBranch(raw: Record<string, unknown>): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
-    id: strOrDefault(raw.id, genId("branch")),
+    id: strOrDefault(raw.id, genId()),
     name: strOrDefault(raw.name, ""),
     code: strOrDefault(raw.code, ""),
     logo_url: strOrNull(raw.logo_url),
@@ -104,7 +106,7 @@ export function transformRawBranch(raw: Record<string, unknown>): Record<string,
 export function transformRawTransactionType(raw: Record<string, unknown>): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
-    id: strOrDefault(raw.id, genId("type")),
+    id: strOrDefault(raw.id, genId()),
     name: strOrDefault(raw.name, "").trim(),
     color: strOrDefault(raw.color, "blue"),
     math_factor: parseAmount(raw.math_factor ?? 1),
@@ -121,7 +123,7 @@ export function transformRawBackupHistory(raw: Record<string, unknown>): Record<
   const now = new Date().toISOString();
   const metadata = raw.metadata as Record<string, unknown> | undefined;
   return {
-    id: strOrDefault(raw.id, genId("backup")),
+    id: strOrDefault(raw.id, genId()),
     company_id: strOrNull(raw.company_id),
     backup_name: strOrDefault(raw.backup_name, `Backup ${now}`),
     backup_version: strOrDefault(raw.backup_version, "1.0.0"),
