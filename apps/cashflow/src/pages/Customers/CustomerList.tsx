@@ -512,10 +512,18 @@ const CustomerList: React.FC = () => {
 
         {/* Filters and Search */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-600">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">
               Bộ lọc khách hàng
             </h3>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-gray-500 dark:text-gray-400">
+                {t("customers.totalDebt", "Tổng công nợ")} ({paginationInfo.total.toLocaleString("vi-VN")} {t("customers.customersCount", "khách hàng")}):
+              </span>
+              <span className={`font-semibold ${state.totalBalance >= 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
+                {formatCurrency(state.totalBalance)}
+              </span>
+            </div>
           </div>
           <div className="p-6 space-y-4">
             <CustomerSearch
@@ -549,25 +557,6 @@ const CustomerList: React.FC = () => {
                   Xuất Excel
                 </Button>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Total balance summary */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6 px-6 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Tổng công nợ ({paginationInfo.total.toLocaleString("vi-VN")} khách hàng)</p>
-              <p className={`text-2xl font-bold ${state.totalBalance >= 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
-                {formatCurrency(state.totalBalance)}
-              </p>
-            </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              {t("customers.showingResults", {
-                start: paginationInfo.start,
-                end: paginationInfo.end,
-                total: paginationInfo.total,
-              })}
             </div>
           </div>
         </div>
