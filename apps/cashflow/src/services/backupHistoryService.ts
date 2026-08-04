@@ -7,62 +7,66 @@ import { branchService } from "./branchService";
 import { bankAccountService } from "./bankAccountService";
 
 export class BackupHistoryService extends BaseService {
-  static async restoreCustomers(customers: any[]) {
+  static async restoreCustomers(customers: Record<string, unknown>[]) {
     for (const customer of customers) {
       try {
-        const { data: existing } = await customerService.getCustomerById(customer.id);
+        const id = String(customer.id ?? "");
+        const { data: existing } = await customerService.getCustomerById(id);
         if (existing) {
-          await customerService.updateCustomer(customer.id, customer);
+          await customerService.updateCustomer(id, customer);
         } else {
           await customerService.createCustomer(customer);
         }
       } catch (error) {
-        console.error(`Failed to restore customer ${customer.id}:`, error);
+        console.error(`Failed to restore customer ${String(customer.id ?? "")}:`, error);
       }
     }
   }
 
-  static async restoreTransactions(transactions: any[]) {
+  static async restoreTransactions(transactions: Record<string, unknown>[]) {
     for (const transaction of transactions) {
       try {
-        const { data: existing } = await transactionService.getTransactionById(transaction.id);
+        const id = String(transaction.id ?? "");
+        const { data: existing } = await transactionService.getTransactionById(id);
         if (existing) {
-          await transactionService.updateTransaction(transaction.id, transaction);
+          await transactionService.updateTransaction(id, transaction);
         } else {
           await transactionService.createTransaction(transaction);
         }
       } catch (error) {
-        console.error(`Failed to restore transaction ${transaction.id}:`, error);
+        console.error(`Failed to restore transaction ${String(transaction.id ?? "")}:`, error);
       }
     }
   }
 
-  static async restoreBranches(branches: any[]) {
+  static async restoreBranches(branches: Record<string, unknown>[]) {
     for (const branch of branches) {
       try {
-        const { data: existing } = await branchService.getBranchById(branch.id);
+        const id = String(branch.id ?? "");
+        const { data: existing } = await branchService.getBranchById(id);
         if (existing) {
-          console.log(`Branch ${branch.id} already exists, skipping`);
+          console.log(`Branch ${id} already exists, skipping`);
         } else {
-          console.log(`Creating branch ${branch.id}`);
+          console.log(`Creating branch ${id}`);
         }
       } catch (error) {
-        console.error(`Failed to restore branch ${branch.id}:`, error);
+        console.error(`Failed to restore branch ${String(branch.id ?? "")}:`, error);
       }
     }
   }
 
-  static async restoreBankAccounts(bankAccounts: any[]) {
+  static async restoreBankAccounts(bankAccounts: Record<string, unknown>[]) {
     for (const bankAccount of bankAccounts) {
       try {
-        const { data: existing } = await bankAccountService.getBankAccount(bankAccount.id);
+        const id = String(bankAccount.id ?? "");
+        const { data: existing } = await bankAccountService.getBankAccount(id);
         if (existing) {
-          console.log(`Bank account ${bankAccount.id} already exists, skipping`);
+          console.log(`Bank account ${id} already exists, skipping`);
         } else {
-          console.log(`Creating bank account ${bankAccount.id}`);
+          console.log(`Creating bank account ${id}`);
         }
       } catch (error) {
-        console.error(`Failed to restore bank account ${bankAccount.id}:`, error);
+        console.error(`Failed to restore bank account ${String(bankAccount.id ?? "")}:`, error);
       }
     }
   }
@@ -77,7 +81,7 @@ export class BackupHistoryService extends BaseService {
           .order("backup_timestamp", { ascending: false });
         
         if (backups && backups.length > 30) {
-          const toDelete = backups.slice(30).map((b: any) => b.id);
+          const toDelete = backups.slice(30).map((b) => String(b.id ?? ""));
           await apiClient.from("backup_history").delete().in("id", toDelete);
         }
         return { data: null, error: null };
@@ -95,10 +99,10 @@ export class BackupHistoryService extends BaseService {
         return { data: data || [], error };
       },
       async () => {
-        let data = trialGet("backup_history") || [];
-        if (companyId) data = data.filter((b: any) => b.company_id === companyId);
-        if (userId) data = data.filter((b: any) => b.created_by === userId);
-        data.sort((a: any, b: any) => new Date(b.backup_timestamp).getTime() - new Date(a.backup_timestamp).getTime());
+        let data = (trialGet("backup_history") || []) as Record<string, unknown>[];
+        if (companyId) data = data.filter((b) => b.company_id === companyId);
+        if (userId) data = data.filter((b) => b.created_by === userId);
+        data.sort((a, b) => new Date(String(b.backup_timestamp ?? "")).getTime() - new Date(String(a.backup_timestamp ?? "")).getTime());
         return { data, error: null };
       }
     );
