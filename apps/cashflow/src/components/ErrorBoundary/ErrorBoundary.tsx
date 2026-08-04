@@ -101,7 +101,7 @@ class ErrorBoundaryClass extends Component<
               </button>
             </div>
 
-            {process.env.NODE_ENV === "development" && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <div className="mt-8">
                 <details className="bg-gray-100 rounded-lg p-4">
                   <summary className="cursor-pointer font-medium text-gray-900 mb-2">
