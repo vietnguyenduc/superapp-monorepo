@@ -14,6 +14,11 @@ node_modules
 
 # Testing
 coverage
+test-results/
+
+# Temporary agent scripts
+.tmp-*.mjs
+*.tmp.mjs
 
 # Turbo
 .turbo

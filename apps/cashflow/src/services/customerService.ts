@@ -391,7 +391,9 @@ export class CustomerService extends BaseService {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
 
-        const companyIdCheck = typeof customerData.company_id === "string" ? customerData.company_id : null;
+        // Fetch the existing row to know its tenant. We never trust the user payload for company_id.
+        const { data: existingCustomer } = await apiClient.from("customers").select("company_id").eq("id", id).single();
+        const companyIdCheck = (existingCustomer as Record<string, unknown> | null)?.company_id as string | null | undefined;
 
         const updatePayload: Record<string, unknown> = {
           ...customerData,
@@ -420,7 +422,8 @@ export class CustomerService extends BaseService {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
 
-        const companyIdCheck = typeof customerData.company_id === "string" ? customerData.company_id : null;
+        const existingCustomer = ((trialGet("customers") || []) as Customer[]).find((c) => c.id === id);
+        const companyIdCheck = existingCustomer?.company_id;
 
         const updatePayload: Record<string, unknown> = {
           ...customerData,
