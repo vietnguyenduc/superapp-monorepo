@@ -326,7 +326,7 @@ export class DashboardService extends BaseService {
     const customersAll: Customer[] = (custResult.data || []) as Customer[];
     const balanceMap = new Map<string, number>();
     for (const c of customersAll) {
-      balanceMap.set(c.id, parseAmount(c.total_balance));
+      balanceMap.set(c.id, parseAmount(c.opening_balance));
     }
     const applyTxToMap = (txs: Transaction[]) => {
       for (const tx of txs) {
@@ -335,9 +335,9 @@ export class DashboardService extends BaseService {
         const amtSigned = parseAmount(tx.amount);
         const amtAbs = Math.abs(amtSigned);
         switch (normalizeTransactionType(String(tx.transaction_type || ""))) {
-          case "payment": balanceMap.set(tx.customer_id, prev - amtAbs); break;
-          case "charge": balanceMap.set(tx.customer_id, prev + amtAbs); break;
-          case "refund": balanceMap.set(tx.customer_id, prev - amtAbs); break;
+          case "payment": balanceMap.set(tx.customer_id, prev + amtAbs); break;
+          case "charge": balanceMap.set(tx.customer_id, prev - amtAbs); break;
+          case "refund": balanceMap.set(tx.customer_id, prev + amtAbs); break;
           case "adjustment": balanceMap.set(tx.customer_id, prev + amtSigned); break;
           default: balanceMap.set(tx.customer_id, prev + amtSigned); break;
         }
@@ -348,16 +348,19 @@ export class DashboardService extends BaseService {
     const outstanding = Array.from(balanceMap.values()).reduce((s, v) => s + v, 0);
 
     const prevBalanceMap = new Map(balanceMap);
-    prevBalanceMap.forEach((_, k) => prevBalanceMap.set(k, parseAmount(customersAll.find(c => c.id === k)?.total_balance)));
+    prevBalanceMap.forEach((_, k) => {
+      const cust = customersAll.find(c => c.id === k);
+      prevBalanceMap.set(k, parseAmount(cust?.opening_balance));
+    });
     for (const tx of transactions.filter((t) => new Date(t.transaction_date) <= prevEnd)) {
       if (!tx.customer_id) continue;
       const prev = prevBalanceMap.get(tx.customer_id) || 0;
       const amtSigned = parseAmount(tx.amount);
       const amtAbs = Math.abs(amtSigned);
       const type = normalizeTransactionType(String(tx.transaction_type || ""));
-      if (type === "payment") prevBalanceMap.set(tx.customer_id, prev - amtAbs);
-      else if (type === "charge") prevBalanceMap.set(tx.customer_id, prev + amtAbs);
-      else if (type === "refund") prevBalanceMap.set(tx.customer_id, prev - amtAbs);
+      if (type === "payment") prevBalanceMap.set(tx.customer_id, prev + amtAbs);
+      else if (type === "charge") prevBalanceMap.set(tx.customer_id, prev - amtAbs);
+      else if (type === "refund") prevBalanceMap.set(tx.customer_id, prev + amtAbs);
       else prevBalanceMap.set(tx.customer_id, prev + amtSigned);
     }
     const prevOutstanding = Array.from(prevBalanceMap.values()).reduce((s, v) => s + v, 0);
@@ -391,7 +394,7 @@ export class DashboardService extends BaseService {
 
     const balanceByBankAccount = balanceByBankAccountAll.slice().sort((a, b) => a.balance - b.balance).slice(Math.min(2, balanceByBankAccountAll.length));
 
-    const customersWithBalance = customersAll.map((c) => ({ ...c, total_balance: balanceMap.get(c.id) ?? c.total_balance }));
+    const customersWithBalance = customersAll.map((c) => ({ ...c, total_balance: balanceMap.get(c.id) ?? c.current_balance ?? c.total_balance }));
     const debtCustomers = customersWithBalance.filter((c) => c.total_balance < 0).sort((a, b) => a.total_balance - b.total_balance);
     const creditCustomers = customersWithBalance.filter((c) => c.total_balance >= 0).sort((a, b) => b.total_balance - a.total_balance);
     const topCustomers = [...debtCustomers, ...creditCustomers];
@@ -443,13 +446,15 @@ export class DashboardService extends BaseService {
       return { transactions: mockTransactions, branches: mockBranches };
     }
 
-    const [txResult, branchResult] = await Promise.all([
+    const [txResult, branchResult, custResult] = await Promise.all([
       apiClient.from("transactions").select("*").order("transaction_date", { ascending: false }),
       apiClient.from("branches").select("id, name"),
+      apiClient.from("customers").select("*"),
     ]);
 
     const transactionsAll: Transaction[] = (txResult.data || []) as Transaction[];
     const transactions = branchId ? transactionsAll.filter((t: any) => t.branch_id === branchId) : transactionsAll;
+    const customersAll = (custResult.data || []) as Customer[];
 
     const count = timeRange === "day" ? rangeCount?.day || 7 : timeRange === "week" ? rangeCount?.week || 8 : timeRange === "month" ? rangeCount?.month || 7 : timeRange === "quarter" ? rangeCount?.quarter || 8 : 2;
     const { start, end } = getPeriodWindow(timeRange, count);
@@ -458,7 +463,10 @@ export class DashboardService extends BaseService {
     const periodEnd = end;
 
     const txBeforeStart = transactions.filter((t) => new Date(t.transaction_date).getTime() < periodStart.getTime());
-    const openingBalance = receivableBalanceFromTransactions(txBeforeStart);
+    const openingBalanceFromCustomers = customersAll
+      .filter((c) => !branchId || c.branch_id === branchId)
+      .reduce((sum, c) => sum + parseAmount(c.opening_balance), 0);
+    const openingBalance = openingBalanceFromCustomers + receivableBalanceFromTransactions(txBeforeStart);
 
     const txInPeriod = transactions.filter((t) => {
       const ts = new Date(t.transaction_date).getTime();
@@ -467,6 +475,7 @@ export class DashboardService extends BaseService {
 
     const branches = (branchResult.data || []) as { id: string; name: string }[];
     const branchNameMap = new Map(branches.map((b) => [b.id, b.name] as const));
+    const customerNameMap = new Map(customersAll.map((c) => [c.id, c.full_name || c.customer_code || c.id] as const));
 
     const rowEffect = (t: Transaction) => {
       if (t.transaction_type === "charge") return -Math.abs(t.amount);
@@ -495,7 +504,7 @@ export class DashboardService extends BaseService {
       runningBalance += delta;
       return {
         transaction_date: t.transaction_date, transaction_code: t.transaction_code, customer_id: t.customer_id,
-        customer_name: t.customer_name, branch_id: t.branch_id, branch_name: t.branch_id ? (branchNameMap.get(t.branch_id) || `Branch ${t.branch_id}`) : "",
+        customer_name: customerNameMap.get(t.customer_id || "") || t.customer_name || "", branch_id: t.branch_id, branch_name: t.branch_id ? (branchNameMap.get(t.branch_id) || `Branch ${t.branch_id}`) : "",
         bank_account_id: t.bank_account_id, bank_account_name: t.bank_account_name, transaction_type: t.transaction_type,
         description: t.description || "", reference_number: t.reference_number || "", increase: rowIncrease(t),
         decrease: rowDecrease(t), delta, running_balance: runningBalance,

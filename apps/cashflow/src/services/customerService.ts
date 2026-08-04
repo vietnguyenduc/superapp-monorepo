@@ -4,6 +4,93 @@ import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from ".
 import { validateCustomerData, transformRawCustomer } from "./businessLogic";
 import { normalizeTransactionType, parseAmount } from "./businessLogic";
 
+function appendToNotes(payload: any, extra: string) {
+  if (!extra) return;
+  const existing = payload.notes ? String(payload.notes) : "";
+  payload.notes = existing ? `${existing}\n${extra}` : extra;
+}
+
+function sanitizeCustomerPayload(payload: any, colsToRemove: string[]) {
+  const copy = { ...payload };
+  const removedParts: string[] = [];
+  for (const col of colsToRemove) {
+    if (col in copy) {
+      const val = copy[col];
+      if (val !== undefined && val !== null && val !== "") {
+        removedParts.push(`${col}: ${val}`);
+      }
+      delete copy[col];
+    }
+  }
+  if (removedParts.length > 0) {
+    appendToNotes(copy, removedParts.join("; "));
+  }
+  return copy;
+}
+
+function parseMissingColumn(error: any): string | null {
+  const message = error?.message || error?.details || error?.hint || String(error || "");
+  const patterns = [
+    /could not find the '([^']+)' column of 'customers' in the schema cache/i,
+    /column "([^"]+)" of relation "customers" does not exist/i,
+    /Could not find a column with the name '([^']+)'/i,
+    /column "([^"]+)" does not exist/i,
+  ];
+  for (const re of patterns) {
+    const m = message.match(re);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+async function insertCustomerWithFallback(payload: any) {
+  const attempt = async (removed: string[]) => {
+    const sanitized = sanitizeCustomerPayload(payload, removed);
+    return apiClient.from("customers").insert(sanitized as any).select().single();
+  };
+  const removed: string[] = [];
+  for (let i = 0; i < 10; i++) {
+    const res = await attempt(removed);
+    if (!res.error) return res;
+    const missing = parseMissingColumn(res.error);
+    if (!missing || removed.includes(missing)) return res;
+    removed.push(missing);
+  }
+  return attempt(removed);
+}
+
+async function bulkInsertCustomersWithFallback(payloads: any[]) {
+  const attempt = async (removed: string[]) => {
+    const sanitized = payloads.map((p) => sanitizeCustomerPayload(p, removed));
+    return apiClient.from("customers").insert(sanitized as any).select();
+  };
+  const removed: string[] = [];
+  for (let i = 0; i < 10; i++) {
+    const res = await attempt(removed);
+    if (!res.error) return res;
+    const missing = parseMissingColumn(res.error);
+    if (!missing || removed.includes(missing)) return res;
+    removed.push(missing);
+  }
+  return attempt(removed);
+}
+
+async function updateCustomerWithFallback(id: string, payload: any) {
+  const attempt = async (removed: string[]) => {
+    const sanitized = sanitizeCustomerPayload(payload, removed);
+    return apiClient.from("customers").update(sanitized as any).eq("id", id).select().single();
+  };
+  const removed: string[] = [];
+  for (let i = 0; i < 10; i++) {
+    const res = await attempt(removed);
+    if (!res.error) return res;
+    const missing = parseMissingColumn(res.error);
+    if (!missing || removed.includes(missing)) return res;
+    removed.push(missing);
+  }
+  return attempt(removed);
+}
+
 export class CustomerService extends BaseService {
   static async getCustomers(filters?: any) {
     return this.execute(
@@ -141,9 +228,9 @@ export class CustomerService extends BaseService {
             const amtAbs = Math.abs(amtSigned);
             const type = normalizeTransactionType(String(tx.transaction_type || ""));
             
-            if (type === "payment") calculatedBalance -= amtAbs;
-            else if (type === "charge") calculatedBalance += amtAbs;
-            else if (type === "refund") calculatedBalance -= amtAbs;
+            if (type === "payment") calculatedBalance += amtAbs;
+            else if (type === "charge") calculatedBalance -= amtAbs;
+            else if (type === "refund") calculatedBalance += amtAbs;
             else calculatedBalance += amtSigned;
           }
         }
@@ -174,9 +261,9 @@ export class CustomerService extends BaseService {
           const amtAbs = Math.abs(amtSigned);
           const type = normalizeTransactionType(String(tx.transaction_type || ""));
           
-          if (type === "payment") calculatedBalance -= amtAbs;
-          else if (type === "charge") calculatedBalance += amtAbs;
-          else if (type === "refund") calculatedBalance -= amtAbs;
+          if (type === "payment") calculatedBalance += amtAbs;
+          else if (type === "charge") calculatedBalance -= amtAbs;
+          else if (type === "refund") calculatedBalance += amtAbs;
           else calculatedBalance += amtSigned;
         }
         
@@ -211,7 +298,7 @@ export class CustomerService extends BaseService {
           }
         }
         
-        const { data, error } = await apiClient.from("customers").insert(transformed as any).select().single();
+        const { data, error } = await insertCustomerWithFallback(transformed);
         return { data, error };
       },
       async () => {
@@ -301,7 +388,7 @@ export class CustomerService extends BaseService {
 
         // Batch insert
         const insertPayload = validRows.map((r) => r.transformed);
-        const { data, error } = await apiClient.from("customers").insert(insertPayload as any).select();
+        const { data, error } = await bulkInsertCustomersWithFallback(insertPayload);
 
         if (error) {
           return { data: null, error, errors, skipped };
@@ -409,7 +496,7 @@ export class CustomerService extends BaseService {
           }
         }
         
-        const { data, error } = await apiClient.from("customers").update(transformed as any).eq("id", id).select().single();
+        const { data, error } = await updateCustomerWithFallback(id, transformed);
         return { data, error };
       },
       async () => {
