@@ -94,6 +94,7 @@ apps/superapp-business-bot/scraper/storage/refined_data/
 # Re-include apps/ and docs/ (matched by [0-9a-f]*/ because "a" and "d" are hex chars)
 !apps/
 !apps/**
+apps/*/node_modules/
 !docs/
 !docs/**
 # Re-include shared-utils api-client directory (starts with "a")
