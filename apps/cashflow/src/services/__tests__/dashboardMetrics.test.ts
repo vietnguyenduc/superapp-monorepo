@@ -1,4 +1,4 @@
-﻿﻿﻿import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { databaseService } from "../database";
 
 // Mock trialMockStore to force trial mode (localStorage-based data path)

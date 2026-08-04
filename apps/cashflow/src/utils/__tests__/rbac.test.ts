@@ -14,6 +14,7 @@ import {
   ROLE_HIERARCHY,
 } from "../rbac";
 import type { UserRole } from "../../types";
+import { render } from "@testing-library/react";
 
 describe("RBAC Utils", () => {
   describe("hasPermission", () => {
@@ -299,7 +300,7 @@ describe("RBAC Utils", () => {
       ]);
 
       const user = { role: "admin_master" as UserRole };
-      const { render } = require("@testing-library/react");
+      
       render(React.createElement(ProtectedComponent, { user }));
 
       expect(TestComponent).toHaveBeenCalledWith({ user }, {});
@@ -313,7 +314,7 @@ describe("RBAC Utils", () => {
       );
 
       const user = { role: "staff" as UserRole };
-      const { render } = require("@testing-library/react");
+      
       render(React.createElement(ProtectedComponent, { user }));
 
       expect(TestComponent).not.toHaveBeenCalled();
@@ -326,7 +327,7 @@ describe("RBAC Utils", () => {
       ]);
 
       const user = { role: "staff" as UserRole };
-      const { render } = require("@testing-library/react");
+      
       const { container } = render(
         React.createElement(ProtectedComponent, { user }),
       );
@@ -342,7 +343,7 @@ describe("RBAC Utils", () => {
         FallbackComponent,
       );
 
-      const { render } = require("@testing-library/react");
+      
       render(React.createElement(ProtectedComponent));
 
       expect(TestComponent).not.toHaveBeenCalled();

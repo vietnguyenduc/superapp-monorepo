@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿import {
+import {
   parseTransactionData,
   validateTransactionData,
   convertToTransactions,
