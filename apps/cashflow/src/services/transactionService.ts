@@ -1,7 +1,8 @@
 import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
-import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
+import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 import { validateTransactionData, transformRawTransaction, parseAmount, normalizeTransactionType } from "./businessLogic";
+import { updateWithFallback, insertWithFallback, bulkInsertWithFallback } from "./updateHelpers";
 import { v4 as uuid } from "uuid";
 
 // Mock helper to get current ISO string
@@ -158,8 +159,8 @@ export class TransactionService extends BaseService {
         const validation = validateTransactionData(transactionData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
         
-        const transformed = transformRawTransaction(transactionData, true);
-        const { data, error } = await apiClient.from("transactions").insert(transformed as any).select().single();
+        const transformed = transformRawTransaction(transactionData, true) as Record<string, unknown>;
+        const { data, error } = await insertWithFallback("transactions", transformed);
         return { data, error };
       },
       async () => {
@@ -173,22 +174,34 @@ export class TransactionService extends BaseService {
     );
   }
 
-  static async updateTransaction(id: string, transactionData: any) {
+  static async updateTransaction(id: string, transactionData: Record<string, unknown>) {
     return this.execute(
       async () => {
         const validation = validateTransactionData(transactionData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawTransaction(transactionData, true);
-        const { data, error } = await apiClient.from("transactions").update(transformed as any).eq("id", id).select().single();
+
+        const updatePayload: Record<string, unknown> = {
+          ...transactionData,
+          updated_at: getNowIso(),
+        };
+        delete updatePayload.id;
+        delete updatePayload.created_at;
+
+        const { data, error } = await updateWithFallback("transactions", id, updatePayload);
         return { data, error };
       },
       async () => {
         const validation = validateTransactionData(transactionData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawTransaction(transactionData, false);
-        const result = trialUpdate("transactions", id, transformed);
+
+        const updatePayload: Record<string, unknown> = {
+          ...transactionData,
+          updated_at: getNowIso(),
+        };
+        delete updatePayload.id;
+        delete updatePayload.created_at;
+
+        const result = trialUpdate("transactions", id, updatePayload);
         return { data: result, error: null };
       }
     );
@@ -307,7 +320,7 @@ export class TransactionService extends BaseService {
           };
         });
 
-        const { data, error } = await apiClient.from("transactions").insert(body as any).select();
+        const { data, error } = await bulkInsertWithFallback("transactions", body as Record<string, unknown>[]);
         return { data: data || [], error };
       },
       async () => {

@@ -1,7 +1,8 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase , apiClient} from "./supabase";
-import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
+import { apiClient } from "./supabase";
+import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 import { validateBranchData, transformRawBranch } from "./businessLogic";
+import { insertWithFallback, updateWithFallback } from "./updateHelpers";
 
 export class BranchService extends BaseService {
   static async getBranches(companyId?: string) {
@@ -36,30 +37,42 @@ export class BranchService extends BaseService {
     );
   }
 
-  static async upsertBranch(payload: Partial<Record<string, any>>) {
+  static async upsertBranch(payload: Record<string, unknown>) {
     return this.execute(
       async () => {
         const validation = validateBranchData(payload);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawBranch(payload, true);
+
         if (payload.id) {
-          const { data, error } = await apiClient.from("branches").update(transformed as any).eq("id", payload.id).select().single();
+          const updatePayload: Record<string, unknown> = {
+            ...payload,
+            updated_at: new Date().toISOString(),
+          };
+          delete updatePayload.id;
+          delete updatePayload.created_at;
+          const { data, error } = await updateWithFallback("branches", String(payload.id), updatePayload);
           return { data, error };
         } else {
-          const { data, error } = await apiClient.from("branches").insert(transformed as any).select().single();
+          const transformed = transformRawBranch(payload, true) as Record<string, unknown>;
+          const { data, error } = await insertWithFallback("branches", transformed);
           return { data, error };
         }
       },
       async () => {
         const validation = validateBranchData(payload);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawBranch(payload, false);
+
         if (payload.id) {
-          const result = trialUpdate("branches", payload.id, transformed);
+          const updatePayload: Record<string, unknown> = {
+            ...payload,
+            updated_at: new Date().toISOString(),
+          };
+          delete updatePayload.id;
+          delete updatePayload.created_at;
+          const result = trialUpdate("branches", String(payload.id), updatePayload);
           return { data: result, error: null };
         } else {
+          const transformed = transformRawBranch(payload, false) as Record<string, unknown>;
           const result = trialInsert("branches", transformed);
           return { data: result, error: null };
         }

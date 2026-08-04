@@ -15,10 +15,6 @@ function inputFor(page: Page, label: string) {
   return page.locator(`label:has-text("${label}") + input`);
 }
 
-function selectFor(page: Page, label: string) {
-  return page.locator(`label:has-text("${label}") + select`);
-}
-
 function datalistFor(page: Page, label: string) {
   return page.locator(`label:has-text("${label}") + input[list]`);
 }
@@ -94,7 +90,7 @@ test.describe("Trial mode create flows", () => {
       if (!raw) return null;
       const store = JSON.parse(raw);
       const txs = store.transactions || [];
-      return txs.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+      return txs.sort((a: { created_at: string }, b: { created_at: string }) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
     });
 
     expect(lastTx).toBeTruthy();

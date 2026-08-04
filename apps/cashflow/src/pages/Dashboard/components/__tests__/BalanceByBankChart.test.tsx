@@ -1,43 +1,57 @@
-﻿import React from "react";
+import React from "react";
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import BalanceByBankChart from "../BalanceByBankChart";
 
-vi.mock("recharts", async () => {
-  const actual = await vi.importActual<any>("recharts");
+// Loose props shape used by the mocked Recharts components.
+interface MockChartProps {
+  children?: React.ReactNode;
+  data?: Record<string, unknown>[];
+  dataKey?: string;
+  __data?: Record<string, unknown>[];
+  formatter?: (value: unknown) => unknown;
+  value?: unknown;
+}
 
-  const BarChart = ({ children, data }: any) => (
+vi.mock("recharts", async () => {
+  const actual = await vi.importActual<Record<string, unknown>>("recharts");
+
+  const BarChart: React.FC<MockChartProps> = ({ children, data }) => (
     <div data-testid="barchart">
       {React.Children.map(children, (child) =>
-        React.isValidElement(child)
-          ? React.cloneElement(child as React.ReactElement<any>, { __data: data })
+        React.isValidElement<MockChartProps>(child)
+          ? React.cloneElement(child, { __data: data })
           : child,
       )}
     </div>
   );
 
-  const Bar = ({ children, dataKey, __data }: any) => (
+  const Bar: React.FC<MockChartProps> = ({ children, dataKey, __data }) => (
     <div data-testid="bar">
       {React.Children.map(children, (child) =>
-        React.isValidElement(child)
-          ? React.cloneElement(child as React.ReactElement<any>, {
-              value: __data?.[0]?.[dataKey],
+        React.isValidElement<MockChartProps>(child)
+          ? React.cloneElement(child, {
+              value:
+                __data && __data[0] ? __data[0][dataKey ?? ""] : undefined,
             })
           : child,
       )}
     </div>
   );
 
-  const LabelList = ({ formatter, value }: any) => (
+  const LabelList: React.FC<MockChartProps> = ({ formatter, value }) => (
     <span>{formatter ? formatter(value) : value}</span>
   );
 
-  const Noop = () => null;
+  const Noop: React.FC = () => null;
 
   return {
     ...actual,
-    ResponsiveContainer: ({ children }: { children: React.ReactElement }) =>
-      React.cloneElement(children, { width: 600, height: 300 }),
+    ResponsiveContainer: ({
+      children,
+    }: {
+      children: React.ReactElement;
+    }) => React.cloneElement(children, { width: 600, height: 300 }),
     BarChart,
     Bar,
     LabelList,

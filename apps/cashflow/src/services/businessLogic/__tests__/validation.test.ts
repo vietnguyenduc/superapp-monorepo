@@ -80,7 +80,8 @@ describe('validateTransactionData', () => {
   });
 
   it('rejects missing amount', () => {
-    const { amount, ...rest } = base;
+    const rest = { ...base };
+    delete (rest as Record<string, unknown>).amount;
     const result = validateTransactionData(rest);
     expect(result.isValid).toBe(false);
     expect(result.errors).toContain('amount is required and must be a valid number');

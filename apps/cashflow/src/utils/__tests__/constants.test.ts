@@ -35,7 +35,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (API_CONFIG as any).TIMEOUT = 50000;
+        (API_CONFIG as unknown as Record<string, unknown>).TIMEOUT = 50000;
       }).not.toThrow();
     });
   });
@@ -55,7 +55,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (PAGINATION as any).DEFAULT_PAGE_SIZE = 50;
+        (PAGINATION as unknown as Record<string, unknown>).DEFAULT_PAGE_SIZE = 50;
       }).not.toThrow();
     });
   });
@@ -81,7 +81,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (FILE_UPLOAD as any).MAX_FILE_SIZE = 5 * 1024 * 1024;
+        (FILE_UPLOAD as unknown as Record<string, unknown>).MAX_FILE_SIZE = 5 * 1024 * 1024;
       }).not.toThrow();
     });
   });
@@ -124,7 +124,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (VALIDATION_RULES as any).EMAIL.required = false;
+        (VALIDATION_RULES as unknown as Record<string, unknown>).EMAIL.required = false;
       }).not.toThrow();
     });
   });
@@ -139,7 +139,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (TRANSACTION_TYPES as any).PAYMENT = "new_payment";
+        (TRANSACTION_TYPES as unknown as Record<string, unknown>).PAYMENT = "new_payment";
       }).not.toThrow();
     });
   });
@@ -153,7 +153,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (USER_ROLES as any).ADMIN = "super_admin";
+        (USER_ROLES as unknown as Record<string, unknown>).ADMIN = "super_admin";
       }).not.toThrow();
     });
   });
@@ -166,7 +166,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (STATUS as any).ACTIVE = false;
+        (STATUS as unknown as Record<string, unknown>).ACTIVE = false;
       }).not.toThrow();
     });
   });
@@ -181,7 +181,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (DATE_FORMATS as any).DISPLAY = "MM/dd/yyyy";
+        (DATE_FORMATS as unknown as Record<string, unknown>).DISPLAY = "MM/dd/yyyy";
       }).not.toThrow();
     });
   });
@@ -198,7 +198,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (CURRENCY as any).DEFAULT = "EUR";
+        (CURRENCY as unknown as Record<string, unknown>).DEFAULT = "EUR";
       }).not.toThrow();
     });
   });
@@ -213,7 +213,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (STORAGE_KEYS as any).AUTH_TOKEN = "new_auth_token";
+        (STORAGE_KEYS as unknown as Record<string, unknown>).AUTH_TOKEN = "new_auth_token";
       }).not.toThrow();
     });
   });
@@ -232,7 +232,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (ROUTES as any).HOME = "/home";
+        (ROUTES as unknown as Record<string, unknown>).HOME = "/home";
       }).not.toThrow();
     });
   });
@@ -275,7 +275,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (ERROR_MESSAGES as any).NETWORK_ERROR = "Custom network error";
+        (ERROR_MESSAGES as unknown as Record<string, unknown>).NETWORK_ERROR = "Custom network error";
       }).not.toThrow();
     });
   });
@@ -302,7 +302,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (SUCCESS_MESSAGES as any).DATA_SAVED = "Custom success message";
+        (SUCCESS_MESSAGES as unknown as Record<string, unknown>).DATA_SAVED = "Custom success message";
       }).not.toThrow();
     });
   });
@@ -316,7 +316,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (NOTIFICATION_DURATION as any).SHORT = 2000;
+        (NOTIFICATION_DURATION as unknown as Record<string, unknown>).SHORT = 2000;
       }).not.toThrow();
     });
   });
@@ -340,7 +340,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (CHART_COLORS as any).PRIMARY = "#000000";
+        (CHART_COLORS as unknown as Record<string, unknown>).PRIMARY = "#000000";
       }).not.toThrow();
     });
   });
@@ -354,7 +354,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (TABLE_CONFIG as any).DEFAULT_PAGE_SIZE = 50;
+        (TABLE_CONFIG as unknown as Record<string, unknown>).DEFAULT_PAGE_SIZE = 50;
       }).not.toThrow();
     });
   });
@@ -368,7 +368,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (EXPORT_CONFIG as any).DEFAULT_FORMAT = "csv";
+        (EXPORT_CONFIG as unknown as Record<string, unknown>).DEFAULT_FORMAT = "csv";
       }).not.toThrow();
     });
   });
@@ -382,7 +382,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (SEARCH_CONFIG as any).MIN_SEARCH_LENGTH = 3;
+        (SEARCH_CONFIG as unknown as Record<string, unknown>).MIN_SEARCH_LENGTH = 3;
       }).not.toThrow();
     });
   });
@@ -405,7 +405,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (BREAKPOINTS as any).SM = 600;
+        (BREAKPOINTS as unknown as Record<string, unknown>).SM = 600;
       }).not.toThrow();
     });
   });
@@ -428,7 +428,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (ANIMATION_DURATION as any).FAST = 100;
+        (ANIMATION_DURATION as unknown as Record<string, unknown>).FAST = 100;
       }).not.toThrow();
     });
   });
@@ -452,7 +452,7 @@ describe("Constants", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (Z_INDEX as any).DROPDOWN = 999;
+        (Z_INDEX as unknown as Record<string, unknown>).DROPDOWN = 999;
       }).not.toThrow();
     });
   });
