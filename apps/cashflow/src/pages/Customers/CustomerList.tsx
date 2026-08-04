@@ -21,7 +21,7 @@ import {
 import Pagination from "../../components/UI/Pagination";
 import Button from "../../components/UI/Button";
 import PageHeader from "../../components/UI/PageHeader";
-import { formatCurrency, getBalanceColor } from "../../utils/formatting";
+import { formatCurrency, formatCompactCurrency, getBalanceColor } from "../../utils/formatting";
 
 interface CustomerListState {
   customers: Customer[];
@@ -318,6 +318,10 @@ const CustomerList: React.FC = () => {
     setState((prev) => ({ ...prev, currentPage: page }));
   }, []);
 
+  const handlePageSizeChange = useCallback((pageSize: number) => {
+    setState((prev) => ({ ...prev, pageSize, currentPage: 1 }));
+  }, []);
+
   // Handle customer selection
   const handleCustomerSelect = useCallback((customer: Customer) => {
     setState((prev) => ({
@@ -516,12 +520,12 @@ const CustomerList: React.FC = () => {
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">
               Bộ lọc khách hàng
             </h3>
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-2 text-sm" title={formatCurrency(state.totalBalance)}>
               <span className="text-gray-500 dark:text-gray-400">
                 {t("customers.totalDebt", "Tổng công nợ")} ({paginationInfo.total.toLocaleString("vi-VN")} {t("customers.customersCount", "khách hàng")}):
               </span>
               <span className={`font-semibold ${getBalanceColor(state.totalBalance)}`}>
-                {formatCurrency(state.totalBalance)}
+                {formatCompactCurrency(state.totalBalance)}
               </span>
             </div>
           </div>
@@ -537,6 +541,16 @@ const CustomerList: React.FC = () => {
                 onDateRangeChange={handleDateRangeChange}
               />
               <div className="flex items-center gap-2">
+                <select
+                  value={state.pageSize}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                  className="block rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 py-2 pl-2 pr-8"
+                  aria-label="Số dòng hiển thị"
+                >
+                  {[10, 20, 50, 100].map((size) => (
+                    <option key={size} value={size}>{size} dòng</option>
+                  ))}
+                </select>
                 <ColumnVisibilityDropdown
                   columns={allColumnOptions}
                   visibleColumns={state.visibleColumns}
@@ -591,7 +605,7 @@ const CustomerList: React.FC = () => {
 
           {/* Pagination */}
           {state.totalCount > state.pageSize && (
-            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-600">
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-600 sticky bottom-0 z-20 bg-white/95 dark:bg-gray-800/95 backdrop-blur">
               <Pagination
                 currentPage={state.currentPage}
                 totalPages={Math.ceil(state.totalCount / state.pageSize)}

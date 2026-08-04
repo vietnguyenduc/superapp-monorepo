@@ -163,7 +163,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   return (
     <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
       <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
-        <thead className="bg-gray-50 dark:bg-gray-700">
+        <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
           <tr>
             <th
               scope="col"
