@@ -11,6 +11,8 @@ import {
   LabelList,
   AreaChart,
   Area,
+  type TooltipProps,
+  type BarProps,
 } from "recharts";
 import { formatCurrency } from "../../../utils/formatting";
 
@@ -92,14 +94,14 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
   });
 
   // Custom tooltip with mini chart
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
     if (active && payload && payload.length && payload[0] && payload[0].payload) {
-      const tooltipData = payload[0].payload;
+      const tooltipData = payload[0].payload as typeof chartData[number];
       const value = payload[0].value || 0;
       const trendChange = tooltipData.trendChange || 0;
       const historicalData = tooltipData.historicalData || [];
       
-      const miniChartData = historicalData.map((item: any) => ({
+      const miniChartData = historicalData.map((item: { date: string; balance: number }) => ({
         name: item.date,
         value: item.balance
       }));
@@ -140,29 +142,34 @@ const BalanceByBankChart: React.FC<BalanceByBankChartProps> = ({ data }) => {
   };
 
   // Custom bar component with conditional colors
-  const CustomBar = (props: any) => {
-    // Add null checks and default values
+  const CustomBar = (props: BarProps) => {
     const { x = 0, y = 0, width = 0, height = 0, value = 0 } = props || {};
-    const isPositive = value >= 0;
+    const isPositive = (value as number) >= 0;
 
     return (
       <rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
+        x={x as number}
+        y={y as number}
+        width={width as number}
+        height={height as number}
         fill={isPositive ? "#22c55e" : "#f97316"}
         rx={2}
       />
     );
   };
 
+  interface TickProps {
+    x: number;
+    y: number;
+    payload?: { value?: string };
+  }
+
   // Responsive X-axis tick component
-  const renderXAxisTick = (props: any) => {
+  const renderXAxisTick = (props: TickProps) => {
     const { x, y, payload } = props;
-    
+
     // Get the data for this tick
-    const tickData = (chartData.find((item) => item.name === payload.value) || {
+    const tickData = (chartData.find((item) => item.name === payload?.value) || {
       bankName: "",
       accountType: "",
       accountNumber: "",

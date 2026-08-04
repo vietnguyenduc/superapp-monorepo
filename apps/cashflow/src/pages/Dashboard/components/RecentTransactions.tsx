@@ -40,10 +40,10 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
     const loadBranches = async () => {
       const response = await databaseService.branches.getBranches(companyId);
       if (!response?.data || !isMounted) return;
-      const map = response.data.reduce((acc: Record<string, string>, branch: any) => {
-        const rawName = String(branch.name || branch.branch_name || branch.code || branch.id);
+      const map = response.data.reduce((acc: Record<string, string>, branch: Record<string, unknown>) => {
+        const rawName = String(branch.name ?? branch.branch_name ?? branch.code ?? branch.id ?? "");
         const normalizedName = rawName.replace(/Chi nhánh/gi, "Văn phòng");
-        acc[String(branch.id)] = normalizedName;
+        acc[String(branch.id ?? "")] = normalizedName;
         return acc;
       }, {} as Record<string, string>);
       if (Object.keys(map).length > 0) {
@@ -62,9 +62,9 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
       const response = await databaseService.bankAccounts.getBankAccounts(companyId);
       if (!response?.data || !isMounted) return;
       setBankAccounts(
-        response.data.map((account: any) => ({
-          id: String(account.id),
-          name: String(account.account_name || account.bank_name || account.account_number || account.id),
+        response.data.map((account: Record<string, unknown>) => ({
+          id: String(account.id ?? ""),
+          name: String(account.account_name ?? account.bank_name ?? account.account_number ?? account.id ?? ""),
         })),
       );
     };
@@ -88,9 +88,9 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
       if (!txRes?.data || !isMounted) return;
 
       const openingByAccount = new Map<string, number>();
-      accountRes?.data?.forEach((acc: any) => {
+      accountRes?.data?.forEach((acc: Record<string, unknown>) => {
         const opening = acc?.opening_balance ?? acc?.balance ?? 0;
-        openingByAccount.set(String(acc.id), Number(opening) || 0);
+        openingByAccount.set(String(acc.id ?? ""), Number(opening) || 0);
       });
 
       const all = [...txRes.data].sort(
