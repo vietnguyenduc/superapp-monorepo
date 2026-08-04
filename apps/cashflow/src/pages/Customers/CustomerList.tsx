@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import * as XLSX from "xlsx";
 import { useAuthContext as useAuth } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useDebounce } from "../../hooks/useDebounce";
@@ -19,6 +20,7 @@ import {
 import Pagination from "../../components/UI/Pagination";
 import Button from "../../components/UI/Button";
 import PageHeader from "../../components/UI/PageHeader";
+import { formatCurrency } from "../../utils/formatting";
 
 interface CustomerListState {
   customers: Customer[];
@@ -37,6 +39,8 @@ interface CustomerListState {
   formMode: "create" | "edit";
   visibleColumns: Record<string, boolean>;
   showBulkEditModal: boolean;
+  totalBalance: number;
+  allCustomers: Customer[];
 }
 
 const defaultVisibleColumns: Record<string, boolean> = {
@@ -90,6 +94,8 @@ const CustomerList: React.FC = () => {
       formMode: "create",
       visibleColumns: { ...defaultVisibleColumns, ...(savedColumns || {}) },
       showBulkEditModal: false,
+      totalBalance: 0,
+      allCustomers: [],
     };
   });
 
@@ -139,6 +145,29 @@ const CustomerList: React.FC = () => {
   useEffect(() => {
     fetchCustomers();
   }, [fetchCustomers]);
+
+  // Fetch all matching customers for total balance summary and Excel export
+  useEffect(() => {
+    const fetchAll = async () => {
+      if (!companyId) return;
+      try {
+        const result = await databaseService.customers.getCustomers({
+          company_id: companyId,
+          search: debouncedSearchTerm || undefined,
+          limit: 10000,
+          offset: 0,
+          sortBy: "created_at",
+          sortOrder: "desc",
+        });
+        const all = (result.data || []) as Customer[];
+        const total = all.reduce((sum, c) => sum + (Number((c as any).total_balance) || 0), 0);
+        setState((prev) => ({ ...prev, allCustomers: all, totalBalance: total }));
+      } catch {
+        // non-blocking: summary/export is best-effort
+      }
+    };
+    fetchAll();
+  }, [companyId, debouncedSearchTerm]);
 
   // Handle search
   const handleSearch = useCallback((searchTerm: string) => {
@@ -233,10 +262,35 @@ const CustomerList: React.FC = () => {
     }
   }, [companyId, debouncedSearchTerm, fetchCustomers]);
 
+  const handleExportExcel = useCallback(() => {
+    const rows = state.allCustomers.map((c) => ({
+      "Mã khách hàng": c.customer_code || "",
+      "Tên khách hàng": c.full_name || "",
+      "Công nợ": Number((c as any).total_balance) || 0,
+      "Giao dịch cuối": (c as any).last_transaction_date || "",
+      "ĐT": c.phone || "",
+      "Địa chỉ": c.address || "",
+      "Cách làm việc công nợ": c.working_method || "",
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Danh sách khách hàng");
+    XLSX.writeFile(wb, "danh-sach-khach-hang.xlsx");
+  }, [state.allCustomers]);
+
+  const toNum = (v: any) => {
+    const n = Number(String(v || "").replace(/\s/g, ""));
+    return Number.isFinite(n) ? n : Number.POSITIVE_INFINITY;
+  };
+
   const sortedCustomers = useMemo(() => {
     const sorted = [...state.customers];
     const direction = state.sortOrder === "asc" ? 1 : -1;
     sorted.sort((a, b) => {
+      if (state.sortBy === "customer_code") {
+        return (toNum((a as any).customer_code) - toNum((b as any).customer_code)) * direction;
+      }
+
       const aValue = (a as any)[state.sortBy];
       const bValue = (b as any)[state.sortBy];
 
@@ -486,7 +540,33 @@ const CustomerList: React.FC = () => {
                 >
                   Chỉnh tên hàng loạt
                 </Button>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={handleExportExcel}
+                >
+                  Xuất Excel
+                </Button>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Total balance summary */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6 px-6 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Tổng công nợ ({paginationInfo.total.toLocaleString("vi-VN")} khách hàng)</p>
+              <p className={`text-2xl font-bold ${state.totalBalance >= 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
+                {formatCurrency(state.totalBalance)}
+              </p>
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {t("customers.showingResults", {
+                start: paginationInfo.start,
+                end: paginationInfo.end,
+                total: paginationInfo.total,
+              })}
             </div>
           </div>
         </div>

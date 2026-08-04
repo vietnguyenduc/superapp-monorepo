@@ -12,31 +12,49 @@ export class CustomerService extends BaseService {
         if (filters?.company_id) {
           query = query.eq("company_id", filters.company_id);
         }
-        
+
         if (filters?.search) {
           const s = `%${filters.search}%`;
           query = query.or(`full_name.ilike.${s},customer_code.ilike.${s},phone.ilike.${s},email.ilike.${s}`);
         }
-        
+
+        const limit = Number.isFinite(filters?.limit) ? Number(filters.limit) : undefined;
+        const offset = Number(filters.offset || 0);
+
+        if (filters?.sortBy === "customer_code") {
+          // customer_code is text but the user expects numeric ordering.
+          // Fetch all matching rows, sort in memory, then slice to the requested page.
+          const { data, error, count } = await query.order("created_at", { ascending: false }).range(0, 9999);
+          let mappedData = (data || []).map((c: any) => ({
+            ...c,
+            total_balance: c.current_balance ?? c.total_balance ?? 0
+          }));
+          const direction = filters?.sortOrder === "asc" ? 1 : -1;
+          const toNum = (v: any) => {
+            const n = Number(String(v || "").replace(/\s/g, ""));
+            return Number.isFinite(n) ? n : Number.POSITIVE_INFINITY;
+          };
+          mappedData.sort((a: any, b: any) => (toNum(a.customer_code) - toNum(b.customer_code)) * direction);
+          if (limit !== undefined) {
+            mappedData = mappedData.slice(offset, offset + limit);
+          }
+          return { data: mappedData, error, count: count || mappedData.length };
+        }
+
         const orderColumn = filters?.sortBy === "total_balance" ? "current_balance" : filters?.sortBy || "created_at";
         query = query.order(orderColumn, { ascending: filters?.sortOrder === "asc" });
-        
-        if (Number.isFinite(filters?.limit)) {
-          const limit = Number(filters.limit);
-          const offset = Number(filters.offset || 0);
+
+        if (limit !== undefined) {
           query = query.range(offset, offset + limit - 1);
         }
-        
-        // select('*', { count: 'exact' }) runs the paginated SELECT and a matching
-        // COUNT(*) in one request, so `count` is the true total, not just the
-        // current page size. Works for both Supabase and InsForge apiClient.
+
         const { data, error, count } = await query;
-        
+
         const mappedData = (data || []).map((c: any) => ({
           ...c,
           total_balance: c.current_balance ?? c.total_balance ?? 0
         }));
-        
+
         return { data: mappedData, error, count: count || mappedData.length };
       },
       async () => {
@@ -56,7 +74,14 @@ export class CustomerService extends BaseService {
         const sortBy = filters?.sortBy || "created_at";
         const ascending = filters?.sortOrder === "asc";
         const direction = ascending ? 1 : -1;
+        const toNum = (v: any) => {
+          const n = Number(String(v || "").replace(/\s/g, ""));
+          return Number.isFinite(n) ? n : Number.POSITIVE_INFINITY;
+        };
         data.sort((a: any, b: any) => {
+          if (sortBy === "customer_code") {
+            return (toNum(a.customer_code) - toNum(b.customer_code)) * direction;
+          }
           const getValue = (item: any) => {
             if (sortBy === "total_balance") return item.current_balance ?? item.total_balance ?? 0;
             return item[sortBy] ?? null;
