@@ -77,6 +77,7 @@ All balance/amount sign display now flows through `getCustomerBalanceDelta`; `ge
 - **`updateWithFallback`** retries updates with unknown columns stripped; useful for production schemas that lag migrations.
 - **Bulk import payloads:** sanitize to the known `transactions` columns before calling `bulkInsertWithFallback` so Supabase does not log 400 errors for UI-only fields (`bank_account_name`, `branch_name`). Also do not select non-existent `branches.branch_name`; the `branches` table only has `name` and `code`.
 - **Transaction type labels:** dropdowns should use `useTransactionTypes()` canonical labels (`Phát sinh tăng/giảm`, `Điều chỉnh`, `Hoàn tiền`), not raw `transaction_types.name` values.
+- **Edit modals:** keep form state and validation inside dedicated components — `TransactionEditModal` for `TransactionList` and `CustomerFormModal` for `CustomerList`. Avoid inline modal JSX in page files so styling, validation, and i18n can be maintained in one place.
 
 ## How to test
 
@@ -90,3 +91,5 @@ All balance/amount sign display now flows through `getCustomerBalanceDelta`; `ge
 - `feature-branch → origin/viet` (preview) → `main` (production).
 - Direct push to `main`/`viet` is not allowed; use PRs.
 - Vercel preview deploys on `viet` PRs; production on `main` merge.
+- **Vercel `ignoreCommand` gotcha:** each `apps/<app>/vercel.json` `ignoreCommand` has a hard 256-character limit. If the command is longer, Vercel returns `bad_request: ignoreCommand should NOT be longer than 256 characters` and the build fails before it starts. Keep the command short (e.g. `bash ../../scripts/vercel-ignore.sh`) and put all branch/path logic in `scripts/vercel-ignore.sh`.
+- **Root `project` Vercel project:** the default project linked to the repo root has no correct `outputDirectory` for the monorepo and should be deleted or reconfigured; it does not map to any real app.

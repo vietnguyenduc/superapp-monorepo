@@ -26,15 +26,49 @@ GitHub repo (vietnguyenduc/superapp-monorepo)
 
 ## Vercel Configuration
 
-Mỗi app có `vercel.json`:
+Mỗi app có `vercel.json` trong `apps/<app>/`. Build từ root monorepo qua `npx turbo`:
 
 ```json
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "cd ../.. && npx turbo run build --filter=cashflow...",
   "outputDirectory": "dist",
   "framework": "vite",
-  "rewrites": [{ "source": "/(.*)", "destination": "/" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/" }],
+  "ignoreCommand": "bash ../../scripts/vercel-ignore.sh"
 }
+```
+
+### `ignoreCommand` — quản lý deploy quota
+
+- `ignoreCommand` tối đa **256 ký tự**. Nếu dài hơn, Vercel trả lỗi `bad_request: ignoreCommand should NOT be longer than 256 characters` và build fail. Logic phân nhánh phải chuyển vào file script riêng, ví dụ `scripts/vercel-ignore.sh`.
+- Với free/hobby plan, quota deploy là **100 lượt/ngày** (rolling 24h). Vì vậy:
+  - `main` luôn build (production).
+  - Branch `viet` chỉ build khi file của app hoặc shared packages thay đổi.
+  - Tất cả branch `devin/*` và PR preview khác tự skip.
+- File `scripts/vercel-ignore.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+REF="${VERCEL_GIT_COMMIT_REF:-}"
+
+# Production is always built
+[ "$REF" = "main" ] && exit 1
+
+# Preview branch: build only when this app, shared packages, or lockfile changed.
+if [ "$REF" = "viet" ]; then
+  if ! git rev-parse HEAD >/dev/null 2>&1; then
+    exit 1
+  fi
+  git fetch origin main --depth=50 -q 2>/dev/null || true
+  BASE=$(git merge-base origin/main HEAD 2>/dev/null || git rev-parse HEAD^ 2>/dev/null || git rev-parse HEAD)
+  git diff --quiet "$BASE" HEAD -- . ../../packages ../../package-lock.json
+  exit $?
+fi
+
+# Skip all other preview branches
+exit 0
 ```
 
 ### Environment Variables (per Vercel project)
@@ -89,12 +123,21 @@ gh pr merge --admin --squash --match-head-commit
 
 ### Scenario C: Manual Redeploy
 
-```bash
-# Trigger new deployment
-vercel --token "$VERCEL_TOKEN" --prod
+**KHÔNG** chạy `vercel --prod` từ trong `apps/<app>/` vì `rootDirectory` của mỗi project là `apps/<app>` nhưng build cần root monorepo để `turbo` resolve dependencies. Nếu cần deploy thủ công, dùng Vercel API từ repo root:
 
-# Or via Vercel Dashboard
+```bash
+curl -X POST "https://api.vercel.com/v13/deployments" \
+  -H "Authorization: Bearer $VERCEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gitSource": {"type": "github", "repoId": <repo-id>, "ref": "main"},
+    "name": "cashflow",
+    "project": "prj_<project-id>",
+    "target": "production"
+  }'
 ```
+
+Hoặc trigger qua Vercel Dashboard → project → Deployments → Redeploy.
 
 ## CI/CD
 
@@ -153,8 +196,11 @@ gh auth login
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
+| Build fails on Vercel with `bad_request: ignoreCommand should NOT be longer than 256 characters` | `vercel.json` `ignoreCommand` exceeds 256 chars | Move logic to `scripts/vercel-ignore.sh` and use short `bash` command |
+| All PRs/checks fail Vercel but Usage shows no limit | `ignoreCommand` malformed or `.vercelignore` excludes `.git` (required for `git diff` in `ignoreCommand`) | Check `vercel.json` and remove `.git` from `.vercelignore` for affected apps |
+| Vercel project named `project` always fails | It is the default root monorepo project without correct `outputDirectory` | Delete it in Vercel dashboard or reconfigure root build |
 | Build fails on Vercel | Missing env vars | Check Vercel project settings |
-| App shows blank page | Vite build output wrong dir | Check `vercel.json` `outputDirectory` |
+| App shows blank page | Vite build output wrong dir | Check `vercel.json` `outputDirectory` is `dist` |
 | Auth not working | Cookie domain mismatch | Ensure `.appforyou.xyz` in cookieStorage |
 | API calls fail | CORS not configured | Add `*.appforyou.xyz` to Supabase CORS |
 | 404 on refresh | SPA routing not configured | Check `vercel.json` rewrites |
