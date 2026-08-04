@@ -40,12 +40,27 @@ Cashflow money math was duplicated and inconsistent:
 
 - Balance sync is implemented in the application layer. If a transaction write succeeds and the balance update fails, the ledger and stored balance can drift. A future migration can move this logic to PostgreSQL triggers for atomicity, but the current implementation includes `company_id` filters and uses the same `balanceMath.ts` helpers to minimize that risk.
 
+## Transaction edit / import hardening
+
+- `TransactionList.tsx` `handleEditSubmit` now uses `editForm.customer_id`, carries `transaction_code`, converts empty UUID/text fields to `null`, and parses amounts with `parseAmount`.
+- `transactionService.updateTransaction` uses a dedicated `validateTransactionUpdateData` check for partial updates, normalizes the payload (strips `id`/`created_at`/`company_id`/`created_by`, empty UUIDs → `null`, VN amount strings → number), and recalculates balances through `balanceMath.ts`.
+- `TransactionImport.tsx` waits for a resolved `companyId` before loading options and blocks import if `companyId` is missing, preventing `company_id = null` inserts.
+- `transactionService.bulkImportTransactions` requires `companyId` and scopes customer/bank/branch lookups by `company_id`.
+- `updateHelpers.ts` `sanitizePayload` no longer appends removed columns to `notes`; unknown columns are dropped to avoid infinite retry loops on tables like `transactions` that have no `notes` column.
+- `TransactionTypeContext` maps canonical `transaction_types` (and legacy Vietnamese names) to the business labels `Phát sinh tăng`/`Phát sinh giảm`/`Điều chỉnh`/`Hoàn tiền`.
+
 ## Related
 
 - `src/services/businessLogic/balanceMath.ts`
+- `src/services/businessLogic/validation.ts`
+- `src/services/businessLogic/parsers.ts`
 - `src/services/dashboardService.ts`
 - `src/services/customerService.ts`
 - `src/services/transactionService.ts`
 - `src/services/bankAccountService.ts`
 - `src/services/branchService.ts`
 - `src/services/transactionTypeService.ts`
+- `src/services/updateHelpers.ts`
+- `src/pages/Transactions/TransactionList.tsx`
+- `src/pages/DataImport/TransactionImport.tsx`
+- `src/contexts/TransactionTypeContext.tsx`

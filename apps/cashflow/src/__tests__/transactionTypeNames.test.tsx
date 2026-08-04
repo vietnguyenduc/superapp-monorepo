@@ -88,10 +88,10 @@ describe("TransactionTypeContext (ADR-0001 regression guard)", () => {
     await waitFor(() => {
       expect(screen.getByTestId("loading").textContent).toBe("false");
     });
-    expect(screen.getByTestId("name").textContent).toBe("Điều chỉnh tăng");
+    expect(screen.getByTestId("name").textContent).toBe("Phát sinh tăng");
   });
 
-  it("deduplicates duplicate names preferring company-scoped UUID rows", async () => {
+  it("deduplicates duplicate labels preferring company-scoped UUID rows", async () => {
     vi.mocked(databaseService.transactionTypes.getTransactionTypes).mockResolvedValue({
       data: [
         {

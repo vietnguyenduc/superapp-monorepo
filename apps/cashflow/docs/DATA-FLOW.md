@@ -77,10 +77,25 @@ Other supporting tables: `transaction_types`, `branches`, `companies`, `users`, 
 ### Bulk import
 
 `transactionService.bulkImportTransactions()`:
-1. Resolves customers by `customer_code`, bank accounts and branches by label.
-2. Normalizes each row.
-3. Bulk inserts into `transactions`.
-4. Iterates the inserted rows and calls `_syncTransactionBalance(null, row)` for each.
+1. Requires `companyId`; returns an error if it is missing.
+2. Scopes option/lookup queries (`customers`, `bank_accounts`, `branches`, `transaction_types`) to the active `company_id`.
+3. Resolves customers by `customer_code`, bank accounts and branches by label.
+4. Normalizes each row.
+5. Bulk inserts into `transactions`.
+6. Iterates the inserted rows and calls `_syncTransactionBalance(null, row)` for each.
+
+### Transaction edit UI (`TransactionList.tsx`)
+
+`handleEditSubmit()`:
+1. Parses the amount with `parseAmount`.
+2. Stores absolute values for `payment`/`charge`/`refund`; `adjustment` keeps the signed value.
+3. Sends `null` for empty `customer_id`/`bank_account_id`/`branch_id`/`reference_number`/`description`.
+4. Includes `transaction_code` and the original `customer_id` so edits do not lose tenant or document context.
+5. `transactionService.updateTransaction()` normalizes the payload, strips immutable/RLS fields, and recalculates balances.
+
+### Missing-column fallback
+
+`updateHelpers.ts` drops unknown columns on the first schema error instead of retrying with a `notes` column fallback. Most Cashflow tables do not have a `notes` column, so the previous fallback caused an infinite retry loop on `transactions` inserts.
 
 ## Sign convention for display
 

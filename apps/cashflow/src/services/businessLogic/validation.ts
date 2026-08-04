@@ -107,6 +107,63 @@ export function validateTransactionData(data: Record<string, unknown>): Validati
   };
 }
 
+// Transaction Validation for partial updates (e.g. status changes or edit forms).
+// Only validates the fields that are actually supplied, allowing callers to update
+// a subset of the record without re-sending every required field.
+export function validateTransactionUpdateData(data: Record<string, unknown>): ValidationResult {
+  const errors: string[] = [];
+
+  if (data.transaction_code !== undefined) {
+    const transactionCode = data.transaction_code;
+    if (typeof transactionCode !== "string" || transactionCode.trim() === "") {
+      errors.push("transaction_code must be a non-empty string");
+    }
+  }
+
+  if (data.transaction_type !== undefined) {
+    const transactionType = data.transaction_type;
+    if (typeof transactionType !== "string") {
+      errors.push("transaction_type must be a string");
+    } else {
+      const validTypes = ["payment", "charge", "refund", "adjustment"];
+      if (!validTypes.includes(transactionType)) {
+        errors.push(`transaction_type must be one of: ${validTypes.join(", ")}`);
+      }
+    }
+  }
+
+  if (data.amount !== undefined) {
+    const amount = data.amount;
+    if (typeof amount !== "number" || isNaN(amount)) {
+      errors.push("amount must be a valid number");
+    }
+  }
+
+  if (data.transaction_date !== undefined) {
+    const transactionDate = data.transaction_date;
+    if (typeof transactionDate !== "string" || transactionDate.trim() === "") {
+      errors.push("transaction_date must be a non-empty string");
+    }
+  }
+
+  if (data.customer_id !== undefined && data.customer_id !== null && typeof data.customer_id !== "string") {
+    errors.push("customer_id must be a string or null");
+  }
+
+  if (data.bank_account_id !== undefined && data.bank_account_id !== null && typeof data.bank_account_id !== "string") {
+    errors.push("bank_account_id must be a string or null");
+  }
+
+  if (data.branch_id !== undefined && data.branch_id !== null && typeof data.branch_id !== "string") {
+    errors.push("branch_id must be a string or null");
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
 // Bank Account Validation
 export function validateBankAccountData(data: Record<string, unknown>): ValidationResult {
   const errors: string[] = [];
