@@ -3,6 +3,7 @@ import { apiClient } from "./supabase";
 import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 import { validateBranchData, transformRawBranch } from "./businessLogic";
 import { insertWithFallback, updateWithFallback } from "./updateHelpers";
+import type { Branch } from "../types";
 
 export class BranchService extends BaseService {
   static async getBranches(companyId?: string) {
@@ -14,8 +15,8 @@ export class BranchService extends BaseService {
         return { data, error };
       },
       async () => {
-        let data = trialGet("branches") || [];
-        if (companyId) data = data.filter((b: any) => b.company_id === companyId);
+        let data = (trialGet("branches") || []) as Branch[];
+        if (companyId) data = data.filter((b) => b.company_id === companyId);
         return { data, error: null };
       }
     );
@@ -30,8 +31,8 @@ export class BranchService extends BaseService {
         return { data, error };
       },
       async () => {
-        const data = trialGet("branches") || [];
-        const branch = data.find((b: any) => b.id === id && (!companyId || b.company_id === companyId));
+        const data = (trialGet("branches") || []) as Branch[];
+        const branch = data.find((b) => b.id === id && (!companyId || b.company_id === companyId));
         return { data: branch || null, error: branch ? null : { message: "Branch not found" } };
       }
     );
@@ -53,7 +54,7 @@ export class BranchService extends BaseService {
           const { data, error } = await updateWithFallback("branches", String(payload.id), updatePayload);
           return { data, error };
         } else {
-          const transformed = transformRawBranch(payload, true) as Record<string, unknown>;
+          const transformed = transformRawBranch(payload) as Record<string, unknown>;
           const { data, error } = await insertWithFallback("branches", transformed);
           return { data, error };
         }
@@ -72,7 +73,7 @@ export class BranchService extends BaseService {
           const result = trialUpdate("branches", String(payload.id), updatePayload);
           return { data: result, error: null };
         } else {
-          const transformed = transformRawBranch(payload, false) as Record<string, unknown>;
+          const transformed = transformRawBranch(payload) as Record<string, unknown>;
           const result = trialInsert("branches", transformed);
           return { data: result, error: null };
         }
@@ -89,8 +90,8 @@ export class BranchService extends BaseService {
         return { data: null, error };
       },
       async () => {
-        const branches = trialGet("branches") || [];
-        const branch = branches.find((b: any) => b.id === id);
+        const branches = (trialGet("branches") || []) as Branch[];
+        const branch = branches.find((b) => b.id === id);
         if (!branch || (companyId && branch.company_id !== companyId)) {
           return { data: null, error: { message: "Branch not found" } };
         }

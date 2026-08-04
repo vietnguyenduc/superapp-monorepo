@@ -209,7 +209,7 @@ export class CustomerService extends BaseService {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
 
-        const transformed = transformRawCustomer(customerData, true) as Record<string, unknown>;
+        const transformed = transformRawCustomer(customerData) as Record<string, unknown>;
         const proposedCode = String(transformed.customer_code ?? "").trim();
 
         if (proposedCode) {
@@ -230,7 +230,7 @@ export class CustomerService extends BaseService {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
 
-        const transformed = transformRawCustomer(customerData, false) as Record<string, unknown>;
+        const transformed = transformRawCustomer(customerData) as Record<string, unknown>;
         const proposedCode = String(transformed.customer_code ?? "").trim();
 
         if (proposedCode) {
@@ -265,7 +265,7 @@ export class CustomerService extends BaseService {
             continue;
           }
 
-          const transformed = transformRawCustomer(raw, true) as Record<string, unknown>;
+          const transformed = transformRawCustomer(raw) as Record<string, unknown>;
           if (raw.company_id) transformed.company_id = raw.company_id;
           if (raw.branch_id !== undefined) transformed.branch_id = raw.branch_id;
           if (raw.working_method) transformed.working_method = raw.working_method;
@@ -336,7 +336,7 @@ export class CustomerService extends BaseService {
             continue;
           }
 
-          const transformed = transformRawCustomer(raw, false) as Record<string, unknown>;
+          const transformed = transformRawCustomer(raw) as Record<string, unknown>;
           if (raw.company_id) transformed.company_id = raw.company_id;
           if (raw.branch_id !== undefined) transformed.branch_id = raw.branch_id;
           if (raw.working_method) transformed.working_method = raw.working_method;

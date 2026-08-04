@@ -175,7 +175,7 @@ export class TransactionService extends BaseService {
         const validation = validateTransactionData(transactionData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
 
-        const transformed = transformRawTransaction(transactionData, true) as Record<string, unknown>;
+        const transformed = transformRawTransaction(transactionData) as Record<string, unknown>;
         const { data, error } = await insertWithFallback("transactions", transformed);
         return { data, error };
       },
@@ -183,7 +183,7 @@ export class TransactionService extends BaseService {
         const validation = validateTransactionData(transactionData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
 
-        const transformed = transformRawTransaction(transactionData, false) as Record<string, unknown>;
+        const transformed = transformRawTransaction(transactionData) as Record<string, unknown>;
         const result = trialInsert("transactions", transformed);
         return { data: result, error: null };
       }

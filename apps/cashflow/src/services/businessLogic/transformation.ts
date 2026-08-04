@@ -25,7 +25,7 @@ const strOrDefault = (value: unknown, fallback: string) => {
 };
 
 // Customer Transformation
-export function transformRawCustomer(raw: Record<string, unknown>, useUuidId = false): Record<string, unknown> {
+export function transformRawCustomer(raw: Record<string, unknown>): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
     id: strOrDefault(raw.id, genId("cust")),
@@ -45,7 +45,7 @@ export function transformRawCustomer(raw: Record<string, unknown>, useUuidId = f
 }
 
 // Transaction Transformation
-export function transformRawTransaction(raw: Record<string, unknown>, useUuidId = false): Record<string, unknown> {
+export function transformRawTransaction(raw: Record<string, unknown>): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
     id: strOrDefault(raw.id, genId("txn")),
@@ -69,7 +69,7 @@ export function transformRawTransaction(raw: Record<string, unknown>, useUuidId 
 }
 
 // Bank Account Transformation
-export function transformRawBankAccount(raw: Record<string, unknown>, useUuidId = false): Record<string, unknown> {
+export function transformRawBankAccount(raw: Record<string, unknown>): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
     id: strOrDefault(raw.id, genId("bank")),
@@ -86,7 +86,7 @@ export function transformRawBankAccount(raw: Record<string, unknown>, useUuidId 
 }
 
 // Branch Transformation
-export function transformRawBranch(raw: Record<string, unknown>, useUuidId = false): Record<string, unknown> {
+export function transformRawBranch(raw: Record<string, unknown>): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
     id: strOrDefault(raw.id, genId("branch")),
@@ -101,7 +101,7 @@ export function transformRawBranch(raw: Record<string, unknown>, useUuidId = fal
 }
 
 // Transaction Type Transformation
-export function transformRawTransactionType(raw: Record<string, unknown>, useUuidId = false): Record<string, unknown> {
+export function transformRawTransactionType(raw: Record<string, unknown>): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
     id: strOrDefault(raw.id, genId("type")),
