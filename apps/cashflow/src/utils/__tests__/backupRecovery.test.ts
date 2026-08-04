@@ -16,7 +16,7 @@ describe("Backup Recovery Utils", () => {
 
     it("is readonly", () => {
       expect(() => {
-        (defaultBackupOptions as any).includeCustomers = false;
+        (defaultBackupOptions as unknown as Record<string, unknown>).includeCustomers = false;
       }).not.toThrow();
     });
   });

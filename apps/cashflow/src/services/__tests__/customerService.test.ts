@@ -3,6 +3,19 @@ import { customerService } from "../customerService";
 import { setTrialMode, trialGet } from "../trialMockStore";
 import { apiClient } from "../supabase";
 
+// Lightweight shape for a customer row coming out of the trial seed store.
+type TrialCustomer = Record<string, unknown>;
+
+// Minimal thenable used to fake Supabase query chains in live-mode tests.
+interface FakeChain {
+  select: () => FakeChain;
+  eq: () => FakeChain;
+  neq: () => FakeChain;
+  update: (payload: Record<string, unknown>) => FakeChain;
+  single: () => Promise<unknown>;
+  then: (resolve: (value: unknown) => void) => Promise<void>;
+}
+
 describe("customerService.updateCustomer", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -19,7 +32,7 @@ describe("customerService.updateCustomer", () => {
     });
 
     it("preserves id, company_id, branch_id, total_balance and created_at when editing a customer", async () => {
-      const seedCustomers = trialGet("customers") as any[];
+      const seedCustomers = trialGet("customers") as TrialCustomer[];
       expect(seedCustomers.length).toBeGreaterThan(0);
       const original = seedCustomers[0];
 
@@ -34,28 +47,33 @@ describe("customerService.updateCustomer", () => {
         is_active: false,
       };
 
-      const result = await customerService.updateCustomer(original.id, updateData);
+      const result = await customerService.updateCustomer(
+        String(original.id),
+        updateData,
+      );
 
       expect(result.error).toBeFalsy();
       expect(result.data).toBeTruthy();
-      expect(result.data.id).toBe(original.id);
-      expect(result.data.company_id).toBe(original.company_id);
-      expect(result.data.branch_id).toBe(original.branch_id);
-      expect(result.data.total_balance).toBe(original.total_balance);
-      expect(result.data.created_at).toBe(original.created_at);
-      expect(result.data.full_name).toBe("Updated Name");
-      expect(result.data.email).toBe("updated@example.com");
-      expect(result.data.working_method).toBe("Updated working method");
-      expect(result.data.is_active).toBe(false);
-      expect(result.data.updated_at).not.toBe(original.updated_at);
+
+      const updated = result.data as TrialCustomer;
+      expect(updated.id).toBe(original.id);
+      expect(updated.company_id).toBe(original.company_id);
+      expect(updated.branch_id).toBe(original.branch_id);
+      expect(updated.total_balance).toBe(original.total_balance);
+      expect(updated.created_at).toBe(original.created_at);
+      expect(updated.full_name).toBe("Updated Name");
+      expect(updated.email).toBe("updated@example.com");
+      expect(updated.working_method).toBe("Updated working method");
+      expect(updated.is_active).toBe(false);
+      expect(updated.updated_at).not.toBe(original.updated_at);
     });
 
     it("does not allow changing customer_code to one already used by another customer", async () => {
-      const seedCustomers = trialGet("customers") as any[];
+      const seedCustomers = trialGet("customers") as TrialCustomer[];
       expect(seedCustomers.length).toBeGreaterThan(1);
       const [first, second] = seedCustomers;
 
-      const result = await customerService.updateCustomer(first.id, {
+      const result = await customerService.updateCustomer(String(first.id), {
         customer_code: second.customer_code,
         full_name: first.full_name,
       });
@@ -69,27 +87,27 @@ describe("customerService.updateCustomer", () => {
     it("sends only the provided fields and updated_at, never id or balances", async () => {
       setTrialMode(false);
       const originalId = "cust-abc-123";
-      const capturedUpdate: any[] = [];
+      const capturedUpdate: Record<string, unknown>[] = [];
 
       // Build a thenable Supabase-style chain that captures the update payload
       // and resolves all queries successfully.
-      const buildChain = (finalResult: any): any => {
-        const chain = {
+      const buildChain = (finalResult: unknown): FakeChain => {
+        const chain: FakeChain = {
           select: vi.fn(() => chain),
           eq: vi.fn(() => chain),
           neq: vi.fn(() => chain),
-          update: vi.fn((payload: any) => {
+          update: vi.fn((payload: Record<string, unknown>) => {
             capturedUpdate.push(payload);
             return chain;
           }),
           single: vi.fn(() => Promise.resolve(finalResult)),
-          then: (resolve: any) => Promise.resolve(finalResult).then(resolve),
+          then: (resolve) => Promise.resolve(finalResult).then(resolve),
         };
         return chain;
       };
 
-      (apiClient as any).from = vi.fn(() =>
-        buildChain({ data: [], error: null })
+      (apiClient as unknown as { from: () => FakeChain }).from = vi.fn(() =>
+        buildChain({ data: [], error: null }),
       );
 
       const updateData = {

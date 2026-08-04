@@ -281,7 +281,7 @@ describe("Formatting Utils", () => {
 
     it("handles unknown types", () => {
       expect(formatTableCell("test", "text")).toBe("test");
-      expect(formatTableCell(123, "unknown" as any)).toBe("123");
+      expect(formatTableCell(123, "unknown" as unknown as "text")).toBe("123");
     });
   });
 
@@ -325,7 +325,7 @@ describe("Formatting Utils", () => {
     });
 
     it("handles empty data", () => {
-      const data: any[] = [];
+      const data: Record<string, unknown>[] = [];
       const columns = [{ key: "name", label: "Name" }];
 
       const result = formatForExport(data, columns);
