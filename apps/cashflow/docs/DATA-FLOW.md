@@ -82,6 +82,13 @@ Other supporting tables: `transaction_types`, `branches`, `companies`, `users`, 
 3. Bulk inserts into `transactions`.
 4. Iterates the inserted rows and calls `_syncTransactionBalance(null, row)` for each.
 
+## Sign convention for display
+
+- Negative customer balance = debt (red).
+- Positive/zero customer balance = credit/overpayment (green).
+- `formatting.ts` (`getCustomerListBalanceColor`, `getCustomerDetailBalanceColor`, `getTransactionTypeAmountColor`) and all list/detail components use `getCustomerBalanceDelta` from `balanceMath.ts` to determine the signed amount and color.
+- Transaction type labels are: `Phát sinh tăng` (charge), `Phát sinh giảm` (payment), `Điều chỉnh` (adjustment), `Hoàn tiền` (refund).
+
 ## Balance math helpers
 
 Single source of truth: `src/services/businessLogic/balanceMath.ts`.
@@ -94,6 +101,26 @@ applyTransactionsToBankAccountBalance(opening, txs)
 ```
 
 All dashboard, customer detail, and transaction write code uses these functions.
+
+## Backup and restore
+
+`src/utils/backupRecovery.ts` orchestrates backup/restore:
+
+1. Backup exports JSON/Excel of selected tables scoped to the active `company_id`.
+2. Restore reads `company_id` from options, normalizes every record to that `company_id`, applies `branchMapping`, and removes `created_at`/`updated_at`.
+3. For each entity it checks existence; existing rows are updated only when `overwriteExisting` is true, missing rows are inserted with a fresh ID.
+4. Restoration order: branches → bank accounts → customers → transactions, so foreign-key references resolve correctly.
+5. `backupHistoryService.ts` delegates to the same helpers, so branch/bank account restore is no longer a no-op.
+
+## User data reset
+
+`Settings.tsx` `handleResetData` prompts for `CONFIRM` and requires an active `company_id`. It deletes in FK order:
+
+1. `transactions` (references customers and bank accounts)
+2. `customers`
+3. `bank_accounts`
+
+All deletions are filtered by `company_id` and governed by RLS.
 
 ## Tenant boundaries
 
