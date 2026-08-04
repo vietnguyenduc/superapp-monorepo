@@ -81,9 +81,7 @@ describe("update integrity (live mode)", () => {
     expect(payload).not.toHaveProperty("created_at");
   });
 
-  // Known bug: updateTransaction reuses transformRawTransaction, which resets id,
-  // company_id/branch_id/customer_id to null, and overwrites created_at.
-  it.fails("transaction update payload never contains id, created_at, or defaulted foreign keys", async () => {
+  it("transaction update payload never contains id, created_at, or defaulted foreign keys", async () => {
     const captured: Record<string, unknown>[] = [];
     mockFrom(captured);
 
@@ -109,7 +107,7 @@ describe("update integrity (live mode)", () => {
 
   // Known bug: upsertBankAccount update path reuses transformRawBankAccount,
   // which sets balance to 0 and company_id/branch_id to null when not provided.
-  it.fails("bank account update payload never contains id, created_at, or defaulted balance/tenant fields", async () => {
+  it("bank account update payload never contains id, created_at, or defaulted balance/tenant fields", async () => {
     const captured: Record<string, unknown>[] = [];
     mockFrom(captured);
 
@@ -133,7 +131,7 @@ describe("update integrity (live mode)", () => {
 
   // Known bug: upsertBranch update path reuses transformRawBranch, which sets
   // company_id to null and overwrites created_at when not provided.
-  it.fails("branch update payload never contains id, created_at, or defaulted company_id", async () => {
+  it("branch update payload never contains id, created_at, or defaulted company_id", async () => {
     const captured: Record<string, unknown>[] = [];
     mockFrom(captured);
 
@@ -154,7 +152,7 @@ describe("update integrity (live mode)", () => {
 
   // Known bug: upsertTransactionType update path reuses transformRawTransactionType,
   // which sets color/impact_type/math_factor/is_active defaults and overwrites created_at.
-  it.fails("transaction type update payload never contains id, created_at, or defaulted fields", async () => {
+  it("transaction type update payload never contains id, created_at, or defaulted fields", async () => {
     const captured: Record<string, unknown>[] = [];
     mockFrom(captured);
 

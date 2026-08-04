@@ -1,7 +1,8 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase , apiClient} from "./supabase";
-import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
+import { apiClient } from "./supabase";
+import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 import { validateTransactionTypeData, transformRawTransactionType } from "./businessLogic";
+import { insertWithFallback, updateWithFallback } from "./updateHelpers";
 
 export class TransactionTypeService extends BaseService {
   static async getTransactionTypes(companyId?: string) {
@@ -44,46 +45,62 @@ export class TransactionTypeService extends BaseService {
     );
   }
 
-  static async upsertTransactionType(payload: any) {
+  static async upsertTransactionType(payload: Record<string, unknown>) {
     return this.execute(
       async () => {
         const validation = validateTransactionTypeData(payload);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawTransactionType(payload, true);
-        
-        if (payload.company_id && !payload.id) {
-          const { data: existing } = await apiClient.from("transaction_types").select("id").eq("company_id", payload.company_id).eq("name", payload.name);
+
+        const name = String(payload.name || "");
+        const companyId = payload.company_id ? String(payload.company_id) : null;
+
+        if (companyId && !payload.id) {
+          const { data: existing } = await apiClient.from("transaction_types").select("id").eq("company_id", companyId).eq("name", name);
           if (existing && existing.length > 0) {
-            return { data: null, error: { message: `Loại giao dịch "${payload.name}" đã tồn tại. Vui lòng chọn tên khác.` } };
+            return { data: null, error: { message: `Loại giao dịch "${name}" đã tồn tại. Vui lòng chọn tên khác.` } };
           }
         }
-        
+
         if (payload.id) {
-          const { data, error } = await apiClient.from("transaction_types").update(transformed as any).eq("id", payload.id).select().single();
+          const updatePayload: Record<string, unknown> = {
+            ...payload,
+            updated_at: new Date().toISOString(),
+          };
+          delete updatePayload.id;
+          delete updatePayload.created_at;
+          const { data, error } = await updateWithFallback("transaction_types", String(payload.id), updatePayload);
           return { data, error };
         } else {
-          const { data, error } = await apiClient.from("transaction_types").insert(transformed as any).select().single();
+          const transformed = transformRawTransactionType(payload, true) as Record<string, unknown>;
+          const { data, error } = await insertWithFallback("transaction_types", transformed);
           return { data, error };
         }
       },
       async () => {
         const validation = validateTransactionTypeData(payload);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawTransactionType(payload, false);
-        
-        if (payload.company_id && !payload.id) {
-          const existing = (trialGet("transaction_types") || []).find((t: any) => t.company_id === payload.company_id && t.name === payload.name);
+
+        const name = String(payload.name || "");
+        const companyId = payload.company_id ? String(payload.company_id) : null;
+
+        if (companyId && !payload.id) {
+          const existing = (trialGet("transaction_types") || []).find((t: any) => t.company_id === companyId && t.name === name);
           if (existing) {
-            return { data: null, error: { message: `Loại giao dịch "${payload.name}" đã tồn tại. Vui lòng chọn tên khác.` } };
+            return { data: null, error: { message: `Loại giao dịch "${name}" đã tồn tại. Vui lòng chọn tên khác.` } };
           }
         }
-        
+
         if (payload.id) {
-          const result = trialUpdate("transaction_types", payload.id, transformed);
+          const updatePayload: Record<string, unknown> = {
+            ...payload,
+            updated_at: new Date().toISOString(),
+          };
+          delete updatePayload.id;
+          delete updatePayload.created_at;
+          const result = trialUpdate("transaction_types", String(payload.id), updatePayload);
           return { data: result, error: null };
         } else {
+          const transformed = transformRawTransactionType(payload, false) as Record<string, unknown>;
           const result = trialInsert("transaction_types", transformed);
           return { data: result, error: null };
         }

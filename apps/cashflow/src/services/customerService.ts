@@ -1,95 +1,14 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase , apiClient} from "./supabase";
-import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
+import { apiClient } from "./supabase";
+import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 import { validateCustomerData, transformRawCustomer } from "./businessLogic";
 import { normalizeTransactionType, parseAmount } from "./businessLogic";
-
-function appendToNotes(payload: any, extra: string) {
-  if (!extra) return;
-  const existing = payload.notes ? String(payload.notes) : "";
-  payload.notes = existing ? `${existing}\n${extra}` : extra;
-}
-
-function sanitizeCustomerPayload(payload: any, colsToRemove: string[]) {
-  const copy = { ...payload };
-  const removedParts: string[] = [];
-  for (const col of colsToRemove) {
-    if (col in copy) {
-      const val = copy[col];
-      if (val !== undefined && val !== null && val !== "") {
-        removedParts.push(`${col}: ${val}`);
-      }
-      delete copy[col];
-    }
-  }
-  if (removedParts.length > 0) {
-    appendToNotes(copy, removedParts.join("; "));
-  }
-  return copy;
-}
-
-function parseMissingColumn(error: any): string | null {
-  const message = error?.message || error?.details || error?.hint || String(error || "");
-  const patterns = [
-    /could not find the '([^']+)' column of 'customers' in the schema cache/i,
-    /column "([^"]+)" of relation "customers" does not exist/i,
-    /Could not find a column with the name '([^']+)'/i,
-    /column "([^"]+)" does not exist/i,
-  ];
-  for (const re of patterns) {
-    const m = message.match(re);
-    if (m) return m[1];
-  }
-  return null;
-}
-
-async function insertCustomerWithFallback(payload: any) {
-  const attempt = async (removed: string[]) => {
-    const sanitized = sanitizeCustomerPayload(payload, removed);
-    return apiClient.from("customers").insert(sanitized as any).select().single();
-  };
-  const removed: string[] = [];
-  for (let i = 0; i < 10; i++) {
-    const res = await attempt(removed);
-    if (!res.error) return res;
-    const missing = parseMissingColumn(res.error);
-    if (!missing || removed.includes(missing)) return res;
-    removed.push(missing);
-  }
-  return attempt(removed);
-}
-
-async function bulkInsertCustomersWithFallback(payloads: any[]) {
-  const attempt = async (removed: string[]) => {
-    const sanitized = payloads.map((p) => sanitizeCustomerPayload(p, removed));
-    return apiClient.from("customers").insert(sanitized as any).select();
-  };
-  const removed: string[] = [];
-  for (let i = 0; i < 10; i++) {
-    const res = await attempt(removed);
-    if (!res.error) return res;
-    const missing = parseMissingColumn(res.error);
-    if (!missing || removed.includes(missing)) return res;
-    removed.push(missing);
-  }
-  return attempt(removed);
-}
-
-async function updateCustomerWithFallback(id: string, payload: any) {
-  const attempt = async (removed: string[]) => {
-    const sanitized = sanitizeCustomerPayload(payload, removed);
-    return apiClient.from("customers").update(sanitized as any).eq("id", id).select().single();
-  };
-  const removed: string[] = [];
-  for (let i = 0; i < 10; i++) {
-    const res = await attempt(removed);
-    if (!res.error) return res;
-    const missing = parseMissingColumn(res.error);
-    if (!missing || removed.includes(missing)) return res;
-    removed.push(missing);
-  }
-  return attempt(removed);
-}
+import {
+  sanitizePayload,
+  insertWithFallback,
+  bulkInsertWithFallback,
+  updateWithFallback,
+} from "./updateHelpers";
 
 export class CustomerService extends BaseService {
   static async getCustomers(filters?: any) {
@@ -280,48 +199,48 @@ export class CustomerService extends BaseService {
     );
   }
 
-  static async createCustomer(customerData: any) {
+  static async createCustomer(customerData: Record<string, unknown>) {
     return this.execute(
       async () => {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawCustomer(customerData, true);
-        const proposedCode = transformed.customer_code?.trim();
-        
+
+        const transformed = transformRawCustomer(customerData, true) as Record<string, unknown>;
+        const proposedCode = String(transformed.customer_code ?? "").trim();
+
         if (proposedCode) {
           let checkQ = apiClient.from("customers").select("id").eq("customer_code", proposedCode);
-          if (transformed.company_id) checkQ = checkQ.eq("company_id", transformed.company_id);
+          if (transformed.company_id) checkQ = checkQ.eq("company_id", String(transformed.company_id));
           const { data: existing } = await checkQ;
           if (existing && existing.length > 0) {
             return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
           }
         }
-        
-        const { data, error } = await insertCustomerWithFallback(transformed);
+
+        const { data, error } = await insertWithFallback("customers", transformed);
         return { data, error };
       },
       async () => {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawCustomer(customerData, false);
-        const proposedCode = transformed.customer_code?.trim();
-        
+
+        const transformed = transformRawCustomer(customerData, false) as Record<string, unknown>;
+        const proposedCode = String(transformed.customer_code ?? "").trim();
+
         if (proposedCode) {
           const existing = (trialGet("customers") || []).find((c: any) => c.customer_code === proposedCode && (!transformed.company_id || c.company_id === transformed.company_id));
           if (existing) {
             return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
           }
         }
-        
+
         const result = trialInsert("customers", transformed);
         return { data: result, error: null };
       }
     );
   }
 
-  static async bulkCreateCustomers(customers: any[], options?: { skipExisting?: boolean }) {
+  static async bulkCreateCustomers(customers: Record<string, unknown>[], options?: { skipExisting?: boolean }) {
     return this.execute(
       async () => {
         const errors: any[] = [];
@@ -338,14 +257,14 @@ export class CustomerService extends BaseService {
             continue;
           }
 
-          const transformed = transformRawCustomer(raw, true);
+          const transformed = transformRawCustomer(raw, true) as Record<string, unknown>;
           // Merge fields that transformRawCustomer doesn't include
           if (raw.company_id) transformed.company_id = raw.company_id;
           if (raw.branch_id !== undefined) transformed.branch_id = raw.branch_id;
           if (raw.working_method) transformed.working_method = raw.working_method;
           if (raw.notes) transformed.notes = raw.notes;
 
-          const code = transformed.customer_code?.trim();
+          const code = String(transformed.customer_code ?? "").trim();
           if (code && seenCodes.has(code)) {
             errors.push({ row: i, column: "customer_code", message: `Mã khách hàng trùng trong file: ${code}`, value: code });
             continue;
@@ -363,13 +282,13 @@ export class CustomerService extends BaseService {
         if (codes.length > 0) {
           let checkQ = apiClient.from("customers").select("customer_code").in("customer_code", codes);
           if (validRows[0].transformed.company_id) {
-            checkQ = checkQ.eq("company_id", validRows[0].transformed.company_id);
+            checkQ = checkQ.eq("company_id", String(validRows[0].transformed.company_id));
           }
           const { data: existing } = await checkQ;
           if (existing && existing.length > 0) {
             const existingCodes = new Set(existing.map((c: any) => c.customer_code));
             for (let j = validRows.length - 1; j >= 0; j--) {
-              const code = validRows[j].transformed.customer_code?.trim();
+              const code = String(validRows[j].transformed.customer_code ?? "").trim();
               if (code && existingCodes.has(code)) {
                 if (options?.skipExisting) {
                   skipped.push({ row: validRows[j].index, column: "customer_code", message: `Mã khách hàng "${code}" đã tồn tại`, value: code });
@@ -388,7 +307,7 @@ export class CustomerService extends BaseService {
 
         // Batch insert
         const insertPayload = validRows.map((r) => r.transformed);
-        const { data, error } = await bulkInsertCustomersWithFallback(insertPayload);
+        const { data, error } = await bulkInsertWithFallback("customers", insertPayload as Record<string, unknown>[]);
 
         if (error) {
           return { data: null, error, errors, skipped };
@@ -410,13 +329,13 @@ export class CustomerService extends BaseService {
             continue;
           }
 
-          const transformed = transformRawCustomer(raw, false);
+          const transformed = transformRawCustomer(raw, false) as Record<string, unknown>;
           if (raw.company_id) transformed.company_id = raw.company_id;
           if (raw.branch_id !== undefined) transformed.branch_id = raw.branch_id;
           if (raw.working_method) transformed.working_method = raw.working_method;
           if (raw.notes) transformed.notes = raw.notes;
 
-          const code = transformed.customer_code?.trim();
+          const code = String(transformed.customer_code ?? "").trim();
           if (code && seenCodes.has(code)) {
             errors.push({ row: i, column: "customer_code", message: `Mã khách hàng trùng trong file: ${code}`, value: code });
             continue;
@@ -478,7 +397,7 @@ export class CustomerService extends BaseService {
     );
   }
 
-  static async updateCustomer(id: string, customerData: any) {
+  static async updateCustomer(id: string, customerData: Record<string, unknown>) {
     return this.execute(
       async () => {
         const validation = validateCustomerData(customerData);
@@ -487,12 +406,13 @@ export class CustomerService extends BaseService {
         // Do not use transformRawCustomer for updates: it would reset id,
         // company_id/branch_id, balances and created_at. Only send the fields
         // provided by the caller plus an updated timestamp.
-        const updatePayload: any = {
+        const updatePayload: Record<string, unknown> = {
           ...customerData,
           updated_at: new Date().toISOString(),
         };
-        // Ensure we never overwrite the primary key during an update.
+        // Ensure we never overwrite the primary key or audit fields during an update.
         delete updatePayload.id;
+        delete updatePayload.created_at;
 
         const proposedCode = String(updatePayload.customer_code || "").trim();
 
@@ -505,18 +425,19 @@ export class CustomerService extends BaseService {
           }
         }
 
-        const { data, error } = await updateCustomerWithFallback(id, updatePayload);
+        const { data, error } = await updateWithFallback("customers", id, updatePayload);
         return { data, error };
       },
       async () => {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
 
-        const updatePayload: any = {
+        const updatePayload: Record<string, unknown> = {
           ...customerData,
           updated_at: new Date().toISOString(),
         };
         delete updatePayload.id;
+        delete updatePayload.created_at;
 
         const proposedCode = String(updatePayload.customer_code || "").trim();
 
@@ -559,11 +480,11 @@ export class CustomerService extends BaseService {
         const delta = oldCurrent - oldOpening;
         const newCurrent = newOpening + delta;
         
-        const { data, error } = await apiClient.from("customers").update({
+        const { data, error } = await updateWithFallback("customers", customerId, {
           opening_balance: newOpening,
           current_balance: newCurrent,
-          updated_at: new Date().toISOString()
-        } as any).eq("id", customerId).select().single();
+          updated_at: new Date().toISOString(),
+        });
         
         return { data, error };
       },
@@ -616,7 +537,7 @@ export class CustomerService extends BaseService {
         if (fetchError) return { data: { updatedCount: 0, errors: [...errors, { message: fetchError.message }] }, error: fetchError };
 
         const customerMap = new Map((customers || []).map((c: any) => [c.customer_code, c]));
-        const payload: any[] = [];
+        const payload: Record<string, unknown>[] = [];
         const now = new Date().toISOString();
 
         for (const [code, { row, opening }] of Object.entries(codeToRow)) {
@@ -638,12 +559,12 @@ export class CustomerService extends BaseService {
 
         if (payload.length === 0) return { data: { updatedCount: 0, errors }, error: null };
 
-        const { data, error } = await apiClient.from("customers").upsert(payload as any).select();
+        const { data, error } = await apiClient.from("customers").upsert(payload as Record<string, unknown>[]).select();
         if (error) return { data: { updatedCount: 0, errors: [...errors, { message: error.message }] }, error };
         return { data: { updatedCount: data?.length || 0, errors }, error: null };
       },
       async () => {
-        const errors: any[] = [];
+        const errors: Record<string, unknown>[] = [];
         const customers = trialGet("customers") || [];
         let updatedCount = 0;
         for (let i = 0; i < rows.length; i++) {
@@ -680,7 +601,7 @@ export class CustomerService extends BaseService {
           full_name: r.full_name,
           updated_at: r.updated_at || new Date().toISOString(),
         }));
-        const { data, error } = await apiClient.from("customers").upsert(payload as any).select();
+        const { data, error } = await apiClient.from("customers").upsert(payload as Record<string, unknown>[]).select();
         if (error) return { data: null, error, errors: [error] };
         return { data: { updatedCount: data?.length || 0 }, error: null };
       },

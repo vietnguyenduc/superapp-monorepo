@@ -1,7 +1,8 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase , apiClient} from "./supabase";
-import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
+import { apiClient } from "./supabase";
+import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 import { validateBankAccountData, transformRawBankAccount } from "./businessLogic";
+import { insertWithFallback, updateWithFallback } from "./updateHelpers";
 
 export class BankAccountService extends BaseService {
   static async getBankAccounts(companyId?: string) {
@@ -36,30 +37,42 @@ export class BankAccountService extends BaseService {
     );
   }
 
-  static async upsertBankAccount(payload: Partial<Record<string, any>>) {
+  static async upsertBankAccount(payload: Record<string, unknown>) {
     return this.execute(
       async () => {
         const validation = validateBankAccountData(payload);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawBankAccount(payload, true);
+
         if (payload.id) {
-          const { data, error } = await apiClient.from("bank_accounts").update(transformed as any).eq("id", payload.id).select().single();
+          const updatePayload: Record<string, unknown> = {
+            ...payload,
+            updated_at: new Date().toISOString(),
+          };
+          delete updatePayload.id;
+          delete updatePayload.created_at;
+          const { data, error } = await updateWithFallback("bank_accounts", String(payload.id), updatePayload);
           return { data, error };
         } else {
-          const { data, error } = await apiClient.from("bank_accounts").insert(transformed as any).select().single();
+          const transformed = transformRawBankAccount(payload, true) as Record<string, unknown>;
+          const { data, error } = await insertWithFallback("bank_accounts", transformed);
           return { data, error };
         }
       },
       async () => {
         const validation = validateBankAccountData(payload);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawBankAccount(payload, false);
+
         if (payload.id) {
-          const result = trialUpdate("bank_accounts", payload.id, transformed);
+          const updatePayload: Record<string, unknown> = {
+            ...payload,
+            updated_at: new Date().toISOString(),
+          };
+          delete updatePayload.id;
+          delete updatePayload.created_at;
+          const result = trialUpdate("bank_accounts", String(payload.id), updatePayload);
           return { data: result, error: null };
         } else {
+          const transformed = transformRawBankAccount(payload, false) as Record<string, unknown>;
           const result = trialInsert("bank_accounts", transformed);
           return { data: result, error: null };
         }
