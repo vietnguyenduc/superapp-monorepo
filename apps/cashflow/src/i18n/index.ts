@@ -24,7 +24,7 @@ i18n
   .init({
     resources,
     fallbackLng: "vi",
-    debug: process.env.NODE_ENV === "development",
+    debug: import.meta.env.DEV,
     
     // Force language detection on every page load
     load: 'currentOnly',
