@@ -106,7 +106,7 @@ const Settings: React.FC = () => {
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem("darkMode") === "true";
   });
-  const [activeTab, setActiveTab] = useState("interface");
+  const [activeTab, setActiveTab] = useState("appearance");
   const [activeOpeningSubTab, setActiveOpeningSubTab] = useState<"list" | "file">("list");
   const [autoApproveExternal, setAutoApproveExternal] = useState(() => {
     return localStorage.getItem("cashflow_auto_approve_external") === "true";
@@ -1053,7 +1053,7 @@ const Settings: React.FC = () => {
   const handleSaveBranch = async () => {
     try {
       const fallbackCompanyId = branches.length > 0 ? branches[0].company_id : (bankAccounts.length > 0 ? bankAccounts[0].company_id : undefined);
-      const finalCompanyId = editingBranch?.company_id || user?.branch?.company_id || fallbackCompanyId;
+      const finalCompanyId = editingBranch?.company_id || companyId || user?.company_id || user?.branch?.company_id || fallbackCompanyId;
 
       const payload: any = {
         id: editingBranch?.id,
