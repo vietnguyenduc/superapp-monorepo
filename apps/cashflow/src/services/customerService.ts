@@ -1,8 +1,7 @@
 import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
 import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
-import { validateCustomerData, transformRawCustomer } from "./businessLogic";
-import { normalizeTransactionType, parseAmount } from "./businessLogic";
+import { validateCustomerData, transformRawCustomer, parseAmount, applyTransactionsToCustomerBalance } from "./businessLogic";
 import {
   insertWithFallback,
   bulkInsertWithFallback,
@@ -33,7 +32,7 @@ export class CustomerService extends BaseService {
           const data = (rawData || []) as Customer[];
           let mappedData = data.map((c) => ({
             ...c,
-            total_balance: c.current_balance ?? c.total_balance ?? 0
+            total_balance: c.total_balance ?? 0
           }));
           const direction = filters?.sortOrder === "asc" ? 1 : -1;
           const toNum = (v: unknown) => {
@@ -48,7 +47,7 @@ export class CustomerService extends BaseService {
         }
 
         const sortBy = typeof filters?.sortBy === "string" ? filters.sortBy : undefined;
-        const orderColumn = sortBy === "total_balance" ? "current_balance" : sortBy || "created_at";
+        const orderColumn = sortBy === "total_balance" ? "total_balance" : sortBy || "created_at";
         query = query.order(orderColumn, { ascending: filters?.sortOrder === "asc" });
 
         if (limit !== undefined) {
@@ -60,7 +59,7 @@ export class CustomerService extends BaseService {
 
         const mappedData = data.map((c) => ({
           ...c,
-          total_balance: c.current_balance ?? c.total_balance ?? 0
+          total_balance: c.total_balance ?? 0
         }));
 
         return { data: mappedData, error, count: count || mappedData.length };
@@ -92,7 +91,7 @@ export class CustomerService extends BaseService {
             return (toNum(a.customer_code) - toNum(b.customer_code)) * direction;
           }
           const getValue = (item: Customer) => {
-            if (sortBy === "total_balance") return item.current_balance ?? item.total_balance ?? 0;
+            if (sortBy === "total_balance") return item.total_balance ?? 0;
             return item[sortBy] ?? null;
           };
           const aValue = getValue(a);
@@ -115,7 +114,7 @@ export class CustomerService extends BaseService {
 
         const mappedData = data.map((c) => ({
           ...c,
-          total_balance: c.current_balance ?? c.total_balance ?? 0
+          total_balance: c.total_balance ?? 0
         }));
 
         return { data: mappedData, error: null, count };
@@ -140,29 +139,17 @@ export class CustomerService extends BaseService {
 
         const { data: txData } = await apiClient.from("transactions").select("transaction_type, amount").eq("customer_id", id);
 
-        let calculatedBalance = parseAmount(customer.opening_balance) || 0;
-        let transactionCount = 0;
-
-        if (txData) {
-          const txRows = txData as Pick<Transaction, "transaction_type" | "amount">[];
-          transactionCount = txRows.length;
-          for (const tx of txRows) {
-            const amtSigned = parseAmount(tx.amount);
-            const amtAbs = Math.abs(amtSigned);
-            const type = normalizeTransactionType(String(tx.transaction_type ?? ""));
-
-            if (type === "payment") calculatedBalance += amtAbs;
-            else if (type === "charge") calculatedBalance -= amtAbs;
-            else if (type === "refund") calculatedBalance += amtAbs;
-            else calculatedBalance += amtSigned;
-          }
-        }
+        const txRows = (txData || []) as Pick<Transaction, "transaction_type" | "amount">[];
+        const calculatedBalance = applyTransactionsToCustomerBalance(
+          parseAmount(customer.opening_balance) || 0,
+          txRows,
+        );
 
         return {
           data: {
             ...customer,
             total_balance: calculatedBalance,
-            transaction_count: transactionCount,
+            transaction_count: txRows.length,
             updated_by_email: updatedByEmail,
           },
           error: null
@@ -176,25 +163,16 @@ export class CustomerService extends BaseService {
         const transactions = (trialGet("transactions") || []) as Transaction[];
         const txData = transactions.filter((t) => t.customer_id === id);
 
-        let calculatedBalance = parseAmount(customer.opening_balance) || 0;
-        const transactionCount = txData.length;
-
-        for (const tx of txData) {
-          const amtSigned = parseAmount(tx.amount);
-          const amtAbs = Math.abs(amtSigned);
-          const type = normalizeTransactionType(String(tx.transaction_type ?? ""));
-
-          if (type === "payment") calculatedBalance += amtAbs;
-          else if (type === "charge") calculatedBalance -= amtAbs;
-          else if (type === "refund") calculatedBalance += amtAbs;
-          else calculatedBalance += amtSigned;
-        }
+        const calculatedBalance = applyTransactionsToCustomerBalance(
+          parseAmount(customer.opening_balance) || 0,
+          txData,
+        );
 
         return {
           data: {
             ...customer,
             total_balance: calculatedBalance,
-            transaction_count: transactionCount,
+            transaction_count: txData.length,
             updated_by_email: null,
           },
           error: null
@@ -413,18 +391,21 @@ export class CustomerService extends BaseService {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
 
+        const companyIdCheck = typeof customerData.company_id === "string" ? customerData.company_id : null;
+
         const updatePayload: Record<string, unknown> = {
           ...customerData,
           updated_at: new Date().toISOString(),
         };
         delete updatePayload.id;
         delete updatePayload.created_at;
+        // Prevent a tenant change from ever being written by a user payload.
+        delete updatePayload.company_id;
 
         const proposedCode = String(updatePayload.customer_code ?? "").trim();
 
         if (proposedCode) {
           let checkQ = apiClient.from("customers").select("id").eq("customer_code", proposedCode).neq("id", id);
-          const companyIdCheck = typeof updatePayload.company_id === "string" ? updatePayload.company_id : null;
           if (companyIdCheck) checkQ = checkQ.eq("company_id", companyIdCheck);
           const { data: existing } = await checkQ;
           if (existing && existing.length > 0) {
@@ -439,17 +420,20 @@ export class CustomerService extends BaseService {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
 
+        const companyIdCheck = typeof customerData.company_id === "string" ? customerData.company_id : null;
+
         const updatePayload: Record<string, unknown> = {
           ...customerData,
           updated_at: new Date().toISOString(),
         };
         delete updatePayload.id;
         delete updatePayload.created_at;
+        // Prevent a tenant change from ever being written by a user payload.
+        delete updatePayload.company_id;
 
         const proposedCode = String(updatePayload.customer_code ?? "").trim();
 
         if (proposedCode) {
-          const companyIdCheck = typeof updatePayload.company_id === "string" ? updatePayload.company_id : null;
           const existing = (trialGet("customers") || [] as Customer[]).find(
             (c) => c.id !== id && c.customer_code === proposedCode && (!companyIdCheck || c.company_id === companyIdCheck)
           );

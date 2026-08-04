@@ -202,6 +202,8 @@ export class TransactionService extends BaseService {
         };
         delete updatePayload.id;
         delete updatePayload.created_at;
+        // company_id should never change after creation (RLS tenant field).
+        delete updatePayload.company_id;
 
         const { data, error } = await updateWithFallback("transactions", id, updatePayload);
         return { data, error };
@@ -216,6 +218,8 @@ export class TransactionService extends BaseService {
         };
         delete updatePayload.id;
         delete updatePayload.created_at;
+        // company_id should never change after creation (RLS tenant field).
+        delete updatePayload.company_id;
 
         const result = trialUpdate("transactions", id, updatePayload);
         return { data: result, error: null };

@@ -68,6 +68,8 @@ export class TransactionTypeService extends BaseService {
           };
           delete updatePayload.id;
           delete updatePayload.created_at;
+          // company_id is a tenant field and must not be changed by user payload.
+          delete updatePayload.company_id;
           const { data, error } = await updateWithFallback("transaction_types", String(payload.id), updatePayload);
           return { data, error };
         } else {
@@ -99,6 +101,8 @@ export class TransactionTypeService extends BaseService {
           };
           delete updatePayload.id;
           delete updatePayload.created_at;
+          // company_id is a tenant field and must not be changed by user payload.
+          delete updatePayload.company_id;
           const result = trialUpdate("transaction_types", String(payload.id), updatePayload);
           return { data: result, error: null };
         } else {

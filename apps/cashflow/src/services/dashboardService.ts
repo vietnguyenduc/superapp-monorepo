@@ -1,7 +1,7 @@
 import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
 import { getTrialMode, trialGet } from "./trialMockStore";
-import { parseAmount } from "./businessLogic";
+import { parseAmount, applyTransactionsToCustomerBalance, getCustomerBalanceDelta, getBankAccountBalanceDelta } from "./businessLogic";
 import type { Transaction, TimeRange, Customer, BankAccount, Branch } from "../types";
 
 function normalizeTransactionType(input: string) {
@@ -139,23 +139,8 @@ function aggregateCashFlow(transactions: Transaction[], timeRange: TimeRange, co
   return Array.from(map.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
-function receivableBalanceFromTransactions(transactions: Transaction[]) {
-  let sum = 0;
-  for (const tx of transactions) {
-    if (tx.transaction_type === "charge") sum -= Math.abs(tx.amount);
-    else if (tx.transaction_type === "payment") sum += Math.abs(tx.amount);
-    else if (tx.transaction_type === "refund") sum += Math.abs(tx.amount);
-    else if (tx.transaction_type === "adjustment") sum += tx.amount;
-    else sum += tx.amount;
-  }
-  return sum;
-}
-
 function cashDeltaFromTransaction(tx: Transaction) {
-  if (tx.transaction_type === "payment") return Math.abs(tx.amount);
-  if (tx.transaction_type === "refund") return -Math.abs(tx.amount);
-  if (tx.transaction_type === "adjustment") return tx.amount;
-  return 0;
+  return getBankAccountBalanceDelta(tx.transaction_type, tx.amount);
 }
 
 function getPeriodWindow(timeRange: TimeRange, count: number, baseDate?: Date) {
@@ -216,19 +201,8 @@ function applyTransactionToBalanceMap(
   for (const tx of transactions) {
     if (!tx.customer_id) continue;
     const previous = balanceMap.get(tx.customer_id) || 0;
-    const amount = parseAmount(tx.amount);
-    const absoluteAmount = Math.abs(amount);
-    switch (normalizeTransactionType(String(tx.transaction_type || ""))) {
-      case "payment":
-      case "refund":
-        balanceMap.set(tx.customer_id, previous + absoluteAmount);
-        break;
-      case "charge":
-        balanceMap.set(tx.customer_id, previous - absoluteAmount);
-        break;
-      default:
-        balanceMap.set(tx.customer_id, previous + amount);
-    }
+    const delta = getCustomerBalanceDelta(tx.transaction_type, tx.amount);
+    balanceMap.set(tx.customer_id, previous + delta);
   }
 }
 
@@ -499,7 +473,7 @@ export class DashboardService extends BaseService {
     const openingBalanceFromCustomers = customersAll
       .filter((c) => !branchId || c.branch_id === branchId)
       .reduce((sum, c) => sum + parseAmount(c.opening_balance), 0);
-    const openingBalance = openingBalanceFromCustomers + receivableBalanceFromTransactions(txBeforeStart);
+    const openingBalance = openingBalanceFromCustomers + applyTransactionsToCustomerBalance(0, txBeforeStart);
 
     const txInPeriod = transactions.filter((t) => {
       const ts = new Date(t.transaction_date).getTime();
