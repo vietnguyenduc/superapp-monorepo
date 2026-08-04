@@ -1,7 +1,9 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase , apiClient} from "./supabase";
-import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
+import { apiClient } from "./supabase";
+import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 import { validateBankAccountData, transformRawBankAccount } from "./businessLogic";
+import { insertWithFallback, updateWithFallback } from "./updateHelpers";
+import type { BankAccount } from "../types";
 
 export class BankAccountService extends BaseService {
   static async getBankAccounts(companyId?: string) {
@@ -13,8 +15,8 @@ export class BankAccountService extends BaseService {
         return { data, error };
       },
       async () => {
-        let data = trialGet("bank_accounts") || [];
-        if (companyId) data = data.filter((b: any) => b.company_id === companyId);
+        let data = (trialGet("bank_accounts") || []) as BankAccount[];
+        if (companyId) data = data.filter((b) => b.company_id === companyId);
         return { data, error: null };
       }
     );
@@ -29,37 +31,53 @@ export class BankAccountService extends BaseService {
         return { data, error };
       },
       async () => {
-        let data = trialGet("bank_accounts") || [];
-        const account = data.find((b: any) => b.id === id && (!companyId || b.company_id === companyId));
+        const data = (trialGet("bank_accounts") || []) as BankAccount[];
+        const account = data.find((b) => b.id === id && (!companyId || b.company_id === companyId));
         return { data: account || null, error: account ? null : { message: "Bank account not found" } };
       }
     );
   }
 
-  static async upsertBankAccount(payload: Partial<Record<string, any>>) {
+  static async upsertBankAccount(payload: Record<string, unknown>) {
     return this.execute(
       async () => {
         const validation = validateBankAccountData(payload);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawBankAccount(payload, true);
+
         if (payload.id) {
-          const { data, error } = await apiClient.from("bank_accounts").update(transformed as any).eq("id", payload.id).select().single();
+          const updatePayload: Record<string, unknown> = {
+            ...payload,
+            updated_at: new Date().toISOString(),
+          };
+          delete updatePayload.id;
+          delete updatePayload.created_at;
+          // company_id is a tenant field and must not be changed by user payload.
+          delete updatePayload.company_id;
+          const { data, error } = await updateWithFallback("bank_accounts", String(payload.id), updatePayload);
           return { data, error };
         } else {
-          const { data, error } = await apiClient.from("bank_accounts").insert(transformed as any).select().single();
+          const transformed = transformRawBankAccount(payload) as Record<string, unknown>;
+          const { data, error } = await insertWithFallback("bank_accounts", transformed);
           return { data, error };
         }
       },
       async () => {
         const validation = validateBankAccountData(payload);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawBankAccount(payload, false);
+
         if (payload.id) {
-          const result = trialUpdate("bank_accounts", payload.id, transformed);
+          const updatePayload: Record<string, unknown> = {
+            ...payload,
+            updated_at: new Date().toISOString(),
+          };
+          delete updatePayload.id;
+          delete updatePayload.created_at;
+          // company_id is a tenant field and must not be changed by user payload.
+          delete updatePayload.company_id;
+          const result = trialUpdate("bank_accounts", String(payload.id), updatePayload);
           return { data: result, error: null };
         } else {
+          const transformed = transformRawBankAccount(payload) as Record<string, unknown>;
           const result = trialInsert("bank_accounts", transformed);
           return { data: result, error: null };
         }
@@ -76,8 +94,8 @@ export class BankAccountService extends BaseService {
         return { data: null, error };
       },
       async () => {
-        const accounts = trialGet("bank_accounts") || [];
-        const account = accounts.find((b: any) => b.id === id);
+        const accounts = (trialGet("bank_accounts") || []) as BankAccount[];
+        const account = accounts.find((b) => b.id === id);
         if (!account || (companyId && account.company_id !== companyId)) {
           return { data: null, error: { message: "Bank account not found" } };
         }

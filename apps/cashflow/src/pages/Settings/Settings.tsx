@@ -674,32 +674,39 @@ const Settings: React.FC = () => {
       return;
     }
 
+    if (!companyId) {
+      alert("Không xác định được công ty. Vui lòng chọn công ty trước khi reset dữ liệu.");
+      return;
+    }
+
     try {
-      // Delete from Supabase database
-      
-      // Delete transactions first (due to foreign key constraints)
+      // Delete from Supabase database scoped to the active tenant.
+      // Order matters due to FK constraints: transactions first, then customers,
+      // then bank accounts.
+
+      // Delete transactions first (references customers and bank_accounts)
       const txResult = await supabase
         .from("transactions")
         .delete()
-        .neq("id", "00000000-0000-0000-0000-000000000000");
-      
+        .eq("company_id", companyId);
+
       // Delete customers
       const custResult = await supabase
         .from("customers")
         .delete()
-        .neq("id", "00000000-0000-0000-0000-000000000000");
-      
+        .eq("company_id", companyId);
+
       // Delete bank accounts
       const bankResult = await supabase
         .from("bank_accounts")
         .delete()
-        .neq("id", "00000000-0000-0000-0000-000000000000");
+        .eq("company_id", companyId);
 
       if (txResult.error || custResult.error || bankResult.error) {
-        console.error("Database deletion errors:", { 
-          txError: txResult.error, 
-          custError: custResult.error, 
-          bankError: bankResult.error 
+        console.error("Database deletion errors:", {
+          txError: txResult.error,
+          custError: custResult.error,
+          bankError: bankResult.error,
         });
         alert(`Có lỗi khi xóa dữ liệu từ database:\n${txResult.error?.message || custResult.error?.message || bankResult.error?.message}`);
         return;
@@ -708,7 +715,7 @@ const Settings: React.FC = () => {
       console.log("✅ Database deletion successful");
 
       alert("Đã xóa toàn bộ dữ liệu thành công!");
-      
+
       // Navigate to dashboard instead of reload to preserve session
       navigate('/dashboard', { replace: true });
     } catch (error) {

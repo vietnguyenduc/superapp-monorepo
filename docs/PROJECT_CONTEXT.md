@@ -47,8 +47,8 @@
 
 ## 6. Pending / Watch Items
 
-- Dashboard `total_balance` may not update immediately after bulk opening-balance import; verify `getDashboardMetrics` / `calculateCustomerBalance`.
-- Admin Portal permission assignment UI and responsive UX still under review.
+- Dashboard metrics now scope customers, bank accounts, branches, and transactions by company/branch in both live and trial mode; bank-account charts no longer drop the first two accounts, and "Customers to watch" keeps debtors first.
+- Admin Portal permission navigation is role-aware; company management is hidden and route-protected for non-master admins.
 - Vercel deployment will resume when the daily build quota resets.
 
 ## 7. Secrets

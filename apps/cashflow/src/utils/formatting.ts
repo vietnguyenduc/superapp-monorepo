@@ -1,5 +1,6 @@
 import { format, parseISO } from "date-fns";
 import { vi } from "date-fns/locale";
+import { getCustomerBalanceDelta } from "../services/businessLogic/balanceMath";
 
 // Currency formatting
 export const formatCurrency = (amount: number, currency = "VND"): string => {
@@ -344,22 +345,23 @@ export function getCustomerListBalanceColor(balance: number): string {
   const colors = cachedBalanceColors;
   if (!colors || !colors.customer_list) {
     // Fallback to hardcoded colors if not loaded yet
-    return balance > 0 ? "text-black dark:text-white" : "text-green-600 dark:text-green-400";
+    // Negative balance = debt (red); positive/zero = credit (green)
+    return balance < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400";
   }
 
   const listColors = colors.customer_list;
-  return balance > 0 ? listColors.positive_balance_color : listColors.zero_or_negative_color;
+  return balance < 0 ? listColors.zero_or_negative_color : listColors.positive_balance_color;
 }
 
 export function getCustomerDetailBalanceColor(balance: number): string {
   const colors = cachedBalanceColors;
   if (!colors || !colors.customer_detail) {
     // Fallback to hardcoded colors if not loaded yet
-    return balance > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400";
+    return balance < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400";
   }
 
   const detailColors = colors.customer_detail;
-  return balance > 0 ? detailColors.positive_balance_color : detailColors.zero_or_negative_color;
+  return balance < 0 ? detailColors.zero_or_negative_color : detailColors.positive_balance_color;
 }
 
 /**
@@ -406,32 +408,15 @@ export const getTransactionTypeColor = (
  */
 export const getTransactionTypeAmountColor = (
   type: string,
+  amount?: number,
 ): string => {
-  const colors = cachedTransactionColors;
-  
-  if (!colors) {
-    // Fallback to hardcoded amount colors if not loaded yet
-    switch (type) {
-      case "payment":
-        return "text-green-600 dark:text-green-400";
-      case "charge":
-        return "text-red-600 dark:text-red-400";
-      case "adjustment":
-        return "text-blue-600 dark:text-blue-400";
-      case "refund":
-        return "text-green-600 dark:text-green-400";
-      default:
-        return "text-gray-600 dark:text-gray-400";
-    }
-  }
-
-  const typeColors = colors[type];
-  if (!typeColors) {
-    return "text-gray-600 dark:text-gray-400";
-  }
-
-  const amountColorClass = `${typeColors.amount_color} ${typeColors.dark_amount_color}`;
-  return amountColorClass;
+  // Amount color follows the customer-balance convention:
+  // negative signed delta = debt (red), positive = credit/cash-in (green).
+  // For display without an amount, use a unit value to infer the sign from the type.
+  const signed = getCustomerBalanceDelta(type, amount ?? 1);
+  if (signed < 0) return "text-red-600 dark:text-red-400";
+  if (signed > 0) return "text-green-600 dark:text-green-400";
+  return "text-gray-600 dark:text-gray-400";
 };
 
 /**
@@ -466,30 +451,13 @@ export const getTransactionTypeTextColor = (type: string): string => {
   return typeColors.amount_color;
 };
 
-// Helper function to get math_factor from transaction type
+/**
+ * @deprecated Use `getCustomerBalanceDelta` from `services/businessLogic/balanceMath`.
+ * Kept for callers that still expect a unit math factor; now delegates to the
+ * single source of truth so the sign convention is consistent.
+ */
 export const getTransactionMathFactor = (type: string): number => {
-  if (!cachedTransactionTypes) {
-    // Fallback to hardcoded math factors if not loaded yet
-    switch (type) {
-      case "payment":
-        return -1;
-      case "charge":
-        return 1;
-      case "adjustment":
-        return 1;
-      case "refund":
-        return -1;
-      default:
-        return 1;
-    }
-  }
-
-  const txType = cachedTransactionTypes.find((t: any) => t.id === type);
-  if (!txType) {
-    return 1; // Default to 1 if not found
-  }
-
-  return txType.math_factor || 1;
+  return getCustomerBalanceDelta(type, 1);
 };
 
 /**

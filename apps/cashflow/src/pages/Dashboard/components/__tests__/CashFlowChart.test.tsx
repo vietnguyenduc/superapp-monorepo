@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from "vitest";
 import CashFlowChart from "../CashFlowChart";
 
 vi.mock("recharts", async () => {
-  const actual = await vi.importActual<any>("recharts");
+  const actual = await vi.importActual<Record<string, unknown>>("recharts");
   return {
     ...actual,
     ResponsiveContainer: ({ children }: { children: React.ReactElement }) =>

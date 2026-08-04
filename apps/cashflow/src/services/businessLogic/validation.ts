@@ -7,244 +7,313 @@ export interface ValidationResult {
 }
 
 // Customer Validation
-export function validateCustomerData(data: any): ValidationResult {
+export function validateCustomerData(data: Record<string, unknown>): ValidationResult {
   const errors: string[] = [];
-  
-  // Required fields
-  if (!data.customer_code || typeof data.customer_code !== "string" || data.customer_code.trim() === "") {
+
+  const customerCode = data.customer_code;
+  if (typeof customerCode !== "string" || customerCode.trim() === "") {
     errors.push("customer_code is required and must be a non-empty string");
   }
-  
-  if (!data.full_name || typeof data.full_name !== "string" || data.full_name.trim() === "") {
+
+  const fullName = data.full_name;
+  if (typeof fullName !== "string" || fullName.trim() === "") {
     errors.push("full_name is required and must be a non-empty string");
   }
-  
-  // Optional fields with format validation
-  if (data.email) {
+
+  const email = data.email;
+  if (typeof email === "string" && email.trim() !== "") {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(data.email)) {
+    if (!emailRegex.test(email)) {
       errors.push("email must be a valid email address");
     }
   }
 
-  if (data.phone) {
-    // Accept digits, spaces, +, -, () — typical phone number characters.
-    // Must contain at least 7 digits to be a plausible phone number.
+  const phone = data.phone;
+  if (typeof phone === "string" && phone.trim() !== "") {
     const phoneRegex = /^[+\d\s()-]+$/;
-    const digitCount = (data.phone.match(/\d/g) || []).length;
-    if (!phoneRegex.test(data.phone) || digitCount < 7) {
+    const digitCount = (phone.match(/\d/g) || []).length;
+    if (!phoneRegex.test(phone) || digitCount < 7) {
       errors.push("phone must be a valid phone number");
     }
   }
-  
-  // Numeric fields
-  if (data.opening_balance !== undefined && data.opening_balance !== null) {
-    if (typeof data.opening_balance !== "number" || isNaN(data.opening_balance)) {
+
+  const openingBalance = data.opening_balance;
+  if (openingBalance !== undefined && openingBalance !== null) {
+    if (typeof openingBalance !== "number" || isNaN(openingBalance)) {
       errors.push("opening_balance must be a valid number");
     }
   }
-  
-  if (data.total_balance !== undefined && data.total_balance !== null) {
-    if (typeof data.total_balance !== "number" || isNaN(data.total_balance)) {
+
+  const totalBalance = data.total_balance;
+  if (totalBalance !== undefined && totalBalance !== null) {
+    if (typeof totalBalance !== "number" || isNaN(totalBalance)) {
       errors.push("total_balance must be a valid number");
     }
   }
-  
+
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
 // Transaction Validation
-export function validateTransactionData(data: any): ValidationResult {
+export function validateTransactionData(data: Record<string, unknown>): ValidationResult {
   const errors: string[] = [];
-  
-  // Required fields
-  if (!data.transaction_code || typeof data.transaction_code !== "string" || data.transaction_code.trim() === "") {
+
+  const transactionCode = data.transaction_code;
+  if (typeof transactionCode !== "string" || transactionCode.trim() === "") {
     errors.push("transaction_code is required and must be a non-empty string");
   }
-  
-  if (!data.transaction_type || typeof data.transaction_type !== "string") {
+
+  const transactionType = data.transaction_type;
+  if (typeof transactionType !== "string") {
     errors.push("transaction_type is required and must be a string");
   }
-  
-  if (data.amount === undefined || data.amount === null || typeof data.amount !== "number" || isNaN(data.amount)) {
+
+  const amount = data.amount;
+  if (amount === undefined || amount === null || typeof amount !== "number" || isNaN(amount)) {
     errors.push("amount is required and must be a valid number");
   }
-  
-  if (!data.transaction_date || typeof data.transaction_date !== "string") {
+
+  const transactionDate = data.transaction_date;
+  if (typeof transactionDate !== "string" || transactionDate.trim() === "") {
     errors.push("transaction_date is required and must be a string");
   }
-  
-  // Valid transaction types
+
   const validTypes = ["payment", "charge", "refund", "adjustment"];
-  if (data.transaction_type && !validTypes.includes(data.transaction_type)) {
+  if (typeof transactionType === "string" && !validTypes.includes(transactionType)) {
     errors.push(`transaction_type must be one of: ${validTypes.join(", ")}`);
   }
-  
-  // Optional fields
-  if (data.customer_id && typeof data.customer_id !== "string") {
+
+  const customerId = data.customer_id;
+  if (customerId !== undefined && customerId !== null && typeof customerId !== "string") {
     errors.push("customer_id must be a string if provided");
   }
-  
-  if (data.bank_account_id && typeof data.bank_account_id !== "string") {
+
+  const bankAccountId = data.bank_account_id;
+  if (bankAccountId !== undefined && bankAccountId !== null && typeof bankAccountId !== "string") {
     errors.push("bank_account_id must be a string if provided");
   }
-  
-  if (data.branch_id && typeof data.branch_id !== "string") {
+
+  const branchId = data.branch_id;
+  if (branchId !== undefined && branchId !== null && typeof branchId !== "string") {
     errors.push("branch_id must be a string if provided");
   }
-  
+
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
+  };
+}
+
+// Transaction Validation for partial updates (e.g. status changes or edit forms).
+// Only validates the fields that are actually supplied, allowing callers to update
+// a subset of the record without re-sending every required field.
+export function validateTransactionUpdateData(data: Record<string, unknown>): ValidationResult {
+  const errors: string[] = [];
+
+  if (data.transaction_code !== undefined) {
+    const transactionCode = data.transaction_code;
+    if (typeof transactionCode !== "string" || transactionCode.trim() === "") {
+      errors.push("transaction_code must be a non-empty string");
+    }
+  }
+
+  if (data.transaction_type !== undefined) {
+    const transactionType = data.transaction_type;
+    if (typeof transactionType !== "string") {
+      errors.push("transaction_type must be a string");
+    } else {
+      const validTypes = ["payment", "charge", "refund", "adjustment"];
+      if (!validTypes.includes(transactionType)) {
+        errors.push(`transaction_type must be one of: ${validTypes.join(", ")}`);
+      }
+    }
+  }
+
+  if (data.amount !== undefined) {
+    const amount = data.amount;
+    if (typeof amount !== "number" || isNaN(amount)) {
+      errors.push("amount must be a valid number");
+    }
+  }
+
+  if (data.transaction_date !== undefined) {
+    const transactionDate = data.transaction_date;
+    if (typeof transactionDate !== "string" || transactionDate.trim() === "") {
+      errors.push("transaction_date must be a non-empty string");
+    }
+  }
+
+  if (data.customer_id !== undefined && data.customer_id !== null && typeof data.customer_id !== "string") {
+    errors.push("customer_id must be a string or null");
+  }
+
+  if (data.bank_account_id !== undefined && data.bank_account_id !== null && typeof data.bank_account_id !== "string") {
+    errors.push("bank_account_id must be a string or null");
+  }
+
+  if (data.branch_id !== undefined && data.branch_id !== null && typeof data.branch_id !== "string") {
+    errors.push("branch_id must be a string or null");
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
   };
 }
 
 // Bank Account Validation
-export function validateBankAccountData(data: any): ValidationResult {
+export function validateBankAccountData(data: Record<string, unknown>): ValidationResult {
   const errors: string[] = [];
-  
-  // Required fields
-  if (!data.account_name || typeof data.account_name !== "string" || data.account_name.trim() === "") {
+
+  const accountName = data.account_name;
+  if (typeof accountName !== "string" || accountName.trim() === "") {
     errors.push("account_name is required and must be a non-empty string");
   }
-  
-  if (!data.account_number || typeof data.account_number !== "string" || data.account_number.trim() === "") {
+
+  const accountNumber = data.account_number;
+  if (typeof accountNumber !== "string" || accountNumber.trim() === "") {
     errors.push("account_number is required and must be a non-empty string");
   }
-  
-  if (!data.bank_name || typeof data.bank_name !== "string" || data.bank_name.trim() === "") {
+
+  const bankName = data.bank_name;
+  if (typeof bankName !== "string" || bankName.trim() === "") {
     errors.push("bank_name is required and must be a non-empty string");
   }
-  
-  // Numeric fields
-  if (data.balance !== undefined && data.balance !== null) {
-    if (typeof data.balance !== "number" || isNaN(data.balance)) {
+
+  const balance = data.balance;
+  if (balance !== undefined && balance !== null) {
+    if (typeof balance !== "number" || isNaN(balance)) {
       errors.push("balance must be a valid number");
     }
   }
-  
-  // Boolean fields
-  if (data.is_active !== undefined && typeof data.is_active !== "boolean") {
+
+  const isActive = data.is_active;
+  if (isActive !== undefined && isActive !== null && typeof isActive !== "boolean") {
     errors.push("is_active must be a boolean");
   }
-  
+
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
 // Branch Validation
-export function validateBranchData(data: any): ValidationResult {
+export function validateBranchData(data: Record<string, unknown>): ValidationResult {
   const errors: string[] = [];
-  
-  // Required fields
-  if (!data.name || typeof data.name !== "string" || data.name.trim() === "") {
+
+  const name = data.name;
+  if (typeof name !== "string" || name.trim() === "") {
     errors.push("name is required and must be a non-empty string");
   }
-  
-  if (!data.code || typeof data.code !== "string" || data.code.trim() === "") {
+
+  const code = data.code;
+  if (typeof code !== "string" || code.trim() === "") {
     errors.push("code is required and must be a non-empty string");
   }
-  
-  // Boolean fields
-  if (data.is_active !== undefined && typeof data.is_active !== "boolean") {
+
+  const isActive = data.is_active;
+  if (isActive !== undefined && isActive !== null && typeof isActive !== "boolean") {
     errors.push("is_active must be a boolean");
   }
-  
+
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
 // Transaction Type Validation
-export function validateTransactionTypeData(data: any): ValidationResult {
+export function validateTransactionTypeData(data: Record<string, unknown>): ValidationResult {
   const errors: string[] = [];
-  
-  // Required fields
-  if (!data.name || typeof data.name !== "string" || data.name.trim() === "") {
+
+  const name = data.name;
+  if (typeof name !== "string" || name.trim() === "") {
     errors.push("name is required and must be a non-empty string");
   }
-  
-  // Valid impact types
+
   const validImpactTypes = ["increase", "decrease"];
-  if (data.impact_type && !validImpactTypes.includes(data.impact_type)) {
+  const impactType = data.impact_type;
+  if (typeof impactType === "string" && !validImpactTypes.includes(impactType)) {
     errors.push(`impact_type must be one of: ${validImpactTypes.join(", ")}`);
   }
-  
-  // Math factor must be -1 or 1
-  if (data.math_factor !== undefined && data.math_factor !== null) {
-    if (data.math_factor !== -1 && data.math_factor !== 1) {
+
+  const mathFactor = data.math_factor;
+  if (mathFactor !== undefined && mathFactor !== null) {
+    if (mathFactor !== -1 && mathFactor !== 1) {
       errors.push("math_factor must be either -1 or 1");
     }
   }
-  
-  // Color validation (basic CSS color check)
-  if (data.color) {
+
+  const color = data.color;
+  if (typeof color === "string" && color.trim() !== "") {
     const colorRegex = /^(#[0-9A-Fa-f]{3}|#[0-9A-Fa-f]{6}|rgb\(\d+,\s*\d+,\s*\d+\)|rgba\(\d+,\s*\d+,\s*\d+,\s*[\d.]+\)|[a-zA-Z]+)$/;
-    if (!colorRegex.test(data.color)) {
+    if (!colorRegex.test(color)) {
       errors.push("color must be a valid CSS color");
     }
   }
-  
-  // Boolean fields
-  if (data.is_active !== undefined && typeof data.is_active !== "boolean") {
+
+  const isActive = data.is_active;
+  if (isActive !== undefined && isActive !== null && typeof isActive !== "boolean") {
     errors.push("is_active must be a boolean");
   }
-  
+
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
 // Backup History Validation
-export function validateBackupHistoryData(data: any): ValidationResult {
+export function validateBackupHistoryData(data: Record<string, unknown>): ValidationResult {
   const errors: string[] = [];
-  
-  // Required fields
-  if (!data.backup_name || typeof data.backup_name !== "string" || data.backup_name.trim() === "") {
+
+  const backupName = data.backup_name;
+  if (typeof backupName !== "string" || backupName.trim() === "") {
     errors.push("backup_name is required and must be a non-empty string");
   }
-  
-  if (!data.backup_version || typeof data.backup_version !== "string" || data.backup_version.trim() === "") {
+
+  const backupVersion = data.backup_version;
+  if (typeof backupVersion !== "string" || backupVersion.trim() === "") {
     errors.push("backup_version is required and must be a non-empty string");
   }
-  
-  if (!data.backup_timestamp || typeof data.backup_timestamp !== "string") {
+
+  const backupTimestamp = data.backup_timestamp;
+  if (typeof backupTimestamp !== "string" || backupTimestamp.trim() === "") {
     errors.push("backup_timestamp is required and must be a string");
   }
-  
-  if (!data.backup_format || typeof data.backup_format !== "string") {
+
+  const backupFormat = data.backup_format;
+  if (typeof backupFormat !== "string" || backupFormat.trim() === "") {
     errors.push("backup_format is required and must be a string");
   }
-  
-  // Numeric fields
-  if (data.backup_size !== undefined && data.backup_size !== null) {
-    if (typeof data.backup_size !== "number" || isNaN(data.backup_size)) {
+
+  const backupSize = data.backup_size;
+  if (backupSize !== undefined && backupSize !== null) {
+    if (typeof backupSize !== "number" || isNaN(backupSize)) {
       errors.push("backup_size must be a valid number");
     }
   }
-  
-  // Numeric metadata fields
-  if (data.total_customers !== undefined && data.total_customers !== null) {
-    if (typeof data.total_customers !== "number" || isNaN(data.total_customers)) {
+
+  const totalCustomers = data.total_customers;
+  if (totalCustomers !== undefined && totalCustomers !== null) {
+    if (typeof totalCustomers !== "number" || isNaN(totalCustomers)) {
       errors.push("total_customers must be a valid number");
     }
   }
-  
-  if (data.total_transactions !== undefined && data.total_transactions !== null) {
-    if (typeof data.total_transactions !== "number" || isNaN(data.total_transactions)) {
+
+  const totalTransactions = data.total_transactions;
+  if (totalTransactions !== undefined && totalTransactions !== null) {
+    if (typeof totalTransactions !== "number" || isNaN(totalTransactions)) {
       errors.push("total_transactions must be a valid number");
     }
   }
-  
+
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }

@@ -1,4 +1,4 @@
-﻿﻿import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 
@@ -40,7 +40,7 @@ describe("TransactionTypeContext (ADR-0001 regression guard)", () => {
 
   it("returns the raw typeId when types have not loaded yet", async () => {
     // Hang the request so the context stays in loading state.
-    (databaseService.transactionTypes.getTransactionTypes as any).mockReturnValue(
+    vi.mocked(databaseService.transactionTypes.getTransactionTypes).mockReturnValue(
       new Promise(() => {})
     );
 
@@ -55,7 +55,7 @@ describe("TransactionTypeContext (ADR-0001 regression guard)", () => {
   });
 
   it("returns the Vietnamese name once types resolve", async () => {
-    (databaseService.transactionTypes.getTransactionTypes as any).mockResolvedValue({
+    vi.mocked(databaseService.transactionTypes.getTransactionTypes).mockResolvedValue({
       data: [
         {
           id: "payment",
@@ -88,11 +88,11 @@ describe("TransactionTypeContext (ADR-0001 regression guard)", () => {
     await waitFor(() => {
       expect(screen.getByTestId("loading").textContent).toBe("false");
     });
-    expect(screen.getByTestId("name").textContent).toBe("Điều chỉnh tăng");
+    expect(screen.getByTestId("name").textContent).toBe("Phát sinh tăng");
   });
 
-  it("deduplicates duplicate names preferring company-scoped UUID rows", async () => {
-    (databaseService.transactionTypes.getTransactionTypes as any).mockResolvedValue({
+  it("deduplicates duplicate labels preferring company-scoped UUID rows", async () => {
+    vi.mocked(databaseService.transactionTypes.getTransactionTypes).mockResolvedValue({
       data: [
         {
           id: "payment",

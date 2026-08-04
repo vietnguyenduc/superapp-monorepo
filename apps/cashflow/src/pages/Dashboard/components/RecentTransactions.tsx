@@ -2,7 +2,8 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import type { Transaction } from "../../../types";
-import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionMathFactor } from "../../../utils/formatting";
+import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../../utils/formatting";
+import { getCustomerBalanceDelta, getBankAccountBalanceDelta } from "../../../services/businessLogic/balanceMath";
 import { useTransactionTypes } from "../../../contexts/TransactionTypeContext";
 import { databaseService } from "../../../services/database";
 import { useCompanyId } from "../../../hooks/useCompanyId";
@@ -105,15 +106,11 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
           runningByAccount.get(tx.bank_account_id) ||
           openingByAccount.get(String(tx.bank_account_id)) ||
           0;
-        // Receivable delta (customer): use math_factor from database
-        const mathFactor = getTransactionMathFactor(tx.transaction_type);
-        let deltaReceivable = tx.amount * mathFactor;
+        // Receivable delta (customer): negative = debt, positive = credit/overpayment
+        const deltaReceivable = getCustomerBalanceDelta(tx.transaction_type, tx.amount);
 
-        // Cash delta (bank account): charge does not move cash; payment adds; refund subtracts; adjustment signed
-        let deltaCash = 0;
-        if (tx.transaction_type === "payment") deltaCash = Math.abs(tx.amount);
-        else if (tx.transaction_type === "refund") deltaCash = -Math.abs(tx.amount);
-        else if (tx.transaction_type === "adjustment") deltaCash = tx.amount;
+        // Cash delta (bank account): use single source of truth
+        const deltaCash = getBankAccountBalanceDelta(tx.transaction_type, tx.amount);
 
         const next = prev + deltaReceivable;
         const nextAccount = prevAccount + deltaCash;
@@ -280,17 +277,12 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                   </div>
                   <div className="flex-shrink-0 text-right">
                     <div
-                      className={`text-lg font-bold ${
-                        transaction.transaction_type === "charge"
-                          ? "text-red-600 dark:text-red-300"
-                          : transaction.transaction_type === "payment" || transaction.transaction_type === "refund"
-                            ? "text-green-600 dark:text-green-300"
-                            : transaction.transaction_type === "adjustment"
-                              ? "text-blue-600 dark:text-blue-300"
-                              : "text-gray-600 dark:text-gray-300"
-                      }`}
+                      className={`text-lg font-bold ${getTransactionTypeAmountColor(
+                        transaction.transaction_type,
+                        transaction.amount,
+                      )}`}
                     >
-                      {formatCurrency(transaction.amount)}
+                      {formatCurrency(getCustomerBalanceDelta(transaction.transaction_type, transaction.amount))}
                     </div>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-semibold mt-1 ${getTransactionTypeColor(
@@ -384,17 +376,12 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                   </td>
                   <td className="px-3 py-3 text-right">
                     <div
-                      className={`text-sm font-bold ${
-                        transaction.transaction_type === "charge"
-                          ? "text-red-600 dark:text-red-300"
-                          : transaction.transaction_type === "payment" || transaction.transaction_type === "refund"
-                            ? "text-green-600 dark:text-green-300"
-                            : transaction.transaction_type === "adjustment"
-                              ? "text-blue-600 dark:text-blue-300"
-                              : "text-gray-600 dark:text-gray-300"
-                      }`}
+                      className={`text-sm font-bold ${getTransactionTypeAmountColor(
+                        transaction.transaction_type,
+                        transaction.amount,
+                      )}`}
                     >
-                      {formatCurrency(transaction.amount)}
+                      {formatCurrency(getCustomerBalanceDelta(transaction.transaction_type, transaction.amount))}
                     </div>
                   </td>
                   <td className="px-3 py-3 text-center">
@@ -429,17 +416,12 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                 </div>
                 <div className="flex-shrink-0 text-right">
                   <div
-                    className={`text-base font-bold ${
-                      transaction.transaction_type === "charge"
-                        ? "text-red-600 dark:text-red-300"
-                        : transaction.transaction_type === "payment" || transaction.transaction_type === "refund"
-                          ? "text-green-600 dark:text-green-300"
-                          : transaction.transaction_type === "adjustment"
-                            ? "text-blue-600 dark:text-blue-300"
-                            : "text-gray-600 dark:text-gray-300"
-                    }`}
+                    className={`text-base font-bold ${getTransactionTypeAmountColor(
+                      transaction.transaction_type,
+                      transaction.amount,
+                    )}`}
                   >
-                    {formatCurrency(transaction.amount)}
+                    {formatCurrency(getCustomerBalanceDelta(transaction.transaction_type, transaction.amount))}
                   </div>
                   <span
                     className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${getTransactionTypeColor(

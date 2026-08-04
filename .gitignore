@@ -14,6 +14,11 @@ node_modules
 
 # Testing
 coverage
+test-results/
+
+# Temporary agent scripts
+.tmp-*.mjs
+*.tmp.mjs
 
 # Turbo
 .turbo
@@ -94,11 +99,21 @@ apps/superapp-business-bot/scraper/storage/refined_data/
 # Re-include apps/ and docs/ (matched by [0-9a-f]*/ because "a" and "d" are hex chars)
 !apps/
 !apps/**
+apps/*/node_modules/
+# Ignore stale compiled JS emitted into source trees by accidental tsc runs.
+# Cashflow source is TypeScript; any committed .js in src/ should be intentional data/config.
+apps/cashflow/src/**/*.js
+# App build outputs (re-included by !apps/** above).
+apps/*/dist/
 !docs/
 !docs/**
 # Re-include shared-utils api-client directory (starts with "a")
 !packages/shared-utils/src/api-client/
 !packages/shared-utils/src/api-client/**
+# Ignore package build outputs except packages/api/dist (source of truth).
+packages/*/dist/
+!packages/api/dist/
+!packages/api/dist/**
 conversations/
 bash_events/
 

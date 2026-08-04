@@ -1,176 +1,97 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase , apiClient} from "./supabase";
-import { getTrialMode, trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
-import { validateCustomerData, transformRawCustomer } from "./businessLogic";
-import { normalizeTransactionType, parseAmount } from "./businessLogic";
-
-function appendToNotes(payload: any, extra: string) {
-  if (!extra) return;
-  const existing = payload.notes ? String(payload.notes) : "";
-  payload.notes = existing ? `${existing}\n${extra}` : extra;
-}
-
-function sanitizeCustomerPayload(payload: any, colsToRemove: string[]) {
-  const copy = { ...payload };
-  const removedParts: string[] = [];
-  for (const col of colsToRemove) {
-    if (col in copy) {
-      const val = copy[col];
-      if (val !== undefined && val !== null && val !== "") {
-        removedParts.push(`${col}: ${val}`);
-      }
-      delete copy[col];
-    }
-  }
-  if (removedParts.length > 0) {
-    appendToNotes(copy, removedParts.join("; "));
-  }
-  return copy;
-}
-
-function parseMissingColumn(error: any): string | null {
-  const message = error?.message || error?.details || error?.hint || String(error || "");
-  const patterns = [
-    /could not find the '([^']+)' column of 'customers' in the schema cache/i,
-    /column "([^"]+)" of relation "customers" does not exist/i,
-    /Could not find a column with the name '([^']+)'/i,
-    /column "([^"]+)" does not exist/i,
-  ];
-  for (const re of patterns) {
-    const m = message.match(re);
-    if (m) return m[1];
-  }
-  return null;
-}
-
-async function insertCustomerWithFallback(payload: any) {
-  const attempt = async (removed: string[]) => {
-    const sanitized = sanitizeCustomerPayload(payload, removed);
-    return apiClient.from("customers").insert(sanitized as any).select().single();
-  };
-  const removed: string[] = [];
-  for (let i = 0; i < 10; i++) {
-    const res = await attempt(removed);
-    if (!res.error) return res;
-    const missing = parseMissingColumn(res.error);
-    if (!missing || removed.includes(missing)) return res;
-    removed.push(missing);
-  }
-  return attempt(removed);
-}
-
-async function bulkInsertCustomersWithFallback(payloads: any[]) {
-  const attempt = async (removed: string[]) => {
-    const sanitized = payloads.map((p) => sanitizeCustomerPayload(p, removed));
-    return apiClient.from("customers").insert(sanitized as any).select();
-  };
-  const removed: string[] = [];
-  for (let i = 0; i < 10; i++) {
-    const res = await attempt(removed);
-    if (!res.error) return res;
-    const missing = parseMissingColumn(res.error);
-    if (!missing || removed.includes(missing)) return res;
-    removed.push(missing);
-  }
-  return attempt(removed);
-}
-
-async function updateCustomerWithFallback(id: string, payload: any) {
-  const attempt = async (removed: string[]) => {
-    const sanitized = sanitizeCustomerPayload(payload, removed);
-    return apiClient.from("customers").update(sanitized as any).eq("id", id).select().single();
-  };
-  const removed: string[] = [];
-  for (let i = 0; i < 10; i++) {
-    const res = await attempt(removed);
-    if (!res.error) return res;
-    const missing = parseMissingColumn(res.error);
-    if (!missing || removed.includes(missing)) return res;
-    removed.push(missing);
-  }
-  return attempt(removed);
-}
+import { apiClient } from "./supabase";
+import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
+import { validateCustomerData, transformRawCustomer, parseAmount, applyTransactionsToCustomerBalance } from "./businessLogic";
+import {
+  insertWithFallback,
+  bulkInsertWithFallback,
+  updateWithFallback,
+} from "./updateHelpers";
+import type { Customer, Transaction } from "../types";
 
 export class CustomerService extends BaseService {
-  static async getCustomers(filters?: any) {
+  static async getCustomers(filters?: Record<string, unknown>) {
     return this.execute(
       async () => {
         let query = apiClient.from("customers").select("*", { count: "exact" });
-        if (filters?.company_id) {
-          query = query.eq("company_id", filters.company_id);
-        }
 
-        if (filters?.search) {
-          const s = `%${filters.search}%`;
+        const companyFilter = typeof filters?.company_id === "string" ? filters.company_id : undefined;
+        if (companyFilter) query = query.eq("company_id", companyFilter);
+
+        const search = typeof filters?.search === "string" ? filters.search.trim() : "";
+        if (search) {
+          const s = `%${search}%`;
           query = query.or(`full_name.ilike.${s},customer_code.ilike.${s},phone.ilike.${s},email.ilike.${s}`);
         }
 
         const limit = Number.isFinite(filters?.limit) ? Number(filters.limit) : undefined;
-        const offset = Number(filters.offset || 0);
+        const offset = Number(filters.offset ?? 0);
 
         if (filters?.sortBy === "customer_code") {
-          // customer_code is text but the user expects numeric ordering.
-          // Fetch all matching rows, sort in memory, then slice to the requested page.
-          const { data, error, count } = await query.order("created_at", { ascending: false }).range(0, 9999);
-          let mappedData = (data || []).map((c: any) => ({
+          const { data: rawData, error, count } = await query.order("created_at", { ascending: false }).range(0, 9999);
+          const data = (rawData || []) as Customer[];
+          let mappedData = data.map((c) => ({
             ...c,
-            total_balance: c.current_balance ?? c.total_balance ?? 0
+            total_balance: c.total_balance ?? 0
           }));
           const direction = filters?.sortOrder === "asc" ? 1 : -1;
-          const toNum = (v: any) => {
-            const n = Number(String(v || "").replace(/\s/g, ""));
+          const toNum = (v: unknown) => {
+            const n = Number(String(v ?? "").replace(/\s/g, ""));
             return Number.isFinite(n) ? n : Number.POSITIVE_INFINITY;
           };
-          mappedData.sort((a: any, b: any) => (toNum(a.customer_code) - toNum(b.customer_code)) * direction);
+          mappedData.sort((a, b) => (toNum(a.customer_code) - toNum(b.customer_code)) * direction);
           if (limit !== undefined) {
             mappedData = mappedData.slice(offset, offset + limit);
           }
           return { data: mappedData, error, count: count || mappedData.length };
         }
 
-        const orderColumn = filters?.sortBy === "total_balance" ? "current_balance" : filters?.sortBy || "created_at";
+        const sortBy = typeof filters?.sortBy === "string" ? filters.sortBy : undefined;
+        const orderColumn = sortBy === "total_balance" ? "total_balance" : sortBy || "created_at";
         query = query.order(orderColumn, { ascending: filters?.sortOrder === "asc" });
 
         if (limit !== undefined) {
           query = query.range(offset, offset + limit - 1);
         }
 
-        const { data, error, count } = await query;
+        const { data: rawData, error, count } = await query;
+        const data = (rawData || []) as Customer[];
 
-        const mappedData = (data || []).map((c: any) => ({
+        const mappedData = data.map((c) => ({
           ...c,
-          total_balance: c.current_balance ?? c.total_balance ?? 0
+          total_balance: c.total_balance ?? 0
         }));
 
         return { data: mappedData, error, count: count || mappedData.length };
       },
       async () => {
-        let data = trialGet("customers") || [];
-        if (filters?.company_id) data = data.filter((c: any) => c.company_id === filters.company_id);
-        
-        const search = String(filters?.search || "").toLowerCase().trim();
+        let data = (trialGet("customers") || []) as Customer[];
+        const companyFilter = typeof filters?.company_id === "string" ? filters.company_id : undefined;
+        if (companyFilter) data = data.filter((c) => c.company_id === companyFilter);
+
+        const search = typeof filters?.search === "string" ? filters.search.toLowerCase().trim() : "";
         if (search) {
-          data = data.filter((c: any) => 
-            (c.full_name && c.full_name.toLowerCase().includes(search)) ||
-            (c.customer_code && c.customer_code.toLowerCase().includes(search)) ||
+          data = data.filter((c) =>
+            c.full_name.toLowerCase().includes(search) ||
+            c.customer_code.toLowerCase().includes(search) ||
             (c.phone && c.phone.toLowerCase().includes(search)) ||
             (c.email && c.email.toLowerCase().includes(search))
           );
         }
-        
-        const sortBy = filters?.sortBy || "created_at";
+
+        const sortBy = typeof filters?.sortBy === "string" ? filters.sortBy : "created_at";
         const ascending = filters?.sortOrder === "asc";
         const direction = ascending ? 1 : -1;
-        const toNum = (v: any) => {
-          const n = Number(String(v || "").replace(/\s/g, ""));
+        const toNum = (v: unknown) => {
+          const n = Number(String(v ?? "").replace(/\s/g, ""));
           return Number.isFinite(n) ? n : Number.POSITIVE_INFINITY;
         };
-        data.sort((a: any, b: any) => {
+        data.sort((a, b) => {
           if (sortBy === "customer_code") {
             return (toNum(a.customer_code) - toNum(b.customer_code)) * direction;
           }
-          const getValue = (item: any) => {
-            if (sortBy === "total_balance") return item.current_balance ?? item.total_balance ?? 0;
+          const getValue = (item: Customer) => {
+            if (sortBy === "total_balance") return item.total_balance ?? 0;
             return item[sortBy] ?? null;
           };
           const aValue = getValue(a);
@@ -183,19 +104,19 @@ export class CustomerService extends BaseService {
           }
           return String(aValue).localeCompare(String(bValue)) * direction;
         });
-        
-        let count = data.length;
+
+        const count = data.length;
         if (Number.isFinite(filters?.limit)) {
           const limit = Number(filters.limit);
-          const offset = Number(filters.offset || 0);
+          const offset = Number(filters.offset ?? 0);
           data = data.slice(offset, offset + limit);
         }
-        
-        const mappedData = data.map((c: any) => ({
+
+        const mappedData = data.map((c) => ({
           ...c,
-          total_balance: c.current_balance ?? c.total_balance ?? 0
+          total_balance: c.total_balance ?? 0
         }));
-        
+
         return { data: mappedData, error: null, count };
       }
     );
@@ -206,72 +127,52 @@ export class CustomerService extends BaseService {
       async () => {
         let query = apiClient.from("customers").select("*").eq("id", id);
         if (companyId) query = query.eq("company_id", companyId);
-        
+
         const { data: customer, error } = await query.single();
         if (error || !customer) return { data: null, error: error || { message: "Customer not found" } };
-        
+
         let updatedByEmail = null;
         if (customer.updated_by) {
           const { data: userData } = await apiClient.from("users").select("email").eq("id", customer.updated_by).single();
           updatedByEmail = userData?.email || null;
         }
-        
+
         const { data: txData } = await apiClient.from("transactions").select("transaction_type, amount").eq("customer_id", id);
 
-        let calculatedBalance = parseAmount(customer.opening_balance) || 0;
-        let transactionCount = 0;
-        
-        if (txData) {
-          transactionCount = txData.length;
-          for (const tx of txData) {
-            const amtSigned = parseAmount(tx.amount);
-            const amtAbs = Math.abs(amtSigned);
-            const type = normalizeTransactionType(String(tx.transaction_type || ""));
-            
-            if (type === "payment") calculatedBalance += amtAbs;
-            else if (type === "charge") calculatedBalance -= amtAbs;
-            else if (type === "refund") calculatedBalance += amtAbs;
-            else calculatedBalance += amtSigned;
-          }
-        }
-        
+        const txRows = (txData || []) as Pick<Transaction, "transaction_type" | "amount">[];
+        const calculatedBalance = applyTransactionsToCustomerBalance(
+          parseAmount(customer.opening_balance) || 0,
+          txRows,
+        );
+
         return {
           data: {
             ...customer,
             total_balance: calculatedBalance,
-            transaction_count: transactionCount,
+            transaction_count: txRows.length,
             updated_by_email: updatedByEmail,
           },
           error: null
         };
       },
       async () => {
-        const customers = trialGet("customers") || [];
-        const customer = customers.find((c: any) => c.id === id && (!companyId || c.company_id === companyId));
+        const customers = (trialGet("customers") || []) as Customer[];
+        const customer = customers.find((c) => c.id === id && (!companyId || c.company_id === companyId));
         if (!customer) return { data: null, error: { message: "Customer not found" } };
-        
-        const transactions = trialGet("transactions") || [];
-        const txData = transactions.filter((t: any) => t.customer_id === id);
 
-        let calculatedBalance = parseAmount(customer.opening_balance) || 0;
-        let transactionCount = txData.length;
-        
-        for (const tx of txData) {
-          const amtSigned = parseAmount(tx.amount);
-          const amtAbs = Math.abs(amtSigned);
-          const type = normalizeTransactionType(String(tx.transaction_type || ""));
-          
-          if (type === "payment") calculatedBalance += amtAbs;
-          else if (type === "charge") calculatedBalance -= amtAbs;
-          else if (type === "refund") calculatedBalance += amtAbs;
-          else calculatedBalance += amtSigned;
-        }
-        
+        const transactions = (trialGet("transactions") || []) as Transaction[];
+        const txData = transactions.filter((t) => t.customer_id === id);
+
+        const calculatedBalance = applyTransactionsToCustomerBalance(
+          parseAmount(customer.opening_balance) || 0,
+          txData,
+        );
+
         return {
           data: {
             ...customer,
             total_balance: calculatedBalance,
-            transaction_count: transactionCount,
+            transaction_count: txData.length,
             updated_by_email: null,
           },
           error: null
@@ -280,56 +181,60 @@ export class CustomerService extends BaseService {
     );
   }
 
-  static async createCustomer(customerData: any) {
+  static async createCustomer(customerData: Record<string, unknown>) {
     return this.execute(
       async () => {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawCustomer(customerData, true);
-        const proposedCode = transformed.customer_code?.trim();
-        
+
+        const transformed = transformRawCustomer(customerData) as Record<string, unknown>;
+        const proposedCode = String(transformed.customer_code ?? "").trim();
+
         if (proposedCode) {
           let checkQ = apiClient.from("customers").select("id").eq("customer_code", proposedCode);
-          if (transformed.company_id) checkQ = checkQ.eq("company_id", transformed.company_id);
+          if (typeof transformed.company_id === "string" && transformed.company_id) {
+            checkQ = checkQ.eq("company_id", transformed.company_id);
+          }
           const { data: existing } = await checkQ;
           if (existing && existing.length > 0) {
             return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
           }
         }
-        
-        const { data, error } = await insertCustomerWithFallback(transformed);
+
+        const { data, error } = await insertWithFallback("customers", transformed);
         return { data, error };
       },
       async () => {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawCustomer(customerData, false);
-        const proposedCode = transformed.customer_code?.trim();
-        
+
+        const transformed = transformRawCustomer(customerData) as Record<string, unknown>;
+        const proposedCode = String(transformed.customer_code ?? "").trim();
+
         if (proposedCode) {
-          const existing = (trialGet("customers") || []).find((c: any) => c.customer_code === proposedCode && c.company_id === transformed.company_id);
+          const companyIdCheck = typeof transformed.company_id === "string" ? transformed.company_id : null;
+          const existing = (trialGet("customers") || [] as Customer[]).find(
+            (c) => c.customer_code === proposedCode && (!companyIdCheck || c.company_id === companyIdCheck)
+          );
           if (existing) {
             return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
           }
         }
-        
+
         const result = trialInsert("customers", transformed);
         return { data: result, error: null };
       }
     );
   }
 
-  static async bulkCreateCustomers(customers: any[], options?: { skipExisting?: boolean }) {
+  static async bulkCreateCustomers(customers: Record<string, unknown>[], options?: { skipExisting?: boolean }) {
     return this.execute(
       async () => {
-        const errors: any[] = [];
-        const validRows: any[] = [];
+        const errors: Record<string, unknown>[] = [];
+        const validRows: { index: number; transformed: Record<string, unknown> }[] = [];
         const seenCodes = new Set<string>();
-        const skipped: any[] = [];
+        const skipped: Record<string, unknown>[] = [];
 
-        // Validate + transform each row
         for (let i = 0; i < customers.length; i++) {
           const raw = customers[i];
           const validation = validateCustomerData(raw);
@@ -338,14 +243,13 @@ export class CustomerService extends BaseService {
             continue;
           }
 
-          const transformed = transformRawCustomer(raw, true);
-          // Merge fields that transformRawCustomer doesn't include
+          const transformed = transformRawCustomer(raw) as Record<string, unknown>;
           if (raw.company_id) transformed.company_id = raw.company_id;
           if (raw.branch_id !== undefined) transformed.branch_id = raw.branch_id;
           if (raw.working_method) transformed.working_method = raw.working_method;
           if (raw.notes) transformed.notes = raw.notes;
 
-          const code = transformed.customer_code?.trim();
+          const code = String(transformed.customer_code ?? "").trim();
           if (code && seenCodes.has(code)) {
             errors.push({ row: i, column: "customer_code", message: `Mã khách hàng trùng trong file: ${code}`, value: code });
             continue;
@@ -358,18 +262,19 @@ export class CustomerService extends BaseService {
           return { data: [], error: null, errors, skipped };
         }
 
-        // Check duplicate codes against existing DB records (single batch query)
         const codes = [...seenCodes];
         if (codes.length > 0) {
           let checkQ = apiClient.from("customers").select("customer_code").in("customer_code", codes);
-          if (validRows[0].transformed.company_id) {
-            checkQ = checkQ.eq("company_id", validRows[0].transformed.company_id);
+          const firstCompanyId = validRows[0].transformed.company_id;
+          if (typeof firstCompanyId === "string" && firstCompanyId) {
+            checkQ = checkQ.eq("company_id", firstCompanyId);
           }
           const { data: existing } = await checkQ;
           if (existing && existing.length > 0) {
-            const existingCodes = new Set(existing.map((c: any) => c.customer_code));
+            const existingRows = existing as { customer_code: string }[];
+            const existingCodes = new Set(existingRows.map((c) => c.customer_code));
             for (let j = validRows.length - 1; j >= 0; j--) {
-              const code = validRows[j].transformed.customer_code?.trim();
+              const code = String(validRows[j].transformed.customer_code ?? "").trim();
               if (code && existingCodes.has(code)) {
                 if (options?.skipExisting) {
                   skipped.push({ row: validRows[j].index, column: "customer_code", message: `Mã khách hàng "${code}" đã tồn tại`, value: code });
@@ -386,9 +291,8 @@ export class CustomerService extends BaseService {
           return { data: [], error: null, errors, skipped };
         }
 
-        // Batch insert
         const insertPayload = validRows.map((r) => r.transformed);
-        const { data, error } = await bulkInsertCustomersWithFallback(insertPayload);
+        const { data, error } = await bulkInsertWithFallback("customers", insertPayload as Record<string, unknown>[]);
 
         if (error) {
           return { data: null, error, errors, skipped };
@@ -397,9 +301,9 @@ export class CustomerService extends BaseService {
         return { data: data || [], error: null, errors, skipped };
       },
       async () => {
-        const errors: any[] = [];
-        const inserted: any[] = [];
-        const skipped: any[] = [];
+        const errors: Record<string, unknown>[] = [];
+        const inserted: Record<string, unknown>[] = [];
+        const skipped: Record<string, unknown>[] = [];
         const seenCodes = new Set<string>();
 
         for (let i = 0; i < customers.length; i++) {
@@ -410,19 +314,22 @@ export class CustomerService extends BaseService {
             continue;
           }
 
-          const transformed = transformRawCustomer(raw, false);
+          const transformed = transformRawCustomer(raw) as Record<string, unknown>;
           if (raw.company_id) transformed.company_id = raw.company_id;
           if (raw.branch_id !== undefined) transformed.branch_id = raw.branch_id;
           if (raw.working_method) transformed.working_method = raw.working_method;
           if (raw.notes) transformed.notes = raw.notes;
 
-          const code = transformed.customer_code?.trim();
+          const code = String(transformed.customer_code ?? "").trim();
           if (code && seenCodes.has(code)) {
             errors.push({ row: i, column: "customer_code", message: `Mã khách hàng trùng trong file: ${code}`, value: code });
             continue;
           }
 
-          const existing = (trialGet("customers") || []).find((c: any) => c.customer_code === code && c.company_id === transformed.company_id);
+          const companyIdCheck = typeof transformed.company_id === "string" ? transformed.company_id : null;
+          const existing = (trialGet("customers") || [] as Customer[]).find(
+            (c) => c.customer_code === code && (!companyIdCheck || c.company_id === companyIdCheck)
+          );
           if (existing) {
             if (options?.skipExisting) {
               skipped.push({ row: i, column: "customer_code", message: `Mã khách hàng "${code}" đã tồn tại`, value: code });
@@ -442,13 +349,13 @@ export class CustomerService extends BaseService {
     );
   }
 
-  static async checkDuplicateCustomers(customers: any[], companyId?: string) {
+  static async checkDuplicateCustomers(customers: Record<string, unknown>[], companyId?: string) {
     return this.execute(
       async () => {
-        const codes = [...new Set(customers.map((c) => String(c.customer_code || "").trim()).filter(Boolean))];
+        const codes = [...new Set(customers.map((c) => String(c.customer_code ?? "").trim()).filter(Boolean))];
         if (codes.length === 0) return { data: [], error: null };
 
-        const duplicates: any[] = [];
+        const duplicates: Record<string, unknown>[] = [];
         const chunkSize = 100;
         for (let i = 0; i < codes.length; i += chunkSize) {
           const chunk = codes.slice(i, i + chunkSize);
@@ -456,21 +363,21 @@ export class CustomerService extends BaseService {
           if (companyId) q = q.eq("company_id", companyId);
           const { data, error } = await q;
           if (error) return { data: null, error, errors: [error] };
-          duplicates.push(...(data || []));
+          duplicates.push(...((data || []) as Record<string, unknown>[]));
         }
         return { data: duplicates, error: null };
       },
       async () => {
-        const trialCustomers = trialGet("customers") || [];
+        const trialCustomers = (trialGet("customers") || []) as Customer[];
         const seen = new Set<string>();
-        const duplicates: any[] = [];
+        const duplicates: Record<string, unknown>[] = [];
         for (const tc of trialCustomers) {
           const match = customers.find(
-            (c: any) => String(c.customer_code || "").trim() === tc.customer_code && (!companyId || c.company_id === companyId)
+            (c) => String(c.customer_code ?? "").trim() === tc.customer_code && (!companyId || String(c.company_id ?? "") === companyId)
           );
           if (match && !seen.has(tc.customer_code)) {
             seen.add(tc.customer_code);
-            duplicates.push(tc);
+            duplicates.push(tc as Record<string, unknown>);
           }
         }
         return { data: duplicates, error: null };
@@ -478,42 +385,67 @@ export class CustomerService extends BaseService {
     );
   }
 
-  static async updateCustomer(id: string, customerData: any) {
+  static async updateCustomer(id: string, customerData: Record<string, unknown>) {
     return this.execute(
       async () => {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawCustomer(customerData, true);
-        const proposedCode = transformed.customer_code?.trim();
-        
+
+        // Fetch the existing row to know its tenant. We never trust the user payload for company_id.
+        const { data: existingCustomer } = await apiClient.from("customers").select("company_id").eq("id", id).single();
+        const companyIdCheck = (existingCustomer as Record<string, unknown> | null)?.company_id as string | null | undefined;
+
+        const updatePayload: Record<string, unknown> = {
+          ...customerData,
+          updated_at: new Date().toISOString(),
+        };
+        delete updatePayload.id;
+        delete updatePayload.created_at;
+        // Prevent a tenant change from ever being written by a user payload.
+        delete updatePayload.company_id;
+
+        const proposedCode = String(updatePayload.customer_code ?? "").trim();
+
         if (proposedCode) {
           let checkQ = apiClient.from("customers").select("id").eq("customer_code", proposedCode).neq("id", id);
-          if (transformed.company_id) checkQ = checkQ.eq("company_id", transformed.company_id);
+          if (companyIdCheck) checkQ = checkQ.eq("company_id", companyIdCheck);
           const { data: existing } = await checkQ;
           if (existing && existing.length > 0) {
             return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
           }
         }
-        
-        const { data, error } = await updateCustomerWithFallback(id, transformed);
+
+        const { data, error } = await updateWithFallback("customers", id, updatePayload);
         return { data, error };
       },
       async () => {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawCustomer(customerData, false);
-        const proposedCode = transformed.customer_code?.trim();
-        
+
+        const existingCustomer = ((trialGet("customers") || []) as Customer[]).find((c) => c.id === id);
+        const companyIdCheck = existingCustomer?.company_id;
+
+        const updatePayload: Record<string, unknown> = {
+          ...customerData,
+          updated_at: new Date().toISOString(),
+        };
+        delete updatePayload.id;
+        delete updatePayload.created_at;
+        // Prevent a tenant change from ever being written by a user payload.
+        delete updatePayload.company_id;
+
+        const proposedCode = String(updatePayload.customer_code ?? "").trim();
+
         if (proposedCode) {
-          const existing = (trialGet("customers") || []).find((c: any) => c.id !== id && c.customer_code === proposedCode && c.company_id === transformed.company_id);
+          const existing = (trialGet("customers") || [] as Customer[]).find(
+            (c) => c.id !== id && c.customer_code === proposedCode && (!companyIdCheck || c.company_id === companyIdCheck)
+          );
           if (existing) {
             return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
           }
         }
-        
-        const result = trialUpdate("customers", id, transformed);
+
+        const result = trialUpdate("customers", id, updatePayload);
         return { data: result, error: null };
       }
     );
@@ -539,36 +471,36 @@ export class CustomerService extends BaseService {
         if (companyId) q = q.eq("company_id", companyId);
         const { data: existing, error: fetchErr } = await q.single();
         if (fetchErr || !existing) return { data: null, error: fetchErr || { message: "Customer not found" } };
-        
+
         const oldOpening = Number(existing.opening_balance || 0);
         const oldCurrent = Number(existing.current_balance || 0);
         const delta = oldCurrent - oldOpening;
         const newCurrent = newOpening + delta;
-        
-        const { data, error } = await apiClient.from("customers").update({
+
+        const { data, error } = await updateWithFallback("customers", customerId, {
           opening_balance: newOpening,
           current_balance: newCurrent,
-          updated_at: new Date().toISOString()
-        } as any).eq("id", customerId).select().single();
-        
+          updated_at: new Date().toISOString(),
+        });
+
         return { data, error };
       },
       async () => {
-        const customers = trialGet("customers") || [];
-        const existing = customers.find((c: any) => c.id === customerId && (!companyId || c.company_id === companyId));
+        const customers = (trialGet("customers") || []) as Customer[];
+        const existing = customers.find((c) => c.id === customerId && (!companyId || c.company_id === companyId));
         if (!existing) return { data: null, error: { message: "Customer not found" } };
-        
+
         const oldOpening = Number(existing.opening_balance || 0);
         const oldCurrent = Number(existing.current_balance || 0);
         const delta = oldCurrent - oldOpening;
         const newCurrent = newOpening + delta;
-        
+
         const result = trialUpdate("customers", customerId, {
           opening_balance: newOpening,
           current_balance: newCurrent,
           updated_at: new Date().toISOString()
         });
-        
+
         return { data: result, error: null };
       }
     );
@@ -577,10 +509,10 @@ export class CustomerService extends BaseService {
   static async bulkUpdateOpeningBalances(rows: { customer_code?: string; opening_balance?: number }[], companyId?: string) {
     return this.execute(
       async () => {
-        const errors: any[] = [];
+        const errors: Record<string, unknown>[] = [];
         const codeToRow: Record<string, { row: number; opening: number }> = {};
         rows.forEach((row, i) => {
-          const code = String(row.customer_code || "").trim();
+          const code = String(row.customer_code ?? "").trim();
           const opening = Number(row.opening_balance);
           if (!code) {
             errors.push({ row: i, message: "Missing customer_code" });
@@ -601,8 +533,9 @@ export class CustomerService extends BaseService {
         const { data: customers, error: fetchError } = await query;
         if (fetchError) return { data: { updatedCount: 0, errors: [...errors, { message: fetchError.message }] }, error: fetchError };
 
-        const customerMap = new Map((customers || []).map((c: any) => [c.customer_code, c]));
-        const payload: any[] = [];
+        const customerRows = (customers || []) as Customer[];
+        const customerMap = new Map(customerRows.map((c) => [c.customer_code, c]));
+        const payload: Record<string, unknown>[] = [];
         const now = new Date().toISOString();
 
         for (const [code, { row, opening }] of Object.entries(codeToRow)) {
@@ -624,22 +557,22 @@ export class CustomerService extends BaseService {
 
         if (payload.length === 0) return { data: { updatedCount: 0, errors }, error: null };
 
-        const { data, error } = await apiClient.from("customers").upsert(payload as any).select();
+        const { data, error } = await apiClient.from("customers").upsert(payload as Record<string, unknown>[]).select();
         if (error) return { data: { updatedCount: 0, errors: [...errors, { message: error.message }] }, error };
         return { data: { updatedCount: data?.length || 0, errors }, error: null };
       },
       async () => {
-        const errors: any[] = [];
-        const customers = trialGet("customers") || [];
+        const errors: Record<string, unknown>[] = [];
+        const customers = (trialGet("customers") || []) as Customer[];
         let updatedCount = 0;
         for (let i = 0; i < rows.length; i++) {
           const row = rows[i];
-          const code = String(row.customer_code || "").trim();
+          const code = String(row.customer_code ?? "").trim();
           const opening = Number(row.opening_balance);
           if (!code) { errors.push({ row: i, message: "Missing customer_code" }); continue; }
           if (!Number.isFinite(opening)) { errors.push({ row: i, message: "Invalid opening_balance", value: row.opening_balance }); continue; }
 
-          const customer = customers.find((c: any) => c.customer_code === code && (!companyId || c.company_id === companyId));
+          const customer = customers.find((c) => c.customer_code === code && (!companyId || c.company_id === companyId));
           if (!customer) { errors.push({ row: i, message: "Customer not found", value: code }); continue; }
 
           const oldOpening = Number(customer.opening_balance || 0);
@@ -666,7 +599,7 @@ export class CustomerService extends BaseService {
           full_name: r.full_name,
           updated_at: r.updated_at || new Date().toISOString(),
         }));
-        const { data, error } = await apiClient.from("customers").upsert(payload as any).select();
+        const { data, error } = await apiClient.from("customers").upsert(payload as Record<string, unknown>[]).select();
         if (error) return { data: null, error, errors: [error] };
         return { data: { updatedCount: data?.length || 0 }, error: null };
       },

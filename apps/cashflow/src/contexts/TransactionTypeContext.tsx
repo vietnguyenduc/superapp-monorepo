@@ -1,6 +1,39 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from "react";
 import { databaseService } from "../services/database";
 import { useAuthContext } from "@superapp/iam";
+// Canonical transaction type display labels.  Maps both canonical ids and the
+// legacy/old Vietnamese names to the business labels requested by the product
+// team (Phát sinh tăng/giảm, Điều chỉnh, Hoàn tiền).
+const CANONICAL_TYPE_LABELS: Record<string, string> = {
+  payment: "Phát sinh giảm",
+  "thu": "Phát sinh giảm",
+  "thanh toán": "Phát sinh giảm",
+  "thanh toan": "Phát sinh giảm",
+  "điều chỉnh giảm": "Phát sinh giảm",
+  "dieu chinh giam": "Phát sinh giảm",
+  "phát sinh giảm": "Phát sinh giảm",
+  "phat sinh giam": "Phát sinh giảm",
+  charge: "Phát sinh tăng",
+  "chi": "Phát sinh tăng",
+  "cho nợ": "Phát sinh tăng",
+  "cho no": "Phát sinh tăng",
+  "điều chỉnh tăng": "Phát sinh tăng",
+  "dieu chinh tang": "Phát sinh tăng",
+  "phát sinh tăng": "Phát sinh tăng",
+  "phat sinh tang": "Phát sinh tăng",
+  adjustment: "Điều chỉnh",
+  "điều chỉnh": "Điều chỉnh",
+  "dieu chinh": "Điều chỉnh",
+  refund: "Hoàn tiền",
+  "hoàn tiền": "Hoàn tiền",
+  "hoan tien": "Hoàn tiền",
+};
+
+function resolveTransactionTypeDisplayName(id: string, rawName: string): string {
+  const idKey = id.toLowerCase().trim();
+  const nameKey = rawName.toLowerCase().trim();
+  return CANONICAL_TYPE_LABELS[idKey] || CANONICAL_TYPE_LABELS[nameKey] || rawName;
+}
 
 export interface TransactionTypeItem {
   id: string;
@@ -47,19 +80,37 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
         setTypes([]);
         setTypesForDropdown([]);
       } else {
-        const all = result.data || [];
+        const all = (result.data || []) as Record<string, unknown>[];
+
+        // Normalize display names for canonical transaction types so the UI
+        // always shows the business labels (Phát sinh tăng/giảm, etc.) even
+        // when the DB rows still hold old names like "Điều chỉnh tăng/giảm".
+        const normalized = all.map((t) => {
+          const id = String(t.id ?? "");
+          const rawName = String(t.name ?? "");
+          return {
+            id,
+            name: resolveTransactionTypeDisplayName(id, rawName),
+            color: String(t.color || "blue"),
+            isActive: t.is_active !== false && t.isActive !== false,
+            math_factor: Number(t.math_factor ?? 1),
+            impact_type: String(t.impact_type ?? "increase"),
+            company_id: typeof t.company_id === "string" ? t.company_id : null,
+          } as TransactionTypeItem;
+        });
+
         // Keep ALL records for ID lookup (including legacy IDs like 'charge', 'payment', 'adjustment')
-        setTypes(all as TransactionTypeItem[]);
-        
-        // Deduplicate only for dropdowns by name, preferring UUID over legacy
-        const active = all.filter((t: any) => t?.isActive !== false && t?.is_active !== false);
+        setTypes(normalized);
+
+        // Deduplicate only for dropdowns by name, preferring company-specific over global
+        const active = normalized.filter((t) => t.isActive);
         const dedupMap = new Map<string, TransactionTypeItem>();
-        active.forEach((t: any) => {
+        active.forEach((t) => {
           const key = String(t.name || t.id || "").toLowerCase().trim();
           if (!key) return;
           const existing = dedupMap.get(key);
           if (!existing || (existing.company_id === null && t.company_id !== null)) {
-            dedupMap.set(key, t as TransactionTypeItem);
+            dedupMap.set(key, t);
           }
         });
         setTypesForDropdown(Array.from(dedupMap.values()));

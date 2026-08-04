@@ -102,14 +102,25 @@ const navItems = [
   { id: 'trial', icon: FlaskConical, label: 'Trial Seeds', path: '/trial-seeds' },
 ];
 
-// 4 main items for mobile bottom nav
-const mainNavItems = navItems.slice(0, 4);
-// remaining items for "More" drawer
-const moreNavItems = navItems.slice(4);
+const useVisibleNavItems = () => {
+  const { user } = useAuthContext();
+  const role = ((user as { role?: string } | null)?.role || user?.app_metadata?.role) as string | undefined;
+  const visibleItems = React.useMemo(
+    () => navItems.filter((item) => !item.masterOnly || role === 'admin_master'),
+    [role],
+  );
+
+  return {
+    visibleItems,
+    mainNavItems: visibleItems.slice(0, 4),
+    moreNavItems: visibleItems.slice(4),
+  };
+};
 
 const Sidebar = () => {
   const location = useLocation();
   const { signOut } = useAuthContext();
+  const { visibleItems } = useVisibleNavItems();
 
   return (
     <aside className="w-64 bg-slate-900 text-white flex flex-col h-full fixed hidden lg:flex">
@@ -120,7 +131,7 @@ const Sidebar = () => {
         </h1>
       </div>
       <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-        {navItems.map((item) => (
+        {visibleItems.map((item) => (
           <Link 
             key={item.id} 
             to={item.path} 
@@ -154,6 +165,7 @@ const MobileBottomNav = () => {
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const { signOut } = useAuthContext();
+  const { mainNavItems, moreNavItems } = useVisibleNavItems();
 
   return (
     <>
@@ -238,6 +250,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const location = useLocation();
   const { user, signOut } = useAuthContext();
+  const { visibleItems } = useVisibleNavItems();
 
   const getPageTitle = () => {
     switch (location.pathname) {
@@ -247,6 +260,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
       case '/settings': return 'Global Settings';
       case '/companies': return 'Company Management';
       case '/manual': return 'User Manual';
+      case '/trial-seeds': return 'Trial Seeds';
       default: return 'Admin Portal';
     }
   };
@@ -304,7 +318,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
                 </h1>
               </div>
               <nav className="px-4 space-y-2">
-                {navItems.map((item) => (
+                {visibleItems.map((item) => (
                   <Link
                     key={item.id}
                     to={item.path}
@@ -356,7 +370,7 @@ const ProtectedAdminRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" replace />;
   }
 
-  const role = (user as any).role || user.app_metadata?.role;
+  const role = (user as { role?: string }).role || user.app_metadata?.role;
   if (role !== 'admin_master' && role !== 'admin_company') {
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-gray-50 p-4 text-center">
@@ -382,6 +396,17 @@ const ProtectedAdminRoute = ({ children }: { children: React.ReactNode }) => {
       <AdminLayout>{children}</AdminLayout>
     </AdminProvider>
   );
+};
+
+const MasterAdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuthContext();
+  const role = (user as { role?: string } | null)?.role || user?.app_metadata?.role;
+
+  if (role !== 'admin_master') {
+    return <Navigate to="/reports" replace />;
+  }
+
+  return <>{children}</>;
 };
 
 const CompanySelector = () => {
@@ -511,7 +536,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<Navigate to="/reports" replace />} />
-            <Route path="/companies" element={<ProtectedAdminRoute><CompanyManagement /></ProtectedAdminRoute>} />
+            <Route path="/companies" element={<ProtectedAdminRoute><MasterAdminRoute><CompanyManagement /></MasterAdminRoute></ProtectedAdminRoute>} />
             <Route path="/identity" element={<ProtectedAdminRoute><IdentityManagement /></ProtectedAdminRoute>} />
             <Route path="/reports" element={<ProtectedAdminRoute><ConsolidatedReports /></ProtectedAdminRoute>} />
             <Route path="/data" element={<ProtectedAdminRoute><DataLifecycle /></ProtectedAdminRoute>} />

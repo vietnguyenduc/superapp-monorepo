@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import type { Customer, Transaction } from "../../../types";
 import { databaseService } from "../../../services/database";
 import { useCompanyId } from "../../../hooks/useCompanyId";
-import { formatCurrency, formatDate, formatPhoneNumber, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor, getTransactionMathFactor } from "../../../utils/formatting";
+import { formatCurrency, formatDate, formatPhoneNumber, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor } from "../../../utils/formatting";
+import { getCustomerBalanceDelta } from "../../../services/businessLogic/balanceMath";
 import { useTransactionTypes } from "../../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../../components/UI/FallbackUI";
 
@@ -76,12 +77,10 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
 
   const openingBalance = customer.opening_balance ?? 0;
 
-  // Tính công nợ hiện tại real-time từ opening_balance + transactions
-  // Logic: opening_balance + transaction_amount * math_factor
+  // Tính công nợ hiện tại real-time từ opening_balance + signed customer deltas
+  // Negative balance = debt (red); positive = credit/overpayment (green)
   const currentBalance = transactions.reduce((balance, transaction) => {
-    const amount = Number(transaction.amount) || 0;
-    const mathFactor = getTransactionMathFactor(transaction.transaction_type);
-    return balance + (amount * mathFactor);
+    return balance + getCustomerBalanceDelta(transaction.transaction_type, transaction.amount);
   }, openingBalance);
 
   // Tìm giao dịch cuối từ transactions array
@@ -374,9 +373,9 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                           </td>
                           <td className="px-3 sm:px-4 py-2 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-gray-100">
                             <span
-                              className={`text-xs sm:text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type)}`}
+                              className={`text-xs sm:text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type, transaction.amount)}`}
                             >
-                              {formatCurrency(transaction.amount)}
+                              {formatCurrency(getCustomerBalanceDelta(transaction.transaction_type, transaction.amount))}
                             </span>
                           </td>
                           <td className="px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-900 truncate max-w-[150px] sm:max-w-[200px]">

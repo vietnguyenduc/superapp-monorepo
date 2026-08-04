@@ -14,8 +14,7 @@ const TRIAL_API_FETCHED_KEY = "cashflow_trial_api_fetched";
 // API base URL (mirrors trialClient.ts logic)
 const getTrialApiUrl = (): string => {
   try {
-    const env = (import.meta as any).env;
-    return env?.VITE_TRIAL_API_URL || "http://localhost:3001";
+    return (import.meta.env as { VITE_TRIAL_API_URL?: string }).VITE_TRIAL_API_URL || "http://localhost:3001";
   } catch {
     return "http://localhost:3001";
   }
@@ -150,11 +149,19 @@ const seedData = {
   ],
 };
 
+type TrialRecord = Record<string, unknown>;
+
 // In-memory store
-let store = { ...seedData };
+let store: Record<string, TrialRecord[]> = seedData as unknown as Record<string, TrialRecord[]>;
 
 // Singleton flag for trial mode detection
 let isTrialMode = false;
+
+const saveStore = () => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(TRIAL_STORE_KEY, JSON.stringify(store));
+  }
+};
 
 export const setTrialMode = (enabled: boolean) => {
   isTrialMode = enabled;
@@ -168,13 +175,13 @@ export const setTrialMode = (enabled: boolean) => {
     try {
       const saved = localStorage.getItem(TRIAL_STORE_KEY);
       if (saved) {
-        store = JSON.parse(saved);
+        store = JSON.parse(saved) as Record<string, TrialRecord[]>;
       } else {
-        store = JSON.parse(JSON.stringify(seedData)); // deep clone
+        store = JSON.parse(JSON.stringify(seedData)) as Record<string, TrialRecord[]>;
         saveStore();
       }
     } catch {
-      store = JSON.parse(JSON.stringify(seedData));
+      store = JSON.parse(JSON.stringify(seedData)) as Record<string, TrialRecord[]>;
     }
     // Try to merge API-loaded seed data (fire-and-forget)
     tryFetchAndMergeFromApi();
@@ -196,7 +203,7 @@ const tryFetchAndMergeFromApi = async () => {
       const res = await fetch(`${apiUrl}/api/trial/${table}`);
       if (!res.ok) continue;
       const json = await res.json();
-      const records = json.data || [];
+      const records = (json.data || []) as TrialRecord[];
       if (records.length > 0) {
         store[table] = records;
         saveStore();
@@ -213,7 +220,7 @@ export const getTrialMode = () => {
     const saved = localStorage.getItem(TRIAL_MODE_KEY);
     const iamUser = localStorage.getItem("cashflow_trial_user");
     const superappTrial = localStorage.getItem("superapp_trial_mode");
-    
+
     if (saved === "true" || iamUser || superappTrial || localStorage.getItem("isTrial") === "true") {
       isTrialMode = true;
       localStorage.setItem("isTrial", "true");
@@ -221,48 +228,42 @@ export const getTrialMode = () => {
       try {
         const storeData = localStorage.getItem(TRIAL_STORE_KEY);
         if (storeData) {
-          store = JSON.parse(storeData);
+          store = JSON.parse(storeData) as Record<string, TrialRecord[]>;
         } else {
-          store = JSON.parse(JSON.stringify(seedData));
+          store = JSON.parse(JSON.stringify(seedData)) as Record<string, TrialRecord[]>;
         }
       } catch {
-        store = JSON.parse(JSON.stringify(seedData));
+        store = JSON.parse(JSON.stringify(seedData)) as Record<string, TrialRecord[]>;
       }
     }
   }
   return isTrialMode;
 };
 
-const saveStore = () => {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(TRIAL_STORE_KEY, JSON.stringify(store));
-  }
-};
-
 // Generic CRUD operations
 export const trialGet = (table: string) => {
   if (!getTrialMode()) return null;
-  return store[table as keyof typeof store] || [];
+  return store[table] || [];
 };
 
-export const trialInsert = (table: string, record: any) => {
+export const trialInsert = (table: string, record: Record<string, unknown>) => {
   if (!getTrialMode()) return null;
-  const tableData = store[table as keyof typeof store] || [];
+  const tableData = store[table] || [];
   const newRecord = {
     ...record,
-    id: record.id || `trial-${Date.now()}`,
+    id: String(record.id ?? "").trim() || `trial-${Date.now()}`,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
-  (store[table as keyof typeof store] as any[]) = [...tableData, newRecord];
+  store[table] = [...tableData, newRecord];
   saveStore();
   return newRecord;
 };
 
-export const trialUpdate = (table: string, id: string, updates: any) => {
+export const trialUpdate = (table: string, id: string, updates: Record<string, unknown>) => {
   if (!getTrialMode()) return null;
-  const tableData = store[table as keyof typeof store] || [];
-  const index = tableData.findIndex((r: any) => r.id === id);
+  const tableData = store[table] || [];
+  const index = tableData.findIndex((r) => String(r.id ?? "") === id);
   if (index === -1) return null;
   const updatedRecord = {
     ...tableData[index],
@@ -270,24 +271,24 @@ export const trialUpdate = (table: string, id: string, updates: any) => {
     id,
     updated_at: new Date().toISOString(),
   };
-  (store[table as keyof typeof store] as any[])[index] = updatedRecord;
+  store[table][index] = updatedRecord;
   saveStore();
   return updatedRecord;
 };
 
 export const trialDelete = (table: string, id: string) => {
   if (!getTrialMode()) return null;
-  const tableData = store[table as keyof typeof store] || [];
-  const index = tableData.findIndex((r: any) => r.id === id);
+  const tableData = store[table] || [];
+  const index = tableData.findIndex((r) => String(r.id ?? "") === id);
   if (index === -1) return null;
-  (store[table as keyof typeof store] as any[]) = tableData.filter((r: any) => r.id !== id);
+  store[table] = tableData.filter((r) => String(r.id ?? "") !== id);
   saveStore();
   return { success: true };
 };
 
 // Reset to seed data
 export const resetTrialStore = () => {
-  store = { ...seedData };
+  store = { ...seedData } as unknown as Record<string, TrialRecord[]>;
   saveStore();
 };
 
@@ -298,6 +299,6 @@ export const clearTrialStore = () => {
     localStorage.removeItem(TRIAL_MODE_KEY);
     localStorage.removeItem("isTrial");
   }
-  store = { ...seedData };
+  store = { ...seedData } as unknown as Record<string, TrialRecord[]>;
   isTrialMode = false;
 };

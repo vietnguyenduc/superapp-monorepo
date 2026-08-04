@@ -17,6 +17,9 @@ import {
   truncateText,
   capitalize,
   titleCase,
+  getCustomerListBalanceColor,
+  getCustomerDetailBalanceColor,
+  getTransactionTypeAmountColor,
 } from "../formatting";
 import { vi } from "vitest";
 
@@ -281,7 +284,34 @@ describe("Formatting Utils", () => {
 
     it("handles unknown types", () => {
       expect(formatTableCell("test", "text")).toBe("test");
-      expect(formatTableCell(123, "unknown" as any)).toBe("123");
+      expect(formatTableCell(123, "unknown" as unknown as "text")).toBe("123");
+    });
+  });
+
+  describe("customer balance colors", () => {
+    it("returns red for negative balance (debt) and green for positive balance (credit)", () => {
+      expect(getCustomerListBalanceColor(-100)).toContain("text-red-600");
+      expect(getCustomerListBalanceColor(-100)).toContain("dark:text-red-400");
+      expect(getCustomerListBalanceColor(100)).toContain("text-green-600");
+      expect(getCustomerListBalanceColor(100)).toContain("dark:text-green-400");
+      expect(getCustomerDetailBalanceColor(-100)).toContain("text-red-600");
+      expect(getCustomerDetailBalanceColor(100)).toContain("text-green-600");
+    });
+  });
+
+  describe("transaction amount colors", () => {
+    it("returns red for debt-increasing types and green for debt-decreasing types", () => {
+      // charge increases debt -> red
+      expect(getTransactionTypeAmountColor("charge", 1000)).toContain("text-red-600");
+      // payment decreases debt -> green
+      expect(getTransactionTypeAmountColor("payment", 1000)).toContain("text-green-600");
+      // refund decreases debt -> green
+      expect(getTransactionTypeAmountColor("refund", 1000)).toContain("text-green-600");
+    });
+
+    it("uses the signed amount to color adjustments", () => {
+      expect(getTransactionTypeAmountColor("adjustment", 500)).toContain("text-green-600");
+      expect(getTransactionTypeAmountColor("adjustment", -500)).toContain("text-red-600");
     });
   });
 
@@ -325,7 +355,7 @@ describe("Formatting Utils", () => {
     });
 
     it("handles empty data", () => {
-      const data: any[] = [];
+      const data: Record<string, unknown>[] = [];
       const columns = [{ key: "name", label: "Name" }];
 
       const result = formatForExport(data, columns);

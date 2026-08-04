@@ -5,6 +5,7 @@ import { useDebounce } from "../../hooks/useDebounce";
 import { databaseService } from "../../services/database";
 import type { Transaction } from "../../types";
 import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../utils/formatting";
+import { getCustomerBalanceDelta, parseAmount } from "../../services/businessLogic";
 import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import Pagination from "../../components/UI/Pagination";
@@ -324,7 +325,7 @@ const TransactionList: React.FC = () => {
     setEditForm({
       transaction_type: tx.transaction_type,
       transaction_date: tx.transaction_date.slice(0, 10),
-      amount: String(tx.amount),
+      amount: tx.transaction_type === "adjustment" ? String(tx.amount) : String(Math.abs(tx.amount)),
       description: tx.description || "",
       bank_account_id: tx.bank_account_id || "",
       branch_id: tx.branch_id || "",
@@ -339,16 +340,15 @@ const TransactionList: React.FC = () => {
 
   const handleEditSubmit = useCallback(async () => {
     if (!editingTx) return;
-    let amt = Number(String(editForm.amount || "").replace(/[\s,]/g, ""));
+    let amt = parseAmount(editForm.amount);
     if (!Number.isFinite(amt)) {
       alert("Số tiền không hợp lệ");
       return;
     }
-    if (editForm.transaction_type === "payment" && amt < 0) {
+    // Payment/charge/refund are stored as absolute values; the sign convention is
+    // applied at display time by getCustomerBalanceDelta. Adjustments keep sign.
+    if (editForm.transaction_type !== "adjustment") {
       amt = Math.abs(amt);
-    }
-    if (editForm.transaction_type === "charge" && amt > 0) {
-      amt = -Math.abs(amt);
     }
     const dateIso = editForm.transaction_date ? new Date(editForm.transaction_date).toISOString() : editingTx.transaction_date;
     try {
@@ -358,11 +358,12 @@ const TransactionList: React.FC = () => {
           transaction_type: editForm.transaction_type,
           transaction_date: dateIso,
           amount: amt,
-          description: editForm.description,
-          bank_account_id: editForm.bank_account_id,
-          branch_id: editForm.branch_id,
-          reference_number: editForm.reference_number,
-          customer_id: editingTx.customer_id,
+          description: editForm.description.trim() || null,
+          bank_account_id: editForm.bank_account_id || null,
+          branch_id: editForm.branch_id || null,
+          reference_number: editForm.reference_number.trim() || null,
+          transaction_code: editingTx.transaction_code,
+          customer_id: editForm.customer_id || null,
           created_by: editingTx.created_by,
           company_id: editingTx.company_id,
         }
@@ -376,7 +377,7 @@ const TransactionList: React.FC = () => {
     } catch (e) {
       alert("Cập nhật giao dịch thất bại");
     }
-  }, [closeEditModal, editForm.amount, editForm.bank_account_id, editForm.branch_id, editForm.description, editForm.reference_number, editForm.transaction_date, editForm.transaction_type, editingTx, fetchTransactions]);
+  }, [closeEditModal, editForm.amount, editForm.bank_account_id, editForm.branch_id, editForm.customer_id, editForm.description, editForm.reference_number, editForm.transaction_date, editForm.transaction_type, editingTx, fetchTransactions]);
 
   const getBranchName = (branchId: string): string => {
     const match = branches.find((branch) => branch.id === String(branchId));
@@ -712,9 +713,9 @@ const TransactionList: React.FC = () => {
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
                       <span
-                        className={`text-xs sm:text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type)}`}
+                        className={`text-xs sm:text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type, transaction.amount)}`}
                       >
-                        {formatCurrency(transaction.amount)}
+                        {formatCurrency(getCustomerBalanceDelta(transaction.transaction_type, transaction.amount))}
                       </span>
                     </td>
                     <td className="hidden sm:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
@@ -845,7 +846,9 @@ const TransactionList: React.FC = () => {
                   onChange={(e) => setEditForm((p) => ({ ...p, transaction_type: e.target.value as any }))}
                 >
                   {transactionTypes.length ? transactionTypes.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
+                    <option key={t.id} value={t.id}>
+                      {getTransactionTypeName(t.id) === t.id ? t.name : getTransactionTypeName(t.id)}
+                    </option>
                   )) : (
                     <option value="" disabled>Không có loại giao dịch</option>
                   )}
