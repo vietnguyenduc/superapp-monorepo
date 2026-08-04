@@ -579,141 +579,43 @@ export const backupService = {
       }
 
       // Restore branches first (if needed for mapping)
-      if (options.restoreBranches && backupData.branches.length > 0) {
-        for (const branch of backupData.branches) {
-          try {
-            // Check if branch already exists
-            const { data: existingBranch } =
-              await databaseService.branches.getBranchById(branch.id);
-
-            if (!existingBranch || options.overwriteExisting) {
-              // Create or update branch
-              // Note: This would need to be implemented in the branch service
-              result.restored.branches++;
-            }
-          } catch (error) {
-            result.errors.push({
-              type: "branch",
-              message: `Failed to restore branch ${branch.name}`,
-              data: branch,
-            });
-          }
-        }
+      if (options.restoreBranches && backupData.branches.length > 0 && options.company_id) {
+        result.restored.branches = await this.restoreBranches(
+          backupData.branches,
+          options.company_id,
+          options.branchMapping,
+          options.overwriteExisting,
+        );
       }
 
       // Restore bank accounts
-      if (options.restoreBankAccounts && backupData.bank_accounts.length > 0) {
-        for (const bankAccount of backupData.bank_accounts) {
-          try {
-            // Map branch ID if provided
-            if (options.branchMapping && bankAccount.branch_id) {
-              bankAccount.branch_id =
-                options.branchMapping[bankAccount.branch_id] ||
-                bankAccount.branch_id;
-            }
-
-            // Check if bank account already exists
-            const { data: existingAccount } =
-              await databaseService.bankAccounts.getBankAccount(
-                bankAccount.id,
-              );
-
-            if (!existingAccount || options.overwriteExisting) {
-              // Create or update bank account
-              await databaseService.bankAccounts.upsertBankAccount(bankAccount);
-              result.restored.bank_accounts++;
-            }
-          } catch (error) {
-            result.errors.push({
-              type: "bank_account",
-              message: `Failed to restore bank account ${bankAccount.account_name}`,
-              data: bankAccount,
-            });
-          }
-        }
+      if (options.restoreBankAccounts && backupData.bank_accounts.length > 0 && options.company_id) {
+        result.restored.bank_accounts = await this.restoreBankAccounts(
+          backupData.bank_accounts,
+          options.company_id,
+          options.branchMapping,
+          options.overwriteExisting,
+        );
       }
 
       // Restore customers
-      if (options.restoreCustomers && backupData.customers.length > 0) {
-        for (const customer of backupData.customers) {
-          try {
-            // Map branch ID if provided
-            if (options.branchMapping && customer.branch_id) {
-              customer.branch_id =
-                options.branchMapping[customer.branch_id] || customer.branch_id;
-            }
-
-            // Check if customer already exists
-            const { data: existingCustomer } =
-              await databaseService.customers.getCustomerById(customer.id);
-
-            if (!existingCustomer || options.overwriteExisting) {
-              // Create or update customer
-              if (existingCustomer) {
-                await databaseService.customers.updateCustomer(
-                  customer.id,
-                  customer,
-                );
-              } else {
-                await databaseService.customers.createCustomer(customer);
-              }
-              result.restored.customers++;
-            } else {
-              // Skip existing customer
-              continue;
-            }
-          } catch (error) {
-            result.errors.push({
-              type: "customer",
-              message: `Failed to restore customer ${customer.full_name}`,
-              data: customer,
-            });
-          }
-        }
+      if (options.restoreCustomers && backupData.customers.length > 0 && options.company_id) {
+        result.restored.customers = await this.restoreCustomers(
+          backupData.customers,
+          options.company_id,
+          options.branchMapping,
+          options.overwriteExisting,
+        );
       }
 
       // Restore transactions
-      if (options.restoreTransactions && backupData.transactions.length > 0) {
-        for (const transaction of backupData.transactions) {
-          try {
-            // Map branch ID if provided
-            if (options.branchMapping && transaction.branch_id) {
-              transaction.branch_id =
-                options.branchMapping[transaction.branch_id] ||
-                transaction.branch_id;
-            }
-
-            // Check if transaction already exists
-            const { data: existingTransaction } =
-              await databaseService.transactions.getTransactionById(
-                transaction.id,
-              );
-
-            if (!existingTransaction || options.overwriteExisting) {
-              // Create or update transaction
-              if (existingTransaction) {
-                await databaseService.transactions.updateTransaction(
-                  transaction.id,
-                  transaction,
-                );
-              } else {
-                await databaseService.transactions.createTransaction(
-                  transaction,
-                );
-              }
-              result.restored.transactions++;
-            } else {
-              // Skip existing transaction
-              continue;
-            }
-          } catch (error) {
-            result.errors.push({
-              type: "transaction",
-              message: `Failed to restore transaction ${transaction.transaction_code}`,
-              data: transaction,
-            });
-          }
-        }
+      if (options.restoreTransactions && backupData.transactions.length > 0 && options.company_id) {
+        result.restored.transactions = await this.restoreTransactions(
+          backupData.transactions,
+          options.company_id,
+          options.branchMapping,
+          options.overwriteExisting,
+        );
       }
 
       return result;
@@ -929,64 +831,111 @@ export const backupService = {
   },
 
   // Helper: Restore customers
-  async restoreCustomers(customers: any[], companyId: string): Promise<void> {
+  async restoreCustomers(customers: any[], companyId: string, branchMapping?: Record<string, string>, overwriteExisting = false): Promise<number> {
+    let restored = 0;
     for (const customer of customers) {
       try {
-        const { data: existing } = await databaseService.customers.getCustomerById(customer.id);
-        if (existing) {
-          await databaseService.customers.updateCustomer(customer.id, customer);
-        } else {
-          await databaseService.customers.createCustomer(customer);
+        const normalized = this.normalizeRestoreRecord(customer, companyId, branchMapping);
+        const id = String(normalized.id ?? "");
+        const { data: existing } = await databaseService.customers.getCustomerById(id);
+        if (existing && overwriteExisting) {
+          await databaseService.customers.updateCustomer(id, normalized);
+          restored++;
+        } else if (!existing) {
+          const createPayload = { ...normalized };
+          delete createPayload.id;
+          await databaseService.customers.createCustomer(createPayload);
+          restored++;
         }
       } catch (error) {
         console.error(`Failed to restore customer ${customer.id}:`, error);
       }
     }
+    return restored;
   },
 
   // Helper: Restore transactions
-  async restoreTransactions(transactions: any[], companyId: string): Promise<void> {
+  async restoreTransactions(transactions: any[], companyId: string, branchMapping?: Record<string, string>, overwriteExisting = false): Promise<number> {
+    let restored = 0;
     for (const transaction of transactions) {
       try {
-        const { data: existing } = await databaseService.transactions.getTransactionById(transaction.id);
-        if (existing) {
-          await databaseService.transactions.updateTransaction(transaction.id, transaction);
-        } else {
-          await databaseService.transactions.createTransaction(transaction);
+        const normalized = this.normalizeRestoreRecord(transaction, companyId, branchMapping);
+        const id = String(normalized.id ?? "");
+        const { data: existing } = await databaseService.transactions.getTransactionById(id);
+        if (existing && overwriteExisting) {
+          await databaseService.transactions.updateTransaction(id, normalized);
+          restored++;
+        } else if (!existing) {
+          const createPayload = { ...normalized };
+          delete createPayload.id;
+          await databaseService.transactions.createTransaction(createPayload);
+          restored++;
         }
       } catch (error) {
         console.error(`Failed to restore transaction ${transaction.id}:`, error);
       }
     }
+    return restored;
   },
 
   // Helper: Restore bank accounts
-  async restoreBankAccounts(accounts: any[], companyId: string): Promise<void> {
+  async restoreBankAccounts(accounts: any[], companyId: string, branchMapping?: Record<string, string>, overwriteExisting = false): Promise<number> {
+    let restored = 0;
     for (const account of accounts) {
       try {
-        await databaseService.bankAccounts.upsertBankAccount(account);
+        const normalized = this.normalizeRestoreRecord(account, companyId, branchMapping);
+        const id = String(normalized.id ?? "");
+        const { data: existing } = await databaseService.bankAccounts.getBankAccount(id);
+        if (existing && overwriteExisting) {
+          await databaseService.bankAccounts.upsertBankAccount({ ...normalized, id });
+          restored++;
+        } else if (!existing) {
+          const createPayload = { ...normalized };
+          delete createPayload.id;
+          await databaseService.bankAccounts.upsertBankAccount(createPayload);
+          restored++;
+        }
       } catch (error) {
         console.error(`Failed to restore bank account ${account.id}:`, error);
       }
     }
+    return restored;
   },
 
   // Helper: Restore branches
-  async restoreBranches(branches: any[], companyId: string): Promise<void> {
+  async restoreBranches(branches: any[], companyId: string, branchMapping?: Record<string, string>, overwriteExisting = false): Promise<number> {
+    let restored = 0;
     for (const branch of branches) {
       try {
-        const { data: existing } = await databaseService.branches.getBranchById(branch.id);
-        if (existing) {
-          // Update branch (would need to implement updateBranch in service)
-          console.log(`Branch ${branch.id} already exists, skipping`);
-        } else {
-          // Create branch (would need to implement createBranch in service)
-          console.log(`Creating branch ${branch.id}`);
+        const normalized = this.normalizeRestoreRecord(branch, companyId, branchMapping);
+        const id = String(normalized.id ?? "");
+        const { data: existing } = await databaseService.branches.getBranchById(id);
+        if (existing && overwriteExisting) {
+          await databaseService.branches.upsertBranch({ ...normalized, id });
+          restored++;
+        } else if (!existing) {
+          const createPayload = { ...normalized };
+          delete createPayload.id;
+          await databaseService.branches.upsertBranch(createPayload);
+          restored++;
         }
       } catch (error) {
         console.error(`Failed to restore branch ${branch.id}:`, error);
       }
     }
+    return restored;
+  },
+
+  // Normalize a backup record for restoration into the active tenant.
+  normalizeRestoreRecord(record: Record<string, unknown>, companyId: string, branchMapping?: Record<string, string>): Record<string, unknown> {
+    const normalized = { ...record };
+    normalized.company_id = companyId;
+    delete normalized.created_at;
+    delete normalized.updated_at;
+    if (branchMapping && normalized.branch_id && typeof normalized.branch_id === "string") {
+      normalized.branch_id = branchMapping[normalized.branch_id] ?? normalized.branch_id;
+    }
+    return normalized;
   },
 };
 

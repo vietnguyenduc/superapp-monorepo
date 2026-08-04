@@ -1,74 +1,23 @@
 import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
 import { trialGet, trialDelete } from "./trialMockStore";
-import { customerService } from "./customerService";
-import { transactionService } from "./transactionService";
-import { branchService } from "./branchService";
-import { bankAccountService } from "./bankAccountService";
+import { backupService } from "../utils/backupRecovery";
 
 export class BackupHistoryService extends BaseService {
-  static async restoreCustomers(customers: Record<string, unknown>[]) {
-    for (const customer of customers) {
-      try {
-        const id = String(customer.id ?? "");
-        const { data: existing } = await customerService.getCustomerById(id);
-        if (existing) {
-          await customerService.updateCustomer(id, customer);
-        } else {
-          await customerService.createCustomer(customer);
-        }
-      } catch (error) {
-        console.error(`Failed to restore customer ${String(customer.id ?? "")}:`, error);
-      }
-    }
+  static async restoreCustomers(customers: Record<string, unknown>[], companyId: string) {
+    await backupService.restoreCustomers(customers, companyId);
   }
 
-  static async restoreTransactions(transactions: Record<string, unknown>[]) {
-    for (const transaction of transactions) {
-      try {
-        const id = String(transaction.id ?? "");
-        const { data: existing } = await transactionService.getTransactionById(id);
-        if (existing) {
-          await transactionService.updateTransaction(id, transaction);
-        } else {
-          await transactionService.createTransaction(transaction);
-        }
-      } catch (error) {
-        console.error(`Failed to restore transaction ${String(transaction.id ?? "")}:`, error);
-      }
-    }
+  static async restoreTransactions(transactions: Record<string, unknown>[], companyId: string) {
+    await backupService.restoreTransactions(transactions, companyId);
   }
 
-  static async restoreBranches(branches: Record<string, unknown>[]) {
-    for (const branch of branches) {
-      try {
-        const id = String(branch.id ?? "");
-        const { data: existing } = await branchService.getBranchById(id);
-        if (existing) {
-          console.log(`Branch ${id} already exists, skipping`);
-        } else {
-          console.log(`Creating branch ${id}`);
-        }
-      } catch (error) {
-        console.error(`Failed to restore branch ${String(branch.id ?? "")}:`, error);
-      }
-    }
+  static async restoreBranches(branches: Record<string, unknown>[], companyId: string) {
+    await backupService.restoreBranches(branches, companyId);
   }
 
-  static async restoreBankAccounts(bankAccounts: Record<string, unknown>[]) {
-    for (const bankAccount of bankAccounts) {
-      try {
-        const id = String(bankAccount.id ?? "");
-        const { data: existing } = await bankAccountService.getBankAccount(id);
-        if (existing) {
-          console.log(`Bank account ${id} already exists, skipping`);
-        } else {
-          console.log(`Creating bank account ${id}`);
-        }
-      } catch (error) {
-        console.error(`Failed to restore bank account ${String(bankAccount.id ?? "")}:`, error);
-      }
-    }
+  static async restoreBankAccounts(bankAccounts: Record<string, unknown>[], companyId: string) {
+    await backupService.restoreBankAccounts(bankAccounts, companyId);
   }
 
   static async cleanupOldBackups(companyId: string) {
