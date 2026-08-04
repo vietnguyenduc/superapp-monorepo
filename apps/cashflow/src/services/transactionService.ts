@@ -1,7 +1,7 @@
 import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
 import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
-import { validateTransactionData, transformRawTransaction, parseAmount, normalizeTransactionType } from "./businessLogic";
+import { validateTransactionData, transformRawTransaction, parseAmount, normalizeTransactionType, getCustomerBalanceDelta, getBankAccountBalanceDelta } from "./businessLogic";
 import { updateWithFallback, insertWithFallback, bulkInsertWithFallback } from "./updateHelpers";
 import { v4 as uuid } from "uuid";
 import type { Transaction, Customer, BankAccount, Branch, User } from "../types";
@@ -9,6 +9,173 @@ import type { Transaction, Customer, BankAccount, Branch, User } from "../types"
 const getNowIso = () => new Date().toISOString();
 
 export class TransactionService extends BaseService {
+  private static async _getTransactionForBalanceSync(id: string) {
+    const { data, error } = await apiClient
+      .from("transactions")
+      .select("customer_id, bank_account_id, transaction_type, amount, transaction_date, company_id")
+      .eq("id", id)
+      .single();
+    if (error || !data) return null;
+    return data as Record<string, unknown>;
+  }
+
+  private static _balanceFields(tx: Record<string, unknown>) {
+    return {
+      customer_id: tx.customer_id ? String(tx.customer_id) : null,
+      bank_account_id: tx.bank_account_id ? String(tx.bank_account_id) : null,
+      transaction_type: String(tx.transaction_type || ""),
+      amount: tx.amount ?? 0,
+      transaction_date: String(tx.transaction_date || getNowIso()),
+      company_id: tx.company_id ? String(tx.company_id) : null,
+    };
+  }
+
+  private static async _adjustCustomerBalance(
+    customerId: string | null | undefined,
+    delta: number,
+    transactionDate: string,
+    companyId?: string | null,
+  ) {
+    if (!customerId || delta === 0) return;
+    let q = apiClient.from("customers").select("total_balance, last_transaction_date").eq("id", customerId);
+    if (companyId) q = q.eq("company_id", companyId);
+    const { data: customer } = await q.single();
+    if (!customer) return;
+
+    const c = customer as Record<string, unknown>;
+    const currentBalance = parseAmount(c.total_balance) || 0;
+    const currentLastDate = String(c.last_transaction_date || "");
+    const newBalance = currentBalance + delta;
+    const newLastDate = !currentLastDate || transactionDate > currentLastDate ? transactionDate : currentLastDate;
+
+    const update: Record<string, unknown> = { total_balance: newBalance, updated_at: getNowIso() };
+    if (newLastDate !== currentLastDate) update.last_transaction_date = newLastDate;
+
+    await apiClient.from("customers").update(update).eq("id", customerId);
+  }
+
+  private static async _adjustBankAccountBalance(
+    accountId: string | null | undefined,
+    delta: number,
+    companyId?: string | null,
+  ) {
+    if (!accountId || delta === 0) return;
+    let q = apiClient.from("bank_accounts").select("balance").eq("id", accountId);
+    if (companyId) q = q.eq("company_id", companyId);
+    const { data: account } = await q.single();
+    if (!account) return;
+
+    const a = account as Record<string, unknown>;
+    const currentBalance = parseAmount(a.balance) || 0;
+    const newBalance = currentBalance + delta;
+
+    await apiClient.from("bank_accounts").update({ balance: newBalance, updated_at: getNowIso() }).eq("id", accountId);
+  }
+
+  private static async _syncTransactionBalance(
+    previous: Record<string, unknown> | null,
+    current: Record<string, unknown> | null,
+    companyId?: string | null,
+  ) {
+    if (!previous && !current) return;
+
+    const oldTx = previous ? this._balanceFields(previous) : null;
+    const newTx = current ? this._balanceFields(current) : null;
+
+    const oldCustomerDelta = oldTx ? getCustomerBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0;
+    const newCustomerDelta = newTx ? getCustomerBalanceDelta(newTx.transaction_type, newTx.amount) : 0;
+    const oldBankDelta = oldTx ? getBankAccountBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0;
+    const newBankDelta = newTx ? getBankAccountBalanceDelta(newTx.transaction_type, newTx.amount) : 0;
+
+    const oldCustomer = oldTx?.customer_id;
+    const newCustomer = newTx?.customer_id;
+    const oldBank = oldTx?.bank_account_id;
+    const newBank = newTx?.bank_account_id;
+
+    if (oldCustomer === newCustomer) {
+      await this._adjustCustomerBalance(newCustomer, newCustomerDelta - oldCustomerDelta, newTx?.transaction_date || getNowIso(), companyId);
+    } else {
+      if (oldCustomer) await this._adjustCustomerBalance(oldCustomer, -oldCustomerDelta, oldTx?.transaction_date || getNowIso(), companyId);
+      if (newCustomer) await this._adjustCustomerBalance(newCustomer, newCustomerDelta, newTx?.transaction_date || getNowIso(), companyId);
+    }
+
+    if (oldBank === newBank) {
+      await this._adjustBankAccountBalance(newBank, newBankDelta - oldBankDelta, companyId);
+    } else {
+      if (oldBank) await this._adjustBankAccountBalance(oldBank, -oldBankDelta, companyId);
+      if (newBank) await this._adjustBankAccountBalance(newBank, newBankDelta, companyId);
+    }
+  }
+
+  // ----- trial helpers -----
+  private static _trialAdjustCustomerBalance(
+    customerId: string | null | undefined,
+    delta: number,
+    transactionDate: string,
+  ) {
+    if (!customerId || delta === 0) return;
+    const customers = (trialGet("customers") || []) as Customer[];
+    const idx = customers.findIndex((c) => c.id === customerId);
+    if (idx === -1) return;
+
+    const currentBalance = parseAmount(customers[idx].total_balance) || 0;
+    const currentLastDate = String(customers[idx].last_transaction_date || "");
+    const newBalance = currentBalance + delta;
+    const newLastDate = !currentLastDate || transactionDate > currentLastDate ? transactionDate : currentLastDate;
+
+    const updates: Record<string, unknown> = { total_balance: newBalance };
+    if (newLastDate !== currentLastDate) updates.last_transaction_date = newLastDate;
+    trialUpdate("customers", customerId, updates);
+  }
+
+  private static _trialAdjustBankAccountBalance(
+    accountId: string | null | undefined,
+    delta: number,
+  ) {
+    if (!accountId || delta === 0) return;
+    const accounts = (trialGet("bank_accounts") || []) as BankAccount[];
+    const idx = accounts.findIndex((b) => b.id === accountId);
+    if (idx === -1) return;
+
+    const currentBalance = parseAmount(accounts[idx].balance) || 0;
+    const newBalance = currentBalance + delta;
+    trialUpdate("bank_accounts", accountId, { balance: newBalance });
+  }
+
+  private static _trialSyncTransactionBalance(
+    previous: Record<string, unknown> | null,
+    current: Record<string, unknown> | null,
+  ) {
+    if (!previous && !current) return;
+
+    const oldTx = previous ? this._balanceFields(previous) : null;
+    const newTx = current ? this._balanceFields(current) : null;
+
+    const oldCustomerDelta = oldTx ? getCustomerBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0;
+    const newCustomerDelta = newTx ? getCustomerBalanceDelta(newTx.transaction_type, newTx.amount) : 0;
+    const oldBankDelta = oldTx ? getBankAccountBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0;
+    const newBankDelta = newTx ? getBankAccountBalanceDelta(newTx.transaction_type, newTx.amount) : 0;
+
+    const oldCustomer = oldTx?.customer_id;
+    const newCustomer = newTx?.customer_id;
+    const oldBank = oldTx?.bank_account_id;
+    const newBank = newTx?.bank_account_id;
+
+    if (oldCustomer === newCustomer) {
+      this._trialAdjustCustomerBalance(newCustomer, newCustomerDelta - oldCustomerDelta, newTx?.transaction_date || getNowIso());
+    } else {
+      if (oldCustomer) this._trialAdjustCustomerBalance(oldCustomer, -oldCustomerDelta, oldTx?.transaction_date || getNowIso());
+      if (newCustomer) this._trialAdjustCustomerBalance(newCustomer, newCustomerDelta, newTx?.transaction_date || getNowIso());
+    }
+
+    if (oldBank === newBank) {
+      this._trialAdjustBankAccountBalance(newBank, newBankDelta - oldBankDelta);
+    } else {
+      if (oldBank) this._trialAdjustBankAccountBalance(oldBank, -oldBankDelta);
+      if (newBank) this._trialAdjustBankAccountBalance(newBank, newBankDelta);
+    }
+  }
+
   static async getTransactions(filters?: Record<string, unknown>) {
     return this.execute(
       async () => {
@@ -177,6 +344,9 @@ export class TransactionService extends BaseService {
 
         const transformed = transformRawTransaction(transactionData) as Record<string, unknown>;
         const { data, error } = await insertWithFallback("transactions", transformed);
+        if (error) return { data, error };
+
+        await this._syncTransactionBalance(null, transformed, transformed.company_id as string | null | undefined);
         return { data, error };
       },
       async () => {
@@ -185,6 +355,7 @@ export class TransactionService extends BaseService {
 
         const transformed = transformRawTransaction(transactionData) as Record<string, unknown>;
         const result = trialInsert("transactions", transformed);
+        this._trialSyncTransactionBalance(null, result || transformed);
         return { data: result, error: null };
       }
     );
@@ -196,6 +367,8 @@ export class TransactionService extends BaseService {
         const validation = validateTransactionData(transactionData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
 
+        const oldTx = await this._getTransactionForBalanceSync(id);
+
         const updatePayload: Record<string, unknown> = {
           ...transactionData,
           updated_at: getNowIso(),
@@ -206,11 +379,18 @@ export class TransactionService extends BaseService {
         delete updatePayload.company_id;
 
         const { data, error } = await updateWithFallback("transactions", id, updatePayload);
+        if (error) return { data, error };
+
+        const newTx = oldTx ? { ...oldTx, ...updatePayload } : updatePayload;
+        await this._syncTransactionBalance(oldTx, newTx, oldTx?.company_id as string | null | undefined);
         return { data, error };
       },
       async () => {
         const validation = validateTransactionData(transactionData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
+
+        const allTxs = (trialGet("transactions") || []) as Transaction[];
+        const oldTx = allTxs.find((t) => t.id === id);
 
         const updatePayload: Record<string, unknown> = {
           ...transactionData,
@@ -222,6 +402,8 @@ export class TransactionService extends BaseService {
         delete updatePayload.company_id;
 
         const result = trialUpdate("transactions", id, updatePayload);
+        const newTx = oldTx ? { ...oldTx, ...updatePayload } : updatePayload;
+        this._trialSyncTransactionBalance(oldTx || null, newTx);
         return { data: result, error: null };
       }
     );
@@ -230,11 +412,18 @@ export class TransactionService extends BaseService {
   static async deleteTransaction(id: string) {
     return this.execute(
       async () => {
+        const oldTx = await this._getTransactionForBalanceSync(id);
         const { error } = await apiClient.from("transactions").delete().eq("id", id);
+        if (!error && oldTx) {
+          await this._syncTransactionBalance(oldTx, null, oldTx.company_id as string | null | undefined);
+        }
         return { data: null, error };
       },
       async () => {
+        const allTxs = (trialGet("transactions") || []) as Transaction[];
+        const oldTx = allTxs.find((t) => t.id === id);
         trialDelete("transactions", id);
+        if (oldTx) this._trialSyncTransactionBalance(oldTx, null);
         return { data: null, error: null };
       }
     );
@@ -360,6 +549,11 @@ export class TransactionService extends BaseService {
         });
 
         const { data, error } = await bulkInsertWithFallback("transactions", body as Record<string, unknown>[]);
+        if (!error) {
+          for (const row of body) {
+            await this._syncTransactionBalance(null, row as Record<string, unknown>, companyId || null);
+          }
+        }
         return { data: data || [], error };
       },
       async () => {
@@ -408,6 +602,9 @@ export class TransactionService extends BaseService {
         });
 
         const inserted = body.map((tx) => trialInsert("transactions", tx as Record<string, unknown>));
+        for (const tx of body) {
+          this._trialSyncTransactionBalance(null, tx as Record<string, unknown>);
+        }
         return { data: inserted, error: null };
       }
     );
