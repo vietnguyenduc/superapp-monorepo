@@ -11,6 +11,7 @@ import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import Pagination from "../../components/UI/Pagination";
 import PageHeader from "../../components/UI/PageHeader";
+import TransactionEditModal, { type TransactionEditFormValues } from "./components/TransactionEditModal";
 
 interface TransactionListState {
   transactions: Transaction[];
@@ -70,16 +71,6 @@ const TransactionList: React.FC = () => {
   const debouncedSearchTerm = useDebounce(state.searchTerm, 300);
 
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
-  const [editForm, setEditForm] = useState({
-    transaction_type: "payment" as Transaction["transaction_type"],
-    transaction_date: "",
-    amount: "",
-    description: "",
-    bank_account_id: "",
-    branch_id: "",
-    reference_number: "",
-    customer_id: "",
-  });
 
   // Initialize customer filter from URL params
   useEffect(() => {
@@ -163,30 +154,38 @@ const TransactionList: React.FC = () => {
         databaseService.transactionTypes.getTransactionTypes(companyId),
       ]);
 
+      const getName = (record: Record<string, unknown>, ...keys: string[]) => {
+        for (const key of keys) {
+          const value = record[key];
+          if (value != null) return String(value);
+        }
+        return String(record.id ?? "");
+      };
+
       if (branchResult?.data) {
         setBranches(
-          branchResult.data.map((branch: any) => ({
-            id: String(branch.id),
-            name: String(branch.name || branch.branch_name || branch.code || branch.id),
+          branchResult.data.map((branch: Record<string, unknown>) => ({
+            id: String(branch.id ?? ""),
+            name: getName(branch, "name", "branch_name", "code"),
           })),
         );
       }
 
       if (bankResult?.data) {
         setBankAccounts(
-          bankResult.data.map((account: any) => ({
-            id: String(account.id),
-            name: String(account.account_name || account.bank_name || account.id),
+          bankResult.data.map((account: Record<string, unknown>) => ({
+            id: String(account.id ?? ""),
+            name: getName(account, "account_name", "bank_name"),
           })),
         );
       }
 
       if (customerResult?.data) {
         setCustomers(
-          customerResult.data.map((customer: any) => ({
-            id: String(customer.id),
-            name: String(customer.full_name || customer.customer_name || customer.customer_code || customer.id),
-            code: customer.customer_code,
+          customerResult.data.map((customer: Record<string, unknown>) => ({
+            id: String(customer.id ?? ""),
+            name: getName(customer, "full_name", "customer_name", "customer_code"),
+            code: customer.customer_code == null ? undefined : String(customer.customer_code),
           })),
         );
       }
@@ -194,14 +193,19 @@ const TransactionList: React.FC = () => {
       if (typeResult?.data) {
         const seen = new Set<string>();
         const names = typeResult.data
-          .filter((t: any) => t?.is_active !== false && t?.isActive !== false)
-          .filter((t: any) => {
+          .filter((t: Record<string, unknown>) =>
+            String(t.is_active ?? t.isActive ?? true) !== "false"
+          )
+          .filter((t: Record<string, unknown>) => {
             const name = String(t.name || "").trim();
             if (!name || seen.has(name.toLowerCase())) return false;
             seen.add(name.toLowerCase());
             return true;
           })
-          .map((t: any) => ({ id: String(t.id || t.value || t.name), name: String(t.name || t.id || t.value) }));
+          .map((t: Record<string, unknown>) => ({
+            id: String(t.id ?? t.value ?? t.name ?? ""),
+            name: String(t.name ?? t.id ?? t.value ?? ""),
+          }));
         if (names.length > 0) setTransactionTypes(names);
       }
     };
@@ -323,48 +327,40 @@ const TransactionList: React.FC = () => {
 
   const openEditModal = useCallback((tx: Transaction) => {
     setEditingTx(tx);
-    setEditForm({
-      transaction_type: tx.transaction_type,
-      transaction_date: tx.transaction_date.slice(0, 10),
-      amount: tx.transaction_type === "adjustment" ? String(tx.amount) : String(Math.abs(tx.amount)),
-      description: tx.description || "",
-      bank_account_id: tx.bank_account_id || "",
-      branch_id: tx.branch_id || "",
-      reference_number: tx.reference_number || "",
-      customer_id: tx.customer_id || "",
-    });
   }, []);
 
   const closeEditModal = useCallback(() => {
     setEditingTx(null);
   }, []);
 
-  const handleEditSubmit = useCallback(async () => {
+  const handleEditSubmit = useCallback(async (values: TransactionEditFormValues) => {
     if (!editingTx) return;
-    let amt = parseAmount(editForm.amount);
+    let amt = parseAmount(values.amount);
     if (!Number.isFinite(amt)) {
       toast.error("Số tiền không hợp lệ");
       return;
     }
     // Payment/charge/refund are stored as absolute values; the sign convention is
     // applied at display time by getCustomerBalanceDelta. Adjustments keep sign.
-    if (editForm.transaction_type !== "adjustment") {
+    if (values.transaction_type !== "adjustment") {
       amt = Math.abs(amt);
     }
-    const dateIso = editForm.transaction_date ? new Date(editForm.transaction_date).toISOString() : editingTx.transaction_date;
+    const dateIso = values.transaction_date
+      ? new Date(values.transaction_date).toISOString()
+      : editingTx.transaction_date;
     try {
       const result = await databaseService.transactions.updateTransaction(
         editingTx.id,
         {
-          transaction_type: editForm.transaction_type,
+          transaction_type: values.transaction_type,
           transaction_date: dateIso,
           amount: amt,
-          description: editForm.description.trim() || null,
-          bank_account_id: editForm.bank_account_id || null,
-          branch_id: editForm.branch_id || null,
-          reference_number: editForm.reference_number.trim() || null,
+          description: values.description.trim() || null,
+          bank_account_id: values.bank_account_id || null,
+          branch_id: values.branch_id || null,
+          reference_number: values.reference_number.trim() || null,
           transaction_code: editingTx.transaction_code,
-          customer_id: editForm.customer_id || null,
+          customer_id: values.customer_id || null,
           created_by: editingTx.created_by,
           company_id: editingTx.company_id,
         }
@@ -378,7 +374,7 @@ const TransactionList: React.FC = () => {
     } catch (e) {
       toast.error("Cập nhật giao dịch thất bại");
     }
-  }, [closeEditModal, editForm.amount, editForm.bank_account_id, editForm.branch_id, editForm.customer_id, editForm.description, editForm.reference_number, editForm.transaction_date, editForm.transaction_type, editingTx, fetchTransactions]);
+  }, [closeEditModal, editingTx, fetchTransactions]);
 
   const getBranchName = (branchId: string): string => {
     const match = branches.find((branch) => branch.id === String(branchId));
@@ -809,139 +805,17 @@ const TransactionList: React.FC = () => {
         </div>
       </div>
 
-      {editingTx && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-xl p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Chỉnh sửa giao dịch</h3>
-              <button
-                type="button"
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                onClick={closeEditModal}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Khách hàng</label>
-                <select
-                  className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                  value={editForm.customer_id}
-                  onChange={(e) => setEditForm((p) => ({ ...p, customer_id: e.target.value }))}
-                >
-                  <option value="">Chọn khách hàng</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.code})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Loại giao dịch</label>
-                <select
-                  className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                  value={editForm.transaction_type}
-                  onChange={(e) => setEditForm((p) => ({ ...p, transaction_type: e.target.value as any }))}
-                >
-                  {transactionTypes.length ? transactionTypes.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {getTransactionTypeName(t.id) === t.id ? t.name : getTransactionTypeName(t.id)}
-                    </option>
-                  )) : (
-                    <option value="" disabled>Không có loại giao dịch</option>
-                  )}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ngày giao dịch</label>
-                <input
-                  type="date"
-                  className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                  value={editForm.transaction_date}
-                  onChange={(e) => setEditForm((p) => ({ ...p, transaction_date: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Số tiền</label>
-                <input
-                  type="text"
-                  className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                  value={editForm.amount}
-                  onChange={(e) => setEditForm((p) => ({ ...p, amount: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Văn phòng</label>
-                <select
-                  className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                  value={editForm.branch_id}
-                  onChange={(e) => setEditForm((p) => ({ ...p, branch_id: e.target.value }))}
-                >
-                  <option value="">Chọn văn phòng</option>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tài khoản</label>
-                <select
-                  className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                  value={editForm.bank_account_id}
-                  onChange={(e) => setEditForm((p) => ({ ...p, bank_account_id: e.target.value }))}
-                >
-                  <option value="">Chọn tài khoản</option>
-                  {bankAccounts.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mô tả</label>
-                <textarea
-                  className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                  rows={2}
-                  value={editForm.description}
-                  onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mã tham chiếu</label>
-                <input
-                  type="text"
-                  className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                  value={editForm.reference_number}
-                  onChange={(e) => setEditForm((p) => ({ ...p, reference_number: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                className="px-4 py-2 rounded border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                onClick={closeEditModal}
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700"
-                onClick={handleEditSubmit}
-              >
-                Lưu
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <TransactionEditModal
+        isOpen={Boolean(editingTx)}
+        transaction={editingTx}
+        customers={customers}
+        transactionTypes={transactionTypes}
+        branches={branches}
+        bankAccounts={bankAccounts}
+        getTransactionTypeName={getTransactionTypeName}
+        onClose={closeEditModal}
+        onSubmit={handleEditSubmit}
+      />
     </>
   );
 };

@@ -81,8 +81,6 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       newErrors.email = t("customers.form.errors.emailInvalid");
     }
 
-    // Phone is optional and accepts free text — no format validation
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -113,24 +111,52 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     if (e.key === "Escape") onClose();
   };
 
+  const inputClass = (hasError?: string) =>
+    `block w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm transition-colors focus:outline-none focus:ring-2 dark:bg-gray-800 dark:text-white ${
+      hasError
+        ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+        : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600"
+    }`;
+
+  const ErrorMessage: React.FC<{ message?: string }> = ({ message }) =>
+    message ? (
+      <p className="mt-1.5 flex items-center text-sm text-red-600">
+        <svg
+          className="mr-1 h-4 w-4 flex-shrink-0"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        {message}
+      </p>
+    ) : null;
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto pointer-events-none">
-      <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0 pointer-events-none">
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex min-h-screen items-center justify-center p-4 text-center sm:p-0">
         <div
-          className="fixed inset-0 bg-gray-700/70 dark:bg-gray-900/80 transition-opacity pointer-events-auto"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
           onClick={onClose}
         />
-        <div className="inline-block align-bottom bg-white dark:bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl sm:w-full w-full mx-4 sm:mx-0 pointer-events-auto">
+
+        <div className="relative inline-block w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white dark:bg-gray-900 text-left shadow-2xl transition-all">
           <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
-            <div className="bg-white dark:bg-gray-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 max-h-[calc(100vh-12rem)] overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
+            <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                  <h3 className="text-lg font-semibold text-white">
                     {mode === "create"
                       ? t("customers.form.createTitle")
                       : t("customers.form.editTitle")}
                   </h3>
-                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  <p className="mt-0.5 text-sm text-indigo-100">
                     {mode === "create"
                       ? t("customers.form.createSubtitle")
                       : t("customers.form.editSubtitle")}
@@ -139,10 +165,10 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  className="rounded-full p-1 text-indigo-100 hover:bg-white/10 hover:text-white"
                 >
                   <svg
-                    className="w-6 h-6"
+                    className="h-6 w-6"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -156,87 +182,51 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                   </svg>
                 </button>
               </div>
+            </div>
 
-              <div className="space-y-4">
+            <div className="px-6 py-5 max-h-[calc(100vh-14rem)] overflow-y-auto">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>
                   <label
                     htmlFor="customer_code"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
-                    {t("customers.form.customerCode")} *
+                    {t("customers.form.customerCode")}
                   </label>
                   <input
                     type="text"
                     id="customer_code"
+                    autoFocus={mode === "create"}
                     value={formData.customer_code}
-                    autoFocus
-                    onChange={(e) =>
-                      handleInputChange("customer_code", e.target.value)
-                    }
-                    className={`mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
-                      errors.customer_code ? "border-red-300" : ""
-                    }`}
+                    onChange={(e) => handleInputChange("customer_code", e.target.value)}
+                    className={inputClass(errors.customer_code)}
                     placeholder={t("customers.form.customerCodePlaceholder")}
                   />
-                  {errors.customer_code && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.customer_code}
-                    </p>
-                  )}
+                  <ErrorMessage message={errors.customer_code} />
                 </div>
 
                 <div>
                   <label
                     htmlFor="full_name"
-                    className="block text-sm font-medium text-gray-700"
+                    className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
-                    {t("customers.form.fullName")} *
+                    {t("customers.form.fullName")} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     id="full_name"
                     value={formData.full_name}
-                    onChange={(e) =>
-                      handleInputChange("full_name", e.target.value)
-                    }
-                    className={`mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
-                      errors.full_name ? "border-red-300" : ""
-                    }`}
+                    onChange={(e) => handleInputChange("full_name", e.target.value)}
+                    className={inputClass(errors.full_name)}
                     placeholder={t("customers.form.fullNamePlaceholder")}
                   />
-                  {errors.full_name && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.full_name}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
-                    {t("customers.form.email")}
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    className={`mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
-                      errors.email ? "border-red-300" : ""
-                    }`}
-                    placeholder={t("customers.form.emailPlaceholder")}
-                  />
-                  {errors.email && (
-                    <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-                  )}
+                  <ErrorMessage message={errors.full_name} />
                 </div>
 
                 <div>
                   <label
                     htmlFor="phone"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     {t("customers.form.phone")}
                   </label>
@@ -245,31 +235,43 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     id="phone"
                     value={formData.phone}
                     onChange={(e) => handleInputChange("phone", e.target.value)}
-                    className={`mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
-                      errors.phone ? "border-red-300" : ""
-                    }`}
+                    className={inputClass(errors.phone)}
                     placeholder={t("customers.form.phonePlaceholder")}
                   />
-                  {errors.phone && (
-                    <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-                  )}
+                  <ErrorMessage message={errors.phone} />
                 </div>
 
                 <div>
                   <label
+                    htmlFor="email"
+                    className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {t("customers.form.email")}
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    className={inputClass(errors.email)}
+                    placeholder={t("customers.form.emailPlaceholder")}
+                  />
+                  <ErrorMessage message={errors.email} />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label
                     htmlFor="address"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     {t("customers.form.address")}
                   </label>
                   <textarea
                     id="address"
-                    rows={3}
+                    rows={2}
                     value={formData.address}
-                    onChange={(e) =>
-                      handleInputChange("address", e.target.value)
-                    }
-                    className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    onChange={(e) => handleInputChange("address", e.target.value)}
+                    className={inputClass()}
                     placeholder={t("customers.form.addressPlaceholder")}
                   />
                 </div>
@@ -277,7 +279,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 <div>
                   <label
                     htmlFor="nguoi_dai_dien"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     Người đại diện
                   </label>
@@ -285,10 +287,8 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     type="text"
                     id="nguoi_dai_dien"
                     value={formData.nguoi_dai_dien}
-                    onChange={(e) =>
-                      handleInputChange("nguoi_dai_dien", e.target.value)
-                    }
-                    className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    onChange={(e) => handleInputChange("nguoi_dai_dien", e.target.value)}
+                    className={inputClass()}
                     placeholder="Người đại diện"
                   />
                 </div>
@@ -296,31 +296,27 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 <div>
                   <label
                     htmlFor="working_method"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     Cách làm việc công nợ
                   </label>
                   <textarea
                     id="working_method"
-                    rows={4}
+                    rows={2}
                     value={formData.working_method}
-                    onChange={(e) =>
-                      handleInputChange("working_method", e.target.value)
-                    }
-                    className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    onChange={(e) => handleInputChange("working_method", e.target.value)}
+                    className={inputClass()}
                     placeholder="Ví dụ: Thu nợ theo chu kỳ 7 ngày, đối soát thứ Hai, thanh toán trước 17:00..."
                   />
                 </div>
 
-                <div className="flex items-center">
+                <div className="flex items-center sm:col-span-2">
                   <input
                     type="checkbox"
                     id="is_active"
                     checked={formData.is_active}
-                    onChange={(e) =>
-                      handleInputChange("is_active", e.target.checked)
-                    }
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+                    onChange={(e) => handleInputChange("is_active", e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
                   />
                   <label
                     htmlFor="is_active"
@@ -331,8 +327,8 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 </div>
 
                 {mode === "create" && (
-                  <div className="rounded-md border border-dashed border-gray-200 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-800/60">
-                    <div className="flex items-start space-x-2">
+                  <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/60 sm:col-span-2">
+                    <div className="flex items-start space-x-3">
                       <input
                         type="checkbox"
                         id="create_transactions"
@@ -340,7 +336,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                         onChange={(e) =>
                           handleInputChange("create_transactions", e.target.checked)
                         }
-                        className="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+                        className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
                       />
                       <label
                         htmlFor="create_transactions"
@@ -349,7 +345,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                         <span className="font-medium">
                           {t("customers.form.createTransactions")}
                         </span>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                           {t("customers.form.createTransactionsHint")}
                         </p>
                       </label>
@@ -357,50 +353,49 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                   </div>
                 )}
               </div>
+            </div>
 
-              <div className="flex justify-end mt-6">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-gray-900 sm:mt-0 sm:mr-3 sm:w-auto sm:text-sm"
-                >
-                  {t("common.cancel")}
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-0 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      {t("common.saving")}
-                    </>
-                  ) : mode === "create" ? (
-                    t("customers.form.create")
-                  ) : (
-                    t("customers.form.save")
-                  )}
-                </button>
-              </div>
+            <div className="flex items-center justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-800/50">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+              >
+                {t("common.cancel")}
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex items-center rounded-lg border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-gray-900"
+              >
+                {isSubmitting && (
+                  <svg
+                    className="-ml-1 mr-2 h-4 w-4 animate-spin text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth={4}
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                )}
+                {isSubmitting
+                  ? t("common.saving")
+                  : mode === "create"
+                    ? t("customers.form.create")
+                    : t("customers.form.save")}
+              </button>
             </div>
           </form>
         </div>

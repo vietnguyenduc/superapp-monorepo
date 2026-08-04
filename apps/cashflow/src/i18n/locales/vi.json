@@ -383,6 +383,12 @@
       "charge": "Phát sinh tăng",
       "adjustment": "Điều chỉnh",
       "refund": "Hoàn tiền"
+    },
+    "errors": {
+      "customerRequired": "Vui lòng chọn khách hàng",
+      "typeRequired": "Vui lòng chọn loại giao dịch",
+      "dateRequired": "Vui lòng chọn ngày giao dịch",
+      "amountInvalid": "Số tiền phải lớn hơn 0"
     }
   },
   "import": {
