@@ -107,7 +107,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
           0;
         // Receivable delta (customer): use math_factor from database
         const mathFactor = getTransactionMathFactor(tx.transaction_type);
-        let deltaReceivable = tx.amount * mathFactor;
+        const deltaReceivable = tx.amount * mathFactor;
 
         // Cash delta (bank account): charge does not move cash; payment adds; refund subtracts; adjustment signed
         let deltaCash = 0;

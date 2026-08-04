@@ -14,30 +14,30 @@ export class TransactionTypeService extends BaseService {
         
         if (error || !data) return { data: [], error: error || { message: "Not found" } };
         
-        const allTypes = data.map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          color: t.color || "blue",
+        const allTypes = (data as Record<string, unknown>[]).map((t) => ({
+          id: String(t.id ?? ""),
+          name: String(t.name ?? ""),
+          color: String(t.color || "blue"),
           isActive: t.is_active !== false,
-          math_factor: t.math_factor ?? 1,
-          impact_type: t.impact_type ?? "increase",
-          company_id: t.company_id,
+          math_factor: Number(t.math_factor ?? 1),
+          impact_type: String(t.impact_type ?? "increase"),
+          company_id: typeof t.company_id === "string" ? t.company_id : null,
         }));
-        
+
         return { data: allTypes, error: null };
       },
       async () => {
-        let data = trialGet("transaction_types") || [];
-        if (companyId) data = data.filter((t: any) => !t.company_id || t.company_id === companyId);
-        
-        const allTypes = data.map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          color: t.color || "blue",
+        let data = (trialGet("transaction_types") || []) as Record<string, unknown>[];
+        if (companyId) data = data.filter((t) => !t.company_id || t.company_id === companyId);
+
+        const allTypes = data.map((t) => ({
+          id: String(t.id ?? ""),
+          name: String(t.name ?? ""),
+          color: String(t.color || "blue"),
           isActive: t.is_active !== false,
-          math_factor: t.math_factor ?? 1,
-          impact_type: t.impact_type ?? "increase",
-          company_id: t.company_id,
+          math_factor: Number(t.math_factor ?? 1),
+          impact_type: String(t.impact_type ?? "increase"),
+          company_id: typeof t.company_id === "string" ? t.company_id : null,
         }));
         
         return { data: allTypes, error: null };
@@ -71,7 +71,7 @@ export class TransactionTypeService extends BaseService {
           const { data, error } = await updateWithFallback("transaction_types", String(payload.id), updatePayload);
           return { data, error };
         } else {
-          const transformed = transformRawTransactionType(payload, true) as Record<string, unknown>;
+          const transformed = transformRawTransactionType(payload) as Record<string, unknown>;
           const { data, error } = await insertWithFallback("transaction_types", transformed);
           return { data, error };
         }
@@ -84,7 +84,9 @@ export class TransactionTypeService extends BaseService {
         const companyId = payload.company_id ? String(payload.company_id) : null;
 
         if (companyId && !payload.id) {
-          const existing = (trialGet("transaction_types") || []).find((t: any) => t.company_id === companyId && t.name === name);
+          const existing = (trialGet("transaction_types") || [] as Record<string, unknown>[]).find(
+            (t) => t.company_id === companyId && t.name === name
+          );
           if (existing) {
             return { data: null, error: { message: `Loại giao dịch "${name}" đã tồn tại. Vui lòng chọn tên khác.` } };
           }
@@ -100,7 +102,7 @@ export class TransactionTypeService extends BaseService {
           const result = trialUpdate("transaction_types", String(payload.id), updatePayload);
           return { data: result, error: null };
         } else {
-          const transformed = transformRawTransactionType(payload, false) as Record<string, unknown>;
+          const transformed = transformRawTransactionType(payload) as Record<string, unknown>;
           const result = trialInsert("transaction_types", transformed);
           return { data: result, error: null };
         }
@@ -123,7 +125,9 @@ export class TransactionTypeService extends BaseService {
       },
       async () => {
         if (!isActive) {
-          const txs = (trialGet("transactions") || []).find((t: any) => t.transaction_type === id);
+          const txs = (trialGet("transactions") || [] as Record<string, unknown>[]).find(
+            (t) => t.transaction_type === id
+          );
           if (txs) {
             return { data: null, error: { message: "Không thể vô hiệu hóa loại giao dịch vì đang được sử dụng trong giao dịch." } };
           }
@@ -146,7 +150,9 @@ export class TransactionTypeService extends BaseService {
         return { data: null, error };
       },
       async () => {
-        const txs = (trialGet("transactions") || []).find((t: any) => t.transaction_type === id);
+        const txs = (trialGet("transactions") || [] as Record<string, unknown>[]).find(
+          (t) => t.transaction_type === id
+        );
         if (txs) {
           return { data: null, error: { message: "Không thể xóa loại giao dịch vì đang được sử dụng trong giao dịch. Vui lòng vô hiệu hóa thay vì xóa." } };
         }

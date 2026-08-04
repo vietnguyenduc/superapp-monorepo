@@ -36,7 +36,7 @@ export interface Branch {
   phone?: string;
   email?: string;
   manager_id?: string;
-  company_id: string;
+  company_id?: string;
   company?: Company;
   created_by?: string;
   created_at: string;
@@ -69,6 +69,7 @@ export interface BankAccount {
   account_name: string;
   bank_name: string;
   branch_id: string;
+  company_id?: string;
   balance: number;
   is_active: boolean;
   created_at: string;
@@ -187,7 +188,7 @@ export interface TransactionForm {
 // Import Types
 export interface ImportData {
   file?: File | null;
-  data: any[];
+  data: Record<string, unknown>[];
   errors: ImportError[];
   isValid: boolean;
 }
@@ -196,7 +197,7 @@ export interface ImportError {
   row: number;
   column: string;
   message: string;
-  value?: any;
+  value?: unknown;
 }
 
 // Dashboard Types
@@ -278,7 +279,7 @@ export interface TableColumn<T> {
   key: keyof T;
   label: string;
   sortable?: boolean;
-  render?: (value: any, row: T) => React.ReactNode;
+  render?: (value: unknown, row: T) => React.ReactNode;
   width?: string;
 }
 
@@ -311,7 +312,7 @@ export interface Notification {
 // Auth Types
 export interface AuthState {
   user: User | null;
-  session: any | null;
+  session: Record<string, unknown> | null;
   loading: boolean;
   error: string | null;
 }

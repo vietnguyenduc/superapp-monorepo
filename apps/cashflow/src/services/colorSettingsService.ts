@@ -24,13 +24,13 @@ export class ColorSettingsService extends BaseService {
   static async getTransactionTypeColors() {
     return this.execute(
       async () => {
-        const { data, error } = await apiClient.from("color_settings").select("*").eq("setting_key", "transaction_type_colors").single();
+        const { data } = await apiClient.from("color_settings").select("*").eq("setting_key", "transaction_type_colors").single();
         if (data?.setting_value) return { data: data.setting_value, error: null };
         return { data: this.getDefaultTransactionTypeColors(), error: null };
       },
       async () => {
-        const data = trialGet("color_settings") || [];
-        const setting = data.find((s: any) => s.setting_key === "transaction_type_colors");
+        const data = (trialGet("color_settings") || []) as Record<string, unknown>[];
+        const setting = data.find((s) => s.setting_key === "transaction_type_colors");
         if (setting?.setting_value) return { data: setting.setting_value, error: null };
         return { data: this.getDefaultTransactionTypeColors(), error: null };
       }
@@ -40,20 +40,20 @@ export class ColorSettingsService extends BaseService {
   static async getCustomerBalanceColors() {
     return this.execute(
       async () => {
-        const { data, error } = await apiClient.from("color_settings").select("*").eq("setting_key", "customer_balance_colors").single();
+        const { data } = await apiClient.from("color_settings").select("*").eq("setting_key", "customer_balance_colors").single();
         if (data?.setting_value) return { data: data.setting_value, error: null };
         return { data: this.getDefaultCustomerBalanceColors(), error: null };
       },
       async () => {
-        const data = trialGet("color_settings") || [];
-        const setting = data.find((s: any) => s.setting_key === "customer_balance_colors");
+        const data = (trialGet("color_settings") || []) as Record<string, unknown>[];
+        const setting = data.find((s) => s.setting_key === "customer_balance_colors");
         if (setting?.setting_value) return { data: setting.setting_value, error: null };
         return { data: this.getDefaultCustomerBalanceColors(), error: null };
       }
     );
   }
 
-  static async updateTransactionTypeColors(colors: any) {
+  static async updateTransactionTypeColors(colors: Record<string, unknown>) {
     return this.execute(
       async () => {
         // Local color_settings PK is id (TEXT) — upsert without id violates
@@ -76,7 +76,7 @@ export class ColorSettingsService extends BaseService {
     );
   }
 
-  static async updateCustomerBalanceColors(colors: any) {
+  static async updateCustomerBalanceColors(colors: Record<string, unknown>) {
     return this.execute(
       async () => {
         const { data: existing } = await apiClient.from("color_settings").select("id").eq("setting_key", "customer_balance_colors").maybeSingle();
