@@ -713,37 +713,60 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                 const rowErrors = getErrorForRow(index);
                 const hasRowError = rowErrors.length > 0;
                 const isDuplicate = duplicateRows.has(index);
-                const rowClass = hasRowError ? "bg-red-50" : isDuplicate ? "bg-yellow-50" : "";
+                const rowClass = hasRowError
+                  ? "bg-red-50 dark:bg-red-900/40 text-red-900 dark:text-red-200"
+                  : isDuplicate
+                    ? "bg-yellow-50 dark:bg-yellow-900/40 text-yellow-900 dark:text-yellow-200"
+                    : "text-gray-900 dark:text-gray-100";
+
+                const cellErrorClass = getErrorForCell(index, "full_name")
+                  ? "bg-red-100 dark:bg-red-800/40 text-red-900 dark:text-red-100"
+                  : "";
+                const cellErrorClassPhone = getErrorForCell(index, "phone")
+                  ? "bg-red-100 dark:bg-red-800/40 text-red-900 dark:text-red-100"
+                  : "";
+                const cellErrorClassAddress = getErrorForCell(index, "address")
+                  ? "bg-red-100 dark:bg-red-800/40 text-red-900 dark:text-red-100"
+                  : "";
+                const cellErrorClassCode = getErrorForCell(index, "customer_code")
+                  ? "bg-red-100 dark:bg-red-800/40 text-red-900 dark:text-red-100"
+                  : "";
+                const cellErrorClassRep = getErrorForCell(index, "nguoi_dai_dien")
+                  ? "bg-red-100 dark:bg-red-800/40 text-red-900 dark:text-red-100"
+                  : "";
+                const cellErrorClassMethod = getErrorForCell(index, "working_method")
+                  ? "bg-red-100 dark:bg-red-800/40 text-red-900 dark:text-red-100"
+                  : "";
 
                 return (
                   <tr key={index} className={rowClass}>
                     <td
-                      className={`px-3 py-2 text-sm ${getErrorForCell(index, "full_name") ? "bg-red-100" : ""}`}
+                      className={`px-3 py-2 text-sm ${cellErrorClass}`}
                     >
                       {row.full_name || "-"}
                     </td>
                     <td
-                      className={`px-3 py-2 text-sm ${getErrorForCell(index, "phone") ? "bg-red-100" : ""}`}
+                      className={`px-3 py-2 text-sm ${cellErrorClassPhone}`}
                     >
                       {row.phone || "-"}
                     </td>
                     <td
-                      className={`hidden sm:table-cell px-3 py-2 text-sm ${getErrorForCell(index, "address") ? "bg-red-100" : ""}`}
+                      className={`hidden sm:table-cell px-3 py-2 text-sm ${cellErrorClassAddress}`}
                     >
                       {row.address || "-"}
                     </td>
                     <td
-                      className={`px-3 py-2 text-sm ${getErrorForCell(index, "customer_code") ? "bg-red-100" : ""}`}
+                      className={`px-3 py-2 text-sm ${cellErrorClassCode}`}
                     >
                       {row.customer_code || "-"}
                     </td>
                     <td
-                      className={`hidden sm:table-cell px-3 py-2 text-sm ${getErrorForCell(index, "nguoi_dai_dien") ? "bg-red-100" : ""}`}
+                      className={`hidden sm:table-cell px-3 py-2 text-sm ${cellErrorClassRep}`}
                     >
                       {row.nguoi_dai_dien || "-"}
                     </td>
                     <td
-                      className={`hidden md:table-cell px-3 py-2 text-sm ${getErrorForCell(index, "working_method") ? "bg-red-100" : ""}`}
+                      className={`hidden md:table-cell px-3 py-2 text-sm ${cellErrorClassMethod}`}
                     >
                       {row.working_method || "-"}
                     </td>
@@ -770,7 +793,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
         </div>
 
         {importData.data.length > 10 && (
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             {t("import.showingFirst10")} {importData.data.length}{" "}
             {t("import.totalRows")}
           </p>
@@ -1175,7 +1198,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                       </div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                         {Math.max(0, importData.data.length - importData.errors.length - duplicateRows.size)}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -1183,7 +1206,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                       </div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-yellow-600">
+                      <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                         {duplicateRows.size}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -1191,7 +1214,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                       </div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-red-600">
+                      <div className="text-2xl font-bold text-red-600 dark:text-red-400">
                         {importData.errors.length}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -1202,8 +1225,8 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                 </div>
 
                 {duplicateRows.size > 0 && (
-                  <div className="rounded-md border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 px-4 py-3">
-                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  <div className="rounded-md border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/40 px-4 py-3">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-100">
                       {duplicateRows.size} bản ghi trùng mã khách hàng đã có trong hệ thống sẽ bị bỏ qua khi nhập.
                     </p>
                   </div>
