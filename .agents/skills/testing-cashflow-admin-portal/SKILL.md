@@ -17,7 +17,8 @@ which surfaces as `Resource is limited - try again in 24 hours` on every check) 
 2. Each app needs `apps/<app>/.env.local` with `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`
    (values come from the session's `SUPABASE_URL` / `SUPABASE_ANON_KEY` env vars). These files are temporary —
    delete them before finishing, and never commit them.
-3. `npx turbo run dev --filter=cashflow` / `--filter=admin-portal`, or `npm run dev -w <app>`.
+3. The Supabase service-role key is available in `docker-compose.yml` (`SUPABASE_SERVICE_ROLE_KEY` under the `api` service). It can be used for auth admin operations and direct REST seeding/cleanup when full user/data lifecycle control is needed.
+4. `npx turbo run dev --filter=cashflow` / `--filter=admin-portal`, or `npm run dev -w <app>`.
    A `Vite requires Node.js version 20.19+` warning may appear and can be ignored if the server starts; mention it
    as a caveat in the report.
 
