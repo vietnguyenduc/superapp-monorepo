@@ -146,6 +146,6 @@ All deletions are filtered by `company_id` and governed by RLS.
 
 ## Data consistency notes
 
-- `customers.total_balance` and `bank_accounts.balance` are now updated at write time, but the **atomicity is at the application layer**. If a balance update fails after the transaction insert succeeds, the ledger and stored balance can diverge. A future improvement is to move this logic into PostgreSQL triggers.
+- `customers.total_balance` and `bank_accounts.balance` are updated at write time by `transactionService` and by the PostgreSQL triggers in `supabase/migrations/030_balance_trigger_sign_convention.sql` (negative balance = debt). A one-time backfill set `total_balance = current_balance` for existing customers.
 - `getCustomerById()` recomputes the balance from transactions as a safety net.
 - `getDashboardMetrics()` recomputes all totals from scratch, so dashboards are never stale.

@@ -21,7 +21,7 @@ import {
 import Pagination from "../../components/UI/Pagination";
 import Button from "../../components/UI/Button";
 import PageHeader from "../../components/UI/PageHeader";
-import { formatCurrency } from "../../utils/formatting";
+import { formatCurrency, getBalanceColor } from "../../utils/formatting";
 
 interface CustomerListState {
   customers: Customer[];
@@ -520,7 +520,7 @@ const CustomerList: React.FC = () => {
               <span className="text-gray-500 dark:text-gray-400">
                 {t("customers.totalDebt", "Tổng công nợ")} ({paginationInfo.total.toLocaleString("vi-VN")} {t("customers.customersCount", "khách hàng")}):
               </span>
-              <span className={`font-semibold ${state.totalBalance >= 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
+              <span className={`font-semibold ${getBalanceColor(state.totalBalance)}`}>
                 {formatCurrency(state.totalBalance)}
               </span>
             </div>
