@@ -54,7 +54,7 @@ All new code must use `src/services/businessLogic/balanceMath.ts`.
 
 Negative `total_balance` = debt. Positive = overpayment/credit.
 
-**Caution:** `src/utils/formatting.ts` has `getTransactionMathFactor` with the opposite fallback (`+1` for charge, `-1` for payment/refund). It is still used by `CustomerDetailModal` / `RecentTransactions`. Reconcile before changing either side.
+All balance/amount sign display now flows through `getCustomerBalanceDelta`; `getTransactionMathFactor` delegates to it, so `CustomerDetailModal` / `RecentTransactions` render charge amounts as negative (debt) and payment/refund amounts as positive (credit).
 
 ## Recent architectural decisions
 
