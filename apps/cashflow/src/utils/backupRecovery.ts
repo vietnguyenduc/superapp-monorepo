@@ -579,44 +579,57 @@ export const backupService = {
         }
       }
 
-      // Restore branches first (if needed for mapping)
+      // Track old -> new IDs across restored tables so foreign keys stay valid.
+      const branchMapping: Record<string, string> = options.branchMapping ? { ...options.branchMapping } : {};
+      const bankAccountMapping: Record<string, string> = {};
+      const customerMapping: Record<string, string> = {};
+
+      // Restore branches first (needed for bank accounts and customers)
       if (options.restoreBranches && backupData.branches.length > 0 && options.company_id) {
-        result.restored.branches = await this.restoreBranches(
+        const { count, mapping } = await this.restoreBranches(
           backupData.branches,
           options.company_id,
-          options.branchMapping,
           options.overwriteExisting,
         );
+        result.restored.branches = count;
+        Object.assign(branchMapping, mapping);
       }
 
       // Restore bank accounts
       if (options.restoreBankAccounts && backupData.bank_accounts.length > 0 && options.company_id) {
-        result.restored.bank_accounts = await this.restoreBankAccounts(
+        const { count, mapping } = await this.restoreBankAccounts(
           backupData.bank_accounts,
           options.company_id,
-          options.branchMapping,
+          branchMapping,
           options.overwriteExisting,
         );
+        result.restored.bank_accounts = count;
+        Object.assign(bankAccountMapping, mapping);
       }
 
       // Restore customers
       if (options.restoreCustomers && backupData.customers.length > 0 && options.company_id) {
-        result.restored.customers = await this.restoreCustomers(
+        const { count, mapping } = await this.restoreCustomers(
           backupData.customers,
           options.company_id,
-          options.branchMapping,
+          branchMapping,
           options.overwriteExisting,
         );
+        result.restored.customers = count;
+        Object.assign(customerMapping, mapping);
       }
 
-      // Restore transactions
+      // Restore transactions with remapped foreign keys
       if (options.restoreTransactions && backupData.transactions.length > 0 && options.company_id) {
-        result.restored.transactions = await this.restoreTransactions(
+        const { count } = await this.restoreTransactions(
           backupData.transactions,
           options.company_id,
-          options.branchMapping,
+          branchMapping,
+          customerMapping,
+          bankAccountMapping,
           options.overwriteExisting,
         );
+        result.restored.transactions = count;
       }
 
       return result;
@@ -831,100 +844,159 @@ export const backupService = {
     }
   },
 
-  // Helper: Restore customers
-  async restoreCustomers(customers: any[], companyId: string, branchMapping?: Record<string, string>, overwriteExisting = false): Promise<number> {
+  // Helper: Restore customers. Returns a map of old ID -> new ID so transactions can be relinked.
+  async restoreCustomers(
+    customers: Record<string, unknown>[],
+    companyId: string,
+    branchMapping?: Record<string, string>,
+    overwriteExisting = false,
+  ): Promise<{ count: number; mapping: Record<string, string> }> {
+    const mapping: Record<string, string> = {};
     let restored = 0;
     for (const customer of customers) {
       try {
         const normalized = this.normalizeRestoreRecord(customer, companyId, branchMapping);
-        const id = String(normalized.id ?? "");
-        const { data: existing } = await databaseService.customers.getCustomerById(id);
+        const oldId = String(normalized.id ?? "");
+        if (!oldId) continue;
+
+        const { data: existing } = await databaseService.customers.getCustomerById(oldId);
         if (existing && overwriteExisting) {
-          await databaseService.customers.updateCustomer(id, normalized);
+          await databaseService.customers.updateCustomer(oldId, normalized);
+          mapping[oldId] = oldId;
           restored++;
         } else if (!existing) {
           const createPayload = { ...normalized };
           delete createPayload.id;
-          await databaseService.customers.createCustomer(createPayload);
+          const { data: created } = await databaseService.customers.createCustomer(createPayload);
+          if (created && typeof created === "object" && "id" in created) {
+            mapping[oldId] = String((created as Record<string, unknown>).id);
+          }
           restored++;
         }
       } catch (error) {
-        logger.error(`Failed to restore customer ${customer.id}:`, error);
+        logger.error("Failed to restore customer:", error);
       }
     }
-    return restored;
+    return { count: restored, mapping };
   },
 
-  // Helper: Restore transactions
-  async restoreTransactions(transactions: any[], companyId: string, branchMapping?: Record<string, string>, overwriteExisting = false): Promise<number> {
+  // Helper: Restore transactions. Remaps customer_id and bank_account_id to the newly restored IDs.
+  async restoreTransactions(
+    transactions: Record<string, unknown>[],
+    companyId: string,
+    branchMapping?: Record<string, string>,
+    customerMapping?: Record<string, string>,
+    bankAccountMapping?: Record<string, string>,
+    overwriteExisting = false,
+  ): Promise<{ count: number }> {
     let restored = 0;
     for (const transaction of transactions) {
       try {
         const normalized = this.normalizeRestoreRecord(transaction, companyId, branchMapping);
+
+        if (customerMapping && normalized.customer_id && typeof normalized.customer_id === "string") {
+          normalized.customer_id = customerMapping[normalized.customer_id] ?? normalized.customer_id;
+        }
+        if (bankAccountMapping && normalized.bank_account_id && typeof normalized.bank_account_id === "string") {
+          normalized.bank_account_id = bankAccountMapping[normalized.bank_account_id] ?? normalized.bank_account_id;
+        }
+
         const id = String(normalized.id ?? "");
-        const { data: existing } = await databaseService.transactions.getTransactionById(id);
-        if (existing && overwriteExisting) {
-          await databaseService.transactions.updateTransaction(id, normalized);
-          restored++;
-        } else if (!existing) {
+        if (id) {
+          const { data: existing } = await databaseService.transactions.getTransactionById(id);
+          if (existing && overwriteExisting) {
+            await databaseService.transactions.updateTransaction(id, normalized);
+            restored++;
+            continue;
+          } else if (!existing) {
+            const createPayload = { ...normalized };
+            delete createPayload.id;
+            await databaseService.transactions.createTransaction(createPayload);
+            restored++;
+            continue;
+          }
+        } else {
           const createPayload = { ...normalized };
           delete createPayload.id;
           await databaseService.transactions.createTransaction(createPayload);
           restored++;
         }
       } catch (error) {
-        logger.error(`Failed to restore transaction ${transaction.id}:`, error);
+        logger.error("Failed to restore transaction:", error);
       }
     }
-    return restored;
+    return { count: restored };
   },
 
-  // Helper: Restore bank accounts
-  async restoreBankAccounts(accounts: any[], companyId: string, branchMapping?: Record<string, string>, overwriteExisting = false): Promise<number> {
+  // Helper: Restore bank accounts. Returns a map of old ID -> new ID so transactions can be relinked.
+  async restoreBankAccounts(
+    accounts: Record<string, unknown>[],
+    companyId: string,
+    branchMapping?: Record<string, string>,
+    overwriteExisting = false,
+  ): Promise<{ count: number; mapping: Record<string, string> }> {
+    const mapping: Record<string, string> = {};
     let restored = 0;
     for (const account of accounts) {
       try {
         const normalized = this.normalizeRestoreRecord(account, companyId, branchMapping);
-        const id = String(normalized.id ?? "");
-        const { data: existing } = await databaseService.bankAccounts.getBankAccount(id);
+        const oldId = String(normalized.id ?? "");
+        if (!oldId) continue;
+
+        const { data: existing } = await databaseService.bankAccounts.getBankAccount(oldId);
         if (existing && overwriteExisting) {
-          await databaseService.bankAccounts.upsertBankAccount({ ...normalized, id });
+          await databaseService.bankAccounts.upsertBankAccount({ ...normalized, id: oldId });
+          mapping[oldId] = oldId;
           restored++;
         } else if (!existing) {
           const createPayload = { ...normalized };
           delete createPayload.id;
-          await databaseService.bankAccounts.upsertBankAccount(createPayload);
+          const { data: created } = await databaseService.bankAccounts.upsertBankAccount(createPayload);
+          if (created && typeof created === "object" && "id" in created) {
+            mapping[oldId] = String((created as Record<string, unknown>).id);
+          }
           restored++;
         }
       } catch (error) {
-        logger.error(`Failed to restore bank account ${account.id}:`, error);
+        logger.error("Failed to restore bank account:", error);
       }
     }
-    return restored;
+    return { count: restored, mapping };
   },
 
-  // Helper: Restore branches
-  async restoreBranches(branches: any[], companyId: string, branchMapping?: Record<string, string>, overwriteExisting = false): Promise<number> {
+  // Helper: Restore branches. Returns a map of old ID -> new ID so dependent records can be relinked.
+  async restoreBranches(
+    branches: Record<string, unknown>[],
+    companyId: string,
+    overwriteExisting = false,
+  ): Promise<{ count: number; mapping: Record<string, string> }> {
+    const mapping: Record<string, string> = {};
     let restored = 0;
     for (const branch of branches) {
       try {
-        const normalized = this.normalizeRestoreRecord(branch, companyId, branchMapping);
-        const id = String(normalized.id ?? "");
-        const { data: existing } = await databaseService.branches.getBranchById(id);
+        const normalized = this.normalizeRestoreRecord(branch, companyId);
+        const oldId = String(normalized.id ?? "");
+        if (!oldId) continue;
+
+        const { data: existing } = await databaseService.branches.getBranchById(oldId);
         if (existing && overwriteExisting) {
-          await databaseService.branches.upsertBranch({ ...normalized, id });
+          await databaseService.branches.upsertBranch({ ...normalized, id: oldId });
+          mapping[oldId] = oldId;
           restored++;
         } else if (!existing) {
           const createPayload = { ...normalized };
           delete createPayload.id;
-          await databaseService.branches.upsertBranch(createPayload);
+          const { data: created } = await databaseService.branches.upsertBranch(createPayload);
+          if (created && typeof created === "object" && "id" in created) {
+            mapping[oldId] = String((created as Record<string, unknown>).id);
+          }
           restored++;
         }
       } catch (error) {
-        logger.error(`Failed to restore branch ${branch.id}:`, error);
+        logger.error("Failed to restore branch:", error);
       }
     }
-    return restored;
+    return { count: restored, mapping };
   },
 
   // Normalize a backup record for restoration into the active tenant.
