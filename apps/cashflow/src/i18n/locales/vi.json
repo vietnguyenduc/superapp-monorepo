@@ -419,6 +419,7 @@
     "totalRows": "Tổng dòng",
     "validRows": "Dòng hợp lệ",
     "invalidRows": "Dòng không hợp lệ",
+    "errorRows": "Dòng lỗi",
     "processing": "Đang xử lý...",
     "processingData": "Đang xử lý dữ liệu của bạn...",
     "step1": "Bước 1: Tải lên hoặc dán dữ liệu",

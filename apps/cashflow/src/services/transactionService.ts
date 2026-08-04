@@ -495,13 +495,13 @@ export class TransactionService extends BaseService {
       const lower = raw.toLowerCase();
       const [namePart, codePart] = lower.split(" - ").map((s) => s.trim());
       const match = branches.find((b) => {
-        const names = [String(b.name ?? ""), String(b.branch_name ?? "")].map((n) => n.toLowerCase().trim());
+        const names = [String(b.name ?? "")].map((n) => n.toLowerCase().trim());
         const codes = [String(b.code ?? ""), String(b.id ?? "")].map((n) => n.toLowerCase().trim());
         if (codePart) return names.includes(namePart) && codes.includes(codePart);
         return names.includes(namePart) || codes.includes(namePart);
       });
       return match
-        ? { id: String(match.id ?? ""), name: String((match.name ?? match.branch_name) ?? "").trim() || null }
+        ? { id: String(match.id ?? ""), name: String(match.name ?? "").trim() || null }
         : { id: null, name: null };
     };
 
@@ -538,7 +538,7 @@ export class TransactionService extends BaseService {
           .eq("company_id", companyId);
         const branchQuery = apiClient
           .from("branches")
-          .select("id, name, branch_name, code, company_id")
+          .select("id, name, code, company_id")
           .eq("company_id", companyId);
         const [{ data: bankData }, { data: branchData }] = await Promise.all([bankQuery, branchQuery]);
         const bankAccounts = bankData as Record<string, unknown>[] || [];

@@ -329,6 +329,7 @@
     "totalRows": "Total Rows",
     "validRows": "Valid Rows",
     "invalidRows": "Invalid Rows",
+    "errorRows": "Error Rows",
     "processing": "Processing...",
     "processingData": "Processing your data...",
     "step1": "Step 1: Upload or paste data",
