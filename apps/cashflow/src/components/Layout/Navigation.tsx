@@ -6,6 +6,7 @@ import { supabase } from "../../services/supabase";
 import { CompanyBadge } from "@superapp/iam";
 import AppSwitcher from "./AppSwitcher";
 import { useAuthContext } from "@superapp/iam";
+import { clearTrialStore } from "../../services/trialMockStore";
 
 const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -28,10 +29,12 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
 
   const handleLogout = async () => {
     try {
+      clearTrialStore();
       await supabase.auth.signOut();
-      navigate("/login");
     } catch (error) {
       logger.error("Error logging out:", error);
+    } finally {
+      navigate("/login", { replace: true });
     }
   };
 
