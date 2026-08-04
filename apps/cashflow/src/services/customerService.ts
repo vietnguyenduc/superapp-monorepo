@@ -309,7 +309,7 @@ export class CustomerService extends BaseService {
         const proposedCode = transformed.customer_code?.trim();
         
         if (proposedCode) {
-          const existing = (trialGet("customers") || []).find((c: any) => c.customer_code === proposedCode && c.company_id === transformed.company_id);
+          const existing = (trialGet("customers") || []).find((c: any) => c.customer_code === proposedCode && (!transformed.company_id || c.company_id === transformed.company_id));
           if (existing) {
             return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
           }
@@ -483,37 +483,51 @@ export class CustomerService extends BaseService {
       async () => {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawCustomer(customerData, true);
-        const proposedCode = transformed.customer_code?.trim();
-        
+
+        // Do not use transformRawCustomer for updates: it would reset id,
+        // company_id/branch_id, balances and created_at. Only send the fields
+        // provided by the caller plus an updated timestamp.
+        const updatePayload: any = {
+          ...customerData,
+          updated_at: new Date().toISOString(),
+        };
+        // Ensure we never overwrite the primary key during an update.
+        delete updatePayload.id;
+
+        const proposedCode = String(updatePayload.customer_code || "").trim();
+
         if (proposedCode) {
           let checkQ = apiClient.from("customers").select("id").eq("customer_code", proposedCode).neq("id", id);
-          if (transformed.company_id) checkQ = checkQ.eq("company_id", transformed.company_id);
+          if (updatePayload.company_id) checkQ = checkQ.eq("company_id", updatePayload.company_id);
           const { data: existing } = await checkQ;
           if (existing && existing.length > 0) {
             return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
           }
         }
-        
-        const { data, error } = await updateCustomerWithFallback(id, transformed);
+
+        const { data, error } = await updateCustomerWithFallback(id, updatePayload);
         return { data, error };
       },
       async () => {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawCustomer(customerData, false);
-        const proposedCode = transformed.customer_code?.trim();
-        
+
+        const updatePayload: any = {
+          ...customerData,
+          updated_at: new Date().toISOString(),
+        };
+        delete updatePayload.id;
+
+        const proposedCode = String(updatePayload.customer_code || "").trim();
+
         if (proposedCode) {
-          const existing = (trialGet("customers") || []).find((c: any) => c.id !== id && c.customer_code === proposedCode && c.company_id === transformed.company_id);
+          const existing = (trialGet("customers") || []).find((c: any) => c.id !== id && c.customer_code === proposedCode && (!updatePayload.company_id || c.company_id === updatePayload.company_id));
           if (existing) {
             return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
           }
         }
-        
-        const result = trialUpdate("customers", id, transformed);
+
+        const result = trialUpdate("customers", id, updatePayload);
         return { data: result, error: null };
       }
     );
