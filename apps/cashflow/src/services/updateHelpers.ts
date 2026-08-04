@@ -19,7 +19,7 @@ export function sanitizePayload(
       delete copy[col];
     }
   }
-  if (removedParts.length > 0) {
+  if (removedParts.length > 0 && !colsToRemove.includes("notes")) {
     const existing = copy.notes ? String(copy.notes) : "";
     copy.notes = existing
       ? `${existing}\n${removedParts.join("; ")}`

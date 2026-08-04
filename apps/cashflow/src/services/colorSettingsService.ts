@@ -7,8 +7,8 @@ import { trialGet } from "./trialMockStore";
 export class ColorSettingsService extends BaseService {
   static getDefaultTransactionTypeColors() {
     return {
-      payment: { label: "Điều chỉnh giảm", bg_color: "bg-green-100", text_color: "text-green-800", dark_bg_color: "dark:bg-green-900", dark_text_color: "dark:text-green-200", amount_color: "text-green-600", dark_amount_color: "dark:text-green-400" },
-      charge: { label: "Điều chỉnh tăng", bg_color: "bg-red-100", text_color: "text-red-800", dark_bg_color: "dark:bg-red-900", dark_text_color: "dark:text-red-200", amount_color: "text-red-600", dark_amount_color: "dark:text-red-400" },
+      payment: { label: "Phát sinh giảm", bg_color: "bg-green-100", text_color: "text-green-800", dark_bg_color: "dark:bg-green-900", dark_text_color: "dark:text-green-200", amount_color: "text-green-600", dark_amount_color: "dark:text-green-400" },
+      charge: { label: "Phát sinh tăng", bg_color: "bg-red-100", text_color: "text-red-800", dark_bg_color: "dark:bg-red-900", dark_text_color: "dark:text-red-200", amount_color: "text-red-600", dark_amount_color: "dark:text-red-400" },
       adjustment: { label: "Điều chỉnh", bg_color: "bg-blue-100", text_color: "text-blue-800", dark_bg_color: "dark:bg-blue-900", dark_text_color: "dark:text-blue-200", amount_color: "text-blue-600", dark_amount_color: "dark:text-blue-400" },
       refund: { label: "Hoàn tiền", bg_color: "bg-green-100", text_color: "text-green-800", dark_bg_color: "dark:bg-green-900", dark_text_color: "dark:text-green-200", amount_color: "text-green-600", dark_amount_color: "dark:text-green-400" },
     };
@@ -16,8 +16,8 @@ export class ColorSettingsService extends BaseService {
 
   static getDefaultCustomerBalanceColors() {
     return {
-      customer_list: { positive_balance_color: "text-black dark:text-white", zero_or_negative_color: "text-green-600 dark:text-green-400" },
-      customer_detail: { positive_balance_color: "text-red-600 dark:text-red-400", zero_or_negative_color: "text-green-600 dark:text-green-400" },
+      customer_list: { positive_balance_color: "text-green-600 dark:text-green-400", zero_or_negative_color: "text-red-600 dark:text-red-400" },
+      customer_detail: { positive_balance_color: "text-green-600 dark:text-green-400", zero_or_negative_color: "text-red-600 dark:text-red-400" },
     };
   }
 
