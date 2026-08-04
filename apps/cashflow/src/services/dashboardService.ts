@@ -208,15 +208,52 @@ function getPeriodWindow(timeRange: TimeRange, count: number, baseDate?: Date) {
   return { start, end, prevStart, prevEnd };
 }
 
+function isInScope(
+  item: { company_id?: string | null; branch_id?: string | null },
+  companyId?: string,
+  branchId?: string,
+) {
+  return (
+    (!companyId || !item.company_id || item.company_id === companyId) &&
+    (!branchId || item.branch_id === branchId)
+  );
+}
+
+function applyTransactionToBalanceMap(
+  balanceMap: Map<string, number>,
+  transactions: Transaction[],
+) {
+  for (const tx of transactions) {
+    if (!tx.customer_id) continue;
+    const previous = balanceMap.get(tx.customer_id) || 0;
+    const amount = parseAmount(tx.amount);
+    const absoluteAmount = Math.abs(amount);
+    switch (normalizeTransactionType(String(tx.transaction_type || ""))) {
+      case "payment":
+      case "refund":
+        balanceMap.set(tx.customer_id, previous + absoluteAmount);
+        break;
+      case "charge":
+        balanceMap.set(tx.customer_id, previous - absoluteAmount);
+        break;
+      default:
+        balanceMap.set(tx.customer_id, previous + amount);
+    }
+  }
+}
+
 export class DashboardService extends BaseService {
   static async getDashboardMetrics(_branchId?: string, timeRange: TimeRange = "month", rangeCount?: any, companyId?: string) {
     const branchId = String(_branchId || "");
 
     if (getTrialMode()) {
-      const mockTransactions = trialGet("transactions") || [];
-      const mockCustomers = trialGet("customers") || [];
-      const mockBankAccounts = trialGet("bank_accounts") || [];
-      const mockBranches = trialGet("branches") || [];
+      const mockTransactions = (trialGet("transactions") || []).filter((tx: Transaction) => isInScope(tx, companyId, branchId));
+      const mockCustomers = (trialGet("customers") || []).filter((customer: Customer) => isInScope(customer, companyId, branchId));
+      const mockBankAccounts = (trialGet("bank_accounts") || []).filter((account: { company_id?: string; branch_id?: string }) => isInScope(account, companyId, branchId));
+      const mockBranches = (trialGet("branches") || []).filter((branch: { company_id?: string; id?: string }) =>
+        (!companyId || !branch.company_id || branch.company_id === companyId) &&
+        (!branchId || branch.id === branchId),
+      );
 
       const currentIncome = mockTransactions
         .filter((t: any) => t.transaction_type === "payment" || t.transaction_type === "refund")
@@ -224,7 +261,12 @@ export class DashboardService extends BaseService {
       const currentDebt = mockTransactions
         .filter((t: any) => t.transaction_type === "charge")
         .reduce((s: number, t: any) => s + Math.abs(t.amount), 0);
-      const outstanding = mockCustomers.reduce((s: number, c: any) => s + (Math.abs(c.total_balance) || 0), 0);
+      const balanceMap = new Map<string, number>();
+      mockCustomers.forEach((customer: Customer) => {
+        balanceMap.set(customer.id, parseAmount(customer.opening_balance ?? customer.current_balance ?? customer.total_balance));
+      });
+      applyTransactionToBalanceMap(balanceMap, mockTransactions);
+      const outstanding = Array.from(balanceMap.values()).reduce((sum, balance) => sum + balance, 0);
       const activeCustomers = mockCustomers.length;
       const currentPaymentCount = mockTransactions.filter((t: any) => t.transaction_type === "payment").length;
       const currentChargeCount = mockTransactions.filter((t: any) => t.transaction_type === "charge").length;
@@ -233,8 +275,11 @@ export class DashboardService extends BaseService {
         .sort((a: any, b: any) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
         .slice(0, 20);
 
-      const topCustomers = [...mockCustomers]
-        .sort((a: any, b: any) => Math.abs(b.total_balance) - Math.abs(a.total_balance))
+      const topCustomers = mockCustomers.map((customer: Customer) => ({
+        ...customer,
+        total_balance: balanceMap.get(customer.id) ?? customer.total_balance,
+      }))
+        .sort((a: Customer, b: Customer) => a.total_balance - b.total_balance)
         .slice(0, 10);
 
       const balanceByBankAccount = mockBankAccounts.map((b: any) => ({
@@ -249,7 +294,7 @@ export class DashboardService extends BaseService {
         timeRange === "day" ? rangeCount?.day || 7 : timeRange === "week" ? rangeCount?.week || 8 : timeRange === "month" ? rangeCount?.month || 7 : timeRange === "quarter" ? rangeCount?.quarter || 8 : 2;
       const cashFlowData = aggregateCashFlow(mockTransactions, timeRange, count);
       
-      const transactionAmountsByBranch = mockBranches.map((b: any) => ({
+      const transactionAmountsByBranch = mockBranches.map((b: { id: string; name: string }) => ({
         branch_id: b.id,
         branch_name: b.name,
         incomeAmount: currentIncome,
@@ -290,8 +335,23 @@ export class DashboardService extends BaseService {
     ]);
 
     const transactionsAll: Transaction[] = (txResult.data || []) as Transaction[];
-    let transactions = companyId ? transactionsAll.filter((t: any) => !t.company_id || t.company_id === companyId) : transactionsAll;
-    transactions = branchId ? transactions.filter((t) => (t as any).branch_id === branchId) : transactions;
+    const transactions = transactionsAll.filter((transaction) => isInScope(transaction, companyId, branchId));
+    const customersAll = ((custResult.data || []) as Customer[]).filter((customer) =>
+      isInScope(customer, companyId, branchId),
+    );
+    const bankAccounts = ((bankResult.data || []) as Array<{
+      id: string;
+      account_name?: string;
+      account_number?: string;
+      company_id?: string;
+      branch_id?: string;
+    }>).filter((account) =>
+      isInScope(account, companyId, branchId),
+    );
+    const branches = ((branchResult.data || []) as Array<{ id: string; name: string; company_id?: string }>).filter((branch) =>
+      (!companyId || !branch.company_id || branch.company_id === companyId) &&
+      (!branchId || branch.id === branchId),
+    );
 
     const latestTxDate = transactions.length ? new Date(transactions.slice().sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())[0].transaction_date) : undefined;
 
@@ -323,28 +383,11 @@ export class DashboardService extends BaseService {
     const activeCustomers = new Set(currentTx.map((t) => t.customer_id).filter((id): id is string => id !== null)).size;
     const prevActiveCustomers = new Set(prevTx.map((t) => t.customer_id).filter((id): id is string => id !== null)).size;
 
-    const customersAll: Customer[] = (custResult.data || []) as Customer[];
     const balanceMap = new Map<string, number>();
     for (const c of customersAll) {
       balanceMap.set(c.id, parseAmount(c.opening_balance));
     }
-    const applyTxToMap = (txs: Transaction[]) => {
-      for (const tx of txs) {
-        if (!tx.customer_id) continue;
-        const prev = balanceMap.get(tx.customer_id) || 0;
-        const amtSigned = parseAmount(tx.amount);
-        const amtAbs = Math.abs(amtSigned);
-        switch (normalizeTransactionType(String(tx.transaction_type || ""))) {
-          case "payment": balanceMap.set(tx.customer_id, prev + amtAbs); break;
-          case "charge": balanceMap.set(tx.customer_id, prev - amtAbs); break;
-          case "refund": balanceMap.set(tx.customer_id, prev + amtAbs); break;
-          case "adjustment": balanceMap.set(tx.customer_id, prev + amtSigned); break;
-          default: balanceMap.set(tx.customer_id, prev + amtSigned); break;
-        }
-      }
-    };
-
-    applyTxToMap(transactions);
+    applyTransactionToBalanceMap(balanceMap, transactions);
     const outstanding = Array.from(balanceMap.values()).reduce((s, v) => s + v, 0);
 
     const prevBalanceMap = new Map(balanceMap);
@@ -367,7 +410,6 @@ export class DashboardService extends BaseService {
 
     const cashFlowData = aggregateCashFlow(currentTx, timeRange, count);
 
-    const bankAccounts = (bankResult.data || []) as any[];
     const balanceByBankAccountAll = bankAccounts.map((b) => {
       const txForAccount = transactions.filter((t) => t.bank_account_id === b.id);
       const periodStarts = buildPeriodStarts(timeRange, count, end);
@@ -392,7 +434,7 @@ export class DashboardService extends BaseService {
       return { bank_account_id: b.id, account_name: b.account_name, account_number: b.account_number, balance, historical_data };
     });
 
-    const balanceByBankAccount = balanceByBankAccountAll.slice().sort((a, b) => a.balance - b.balance).slice(Math.min(2, balanceByBankAccountAll.length));
+    const balanceByBankAccount = balanceByBankAccountAll.slice().sort((a, b) => a.balance - b.balance);
 
     const customersWithBalance = customersAll.map((c) => ({ ...c, total_balance: balanceMap.get(c.id) ?? c.current_balance ?? c.total_balance }));
     const debtCustomers = customersWithBalance.filter((c) => c.total_balance < 0).sort((a, b) => a.total_balance - b.total_balance);
@@ -406,7 +448,6 @@ export class DashboardService extends BaseService {
       ...tx, customer_name: customerNameMap.get(tx.customer_id || "") || tx.customer_name, bank_account_name: bankAccountNameMap.get(tx.bank_account_id || "") || tx.bank_account_name,
     }));
 
-    const branches = (branchResult.data || []) as { id: string; name: string }[];
     const branchNameMap = new Map(branches.map((b) => [b.id, b.name] as const));
     const branchAgg = new Map<string, { incomeAmount: number; debtAmount: number }>();
     for (const tx of currentTx) {
