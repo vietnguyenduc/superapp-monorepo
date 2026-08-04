@@ -41,6 +41,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@repo/eslint-config": "*",
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^13.4.0",

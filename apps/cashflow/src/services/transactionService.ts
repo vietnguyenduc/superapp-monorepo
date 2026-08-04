@@ -208,7 +208,35 @@ export class TransactionService extends BaseService {
   }
 
   static async bulkImportTransactions(rawData: any[], branchId?: string, createdBy?: string, companyId?: string) {
-    // This is a complex method. We'll simplify the fallback part and copy the raw Supabase logic.
+    // Resolve display labels used in UI dropdowns ("Name - Code/Number") back to actual IDs
+    const resolveBankAccount = (label: string, accounts: any[]): { id: string | null; name: string | null } => {
+      const raw = (label || "").trim();
+      if (!raw) return { id: null, name: null };
+      const lower = raw.toLowerCase();
+      const [namePart, codePart] = lower.split(" - ").map((s) => s.trim());
+      const match = accounts.find((a) => {
+        const names = [String(a.account_name || ""), String(a.bank_name || "")].map((n) => n.toLowerCase().trim());
+        const codes = [String(a.account_number || ""), String(a.id || "")].map((n) => n.toLowerCase().trim());
+        if (codePart) return names.includes(namePart) && codes.includes(codePart);
+        return names.includes(namePart) || codes.includes(namePart);
+      });
+      return match ? { id: match.id, name: match.account_name || match.bank_name || null } : { id: null, name: null };
+    };
+
+    const resolveBranch = (label: string, branches: any[]): { id: string | null; name: string | null } => {
+      const raw = (label || "").trim();
+      if (!raw) return { id: null, name: null };
+      const lower = raw.toLowerCase();
+      const [namePart, codePart] = lower.split(" - ").map((s) => s.trim());
+      const match = branches.find((b) => {
+        const names = [String(b.name || ""), String(b.branch_name || "")].map((n) => n.toLowerCase().trim());
+        const codes = [String(b.code || ""), String(b.id || "")].map((n) => n.toLowerCase().trim());
+        if (codePart) return names.includes(namePart) && codes.includes(codePart);
+        return names.includes(namePart) || codes.includes(namePart);
+      });
+      return match ? { id: match.id, name: match.name || match.branch_name || null } : { id: null, name: null };
+    };
+
     return this.execute(
       async () => {
         const raw = Array.isArray(rawData) ? rawData : [];
@@ -218,7 +246,7 @@ export class TransactionService extends BaseService {
         if (typeErr || !validTypes?.length) return { data: null, error: { message: "Failed to fetch transaction types" } };
 
         const validTypeNames = new Set(validTypes.map((t: any) => t.name.toLowerCase()));
-        
+
         let customerMap: Record<string, string> = {};
         const { data: customers } = await apiClient.from('customers').select('id, customer_code');
         if (customers) {
@@ -227,6 +255,18 @@ export class TransactionService extends BaseService {
             return acc;
           }, {} as Record<string, string>);
         }
+
+        let bankAccounts: any[] = [];
+        let branches: any[] = [];
+        let bankQuery: any = apiClient.from("bank_accounts").select("id, account_name, bank_name, account_number, company_id");
+        let branchQuery: any = apiClient.from("branches").select("id, name, branch_name, code, company_id");
+        if (companyId) {
+          bankQuery = bankQuery.eq("company_id", companyId);
+          branchQuery = branchQuery.eq("company_id", companyId);
+        }
+        const [{ data: bankData }, { data: branchData }] = await Promise.all([bankQuery, branchQuery]);
+        if (bankData) bankAccounts = bankData;
+        if (branchData) branches = branchData;
 
         const body = raw.map((r, idx) => {
           let cId = r.customer_id || null;
@@ -238,6 +278,9 @@ export class TransactionService extends BaseService {
             if (!cId) throw new Error(`Row ${idx + 1}: Customer not found for code "${r.customer_code}"`);
           }
 
+          const resolvedBank = resolveBankAccount(r.bank_account || r.bank_account_name, bankAccounts);
+          const resolvedBranch = resolveBranch(r.branch || r.branch_name, branches);
+
           let parsedDate = now;
           if (r.transaction_date) {
             const date = new Date(r.transaction_date);
@@ -248,7 +291,10 @@ export class TransactionService extends BaseService {
             id: r.id || uuid(),
             transaction_code: r.transaction_code || `TXN${Date.now()}${idx}`,
             customer_id: cId,
-            branch_id: r.branch_id || branchId || null,
+            bank_account_id: resolvedBank.id || r.bank_account_id || null,
+            bank_account_name: resolvedBank.name || r.bank_account_name || null,
+            branch_id: resolvedBranch.id || r.branch_id || branchId || null,
+            branch_name: resolvedBranch.name || r.branch_name || null,
             company_id: companyId || null,
             created_by: createdBy || null,
             transaction_type: normalizeTransactionType(r.transaction_type || 'payment'),
@@ -267,32 +313,35 @@ export class TransactionService extends BaseService {
       async () => {
         const raw = Array.isArray(rawData) ? rawData : [];
         const now = getNowIso();
-        const mockTransactions = trialGet("transactions") || [];
-        const mockCustomers = trialGet("customers") || [];
+        const mockBankAccounts = trialGet("bank_accounts") || [];
+        const mockBranches = trialGet("branches") || [];
 
-        const body = raw.map((row: any) => ({
-          id: `txn-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
-          transaction_code: row.transaction_code || `TXN${Date.now()}`,
-          customer_id: row.customer_id || null,
-          customer_name: row.customer_name || null,
-          bank_account_id: row.bank_account_id || null,
-          bank_account_name: row.bank_account_name || null,
-          branch_id: branchId || "trial-branch",
-          company_id: companyId || "trial-company",
-          created_by: createdBy || "",
-          transaction_type: normalizeTransactionType(row.transaction_type || "payment"),
-          amount: parseAmount(row.amount),
-          description: row.description || null,
-          reference_number: row.reference_number || null,
-          transaction_date: row.transaction_date || now,
-          created_at: now,
-          updated_at: now,
-        }));
+        const body = raw.map((row: any) => {
+          const resolvedBank = resolveBankAccount(row.bank_account || row.bank_account_name, mockBankAccounts);
+          const resolvedBranch = resolveBranch(row.branch || row.branch_name, mockBranches);
+          return {
+            id: `txn-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+            transaction_code: row.transaction_code || `TXN${Date.now()}`,
+            customer_id: row.customer_id || null,
+            customer_name: row.customer_name || null,
+            bank_account_id: resolvedBank.id || row.bank_account_id || null,
+            bank_account_name: resolvedBank.name || row.bank_account_name || null,
+            branch_id: resolvedBranch.id || row.branch_id || branchId || "trial-branch",
+            branch_name: resolvedBranch.name || row.branch_name || null,
+            company_id: companyId || "trial-company",
+            created_by: createdBy || "",
+            transaction_type: normalizeTransactionType(row.transaction_type || "payment"),
+            amount: parseAmount(row.amount),
+            description: row.description || null,
+            reference_number: row.reference_number || null,
+            transaction_date: row.transaction_date || now,
+            created_at: now,
+            updated_at: now,
+          };
+        });
 
-        const allTransactions = [...body, ...mockTransactions];
-        localStorage.setItem("cashflow_trial_store", JSON.stringify({ transactions: allTransactions, customers: mockCustomers }));
-
-        return { data: body, error: null };
+        const inserted = body.map((tx: any) => trialInsert("transactions", tx));
+        return { data: inserted, error: null };
       }
     );
   }
