@@ -4,12 +4,12 @@ import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStor
 import { validateTransactionData, transformRawTransaction, parseAmount, normalizeTransactionType } from "./businessLogic";
 import { updateWithFallback, insertWithFallback, bulkInsertWithFallback } from "./updateHelpers";
 import { v4 as uuid } from "uuid";
+import type { Transaction, Customer, BankAccount, Branch, User } from "../types";
 
-// Mock helper to get current ISO string
 const getNowIso = () => new Date().toISOString();
 
 export class TransactionService extends BaseService {
-  static async getTransactions(filters?: any) {
+  static async getTransactions(filters?: Record<string, unknown>) {
     return this.execute(
       async () => {
         let query = apiClient
@@ -22,34 +22,44 @@ export class TransactionService extends BaseService {
             users!transactions_created_by_fkey(full_name)
           `);
 
-        if (filters?.company_id) query = query.eq("company_id", filters.company_id);
-        if (filters?.branch_id) query = query.eq("branch_id", filters.branch_id);
-        if (filters?.transaction_type) query = query.eq("transaction_type", filters.transaction_type);
-        if (filters?.customer_id) query = query.eq("customer_id", filters.customer_id);
+        const companyFilter = typeof filters?.company_id === "string" ? filters.company_id : undefined;
+        const branchFilter = typeof filters?.branch_id === "string" ? filters.branch_id : undefined;
+        const typeFilter = typeof filters?.transaction_type === "string" ? filters.transaction_type : undefined;
+        const customerFilter = typeof filters?.customer_id === "string" ? filters.customer_id : undefined;
 
-        if (filters?.search) {
-          const s = `%${filters.search}%`;
+        if (companyFilter) query = query.eq("company_id", companyFilter);
+        if (branchFilter) query = query.eq("branch_id", branchFilter);
+        if (typeFilter) query = query.eq("transaction_type", typeFilter);
+        if (customerFilter) query = query.eq("customer_id", customerFilter);
+
+        const search = typeof filters?.search === "string" ? filters.search.trim() : "";
+        if (search) {
+          const s = `%${search}%`;
           query = query.or(`description.ilike.${s},reference_number.ilike.${s}`);
         }
 
-        if (filters?.dateRange?.start && filters?.dateRange?.end) {
-          query = query.gte("transaction_date", new Date(filters.dateRange.start).toISOString())
-                       .lte("transaction_date", new Date(filters.dateRange.end).toISOString());
+        const dateRange = filters?.dateRange as { start?: string; end?: string } | undefined;
+        if (typeof dateRange?.start === "string" && typeof dateRange?.end === "string") {
+          query = query.gte("transaction_date", new Date(dateRange.start).toISOString())
+                       .lte("transaction_date", new Date(dateRange.end).toISOString());
         }
 
         query = query.order("transaction_date", { ascending: false });
 
-        if (filters?.page && filters?.pageSize) {
-          const page = Number(filters.page || 1);
-          const pageSize = Number(filters.pageSize || 20);
+        const hasPage = typeof filters?.page !== "undefined";
+        const hasPageSize = typeof filters?.pageSize !== "undefined";
+        if (hasPage && hasPageSize) {
+          const page = typeof filters.page === "number" ? filters.page : Number(filters.page);
+          const pageSize = typeof filters.pageSize === "number" ? filters.pageSize : Number(filters.pageSize);
           const from = (page - 1) * pageSize;
           const to = from + pageSize - 1;
           query = query.range(from, to);
         }
 
-        const { data, error, count } = await query;
+        const { data: rawData, error, count } = await query;
+        const data = (rawData || []) as Transaction[];
 
-        const mappedData = (data || []).map((tx: any) => ({
+        const mappedData = data.map((tx) => ({
           ...tx,
           customer_name: tx.customers?.full_name || tx.customer_name,
           bank_account_name: tx.bank_accounts?.account_name || tx.bank_account_name,
@@ -60,55 +70,61 @@ export class TransactionService extends BaseService {
         return { data: mappedData, error, count: count || mappedData.length };
       },
       async () => {
-        let transactions = trialGet("transactions") || [];
-        
-        if (filters?.company_id) transactions = transactions.filter((t: any) => t.company_id === filters.company_id);
-        if (filters?.branch_id) transactions = transactions.filter((t: any) => t.branch_id === filters.branch_id);
-        if (filters?.transaction_type) transactions = transactions.filter((t: any) => t.transaction_type === filters.transaction_type);
-        if (filters?.customer_id) transactions = transactions.filter((t: any) => t.customer_id === filters.customer_id);
+        let transactions = (trialGet("transactions") || []) as Transaction[];
 
-        const search = String(filters?.search || "").toLowerCase().trim();
+        const companyFilter = typeof filters?.company_id === "string" ? filters.company_id : undefined;
+        const branchFilter = typeof filters?.branch_id === "string" ? filters.branch_id : undefined;
+        const typeFilter = typeof filters?.transaction_type === "string" ? filters.transaction_type : undefined;
+        const customerFilter = typeof filters?.customer_id === "string" ? filters.customer_id : undefined;
+
+        if (companyFilter) transactions = transactions.filter((t) => t.company_id === companyFilter);
+        if (branchFilter) transactions = transactions.filter((t) => t.branch_id === branchFilter);
+        if (typeFilter) transactions = transactions.filter((t) => t.transaction_type === typeFilter);
+        if (customerFilter) transactions = transactions.filter((t) => t.customer_id === customerFilter);
+
+        const search = typeof filters?.search === "string" ? filters.search.toLowerCase().trim() : "";
         if (search) {
-          transactions = transactions.filter((tx: any) => {
-            const desc = String(tx.description || "").toLowerCase();
-            const ref = String(tx.reference_number || "").toLowerCase();
+          transactions = transactions.filter((tx) => {
+            const desc = String(tx.description ?? "").toLowerCase();
+            const ref = String(tx.reference_number ?? "").toLowerCase();
             return desc.includes(search) || ref.includes(search);
           });
         }
 
-        if (filters?.dateRange?.start && filters?.dateRange?.end) {
-          const start = new Date(filters.dateRange.start);
-          const end = new Date(filters.dateRange.end);
-          transactions = transactions.filter((tx: any) => {
+        const dateRange = filters?.dateRange as { start?: string; end?: string } | undefined;
+        if (typeof dateRange?.start === "string" && typeof dateRange?.end === "string") {
+          const start = new Date(dateRange.start);
+          const end = new Date(dateRange.end);
+          transactions = transactions.filter((tx) => {
             const txDate = new Date(tx.transaction_date);
             return txDate >= start && txDate <= end;
           });
         }
 
-        transactions.sort((a: any, b: any) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime());
+        transactions.sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime());
         const totalCount = transactions.length;
 
-        const page = Number(filters?.page || 1);
-        const pageSize = Number(filters?.pageSize || 20);
+        const page = typeof filters?.page === "number" ? filters.page : typeof filters?.page === "string" ? Number(filters.page) : 1;
+        const pageSize = typeof filters?.pageSize === "number" ? filters.pageSize : typeof filters?.pageSize === "string" ? Number(filters.pageSize) : 20;
         const from = (page - 1) * pageSize;
         transactions = transactions.slice(from, from + pageSize);
 
-        const customers = trialGet("customers") || [];
-        const bankAccounts = trialGet("bank_accounts") || [];
-        const branches = trialGet("branches") || [];
-        const users = trialGet("users") || [];
+        const customers = (trialGet("customers") || []) as Customer[];
+        const bankAccounts = (trialGet("bank_accounts") || []) as BankAccount[];
+        const branches = (trialGet("branches") || []) as Branch[];
+        const users = (trialGet("users") || []) as User[];
 
-        const cMap = new Map(customers.map((c: any) => [c.id, c]));
-        const bMap = new Map(bankAccounts.map((b: any) => [b.id, b]));
-        const brMap = new Map(branches.map((b: any) => [b.id, b]));
-        const uMap = new Map(users.map((u: any) => [u.id, u]));
+        const cMap = new Map(customers.map((c) => [c.id, c]));
+        const bMap = new Map(bankAccounts.map((b) => [b.id, b]));
+        const brMap = new Map(branches.map((b) => [b.id, b]));
+        const uMap = new Map(users.map((u) => [u.id, u]));
 
-        const mappedData = transactions.map((tx: any) => ({
+        const mappedData = transactions.map((tx) => ({
           ...tx,
-          customer_name: cMap.get(tx.customer_id)?.full_name || tx.customer_name,
-          bank_account_name: bMap.get(tx.bank_account_id)?.account_name || tx.bank_account_name,
-          branch_name: brMap.get(tx.branch_id)?.name,
-          creator_name: uMap.get(tx.created_by)?.full_name,
+          customer_name: cMap.get(tx.customer_id || "")?.full_name || tx.customer_name,
+          bank_account_name: bMap.get(tx.bank_account_id || "")?.account_name || tx.bank_account_name,
+          branch_name: brMap.get(tx.branch_id || "")?.name || tx.branch_name,
+          creator_name: uMap.get(tx.created_by || "")?.full_name,
         }));
 
         return { data: mappedData, error: null, count: totalCount };
@@ -123,23 +139,23 @@ export class TransactionService extends BaseService {
           .from("transactions")
           .select("*, customers(full_name, customer_code), bank_accounts(account_name)")
           .eq("id", id);
-        
+
         if (companyId) query = query.eq("company_id", companyId);
-        
+
         const { data: tx, error } = await query.single();
         if (error || !tx) return { data: null, error: error || { message: "Transaction not found" } };
-        
+
         return { data: tx, error: null };
       },
       async () => {
-        const transactions = trialGet("transactions") || [];
-        const tx = transactions.find((t: any) => t.id === id && (!companyId || t.company_id === companyId));
+        const transactions = (trialGet("transactions") || []) as Transaction[];
+        const tx = transactions.find((t) => t.id === id && (!companyId || t.company_id === companyId));
         if (!tx) return { data: null, error: { message: "Transaction not found" } };
 
-        const customers = trialGet("customers") || [];
-        const bankAccounts = trialGet("bank_accounts") || [];
-        const customer = customers.find((c: any) => c.id === tx.customer_id);
-        const bankAccount = bankAccounts.find((b: any) => b.id === tx.bank_account_id);
+        const customers = (trialGet("customers") || []) as Customer[];
+        const bankAccounts = (trialGet("bank_accounts") || []) as BankAccount[];
+        const customer = customers.find((c) => c.id === tx.customer_id);
+        const bankAccount = bankAccounts.find((b) => b.id === tx.bank_account_id);
 
         return {
           data: {
@@ -153,12 +169,12 @@ export class TransactionService extends BaseService {
     );
   }
 
-  static async createTransaction(transactionData: any) {
+  static async createTransaction(transactionData: Record<string, unknown>) {
     return this.execute(
       async () => {
         const validation = validateTransactionData(transactionData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
+
         const transformed = transformRawTransaction(transactionData, true) as Record<string, unknown>;
         const { data, error } = await insertWithFallback("transactions", transformed);
         return { data, error };
@@ -166,8 +182,8 @@ export class TransactionService extends BaseService {
       async () => {
         const validation = validateTransactionData(transactionData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
-        
-        const transformed = transformRawTransaction(transactionData, false);
+
+        const transformed = transformRawTransaction(transactionData, false) as Record<string, unknown>;
         const result = trialInsert("transactions", transformed);
         return { data: result, error: null };
       }
@@ -220,34 +236,37 @@ export class TransactionService extends BaseService {
     );
   }
 
-  static async bulkImportTransactions(rawData: any[], branchId?: string, createdBy?: string, companyId?: string) {
-    // Resolve display labels used in UI dropdowns ("Name - Code/Number") back to actual IDs
-    const resolveBankAccount = (label: string, accounts: any[]): { id: string | null; name: string | null } => {
+  static async bulkImportTransactions(rawData: Record<string, unknown>[], branchId?: string, createdBy?: string, companyId?: string) {
+    const resolveBankAccount = (label: string, accounts: Record<string, unknown>[]): { id: string | null; name: string | null } => {
       const raw = (label || "").trim();
       if (!raw) return { id: null, name: null };
       const lower = raw.toLowerCase();
       const [namePart, codePart] = lower.split(" - ").map((s) => s.trim());
       const match = accounts.find((a) => {
-        const names = [String(a.account_name || ""), String(a.bank_name || "")].map((n) => n.toLowerCase().trim());
-        const codes = [String(a.account_number || ""), String(a.id || "")].map((n) => n.toLowerCase().trim());
+        const names = [String(a.account_name ?? ""), String(a.bank_name ?? "")].map((n) => n.toLowerCase().trim());
+        const codes = [String(a.account_number ?? ""), String(a.id ?? "")].map((n) => n.toLowerCase().trim());
         if (codePart) return names.includes(namePart) && codes.includes(codePart);
         return names.includes(namePart) || codes.includes(namePart);
       });
-      return match ? { id: match.id, name: match.account_name || match.bank_name || null } : { id: null, name: null };
+      return match
+        ? { id: String(match.id ?? ""), name: String((match.account_name ?? match.bank_name) ?? "").trim() || null }
+        : { id: null, name: null };
     };
 
-    const resolveBranch = (label: string, branches: any[]): { id: string | null; name: string | null } => {
+    const resolveBranch = (label: string, branches: Record<string, unknown>[]): { id: string | null; name: string | null } => {
       const raw = (label || "").trim();
       if (!raw) return { id: null, name: null };
       const lower = raw.toLowerCase();
       const [namePart, codePart] = lower.split(" - ").map((s) => s.trim());
       const match = branches.find((b) => {
-        const names = [String(b.name || ""), String(b.branch_name || "")].map((n) => n.toLowerCase().trim());
-        const codes = [String(b.code || ""), String(b.id || "")].map((n) => n.toLowerCase().trim());
+        const names = [String(b.name ?? ""), String(b.branch_name ?? "")].map((n) => n.toLowerCase().trim());
+        const codes = [String(b.code ?? ""), String(b.id ?? "")].map((n) => n.toLowerCase().trim());
         if (codePart) return names.includes(namePart) && codes.includes(codePart);
         return names.includes(namePart) || codes.includes(namePart);
       });
-      return match ? { id: match.id, name: match.name || match.branch_name || null } : { id: null, name: null };
+      return match
+        ? { id: String(match.id ?? ""), name: String((match.name ?? match.branch_name) ?? "").trim() || null }
+        : { id: null, name: null };
     };
 
     return this.execute(
@@ -258,62 +277,78 @@ export class TransactionService extends BaseService {
         const { data: validTypes, error: typeErr } = await apiClient.from("transaction_types").select("id, name").eq("is_active", true);
         if (typeErr || !validTypes?.length) return { data: null, error: { message: "Failed to fetch transaction types" } };
 
-        const validTypeNames = new Set(validTypes.map((t: any) => t.name.toLowerCase()));
-
         let customerMap: Record<string, string> = {};
         const { data: customers } = await apiClient.from('customers').select('id, customer_code');
         if (customers) {
-          customerMap = customers.reduce((acc, c) => {
-            if (c.customer_code) acc[c.customer_code.toLowerCase().trim()] = c.id;
+          const rows = customers as { id: string; customer_code?: string }[];
+          customerMap = rows.reduce((acc, c) => {
+            const code = c.customer_code?.toLowerCase().trim();
+            if (code) acc[code] = c.id;
             return acc;
           }, {} as Record<string, string>);
         }
 
-        let bankAccounts: any[] = [];
-        let branches: any[] = [];
-        let bankQuery: any = apiClient.from("bank_accounts").select("id, account_name, bank_name, account_number, company_id");
-        let branchQuery: any = apiClient.from("branches").select("id, name, branch_name, code, company_id");
+        let bankAccounts: Record<string, unknown>[] = [];
+        let branches: Record<string, unknown>[] = [];
+        let bankQuery = apiClient.from("bank_accounts").select("id, account_name, bank_name, account_number, company_id");
+        let branchQuery = apiClient.from("branches").select("id, name, branch_name, code, company_id");
         if (companyId) {
           bankQuery = bankQuery.eq("company_id", companyId);
           branchQuery = branchQuery.eq("company_id", companyId);
         }
         const [{ data: bankData }, { data: branchData }] = await Promise.all([bankQuery, branchQuery]);
-        if (bankData) bankAccounts = bankData;
-        if (branchData) branches = branchData;
+        if (bankData) bankAccounts = bankData as Record<string, unknown>[];
+        if (branchData) branches = branchData as Record<string, unknown>[];
 
         const body = raw.map((r, idx) => {
-          let cId = r.customer_id || null;
+          let cId: string | null = String(r.customer_id ?? "").trim() || null;
+
           if (!cId && r.customer_code) {
-            let parsed = r.customer_code.toLowerCase().trim();
-            const dashIdx = parsed.indexOf(' - ');
+            const rawCode = r.customer_code;
+            let parsed = typeof rawCode === "string" ? rawCode.toLowerCase().trim() : String(rawCode).toLowerCase().trim();
+            const dashIdx = parsed.indexOf(" - ");
             if (dashIdx > 0) parsed = parsed.substring(0, dashIdx).trim();
             cId = customerMap[parsed] || null;
-            if (!cId) throw new Error(`Row ${idx + 1}: Customer not found for code "${r.customer_code}"`);
+            if (!cId) throw new Error(`Row ${idx + 1}: Customer not found for code "${rawCode}"`);
           }
 
-          const resolvedBank = resolveBankAccount(r.bank_account || r.bank_account_name, bankAccounts);
-          const resolvedBranch = resolveBranch(r.branch || r.branch_name, branches);
+          const bankLabel = typeof r.bank_account === "string" && r.bank_account.trim()
+            ? r.bank_account
+            : typeof r.bank_account_name === "string"
+            ? r.bank_account_name
+            : "";
+          const branchLabel = typeof r.branch === "string" && r.branch.trim()
+            ? r.branch
+            : typeof r.branch_name === "string"
+            ? r.branch_name
+            : "";
+
+          const resolvedBank = resolveBankAccount(bankLabel, bankAccounts);
+          const resolvedBranch = resolveBranch(branchLabel, branches);
 
           let parsedDate = now;
           if (r.transaction_date) {
-            const date = new Date(r.transaction_date);
+            const date = new Date(typeof r.transaction_date === "string" ? r.transaction_date : String(r.transaction_date));
             if (!isNaN(date.getTime())) parsedDate = date.toISOString();
           }
 
+          const rawType = typeof r.transaction_type === "string" ? r.transaction_type.trim() : "";
+          const transaction_type = normalizeTransactionType(rawType || "payment");
+
           return {
-            id: r.id || uuid(),
-            transaction_code: r.transaction_code || `TXN${Date.now()}${idx}`,
+            id: String(r.id ?? "").trim() || uuid(),
+            transaction_code: String(r.transaction_code ?? "").trim() || `TXN${Date.now()}${idx}`,
             customer_id: cId,
-            bank_account_id: resolvedBank.id || r.bank_account_id || null,
-            bank_account_name: resolvedBank.name || r.bank_account_name || null,
-            branch_id: resolvedBranch.id || r.branch_id || branchId || null,
-            branch_name: resolvedBranch.name || r.branch_name || null,
+            bank_account_id: resolvedBank.id || String(r.bank_account_id ?? "").trim() || null,
+            bank_account_name: resolvedBank.name || String(r.bank_account_name ?? "").trim() || null,
+            branch_id: resolvedBranch.id || String(r.branch_id ?? "").trim() || branchId || null,
+            branch_name: resolvedBranch.name || String(r.branch_name ?? "").trim() || null,
             company_id: companyId || null,
             created_by: createdBy || null,
-            transaction_type: normalizeTransactionType(r.transaction_type || 'payment'),
+            transaction_type,
             amount: parseAmount(r.amount),
-            description: r.description || null,
-            reference_number: r.reference_number || null,
+            description: String(r.description ?? "").trim() || null,
+            reference_number: String(r.reference_number ?? "").trim() || null,
             transaction_date: parsedDate,
             created_at: now,
             updated_at: now,
@@ -326,34 +361,49 @@ export class TransactionService extends BaseService {
       async () => {
         const raw = Array.isArray(rawData) ? rawData : [];
         const now = getNowIso();
-        const mockBankAccounts = trialGet("bank_accounts") || [];
-        const mockBranches = trialGet("branches") || [];
+        const mockBankAccounts = (trialGet("bank_accounts") || []) as Record<string, unknown>[];
+        const mockBranches = (trialGet("branches") || []) as Record<string, unknown>[];
 
-        const body = raw.map((row: any) => {
-          const resolvedBank = resolveBankAccount(row.bank_account || row.bank_account_name, mockBankAccounts);
-          const resolvedBranch = resolveBranch(row.branch || row.branch_name, mockBranches);
+        const body = raw.map((row) => {
+          const bankLabel = typeof row.bank_account === "string" && row.bank_account.trim()
+            ? row.bank_account
+            : typeof row.bank_account_name === "string"
+            ? row.bank_account_name
+            : "";
+          const branchLabel = typeof row.branch === "string" && row.branch.trim()
+            ? row.branch
+            : typeof row.branch_name === "string"
+            ? row.branch_name
+            : "";
+
+          const resolvedBank = resolveBankAccount(bankLabel, mockBankAccounts);
+          const resolvedBranch = resolveBranch(branchLabel, mockBranches);
+
+          const rawType = typeof row.transaction_type === "string" ? row.transaction_type.trim() : "";
+          const transaction_type = normalizeTransactionType(rawType || "payment");
+
           return {
             id: `txn-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
-            transaction_code: row.transaction_code || `TXN${Date.now()}`,
-            customer_id: row.customer_id || null,
-            customer_name: row.customer_name || null,
-            bank_account_id: resolvedBank.id || row.bank_account_id || null,
-            bank_account_name: resolvedBank.name || row.bank_account_name || null,
-            branch_id: resolvedBranch.id || row.branch_id || branchId || "trial-branch",
-            branch_name: resolvedBranch.name || row.branch_name || null,
+            transaction_code: String(row.transaction_code ?? "").trim() || `TXN${Date.now()}`,
+            customer_id: String(row.customer_id ?? "").trim() || null,
+            customer_name: String(row.customer_name ?? "").trim() || null,
+            bank_account_id: resolvedBank.id || String(row.bank_account_id ?? "").trim() || null,
+            bank_account_name: resolvedBank.name || String(row.bank_account_name ?? "").trim() || null,
+            branch_id: resolvedBranch.id || String(row.branch_id ?? "").trim() || branchId || null,
+            branch_name: resolvedBranch.name || String(row.branch_name ?? "").trim() || null,
             company_id: companyId || "trial-company",
             created_by: createdBy || "",
-            transaction_type: normalizeTransactionType(row.transaction_type || "payment"),
+            transaction_type,
             amount: parseAmount(row.amount),
-            description: row.description || null,
-            reference_number: row.reference_number || null,
-            transaction_date: row.transaction_date || now,
+            description: String(row.description ?? "").trim() || null,
+            reference_number: String(row.reference_number ?? "").trim() || null,
+            transaction_date: String(row.transaction_date ?? "").trim() || now,
             created_at: now,
             updated_at: now,
           };
         });
 
-        const inserted = body.map((tx: any) => trialInsert("transactions", tx));
+        const inserted = body.map((tx) => trialInsert("transactions", tx as Record<string, unknown>));
         return { data: inserted, error: null };
       }
     );
