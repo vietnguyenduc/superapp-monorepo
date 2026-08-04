@@ -1,7 +1,8 @@
 import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
-import { trialGet, trialDelete } from "./trialMockStore";
-import { backupService } from "../utils/backupRecovery";
+import { trialGet, trialInsert, trialDelete } from "./trialMockStore";
+import { backupService, type BackupData } from "../utils/backupRecovery";
+import { compressJSON, decompressJSON } from "../utils/compression";
 
 export class BackupHistoryService extends BaseService {
   static async restoreCustomers(customers: Record<string, unknown>[], companyId: string) {
@@ -69,6 +70,71 @@ export class BackupHistoryService extends BaseService {
       }
     );
   }
+
+  static async saveBackupToDatabase(backupData: BackupData, companyId: string, userId: string) {
+    return this.execute(
+      async () => backupService.saveBackupToDatabase(backupData, companyId, userId),
+      async () => {
+        const compressed = await compressJSON(backupData);
+        const includedTables = Object.keys(backupData).filter((key) =>
+          Array.isArray(backupData[key as keyof BackupData])
+        );
+        const record = trialInsert("backup_history", {
+          company_id: companyId,
+          backup_name: backupService.generateBackupFilename(undefined, "json"),
+          backup_data: compressed,
+          included_tables: includedTables,
+          is_compressed: true,
+          compression_algorithm: "base64",
+          created_by: userId,
+          backup_timestamp: new Date().toISOString(),
+          backup_format: "json",
+          backup_version: backupData.version,
+          total_customers: backupData.customers?.length || 0,
+          total_transactions: backupData.transactions?.length || 0,
+          total_bank_accounts: backupData.bank_accounts?.length || 0,
+          total_branches: backupData.branches?.length || 0,
+          is_restorable: true,
+        });
+        if (!record) {
+          return { data: null, error: "Trial mode: failed to save backup" };
+        }
+        return { data: record, error: null };
+      }
+    );
+  }
+
+  static async loadBackupData(backupId: string, _companyId?: string) {
+    return this.execute(
+      async () => backupService.loadBackupFromDatabase(backupId),
+      async () => {
+        const backups = (trialGet("backup_history") || []) as Record<string, unknown>[];
+        const backup = backups.find((b) => String(b.id) === backupId);
+        if (!backup || typeof backup.backup_data !== "string") {
+          return { data: null, error: "Không tìm thấy bản sao lưu" };
+        }
+        const decompressed = await decompressJSON(backup.backup_data);
+        return { data: decompressed as BackupData, error: null };
+      }
+    );
+  }
+
+  static async revertTableFromBackup(
+    backupId: string,
+    tableName: string,
+    companyId: string,
+    userId: string
+  ) {
+    return this.execute(
+      async () =>
+        backupService.revertTableFromBackup(backupId, tableName, {
+          companyId,
+          userId,
+          restoreOnlyOwnChanges: true,
+        }),
+      async () => ({ data: null, error: "Không hỗ trợ revert trong chế độ dùng thử" })
+    );
+  }
 }
 
 export const backupHistoryService = {
@@ -79,4 +145,7 @@ export const backupHistoryService = {
   cleanupOldBackups: BackupHistoryService.cleanupOldBackups.bind(BackupHistoryService),
   getBackupHistory: BackupHistoryService.getBackupHistory.bind(BackupHistoryService),
   deleteBackupHistory: BackupHistoryService.deleteBackupHistory.bind(BackupHistoryService),
+  saveBackupToDatabase: BackupHistoryService.saveBackupToDatabase.bind(BackupHistoryService),
+  loadBackupData: BackupHistoryService.loadBackupData.bind(BackupHistoryService),
+  revertTableFromBackup: BackupHistoryService.revertTableFromBackup.bind(BackupHistoryService),
 };
