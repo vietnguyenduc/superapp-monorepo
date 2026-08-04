@@ -13,6 +13,8 @@ import {
   CustomerTable,
   CustomerDetailModal,
   CustomerFormModal,
+  ColumnVisibilityDropdown,
+  CustomerBulkEditModal,
 } from "./components";
 import Pagination from "../../components/UI/Pagination";
 import Button from "../../components/UI/Button";
@@ -33,7 +35,29 @@ interface CustomerListState {
   showDetailModal: boolean;
   showFormModal: boolean;
   formMode: "create" | "edit";
+  visibleColumns: Record<string, boolean>;
+  showBulkEditModal: boolean;
 }
+
+const defaultVisibleColumns: Record<string, boolean> = {
+  customerCode: true,
+  fullName: true,
+  balance: true,
+  lastTransaction: true,
+  phone: true,
+  address: true,
+  workingMethod: true,
+};
+
+const allColumnOptions = [
+  { key: "customerCode", label: "Mã khách hàng" },
+  { key: "fullName", label: "Tên khách hàng" },
+  { key: "balance", label: "Công nợ" },
+  { key: "lastTransaction", label: "Giao dịch cuối" },
+  { key: "phone", label: "ĐT" },
+  { key: "address", label: "Địa chỉ" },
+  { key: "workingMethod", label: "Cách làm việc công nợ" },
+];
 
 const CustomerList: React.FC = () => {
   const { t } = useTranslation();
@@ -41,22 +65,37 @@ const CustomerList: React.FC = () => {
   const companyId = useCompanyId();
   const navigate = useNavigate();
 
-  const [state, setState] = useState<CustomerListState>({
-    customers: [],
-    loading: true,
-    error: null,
-    totalCount: 0,
-    currentPage: 1,
-    pageSize: 20,
-    searchTerm: "",
-    dateRange: null,
-    sortBy: "created_at",
-    sortOrder: "desc",
-    selectedCustomer: null,
-    showDetailModal: false,
-    showFormModal: false,
-    formMode: "create",
+  const [state, setState] = useState<CustomerListState>(() => {
+    let savedColumns: Record<string, boolean> | null = null;
+    try {
+      const raw = localStorage.getItem("cashflow_customerList_columns");
+      if (raw) savedColumns = JSON.parse(raw);
+    } catch {
+      savedColumns = null;
+    }
+    return {
+      customers: [],
+      loading: true,
+      error: null,
+      totalCount: 0,
+      currentPage: 1,
+      pageSize: 20,
+      searchTerm: "",
+      dateRange: null,
+      sortBy: "created_at",
+      sortOrder: "desc",
+      selectedCustomer: null,
+      showDetailModal: false,
+      showFormModal: false,
+      formMode: "create",
+      visibleColumns: { ...defaultVisibleColumns, ...(savedColumns || {}) },
+      showBulkEditModal: false,
+    };
   });
+
+  useEffect(() => {
+    localStorage.setItem("cashflow_customerList_columns", JSON.stringify(state.visibleColumns));
+  }, [state.visibleColumns]);
 
   // Debounce search term so API isn't called on every keystroke (300ms delay)
   const debouncedSearchTerm = useDebounce(state.searchTerm, 300);
@@ -73,6 +112,8 @@ const CustomerList: React.FC = () => {
         search: debouncedSearchTerm || undefined,
         limit: state.pageSize,
         offset,
+        sortBy: state.sortBy,
+        sortOrder: state.sortOrder,
       });
 
       if (result.error) {
@@ -92,7 +133,7 @@ const CustomerList: React.FC = () => {
         loading: false,
       }));
     }
-  }, [companyId, state.currentPage, state.pageSize, debouncedSearchTerm]);
+  }, [companyId, state.currentPage, state.pageSize, debouncedSearchTerm, state.sortBy, state.sortOrder]);
 
   // Load customers on mount and when filters change
   useEffect(() => {
@@ -119,8 +160,78 @@ const CustomerList: React.FC = () => {
       sortBy,
       sortOrder:
         prev.sortBy === sortBy && prev.sortOrder === "asc" ? "desc" : "asc",
+      currentPage: 1,
     }));
   }, []);
+
+  const handleToggleColumn = useCallback((key: string) => {
+    setState((prev) => ({
+      ...prev,
+      visibleColumns: { ...prev.visibleColumns, [key]: !prev.visibleColumns[key] },
+    }));
+  }, []);
+
+  const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\\\]/g, "\\$&");
+
+  const handleBulkEditApply = useCallback(async (config: {
+    mode: "findReplace" | "prefix" | "suffix";
+    find: string;
+    replace: string;
+    prefix: string;
+    suffix: string;
+    caseSensitive: boolean;
+  }) => {
+    if (!companyId) {
+      alert("Không xác định được công ty");
+      return;
+    }
+    setState((prev) => ({ ...prev, loading: true, showBulkEditModal: false }));
+    try {
+      const result = await databaseService.customers.getCustomers({
+        company_id: companyId,
+        search: debouncedSearchTerm || undefined,
+        limit: 10000,
+        offset: 0,
+        sortBy: "created_at",
+        sortOrder: "desc",
+      });
+      const allCustomers = (result.data || []) as Customer[];
+      const now = new Date().toISOString();
+      const records: { id: string; full_name: string; updated_at: string }[] = [];
+
+      for (const c of allCustomers) {
+        const name = c.full_name || "";
+        let newName = name;
+        if (config.mode === "findReplace") {
+          if (config.find) {
+            const regex = new RegExp(escapeRegex(config.find), config.caseSensitive ? "g" : "gi");
+            newName = name.replace(regex, () => config.replace);
+          }
+        } else if (config.mode === "prefix") {
+          newName = config.prefix + name;
+        } else if (config.mode === "suffix") {
+          newName = name + config.suffix;
+        }
+        if (newName !== name) {
+          records.push({ id: c.id, full_name: newName, updated_at: now });
+        }
+      }
+
+      if (records.length === 0) {
+        alert("Không có khách hàng nào thay đổi");
+        return;
+      }
+
+      const updateRes = await databaseService.customers.bulkUpdateCustomerNames(records);
+      if (updateRes.error) {
+        alert(updateRes.error);
+      } else {
+        fetchCustomers();
+      }
+    } finally {
+      setState((prev) => ({ ...prev, loading: false }));
+    }
+  }, [companyId, debouncedSearchTerm, fetchCustomers]);
 
   const sortedCustomers = useMemo(() => {
     const sorted = [...state.customers];
@@ -357,10 +468,26 @@ const CustomerList: React.FC = () => {
               onChange={handleSearch}
               placeholder={t("customers.searchPlaceholder")}
             />
-            <CustomerFilters
-              dateRange={state.dateRange}
-              onDateRangeChange={handleDateRangeChange}
-            />
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <CustomerFilters
+                dateRange={state.dateRange}
+                onDateRangeChange={handleDateRangeChange}
+              />
+              <div className="flex items-center gap-2">
+                <ColumnVisibilityDropdown
+                  columns={allColumnOptions}
+                  visibleColumns={state.visibleColumns}
+                  onToggle={handleToggleColumn}
+                />
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={() => setState((prev) => ({ ...prev, showBulkEditModal: true }))}
+                >
+                  Chỉnh tên hàng loạt
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -389,6 +516,7 @@ const CustomerList: React.FC = () => {
             onCustomerSelect={handleCustomerSelect}
             onCustomerAction={handleCustomerAction}
             loading={state.loading}
+            visibleColumns={state.visibleColumns}
           />
 
           {/* Pagination */}
@@ -427,6 +555,15 @@ const CustomerList: React.FC = () => {
             customer={state.selectedCustomer}
             onClose={closeModals}
             onSubmit={handleFormSubmit}
+          />
+        )}
+
+        {state.showBulkEditModal && (
+          <CustomerBulkEditModal
+            isOpen={state.showBulkEditModal}
+            totalCustomers={state.totalCount}
+            onClose={() => setState((prev) => ({ ...prev, showBulkEditModal: false }))}
+            onApply={handleBulkEditApply}
           />
         )}
       </div>

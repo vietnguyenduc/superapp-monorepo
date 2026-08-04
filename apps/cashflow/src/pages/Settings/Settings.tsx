@@ -1135,17 +1135,18 @@ const Settings: React.FC = () => {
     setIsOpeningProcessing(true);
     setOpeningSuccess(null);
     try {
-      const res = await databaseService.customers.bulkUpdateOpeningBalances(openingRows);
-      if (res.errors && res.errors.length > 0) {
-        const errs = res.errors.map((e: any) => {
+      const res = await databaseService.customers.bulkUpdateOpeningBalances(openingRows, companyId || undefined);
+      if (res.error || (res.data?.errors && res.data.errors.length > 0)) {
+        const errs = (res.data?.errors || []).map((e: any) => {
           const msg = e.message === "Customer not found" ? "Không tìm thấy khách hàng" : e.message;
           return `Dòng ${e.row + 2}: ${msg}${e.value ? ` (${e.value})` : ""}`;
         });
+        if (res.error) errs.unshift(`Lỗi: ${res.error.message || res.error}`);
         setOpeningErrors(errs);
       } else {
         setOpeningErrors([]);
       }
-      setOpeningSuccess(`Đã cập nhật ${res.data?.updated || 0} khách hàng.`);
+      setOpeningSuccess(`Đã cập nhật ${res.data?.updatedCount || 0} khách hàng.`);
     } catch (err) {
       console.error("Import opening balance failed", err);
       setOpeningErrors(["Có lỗi khi nhập số dư. Vui lòng thử lại."]);

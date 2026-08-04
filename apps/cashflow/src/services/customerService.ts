@@ -18,7 +18,8 @@ export class CustomerService extends BaseService {
           query = query.or(`full_name.ilike.${s},customer_code.ilike.${s},phone.ilike.${s},email.ilike.${s}`);
         }
         
-        query = query.order("created_at", { ascending: false });
+        const orderColumn = filters?.sortBy === "total_balance" ? "current_balance" : filters?.sortBy || "created_at";
+        query = query.order(orderColumn, { ascending: filters?.sortOrder === "asc" });
         
         if (Number.isFinite(filters?.limit)) {
           const limit = Number(filters.limit);
@@ -52,7 +53,24 @@ export class CustomerService extends BaseService {
           );
         }
         
-        data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        const sortBy = filters?.sortBy || "created_at";
+        const ascending = filters?.sortOrder === "asc";
+        const direction = ascending ? 1 : -1;
+        data.sort((a: any, b: any) => {
+          const getValue = (item: any) => {
+            if (sortBy === "total_balance") return item.current_balance ?? item.total_balance ?? 0;
+            return item[sortBy] ?? null;
+          };
+          const aValue = getValue(a);
+          const bValue = getValue(b);
+          if (aValue === undefined || aValue === null) return 1 * direction;
+          if (bValue === undefined || bValue === null) return -1 * direction;
+          if (typeof aValue === "number" && typeof bValue === "number") return (aValue - bValue) * direction;
+          if (sortBy === "last_transaction_date" || sortBy === "created_at") {
+            return (new Date(aValue).getTime() - new Date(bValue).getTime()) * direction;
+          }
+          return String(aValue).localeCompare(String(bValue)) * direction;
+        });
         
         let count = data.length;
         if (Number.isFinite(filters?.limit)) {
@@ -444,51 +462,109 @@ export class CustomerService extends BaseService {
     );
   }
 
-  static async bulkUpdateOpeningBalances(rows: { customer_code?: string; opening_balance?: number }[]) {
+  static async bulkUpdateOpeningBalances(rows: { customer_code?: string; opening_balance?: number }[], companyId?: string) {
     return this.execute(
       async () => {
-        let updatedCount = 0;
         const errors: any[] = [];
-        for (let i = 0; i < rows.length; i++) {
-          const row = rows[i];
+        const codeToRow: Record<string, { row: number; opening: number }> = {};
+        rows.forEach((row, i) => {
           const code = String(row.customer_code || "").trim();
           const opening = Number(row.opening_balance);
-          if (!code) { errors.push({ row: i, message: "Missing customer_code" }); continue; }
-          
-          const { data: customer } = await apiClient.from("customers").select("*").eq("customer_code", code).single();
-          if (!customer) { errors.push({ row: i, message: "Customer not found" }); continue; }
-          
-          await apiClient.from("customers").update({
+          if (!code) {
+            errors.push({ row: i, message: "Missing customer_code" });
+            return;
+          }
+          if (!Number.isFinite(opening)) {
+            errors.push({ row: i, message: "Invalid opening_balance", value: row.opening_balance });
+            return;
+          }
+          codeToRow[code] = { row: i, opening };
+        });
+
+        const codes = Object.keys(codeToRow);
+        if (codes.length === 0) return { data: { updatedCount: 0, errors }, error: null };
+
+        let query = apiClient.from("customers").select("id,customer_code,opening_balance,current_balance").in("customer_code", codes);
+        if (companyId) query = query.eq("company_id", companyId);
+        const { data: customers, error: fetchError } = await query;
+        if (fetchError) return { data: { updatedCount: 0, errors: [...errors, { message: fetchError.message }] }, error: fetchError };
+
+        const customerMap = new Map((customers || []).map((c: any) => [c.customer_code, c]));
+        const payload: any[] = [];
+        const now = new Date().toISOString();
+
+        for (const [code, { row, opening }] of Object.entries(codeToRow)) {
+          const customer = customerMap.get(code);
+          if (!customer) {
+            errors.push({ row, message: "Customer not found", value: code });
+            continue;
+          }
+          const oldOpening = Number(customer.opening_balance || 0);
+          const oldCurrent = Number(customer.current_balance || 0);
+          const delta = oldCurrent - oldOpening;
+          payload.push({
+            id: customer.id,
             opening_balance: opening,
-            current_balance: opening,
-            updated_at: new Date().toISOString()
-          } as any).eq("id", customer.id);
-          updatedCount++;
+            current_balance: opening + delta,
+            updated_at: now,
+          });
         }
-        return { data: { updatedCount, errors }, error: null };
+
+        if (payload.length === 0) return { data: { updatedCount: 0, errors }, error: null };
+
+        const { data, error } = await apiClient.from("customers").upsert(payload as any).select();
+        if (error) return { data: { updatedCount: 0, errors: [...errors, { message: error.message }] }, error };
+        return { data: { updatedCount: data?.length || 0, errors }, error: null };
       },
       async () => {
-        let updatedCount = 0;
         const errors: any[] = [];
         const customers = trialGet("customers") || [];
-        
+        let updatedCount = 0;
         for (let i = 0; i < rows.length; i++) {
           const row = rows[i];
           const code = String(row.customer_code || "").trim();
           const opening = Number(row.opening_balance);
           if (!code) { errors.push({ row: i, message: "Missing customer_code" }); continue; }
-          
-          const customer = customers.find((c: any) => c.customer_code === code);
-          if (!customer) { errors.push({ row: i, message: "Customer not found" }); continue; }
-          
+          if (!Number.isFinite(opening)) { errors.push({ row: i, message: "Invalid opening_balance", value: row.opening_balance }); continue; }
+
+          const customer = customers.find((c: any) => c.customer_code === code && (!companyId || c.company_id === companyId));
+          if (!customer) { errors.push({ row: i, message: "Customer not found", value: code }); continue; }
+
+          const oldOpening = Number(customer.opening_balance || 0);
+          const oldCurrent = Number(customer.current_balance || 0);
+          const delta = oldCurrent - oldOpening;
           trialUpdate("customers", customer.id, {
             opening_balance: opening,
-            current_balance: opening,
+            current_balance: opening + delta,
             updated_at: new Date().toISOString()
           });
           updatedCount++;
         }
         return { data: { updatedCount, errors }, error: null };
+      }
+    );
+  }
+
+  static async bulkUpdateCustomerNames(records: { id: string; full_name: string; updated_at?: string }[]) {
+    return this.execute(
+      async () => {
+        if (records.length === 0) return { data: { updatedCount: 0 }, error: null };
+        const payload = records.map((r) => ({
+          id: r.id,
+          full_name: r.full_name,
+          updated_at: r.updated_at || new Date().toISOString(),
+        }));
+        const { data, error } = await apiClient.from("customers").upsert(payload as any).select();
+        if (error) return { data: null, error, errors: [error] };
+        return { data: { updatedCount: data?.length || 0 }, error: null };
+      },
+      async () => {
+        let updatedCount = 0;
+        for (const r of records) {
+          const updated = trialUpdate("customers", r.id, { full_name: r.full_name });
+          if (updated) updatedCount++;
+        }
+        return { data: { updatedCount }, error: null };
       }
     );
   }
@@ -504,4 +580,5 @@ export const customerService = {
   deleteCustomer: CustomerService.deleteCustomer.bind(CustomerService),
   updateCustomerOpeningBalance: CustomerService.updateCustomerOpeningBalance.bind(CustomerService),
   bulkUpdateOpeningBalances: CustomerService.bulkUpdateOpeningBalances.bind(CustomerService),
+  bulkUpdateCustomerNames: CustomerService.bulkUpdateCustomerNames.bind(CustomerService),
 };
