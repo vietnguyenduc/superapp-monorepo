@@ -30,7 +30,7 @@ export class BankAccountService extends BaseService {
         return { data, error };
       },
       async () => {
-        let data = trialGet("bank_accounts") || [];
+        const data = trialGet("bank_accounts") || [];
         const account = data.find((b: any) => b.id === id && (!companyId || b.company_id === companyId));
         return { data: account || null, error: account ? null : { message: "Bank account not found" } };
       }

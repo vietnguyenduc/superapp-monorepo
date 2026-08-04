@@ -1,18 +1,8 @@
 import { BaseService } from "@superapp/shared-utils";
-import { supabase , apiClient} from "./supabase";
+import { apiClient } from "./supabase";
 import { getTrialMode, trialGet } from "./trialMockStore";
 import { parseAmount } from "./businessLogic";
-import type { Transaction, TimeRange, Customer } from "../types";
-
-function getNowIso() {
-  return new Date().toISOString();
-}
-
-function uuid() {
-  const anyCrypto = (globalThis as any).crypto;
-  if (anyCrypto?.randomUUID) return anyCrypto.randomUUID();
-  return `id_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
-}
+import type { Transaction, TimeRange, Customer, BankAccount, Branch } from "../types";
 
 function normalizeTransactionType(input: string) {
   const raw = (input || "").toLowerCase().trim();
@@ -243,46 +233,48 @@ function applyTransactionToBalanceMap(
 }
 
 export class DashboardService extends BaseService {
-  static async getDashboardMetrics(_branchId?: string, timeRange: TimeRange = "month", rangeCount?: any, companyId?: string) {
+  static async getDashboardMetrics(_branchId?: string, timeRange: TimeRange = "month", rangeCount?: Partial<Record<TimeRange, number>>, companyId?: string) {
     const branchId = String(_branchId || "");
 
     if (getTrialMode()) {
-      const mockTransactions = (trialGet("transactions") || []).filter((tx: Transaction) => isInScope(tx, companyId, branchId));
-      const mockCustomers = (trialGet("customers") || []).filter((customer: Customer) => isInScope(customer, companyId, branchId));
-      const mockBankAccounts = (trialGet("bank_accounts") || []).filter((account: { company_id?: string; branch_id?: string }) => isInScope(account, companyId, branchId));
-      const mockBranches = (trialGet("branches") || []).filter((branch: { company_id?: string; id?: string }) =>
-        (!companyId || !branch.company_id || branch.company_id === companyId) &&
-        (!branchId || branch.id === branchId),
+      const mockTransactions = (trialGet("transactions") || []) as Transaction[];
+      const mockCustomers = (trialGet("customers") || []) as Customer[];
+      const mockBankAccounts = (trialGet("bank_accounts") || []) as BankAccount[];
+      const mockBranches = (trialGet("branches") || []) as Branch[];
+
+      const filteredTransactions = mockTransactions.filter((tx) => isInScope(tx, companyId, branchId));
+      const filteredCustomers = mockCustomers.filter((customer) => isInScope(customer, companyId, branchId));
+      const filteredBankAccounts = mockBankAccounts.filter((account) => isInScope(account, companyId, branchId));
+      const filteredBranches = mockBranches.filter(
+        (branch) => (!companyId || branch.company_id === companyId) && (!branchId || branch.id === branchId),
       );
 
-      const currentIncome = mockTransactions
-        .filter((t: any) => t.transaction_type === "payment" || t.transaction_type === "refund")
-        .reduce((s: number, t: any) => s + Math.abs(t.amount), 0);
-      const currentDebt = mockTransactions
-        .filter((t: any) => t.transaction_type === "charge")
-        .reduce((s: number, t: any) => s + Math.abs(t.amount), 0);
+      const currentIncome = filteredTransactions
+        .filter((t) => t.transaction_type === "payment" || t.transaction_type === "refund")
+        .reduce((s, t) => s + Math.abs(t.amount), 0);
+      const currentDebt = filteredTransactions
+        .filter((t) => t.transaction_type === "charge")
+        .reduce((s, t) => s + Math.abs(t.amount), 0);
       const balanceMap = new Map<string, number>();
-      mockCustomers.forEach((customer: Customer) => {
+      filteredCustomers.forEach((customer) => {
         balanceMap.set(customer.id, parseAmount(customer.opening_balance ?? customer.current_balance ?? customer.total_balance));
       });
-      applyTransactionToBalanceMap(balanceMap, mockTransactions);
+      applyTransactionToBalanceMap(balanceMap, filteredTransactions);
       const outstanding = Array.from(balanceMap.values()).reduce((sum, balance) => sum + balance, 0);
-      const activeCustomers = mockCustomers.length;
-      const currentPaymentCount = mockTransactions.filter((t: any) => t.transaction_type === "payment").length;
-      const currentChargeCount = mockTransactions.filter((t: any) => t.transaction_type === "charge").length;
+      const activeCustomers = filteredCustomers.length;
+      const currentPaymentCount = filteredTransactions.filter((t) => t.transaction_type === "payment").length;
+      const currentChargeCount = filteredTransactions.filter((t) => t.transaction_type === "charge").length;
 
-      const recentTransactions = [...mockTransactions]
-        .sort((a: any, b: any) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
+      const recentTransactions = [...filteredTransactions]
+        .sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
         .slice(0, 20);
 
-      const topCustomers = mockCustomers.map((customer: Customer) => ({
-        ...customer,
-        total_balance: balanceMap.get(customer.id) ?? customer.total_balance,
-      }))
-        .sort((a: Customer, b: Customer) => a.total_balance - b.total_balance)
+      const topCustomers = filteredCustomers
+        .map((customer) => ({ ...customer, total_balance: balanceMap.get(customer.id) ?? customer.total_balance }))
+        .sort((a, b) => a.total_balance - b.total_balance)
         .slice(0, 10);
 
-      const balanceByBankAccount = mockBankAccounts.map((b: any) => ({
+      const balanceByBankAccount = filteredBankAccounts.map((b) => ({
         bank_account_id: b.id,
         account_name: b.account_name,
         account_number: b.account_number,
@@ -292,9 +284,9 @@ export class DashboardService extends BaseService {
 
       const count =
         timeRange === "day" ? rangeCount?.day || 7 : timeRange === "week" ? rangeCount?.week || 8 : timeRange === "month" ? rangeCount?.month || 7 : timeRange === "quarter" ? rangeCount?.quarter || 8 : 2;
-      const cashFlowData = aggregateCashFlow(mockTransactions, timeRange, count);
-      
-      const transactionAmountsByBranch = mockBranches.map((b: { id: string; name: string }) => ({
+      const cashFlowData = aggregateCashFlow(filteredTransactions, timeRange, count);
+
+      const transactionAmountsByBranch = filteredBranches.map((b) => ({
         branch_id: b.id,
         branch_name: b.name,
         incomeAmount: currentIncome,
@@ -478,12 +470,12 @@ export class DashboardService extends BaseService {
     };
   }
 
-  static async getReceivableLedger(_branchId?: string, timeRange: TimeRange = "month", rangeCount?: any) {
+  static async getReceivableLedger(_branchId?: string, timeRange: TimeRange = "month", rangeCount?: Partial<Record<TimeRange, number>>) {
     const branchId = String(_branchId || "");
 
     if (getTrialMode()) {
-      const mockTransactions = trialGet("transactions") || [];
-      const mockBranches = trialGet("branches") || [];
+      const mockTransactions = (trialGet("transactions") || []) as Transaction[];
+      const mockBranches = (trialGet("branches") || []) as Branch[];
       return { transactions: mockTransactions, branches: mockBranches };
     }
 
@@ -494,7 +486,7 @@ export class DashboardService extends BaseService {
     ]);
 
     const transactionsAll: Transaction[] = (txResult.data || []) as Transaction[];
-    const transactions = branchId ? transactionsAll.filter((t: any) => t.branch_id === branchId) : transactionsAll;
+    const transactions = branchId ? transactionsAll.filter((t) => t.branch_id === branchId) : transactionsAll;
     const customersAll = (custResult.data || []) as Customer[];
 
     const count = timeRange === "day" ? rangeCount?.day || 7 : timeRange === "week" ? rangeCount?.week || 8 : timeRange === "month" ? rangeCount?.month || 7 : timeRange === "quarter" ? rangeCount?.quarter || 8 : 2;

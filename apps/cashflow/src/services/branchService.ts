@@ -30,7 +30,7 @@ export class BranchService extends BaseService {
         return { data, error };
       },
       async () => {
-        let data = trialGet("branches") || [];
+        const data = trialGet("branches") || [];
         const branch = data.find((b: any) => b.id === id && (!companyId || b.company_id === companyId));
         return { data: branch || null, error: branch ? null : { message: "Branch not found" } };
       }

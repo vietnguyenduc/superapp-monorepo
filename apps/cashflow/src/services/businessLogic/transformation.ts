@@ -1,6 +1,8 @@
 // Shared Transformation Functions
 // Pure functions for transforming data - no data source dependencies
 
+import { parseAmount } from "./parsers";
+
 // Generates a collision-resistant id for the real (non-trial) data path.
 // Uses ms timestamp + 8 random chars — avoids crypto.randomUUID() so it works
 // on non-secure contexts (e.g. dev over plain Tailscale HTTP).
@@ -12,116 +14,127 @@ const genId = (prefix: string) => {
   return `${prefix}-${random}`;
 };
 
+const strOrNull = (value: unknown) => {
+  const s = typeof value === "string" ? value.trim() : String(value ?? "").trim();
+  return s || null;
+};
+
+const strOrDefault = (value: unknown, fallback: string) => {
+  const s = typeof value === "string" ? value.trim() : String(value ?? "").trim();
+  return s || fallback;
+};
+
 // Customer Transformation
-export function transformRawCustomer(raw: any, useUuidId = false): any {
+export function transformRawCustomer(raw: Record<string, unknown>, useUuidId = false): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
-    id: raw.id || genId("cust"),
-    customer_code: raw.customer_code || `CUST${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    full_name: raw.full_name,
-    phone: raw.phone || null,
-    email: raw.email || null,
-    address: raw.address || null,
-    nguoi_dai_dien: raw.nguoi_dai_dien || null,
-    opening_balance: raw.opening_balance ?? 0,
-    total_balance: raw.total_balance ?? 0,
-    company_id: raw.company_id ?? null,
-    branch_id: raw.branch_id ?? null,
-    created_at: raw.created_at || now,
-    updated_at: raw.updated_at || now,
+    id: strOrDefault(raw.id, genId("cust")),
+    customer_code: strOrDefault(raw.customer_code, `CUST${Date.now()}-${Math.random().toString(36).slice(2, 6)}`),
+    full_name: strOrDefault(raw.full_name, ""),
+    phone: strOrNull(raw.phone),
+    email: strOrNull(raw.email),
+    address: strOrNull(raw.address),
+    nguoi_dai_dien: strOrNull(raw.nguoi_dai_dien),
+    opening_balance: parseAmount(raw.opening_balance ?? 0),
+    total_balance: parseAmount(raw.total_balance ?? 0),
+    company_id: strOrNull(raw.company_id),
+    branch_id: strOrNull(raw.branch_id),
+    created_at: strOrDefault(raw.created_at, now),
+    updated_at: strOrDefault(raw.updated_at, now),
   };
 }
 
 // Transaction Transformation
-export function transformRawTransaction(raw: any, useUuidId = false): any {
+export function transformRawTransaction(raw: Record<string, unknown>, useUuidId = false): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
-    id: raw.id || genId("txn"),
-    transaction_code: raw.transaction_code || `TXN${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    customer_id: raw.customer_id || null,
-    customer_name: raw.customer_name || null,
-    bank_account_id: raw.bank_account_id || null,
-    bank_account_name: raw.bank_account_name || null,
-    branch_id: raw.branch_id || null,
-    company_id: raw.company_id || null,
-    transaction_type: raw.transaction_type,
-    amount: raw.amount,
-    description: raw.description || null,
-    reference_number: raw.reference_number || null,
-    transaction_date: raw.transaction_date || now,
-    status: raw.status || "completed",
-    created_by: raw.created_by || null,
-    created_at: raw.created_at || now,
-    updated_at: raw.updated_at || now,
+    id: strOrDefault(raw.id, genId("txn")),
+    transaction_code: strOrDefault(raw.transaction_code, `TXN${Date.now()}-${Math.random().toString(36).slice(2, 6)}`),
+    customer_id: strOrNull(raw.customer_id),
+    customer_name: strOrNull(raw.customer_name),
+    bank_account_id: strOrNull(raw.bank_account_id),
+    bank_account_name: strOrNull(raw.bank_account_name),
+    branch_id: strOrNull(raw.branch_id),
+    company_id: strOrNull(raw.company_id),
+    transaction_type: strOrDefault(raw.transaction_type, ""),
+    amount: parseAmount(raw.amount ?? 0),
+    description: strOrNull(raw.description),
+    reference_number: strOrNull(raw.reference_number),
+    transaction_date: strOrDefault(raw.transaction_date, now),
+    status: strOrDefault(raw.status, "completed"),
+    created_by: strOrNull(raw.created_by),
+    created_at: strOrDefault(raw.created_at, now),
+    updated_at: strOrDefault(raw.updated_at, now),
   };
 }
 
 // Bank Account Transformation
-export function transformRawBankAccount(raw: any, useUuidId = false): any {
+export function transformRawBankAccount(raw: Record<string, unknown>, useUuidId = false): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
-    id: raw.id || genId("bank"),
-    account_name: raw.account_name,
-    account_number: raw.account_number,
-    bank_name: raw.bank_name,
-    balance: raw.balance ?? 0,
+    id: strOrDefault(raw.id, genId("bank")),
+    account_name: strOrDefault(raw.account_name, ""),
+    account_number: strOrDefault(raw.account_number, ""),
+    bank_name: strOrDefault(raw.bank_name, ""),
+    balance: parseAmount(raw.balance ?? 0),
     is_active: raw.is_active !== false,
-    branch_id: raw.branch_id ?? null,
-    company_id: raw.company_id ?? null,
-    created_at: raw.created_at || now,
-    updated_at: raw.updated_at || now,
+    branch_id: strOrNull(raw.branch_id),
+    company_id: strOrNull(raw.company_id),
+    created_at: strOrDefault(raw.created_at, now),
+    updated_at: strOrDefault(raw.updated_at, now),
   };
 }
 
 // Branch Transformation
-export function transformRawBranch(raw: any, useUuidId = false): any {
+export function transformRawBranch(raw: Record<string, unknown>, useUuidId = false): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
-    id: raw.id || genId("branch"),
-    name: raw.name,
-    code: raw.code,
-    logo_url: raw.logo_url || null,
+    id: strOrDefault(raw.id, genId("branch")),
+    name: strOrDefault(raw.name, ""),
+    code: strOrDefault(raw.code, ""),
+    logo_url: strOrNull(raw.logo_url),
     is_active: raw.is_active !== false,
-    company_id: raw.company_id ?? null,
-    created_at: raw.created_at || now,
-    updated_at: raw.updated_at || now,
+    company_id: strOrNull(raw.company_id),
+    created_at: strOrDefault(raw.created_at, now),
+    updated_at: strOrDefault(raw.updated_at, now),
   };
 }
 
 // Transaction Type Transformation
-export function transformRawTransactionType(raw: any, useUuidId = false): any {
+export function transformRawTransactionType(raw: Record<string, unknown>, useUuidId = false): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
-    id: raw.id || genId("type"),
-    name: raw.name.trim(),
-    color: raw.color || "blue",
-    math_factor: raw.math_factor ?? 1,
-    impact_type: raw.impact_type || "increase",
+    id: strOrDefault(raw.id, genId("type")),
+    name: strOrDefault(raw.name, "").trim(),
+    color: strOrDefault(raw.color, "blue"),
+    math_factor: parseAmount(raw.math_factor ?? 1),
+    impact_type: strOrDefault(raw.impact_type, "increase"),
     is_active: raw.is_active !== false,
-    company_id: raw.company_id ?? null,
-    created_at: raw.created_at || now,
-    updated_at: raw.updated_at || now,
+    company_id: strOrNull(raw.company_id),
+    created_at: strOrDefault(raw.created_at, now),
+    updated_at: strOrDefault(raw.updated_at, now),
   };
 }
 
 // Backup History Transformation
-export function transformRawBackupHistory(raw: any): any {
+export function transformRawBackupHistory(raw: Record<string, unknown>): Record<string, unknown> {
   const now = new Date().toISOString();
+  const metadata = raw.metadata as Record<string, unknown> | undefined;
   return {
-    id: raw.id || genId("backup"),
-    company_id: raw.company_id ?? null,
-    backup_name: raw.backup_name || `Backup ${now}`,
-    backup_version: raw.backup_version || "1.0.0",
-    backup_timestamp: raw.backup_timestamp || now,
-    backup_format: raw.backup_format || "xlsx",
-    backup_size: raw.backup_size,
-    created_by: raw.created_by,
-    total_customers: raw.metadata?.totalCustomers || 0,
-    total_transactions: raw.metadata?.totalTransactions || 0,
-    total_bank_accounts: raw.metadata?.totalBankAccounts || 0,
-    total_branches: raw.metadata?.totalBranches || 0,
-    branch_id: raw.branch_id ?? null,
-    notes: raw.notes,
+    id: strOrDefault(raw.id, genId("backup")),
+    company_id: strOrNull(raw.company_id),
+    backup_name: strOrDefault(raw.backup_name, `Backup ${now}`),
+    backup_version: strOrDefault(raw.backup_version, "1.0.0"),
+    backup_timestamp: strOrDefault(raw.backup_timestamp, now),
+    backup_format: strOrDefault(raw.backup_format, "xlsx"),
+    backup_size: parseAmount(raw.backup_size ?? 0),
+    created_by: strOrNull(raw.created_by),
+    total_customers: parseAmount(metadata?.totalCustomers ?? 0),
+    total_transactions: parseAmount(metadata?.totalTransactions ?? 0),
+    total_bank_accounts: parseAmount(metadata?.totalBankAccounts ?? 0),
+    total_branches: parseAmount(metadata?.totalBranches ?? 0),
+    branch_id: strOrNull(raw.branch_id),
+    notes: strOrNull(raw.notes),
     is_restorable: true,
     created_at: now,
   };

@@ -103,7 +103,7 @@ export class CustomerService extends BaseService {
           return String(aValue).localeCompare(String(bValue)) * direction;
         });
         
-        let count = data.length;
+        const count = data.length;
         if (Number.isFinite(filters?.limit)) {
           const limit = Number(filters.limit);
           const offset = Number(filters.offset || 0);
@@ -173,7 +173,7 @@ export class CustomerService extends BaseService {
         const txData = transactions.filter((t: any) => t.customer_id === id);
 
         let calculatedBalance = parseAmount(customer.opening_balance) || 0;
-        let transactionCount = txData.length;
+        const transactionCount = txData.length;
         
         for (const tx of txData) {
           const amtSigned = parseAmount(tx.amount);
