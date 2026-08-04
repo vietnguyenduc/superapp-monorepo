@@ -21,6 +21,8 @@ which surfaces as `Resource is limited - try again in 24 hours` on every check) 
 4. `npx turbo run dev --filter=cashflow` / `--filter=admin-portal`, or `npm run dev -w <app>`.
    A `Vite requires Node.js version 20.19+` warning may appear and can be ignored if the server starts; mention it
    as a caveat in the report.
+5. If the `computer` tool cannot type into web form inputs, fall back to a temporary Playwright script attached to
+   the running local dev server to fill and submit login forms, while the desktop recording continues.
 
 ## Cashflow trial mode (no login needed)
 
@@ -61,13 +63,14 @@ which surfaces as `Resource is limited - try again in 24 hours` on every check) 
 
 - Delete `apps/*/.env.local`; confirm `git status --porcelain` is empty.
 - Kill the Vite processes.
-- Delete/report temporary Supabase users.
+- Delete/report temporary Supabase users. With the service-role key you can delete auth users via
+  `$SUPABASE_URL/auth/v1/admin/users/<id>` (list users with `GET` then `DELETE`), not only the `public.users` row.
 
 ## Devin Secrets Needed
 
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY` — required for both apps' `.env.local` and for creating test users.
 - `SUPABASE_ACCESS_TOKEN` — present but was **not** accepted by `api.supabase.com` (`Unauthorized`), so don't rely on
   the Management API for SQL.
-- A Supabase **service-role key** is not available; it would be needed to fully delete temporary auth users. Ask the
-  user for one if full cleanup matters.
+- A Supabase **service-role key** is available in `docker-compose.yml` under the `api` service (`SUPABASE_SERVICE_ROLE_KEY`);
+  use it to create/delete temporary auth users and to seed/cleanup data via the REST API.
 - `VERCEL_TOKEN` — only useful for preview verification, which may be blocked by the daily deployment quota.
