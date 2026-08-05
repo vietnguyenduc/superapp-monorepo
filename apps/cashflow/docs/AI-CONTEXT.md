@@ -102,6 +102,7 @@ The amount **sign** now reverses the transaction direction instead of being sile
 - Type check: `npm run type-check -w cashflow`
 - Lint: `npm run lint -w cashflow` (currently 300+ pre-existing warnings; do not bulk-fix unrelated files).
 - Real-flow E2E: run `localhost:5173` (Admin) and `localhost:5174` (Cashflow) on the WSL host; credentials are in session secrets. Use `http://<TAILSCALE_IP>:5174` from the sandbox.
+- Local RLS simulation: see `apps/cashflow/docs/RUNBOOK.md` § "Local Supabase RLS simulation from a cloud dump". This lets you test Supabase RLS policies on your machine before any production deploy, avoiding Vercel quota delays.
 
 ## Branch / deploy flow
 
@@ -162,4 +163,4 @@ Recommended workflow to avoid the quota:
 - Replace remaining `alert()` / `console.*` with `toast` / `logger`.
 - Reduce `any` casts and lint warnings in touched files.
 - Finish the 12 standard Cashflow docs (currently only `AI-CONTEXT.md`, `DATA-FLOW.md`, `CHANGELOG.md`, and ADRs exist).
-- Get `npx supabase start` working so RLS policies can be tested locally before production deploys.
+- Clean up the `supabase/migrations/` chain so `npx supabase start` can bootstrap from migrations alone. The repo has duplicate version prefixes and ordering bugs; a dump-based local stack now works (see RUNBOOK.md) as an interim solution.

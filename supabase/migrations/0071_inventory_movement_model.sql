@@ -172,28 +172,28 @@ CREATE POLICY inventory_movements_select_policy ON inventory_movements
   FOR SELECT TO authenticated
   USING (
     company_id IN (SELECT company_id FROM user_companies WHERE user_id = auth.uid())
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
 CREATE POLICY inventory_movements_insert_policy ON inventory_movements
   FOR INSERT TO authenticated
   WITH CHECK (
     company_id IN (SELECT company_id FROM user_companies WHERE user_id = auth.uid())
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
 CREATE POLICY inventory_movements_update_policy ON inventory_movements
   FOR UPDATE TO authenticated
   USING (
     company_id IN (SELECT company_id FROM user_companies WHERE user_id = auth.uid())
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
 CREATE POLICY inventory_movements_delete_policy ON inventory_movements
   FOR DELETE TO authenticated
   USING (
     company_id IN (SELECT company_id FROM user_companies WHERE user_id = auth.uid())
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
 -- RLS Policies for inventory_balance_snapshots
@@ -203,28 +203,28 @@ CREATE POLICY inventory_balance_snapshots_select_policy ON inventory_balance_sna
   FOR SELECT TO authenticated
   USING (
     company_id IN (SELECT company_id FROM user_companies WHERE user_id = auth.uid())
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
 CREATE POLICY inventory_balance_snapshots_insert_policy ON inventory_balance_snapshots
   FOR INSERT TO authenticated
   WITH CHECK (
     company_id IN (SELECT company_id FROM user_companies WHERE user_id = auth.uid())
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
 CREATE POLICY inventory_balance_snapshots_update_policy ON inventory_balance_snapshots
   FOR UPDATE TO authenticated
   USING (
     company_id IN (SELECT company_id FROM user_companies WHERE user_id = auth.uid())
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
 CREATE POLICY inventory_balance_snapshots_delete_policy ON inventory_balance_snapshots
   FOR DELETE TO authenticated
   USING (
     company_id IN (SELECT company_id FROM user_companies WHERE user_id = auth.uid())
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
 -- RLS Policies for stock_count_entries
@@ -234,28 +234,28 @@ CREATE POLICY stock_count_entries_select_policy ON stock_count_entries
   FOR SELECT TO authenticated
   USING (
     company_id IN (SELECT company_id FROM user_companies WHERE user_id = auth.uid())
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
 CREATE POLICY stock_count_entries_insert_policy ON stock_count_entries
   FOR INSERT TO authenticated
   WITH CHECK (
     company_id IN (SELECT company_id FROM user_companies WHERE user_id = auth.uid())
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
 CREATE POLICY stock_count_entries_update_policy ON stock_count_entries
   FOR UPDATE TO authenticated
   USING (
     company_id IN (SELECT company_id FROM user_companies WHERE user_id = auth.uid())
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
 CREATE POLICY stock_count_entries_delete_policy ON stock_count_entries
   FOR DELETE TO authenticated
   USING (
     company_id IN (SELECT company_id FROM user_companies WHERE user_id = auth.uid())
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
 -- Updated timestamp trigger function

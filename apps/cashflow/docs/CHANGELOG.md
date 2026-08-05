@@ -29,7 +29,9 @@
 - `scripts/deploy-app.sh` and `scripts/deploy-changed-apps.sh` for on-demand, single-app / changed-app-only Vercel CLI deploys.
 - `.github/workflows/deploy-changed-apps.yml` as an optional `workflow_dispatch` deployment path.
 - `scripts/vercel-ignore.sh` now skips every preview build that is not the `viet` branch to preserve free Vercel quota.
+- `scripts/supabase-local-from-dump.sh` and `apps/cashflow/docs/RUNBOOK.md` for local Supabase RLS simulation from a cloud schema dump, bypassing the broken migration chain and avoiding Vercel quota delays.
 
 ### Docs
 
 - Updated `AI-CONTEXT.md`, `DATA-FLOW.md`, and ADRs to reflect sign-aware balance math and the minimal-deployment strategy.
+- Added `apps/cashflow/docs/RUNBOOK.md` with the local Supabase RLS simulation workflow.

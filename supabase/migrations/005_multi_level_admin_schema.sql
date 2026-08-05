@@ -58,7 +58,7 @@ DROP CONSTRAINT IF EXISTS users_role_check;
 -- Add new constraint with all role values
 ALTER TABLE public.users 
 ADD CONSTRAINT users_role_check 
-CHECK (role = ANY (ARRAY['admin'::text, 'branch_manager'::text, 'staff'::text, 'admin_master'::text, 'admin_company'::text]));
+CHECK (role::text = ANY (ARRAY['admin'::text, 'branch_manager'::text, 'staff'::text, 'admin_master'::text, 'admin_company'::text]));
 
 -- Step 5: Create indexes for new fields
 CREATE INDEX IF NOT EXISTS idx_users_company_id ON public.users(company_id);
