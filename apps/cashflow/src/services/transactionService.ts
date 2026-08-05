@@ -235,8 +235,10 @@ export class TransactionService extends BaseService {
 
         const search = typeof filters?.search === "string" ? filters.search.trim() : "";
         if (search) {
-          const s = `%${search}%`;
-          query = query.or(`description.ilike.${s},reference_number.ilike.${s}`);
+          // Quote the ilike value so PostgREST treats commas/parentheses as literal text.
+          const safe = search.replace(/"/g, '""');
+          const s = `%${safe}%`;
+          query = query.or(`description.ilike."${s}",reference_number.ilike."${s}"`);
         }
 
         const dateRange = filters?.dateRange as { start?: string; end?: string } | undefined;
