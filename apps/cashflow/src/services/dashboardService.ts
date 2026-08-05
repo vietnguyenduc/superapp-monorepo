@@ -181,10 +181,9 @@ function isInScope(
   companyId?: string,
   branchId?: string,
 ) {
-  return (
-    (!companyId || !item.company_id || item.company_id === companyId) &&
-    (!branchId || item.branch_id === branchId)
-  );
+  const companyMatch = companyId ? item.company_id === companyId : true;
+  const branchMatch = branchId ? item.branch_id === branchId : true;
+  return companyMatch && branchMatch;
 }
 
 function applyTransactionToBalanceMap(

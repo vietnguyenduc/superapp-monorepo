@@ -14,6 +14,8 @@ import { useCompany } from "@superapp/iam";
 export const useCompanyId = (): string | undefined => {
   const { user } = useAuthContext();
   const { selectedCompany } = useCompany();
-  if (user?.role === "admin_master") return selectedCompany?.id;
+  if (user?.role === "admin_master") {
+    return selectedCompany?.id || (typeof window !== "undefined" ? window.localStorage.getItem("selectedCompanyId") || undefined : undefined);
+  }
   return user?.company_id;
 };

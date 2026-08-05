@@ -150,9 +150,16 @@ Recommended workflow to avoid the quota:
 
 8. **Vercel rate-limit workaround (2026-08-05)** — The Vercel Hobby account hit `api-deployments-free-per-day` while PR #67/#68 were building, so a normal `main` production deploy could not start. To stop the customer-search `PGRST100` regression from staying live, `cashflow.appforyou.xyz` was manually aliased to the successful PR #67 preview deployment (`cashflow-r9iym8czc-viet-ducs-projects-3717a482.vercel.app`) after verifying the search-with-comma flow returns `0` rows and no `Lỗi tải khách hàng` banner. A regular production deploy from `main` will replace this alias once the Vercel quota resets.
 
+## 2026-08-06 hotfix round
+
+1. **Dashboard cross-tenant aggregates** — `dashboardService.ts` `isInScope` now requires an exact `company_id` match when `companyId` is provided. `Dashboard.tsx` also skips `getDashboardMetrics` until `companyId` resolves, and `useCompanyId.ts` falls back to `localStorage.selectedCompanyId` for `admin_master` so the dashboard no longer flashes all-tenant totals.
+2. **Cash-flow chart negative rect** — `CashFlowChart.tsx` no longer uses a transparent `base` + `delta` stacked waterfall; that pattern produced invalid negative SVG `<rect>` heights whenever a period's net flow pushed the running total across zero. It now renders signed `inflow`/`outflow` bars with `stackOffset="sign"` and a `runningTotal` balance line, which Recharts handles natively for negative values.
+3. **Import tab blocked by default date** — `TransactionImport.tsx` `hasTableChanges` compares the row against `emptyRow` instead of an empty string, so the pre-filled default `transaction_date` no longer triggers the `window.confirm` that was silently dismissed by Playwright and blocked switching to `Nhập hàng loạt`.
+
 ### Still to do for production-grade
 - `Settings.tsx` is 3000+ lines with ~50 `useState` hooks and inline modal JSX; split into tab/page components.
 - `TransactionImport.tsx` / `CustomerImport.tsx` still contain parser/validator/preview logic inline; extract to `utils/importUtils` or dedicated modules.
 - Replace remaining `alert()` / `console.*` with `toast` / `logger`.
 - Reduce `any` casts and lint warnings in touched files.
-- Finish the 12 standard Cashflow docs (currently only `AI-CONTEXT.md`, `DATA-FLOW.md`, and ADRs exist).
+- Finish the 12 standard Cashflow docs (currently only `AI-CONTEXT.md`, `DATA-FLOW.md`, `CHANGELOG.md`, and ADRs exist).
+- Get `npx supabase start` working so RLS policies can be tested locally before production deploys.

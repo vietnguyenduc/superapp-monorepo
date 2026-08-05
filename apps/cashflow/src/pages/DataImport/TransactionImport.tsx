@@ -608,9 +608,13 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
 
   const hasTableChanges = useMemo(() => {
     return tableData.some((row) =>
-      Object.values(row).some((v) => String(v || "").trim() !== "")
+      Object.entries(row).some(
+        ([key, value]) =>
+          String(value || "").trim() !==
+          String(emptyRow[key as keyof TransactionInputRow] || "").trim(),
+      ),
     );
-  }, [tableData]);
+  }, [tableData, emptyRow]);
 
   const handleChangeTab = useCallback(
     (tab: "single" | "bulk") => {
