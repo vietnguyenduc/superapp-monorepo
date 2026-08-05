@@ -66,10 +66,7 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       setForm({
         transaction_type: transaction.transaction_type,
         transaction_date: transaction.transaction_date.slice(0, 10),
-        amount:
-          transaction.transaction_type === "adjustment"
-            ? String(transaction.amount)
-            : String(Math.abs(transaction.amount)),
+        amount: String(transaction.amount),
         description: transaction.description || "",
         bank_account_id: transaction.bank_account_id || "",
         branch_id: transaction.branch_id || "",

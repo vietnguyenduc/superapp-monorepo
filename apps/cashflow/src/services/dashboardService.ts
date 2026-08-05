@@ -14,15 +14,8 @@ function normalizeTransactionType(input: string) {
 }
 
 function inflowOutflowByType(type: string, amount: number) {
-  if (type === "payment") return { inflow: Math.abs(amount), outflow: 0 };
-  if (type === "refund") return { inflow: Math.abs(amount), outflow: 0 };
-  if (type === "charge") return { inflow: 0, outflow: Math.abs(amount) };
-  if (type === "adjustment") {
-    return amount >= 0
-      ? { inflow: Math.abs(amount), outflow: 0 }
-      : { inflow: 0, outflow: Math.abs(amount) };
-  }
-  return { inflow: Math.abs(amount), outflow: 0 };
+  const delta = getBankAccountBalanceDelta(type, amount);
+  return { inflow: delta > 0 ? delta : 0, outflow: delta < 0 ? -delta : 0 };
 }
 
 function startOfDay(date: Date) {
@@ -223,12 +216,14 @@ export class DashboardService extends BaseService {
         (branch) => (!companyId || branch.company_id === companyId) && (!branchId || branch.id === branchId),
       );
 
-      const currentIncome = filteredTransactions
-        .filter((t) => t.transaction_type === "payment" || t.transaction_type === "refund")
-        .reduce((s, t) => s + Math.abs(t.amount), 0);
-      const currentDebt = filteredTransactions
-        .filter((t) => t.transaction_type === "charge")
-        .reduce((s, t) => s + Math.abs(t.amount), 0);
+      const currentIncome = filteredTransactions.reduce(
+        (s, t) => s + Math.max(0, getCustomerBalanceDelta(t.transaction_type, t.amount)),
+        0,
+      );
+      const currentDebt = filteredTransactions.reduce(
+        (s, t) => s + Math.max(0, -getCustomerBalanceDelta(t.transaction_type, t.amount)),
+        0,
+      );
       const balanceMap = new Map<string, number>();
       filteredCustomers.forEach((customer) => {
         balanceMap.set(customer.id, parseAmount(customer.opening_balance ?? customer.current_balance ?? customer.total_balance));
@@ -332,14 +327,22 @@ export class DashboardService extends BaseService {
     const currentTx = transactions.filter((tx) => inRange(tx, start, end));
     const prevTx = transactions.filter((tx) => inRange(tx, prevStart, prevEnd));
 
-    const sumPositiveAdjustment = (txs: Transaction[]) => txs.filter((t) => t.transaction_type === "adjustment" && t.amount >= 0).reduce((s, t) => s + Math.abs(t.amount), 0);
-    const sumNegativeAdjustment = (txs: Transaction[]) => txs.filter((t) => t.transaction_type === "adjustment" && t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
-
-    const currentIncome = currentTx.filter((t) => t.transaction_type === "payment" || t.transaction_type === "refund").reduce((s, t) => s + Math.abs(t.amount), 0) + sumPositiveAdjustment(currentTx);
-    const currentDebt = currentTx.filter((t) => t.transaction_type === "charge").reduce((s, t) => s + Math.abs(t.amount), 0) + sumNegativeAdjustment(currentTx);
-
-    const prevIncome = prevTx.filter((t) => t.transaction_type === "payment" || t.transaction_type === "refund").reduce((s, t) => s + Math.abs(t.amount), 0) + sumPositiveAdjustment(prevTx);
-    const prevDebt = prevTx.filter((t) => t.transaction_type === "charge").reduce((s, t) => s + Math.abs(t.amount), 0) + sumNegativeAdjustment(prevTx);
+    const currentIncome = currentTx.reduce(
+      (s, t) => s + Math.max(0, getCustomerBalanceDelta(t.transaction_type, t.amount)),
+      0,
+    );
+    const currentDebt = currentTx.reduce(
+      (s, t) => s + Math.max(0, -getCustomerBalanceDelta(t.transaction_type, t.amount)),
+      0,
+    );
+    const prevIncome = prevTx.reduce(
+      (s, t) => s + Math.max(0, getCustomerBalanceDelta(t.transaction_type, t.amount)),
+      0,
+    );
+    const prevDebt = prevTx.reduce(
+      (s, t) => s + Math.max(0, -getCustomerBalanceDelta(t.transaction_type, t.amount)),
+      0,
+    );
 
     const currentPaymentCount = currentTx.filter((t) => t.transaction_type === "payment").length;
     const currentChargeCount = currentTx.filter((t) => t.transaction_type === "charge").length;
@@ -364,13 +367,8 @@ export class DashboardService extends BaseService {
     for (const tx of transactions.filter((t) => new Date(t.transaction_date) <= prevEnd)) {
       if (!tx.customer_id) continue;
       const prev = prevBalanceMap.get(tx.customer_id) || 0;
-      const amtSigned = parseAmount(tx.amount);
-      const amtAbs = Math.abs(amtSigned);
-      const type = normalizeTransactionType(String(tx.transaction_type || ""));
-      if (type === "payment") prevBalanceMap.set(tx.customer_id, prev + amtAbs);
-      else if (type === "charge") prevBalanceMap.set(tx.customer_id, prev - amtAbs);
-      else if (type === "refund") prevBalanceMap.set(tx.customer_id, prev + amtAbs);
-      else prevBalanceMap.set(tx.customer_id, prev + amtSigned);
+      const delta = getCustomerBalanceDelta(tx.transaction_type, tx.amount);
+      prevBalanceMap.set(tx.customer_id, prev + delta);
     }
     const prevOutstanding = Array.from(prevBalanceMap.values()).reduce((s, v) => s + v, 0);
 
@@ -419,10 +417,9 @@ export class DashboardService extends BaseService {
     for (const tx of currentTx) {
       const branchIdForTx = tx.branch_id ? String(tx.branch_id) : "";
       const prev = branchAgg.get(branchIdForTx) || { incomeAmount: 0, debtAmount: 0 };
-      if (tx.transaction_type === "payment" || tx.transaction_type === "refund") { prev.incomeAmount += Math.abs(tx.amount); }
-      else if (tx.transaction_type === "charge") { prev.debtAmount += Math.abs(tx.amount); }
-      else if (tx.transaction_type === "adjustment") { if (tx.amount >= 0) prev.incomeAmount += Math.abs(tx.amount); else prev.debtAmount += Math.abs(tx.amount); }
-      else { prev.incomeAmount += tx.amount; }
+      const delta = getCustomerBalanceDelta(tx.transaction_type, tx.amount);
+      prev.incomeAmount += Math.max(0, delta);
+      prev.debtAmount += Math.max(0, -delta);
       branchAgg.set(branchIdForTx, prev);
     }
 
@@ -484,26 +481,11 @@ export class DashboardService extends BaseService {
     const branchNameMap = new Map(branches.map((b) => [b.id, b.name] as const));
     const customerNameMap = new Map(customersAll.map((c) => [c.id, c.full_name || c.customer_code || c.id] as const));
 
-    const rowEffect = (t: Transaction) => {
-      if (t.transaction_type === "charge") return -Math.abs(t.amount);
-      if (t.transaction_type === "payment") return Math.abs(t.amount);
-      if (t.transaction_type === "refund") return Math.abs(t.amount);
-      if (t.transaction_type === "adjustment") return t.amount;
-      return t.amount;
-    };
+    const rowEffect = (t: Transaction) => getCustomerBalanceDelta(t.transaction_type, t.amount);
 
-    const rowIncrease = (t: Transaction) => {
-      if (t.transaction_type === "charge") return Math.abs(t.amount);
-      if (t.transaction_type === "adjustment" && t.amount < 0) return Math.abs(t.amount);
-      return 0;
-    };
+    const rowIncrease = (t: Transaction) => Math.max(0, -rowEffect(t));
 
-    const rowDecrease = (t: Transaction) => {
-      if (t.transaction_type === "payment") return Math.abs(t.amount);
-      if (t.transaction_type === "refund") return Math.abs(t.amount);
-      if (t.transaction_type === "adjustment" && t.amount > 0) return Math.abs(t.amount);
-      return 0;
-    };
+    const rowDecrease = (t: Transaction) => Math.max(0, rowEffect(t));
 
     let runningBalance = openingBalance;
     const rows = txInPeriod.map((t) => {
