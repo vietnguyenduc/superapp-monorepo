@@ -91,10 +91,20 @@ All form/entity validators in `src/services/businessLogic/validation.ts` return 
 
 `handleEditSubmit()`:
 1. Parses the amount with `parseAmount`.
-2. Stores absolute values for `payment`/`charge`/`refund`; `adjustment` keeps the signed value.
+2. Preserves the amount sign for all types; the sign flips the type's default effect (e.g. `charge -1000` reduces debt the same as `payment 1000`).
 3. Sends `null` for empty `customer_id`/`bank_account_id`/`branch_id`/`reference_number`/`description`.
 4. Includes `transaction_code` and the original `customer_id` so edits do not lose tenant or document context.
 5. `transactionService.updateTransaction()` normalizes the payload, strips immutable/RLS fields, and recalculates balances.
+
+### Sign-aware amount handling
+
+- `balanceMath.ts` is the single source of truth: `getCustomerBalanceDelta` and `getBankAccountBalanceDelta` multiply the type's default magnitude by `Math.sign(amount)`.
+- `charge -1000` increases customer balance by 1000 (debt decreases), bank cash 0.
+- `payment -1000` decreases customer balance by 1000 (debt increases), bank cash decreases by 1000.
+- `refund -1000` decreases customer balance by 1000, bank cash increases by 1000.
+- `adjustment -1000` / `+1000` is a direct signed correction on both customer and bank.
+- `validateTransactionData` only rejects zero/NaN amounts; negative amounts are accepted for all types.
+- UI display (`TransactionList`, `RecentTransactions`, `Dashboard`) shows `formatCurrency(getCustomerBalanceDelta(...))` with color driven by the signed delta, so a negative charge appears green/positive.
 
 ### Missing-column fallback
 
