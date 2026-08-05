@@ -510,7 +510,7 @@ const CustomerList: React.FC = () => {
   }
 
   return (
-    <div className="min-h-[calc(100vh-8rem)] sm:min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8">
+    <div className="sm:min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8">
       <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto px-3 sm:px-6 lg:px-8 pb-4 sm:pb-8">
         <PageHeader
           title={t("customers.title")}
@@ -562,22 +562,22 @@ const CustomerList: React.FC = () => {
               </span>
             </div>
           </div>
-          <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+          <div className="p-3 sm:p-6 space-y-2 sm:space-y-4">
             <CustomerSearch
               value={state.searchTerm}
               onChange={handleSearch}
               placeholder={t("customers.searchPlaceholder")}
             />
-            <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
               <CustomerFilters
                 dateRange={state.dateRange}
                 onDateRangeChange={handleDateRangeChange}
               />
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
                 <select
                   value={state.pageSize}
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                  className="block rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 py-2 pl-2 pr-8"
+                  className="block rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 py-1.5 pl-2 pr-7 flex-shrink-0"
                   aria-label="Số dòng hiển thị"
                 >
                   {[10, 20, 50, 100].map((size) => (
@@ -591,15 +591,17 @@ const CustomerList: React.FC = () => {
                 />
                 <Button
                   variant="secondary"
-                  size="md"
+                  size="sm"
                   onClick={() => setState((prev) => ({ ...prev, showBulkEditModal: true }))}
+                  className="flex-shrink-0"
                 >
                   Chỉnh tên hàng loạt
                 </Button>
                 <Button
                   variant="secondary"
-                  size="md"
+                  size="sm"
                   onClick={handleExportExcel}
+                  className="flex-shrink-0"
                 >
                   Xuất Excel
                 </Button>

@@ -161,7 +161,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   }
 
   return (
-    <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 sm:max-h-[calc(100vh-260px)] [&::-webkit-scrollbar:horizontal]:h-2 [&::-webkit-scrollbar-thumb:horizontal]:rounded [&::-webkit-scrollbar-thumb:horizontal]:bg-gray-300/70 hover:[&::-webkit-scrollbar-thumb:horizontal]:bg-gray-400/80">
+    <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 max-h-[calc(100vh_-_36rem)] sm:max-h-[calc(100vh_-_260px)] [&::-webkit-scrollbar:horizontal]:h-2 [&::-webkit-scrollbar-thumb:horizontal]:rounded [&::-webkit-scrollbar-thumb:horizontal]:bg-gray-300/70 hover:[&::-webkit-scrollbar-thumb:horizontal]:bg-gray-400/80">
       <table className="w-full min-w-max divide-y divide-gray-300 dark:divide-gray-600">
         <thead className="bg-gray-50 dark:bg-gray-700">
           <tr>
