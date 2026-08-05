@@ -72,7 +72,7 @@ export class BackupHistoryService extends BaseService {
   }
 
   static async saveBackupToDatabase(backupData: BackupData, companyId: string, userId: string) {
-    return this.execute(
+    const result = await this.execute(
       async () => backupService.saveBackupToDatabase(backupData, companyId, userId),
       async () => {
         const compressed = await compressJSON(backupData);
@@ -102,6 +102,10 @@ export class BackupHistoryService extends BaseService {
         return { data: record, error: null };
       }
     );
+    if (!result.success) {
+      throw new Error(result.error || "Failed to save backup to database");
+    }
+    return result;
   }
 
   static async loadBackupData(backupId: string, _companyId?: string) {
