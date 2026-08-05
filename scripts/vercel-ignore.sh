@@ -3,6 +3,7 @@ set -euo pipefail
 
 ENV="${VERCEL_ENV:-preview}"
 REF="${VERCEL_GIT_COMMIT_REF:-}"
+PREV_SHA="${VERCEL_GIT_PREVIOUS_SHA:-}"
 
 # ignoreCommand runs from apps/<app>/ (where vercel.json lives).
 APP_DIR=$(basename "$PWD")
@@ -17,8 +18,12 @@ fi
 HEAD_SHA=$(git rev-parse HEAD)
 BASE_SHA=""
 
-if [ "$ENV" = "production" ] || [ "$REF" = "main" ]; then
-  # Production deploy on main: compare against previous main commit.
+if [ -n "$PREV_SHA" ]; then
+  # Vercel exposes the SHA of the last successful deployment for this project/branch.
+  # This is the safest diff base in shallow clones.
+  BASE_SHA="$PREV_SHA"
+elif [ "$ENV" = "production" ] || [ "$REF" = "main" ]; then
+  # Production deploy on main: compare against the previous main commit.
   BASE_SHA=$(git rev-parse HEAD^ 2>/dev/null || echo "$HEAD_SHA")
 else
   # Previews (viet, PR branches, etc.): compare against the merge-base with origin/main.
@@ -33,13 +38,17 @@ fi
 
 CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" 2>/dev/null || true)
 
-if [ -z "$CHANGED" ]; then
+# The ignore script itself changing does not affect app output, so it should not
+# force every app to rebuild.
+RELEVANT_CHANGED=$(echo "$CHANGED" | grep -vE "^scripts/vercel-ignore\.sh$")
+
+if [ -z "$RELEVANT_CHANGED" ]; then
   echo "No changed files detected; skipping build."
   exit 0
 fi
 
 APP_PATH="apps/$APP_DIR"
-if echo "$CHANGED" | grep -qE "^$APP_PATH/|^packages/|^package-lock\.json$|^package\.json$|^turbo\.json$|^scripts/"; then
+if echo "$RELEVANT_CHANGED" | grep -qE "^$APP_PATH/|^packages/|^package-lock\.json$|^package\.json$|^turbo\.json$|^scripts/"; then
   echo "Changes detected for $APP_PATH or shared dependencies; building."
   exit 1
 else
