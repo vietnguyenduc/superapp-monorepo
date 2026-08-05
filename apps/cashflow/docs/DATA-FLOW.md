@@ -20,6 +20,7 @@ Other supporting tables: `transaction_types`, `branches`, `companies`, `users`, 
 3. Computes `totalOutstanding` by applying `getCustomerBalanceDelta` over each transaction.
 4. Computes `balanceByBranch` and bank chart cash by applying `getBankAccountBalanceDelta`.
 5. Returns `topCustomers` sorted by the computed running balance.
+6. `activeCustomers` is the count of `customers` with `is_active !== false` for the selected tenant. It is *not* derived from transactions in the selected date window, because that produced `0` when the period had no activity.
 
 ### Customer list
 
@@ -43,6 +44,8 @@ Other supporting tables: `transaction_types`, `branches`, `companies`, `users`, 
 2. Uses the stored `balance` column.
 
 ## Write paths
+
+All form/entity validators in `src/services/businessLogic/validation.ts` return **Vietnamese** user-facing messages. Callers should pass `error.message` or `getErrorMessage(error)` to the UI; do not construct new English strings.
 
 ### Create transaction
 

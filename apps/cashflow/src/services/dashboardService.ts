@@ -235,7 +235,7 @@ export class DashboardService extends BaseService {
       });
       applyTransactionToBalanceMap(balanceMap, filteredTransactions);
       const outstanding = Array.from(balanceMap.values()).reduce((sum, balance) => sum + balance, 0);
-      const activeCustomers = filteredCustomers.length;
+      const activeCustomers = filteredCustomers.filter((c) => c.is_active !== false).length;
       const currentPaymentCount = filteredTransactions.filter((t) => t.transaction_type === "payment").length;
       const currentChargeCount = filteredTransactions.filter((t) => t.transaction_type === "charge").length;
 
@@ -346,8 +346,8 @@ export class DashboardService extends BaseService {
     const prevPaymentCount = prevTx.filter((t) => t.transaction_type === "payment").length;
     const prevChargeCount = prevTx.filter((t) => t.transaction_type === "charge").length;
 
-    const activeCustomers = new Set(currentTx.map((t) => t.customer_id).filter((id): id is string => id !== null)).size;
-    const prevActiveCustomers = new Set(prevTx.map((t) => t.customer_id).filter((id): id is string => id !== null)).size;
+    const activeCustomers = customersAll.filter((c) => c.is_active !== false).length;
+    const prevActiveCustomers = activeCustomers;
 
     const balanceMap = new Map<string, number>();
     for (const c of customersAll) {

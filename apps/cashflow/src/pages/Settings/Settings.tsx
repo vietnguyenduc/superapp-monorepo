@@ -200,6 +200,12 @@ const Settings: React.FC = () => {
   const [loadingBackupHistory, setLoadingBackupHistory] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const getErrorMessage = (err: unknown): string => {
+    if (typeof err === "string") return err;
+    const msg = err && typeof (err as { message?: unknown }).message === "string" ? (err as { message: string }).message : undefined;
+    return msg || "Lỗi không xác định";
+  };
+
   // Load backup history
   useEffect(() => {
     const loadBackupHistory = async () => {
@@ -656,6 +662,7 @@ const Settings: React.FC = () => {
   }, [companyId]);
 
   const handleEditBankAccount = (account: BankAccount) => {
+    setError(null);
     setEditingBankAccount(account);
     setBankAccountForm({
       bankName: account.bankName,
@@ -771,7 +778,7 @@ const Settings: React.FC = () => {
         company_id: finalCompanyId,
       };
       const res = await databaseService.bankAccounts.upsertBankAccount(payload);
-      if (res.error) throw new Error(res.error);
+      if (res.error) throw new Error(getErrorMessage(res.error));
       const saved = res.data || {
         id: editingBankAccount?.id || `bank-${Date.now()}`,
         bank_name: (bankAccountForm.bankName || "").trim() || "Ngan hang moi",
@@ -826,12 +833,14 @@ const Settings: React.FC = () => {
   };
 
   const handleAddTransactionType = () => {
+    setError(null);
     setEditingTransactionType(null);
     setTransactionTypeForm({ name: "", color: "blue", math_factor: 1, impact_type: "increase" });
     setIsTransactionTypeModalOpen(true);
   };
 
   const handleEditTransactionType = (type: TransactionType) => {
+    setError(null);
     setEditingTransactionType(type);
     setTransactionTypeForm({ 
       name: type.name, 
@@ -856,7 +865,7 @@ const Settings: React.FC = () => {
         is_active: editingTransactionType?.isActive ?? true,
         company_id: companyId,
       });
-      if (res.error) throw new Error(res.error);
+      if (res.error) throw new Error(getErrorMessage(res.error));
       const saved = res.data || { 
         id: editingTransactionType?.id || `type-${Date.now()}`, 
         name, 
@@ -894,6 +903,7 @@ const Settings: React.FC = () => {
   };
 
   const handleEditCustomerField = (field: CustomerField) => {
+    setError(null);
     setEditingCustomerField(field);
     setCustomerFieldForm({
       name: field.name,
@@ -916,6 +926,7 @@ const Settings: React.FC = () => {
   };
 
   const handleAddCustomerField = () => {
+    setError(null);
     setEditingCustomerField(null);
     setCustomerFieldForm({ name: "", type: "text", isRequired: false });
     setIsCustomerFieldModalOpen(true);
@@ -1027,6 +1038,7 @@ const Settings: React.FC = () => {
   };
 
   const handleEditBranch = (branch: Branch) => {
+    setError(null);
     setEditingBranch(branch);
     setBranchForm({
       name: branch.name,
@@ -1037,6 +1049,7 @@ const Settings: React.FC = () => {
   };
 
   const handleAddBranch = () => {
+    setError(null);
     setEditingBranch(null);
     setBranchForm({ name: "", address: "", phone: "" });
     setIsBranchModalOpen(true);
@@ -1045,7 +1058,7 @@ const Settings: React.FC = () => {
   const handleDeleteBranch = async (branchId: string) => {
     try {
       const res = await databaseService.branches.deleteBranch(branchId, companyId);
-      if (res.error) throw new Error(res.error);
+      if (res.error) throw new Error(getErrorMessage(res.error));
       setBranches((prev) => prev.filter((branch) => branch.id !== branchId));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không xóa được văn phòng");
@@ -1073,7 +1086,7 @@ const Settings: React.FC = () => {
         code: editingBranch?.code || `BR-${Date.now()}`,
       };
       const res = await databaseService.branches.upsertBranch(payload);
-      if (res.error) throw new Error(res.error);
+      if (res.error) throw new Error(getErrorMessage(res.error));
       const saved = res.data || {
         id: editingBranch?.id || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `branch-${Date.now()}`),
         name: (branchForm.name || "").trim(),
@@ -1178,6 +1191,7 @@ const Settings: React.FC = () => {
   };
 
   const handleAddBankAccount = () => {
+    setError(null);
     setEditingBankAccount(null);
     setBankAccountForm({
       bankName: "",
@@ -1191,6 +1205,7 @@ const Settings: React.FC = () => {
 
   // Handle opening edit user modal
   const handleOpenEditUser = (staff: any) => {
+    setError(null);
     setEditingUser(staff);
     setUserEditForm({
       full_name: staff.full_name || "",
@@ -2196,6 +2211,7 @@ const Settings: React.FC = () => {
                     variant="secondary"
                     size="sm"
                     onClick={() => {
+                      setError(null);
                       setIsBankAccountModalOpen(false);
                       setEditingBankAccount(null);
                     }}
@@ -2408,6 +2424,7 @@ const Settings: React.FC = () => {
                     variant="primary"
                     size="sm"
                     onClick={() => {
+                      setError(null);
                       setIsCreateUserModalOpen(true);
                     }}
                   >
