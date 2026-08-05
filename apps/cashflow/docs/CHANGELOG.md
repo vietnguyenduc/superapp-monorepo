@@ -1,5 +1,11 @@
 # Changelog — Cashflow
 
+## 2026-08-07
+
+### Changed
+
+- **Settings page refactor** — split `pages/Settings/Settings.tsx` into a shared `useSettingsState` hook, `SettingsContext`, and per-tab components in `pages/Settings/components/tabs/*.tsx`. `colorOptions`/`getColorClass` moved to `pages/Settings/utils.ts`, and the module-level `formatCurrency` duplicate was removed. No behavior changed; all tabs render and switch correctly in local preview.
+
 ## 2026-08-06
 
 ### Fixed

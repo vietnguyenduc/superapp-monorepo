@@ -41,6 +41,7 @@ A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management
 - `src/services/trialMockStore.ts` — trial-mode localStorage store.
 - `src/services/supabase.ts` — `apiClient`.
 - `src/utils/formatting.ts` — `formatCurrency`, `formatDate`, `getTransactionMathFactor`.
+- `src/pages/Settings/Settings.tsx` — provider shell + `SettingsContent`; per-tab JSX in `pages/Settings/components/tabs/*.tsx`; state in `useSettingsState.ts`; shared context in `SettingsContext.tsx`; `colorOptions`/`getColorClass` in `Settings/utils.ts`.
 - `src/types/index.ts` and `src/types/database.types.ts` — TS types.
 
 ## Money sign conventions (critical)
