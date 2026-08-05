@@ -1,0 +1,43 @@
+# Changelog — Cashflow
+
+## 2026-08-07
+
+### Changed
+
+- **Settings page refactor** — split `pages/Settings/Settings.tsx` into a shared `useSettingsState` hook, `SettingsContext`, and per-tab components in `pages/Settings/components/tabs/*.tsx`. `colorOptions`/`getColorClass` moved to `pages/Settings/utils.ts`, and the module-level `formatCurrency` duplicate was removed. No behavior changed; all tabs render and switch correctly in local preview.
+
+## 2026-08-06
+
+### Fixed
+
+- **Dashboard tenant scoping** — `dashboardService.ts` now requires an exact `company_id` match when a company is selected, preventing cross-tenant aggregates for `admin_master`.
+- **Dashboard cash-flow chart negative rect** — replaced the broken stacked-base waterfall with signed `inflow`/`outflow` bars plus a `runningTotal` balance line (`stackOffset="sign"`), so periods with net-negative cash flow no longer throw SVG `negative <rect> height` errors.
+- **Import tab switching** — `TransactionImport.tsx` only warns about unsaved single-entry data when the row differs from the default empty row, so the `Nhập hàng loạt` tab is no longer blocked by the pre-filled default date.
+- **Company ID fallback for admin** — `useCompanyId.ts` falls back to `localStorage.selectedCompanyId` for `admin_master`, reducing the chance that `Dashboard.tsx` loads cross-tenant data before `CompanyContext` finishes restoring the selection.
+- **Dashboard fetch guard** — `Dashboard.tsx` skips `getDashboardMetrics` until `companyId` is resolved.
+
+## 2026-08-05
+
+### Fixed
+
+- **Sign-aware transaction amounts** — `balanceMath.ts` now multiplies the type's default impact by `Math.sign(amount)`, so negative amounts reverse the transaction direction instead of being silently absoluted. Applied to bulk import, manual edit, balance sync, and dashboard aggregates.
+- **Vietnamese validation messages** — `validation.ts` returns user-facing errors in Vietnamese, fixing the English "Lỗi cấu hình" banner when saving bank accounts.
+- **Stale modal errors** — `Settings.tsx` resets `error` when opening or canceling modals.
+- **Dashboard active customers** — counts `customers.is_active !== false` instead of unique `customer_id` values in the current transaction window.
+- **Customer list summary** — uses `formatCurrency` (exact number) and counts from the full `allCustomers` list.
+- **Customer table responsive UX** — compact columns, sticky headers, horizontal scroll indicator, and mobile-safe pagination.
+- **Search with special characters** — `customerService.getCustomers` and `transactionService.getTransactions` quote `ilike` values so searches containing `,`, `(`, `)`, `.`, `=` no longer cause PostgREST `PGRST100` errors.
+- **Backup/restore robustness** — browser-safe compression (`TextEncoder`/`btoa`), restore column whitelist, per-record error reporting, and correct opening-balance reset to avoid double-counted balances after restore.
+- **Export Excel** — matches the current customer table view (search, sort, and visible columns) and keeps amounts as numbers.
+
+### Added
+
+- `scripts/deploy-app.sh` and `scripts/deploy-changed-apps.sh` for on-demand, single-app / changed-app-only Vercel CLI deploys.
+- `.github/workflows/deploy-changed-apps.yml` as an optional `workflow_dispatch` deployment path.
+- `scripts/vercel-ignore.sh` now skips every preview build that is not the `viet` branch to preserve free Vercel quota.
+- `scripts/supabase-local-from-dump.sh` and `apps/cashflow/docs/RUNBOOK.md` for local Supabase RLS simulation from a cloud schema dump, bypassing the broken migration chain and avoiding Vercel quota delays.
+
+### Docs
+
+- Updated `AI-CONTEXT.md`, `DATA-FLOW.md`, and ADRs to reflect sign-aware balance math and the minimal-deployment strategy.
+- Added `apps/cashflow/docs/RUNBOOK.md` with the local Supabase RLS simulation workflow.
