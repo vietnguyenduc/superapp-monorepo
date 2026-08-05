@@ -21,8 +21,8 @@ describe('validateCustomerData', () => {
   it('rejects missing required fields', () => {
     const result = validateCustomerData({});
     expect(result.isValid).toBe(false);
-    expect(result.errors).toContain('customer_code is required and must be a non-empty string');
-    expect(result.errors).toContain('full_name is required and must be a non-empty string');
+    expect(result.errors).toContain('Mã khách hàng là bắt buộc và phải là chuỗi không rỗng');
+    expect(result.errors).toContain('Họ và tên là bắt buộc và phải là chuỗi không rỗng');
   });
 
   it('rejects empty-string required fields (whitespace only)', () => {
@@ -37,7 +37,7 @@ describe('validateCustomerData', () => {
       email: 'not-an-email',
     });
     expect(result.isValid).toBe(false);
-    expect(result.errors).toContain('email must be a valid email address');
+    expect(result.errors).toContain('Email phải đúng định dạng');
   });
 
   it('rejects invalid phone format', () => {
@@ -47,7 +47,7 @@ describe('validateCustomerData', () => {
       phone: 'call-me-maybe',
     });
     expect(result.isValid).toBe(false);
-    expect(result.errors).toContain('phone must be a valid phone number');
+    expect(result.errors).toContain('Số điện thoại phải hợp lệ (ít nhất 7 chữ số)');
   });
 
   it('rejects non-numeric opening_balance', () => {
@@ -57,7 +57,7 @@ describe('validateCustomerData', () => {
       opening_balance: 'a lot of money',
     });
     expect(result.isValid).toBe(false);
-    expect(result.errors).toContain('opening_balance must be a valid number');
+    expect(result.errors).toContain('Số dư đầu kỳ phải là số hợp lệ');
   });
 });
 
@@ -76,7 +76,7 @@ describe('validateTransactionData', () => {
   it('rejects invalid transaction_type', () => {
     const result = validateTransactionData({ ...base, transaction_type: 'bogus' });
     expect(result.isValid).toBe(false);
-    expect(result.errors.some((e) => e.includes('transaction_type must be one of'))).toBe(true);
+    expect(result.errors.some((e) => e.includes('Loại giao dịch phải là một trong'))).toBe(true);
   });
 
   it('rejects missing amount', () => {
@@ -84,7 +84,7 @@ describe('validateTransactionData', () => {
     delete (rest as Record<string, unknown>).amount;
     const result = validateTransactionData(rest);
     expect(result.isValid).toBe(false);
-    expect(result.errors).toContain('amount is required and must be a valid number');
+    expect(result.errors).toContain('Số tiền là bắt buộc và phải là số hợp lệ');
   });
 
   it('rejects NaN amount', () => {
@@ -124,7 +124,7 @@ describe('validateBankAccountData', () => {
       is_active: 'yes',
     });
     expect(result.isValid).toBe(false);
-    expect(result.errors).toContain('is_active must be a boolean');
+    expect(result.errors).toContain('Trạng thái hoạt động phải là true/false');
   });
 });
 
@@ -142,7 +142,7 @@ describe('validateTransactionTypeData', () => {
   it('rejects math_factor other than -1 or 1', () => {
     const result = validateTransactionTypeData({ name: 'X', math_factor: 5 });
     expect(result.isValid).toBe(false);
-    expect(result.errors).toContain('math_factor must be either -1 or 1');
+    expect(result.errors).toContain('Hệ số tính toán phải là -1 hoặc 1');
   });
 
   it('rejects invalid impact_type', () => {

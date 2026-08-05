@@ -21,7 +21,7 @@ import {
 import Pagination from "../../components/UI/Pagination";
 import Button from "../../components/UI/Button";
 import PageHeader from "../../components/UI/PageHeader";
-import { formatCurrency, formatCompactCurrency, getBalanceColor } from "../../utils/formatting";
+import { formatCurrency, getBalanceColor } from "../../utils/formatting";
 
 interface CustomerListState {
   customers: Customer[];
@@ -525,10 +525,10 @@ const CustomerList: React.FC = () => {
             </h3>
             <div className="flex items-center gap-2 text-sm" title={formatCurrency(state.totalBalance)}>
               <span className="text-gray-500 dark:text-gray-400">
-                {t("customers.totalDebt", "Tổng công nợ")} ({paginationInfo.total.toLocaleString("vi-VN")} {t("customers.customersCount", "khách hàng")}):
+                {t("customers.totalDebt", "Tổng công nợ")} ({state.allCustomers.length.toLocaleString("vi-VN")} {t("customers.customersCount", "khách hàng")}):
               </span>
               <span className={`font-semibold ${getBalanceColor(state.totalBalance)}`}>
-                {formatCompactCurrency(state.totalBalance)}
+                {formatCurrency(state.totalBalance)}
               </span>
             </div>
           </div>
