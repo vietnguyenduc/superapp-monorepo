@@ -64,6 +64,16 @@ const allColumnOptions = [
   { key: "workingMethod", label: "Cách làm việc công nợ" },
 ];
 
+const columnFieldMap: Record<string, keyof Customer> = {
+  customerCode: "customer_code",
+  fullName: "full_name",
+  balance: "total_balance",
+  lastTransaction: "last_transaction_date",
+  phone: "phone",
+  address: "address",
+  workingMethod: "working_method",
+};
+
 const CustomerList: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -264,20 +274,40 @@ const CustomerList: React.FC = () => {
   }, [companyId, debouncedSearchTerm, fetchCustomers]);
 
   const handleExportExcel = useCallback(() => {
-    const rows = state.allCustomers.map((c) => ({
-      "Mã khách hàng": c.customer_code || "",
-      "Tên khách hàng": c.full_name || "",
-      "Công nợ": Number(c.total_balance) || 0,
-      "Giao dịch cuối": c.last_transaction_date || "",
-      "ĐT": c.phone || "",
-      "Địa chỉ": c.address || "",
-      "Cách làm việc công nợ": c.working_method || "",
-    }));
+    // Export the same filtered + sorted dataset the user sees, and only visible columns.
+    const direction = state.sortOrder === "asc" ? 1 : -1;
+    const sorted = [...state.allCustomers].sort((a, b) => {
+      if (state.sortBy === "customer_code") {
+        return (toNum(getField(a, "customer_code")) - toNum(getField(b, "customer_code"))) * direction;
+      }
+      const aValue = getField(a, state.sortBy);
+      const bValue = getField(b, state.sortBy);
+      if (aValue === undefined || aValue === null) return 1 * direction;
+      if (bValue === undefined || bValue === null) return -1 * direction;
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        return (aValue - bValue) * direction;
+      }
+      if (state.sortBy === "last_transaction_date" || state.sortBy === "created_at") {
+        return (new Date(aValue).getTime() - new Date(bValue).getTime()) * direction;
+      }
+      return String(aValue).localeCompare(String(bValue)) * direction;
+    });
+
+    const rows = sorted.map((c) => {
+      const row: Record<string, unknown> = {};
+      for (const col of allColumnOptions) {
+        if (!state.visibleColumns[col.key]) continue;
+        const field = columnFieldMap[col.key];
+        row[col.label] = field === "total_balance" ? Number(getField(c, field)) || 0 : (getField(c, field) ?? "");
+      }
+      return row;
+    });
+
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Danh sách khách hàng");
     XLSX.writeFile(wb, "danh-sach-khach-hang.xlsx");
-  }, [state.allCustomers]);
+  }, [state.allCustomers, state.visibleColumns, state.sortBy, state.sortOrder]);
 
   const toNum = (v: unknown) => {
     const n = Number(String(v ?? "").replace(/\s/g, ""));
