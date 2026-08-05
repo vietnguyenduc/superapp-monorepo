@@ -108,6 +108,11 @@ All balance/amount sign display now flows through `getCustomerBalanceDelta`; `ge
 3. **Dashboard active customers** — `src/services/dashboardService.ts` now counts `customers.is_active !== false` instead of unique `customer_id` values in the current transaction window, which was frequently `0`.
 4. **Customer list summary** — `src/pages/Customers/CustomerList.tsx` now uses `formatCurrency` (exact number) instead of `formatCompactCurrency` (e.g. `20.7B đ`) and counts from the full `allCustomers` list, not the paginated subset.
 5. **Customer table UX** — `src/pages/Customers/components/CustomerTable.tsx` is more compact (`px-1.5 py-1.5`, smaller text), uses `min-w-max` with a constrained container `max-h-[calc(100vh-260px)]`, and has sticky `th` headers for easier horizontal scrolling.
+6. **Backup/restore fixes (2026-08-05)** —
+   - `src/utils/compression.ts` no longer uses Node-only `Buffer`; it now uses `TextEncoder`/`TextDecoder` + `btoa`/`atob` so browser backups do not throw `Buffer is not defined`.
+   - `src/utils/backupRecovery.ts` now whitelists allowed columns during restore (`BRANCH_KEYS`, `BANK_ACCOUNT_KEYS`, `CUSTOMER_KEYS`, `TRANSACTION_KEYS`), preventing `PGRST204` errors for joined/display-only columns like `customer_name` or `bank_account_name`.
+   - Restore helpers now collect per-record errors and `restoreBackup` returns them in `result.errors`; `Settings.tsx` / `Dashboard.tsx` show these instead of a false "Khôi phục thành công!".
+   - `src/services/backupHistoryService.ts` `saveBackupToDatabase` now throws when `ServiceResponse.success` is `false`, so the UI surfaces backup failures.
 
 ### Still to do for production-grade
 - `Settings.tsx` is 3000+ lines with ~50 `useState` hooks and inline modal JSX; split into tab/page components.
