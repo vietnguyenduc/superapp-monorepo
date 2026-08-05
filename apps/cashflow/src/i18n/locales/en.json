@@ -294,7 +294,13 @@
     "allTypes": "All Types",
     "dateRange": "Date Range",
     "fromDate": "From Date",
-    "toDate": "To Date"
+    "toDate": "To Date",
+    "errors": {
+      "customerRequired": "Please select a customer",
+      "typeRequired": "Please select a transaction type",
+      "dateRequired": "Please select a transaction date",
+      "amountInvalid": "Amount must be greater than 0"
+    }
   },
   "import": {
     "title": "Import Data",

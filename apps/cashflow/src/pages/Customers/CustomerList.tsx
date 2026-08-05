@@ -128,7 +128,7 @@ const CustomerList: React.FC = () => {
       } else {
         setState((prev) => ({
           ...prev,
-          customers: (result.data || []) as any,
+          customers: (result.data || []) as Customer[],
           totalCount: result.count,
           loading: false,
         }));
@@ -161,7 +161,7 @@ const CustomerList: React.FC = () => {
           sortOrder: "desc",
         });
         const all = (result.data || []) as Customer[];
-        const total = all.reduce((sum, c) => sum + (Number((c as any).total_balance) || 0), 0);
+        const total = all.reduce((sum, c) => sum + (Number(c.total_balance) || 0), 0);
         setState((prev) => ({ ...prev, allCustomers: all, totalBalance: total }));
       } catch {
         // non-blocking: summary/export is best-effort
@@ -267,8 +267,8 @@ const CustomerList: React.FC = () => {
     const rows = state.allCustomers.map((c) => ({
       "Mã khách hàng": c.customer_code || "",
       "Tên khách hàng": c.full_name || "",
-      "Công nợ": Number((c as any).total_balance) || 0,
-      "Giao dịch cuối": (c as any).last_transaction_date || "",
+      "Công nợ": Number(c.total_balance) || 0,
+      "Giao dịch cuối": c.last_transaction_date || "",
       "ĐT": c.phone || "",
       "Địa chỉ": c.address || "",
       "Cách làm việc công nợ": c.working_method || "",
@@ -279,21 +279,24 @@ const CustomerList: React.FC = () => {
     XLSX.writeFile(wb, "danh-sach-khach-hang.xlsx");
   }, [state.allCustomers]);
 
-  const toNum = (v: any) => {
-    const n = Number(String(v || "").replace(/\s/g, ""));
+  const toNum = (v: unknown) => {
+    const n = Number(String(v ?? "").replace(/\s/g, ""));
     return Number.isFinite(n) ? n : Number.POSITIVE_INFINITY;
   };
+
+  const getField = (customer: Customer, key: string): unknown =>
+    (customer as unknown as Record<string, unknown>)[key];
 
   const sortedCustomers = useMemo(() => {
     const sorted = [...state.customers];
     const direction = state.sortOrder === "asc" ? 1 : -1;
     sorted.sort((a, b) => {
       if (state.sortBy === "customer_code") {
-        return (toNum((a as any).customer_code) - toNum((b as any).customer_code)) * direction;
+        return (toNum(getField(a, "customer_code")) - toNum(getField(b, "customer_code"))) * direction;
       }
 
-      const aValue = (a as any)[state.sortBy];
-      const bValue = (b as any)[state.sortBy];
+      const aValue = getField(a, state.sortBy);
+      const bValue = getField(b, state.sortBy);
 
       if (aValue === undefined || aValue === null) return 1 * direction;
       if (bValue === undefined || bValue === null) return -1 * direction;

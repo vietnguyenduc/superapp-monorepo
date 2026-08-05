@@ -274,8 +274,8 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                         Cập nhật lúc
                       </dt>
                       <dd className="mt-0.5 text-xs sm:text-sm text-gray-900 dark:text-gray-100">
-                        {(customer as any).opening_balance_updated_at
-                          ? formatDate((customer as any).opening_balance_updated_at)
+                        {customer.opening_balance_updated_at
+                          ? formatDate(customer.opening_balance_updated_at)
                           : customer.updated_at
                             ? formatDate(customer.updated_at)
                             : customer.created_at

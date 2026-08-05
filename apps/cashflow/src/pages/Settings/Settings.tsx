@@ -1074,7 +1074,13 @@ const Settings: React.FC = () => {
       };
       const res = await databaseService.branches.upsertBranch(payload);
       if (res.error) throw new Error(res.error);
-      const saved = res.data || { id: editingBranch?.id || `branch-${Date.now()}`, name: (branchForm.name || "").trim(), address: (branchForm.address || "").trim(), phone: (branchForm.phone || "").trim(), is_active: true };
+      const saved = res.data || {
+        id: editingBranch?.id || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `branch-${Date.now()}`),
+        name: (branchForm.name || "").trim(),
+        address: (branchForm.address || "").trim(),
+        phone: (branchForm.phone || "").trim(),
+        is_active: true,
+      };
       setBranches((prev) => {
         const exists = prev.some((b) => b.id === saved.id);
         const next = exists

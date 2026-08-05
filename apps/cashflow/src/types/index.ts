@@ -88,6 +88,7 @@ export interface Customer {
   company_id?: string;
   total_balance: number;
   opening_balance?: number;
+  opening_balance_updated_at?: string;
   current_balance?: number;
   last_transaction_date?: string;
   is_active: boolean;

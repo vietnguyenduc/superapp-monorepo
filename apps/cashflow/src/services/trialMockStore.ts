@@ -298,6 +298,9 @@ export const clearTrialStore = () => {
     localStorage.removeItem(TRIAL_STORE_KEY);
     localStorage.removeItem(TRIAL_MODE_KEY);
     localStorage.removeItem("isTrial");
+    localStorage.removeItem("cashflow_trial_user");
+    localStorage.removeItem("cashflow_trial_api_fetched");
+    localStorage.removeItem("superapp_trial_mode");
   }
   store = { ...seedData } as unknown as Record<string, TrialRecord[]>;
   isTrialMode = false;
