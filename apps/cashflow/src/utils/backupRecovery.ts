@@ -5,12 +5,51 @@ import { databaseService } from "../services/database";
 import { createError, ERROR_CODES } from "./errorHandling";
 import { compressJSON, decompressJSON } from "./compression";
 import { supabase } from "../services/supabase";
+import { applyTransactionsToCustomerBalance, applyTransactionsToBankAccountBalance, parseAmount } from "../services/businessLogic";
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
   if (error && typeof error === "object" && "message" in error) return String((error as { message?: unknown }).message);
   return "Unknown error";
+}
+
+function deriveCustomerOpeningBalance(
+  customer: Record<string, unknown>,
+  transactions: Record<string, unknown>[],
+): number {
+  const customerId = String(customer.id ?? "");
+  const customerTransactions = transactions.filter(
+    (t) => String(t.customer_id ?? "") === customerId,
+  );
+  const netDelta = applyTransactionsToCustomerBalance(
+    0,
+    customerTransactions.map((t) => ({
+      transaction_type: String(t.transaction_type),
+      amount: Number(t.amount ?? 0),
+    })),
+  );
+  const totalBalance = parseAmount(customer.total_balance ?? 0);
+  return totalBalance - netDelta;
+}
+
+function deriveBankAccountOpeningBalance(
+  account: Record<string, unknown>,
+  transactions: Record<string, unknown>[],
+): number {
+  const accountId = String(account.id ?? "");
+  const accountTransactions = transactions.filter(
+    (t) => String(t.bank_account_id ?? "") === accountId,
+  );
+  const netDelta = applyTransactionsToBankAccountBalance(
+    0,
+    accountTransactions.map((t) => ({
+      transaction_type: String(t.transaction_type),
+      amount: Number(t.amount ?? 0),
+    })),
+  );
+  const totalBalance = parseAmount(account.balance ?? 0);
+  return totalBalance - netDelta;
 }
 
 const BRANCH_KEYS = new Set([
@@ -672,6 +711,7 @@ export const backupService = {
           options.company_id,
           branchMapping,
           options.overwriteExisting,
+          backupData.transactions,
         );
         result.restored.bank_accounts = count;
         result.errors.push(...errors);
@@ -685,6 +725,7 @@ export const backupService = {
           options.company_id,
           branchMapping,
           options.overwriteExisting,
+          backupData.transactions,
         );
         result.restored.customers = count;
         result.errors.push(...errors);
@@ -923,6 +964,7 @@ export const backupService = {
     companyId: string,
     branchMapping?: Record<string, string>,
     overwriteExisting = false,
+    transactions?: Record<string, unknown>[],
   ): Promise<{ count: number; mapping: Record<string, string>; errors: Array<{ type: string; message: string; data?: unknown }> }> {
     const mapping: Record<string, string> = {};
     const errors: Array<{ type: string; message: string; data?: unknown }> = [];
@@ -931,6 +973,11 @@ export const backupService = {
       let oldId = "";
       try {
         const normalized = this.normalizeRestoreRecord(customer, companyId, branchMapping, CUSTOMER_KEYS);
+        if (transactions) {
+          const opening = deriveCustomerOpeningBalance(customer, transactions);
+          normalized.total_balance = opening;
+          normalized.current_balance = opening;
+        }
         oldId = String(normalized.id ?? "");
         if (!oldId) {
           errors.push({ type: "customer", message: "Missing id", data: customer });
@@ -1016,6 +1063,7 @@ export const backupService = {
     companyId: string,
     branchMapping?: Record<string, string>,
     overwriteExisting = false,
+    transactions?: Record<string, unknown>[],
   ): Promise<{ count: number; mapping: Record<string, string>; errors: Array<{ type: string; message: string; data?: unknown }> }> {
     const mapping: Record<string, string> = {};
     const errors: Array<{ type: string; message: string; data?: unknown }> = [];
@@ -1024,6 +1072,10 @@ export const backupService = {
       let oldId = "";
       try {
         const normalized = this.normalizeRestoreRecord(account, companyId, branchMapping, BANK_ACCOUNT_KEYS);
+        if (transactions) {
+          const opening = deriveBankAccountOpeningBalance(account, transactions);
+          normalized.balance = opening;
+        }
         oldId = String(normalized.id ?? "");
         if (!oldId) {
           errors.push({ type: "bank_account", message: "Missing id", data: account });
