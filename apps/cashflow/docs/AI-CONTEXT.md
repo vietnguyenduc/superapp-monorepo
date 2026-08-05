@@ -116,6 +116,8 @@ All balance/amount sign display now flows through `getCustomerBalanceDelta`; `ge
    - `src/services/backupHistoryService.ts` `saveBackupToDatabase` now throws when `ServiceResponse.success` is `false`, so the UI surfaces backup failures.
    - `src/utils/backupRecovery.ts` `restoreCustomers` / `restoreBankAccounts` derive and reset the pre-transaction opening balance (`total_balance` / `current_balance` / `balance`) before re-inserting transactions, so `transactionService._syncTransactionBalance` does not double-count restored balances.
 
+8. **Vercel rate-limit workaround (2026-08-05)** — The Vercel Hobby account hit `api-deployments-free-per-day` while PR #67/#68 were building, so a normal `main` production deploy could not start. To stop the customer-search `PGRST100` regression from staying live, `cashflow.appforyou.xyz` was manually aliased to the successful PR #67 preview deployment (`cashflow-r9iym8czc-viet-ducs-projects-3717a482.vercel.app`) after verifying the search-with-comma flow returns `0` rows and no `Lỗi tải khách hàng` banner. A regular production deploy from `main` will replace this alias once the Vercel quota resets.
+
 ### Still to do for production-grade
 - `Settings.tsx` is 3000+ lines with ~50 `useState` hooks and inline modal JSX; split into tab/page components.
 - `TransactionImport.tsx` / `CustomerImport.tsx` still contain parser/validator/preview logic inline; extract to `utils/importUtils` or dedicated modules.
