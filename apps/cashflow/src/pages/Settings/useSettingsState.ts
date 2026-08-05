@@ -8,7 +8,7 @@ import { supabase } from "../../services/supabase";
 import { useAuthContext as useAuth } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useNavigate } from "react-router-dom";
-import { backupService, recoveryUtils } from "../../utils/backupRecovery";
+import { backupService, recoveryUtils, type BackupData } from "../../utils/backupRecovery";
 import { isAdmin } from "../../utils/permissions";
 
 
@@ -255,7 +255,7 @@ export function useSettingsState() {
       try {
         const result = await databaseService.backupHistory.getBackupHistory(companyId);
         if (result.data) {
-          setBackupHistory(result.data);
+          setBackupHistory(result.data as any[]);
         }
       } catch (err) {
         logger.error('Failed to load backup history:', err);
@@ -298,7 +298,7 @@ export function useSettingsState() {
       // Reload backup history
       const historyResult = await databaseService.backupHistory.getBackupHistory(companyId);
       if (historyResult.data) {
-        setBackupHistory(historyResult.data);
+        setBackupHistory(historyResult.data as any[]);
       }
 
       setSuccessMessage('Sao lưu thành công!');
@@ -369,7 +369,7 @@ export function useSettingsState() {
       }
 
       // Restore with conflict detection
-      const result = await backupService.restoreBackup(backupData, {
+      const result = await backupService.restoreBackup(backupData as BackupData, {
         restoreCustomers: true,
         restoreTransactions: true,
         restoreBankAccounts: true,
@@ -414,7 +414,7 @@ export function useSettingsState() {
       }
 
       // Restore with conflict detection
-      const result = await backupService.restoreBackup(backupData, {
+      const result = await backupService.restoreBackup(backupData as BackupData, {
         restoreCustomers: true,
         restoreTransactions: true,
         restoreBankAccounts: true,
@@ -436,7 +436,7 @@ export function useSettingsState() {
         // Reload backup history to update restore count
         const historyResult = await databaseService.backupHistory.getBackupHistory(companyId);
         if (historyResult.data) {
-          setBackupHistory(historyResult.data);
+          setBackupHistory(historyResult.data as any[]);
         }
       }
     } catch (err) {
@@ -471,7 +471,7 @@ export function useSettingsState() {
       }
 
       // Restore selected tables
-      const result = await backupService.restoreBackup(backupData, {
+      const result = await backupService.restoreBackup(backupData as BackupData, {
         restoreCustomers: selectedTables.includes('customers'),
         restoreTransactions: selectedTables.includes('transactions'),
         restoreBankAccounts: selectedTables.includes('bank_accounts'),
@@ -493,7 +493,7 @@ export function useSettingsState() {
         // Reload backup history to update restore count
         const historyResult = await databaseService.backupHistory.getBackupHistory(companyId);
         if (historyResult.data) {
-          setBackupHistory(historyResult.data);
+          setBackupHistory(historyResult.data as any[]);
         }
       }
     } catch (err) {
@@ -530,7 +530,7 @@ export function useSettingsState() {
         // Reload backup history to update restore count
         const historyResult = await databaseService.backupHistory.getBackupHistory(companyId);
         if (historyResult.data) {
-          setBackupHistory(historyResult.data);
+          setBackupHistory(historyResult.data as any[]);
         }
       }
     } catch (err) {
@@ -563,7 +563,7 @@ export function useSettingsState() {
     try {
       const result = await databaseService.customers.getCustomers({ limit: 1000, company_id: companyId });
       if (result?.data) {
-        const rows: CustomerBalanceRow[] = result.data.map((c: any) => ({
+        const rows: CustomerBalanceRow[] = (result.data as any[]).map((c: any) => ({
           id: c.id,
           customer_code: c.customer_code || "",
           full_name: c.full_name || c.customer_name || c.name || "",
@@ -590,7 +590,7 @@ export function useSettingsState() {
         // Load transaction types
         const txTypeRes = await databaseService.transactionTypes.getTransactionTypes(companyId);
         if (txTypeRes.error) throw new Error(txTypeRes.error);
-        const formattedTypes = (txTypeRes.data || []).map((t: any) => ({
+        const formattedTypes = ((txTypeRes.data as any[] | null) || []).map((t: any) => ({
           id: t.id,
           name: t.name,
           color: t.color || "blue",
@@ -606,7 +606,7 @@ export function useSettingsState() {
           throw new Error(bankAccountsResponse.error);
         }
 
-        const formattedBankAccounts = bankAccountsResponse.data?.map((account: any) => ({
+        const formattedBankAccounts = (bankAccountsResponse.data as any[] | null)?.map((account: any) => ({
           id: account.id,
           bankName: account.bank_name,
           accountNumber: account.account_number,
@@ -627,7 +627,7 @@ export function useSettingsState() {
           throw new Error(branchesResponse.error);
         }
 
-        const formattedBranches = branchesResponse.data?.map((branch: any) => ({
+        const formattedBranches = (branchesResponse.data as any[] | null)?.map((branch: any) => ({
           id: branch.id,
           name: branch.name,
           address: branch.address,
@@ -643,7 +643,7 @@ export function useSettingsState() {
         const customersResponse = await databaseService.customers.getCustomers({ limit: 1000, company_id: companyId });
         if (customersResponse?.data) {
           const map: Record<string, string> = {};
-          customersResponse.data.forEach((c: any) => {
+          (customersResponse.data as any[]).forEach((c: any) => {
             if (c?.customer_code) map[String(c.customer_code)] = c.full_name || c.customer_name || c.name || "";
           });
           setCustomerMap(map);
@@ -834,7 +834,7 @@ export function useSettingsState() {
       };
       const res = await databaseService.bankAccounts.upsertBankAccount(payload);
       if (res.error) throw new Error(getErrorMessage(res.error));
-      const saved = res.data || {
+      const saved = (res.data as any) || {
         id: editingBankAccount?.id || `bank-${Date.now()}`,
         bank_name: (bankAccountForm.bankName || "").trim() || "Ngan hang moi",
         account_number: (bankAccountForm.accountNumber || "").trim(),
@@ -924,7 +924,7 @@ export function useSettingsState() {
         company_id: companyId,
       });
       if (res.error) throw new Error(getErrorMessage(res.error));
-      const saved = res.data || { 
+      const saved = (res.data as any) || { 
         id: editingTransactionType?.id || `type-${Date.now()}`, 
         name, 
         color: transactionTypeForm.color, 
@@ -1150,7 +1150,7 @@ export function useSettingsState() {
       };
       const res = await databaseService.branches.upsertBranch(payload);
       if (res.error) throw new Error(getErrorMessage(res.error));
-      const saved = res.data || {
+      const saved = (res.data as any) || {
         id: editingBranch?.id || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `branch-${Date.now()}`),
         name: (branchForm.name || "").trim(),
         address: (branchForm.address || "").trim(),
@@ -1237,17 +1237,18 @@ export function useSettingsState() {
     setOpeningSuccess(null);
     try {
       const res = await databaseService.customers.bulkUpdateOpeningBalances(openingRows, companyId || undefined);
-      if (res.error || (res.data?.errors && res.data.errors.length > 0)) {
-        const errs = (res.data?.errors || []).map((e: any) => {
+      const resData = res.data as any;
+      if (res.error || (resData?.errors && resData.errors.length > 0)) {
+        const errs = (resData?.errors || []).map((e: any) => {
           const msg = e.message === "Customer not found" ? "Không tìm thấy khách hàng" : e.message;
           return `Dòng ${e.row + 2}: ${msg}${e.value ? ` (${e.value})` : ""}`;
         });
-        if (res.error) errs.unshift(`Lỗi: ${res.error.message || res.error}`);
+        if (res.error) errs.unshift(`Lỗi: ${res.error}`);
         setOpeningErrors(errs);
       } else {
         setOpeningErrors([]);
       }
-      setOpeningSuccess(`Đã cập nhật ${res.data?.updatedCount || 0} khách hàng.`);
+      setOpeningSuccess(`Đã cập nhật ${resData?.updatedCount || 0} khách hàng.`);
     } catch (err) {
       logger.error("Import opening balance failed", err);
       setOpeningErrors(["Có lỗi khi nhập số dư. Vui lòng thử lại."]);
@@ -1394,7 +1395,7 @@ export function useSettingsState() {
     try {
       const { data, error } = await databaseService.users.getUsers();
       if (error) throw new Error(String(error));
-      setUsers(data || []);
+      setUsers((data as any[] | null) || []);
     } catch (err) {
       logger.error('Failed to load users:', err);
     } finally {

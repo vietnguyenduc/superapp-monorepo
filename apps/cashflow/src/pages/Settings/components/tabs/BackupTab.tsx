@@ -165,7 +165,7 @@ export const BackupTab: FC = () => {
                       </div>
                     </div>
                     {/* Restore options for admins */}
-                    {canRestoreFullBackup(user!) && (
+                    {canRestoreFullBackup(user as any) && (
                       <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
                         <Button
                           size="sm"
@@ -184,10 +184,10 @@ export const BackupTab: FC = () => {
                       </div>
                     )}
                     {/* Revert own changes for all users */}
-                    {backup.included_tables && backup.included_tables.some((table: string) => canRevertTable(user!, table)) && (
+                    {backup.included_tables && backup.included_tables.some((table: string) => canRevertTable(user as any, table)) && (
                       <div className="flex flex-wrap gap-2 mt-2">
                         {backup.included_tables.map((table: string) => (
-                          canRevertTable(user!, table) && (
+                          canRevertTable(user as any, table) && (
                             <Button
                               key={table}
                               size="sm"
