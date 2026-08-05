@@ -20,8 +20,11 @@ export class CustomerService extends BaseService {
 
         const search = typeof filters?.search === "string" ? filters.search.trim() : "";
         if (search) {
-          const s = `%${search}%`;
-          query = query.or(`full_name.ilike.${s},customer_code.ilike.${s},phone.ilike.${s},email.ilike.${s}`);
+          // Quote the ilike value so PostgREST treats commas/parentheses as literal text
+          // instead of logic-tree separators. Double any internal double quotes.
+          const safe = search.replace(/"/g, '""');
+          const s = `%${safe}%`;
+          query = query.or(`full_name.ilike."${s}",customer_code.ilike."${s}",phone.ilike."${s}",email.ilike."${s}"`);
         }
 
         const limit = Number.isFinite(filters?.limit) ? Number(filters.limit) : undefined;
