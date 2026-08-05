@@ -29,19 +29,19 @@ CREATE POLICY inventory_backup_history_select_policy ON inventory_backup_history
   FOR SELECT TO authenticated
   USING (
     company_id IN (SELECT company_id FROM user_companies WHERE user_id = auth.uid())
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
 CREATE POLICY inventory_backup_history_insert_policy ON inventory_backup_history
   FOR INSERT TO authenticated
   WITH CHECK (
     company_id IN (SELECT company_id FROM user_companies WHERE user_id = auth.uid())
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );
 
 CREATE POLICY inventory_backup_history_delete_policy ON inventory_backup_history
   FOR DELETE TO authenticated
   USING (
     company_id IN (SELECT company_id FROM user_companies WHERE user_id = auth.uid())
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
   );

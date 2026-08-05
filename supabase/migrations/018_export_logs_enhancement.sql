@@ -61,7 +61,7 @@ USING (
         SELECT id FROM public.companies 
         WHERE id IN (SELECT company_id FROM public.user_companies WHERE user_id = auth.uid()::uuid)
     )
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
 );
 
 -- Policy: Users can insert their own export logs
@@ -84,7 +84,7 @@ USING (
         SELECT id FROM public.companies 
         WHERE id IN (SELECT company_id FROM public.user_companies WHERE user_id = auth.uid()::uuid)
     )
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
 )
 WITH CHECK (
     user_id = auth.uid()::uuid
@@ -92,7 +92,7 @@ WITH CHECK (
         SELECT id FROM public.companies 
         WHERE id IN (SELECT company_id FROM public.user_companies WHERE user_id = auth.uid()::uuid)
     )
-    OR role = 'admin'
+    OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin')
 );
 
 -- Function to update duration on completion

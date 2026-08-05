@@ -119,3 +119,7 @@ bash_events/
 
 superapp-monorepo/
 *tsbuildinfo
+
+# Supabase local dev generated files
+supabase/.branches/
+supabase/.temp/
