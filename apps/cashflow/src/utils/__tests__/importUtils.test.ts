@@ -146,17 +146,28 @@ describe("Import Utils", () => {
         { ...validData[0], amount: "" },
         { ...validData[0], amount: "invalid" },
         { ...validData[0], amount: "0" },
-        { ...validData[0], amount: "-100" },
       ];
 
       const result = validateTransactionData(invalidData);
 
       expect(result.isValid).toBe(false);
-      expect(result.errors).toHaveLength(4);
+      expect(result.errors).toHaveLength(3);
       expect(result.errors[0].message).toBe("Amount is required");
-      expect(result.errors[1].message).toBe("Amount must be a positive number");
-      expect(result.errors[2].message).toBe("Amount must be a positive number");
-      expect(result.errors[3].message).toBe("Payment amount must be positive");
+      expect(result.errors[1].message).toBe("Amount must be a non-zero number");
+      expect(result.errors[2].message).toBe("Amount must be a non-zero number");
+    });
+
+    it("allows negative amounts for payment/charge/refund", () => {
+      const data = [
+        { ...validData[0], amount: "-100", transaction_type: "payment" },
+        { ...validData[0], amount: "-100", transaction_type: "charge" },
+        { ...validData[0], amount: "-100", transaction_type: "refund" },
+      ];
+
+      const result = validateTransactionData(data);
+
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
     });
 
     it("validates transaction date", () => {

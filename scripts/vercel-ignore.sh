@@ -15,6 +15,15 @@ if ! git rev-parse HEAD >/dev/null 2>&1; then
   exit 0
 fi
 
+# Vercel free quota is tight with 7 linked projects, so only auto-build
+# production (main) and the viet preview branch. Every other branch/PR
+# preview is skipped; use `workflow_dispatch` / `scripts/deploy-app.sh` when
+# you actually need a preview deployment.
+if [ "$ENV" = "preview" ] && [ "$REF" != "viet" ]; then
+  echo "Preview branch '$REF' is not viet; skipping build to preserve quota."
+  exit 0
+fi
+
 HEAD_SHA=$(git rev-parse HEAD)
 BASE_SHA=""
 

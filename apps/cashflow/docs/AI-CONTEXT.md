@@ -58,6 +58,17 @@ Negative `total_balance` = debt. Positive = overpayment/credit.
 
 All balance/amount sign display now flows through `getCustomerBalanceDelta`; `getTransactionMathFactor` delegates to it, so `CustomerDetailModal` / `RecentTransactions` render charge amounts as negative (debt) and payment/refund amounts as positive (credit).
 
+### Sign-aware amounts (2026-08-05)
+
+The amount **sign** now reverses the transaction direction instead of being silently taken as an absolute value. This applies to bulk import, manual edits, and dashboard calculations.
+
+- `charge -1000` → customer balance **+1000** (debt decreases), bank cash `0`.
+- `payment -1000` → customer balance **-1000** (debt increases), bank cash **-1000** (cash out).
+- `refund -1000` → customer balance **-1000** (debt increases), bank cash **+1000** (cash in).
+- `adjustment -1000` / `+1000` → direct signed correction on both customer and bank.
+
+`getCustomerBalanceDelta` and `getBankAccountBalanceDelta` multiply the type's default magnitude by `Math.sign(amount)`. `validateTransactionData` no longer rejects negative amounts for `payment`/`charge`/`refund`; it only requires a non-zero value. `TransactionList` and `TransactionEditModal` no longer call `Math.abs()` before saving non-adjustment amounts. A negative amount also flips the amount color (e.g. `charge -1000` shows green because it reduces debt).
+
 ## Recent architectural decisions
 
 - `docs/adr/0001-transaction-type-single-source-of-truth.md`
@@ -99,6 +110,27 @@ All balance/amount sign display now flows through `getCustomerBalanceDelta`; `ge
 - Vercel preview deploys on `viet` PRs; production on `main` merge.
 - **Vercel `ignoreCommand` gotcha:** each `apps/<app>/vercel.json` `ignoreCommand` has a hard 256-character limit. If the command is longer, Vercel returns `bad_request: ignoreCommand should NOT be longer than 256 characters` and the build fails before it starts. Keep the command short (e.g. `bash ../../scripts/vercel-ignore.sh`) and put all branch/path logic in `scripts/vercel-ignore.sh`.
 - **Root `project` Vercel project:** the default project linked to the repo root has no correct `outputDirectory` for the monorepo and should be deleted or reconfigured; it does not map to any real app.
+
+### Reducing Vercel deployment quota usage
+
+The account has 7 Vercel projects, so the default Git integration creates up to 7 deployment attempts per push and quickly exhausts the free `api-deployments-free-per-day` quota.
+
+Current mitigations (2026-08-05):
+- `scripts/vercel-ignore.sh` now skips every preview build that is **not** the `viet` branch and only builds `main` (production) or `viet` when the relevant app actually changed. This stops preview deployments on every `devin/*` PR.
+- `scripts/deploy-app.sh` and `scripts/deploy-changed-apps.sh` let you deploy a single app (or only the changed apps) on demand via the Vercel CLI:
+  ```bash
+  VERCEL_TOKEN=xxx scripts/deploy-app.sh cashflow preview
+  VERCEL_TOKEN=xxx scripts/deploy-app.sh cashflow production
+  VERCEL_TOKEN=xxx scripts/deploy-changed-apps.sh preview origin/main
+  ```
+- `.github/workflows/deploy-changed-apps.yml` is a `workflow_dispatch` job that deploys only changed apps. If you want full automation without burning quota, disable Vercel's Git integration and let this workflow own `main`/`viet` deployments.
+
+Recommended workflow to avoid the quota:
+1. Develop and verify on `http://<TAILSCALE_IP>:5174` (local Vite on WSL).
+2. Push to a `devin/*` branch for code review; no Vercel preview is created.
+3. When you actually need a preview, run `scripts/deploy-app.sh cashflow preview` or trigger the GitHub Action manually.
+4. Merge to `viet` only when ready; `viet` still auto-deploys a preview.
+5. Merge `viet` → `main`; production deploys once per merge (not per app push).
 
 ## Production hotfixes and current state (2026-08-05)
 

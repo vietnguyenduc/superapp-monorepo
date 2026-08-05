@@ -1,0 +1,83 @@
+name: Deploy changed Vercel apps
+
+on:
+  # Start manual-only. When the Vercel Git integration is disabled, uncomment
+  # push triggers so this workflow owns main/viet deployments.
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Deployment target"
+        required: true
+        default: "preview"
+        type: choice
+        options:
+          - preview
+          - production
+      base_ref:
+        description: "Base ref to detect changed apps (default origin/main for preview, HEAD^1 for production)"
+        required: false
+        type: string
+
+  # push:
+  #   branches:
+  #     - main
+  #     - viet
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changed-apps:
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.matrix.outputs.apps }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine changed apps
+        id: matrix
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            BASE="${{ github.event.inputs.base_ref }}"
+          elif [ "${{ github.ref_name }}" = "main" ]; then
+            BASE="HEAD^1"
+          else
+            BASE="origin/main"
+            git fetch origin main --depth=100 -q
+          fi
+          [ -z "$BASE" ] && BASE="origin/main" && git fetch origin main --depth=100 -q
+
+          BASE_SHA=$(git rev-parse "$BASE" 2>/dev/null || git merge-base "$BASE" HEAD)
+          CHANGED=$(git diff --name-only "$BASE_SHA" HEAD)
+
+          apps=$(echo "$CHANGED" | awk -F/ '$1 == "apps" {print $2}' | sort -u)
+          deployable=""
+          for app in $apps; do
+            [ -f "apps/$app/vercel.json" ] || continue
+            [ -z "$deployable" ] && deployable="\"$app\"" || deployable="$deployable, \"$app\""
+          done
+
+          echo "apps=[$deployable]" >> "$GITHUB_OUTPUT"
+          echo "Changed apps: [$deployable]"
+
+  deploy:
+    needs: changed-apps
+    if: ${{ needs.changed-apps.outputs.apps != '[]' && needs.changed-apps.outputs.apps != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJson(needs.changed-apps.outputs.apps) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Vercel
+        run: |
+          npx vercel@latest deploy \
+            --project ${{ matrix.app }} \
+            --token ${{ secrets.VERCEL_TOKEN }} \
+            --yes \
+            ${{ github.event.inputs.target == 'production' && '--prod' || '' }}

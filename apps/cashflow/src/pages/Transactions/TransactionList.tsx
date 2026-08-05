@@ -335,15 +335,10 @@ const TransactionList: React.FC = () => {
 
   const handleEditSubmit = useCallback(async (values: TransactionEditFormValues) => {
     if (!editingTx) return;
-    let amt = parseAmount(values.amount);
-    if (!Number.isFinite(amt)) {
+    const amt = parseAmount(values.amount);
+    if (!Number.isFinite(amt) || amt === 0) {
       toast.error("Số tiền không hợp lệ");
       return;
-    }
-    // Payment/charge/refund are stored as absolute values; the sign convention is
-    // applied at display time by getCustomerBalanceDelta. Adjustments keep sign.
-    if (values.transaction_type !== "adjustment") {
-      amt = Math.abs(amt);
     }
     const dateIso = values.transaction_date
       ? new Date(values.transaction_date).toISOString()

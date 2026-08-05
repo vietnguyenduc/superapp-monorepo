@@ -29,6 +29,12 @@ describe("balanceMath", () => {
       expect(getCustomerBalanceDelta("  CHARGE ", 100)).toBe(-100);
     });
 
+    it("reverses the customer effect when amount is negative", () => {
+      expect(getCustomerBalanceDelta("charge", -100)).toBe(100);
+      expect(getCustomerBalanceDelta("payment", -100)).toBe(-100);
+      expect(getCustomerBalanceDelta("refund", -100)).toBe(-100);
+    });
+
     it("falls back to signed amount for unknown types", () => {
       expect(getCustomerBalanceDelta("unknown", -25)).toBe(-25);
     });
@@ -50,6 +56,12 @@ describe("balanceMath", () => {
 
     it("charges do not affect the bank account balance", () => {
       expect(getBankAccountBalanceDelta("charge", 100)).toBe(0);
+    });
+
+    it("reverses the bank cash-flow when amount is negative", () => {
+      expect(getBankAccountBalanceDelta("payment", -100)).toBe(-100);
+      expect(getBankAccountBalanceDelta("refund", -100)).toBe(100);
+      expect(getBankAccountBalanceDelta("charge", -100)).toBe(0);
     });
   });
 

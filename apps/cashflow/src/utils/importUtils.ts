@@ -233,8 +233,6 @@ export function validateTransactionData(
     } else {
       const amount = parseAmount(amountRaw);
       const isAdjustment = normalizedType === "adjustment";
-      const isPayment = normalizedType === "payment";
-      const isCharge = normalizedType === "charge";
 
       if (isNaN(amount) || amount === 0) {
         errors.push({
@@ -242,20 +240,9 @@ export function validateTransactionData(
           column: "amount",
           message: isAdjustment
             ? "Amount must be a non-zero number for adjustment"
-            : "Amount must be a positive number",
+            : "Amount must be a non-zero number",
           value: row.amount,
         });
-      } else {
-        if ((isPayment || isCharge) && amount < 0) {
-          errors.push({
-            row: index,
-            column: "amount",
-            message: isPayment
-              ? "Payment amount must be positive"
-              : "Charge amount must be positive",
-            value: row.amount,
-          });
-        }
       }
     }
 
