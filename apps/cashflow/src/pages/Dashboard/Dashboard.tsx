@@ -132,7 +132,7 @@ const Dashboard: React.FC = () => {
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
     // Don't fetch until company context is ready (prevents showing all-company data flash)
-    if (companyLoading) return;
+    if (companyLoading || !companyId) return;
     setLoading(true);
     setError(null);
 
