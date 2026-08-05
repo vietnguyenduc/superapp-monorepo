@@ -510,8 +510,8 @@ const CustomerList: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100vh-8rem)] sm:min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8">
+      <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto px-3 sm:px-6 lg:px-8 pb-4 sm:pb-8">
         <PageHeader
           title={t("customers.title")}
           subtitle={t("customers.subtitle")}
@@ -549,11 +549,11 @@ const CustomerList: React.FC = () => {
 
         {/* Filters and Search */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+          <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 dark:border-gray-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
               Bộ lọc khách hàng
             </h3>
-            <div className="flex items-center gap-2 text-sm" title={formatCurrency(state.totalBalance)}>
+            <div className="flex flex-wrap items-center gap-2 text-sm" title={formatCurrency(state.totalBalance)}>
               <span className="text-gray-500 dark:text-gray-400">
                 {t("customers.totalDebt", "Tổng công nợ")} ({state.allCustomers.length.toLocaleString("vi-VN")} {t("customers.customersCount", "khách hàng")}):
               </span>
@@ -562,18 +562,18 @@ const CustomerList: React.FC = () => {
               </span>
             </div>
           </div>
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
             <CustomerSearch
               value={state.searchTerm}
               onChange={handleSearch}
               placeholder={t("customers.searchPlaceholder")}
             />
-            <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
               <CustomerFilters
                 dateRange={state.dateRange}
                 onDateRangeChange={handleDateRangeChange}
               />
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <select
                   value={state.pageSize}
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
@@ -610,12 +610,12 @@ const CustomerList: React.FC = () => {
 
         {/* Customer Table */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-600">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+          <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 dark:border-gray-600">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
                 {t("customers.customerList")}
               </h3>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 {t("customers.showingResults", {
                   start: paginationInfo.start,
                   end: paginationInfo.end,
@@ -638,7 +638,7 @@ const CustomerList: React.FC = () => {
 
           {/* Pagination */}
           {state.totalCount > state.pageSize && (
-            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-600 sticky bottom-0 z-20 bg-white/95 dark:bg-gray-800/95 backdrop-blur">
+            <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-gray-200 dark:border-gray-600 sticky bottom-20 sm:bottom-0 z-20 bg-white/95 dark:bg-gray-800/95 backdrop-blur">
               <Pagination
                 currentPage={state.currentPage}
                 totalPages={Math.ceil(state.totalCount / state.pageSize)}
