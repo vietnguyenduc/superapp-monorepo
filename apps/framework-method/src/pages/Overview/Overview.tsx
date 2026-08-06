@@ -125,7 +125,12 @@ const Overview = () => {
             {t("overview.taskSummary", { total: stats.total, done: stats.done, inProgress: stats.inProgress })}
             {stats.total > 0 && (
               <span className="ml-2 text-xs text-gray-400">
-                · {stats.groups} {t("overview.taskGroup")} · {stats.categories} {t("overview.taskCategory")} · {stats.subCategories} {t("overview.taskSubCategory")}
+                {" · "}
+                {[
+                  `${stats.groups} ${t("overview.taskGroup")}`,
+                  `${stats.categories} ${t("overview.taskCategory")}`,
+                  `${stats.subCategories} ${t("overview.taskSubCategory")}`,
+                ].join(" · ")}
               </span>
             )}
           </p>
