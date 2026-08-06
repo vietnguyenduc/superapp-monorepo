@@ -92,36 +92,49 @@ dist
 
 ## Deployment Workflow
 
-### Scenario A: Push to `viet` (Preview)
+### Scenario A: Local preview (mandatory first step)
+
+1. Build the affected app(s) locally:
+   ```bash
+   npm run build -w framework-method
+   ```
+2. Serve the `dist` folder and expose it (or use Tailscale):
+   ```bash
+   cd apps/framework-method
+   npx vite preview --port 4179
+   ```
+3. Both the agent and the requester verify UI/UX, navigation, persistence, and responsive layout.
+4. **Do NOT push to `viet` or create a PR to `main` before this step is approved.**
+
+### Scenario B: Manual Vercel preview (after local approval)
+
+Only when the requester asks for a Vercel preview:
 
 ```bash
-git add -A
-git commit -m "fix(cashflow): resolve chart rendering bug"
-git push origin viet
+cd /home/ubuntu/repos/superapp-monorepo
+npx vercel --cwd apps/framework-method --token "$VERCEL_TOKEN"
 ```
 
-→ Vercel auto-builds **preview** deployment per app
-→ Get preview URL: `vercel ls --token "$VERCEL_TOKEN" cashflow`
-→ Verify at preview URL (NOT production)
+→ Get the exact preview URL: `vercel ls --token "$VERCEL_TOKEN" framework-method`
+→ Both parties verify at the **preview URL** (NOT production)
 
-### Scenario B: Merge to `main` (Production)
+### Scenario C: PR to `main` (Production)
+
+Only after Vercel preview is approved:
 
 ```bash
-# Create PR viet → main
-gh pr create --base main --head viet --title "Release: ..."
+# Create PR from the working branch to main
+gh pr create --base main --head devin/framework-method-fix --title "Release: ..."
 
 # Merge PR (squash)
 gh pr merge --squash --admin
-
-# Or force merge if CI pending
-gh pr merge --admin --squash --match-head-commit
 ```
 
 → Vercel deploys to **production** (`*.appforyou.xyz`)
 → Wait for `READY` state
-→ Verify at production URL
+→ Both parties verify at production URL
 
-### Scenario C: Manual Redeploy
+### Scenario D: Manual Redeploy
 
 **KHÔNG** chạy `vercel --prod` từ trong `apps/<app>/` vì `rootDirectory` của mỗi project là `apps/<app>` nhưng build cần root monorepo để `turbo` resolve dependencies. Nếu cần deploy thủ công, dùng Vercel API từ repo root:
 

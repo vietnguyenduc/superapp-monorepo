@@ -95,6 +95,7 @@ flowchart TD
 | 13 | Don't code without reading docs first | §13.1 — 3 min of reading saves 30 min of re-discovery | §13 |
 | 14 | Don't commit without updating docs | §13.3 — stale docs mislead the next session | §13 |
 | 15 | Don't skip `log_decision` / `log_error_pattern` / `write_memory` | §13.4 — findings not logged are findings lost | §13 |
+| 16 | Don't create a PR to `main` or `viet` before local preview is approved | Wastes Vercel quota and risks premature production changes | §1b / `docs/DEPLOYMENT.md` |
 
 ### 0.8 When you're stuck
 
@@ -188,20 +189,23 @@ g | https://accounting.appforyou.xyz |
 3. Screenshot + verify feature
 4. Report: "Verified locally at [URL]: [feature] OK"
 
-**Scenario B: Pushed to `viet` (preview deployment)**
-1. `git push origin viet` → Vercel auto-builds preview
-2. `vercel ls --token "$VERCEL_TOKEN" <app-name>` → find latest preview URL
-3. `browser_navigate` to the **preview URL** (NOT appforyou.xyz!)
-4. Screenshot + verify feature
-5. Report: "Verified preview at [URL]: [feature] OK"
-6. **Do NOT claim production is updated — it isn't until merge to main.**
+**Scenario B: Manual Vercel preview (after local approval)**
+1. Do **not** push to `viet` or create a PR just to get a preview link.
+2. When the requester asks, trigger a manual preview: `npx vercel --cwd apps/<app> --token "$VERCEL_TOKEN"`
+3. `vercel ls --token "$VERCEL_TOKEN" <app-name>` → find the exact preview URL
+4. `browser_navigate` to the **preview URL** (NOT appforyou.xyz!)
+5. Screenshot + verify feature
+6. Report: "Verified preview at [URL]: [feature] OK"
+7. **Do NOT claim production is updated — it isn't until merge to main.**
 
-**Scenario C: Merged to `main` (production deployment)**
-1. Merge `viet` → `main` → Vercel deploys to production
-2. Wait for READY
-3. `browser_navigate` to `https://<app>.appforyou.xyz`
-4. Screenshot + verify feature
-5. Report: "Verified production at [URL]: [feature] OK"
+**Scenario C: PR to `main` (production deployment)**
+1. Create a PR to `main` only after Vercel preview is approved.
+2. Wait for required CI checks.
+3. Merge to `main` → Vercel deploys to production
+4. Wait for READY
+5. `browser_navigate` to `https://<app>.appforyou.xyz`
+6. Screenshot + verify feature
+7. Report: "Verified production at [URL]: [feature] OK"
 
 ### Common excuses that are NOT accepted
 - "I can't access the URL" → Use the correct URL for the scenario (local/preview/production).
