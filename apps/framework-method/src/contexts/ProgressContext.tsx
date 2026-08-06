@@ -247,6 +247,7 @@ export interface FrameworkTemplate {
   name: string;
   description?: string;
   steps: Step[];
+  updatedAt?: string;
   blocks?: Block[]; // legacy, migrated to steps
 }
 
@@ -353,7 +354,7 @@ interface ProgressContextValue {
   saveReflection: (blockId: string, section: string, text: string) => void;
   completeStep: (stepIndex: number) => void;
   closeDay: () => void;
-  saveTemplate: (name: string, steps: Step[], templateId?: string) => string;
+  saveTemplate: (name: string, description: string, steps: Step[], templateId?: string) => string;
   setActiveTemplate: (templateId: string | null) => void;
   setDailyTemplates: (templateIds: string[]) => void;
 }
@@ -491,15 +492,16 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
   );
 
   const saveTemplate = useCallback(
-    (name: string, steps: Step[], templateId?: string) => {
+    (name: string, description: string, steps: Step[], templateId?: string) => {
       const id = templateId || `tpl-${Date.now()}`;
       setProgress((prev) => {
         const templates = [...prev.templates];
         const idx = templates.findIndex((t) => t.id === id);
+        const now = new Date().toISOString();
         if (idx >= 0) {
-          templates[idx] = { ...templates[idx], name, steps };
+          templates[idx] = { ...templates[idx], name, description, steps, updatedAt: now };
         } else {
-          templates.push({ id, name, steps });
+          templates.push({ id, name, description, steps, updatedAt: now });
         }
         const next = { ...prev, templates, activeTemplateId: id, lastUpdated: new Date().toISOString() };
         saveProgress(userKey, next);

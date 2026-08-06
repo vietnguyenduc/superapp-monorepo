@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { FiArrowRight } from "react-icons/fi";
+import { FiArrowRight, FiEdit3 } from "react-icons/fi";
 import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useFrameworkProgress, getDailySteps } from "../../hooks/useFrameworkProgress";
@@ -47,18 +47,28 @@ const Overview = () => {
           </p>
           <h1 className="text-3xl sm:text-4xl font-bold mt-1 leading-tight">{frameworkName}</h1>
         </div>
-        <button
-          onClick={() => setShowOverlay(true)}
-          className="w-10 h-10 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300"
-          aria-label="Frameworks"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="3" width="7" height="7" rx="1.5" />
-            <rect x="14" y="3" width="7" height="7" rx="1.5" />
-            <rect x="14" y="14" width="7" height="7" rx="1.5" />
-            <rect x="3" y="14" width="7" height="7" rx="1.5" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/builder?edit=active"
+            className="w-10 h-10 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:border-primary-500 hover:text-primary-600"
+            aria-label={t("builder.editThisFramework")}
+            title={t("builder.editThisFramework")}
+          >
+            <FiEdit3 className="w-5 h-5" />
+          </Link>
+          <button
+            onClick={() => setShowOverlay(true)}
+            className="w-10 h-10 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300"
+            aria-label="Frameworks"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <Card className="p-5">

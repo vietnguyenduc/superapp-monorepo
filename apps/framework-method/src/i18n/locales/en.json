@@ -132,6 +132,8 @@
     "dependsOnDescription": "Only show this block when another answer contains the value below.",
     "noDependency": "Always show",
     "dependsOnValue": "Expected value",
+    "active": "Active",
+    "editThisFramework": "Edit this framework",
     "required": "Required"
   },
   "common": {

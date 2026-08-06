@@ -132,6 +132,8 @@
     "dependsOnDescription": "Chỉ hiện block này khi câu trả lời khác chứa giá trị bên dưới.",
     "noDependency": "Luôn hiện",
     "dependsOnValue": "Giá trị mong đợi",
+    "active": "Đang chạy",
+    "editThisFramework": "Sửa framework này",
     "required": "Bắt buộc"
   },
   "common": {

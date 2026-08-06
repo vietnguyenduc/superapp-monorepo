@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   FiEye,
   FiUpload,
@@ -67,11 +67,13 @@ const blockCatalog: { type: BlockType; label: string; icon: typeof FiBook; categ
 const Builder = () => {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { progress, saveTemplate, setActiveTemplate, setDailyTemplates } = useFrameworkProgress();
 
   const activeTemplate = progress.templates.find((t) => t.id === progress.activeTemplateId);
 
   const [templateName, setTemplateName] = useState(activeTemplate?.name || "New Framework");
+  const [templateDescription, setTemplateDescription] = useState(activeTemplate?.description || "");
   const [steps, setSteps] = useState<Step[]>(activeTemplate?.steps || defaultSteps);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
@@ -80,10 +82,18 @@ const Builder = () => {
 
   useEffect(() => {
     setTemplateName(activeTemplate?.name || "New Framework");
+    setTemplateDescription(activeTemplate?.description || "");
     setSteps(activeTemplate?.steps ? activeTemplate.steps : defaultSteps);
     setSelectedStepId(null);
     setSaveStatus("");
   }, [activeTemplate?.id]);
+
+  useEffect(() => {
+    const editParam = searchParams.get("edit");
+    if (editParam === "active" && progress.activeTemplateId) {
+      setActiveTemplate(progress.activeTemplateId);
+    }
+  }, [searchParams, progress.activeTemplateId]);
 
   useEffect(() => {
     setMixIds(progress.dailyTemplateIds || []);
@@ -97,11 +107,11 @@ const Builder = () => {
     }
     const timer = setTimeout(() => {
       const name = templateName.trim() || "New Framework";
-      saveTemplate(name, steps, activeTemplate.id);
+      saveTemplate(name, templateDescription, steps, activeTemplate.id);
       setSaveStatus("Auto-saved");
     }, 800);
     return () => clearTimeout(timer);
-  }, [steps, templateName, activeTemplate, saveTemplate]);
+  }, [steps, templateName, templateDescription, activeTemplate, saveTemplate]);
 
   const selectedStep = useMemo(
     () => steps.find((s) => s.id === selectedStepId) || steps[steps.length - 1],
@@ -211,7 +221,7 @@ const Builder = () => {
 
   const handlePublish = () => {
     const name = templateName.trim() || "New Framework";
-    saveTemplate(name, steps, activeTemplate?.id);
+    saveTemplate(name, templateDescription, steps, activeTemplate?.id);
     setSaveStatus(t("builder.published"));
   };
 
@@ -290,22 +300,50 @@ const Builder = () => {
       <div>
         <h3 className="text-sm font-semibold mb-1">Templates</h3>
         <p className="text-xs text-gray-500 mb-2">Select an existing template to edit, or start a new one.</p>
-        <div className="flex flex-col gap-2">
-          <select
-            value={activeTemplate?.id || "new"}
-            onChange={(e) => handleSelectTemplate(e.target.value)}
-            className="input text-sm"
+        <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
+          <button
+            onClick={handleNewTemplate}
+            className={`text-left px-3 py-2 rounded-xl border text-sm transition-colors ${
+              !activeTemplate
+                ? "border-primary-500 bg-primary-50 dark:bg-primary-900/10 text-primary-700"
+                : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+            }`}
           >
-            <option value="new">+ New Framework</option>
-            {progress.templates.map((tmpl) => (
-              <option key={tmpl.id} value={tmpl.id}>
-                {tmpl.name}
-              </option>
-            ))}
-          </select>
-          <Button variant="secondary" size="sm" onClick={handleNewTemplate}>
-            <FiPlusCircle className="w-4 h-4" /> <span className="ml-1">{t("common.create")}</span>
-          </Button>
+            + {t("common.create")}
+          </button>
+          {[...progress.templates]
+            .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""))
+            .map((tmpl) => {
+              const isActive = tmpl.id === progress.activeTemplateId;
+              return (
+                <button
+                  key={tmpl.id}
+                  onClick={() => handleSelectTemplate(tmpl.id)}
+                  className={`text-left px-3 py-2 rounded-xl border text-sm transition-colors ${
+                    isActive
+                      ? "border-primary-500 bg-primary-50 dark:bg-primary-900/10"
+                      : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium truncate">{tmpl.name}</span>
+                    {isActive && (
+                      <span className="text-[10px] font-semibold tracking-wide text-primary-600 bg-primary-100 dark:bg-primary-900/30 px-1.5 py-0.5 rounded">
+                        {t("builder.active")}
+                      </span>
+                    )}
+                  </div>
+                  {tmpl.description && (
+                    <p className="text-xs text-gray-500 truncate mt-0.5">{tmpl.description}</p>
+                  )}
+                  {tmpl.updatedAt && (
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      {new Date(tmpl.updatedAt).toLocaleDateString("vi-VN")}
+                    </p>
+                  )}
+                </button>
+              );
+            })}
         </div>
       </div>
 
@@ -401,6 +439,13 @@ const Builder = () => {
                 onChange={(e) => setTemplateName(e.target.value)}
                 className="font-bold text-lg bg-transparent border-0 p-0 focus:ring-0 w-full sm:w-56 md:w-80"
                 placeholder="Template name"
+              />
+              <input
+                type="text"
+                value={templateDescription}
+                onChange={(e) => setTemplateDescription(e.target.value)}
+                className="text-xs text-gray-500 bg-transparent border-0 p-0 focus:ring-0 w-full sm:w-56 md:w-80"
+                placeholder="Short description to distinguish this template"
               />
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
