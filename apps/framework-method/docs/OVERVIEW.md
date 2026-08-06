@@ -10,13 +10,13 @@ Help users run multi-step thinking frameworks (Discovery → Deconstruction → 
 
 1. Morning Dashboard — streak, weekly completion, productivity insights, active frameworks.
 2. Overview — progress, focus for today, upcoming steps.
-3. Step Detail — accordion sections (Concepts, Reference, Examples) with reflection inputs.
+3. Step Detail — open block cards (Concepts, Reference, Examples) each with their own reflection input, hint, and completion status.
 4. Framework/Template Overlay — switch framework template and view phases.
 5. Actions — committed action list, midday reflection, quick notes.
 6. Evening Reflection — what went well, daily goals, tomorrow's focus, close the day.
-7. Calendar — month/week view and scheduled sessions.
-8. History — completed framework sessions.
-9. Web Builder — build templates with content, interaction, and logic blocks.
+7. Calendar — day/week/month/quarter views grouped into Framework, Actions, and Reflections.
+8. History — completed framework sessions with full per-block reflection detail.
+9. Web Builder — build templates with content, interaction, and logic blocks; define per-block reflection question/placeholder/hint.
 
 ## Tech Stack
 

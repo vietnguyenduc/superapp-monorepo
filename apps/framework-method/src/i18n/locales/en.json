@@ -44,6 +44,8 @@
     "yourReflection": "Your Reflection",
     "completeStep": "Complete Step",
     "completeFramework": "Complete Framework",
+    "finalizeStep": "Finalize Step & Proceed",
+    "finalizeFramework": "Finalize Framework",
     "allReflectionsCaptured": "All reflections captured",
     "reflectionsInProgress": "{{completed}} of {{total}} inputs completed",
     "hint": "Hint",
@@ -109,6 +111,9 @@
     "fieldLabel": "Field Label",
     "userPrompt": "User Prompt",
     "placeholder": "Placeholder",
+    "reflectionQuestion": "Reflection Question",
+    "reflectionPlaceholder": "Reflection Placeholder",
+    "reflectionHint": "Reflection Hint",
     "required": "Required"
   },
   "common": {

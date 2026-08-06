@@ -44,6 +44,8 @@
     "yourReflection": "Suy ngẫm của bạn",
     "completeStep": "Hoàn tất bước",
     "completeFramework": "Hoàn tất framework",
+    "finalizeStep": "Hoàn tất bước & Tiếp tục",
+    "finalizeFramework": "Hoàn tất framework",
     "allReflectionsCaptured": "Đã ghi lại đầy đủ suy ngẫm",
     "reflectionsInProgress": "Đã hoàn thành {{completed}}/{{total}} phần nhập liệu",
     "hint": "Gợi ý",
@@ -109,6 +111,9 @@
     "fieldLabel": "Nhãn trường",
     "userPrompt": "Câu hỏi người dùng",
     "placeholder": "Văn bản gợi ý",
+    "reflectionQuestion": "Câu hỏi suy ngẫm",
+    "reflectionPlaceholder": "Gợi ý nhập suy ngẫm",
+    "reflectionHint": "Gợi ý phản hồi",
     "required": "Bắt buộc"
   },
   "common": {

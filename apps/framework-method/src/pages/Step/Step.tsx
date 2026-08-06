@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FiStar, FiChevronDown, FiChevronUp, FiBook, FiSun, FiInfo, FiEdit3, FiList, FiType, FiHash, FiGitBranch, FiCheck } from "react-icons/fi";
+import { FiStar, FiBook, FiSun, FiInfo, FiEdit3, FiList, FiType, FiHash, FiGitBranch, FiCheck, FiArrowRight } from "react-icons/fi";
 import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useFrameworkProgress, getDailySteps } from "../../hooks/useFrameworkProgress";
@@ -18,9 +18,15 @@ const iconByType: Record<BlockType, typeof FiBook> = {
   routing: FiGitBranch,
 };
 
-const interactionTypes: BlockType[] = ["reflection", "short_text", "number_input", "rating", "multiple_choice"];
+const contentTypes: BlockType[] = ["knowledge", "example", "hint"];
+const inputTypes: BlockType[] = ["reflection", "short_text", "number_input", "rating", "multiple_choice"];
 
-const isInteractionBlock = (block: Block) => interactionTypes.includes(block.type);
+const hasInput = (block: Block) => {
+  if (block.type === "routing") return false;
+  if (inputTypes.includes(block.type)) return true;
+  if (contentTypes.includes(block.type) && (block.reflectionQuestion?.trim() || block.required)) return true;
+  return false;
+};
 
 const StepPage = () => {
   const { stepId } = useParams<{ stepId: string }>();
@@ -34,20 +40,16 @@ const StepPage = () => {
   const step: Step | undefined = dailySteps[stepNumber - 1];
 
   const [answers, setAnswers] = useState<Record<string, Record<string, string>>>({});
-  const [openBlocks, setOpenBlocks] = useState<Record<string, boolean>>({});
   const timers = useRef<Record<string, number | null>>({});
 
   useEffect(() => {
     if (!step) return;
     const initial: Record<string, Record<string, string>> = {};
-    const initialOpen: Record<string, boolean> = {};
     step.blocks?.forEach((block) => {
       const saved = progress.reflections[block.id] || {};
       initial[block.id] = { ...saved };
-      initialOpen[block.id] = isInteractionBlock(block);
     });
     setAnswers(initial);
-    setOpenBlocks(initialOpen);
   }, [step?.id]);
 
   useEffect(() => {
@@ -70,9 +72,10 @@ const StepPage = () => {
   }
 
   const flushReflection = (blockId: string, field: string, value: string) => {
-    if (timers.current[`${blockId}-${field}`]) {
-      window.clearTimeout(timers.current[`${blockId}-${field}`]!);
-      timers.current[`${blockId}-${field}`] = null;
+    const key = `${blockId}-${field}`;
+    if (timers.current[key]) {
+      window.clearTimeout(timers.current[key]!);
+      timers.current[key] = null;
     }
     saveReflection(blockId, field, value);
   };
@@ -82,10 +85,11 @@ const StepPage = () => {
       ...prev,
       [blockId]: { ...prev[blockId], [field]: value },
     }));
-    if (timers.current[`${blockId}-${field}`]) {
-      window.clearTimeout(timers.current[`${blockId}-${field}`]!);
+    const key = `${blockId}-${field}`;
+    if (timers.current[key]) {
+      window.clearTimeout(timers.current[key]!);
     }
-    timers.current[`${blockId}-${field}`] = window.setTimeout(() => {
+    timers.current[key] = window.setTimeout(() => {
       saveReflection(blockId, field, value);
     }, 500);
   };
@@ -105,8 +109,11 @@ const StepPage = () => {
   };
 
   const isCompleted = (block: Block) => {
-    if (!isInteractionBlock(block)) return true;
+    if (!hasInput(block)) return true;
     switch (block.type) {
+      case "knowledge":
+      case "example":
+      case "hint":
       case "reflection":
       case "short_text":
       case "number_input":
@@ -123,25 +130,20 @@ const StepPage = () => {
   };
 
   const allBlocks = step.blocks || [];
-  const interactionBlocks = allBlocks.filter(isInteractionBlock);
-  const completedCount = interactionBlocks.filter(isCompleted).length;
-  const totalInputs = interactionBlocks.length;
+  const inputBlocks = allBlocks.filter(hasInput);
+  const completedCount = inputBlocks.filter(isCompleted).length;
+  const totalInputs = inputBlocks.length;
   const allRequiredDone = allBlocks.every((b) => (b.required ? isCompleted(b) : true));
-
-  const toggleBlock = (id: string) => {
-    setOpenBlocks((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
 
   const handleFinalize = () => {
     allBlocks.forEach((b) => {
-      if (isInteractionBlock(b)) {
-        if (b.type === "multiple_choice") {
-          flushReflection(b.id, "options", JSON.stringify(getArrayField(b, "options")));
-        } else if (b.type === "rating") {
-          flushReflection(b.id, "rating", getField(b, "rating"));
-        } else {
-          flushReflection(b.id, "reflection", getField(b, "reflection"));
-        }
+      if (!hasInput(b)) return;
+      if (b.type === "multiple_choice") {
+        flushReflection(b.id, "options", JSON.stringify(getArrayField(b, "options")));
+      } else if (b.type === "rating") {
+        flushReflection(b.id, "rating", getField(b, "rating"));
+      } else {
+        flushReflection(b.id, "reflection", getField(b, "reflection"));
       }
     });
     completeStep(stepNumber);
@@ -172,15 +174,32 @@ const StepPage = () => {
     return <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">{block.prompt}</p>;
   };
 
+  const getQuestion = (block: Block) => {
+    if (contentTypes.includes(block.type)) {
+      return block.reflectionQuestion?.trim() || t("step.yourReflection");
+    }
+    return block.prompt?.trim() || t("step.yourReflection");
+  };
+
+  const getInputPlaceholder = (block: Block) => {
+    if (contentTypes.includes(block.type)) {
+      return block.reflectionPlaceholder?.trim() || block.placeholder?.trim() || t("step.answerPlaceholder");
+    }
+    return block.placeholder?.trim() || t("step.answerPlaceholder");
+  };
+
   const renderInput = (block: Block) => {
     switch (block.type) {
+      case "knowledge":
+      case "example":
+      case "hint":
       case "reflection":
         return (
           <textarea
             value={getField(block, "reflection")}
             onChange={(e) => setField(block.id, "reflection", e.target.value)}
-            placeholder={block.placeholder || t("step.answerPlaceholder")}
-            className="input h-32 resize-none bg-blue-50/40 dark:bg-primary-900/10 border-blue-100 dark:border-primary-900/30 w-full"
+            placeholder={getInputPlaceholder(block)}
+            className="input h-28 resize-none w-full bg-blue-50/40 dark:bg-primary-900/10 border-blue-100 dark:border-primary-900/30"
           />
         );
       case "short_text":
@@ -189,7 +208,7 @@ const StepPage = () => {
             type="text"
             value={getField(block, "reflection")}
             onChange={(e) => setField(block.id, "reflection", e.target.value)}
-            placeholder={block.placeholder || t("step.answerPlaceholder")}
+            placeholder={getInputPlaceholder(block)}
             className="input w-full bg-blue-50/40 dark:bg-primary-900/10 border-blue-100 dark:border-primary-900/30"
           />
         );
@@ -199,7 +218,7 @@ const StepPage = () => {
             type="number"
             value={getField(block, "reflection")}
             onChange={(e) => setField(block.id, "reflection", e.target.value)}
-            placeholder={block.placeholder || t("step.answerPlaceholder")}
+            placeholder={getInputPlaceholder(block)}
             className="input w-full bg-blue-50/40 dark:bg-primary-900/10 border-blue-100 dark:border-primary-900/30"
           />
         );
@@ -247,7 +266,7 @@ const StepPage = () => {
   };
 
   return (
-    <div className="space-y-5 animate-fade-in max-w-3xl mx-auto">
+    <div className="space-y-5 animate-fade-in max-w-3xl mx-auto pb-8">
       <div className="text-center">
         {step.phaseName && (
           <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 text-xs font-semibold uppercase tracking-wide">
@@ -278,45 +297,38 @@ const StepPage = () => {
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {allBlocks.map((block) => {
           const Icon = iconByType[block.type] || FiBook;
-          const open = openBlocks[block.id] ?? isInteractionBlock(block);
           const filled = isCompleted(block);
-          const showCheck = isInteractionBlock(block) && filled;
+          const showInput = hasInput(block);
+          const question = getQuestion(block);
+          const hint = block.reflectionHint?.trim();
           return (
-            <Card key={block.id} className="overflow-hidden p-0">
-              <button
-                onClick={() => toggleBlock(block.id)}
-                className="w-full flex items-center gap-3 p-5 text-left"
-              >
+            <Card key={block.id} className="p-5 space-y-4">
+              <div className="flex items-start gap-3">
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                    showCheck ? "bg-primary-600 text-white" : "bg-blue-50 dark:bg-primary-900/20 text-primary-600"
+                    filled ? "bg-primary-600 text-white" : "bg-blue-50 dark:bg-primary-900/20 text-primary-600"
                   }`}
                 >
-                  {showCheck ? <FiCheck className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
+                  {filled ? <FiCheck className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">{block.label}</p>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">{block.type}</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100 text-lg">{block.label}</p>
                 </div>
-                {open ? <FiChevronUp className="w-5 h-5 text-gray-400" /> : <FiChevronDown className="w-5 h-5 text-gray-400" />}
-              </button>
-              {open && (
-                <div className="px-5 pb-5 space-y-4 border-t border-gray-100 dark:border-gray-800 pt-4">
-                  {block.prompt && renderContent(block)}
-                  {isInteractionBlock(block) && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">
-                        {t("step.yourReflection")}
-                      </p>
-                      {renderInput(block)}
-                      {block.required && !filled && (
-                        <p className="text-xs text-red-500">{t("step.required")}</p>
-                      )}
-                    </div>
-                  )}
+              </div>
+
+              {contentTypes.includes(block.type) && block.prompt?.trim() && (
+                <div className="pl-13">{renderContent(block)}</div>
+              )}
+
+              {showInput && (
+                <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{question}</p>
+                  {renderInput(block)}
+                  {hint && <p className="text-xs text-gray-400 italic">{hint}</p>}
+                  {block.required && !filled && <p className="text-xs text-red-500">{t("step.required")}</p>}
                 </div>
               )}
             </Card>
@@ -334,26 +346,19 @@ const StepPage = () => {
         </div>
         <div className="flex-1">
           <p className="text-sm font-bold">
-            {allRequiredDone
+            {completedCount === totalInputs && totalInputs > 0
               ? t("step.allReflectionsCaptured")
               : t("step.reflectionsInProgress", { completed: completedCount, total: totalInputs })}
           </p>
           <p className="text-xs text-gray-500">
-            {allRequiredDone
-              ? t("common.ready")
-              : t("step.answerPlaceholder")}
+            {allRequiredDone ? t("common.ready") : t("step.answerPlaceholder")}
           </p>
         </div>
       </Card>
 
-      <Button
-        variant="dark"
-        size="lg"
-        className="w-full"
-        disabled={!allRequiredDone}
-        onClick={handleFinalize}
-      >
-        {stepNumber === totalSteps ? t("step.completeFramework") : t("step.completeStep")}
+      <Button variant="dark" size="lg" className="w-full" disabled={!allRequiredDone} onClick={handleFinalize}>
+        {stepNumber === totalSteps ? t("step.finalizeFramework") : t("step.finalizeStep")}
+        <FiArrowRight className="ml-2 w-5 h-5" />
       </Button>
     </div>
   );

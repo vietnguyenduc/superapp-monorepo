@@ -26,6 +26,9 @@ export interface Block {
   label: string;
   prompt?: string;
   placeholder?: string;
+  reflectionQuestion?: string;
+  reflectionPlaceholder?: string;
+  reflectionHint?: string;
   required?: boolean;
   options?: string[];
   order_index: number;

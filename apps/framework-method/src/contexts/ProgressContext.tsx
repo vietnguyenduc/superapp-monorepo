@@ -10,6 +10,9 @@ const makeBlock = (overrides: Partial<Block> & Pick<Block, "type" | "label">): B
   label: overrides.label,
   prompt: "",
   placeholder: "",
+  reflectionQuestion: "",
+  reflectionPlaceholder: "",
+  reflectionHint: "",
   required: false,
   order_index: 0,
   ...overrides,
@@ -40,6 +43,10 @@ export const defaultSteps: Step[] = [
         label: "Concepts",
         prompt:
           "Analyzing a situation effectively requires separating symptoms from root causes. Key theories applied here include Systems Thinking, where the problem is viewed as part of an interconnected web rather than in isolation, and Stakeholder Theory, ensuring all voices impacted by potential changes are accounted for. The goal is to build a comprehensive 'Current State Assessment' document.",
+        reflectionQuestion: "How does this concept apply to your current problem?",
+        reflectionPlaceholder: "Type your thoughts here...",
+        reflectionHint: "Hint: How does this concept apply to your current problem?",
+        required: true,
         order_index: 0,
       }),
       makeBlock({
@@ -47,6 +54,10 @@ export const defaultSteps: Step[] = [
         label: "Reference",
         prompt:
           "- McKinsey 7S Framework Guidelines\n- SWOT Analysis Templates & Best Practices\n- Root Cause Analysis (5 Whys Technique) Overview\n- Internal Documentation: Previous Q3 Project Post-Mortems",
+        reflectionQuestion: "Which references are most relevant?",
+        reflectionPlaceholder: "Identify which framework best fits your current data set...",
+        reflectionHint: "Hint: Identify which framework best fits your current data set.",
+        required: true,
         order_index: 1,
       }),
       makeBlock({
@@ -54,15 +65,11 @@ export const defaultSteps: Step[] = [
         label: "Examples",
         prompt:
           "Case Study Alpha: Customer support tickets spiked by 40%. Initial assumption was a flawed product release. Step 1 analysis revealed the root cause was actually a recent update to the help documentation UI making it unusable, not the product itself.",
-        order_index: 2,
-      }),
-      makeBlock({
-        type: "reflection",
-        label: "Your Reflection",
-        prompt: "What is the problem you are trying to solve?",
-        placeholder: "Type your thoughts here...",
+        reflectionQuestion: "Note any similar patterns you've observed...",
+        reflectionPlaceholder: "Can you recall a time when a symptom masked the true root cause?",
+        reflectionHint: "Hint: Can you recall a time when a symptom masked the true root cause?",
         required: true,
-        order_index: 3,
+        order_index: 2,
       }),
     ],
   }),
@@ -79,6 +86,10 @@ export const defaultSteps: Step[] = [
         label: "First Principles",
         prompt:
           "Instead of reasoning by analogy, strip a problem down to the fundamental truths. For example, instead of saying 'batteries cost $600 per kWh,' ask what raw materials are needed and what the spot market prices are.",
+        reflectionQuestion: "What assumptions are you challenging?",
+        reflectionPlaceholder: "List assumptions you are re-examining...",
+        reflectionHint: "Hint: Which assumptions are baked into the current problem?",
+        required: true,
         order_index: 0,
       }),
       makeBlock({
@@ -122,6 +133,10 @@ export const defaultSteps: Step[] = [
         label: "Idea Prompts",
         prompt:
           "What if cost was zero?\nWhat if you had 10x the resources?\nWhat if the constraint was flipped into an advantage?",
+        reflectionQuestion: "What ideas emerge from flipping the constraints?",
+        reflectionPlaceholder: "Describe one or more new approaches...",
+        reflectionHint: "Hint: Reassemble truths to form novel solutions.",
+        required: true,
         order_index: 0,
       }),
       makeBlock({

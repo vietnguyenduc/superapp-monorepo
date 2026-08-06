@@ -32,6 +32,9 @@ const makeBlock = (type: BlockType, label?: string): Block => ({
   label: label || type,
   prompt: "",
   placeholder: "",
+  reflectionQuestion: "",
+  reflectionPlaceholder: "",
+  reflectionHint: "",
   required: false,
   order_index: 0,
 });
@@ -447,11 +450,32 @@ const Builder = () => {
                               onChange={(e) => updateBlock(step.id, block.id, { prompt: e.target.value })}
                             />
                             {block.type !== "multiple_choice" && block.type !== "rating" && (
-                              <Input
-                                label={t("builder.placeholder")}
-                                value={block.placeholder || ""}
-                                onChange={(e) => updateBlock(step.id, block.id, { placeholder: e.target.value })}
-                              />
+                              <>
+                                <Input
+                                  label={t("builder.placeholder")}
+                                  value={block.placeholder || ""}
+                                  onChange={(e) => updateBlock(step.id, block.id, { placeholder: e.target.value })}
+                                />
+                                {["knowledge", "example", "hint"].includes(block.type) && (
+                                  <>
+                                    <Input
+                                      label={t("builder.reflectionQuestion")}
+                                      value={block.reflectionQuestion || ""}
+                                      onChange={(e) => updateBlock(step.id, block.id, { reflectionQuestion: e.target.value })}
+                                    />
+                                    <Input
+                                      label={t("builder.reflectionPlaceholder")}
+                                      value={block.reflectionPlaceholder || ""}
+                                      onChange={(e) => updateBlock(step.id, block.id, { reflectionPlaceholder: e.target.value })}
+                                    />
+                                    <Input
+                                      label={t("builder.reflectionHint")}
+                                      value={block.reflectionHint || ""}
+                                      onChange={(e) => updateBlock(step.id, block.id, { reflectionHint: e.target.value })}
+                                    />
+                                  </>
+                                )}
+                              </>
                             )}
                             {block.type === "multiple_choice" && (
                               <div className="space-y-2">
