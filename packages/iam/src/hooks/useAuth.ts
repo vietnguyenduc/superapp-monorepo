@@ -264,7 +264,8 @@ export const useAuth = () => {
           if (!isMounted) return;
           let profile = await fetchUserProfile(session.user.id);
 
-          // If no profile exists (e.g., after email confirmation), create one
+          // If no profile exists (e.g., after email confirmation), create one.
+          // Use INSERT (not UPSERT) so an existing profile's role/company_id is never overwritten.
           if (!profile) {
             const meta = session.user.user_metadata as { full_name?: string };
             const profilePayload: TablesInsert<"users"> = {
@@ -273,11 +274,11 @@ export const useAuth = () => {
               full_name: meta?.full_name || null,
               role: "staff",
             };
-            const { error: upsertError } = await supabase
+            const { error: insertError } = await supabase
               .from("users")
-              .upsert(profilePayload);
-            if (upsertError) {
-              console.error("Error creating user profile on sign-in:", upsertError);
+              .insert(profilePayload);
+            if (insertError && (insertError as any).code !== "23505") {
+              console.error("Error creating user profile on sign-in:", insertError);
             }
             profile = await fetchUserProfile(session.user.id);
           }
@@ -429,9 +430,9 @@ export const useAuth = () => {
           role: "staff",
         };
 
-        const { error: profileError } = await supabase.from("users").upsert(profilePayload);
+        const { error: profileError } = await supabase.from("users").insert(profilePayload);
 
-        if (profileError) {
+        if (profileError && (profileError as any).code !== "23505") {
           console.error("Error creating profile during sign up:", profileError);
           setState((prev) => ({ ...prev, loading: false, error: profileError.message }));
           return { error: profileError.message };

@@ -13,8 +13,10 @@
 - **Dashboard tenant scoping** — `dashboardService.ts` now requires an exact `company_id` match when a company is selected, preventing cross-tenant aggregates for `admin_master`.
 - **Dashboard cash-flow chart negative rect** — replaced the broken stacked-base waterfall with signed `inflow`/`outflow` bars plus a `runningTotal` balance line (`stackOffset="sign"`), so periods with net-negative cash flow no longer throw SVG `negative <rect> height` errors.
 - **Import tab switching** — `TransactionImport.tsx` only warns about unsaved single-entry data when the row differs from the default empty row, so the `Nhập hàng loạt` tab is no longer blocked by the pre-filled default date.
-- **Company ID fallback for admin** — `useCompanyId.ts` falls back to `localStorage.selectedCompanyId` for `admin_master`, reducing the chance that `Dashboard.tsx` loads cross-tenant data before `CompanyContext` finishes restoring the selection.
+- **Company ID fallback for admin** — `useCompanyId.ts` falls back to `localStorage.selectedCompanyId` and the user's assigned `company_id` for `admin_master`/`admin`, reducing the chance that `Dashboard.tsx` loads cross-tenant data or stays in loading before `CompanyContext` finishes restoring the selection.
 - **Dashboard fetch guard** — `Dashboard.tsx` skips `getDashboardMetrics` until `companyId` is resolved.
+- **Auth profile overwrite fix** — `@superapp/iam` `useAuth.ts` now uses `insert` instead of `upsert` when creating a `public.users` profile on sign-in / sign-up, and ignores `23505` unique violations. Previously `upsert({ role: "staff" })` silently overwrote an existing `admin_master`/`admin_company` role and `company_id` on every login.
+- **Company badge default for admin** — `CompanyBadge.tsx` now prefers `user.company_id` as the default company for `admin_master`/`admin` before falling back to `companies[0]`, preventing an empty/wrong-tenant dashboard on first load.
 
 ## 2026-08-05
 
