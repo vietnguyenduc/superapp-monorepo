@@ -41,6 +41,7 @@ A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management
 - `src/services/trialMockStore.ts` — trial-mode localStorage store.
 - `src/services/supabase.ts` — `apiClient`.
 - `src/utils/formatting.ts` — `formatCurrency`, `formatDate`, `getTransactionMathFactor`.
+- `src/pages/Transactions/TransactionList.tsx` — transaction list with group-by `Ngày` / `Tuần` / `Tháng` / `Văn phòng` / `Loại giao dịch` / `Khách hàng`. Group summary uses `getCustomerBalanceDelta` to separate `Tổng phát sinh tăng`, `Tổng phát sinh giảm`, `Tổng điều chỉnh`, and `Net`.
 - `src/pages/Settings/Settings.tsx` — provider shell + `SettingsContent`; per-tab JSX in `pages/Settings/components/tabs/*.tsx`; state in `useSettingsState.ts`; shared context in `SettingsContext.tsx`; `colorOptions`/`getColorClass` in `Settings/utils.ts`.
 - `src/types/index.ts` and `src/types/database.types.ts` — TS types.
 

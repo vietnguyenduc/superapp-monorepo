@@ -96,6 +96,13 @@ All form/entity validators in `src/services/businessLogic/validation.ts` return 
 4. Includes `transaction_code` and the original `customer_id` so edits do not lose tenant or document context.
 5. `transactionService.updateTransaction()` normalizes the payload, strips immutable/RLS fields, and recalculates balances.
 
+### Transaction list grouping (`TransactionList.tsx`)
+
+A group-by selector produces a `Tổng hợp theo nhóm` table above the transaction list:
+- Group keys: `day` (ISO date), `week` (ISO week), `month` (year-month), plus existing `branch`, `transaction_type`, `customer`.
+- Group summary per key: count, `Tổng phát sinh tăng` (sum of `abs(delta)` for non-adjustment deltas `< 0`), `Tổng phát sinh giảm` (sum of `abs(delta)` for non-adjustment deltas `> 0`), `Tổng điều chỉnh` (signed sum of adjustment deltas), and `Net` (sum of all signed deltas).
+- Day/week/month groups are sorted chronologically by key; other groups are sorted by label.
+
 ### Sign-aware amount handling
 
 - `balanceMath.ts` is the single source of truth: `getCustomerBalanceDelta` and `getBankAccountBalanceDelta` multiply the type's default magnitude by `Math.sign(amount)`.
