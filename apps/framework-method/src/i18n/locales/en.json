@@ -4,6 +4,7 @@
     "tagline": "Think from first principles"
   },
   "nav": {
+    "dashboard": "Dashboard",
     "overview": "Overview",
     "steps": "Steps",
     "actions": "Actions",
@@ -22,7 +23,8 @@
     "productivityTrend": "Productivity Trend (Last 7 Days)",
     "beginSession": "Begin Session",
     "frameworks": "Frameworks",
-    "mostUsed": "Most used this week"
+    "mostUsed": "Most used this week",
+    "today": "Today"
   },
   "overview": {
     "activeFramework": "Active Framework",
@@ -45,7 +47,8 @@
     "taskPriority": "Priority",
     "noTasks": "No tasks yet. Add one or run a framework to generate tasks.",
     "editGroup": "Rename group",
-    "groupSummary": "{{count}} tasks"
+    "groupSummary": "{{count}} tasks",
+    "createAndRun": "Create and run framework"
   },
   "step": {
     "backToFramework": "Back to Framework",
@@ -56,7 +59,8 @@
     "completeStep": "Complete Step",
     "completeFramework": "Complete Framework",
     "finalizeStep": "Finalize Step & Proceed",
-    "finalizeFramework": "Finalize Framework",
+    "finalizeFramework": "Finish task",
+    "taskCompleted": "Task completed",
     "referencedAnswer": "Referenced answer",
     "referenceMissing": "[answer not yet provided]",
     "allReflectionsCaptured": "All reflections captured",
@@ -67,6 +71,10 @@
     "hint": "Hint",
     "required": "Required",
     "answerPlaceholder": "Type your reflection here..."
+  },
+  "steps": {
+    "frameworkSteps": "Framework steps for today",
+    "sections": "sections"
   },
   "actions": {
     "committedActions": "Committed Actions",

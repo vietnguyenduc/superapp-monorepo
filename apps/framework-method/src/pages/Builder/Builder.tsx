@@ -17,7 +17,6 @@ import {
   FiArrowLeft,
   FiChevronUp,
   FiChevronDown,
-  FiPlusCircle,
 } from "react-icons/fi";
 import { Card, Button, Input } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
@@ -80,12 +79,14 @@ const Builder = () => {
   const [saveStatus, setSaveStatus] = useState("");
   const [mixIds, setMixIds] = useState<string[]>(progress.dailyTemplateIds || []);
 
+  // Reset draft when the active template changes (only depends on id to avoid overwriting during auto-save)
   useEffect(() => {
     setTemplateName(activeTemplate?.name || "New Framework");
     setTemplateDescription(activeTemplate?.description || "");
     setSteps(activeTemplate?.steps ? activeTemplate.steps : defaultSteps);
     setSelectedStepId(null);
     setSaveStatus("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTemplate?.id]);
 
   useEffect(() => {
@@ -93,11 +94,11 @@ const Builder = () => {
     if (editParam === "active" && progress.activeTemplateId) {
       setActiveTemplate(progress.activeTemplateId);
     }
-  }, [searchParams, progress.activeTemplateId]);
+  }, [searchParams, progress.activeTemplateId, setActiveTemplate]);
 
   useEffect(() => {
     setMixIds(progress.dailyTemplateIds || []);
-  }, [progress.dailyTemplateIds.join(",")]);
+  }, [progress.dailyTemplateIds]);
 
   // Auto-save draft back to active template (debounced)
   useEffect(() => {

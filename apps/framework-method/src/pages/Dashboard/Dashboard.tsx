@@ -1,231 +1,355 @@
-import { Link, useNavigate } from "react-router-dom";
-import { useMemo } from "react";
-import { FiPlay, FiTrendingUp, FiAnchor } from "react-icons/fi";
-import {
-  startOfDay,
-  parseISO,
-  subDays,
-  eachDayOfInterval,
-  isSameDay,
-  format,
-} from "date-fns";
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-} from "recharts";
+import { useState, useMemo, KeyboardEvent } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { FiEdit3, FiCheck, FiPlus, FiTrash2, FiPlay } from "react-icons/fi";
 import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
-import { useFrameworkProgress, getDailySteps } from "../../hooks/useFrameworkProgress";
+import { useFrameworkProgress, getDailySteps, type Task, type TaskPriority } from "../../hooks/useFrameworkProgress";
+
+const priorityClass: Record<TaskPriority, string> = {
+  low: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
+  normal: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300",
+  high: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300",
+};
+
+const priorityOptions: TaskPriority[] = ["low", "normal", "high"];
 
 const Dashboard = () => {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { progress } = useFrameworkProgress();
+  const { progress, frameworkName, addTask, toggleTask, updateTask, deleteTask, renameTaskGroup } = useFrameworkProgress();
 
-  const today = startOfDay(new Date());
-  const todayKey = format(today, "yyyy-MM-dd");
+  const today = new Date().toISOString().split("T")[0];
+  const tasks = useMemo(() => (progress.tasks || []).filter((task) => task.date === today), [progress.tasks, today]);
   const dailySteps = useMemo(() => getDailySteps(progress), [progress]);
-  const totalSteps = dailySteps.length || 5;
-  const activeProgress = Math.round((progress.completedSteps.length / totalSteps) * 100);
 
-  const allTasks = progress.tasks || [];
+  const [newTitle, setNewTitle] = useState("");
+  const [newGroup, setNewGroup] = useState(frameworkName);
+  const [newCategory, setNewCategory] = useState("");
+  const [newSubCategory, setNewSubCategory] = useState("");
+  const [newPriority, setNewPriority] = useState<TaskPriority>("normal");
+  const [editingGroup, setEditingGroup] = useState<string | null>(null);
+  const [groupName, setGroupName] = useState("");
+  const [editingTask, setEditingTask] = useState<string | null>(null);
+  const [editTaskTitle, setEditTaskTitle] = useState("");
 
-  const completedTaskDates = useMemo(() => {
-    return allTasks
-      .filter((t) => t.status === "done")
-      .map((t) => startOfDay(parseISO(t.date)))
-      .filter((d) => !isNaN(d.getTime()));
-  }, [allTasks]);
+  const groupedTasks = useMemo(() => {
+    const map = new Map<string, Task[]>();
+    tasks.forEach((task) => {
+      const group = task.group || frameworkName;
+      if (!map.has(group)) map.set(group, []);
+      map.get(group)!.push(task);
+    });
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [tasks, frameworkName]);
 
-  const streak = useMemo(() => {
-    if (!completedTaskDates.length) return 0;
-    const sorted = [...completedTaskDates].sort((a, b) => b.getTime() - a.getTime());
-    let last = sorted[0];
-    let count = 0;
-    while (completedTaskDates.some((d) => isSameDay(d, last))) {
-      count++;
-      last = subDays(last, 1);
+  const stats = useMemo(() => {
+    const total = tasks.length;
+    const done = tasks.filter((t) => t.status === "done").length;
+    const inProgress = tasks.filter((t) => t.status === "in_progress").length;
+    const categories = new Set(tasks.map((t) => t.category).filter(Boolean));
+    const subCategories = new Set(tasks.map((t) => t.subCategory).filter(Boolean));
+    return { total, done, inProgress, groups: groupedTasks.length, categories: categories.size, subCategories: subCategories.size };
+  }, [tasks, groupedTasks.length]);
+
+  const taskProgress = (task: Task) => {
+    const run = progress.taskRuns[task.id];
+    if (!run) return 0;
+    const total = dailySteps.length || 1;
+    const done = run.completedSteps.length;
+    return Math.round((done / total) * 100);
+  };
+
+  const handleCreateTask = () => {
+    const title = newTitle.trim();
+    if (!title) return;
+    const task = addTask({
+      title,
+      group: newGroup.trim() || frameworkName,
+      category: newCategory.trim() || undefined,
+      subCategory: newSubCategory.trim() || undefined,
+      status: "in_progress",
+      priority: newPriority,
+      date: today,
+    });
+    setNewTitle("");
+    setNewCategory("");
+    setNewSubCategory("");
+    setNewPriority("normal");
+    navigate(`/task/${task.id}`);
+  };
+
+  const startRenameGroup = (group: string) => {
+    setEditingGroup(group);
+    setGroupName(group);
+  };
+
+  const saveRenameGroup = (oldGroup: string) => {
+    const next = groupName.trim();
+    if (next && next !== oldGroup) {
+      renameTaskGroup(oldGroup, next, today);
     }
-    return count;
-  }, [completedTaskDates]);
+    setEditingGroup(null);
+  };
 
-  const weekDays = useMemo(() => {
-    const start = subDays(today, 6);
-    const days = eachDayOfInterval({ start, end: today });
-    return days.map((d) => {
-      const hasDoneTask = completedTaskDates.some((sd) => isSameDay(sd, d));
-      return { label: format(d, "EEEEE"), done: hasDoneTask, today: isSameDay(d, today) };
-    });
-  }, [completedTaskDates, today]);
+  const startEditTask = (task: Task) => {
+    setEditingTask(task.id);
+    setEditTaskTitle(task.title);
+  };
 
-  const trendData = useMemo(() => {
-    const start = subDays(today, 6);
-    const days = eachDayOfInterval({ start, end: today });
-    return days.map((d) => {
-      const count = allTasks.filter((t) => t.status === "done" && isSameDay(startOfDay(parseISO(t.date)), d)).length;
-      return { day: format(d, "EEEEE"), value: count };
-    });
-  }, [allTasks, today]);
+  const saveEditTask = (taskId: string) => {
+    const title = editTaskTitle.trim();
+    if (title) {
+      updateTask(taskId, { title });
+    }
+    setEditingTask(null);
+  };
 
-  const todayStats = useMemo(() => {
-    const tasks = allTasks.filter((t) => startOfDay(parseISO(t.date)).getTime() === today.getTime());
-    return {
-      total: tasks.length,
-      done: tasks.filter((t) => t.status === "done").length,
-      inProgress: tasks.filter((t) => t.status === "in_progress").length,
-      open: tasks.filter((t) => t.status === "todo").length,
-    };
-  }, [allTasks, today]);
-
-  const defaultFrameworks = [
-    { id: "first-principles", name: "The First Principles Method", progress: activeProgress, tag: t("overview.activeFramework") },
-    { id: "deep-work", name: "Deep Work", progress: 0, tag: "" },
-    { id: "time-blocking", name: "Time Blocking", progress: 0, tag: "" },
-  ];
-
-  const frameworks = progress.templates.length
-    ? progress.templates.map((t) => ({
-        id: t.id,
-        name: t.name,
-        progress: t.id === progress.activeTemplateId ? activeProgress : 0,
-        tag: t.id === progress.activeTemplateId ? t("overview.activeFramework") : "",
-      }))
-    : defaultFrameworks;
+  const handleKey = (e: KeyboardEvent<HTMLInputElement>, action: () => void) => {
+    if (e.key === "Enter") action();
+    if (e.key === "Escape") {
+      setEditingGroup(null);
+      setEditingTask(null);
+    }
+  };
 
   return (
     <div className="space-y-5 animate-fade-in">
-      <div className="text-left">
-        <h1 className="text-2xl font-bold">{t("dashboard.goodMorning")}</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm italic border-l-2 border-gray-300 dark:border-gray-700 pl-3">
-          &quot;Logic is the beginning of wisdom, not the end.&quot;
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+            {t("dashboard.today")}
+          </p>
+          <h1 className="text-3xl sm:text-4xl font-bold mt-1 leading-tight">{frameworkName}</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {t("overview.taskSummary", { total: stats.total, done: stats.done, inProgress: stats.inProgress })}
+            {stats.total > 0 && (
+              <span className="ml-2 text-xs text-gray-400">
+                {" · "}
+                {[
+                  `${stats.groups} ${t("overview.taskGroup")}`,
+                  `${stats.categories} ${t("overview.taskCategory")}`,
+                  `${stats.subCategories} ${t("overview.taskSubCategory")}`,
+                ].join(" · ")}
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/builder?edit=active"
+            className="w-10 h-10 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:border-primary-500 hover:text-primary-600"
+            aria-label={t("builder.editThisFramework")}
+            title={t("builder.editThisFramework")}
+          >
+            <FiEdit3 className="w-5 h-5" />
+          </Link>
+          <button
+            onClick={() => navigate("/steps")}
+            className="w-10 h-10 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300"
+            aria-label={t("nav.steps")}
+            title={t("nav.steps")}
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <Card className="p-5">
-        <div className="flex items-center gap-4 mb-5">
-          <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-primary-900/20 text-primary-600 flex items-center justify-center">
-            <FiAnchor className="w-7 h-7" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold">{streak}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t("dashboard.streak", { count: streak })}</p>
-          </div>
+        <h2 className="font-semibold text-lg mb-4">{t("overview.addTask") || "Tạo việc mới"}</h2>
+        <div className="flex flex-col sm:flex-row gap-2 mb-3">
+          <input
+            type="text"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            onKeyDown={(e) => handleKey(e, handleCreateTask)}
+            placeholder={t("overview.taskTitle")}
+            className="flex-1 input"
+          />
+          <input
+            type="text"
+            value={newGroup}
+            onChange={(e) => setNewGroup(e.target.value)}
+            placeholder={t("overview.taskGroup")}
+            className="sm:w-40 input"
+          />
+          <input
+            type="text"
+            value={newCategory}
+            onChange={(e) => setNewCategory(e.target.value)}
+            placeholder={t("overview.taskCategory")}
+            className="sm:w-36 input"
+          />
+          <input
+            type="text"
+            value={newSubCategory}
+            onChange={(e) => setNewSubCategory(e.target.value)}
+            placeholder={t("overview.taskSubCategory")}
+            className="sm:w-36 input"
+          />
+          <select
+            value={newPriority}
+            onChange={(e) => setNewPriority(e.target.value as TaskPriority)}
+            className="sm:w-32 input"
+          >
+            {priorityOptions.map((p) => (
+              <option key={p} value={p}>
+                {p === "low" ? "Thấp" : p === "normal" ? "Bình thường" : "Cao"}
+              </option>
+            ))}
+          </select>
         </div>
-        <div className="flex justify-between">
-          {weekDays.map((day, idx) => (
-            <div
-              key={idx}
-              className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold ${
-                day.today
-                  ? "bg-white dark:bg-gray-950 text-primary-600 border-2 border-primary-600"
-                  : day.done
-                  ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-400"
-              }`}
-            >
-              {day.done && !day.today ? (
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                  <path d="M20 6L9 17l-5-5" />
-                </svg>
-              ) : (
-                day.label
-              )}
-            </div>
-          ))}
-        </div>
+        <Button variant="dark" size="md" onClick={handleCreateTask} disabled={!newTitle.trim()} className="w-full sm:w-auto">
+          <FiPlus className="w-4 h-4 mr-2" /> {t("overview.createAndRun") || "Tạo và chạy framework"}
+        </Button>
       </Card>
 
       <Card className="p-5">
         <h2 className="font-semibold text-lg mb-4">{t("overview.todayTasks")}</h2>
-        <div className="grid grid-cols-2 gap-3 mb-2">
-          <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20">
-            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{todayStats.total}</p>
-            <p className="text-xs text-gray-500">{t("overview.taskSummary", { total: todayStats.total, done: todayStats.done, inProgress: todayStats.inProgress }).split("·")[0]}</p>
-          </div>
-          <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/20">
-            <p className="text-2xl font-bold text-green-700 dark:text-green-300">{todayStats.done}</p>
-            <p className="text-xs text-gray-500">{t("common.done")}</p>
-          </div>
-        </div>
-      </Card>
 
-      <Card className="p-5">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-semibold text-lg">{t("dashboard.insights")}</h2>
-          <FiTrendingUp className="w-5 h-5 text-gray-400" />
-        </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Completed tasks (Last 7 Days)</p>
-        <div className="h-40">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={trendData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#2563eb" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#9ca3af" }} />
-              <YAxis hide />
-              <Tooltip
-                contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
-              />
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke="#2563eb"
-                strokeWidth={2}
-                fillOpacity={1}
-                fill="url(#colorValue)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
-
-      <Card className="p-5">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-semibold text-lg">{t("dashboard.frameworks")}</h2>
-          <FiAnchor className="w-5 h-5 text-gray-400" />
-        </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Most used this week</p>
-        <div className="space-y-4">
-          {frameworks.map((fw) => (
-            <Link
-              key={fw.id}
-              to={`/overview?framework=${fw.id}`}
-              className="flex items-center gap-3 group"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-primary-900/20 text-primary-600 flex items-center justify-center font-bold text-lg">
-                {fw.name[0]}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{fw.name}</p>
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-[10px] text-gray-400 uppercase tracking-wide">{fw.tag || "—"}</span>
-                  <span className="text-[10px] text-gray-400">{allTasks.filter((t) => t.group === fw.name && startOfDay(parseISO(t.date)).getTime() === today.getTime()).length} tasks today</span>
+        {tasks.length === 0 ? (
+          <p className="text-sm text-gray-500 py-6 text-center">{t("overview.noTasks")}</p>
+        ) : (
+          <div className="space-y-6">
+            {groupedTasks.map(([group, groupTasks]) => (
+              <div key={group}>
+                <div className="flex items-center justify-between mb-2">
+                  {editingGroup === group ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <input
+                        type="text"
+                        value={groupName}
+                        onChange={(e) => setGroupName(e.target.value)}
+                        onKeyDown={(e) => handleKey(e, () => saveRenameGroup(group))}
+                        onBlur={() => saveRenameGroup(group)}
+                        autoFocus
+                        className="font-semibold text-sm bg-transparent border-b border-primary-500 focus:outline-none"
+                      />
+                      <button onClick={() => saveRenameGroup(group)} className="text-xs text-primary-600">
+                        {t("common.save")}
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">{group}</h3>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400">{t("overview.groupSummary", { count: groupTasks.length })}</span>
+                        <button
+                          onClick={() => startRenameGroup(group)}
+                          className="text-gray-400 hover:text-primary-600"
+                          aria-label={t("overview.editGroup")}
+                          title={t("overview.editGroup")}
+                        >
+                          <FiEdit3 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
-                {fw.progress > 0 && (
-                  <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full mt-1.5">
-                    <div className="h-1.5 bg-primary-500 rounded-full" style={{ width: `${fw.progress}%` }} />
-                  </div>
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
-      </Card>
 
-      <Card className="p-5">
-        <h2 className="font-semibold text-lg">Ready to focus?</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">Start a new deep work session.</p>
-        <Button variant="dark" size="lg" className="w-full" onClick={() => navigate("/overview")}>
-          <FiPlay className="w-5 h-5 mr-2" />
-          {t("dashboard.beginSession")}
-        </Button>
+                <div className="space-y-2">
+                  {groupTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      onClick={() => navigate(`/task/${task.id}`)}
+                      className="flex items-start gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/50 hover:border-primary-200 dark:hover:border-primary-800 transition-colors cursor-pointer"
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleTask(task.id);
+                        }}
+                        className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center shrink-0 ${
+                          task.status === "done"
+                            ? "bg-primary-600 border-primary-600 text-white"
+                            : "border-gray-300 dark:border-gray-600 hover:border-primary-500"
+                        }`}
+                        aria-label={task.status === "done" ? t("common.done") : t("common.pending")}
+                      >
+                        {task.status === "done" && <FiCheck className="w-3.5 h-3.5" />}
+                      </button>
+
+                      <div className="flex-1 min-w-0">
+                        {editingTask === task.id ? (
+                          <input
+                            type="text"
+                            value={editTaskTitle}
+                            onChange={(e) => setEditTaskTitle(e.target.value)}
+                            onKeyDown={(e) => handleKey(e, () => saveEditTask(task.id))}
+                            onBlur={() => saveEditTask(task.id)}
+                            autoFocus
+                            className="w-full text-sm bg-transparent border-b border-primary-500 focus:outline-none"
+                          />
+                        ) : (
+                          <p
+                            className={`text-left text-sm font-medium ${
+                              task.status === "done" ? "line-through text-gray-400" : "text-gray-900 dark:text-gray-100"
+                            }`}
+                          >
+                            {task.title}
+                          </p>
+                        )}
+                        {(task.category || task.subCategory) && (
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            {[task.category, task.subCategory].filter(Boolean).join(" / ")}
+                          </p>
+                        )}
+                        <div className="w-full h-1 bg-gray-100 dark:bg-gray-800 rounded-full mt-2">
+                          <div
+                            className="h-1 bg-primary-500 rounded-full transition-all"
+                            style={{ width: `${taskProgress(task)}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <span
+                        className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded shrink-0 ${
+                          priorityClass[task.priority]
+                        }`}
+                      >
+                        {task.priority}
+                      </span>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEditTask(task);
+                        }}
+                        className="text-gray-400 hover:text-primary-600 shrink-0"
+                        aria-label={t("common.edit")}
+                        title={t("common.edit")}
+                      >
+                        <FiEdit3 className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteTask(task.id);
+                        }}
+                        className="text-gray-400 hover:text-red-500 shrink-0"
+                        aria-label={t("common.delete")}
+                        title={t("common.delete")}
+                      >
+                        <FiTrash2 className="w-4 h-4" />
+                      </button>
+
+                      <FiPlay
+                        className={`w-4 h-4 shrink-0 mt-1 ${
+                          task.status === "done" ? "text-gray-300" : "text-primary-600"
+                        }`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );

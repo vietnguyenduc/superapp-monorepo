@@ -9,7 +9,11 @@ const History = () => {
   const { t } = useI18n();
   const { progress } = useFrameworkProgress();
 
-  const sessions = [...progress.sessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const allSessions = [
+    ...progress.sessions,
+    ...Object.values(progress.taskRuns || {}).flatMap((r) => r.sessions),
+  ];
+  const sessions = allSessions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
     <div className="space-y-5 animate-fade-in">

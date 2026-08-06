@@ -29,15 +29,18 @@ const hasInput = (block: Block) => {
 };
 
 const StepPage = () => {
-  const { stepId } = useParams<{ stepId: string }>();
+  const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
   const { t } = useI18n();
-  const { progress, saveReflection, completeStep } = useFrameworkProgress();
+  const { progress, frameworkName, getTaskRun, saveTaskReflection, completeTaskStep } = useFrameworkProgress();
 
   const dailySteps = useMemo(() => getDailySteps(progress), [progress]);
   const totalSteps = dailySteps.length;
-  const stepNumber = Math.min(Math.max(parseInt(stepId || "1", 10), 1), totalSteps || 1);
+  const task = useMemo(() => progress.tasks.find((t) => t.id === taskId), [progress.tasks, taskId]);
+  const run = useMemo(() => getTaskRun(taskId || ""), [getTaskRun, taskId]);
+  const stepNumber = Math.max(run.currentStep, 1);
   const step: Step | undefined = dailySteps[stepNumber - 1];
+  const taskCompleted = task?.status === "done" || stepNumber > totalSteps;
 
   const [answers, setAnswers] = useState<Record<string, Record<string, string>>>({});
   const timers = useRef<Record<string, number | null>>({});
@@ -46,26 +49,42 @@ const StepPage = () => {
     if (!step) return;
     const initial: Record<string, Record<string, string>> = {};
     step.blocks?.forEach((block) => {
-      const saved = progress.reflections[block.id] || {};
+      const saved = run.reflections[block.id] || {};
       initial[block.id] = { ...saved };
     });
     setAnswers(initial);
-  }, [step?.id]);
+  }, [step, run.reflections]);
 
   useEffect(() => {
+    const currentTimers = timers.current;
     return () => {
-      Object.values(timers.current).forEach((id) => {
+      Object.values(currentTimers).forEach((id) => {
         if (id) window.clearTimeout(id);
       });
     };
   }, []);
 
-  if (!step) {
+  if (!task) {
     return (
       <div className="space-y-5 animate-fade-in text-center py-10">
-        <p className="text-gray-500">{t("overview.noFramework")}</p>
-        <Button variant="dark" onClick={() => navigate("/builder")}>
-          {t("builder.title")}
+        <p className="text-gray-500">{t("overview.noTasks")}</p>
+        <Button variant="dark" onClick={() => navigate("/dashboard")}>
+          {t("nav.dashboard")}
+        </Button>
+      </div>
+    );
+  }
+
+  if (!step || taskCompleted) {
+    return (
+      <div className="space-y-5 animate-fade-in text-center py-10 max-w-3xl mx-auto">
+        <div className="w-20 h-20 rounded-full bg-green-50 dark:bg-green-900/20 text-green-600 flex items-center justify-center mx-auto mb-4">
+          <FiCheck className="w-10 h-10" />
+        </div>
+        <h1 className="text-2xl font-bold">{t("step.taskCompleted") || "Đã hoàn thành"}</h1>
+        <p className="text-gray-500 mt-1">{task.title}</p>
+        <Button variant="dark" onClick={() => navigate("/dashboard")}>
+          {t("nav.dashboard")}
         </Button>
       </div>
     );
@@ -77,7 +96,7 @@ const StepPage = () => {
       window.clearTimeout(timers.current[key]!);
       timers.current[key] = null;
     }
-    saveReflection(blockId, field, value);
+    if (taskId) saveTaskReflection(taskId, blockId, field, value);
   };
 
   const setField = (blockId: string, field: string, value: string) => {
@@ -90,12 +109,12 @@ const StepPage = () => {
       window.clearTimeout(timers.current[key]!);
     }
     timers.current[key] = window.setTimeout(() => {
-      saveReflection(blockId, field, value);
+      if (taskId) saveTaskReflection(taskId, blockId, field, value);
     }, 500);
   };
 
   const getField = (block: Block, field: string): string => {
-    return answers[block.id]?.[field] ?? progress.reflections[block.id]?.[field] ?? "";
+    return answers[block.id]?.[field] ?? run.reflections[block.id]?.[field] ?? "";
   };
 
   const getArrayField = (block: Block, field: string): string[] => {
@@ -110,7 +129,7 @@ const StepPage = () => {
 
   const resolveAnswer = (id?: string): string => {
     if (!id) return "";
-    const saved = progress.reflections[id];
+    const saved = run.reflections[id];
     if (!saved) return t("step.referenceMissing");
     return (
       saved.reflection?.trim() ||
@@ -127,7 +146,7 @@ const StepPage = () => {
 
   const getSavedAnswer = (blockId?: string): string => {
     if (!blockId) return "";
-    const saved = progress.reflections[blockId];
+    const saved = run.reflections[blockId];
     if (!saved) return "";
     return (
       saved.reflection?.trim() ||
@@ -173,6 +192,7 @@ const StepPage = () => {
   const allRequiredDone = visibleBlocks.every((b) => (b.required ? isCompleted(b) : true));
 
   const handleFinalize = () => {
+    if (!taskId) return;
     visibleBlocks.forEach((b) => {
       if (!hasInput(b)) return;
       if (b.type === "multiple_choice") {
@@ -183,12 +203,12 @@ const StepPage = () => {
         flushReflection(b.id, "reflection", getField(b, "reflection"));
       }
     });
-    completeStep(stepNumber);
+    completeTaskStep(taskId, stepNumber);
     window.setTimeout(() => {
       if (stepNumber < totalSteps) {
-        navigate(`/step/${stepNumber + 1}`);
+        navigate(`/task/${taskId}`);
       } else {
-        navigate("/review");
+        navigate("/dashboard");
       }
     }, 100);
   };
@@ -305,6 +325,20 @@ const StepPage = () => {
 
   return (
     <div className="space-y-5 animate-fade-in max-w-3xl mx-auto pb-8">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => navigate("/dashboard")}
+          className="p-2 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:border-primary-500 hover:text-primary-600"
+          aria-label={t("common.back")}
+        >
+          <FiArrowRight className="w-5 h-5 rotate-180" />
+        </button>
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide truncate">{frameworkName}</p>
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
+        </div>
+      </div>
+
       <div className="text-center">
         {step.phaseName && (
           <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 text-xs font-semibold uppercase tracking-wide">

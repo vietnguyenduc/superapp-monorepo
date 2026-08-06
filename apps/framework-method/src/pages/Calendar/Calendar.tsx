@@ -76,12 +76,10 @@ const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const today = startOfDay(new Date());
-
   const events = useMemo<CalendarEvent[]>(() => {
     const list: CalendarEvent[] = [];
 
-    progress.sessions.forEach((session) => {
+    [...progress.sessions, ...Object.values(progress.taskRuns || {}).flatMap((r) => r.sessions)].forEach((session) => {
       list.push({
         id: `session-${session.id}`,
         date: parseISO(session.date),
@@ -108,7 +106,7 @@ const Calendar = () => {
     });
 
     return list;
-  }, [progress, t, today]);
+  }, [progress, t]);
 
   const eventsForDate = (date: Date) =>
     events.filter((e) => isSameDay(startOfDay(e.date), startOfDay(date)));

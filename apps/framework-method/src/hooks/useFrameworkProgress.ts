@@ -13,6 +13,7 @@ export type {
   FrameworkTemplate,
   FrameworkProgress,
   Task,
+  TaskRun,
   TaskStatus,
   TaskPriority,
 } from "../contexts/ProgressContext";

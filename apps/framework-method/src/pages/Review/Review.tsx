@@ -11,8 +11,6 @@ const Review = () => {
   const { progress } = useFrameworkProgress();
   const dailySteps = useMemo(() => getDailySteps(progress), [progress]);
 
-  const session = progress.sessions[progress.sessions.length - 1];
-
   return (
     <div className="space-y-5 animate-fade-in max-w-3xl mx-auto text-center">
       <div className="flex justify-center mb-4">

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuthContext } from "@superapp/iam";
 
 interface ProtectedRouteProps {
@@ -25,7 +25,6 @@ const isTrialPreview = () => {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated, loading } = useAuthContext();
-  const location = useLocation();
 
   if (loading) {
     return (

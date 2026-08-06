@@ -12,10 +12,13 @@ const HistoryDetail = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { progress } = useFrameworkProgress();
 
-  const session = useMemo(
-    () => progress.sessions.find((s) => s.id === sessionId),
-    [progress.sessions, sessionId]
-  );
+  const session = useMemo(() => {
+    const allSessions = [
+      ...progress.sessions,
+      ...Object.values(progress.taskRuns || {}).flatMap((r) => r.sessions),
+    ];
+    return allSessions.find((s) => s.id === sessionId);
+  }, [progress, sessionId]);
 
   if (!session) {
     return (

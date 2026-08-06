@@ -4,6 +4,7 @@
     "tagline": "Suy nghĩ từ những nguyên lý đầu tiên"
   },
   "nav": {
+    "dashboard": "Bảng điều khiển",
     "overview": "Tổng quan",
     "steps": "Các bước",
     "actions": "Hành động",
@@ -22,7 +23,8 @@
     "productivityTrend": "Xu hướng năng suất (7 ngày qua)",
     "beginSession": "Bắt đầu phiên",
     "frameworks": "Frameworks",
-    "mostUsed": "Dùng nhiều nhất tuần này"
+    "mostUsed": "Dùng nhiều nhất tuần này",
+    "today": "Hôm nay"
   },
   "overview": {
     "activeFramework": "Framework đang hoạt động",
@@ -45,7 +47,8 @@
     "taskPriority": "Ưu tiên",
     "noTasks": "Chưa có việc nào. Thêm việc hoặc chạy framework để tạo.",
     "editGroup": "Đổi tên nhóm",
-    "groupSummary": "{{count}} việc"
+    "groupSummary": "{{count}} việc",
+    "createAndRun": "Tạo và chạy framework"
   },
   "step": {
     "backToFramework": "Quay lại Framework",
@@ -56,7 +59,8 @@
     "completeStep": "Hoàn tất bước",
     "completeFramework": "Hoàn tất framework",
     "finalizeStep": "Hoàn tất bước & Tiếp tục",
-    "finalizeFramework": "Hoàn tất framework",
+    "finalizeFramework": "Hoàn tất việc",
+    "taskCompleted": "Đã hoàn thành việc",
     "referencedAnswer": "Câu trả lời tham chiếu",
     "referenceMissing": "[chưa có câu trả lời]",
     "allReflectionsCaptured": "Đã ghi lại đầy đủ suy ngẫm",
@@ -67,6 +71,10 @@
     "hint": "Gợi ý",
     "required": "Bắt buộc",
     "answerPlaceholder": "Nhập suy ngẫm của bạn..."
+  },
+  "steps": {
+    "frameworkSteps": "Các bước trong framework hôm nay",
+    "sections": "phần"
   },
   "actions": {
     "committedActions": "Hành động cam kết",
@@ -143,6 +151,8 @@
     "dependsOnDescription": "Chỉ hiện block này khi câu trả lời khác chứa giá trị bên dưới.",
     "noDependency": "Luôn hiện",
     "dependsOnValue": "Giá trị mong đợi",
+    "frameworkSteps": "Các bước trong framework hôm nay",
+    "sections": "phần",
     "active": "Đang chạy",
     "editThisFramework": "Sửa framework này",
     "createSampleMix": "Tạo bộ mẫu kết nối",

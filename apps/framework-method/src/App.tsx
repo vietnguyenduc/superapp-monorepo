@@ -11,7 +11,6 @@ import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import Login from "./pages/Auth/Login";
 import SignUp from "./pages/Auth/SignUp";
 import Dashboard from "./pages/Dashboard/Dashboard";
-import Overview from "./pages/Overview/Overview";
 import Steps from "./pages/Steps/Steps";
 import Step from "./pages/Step/Step";
 import Actions from "./pages/Actions/Actions";
@@ -40,9 +39,9 @@ function App() {
             >
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
-              <Route path="overview" element={<Overview />} />
+              <Route path="overview" element={<Navigate to="/dashboard" replace />} />
               <Route path="steps" element={<Steps />} />
-              <Route path="step/:stepId" element={<Step />} />
+              <Route path="task/:taskId" element={<Step />} />
               <Route path="actions" element={<Actions />} />
               <Route path="evening" element={<Evening />} />
               <Route path="calendar" element={<Calendar />} />
