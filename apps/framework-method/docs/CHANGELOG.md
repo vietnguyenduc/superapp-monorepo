@@ -1,5 +1,19 @@
 # Framework Method — Changelog
 
+## 2026-08-07 (daily mix + cross-template references)
+
+- Added `Daily Mix` section in `Builder`: choose one or more templates and `setDailyTemplates` to combine them into a single daily framework.
+- Added `referenceBlockId` to `Block` type; Builder has a dropdown to select a previous block whose answer is displayed inside the current block.
+- Added `showIfBlockId` / `showIfValue` to `Block`; Step page filters visible blocks based on whether another answer contains the expected value (Tally-style conditional fields).
+- Step page resolves `{{answer:blockId}}` placeholders in prompts, placeholders, reflection questions, and hints so answers can flow between templates.
+- Added i18n keys for reference/dependency (`builder.referenceBlock`, `builder.dependsOn`, `step.referencedAnswer`, `step.referenceMissing`).
+- Calendar month view uses larger colored dots, a primary border for selected days, and `date-fns/locale/vi` for Vietnamese date titles.
+
+## 2026-08-07 (repo hygiene)
+
+- Added root `.devinignore` to keep Devin from indexing node_modules, dist, build artifacts, lockfiles, media, backups, and environment files.
+- Updated repo environment blueprint with `framework-method-build` and `devinignore` knowledge entries.
+
 ## 2026-08-07 (desktop navigation)
 
 - Added a persistent horizontal navigation menu to `Navigation.tsx` for desktop/tablet (`md+`) with links to Overview, Steps, Actions, History, and Builder.

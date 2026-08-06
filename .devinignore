@@ -1,0 +1,96 @@
+# .devinignore — limit what Devin indexes/reads in the monorepo.
+# Keep this in sync with .gitignore and add Devin-specific excludes.
+
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build artifacts
+*.tsbuildinfo
+dist
+dist-ssr
+build
+out
+.next
+.nuxt
+.vite
+.vercel
+.turbo
+
+# Test / coverage
+coverage
+.nyc_output
+*.lcov
+playwright-report
+test-results
+
+# Caches
+.cache
+.mf
+.parcel-cache
+.eslintcache
+.stylelintcache
+.prettiercache
+*.log
+logs
+*.tmp
+.tmp
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+.env.local
+.env.production
+.env.development
+.secrets
+*.pem
+*.key
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+*.swp
+*.swo
+
+# Package manager lock files (already tracked by git but heavy for Devin context)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Large binary/static assets
+*.mp4
+*.mov
+*.avi
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.svg
+*.ico
+*.pdf
+*.zip
+*.tar
+*.gz
+*.rar
+*.7z
+
+# Documentation output / generated
+apps/*/docs/generated
+docs/generated
+CHANGELOG-*.md
+
+# Local data dumps / backups
+*.dump
+*.backup
+*.bak
+supabase/backups
+apps/cashflow/backups
+
+# Misc
+.history
+.vitepress/cache

@@ -17,6 +17,9 @@ Help users run multi-step thinking frameworks (Discovery → Deconstruction → 
 7. Calendar — day/week/month/quarter views grouped into Framework, Actions, and Reflections.
 8. History — completed framework sessions with full per-block reflection detail.
 9. Web Builder — build templates with content, interaction, and logic blocks; define per-block reflection question/placeholder/hint.
+10. Daily Mix — run multiple templates together as one framework for the day.
+11. Cross-template references — a block can display or depend on an answer from another template via `referenceBlockId` and `{{answer:blockId}}` placeholders.
+12. Conditional logic per block — show/hide a block based on whether another answer contains a value (Tally-style dependency).
 
 ## Tech Stack
 
