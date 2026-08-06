@@ -39,10 +39,13 @@
   "step": {
     "backToFramework": "Back to Framework",
     "stepOf": "Step {{current}} of {{total}}",
+    "stepTitle": "Step {{number}}: {{title}}",
+    "phase": "Framework Phase: {{name}}",
     "yourReflection": "Your Reflection",
     "completeStep": "Complete Step",
     "completeFramework": "Complete Framework",
     "allReflectionsCaptured": "All reflections captured",
+    "reflectionsInProgress": "{{completed}} of {{total}} inputs completed",
     "hint": "Hint",
     "required": "Required",
     "answerPlaceholder": "Type your reflection here..."
@@ -84,7 +87,15 @@
   },
   "history": {
     "title": "History",
-    "subtitle": "Your completed frameworks and reflections"
+    "subtitle": "Your completed frameworks and reflections",
+    "detail": "Session detail",
+    "noReflection": "No reflection"
+  },
+  "review": {
+    "title": "Framework completed",
+    "subtitle": "Review your reflections below or go to History.",
+    "goToHistory": "Go to History",
+    "noReflection": "—"
   },
   "builder": {
     "title": "Web Builder",

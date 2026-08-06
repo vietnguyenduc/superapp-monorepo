@@ -1,8 +1,9 @@
 export {
   useFrameworkProgress,
   ProgressProvider,
+  getDailySteps,
   getDailyBlocks,
-  defaultBlocks,
+  defaultSteps,
 } from "../contexts/ProgressContext";
 
 export type {

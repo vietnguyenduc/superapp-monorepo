@@ -39,10 +39,13 @@
   "step": {
     "backToFramework": "Quay lại Framework",
     "stepOf": "Bước {{current}} trên {{total}}",
+    "stepTitle": "Bước {{number}}: {{title}}",
+    "phase": "Giai đoạn: {{name}}",
     "yourReflection": "Suy ngẫm của bạn",
     "completeStep": "Hoàn tất bước",
     "completeFramework": "Hoàn tất framework",
     "allReflectionsCaptured": "Đã ghi lại đầy đủ suy ngẫm",
+    "reflectionsInProgress": "Đã hoàn thành {{completed}}/{{total}} phần nhập liệu",
     "hint": "Gợi ý",
     "required": "Bắt buộc",
     "answerPlaceholder": "Nhập suy ngẫm của bạn..."
@@ -84,7 +87,15 @@
   },
   "history": {
     "title": "Lịch sử",
-    "subtitle": "Framework và suy ngẫm đã hoàn thành"
+    "subtitle": "Framework và suy ngẫm đã hoàn thành",
+    "detail": "Chi tiết phiên",
+    "noReflection": "Chưa có suy ngẫm"
+  },
+  "review": {
+    "title": "Hoàn thành framework",
+    "subtitle": "Xem lại suy ngẫm của bạn bên dưới hoặc vào Lịch sử.",
+    "goToHistory": "Xem lịch sử",
+    "noReflection": "—"
   },
   "builder": {
     "title": "Trình thiết kế",

@@ -1,15 +1,50 @@
-import { useEffect, useState } from "react";
-import { FiEye, FiUpload, FiTrash2, FiPlus, FiBook, FiInfo, FiSun, FiEdit3, FiStar, FiList, FiType, FiHash, FiGitBranch, FiHome, FiUser, FiPlusCircle } from "react-icons/fi";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  FiEye,
+  FiUpload,
+  FiTrash2,
+  FiPlus,
+  FiBook,
+  FiInfo,
+  FiSun,
+  FiEdit3,
+  FiStar,
+  FiList,
+  FiType,
+  FiHash,
+  FiGitBranch,
+  FiArrowLeft,
+  FiChevronUp,
+  FiChevronDown,
+  FiPlusCircle,
+} from "react-icons/fi";
 import { Card, Button, Input } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
-import { useFrameworkProgress } from "../../hooks/useFrameworkProgress";
-import type { Block, BlockType } from "../../types";
+import { useFrameworkProgress, defaultSteps } from "../../hooks/useFrameworkProgress";
+import type { Block, BlockType, Step } from "../../types";
 
-const defaultBlocks: Block[] = [
-  { id: "1", type: "knowledge", label: "Deconstruct the Problem", prompt: "Define the current assumption or problem clearly before breaking it down into fundamental truths.", placeholder: "", required: false, order_index: 0 },
-  { id: "2", type: "example", label: "Example", prompt: "Instead of saying 'batteries are expensive,' identify the cost of the raw materials making up the battery.", placeholder: "", required: false, order_index: 1 },
-  { id: "3", type: "reflection", label: "Reflection Area", prompt: "What is the problem you are trying to solve?", placeholder: "Type your answer here...", required: true, order_index: 2 },
-];
+const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+const makeBlock = (type: BlockType, label?: string): Block => ({
+  id: `block-${uid()}`,
+  type,
+  label: label || type,
+  prompt: "",
+  placeholder: "",
+  required: false,
+  order_index: 0,
+});
+
+const makeStep = (title?: string): Step => ({
+  id: `step-${uid()}`,
+  phase_id: "custom",
+  phaseName: "Custom",
+  title: title || "New Step",
+  description: "",
+  order_index: 0,
+  blocks: [makeBlock("reflection", "Your Reflection")],
+});
 
 const blockCatalog: { type: BlockType; label: string; icon: typeof FiBook; category: "content" | "interaction" | "logic" }[] = [
   { type: "knowledge", label: "Knowledge", icon: FiBook, category: "content" },
@@ -25,64 +60,138 @@ const blockCatalog: { type: BlockType; label: string; icon: typeof FiBook; categ
 
 const Builder = () => {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const { progress, saveTemplate, setActiveTemplate } = useFrameworkProgress();
 
   const activeTemplate = progress.templates.find((t) => t.id === progress.activeTemplateId);
 
   const [templateName, setTemplateName] = useState(activeTemplate?.name || "New Framework");
-  const [blocks, setBlocks] = useState<Block[]>(activeTemplate ? activeTemplate.blocks : defaultBlocks);
+  const [steps, setSteps] = useState<Step[]>(activeTemplate?.steps || defaultSteps);
+  const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
 
   useEffect(() => {
     setTemplateName(activeTemplate?.name || "New Framework");
-    setBlocks(activeTemplate ? activeTemplate.blocks : defaultBlocks);
+    setSteps(activeTemplate?.steps ? activeTemplate.steps : defaultSteps);
+    setSelectedStepId(null);
+    setSaveStatus("");
   }, [activeTemplate?.id]);
 
   // Auto-save draft back to active template (debounced)
   useEffect(() => {
-    if (!activeTemplate) return;
+    if (!activeTemplate) {
+      setSaveStatus("");
+      return;
+    }
     const timer = setTimeout(() => {
-      saveTemplate(templateName, blocks, activeTemplate.id);
+      const name = templateName.trim() || "New Framework";
+      saveTemplate(name, steps, activeTemplate.id);
       setSaveStatus("Auto-saved");
     }, 800);
     return () => clearTimeout(timer);
-  }, [blocks, templateName, activeTemplate]);
+  }, [steps, templateName, activeTemplate, saveTemplate]);
+
+  const selectedStep = useMemo(
+    () => steps.find((s) => s.id === selectedStepId) || steps[steps.length - 1],
+    [steps, selectedStepId]
+  );
+
+  const updateSteps = (updater: (prev: Step[]) => Step[]) => {
+    setSteps((prev) =>
+      updater(prev).map((s, idx) => ({
+        ...s,
+        order_index: idx,
+        blocks: (s.blocks || []).map((b, bidx) => ({ ...b, order_index: bidx })),
+      }))
+    );
+  };
+
+  const addStep = () => {
+    updateSteps((prev) => [...prev, makeStep(`Step ${prev.length + 1}`)]);
+    setTimeout(() => {
+      const list = document.getElementById("builder-steps");
+      list?.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
+    }, 50);
+  };
+
+  const removeStep = (stepId: string) => {
+    updateSteps((prev) => prev.filter((s) => s.id !== stepId));
+  };
+
+  const moveStep = (stepId: string, direction: -1 | 1) => {
+    updateSteps((prev) => {
+      const idx = prev.findIndex((s) => s.id === stepId);
+      if (idx < 0) return prev;
+      const next = [...prev];
+      const target = idx + direction;
+      if (target < 0 || target >= next.length) return prev;
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next;
+    });
+  };
+
+  const updateStep = (stepId: string, updates: Partial<Step>) => {
+    updateSteps((prev) => prev.map((s) => (s.id === stepId ? { ...s, ...updates } : s)));
+  };
 
   const addBlock = (type: BlockType) => {
     const catalog = blockCatalog.find((b) => b.type === type);
-    setBlocks((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        type,
-        label: catalog?.label || type,
-        prompt: "",
-        placeholder: "",
-        required: false,
-        order_index: prev.length,
-      },
-    ]);
+    const step = selectedStep;
+    if (!step) return;
+    updateSteps((prev) =>
+      prev.map((s) =>
+        s.id === step.id
+          ? { ...s, blocks: [...(s.blocks || []), makeBlock(type, catalog?.label)] }
+          : s
+      )
+    );
   };
 
-  const updateBlock = (id: string, updates: Partial<Block>) => {
-    setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, ...updates } : b)));
+  const updateBlock = (stepId: string, blockId: string, updates: Partial<Block>) => {
+    updateSteps((prev) =>
+      prev.map((s) =>
+        s.id === stepId
+          ? { ...s, blocks: s.blocks?.map((b) => (b.id === blockId ? { ...b, ...updates } : b)) }
+          : s
+      )
+    );
   };
 
-  const removeBlock = (id: string) => {
-    setBlocks((prev) => prev.filter((b) => b.id !== id));
+  const removeBlock = (stepId: string, blockId: string) => {
+    updateSteps((prev) =>
+      prev.map((s) =>
+        s.id === stepId ? { ...s, blocks: s.blocks?.filter((b) => b.id !== blockId) } : s
+      )
+    );
+  };
+
+  const moveBlock = (stepId: string, blockId: string, direction: -1 | 1) => {
+    updateSteps((prev) =>
+      prev.map((s) => {
+        if (s.id !== stepId || !s.blocks) return s;
+        const idx = s.blocks.findIndex((b) => b.id === blockId);
+        if (idx < 0) return s;
+        const next = [...s.blocks];
+        const target = idx + direction;
+        if (target < 0 || target >= next.length) return s;
+        [next[idx], next[target]] = [next[target], next[idx]];
+        return { ...s, blocks: next };
+      })
+    );
   };
 
   const handlePublish = () => {
     const name = templateName.trim() || "New Framework";
-    saveTemplate(name, blocks, activeTemplate?.id);
+    saveTemplate(name, steps, activeTemplate?.id);
     setSaveStatus(t("builder.published"));
   };
 
   const handleNewTemplate = () => {
     setActiveTemplate(null);
     setTemplateName("New Framework");
-    setBlocks(defaultBlocks);
+    setSteps([makeStep("Step 1")]);
+    setSelectedStepId(null);
     setSaveStatus("");
   };
 
@@ -94,17 +203,22 @@ const Builder = () => {
     }
   };
 
+  const updateOptions = (stepId: string, blockId: string, options: string[]) => {
+    updateBlock(stepId, blockId, { options });
+  };
+
   const renderPreview = (block: Block) => {
     switch (block.type) {
       case "knowledge":
       case "example":
       case "hint":
-        return <p className="text-sm text-gray-600 dark:text-gray-300">{block.prompt || "Content preview"}</p>;
+        return <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">{block.prompt || "Content preview"}</p>;
       case "reflection":
+        return <textarea className="input h-24 w-full" readOnly placeholder={block.placeholder} />;
       case "short_text":
-        return <input className="input" readOnly placeholder={block.placeholder} />;
+        return <input className="input w-full" readOnly placeholder={block.placeholder} />;
       case "number_input":
-        return <input type="number" className="input" readOnly placeholder={block.placeholder} />;
+        return <input type="number" className="input w-full" readOnly placeholder={block.placeholder} />;
       case "multiple_choice":
       case "rating":
         return (
@@ -152,36 +266,49 @@ const Builder = () => {
             ))}
           </select>
           <Button variant="secondary" size="sm" onClick={handleNewTemplate}>
-            <FiPlusCircle className="w-4 h-4" /> <span className="hidden sm:inline ml-1">New template</span>
+            <FiPlusCircle className="w-4 h-4" /> <span className="ml-1">New template</span>
           </Button>
         </div>
       </div>
 
       <div>
+        <Button variant="outline" size="sm" className="w-full" onClick={addStep}>
+          <FiPlus className="w-4 h-4 mr-1" /> Add Step
+        </Button>
+      </div>
+
+      <div>
         <h3 className="text-sm font-semibold mb-1">Insert Blocks</h3>
-        <p className="text-xs text-gray-500">Drag elements onto the canvas to build your framework.</p>
+        <p className="text-xs text-gray-500 mb-2">
+          {selectedStep ? `Adding to: ${selectedStep.title}` : "Select a step first"}
+        </p>
       </div>
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Content Blocks</p>
         <div className="grid grid-cols-2 gap-2">
-          {blockCatalog.filter((b) => b.category === "content").map((b) => (
-            <button
-              key={b.type}
-              onClick={() => addBlock(b.type)}
-              className="flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors"
-            >
-              <b.icon className="w-5 h-5 text-primary-600" />
-              <span className="text-xs text-center leading-tight">{b.label}</span>
-            </button>
-          ))}
+          {blockCatalog
+            .filter((b) => b.category === "content")
+            .map((b) => (
+              <button
+                key={b.type}
+                disabled={!selectedStep}
+                onClick={() => addBlock(b.type)}
+                className="flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <b.icon className="w-5 h-5 text-primary-600" />
+                <span className="text-xs text-center leading-tight">{b.label}</span>
+              </button>
+            ))}
         </div>
       </div>
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Interaction Blocks</p>
         <div className="space-y-2">
-          {blockCatalog.filter((b) => b.category === "interaction").map((b) => (
-            <SidebarBlock key={b.type} label={b.label} icon={b.icon} onClick={() => addBlock(b.type)} />
-          ))}
+          {blockCatalog
+            .filter((b) => b.category === "interaction")
+            .map((b) => (
+              <SidebarBlock key={b.type} label={b.label} icon={b.icon} onClick={() => addBlock(b.type)} />
+            ))}
         </div>
       </div>
       <div>
@@ -197,10 +324,10 @@ const Builder = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => window.history.back()}
+              onClick={() => navigate("/overview")}
               className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
             >
-              <FiHome className="w-5 h-5" />
+              <FiArrowLeft className="w-5 h-5" />
             </button>
             <div>
               <input
@@ -214,9 +341,7 @@ const Builder = () => {
                 <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
                   {activeTemplate ? t("builder.published") : t("builder.draft")}
                 </span>
-                {saveStatus && (
-                  <span className="text-[10px] text-gray-400">{saveStatus}</span>
-                )}
+                {saveStatus && <span className="text-[10px] text-gray-400">{saveStatus}</span>}
               </div>
             </div>
           </div>
@@ -238,67 +363,185 @@ const Builder = () => {
               <Sidebar />
             </div>
           </aside>
-          <div className="lg:col-span-8 space-y-4">
-            <div className="mb-2">
-              <p className="text-xs text-gray-500">Break down complex problems into fundamental truths and build up from there.</p>
-            </div>
-            {blocks.map((block) => (
-              <Card key={block.id} className="relative">
+
+          <div id="builder-steps" className="lg:col-span-8 space-y-6 overflow-y-auto max-h-[calc(100vh-140px)]">
+            {steps.map((step, stepIdx) => (
+              <Card
+                key={step.id}
+                className={`relative ${selectedStepId === step.id ? "ring-2 ring-primary-500" : ""}`}
+              >
                 {!preview ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400">
-                        {block.type.replace("_", " ")}
-                      </span>
-                      <button onClick={() => removeBlock(block.id)} className="text-gray-400 hover:text-red-500">
-                        <FiTrash2 className="w-4 h-4" />
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Input
+                            label={`Step ${stepIdx + 1} title`}
+                            value={step.title}
+                            onChange={(e) => updateStep(step.id, { title: e.target.value })}
+                            className="font-semibold"
+                          />
+                          <button
+                            onClick={() => setSelectedStepId(step.id)}
+                            className={`ml-2 px-2 py-1 text-xs font-semibold rounded-md ${
+                              selectedStepId === step.id
+                                ? "bg-primary-100 text-primary-700"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                          >
+                            Select
+                          </button>
+                        </div>
+                        <Input
+                          label="Description"
+                          value={step.description || ""}
+                          onChange={(e) => updateStep(step.id, { description: e.target.value })}
+                        />
+                        <Input
+                          label="Phase"
+                          value={step.phaseName || ""}
+                          onChange={(e) => updateStep(step.id, { phaseName: e.target.value })}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1 ml-3">
+                        <button onClick={() => moveStep(step.id, -1)} disabled={stepIdx === 0} className="p-1 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-30">
+                          <FiChevronUp className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => moveStep(step.id, 1)} disabled={stepIdx === steps.length - 1} className="p-1 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-30">
+                          <FiChevronDown className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => removeStep(step.id)} className="p-1 text-gray-400 hover:text-red-500">
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pl-2 border-l-2 border-gray-100 dark:border-gray-800">
+                      {step.blocks?.map((block, blockIdx) => (
+                        <Card key={block.id} className="p-4 bg-gray-50/50 dark:bg-gray-800/30">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-xs font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400">
+                              {block.type.replace("_", " ")}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => moveBlock(step.id, block.id, -1)} disabled={blockIdx === 0} className="p-1 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-30">
+                                <FiChevronUp className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => moveBlock(step.id, block.id, 1)} disabled={blockIdx === (step.blocks?.length || 0) - 1} className="p-1 text-gray-500 hover:bg-gray-100 rounded disabled:opacity-30">
+                                <FiChevronDown className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => removeBlock(step.id, block.id)} className="p-1 text-gray-400 hover:text-red-500">
+                                <FiTrash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Input
+                              label={t("builder.fieldLabel")}
+                              value={block.label}
+                              onChange={(e) => updateBlock(step.id, block.id, { label: e.target.value })}
+                            />
+                            <Input
+                              label={t("builder.userPrompt")}
+                              value={block.prompt || ""}
+                              onChange={(e) => updateBlock(step.id, block.id, { prompt: e.target.value })}
+                            />
+                            {block.type !== "multiple_choice" && block.type !== "rating" && (
+                              <Input
+                                label={t("builder.placeholder")}
+                                value={block.placeholder || ""}
+                                onChange={(e) => updateBlock(step.id, block.id, { placeholder: e.target.value })}
+                              />
+                            )}
+                            {block.type === "multiple_choice" && (
+                              <div className="space-y-2">
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Options</p>
+                                {(block.options || ["Option 1", "Option 2"]).map((opt, i) => (
+                                  <div key={i} className="flex gap-2">
+                                    <input
+                                      type="text"
+                                      value={opt}
+                                      onChange={(e) => {
+                                        const next = [...(block.options || [])];
+                                        next[i] = e.target.value;
+                                        updateOptions(step.id, block.id, next);
+                                      }}
+                                      className="input flex-1"
+                                    />
+                                    <button
+                                      onClick={() => {
+                                        const next = (block.options || []).filter((_, j) => j !== i);
+                                        updateOptions(step.id, block.id, next);
+                                      }}
+                                      className="text-gray-400 hover:text-red-500"
+                                    >
+                                      <FiTrash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                ))}
+                                <button
+                                  onClick={() => updateOptions(step.id, block.id, [...(block.options || []), `Option ${(block.options || []).length + 1}`])}
+                                  className="text-sm text-primary-600 flex items-center gap-1"
+                                >
+                                  <FiPlus className="w-3 h-3" /> Add option
+                                </button>
+                              </div>
+                            )}
+                            <label className="flex items-center gap-2 text-sm">
+                              <input
+                                type="checkbox"
+                                checked={block.required}
+                                onChange={(e) => updateBlock(step.id, block.id, { required: e.target.checked })}
+                                className="w-4 h-4 rounded border-gray-300 text-primary-600"
+                              />
+                              {t("builder.required")}
+                            </label>
+                          </div>
+                        </Card>
+                      ))}
+                      <button
+                        onClick={() => {
+                          setSelectedStepId(step.id);
+                          addBlock("reflection");
+                        }}
+                        className="w-full py-2 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-500 hover:border-primary-500 hover:text-primary-600 flex items-center justify-center gap-2"
+                      >
+                        <FiPlus className="w-4 h-4" /> Add block to this step
                       </button>
                     </div>
-                    <Input
-                      label={t("builder.fieldLabel")}
-                      value={block.label}
-                      onChange={(e) => updateBlock(block.id, { label: e.target.value })}
-                    />
-                    <Input
-                      label={t("builder.userPrompt")}
-                      value={block.prompt || ""}
-                      onChange={(e) => updateBlock(block.id, { prompt: e.target.value })}
-                    />
-                    <Input
-                      label={t("builder.placeholder")}
-                      value={block.placeholder || ""}
-                      onChange={(e) => updateBlock(block.id, { placeholder: e.target.value })}
-                    />
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={block.required}
-                        onChange={(e) => updateBlock(block.id, { required: e.target.checked })}
-                        className="w-4 h-4 rounded border-gray-300 text-primary-600"
-                      />
-                      {t("builder.required")}
-                    </label>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <p className="font-medium">{block.label}</p>
-                    {block.prompt && <p className="text-xs text-gray-500 dark:text-gray-400">{block.prompt}</p>}
-                    {renderPreview(block)}
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400">
+                        {step.phaseName || "Phase"}
+                      </p>
+                      <h3 className="text-xl font-bold">{step.title}</h3>
+                      {step.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{step.description}</p>}
+                    </div>
+                    <div className="space-y-3">
+                      {step.blocks?.map((block) => (
+                        <Card key={block.id} className="p-4">
+                          <p className="font-medium">{block.label}</p>
+                          {block.prompt && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{block.prompt}</p>}
+                          {renderPreview(block)}
+                        </Card>
+                      ))}
+                    </div>
                   </div>
                 )}
               </Card>
             ))}
+
             {!preview && (
               <button
-                onClick={() => addBlock("reflection")}
-                className="w-full py-3 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-500 hover:border-primary-500 hover:text-primary-600 flex items-center justify-center gap-2"
+                onClick={addStep}
+                className="w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-500 hover:border-primary-500 hover:text-primary-600 flex items-center justify-center gap-2"
               >
-                <FiPlus className="w-4 h-4" /> Add block
+                <FiPlus className="w-4 h-4" /> Add Step
               </button>
             )}
           </div>
-
-
         </div>
       </div>
     </div>

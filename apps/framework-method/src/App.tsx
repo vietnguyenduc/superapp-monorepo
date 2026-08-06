@@ -12,11 +12,14 @@ import Login from "./pages/Auth/Login";
 import SignUp from "./pages/Auth/SignUp";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Overview from "./pages/Overview/Overview";
+import Steps from "./pages/Steps/Steps";
 import Step from "./pages/Step/Step";
 import Actions from "./pages/Actions/Actions";
 import Evening from "./pages/Evening/Evening";
 import Calendar from "./pages/Calendar/Calendar";
 import History from "./pages/History/History";
+import HistoryDetail from "./pages/History/HistoryDetail";
+import Review from "./pages/Review/Review";
 import Builder from "./pages/Builder/Builder";
 
 function App() {
@@ -35,18 +38,21 @@ function App() {
                 </ProtectedRoute>
               }
             >
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="overview" element={<Overview />} />
-            <Route path="step/:stepId" element={<Step />} />
-            <Route path="actions" element={<Actions />} />
-            <Route path="evening" element={<Evening />} />
-            <Route path="calendar" element={<Calendar />} />
-            <Route path="history" element={<History />} />
-            <Route path="builder" element={<Builder />} />
-          </Route>
-        </Routes>
-      </Router>
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="overview" element={<Overview />} />
+              <Route path="steps" element={<Steps />} />
+              <Route path="step/:stepId" element={<Step />} />
+              <Route path="actions" element={<Actions />} />
+              <Route path="evening" element={<Evening />} />
+              <Route path="calendar" element={<Calendar />} />
+              <Route path="history" element={<History />} />
+              <Route path="history/:sessionId" element={<HistoryDetail />} />
+              <Route path="review" element={<Review />} />
+              <Route path="builder" element={<Builder />} />
+            </Route>
+          </Routes>
+        </Router>
       </ProgressProvider>
     </CompanyProvider>
   );

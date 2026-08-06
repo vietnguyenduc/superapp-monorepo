@@ -1,5 +1,5 @@
-import { FiX } from "react-icons/fi";
-import { useFrameworkProgress } from "../../hooks/useFrameworkProgress";
+import { FiX, FiCheck } from "react-icons/fi";
+import { useFrameworkProgress, getDailySteps } from "../../hooks/useFrameworkProgress";
 import type { FrameworkTemplate } from "../../hooks/useFrameworkProgress";
 
 interface Phase {
@@ -15,17 +15,19 @@ interface FrameworkOverlayProps {
 }
 
 const defaultTemplates: FrameworkTemplate[] = [
-  { id: "deep-work", name: "Deep Work", blocks: [] },
-  { id: "time-blocking", name: "Time Blocking", blocks: [] },
+  { id: "deep-work", name: "Deep Work", steps: [] },
+  { id: "time-blocking", name: "Time Blocking", steps: [] },
 ];
 
 const FrameworkOverlay = ({ onClose, phases }: FrameworkOverlayProps) => {
   const { progress, setActiveTemplate } = useFrameworkProgress();
   const templates = progress.templates.length > 0 ? progress.templates : defaultTemplates;
+  const dailySteps = getDailySteps(progress);
+  const currentStep = progress.currentStep;
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="w-full md:w-80 bg-white dark:bg-gray-900 h-full shadow-2xl p-5 overflow-y-auto">
+      <div className="w-full md:w-96 bg-white dark:bg-gray-900 h-full shadow-2xl p-5 overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="font-bold text-lg">The First Principles Method</h2>
@@ -38,46 +40,59 @@ const FrameworkOverlay = ({ onClose, phases }: FrameworkOverlayProps) => {
         <div className="mb-8">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-3">Phases</p>
           <div className="space-y-3">
-            {phases.map((phase) => (
-              <div key={phase.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-800">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      phase.completed || phase.current
-                        ? "border-primary-600"
-                        : "border-gray-300 dark:border-gray-600"
-                    }`}
-                  >
-                    {(phase.completed || phase.current) && (
-                      <div className="w-2.5 h-2.5 rounded-full bg-primary-600" />
-                    )}
+            {phases.map((phase, idx) => {
+              const stepAtPhase = dailySteps[idx];
+              const isCurrent = phase.current;
+              return (
+                <div key={phase.id} className="flex items-start justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-800">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${
+                        phase.completed || isCurrent
+                          ? "border-primary-600"
+                          : "border-gray-300 dark:border-gray-600"
+                      }`}
+                    >
+                      {(phase.completed || isCurrent) && (
+                        <div className="w-2.5 h-2.5 rounded-full bg-primary-600" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{phase.name}</p>
+                      {stepAtPhase && <p className="text-xs text-gray-500">{stepAtPhase.title}</p>}
+                      {isCurrent && <p className="text-[10px] text-primary-600 font-semibold">Current: Step {currentStep}</p>}
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">{phase.name}</p>
-                    {phase.current && <p className="text-[10px] text-primary-600 font-semibold">Current: Step 1</p>}
-                  </div>
+                  <span className="text-xs text-gray-400">{phase.completed ? "100%" : "0%"}</span>
                 </div>
-                <span className="text-xs text-gray-400">{phase.completed ? "100%" : "0%"}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         <div className="mb-8">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-3">Switch Template</p>
           <div className="space-y-2">
-            {templates.map((template) => (
-              <button
-                key={template.id}
-                onClick={() => {
-                  setActiveTemplate(template.id);
-                  onClose();
-                }}
-                className="w-full p-3 text-left text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors"
-              >
-                {template.name}
-              </button>
-            ))}
+            {templates.map((template) => {
+              const active = progress.activeTemplateId === template.id;
+              return (
+                <button
+                  key={template.id}
+                  onClick={() => {
+                    setActiveTemplate(template.id);
+                    onClose();
+                  }}
+                  className={`w-full p-3 text-left text-sm font-medium rounded-xl border transition-colors flex items-center justify-between ${
+                    active
+                      ? "border-primary-500 bg-primary-50 dark:bg-primary-900/10 text-primary-700"
+                      : "border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10"
+                  }`}
+                >
+                  {template.name}
+                  {active && <FiCheck className="w-4 h-4 text-primary-600" />}
+                </button>
+              );
+            })}
           </div>
         </div>
 

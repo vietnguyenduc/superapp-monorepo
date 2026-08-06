@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { FiArrowRight } from "react-icons/fi";
 import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
-import { useFrameworkProgress, getDailyBlocks } from "../../hooks/useFrameworkProgress";
+import { useFrameworkProgress, getDailySteps } from "../../hooks/useFrameworkProgress";
 import FrameworkOverlay from "./FrameworkOverlay";
 
 const phases = [
@@ -21,11 +21,10 @@ const Overview = () => {
   const [showOverlay, setShowOverlay] = useState(false);
   const [showAllSteps, setShowAllSteps] = useState(false);
 
-  const dailyBlocks = useMemo(() => getDailyBlocks(progress), [progress]);
+  const dailySteps = useMemo(() => getDailySteps(progress), [progress]);
 
-  const totalSteps = dailyBlocks.length;
+  const totalSteps = dailySteps.length;
   const currentStep = Math.min(progress.currentStep, totalSteps || 1);
-  const currentBlock = dailyBlocks[currentStep - 1];
   const completedCount = progress.completedSteps.length;
   const progressPct = totalSteps ? Math.round((completedCount / totalSteps) * 100) : 0;
 
@@ -35,7 +34,8 @@ const Overview = () => {
       ? t("overview.dailyMix")
       : activeTemplate?.name || t("overview.yourFramework");
 
-  const upcomingSteps = dailyBlocks.slice(currentStep - 1);
+  const currentStepObj = dailySteps[currentStep - 1];
+  const upcomingSteps = dailySteps.slice(currentStep - 1);
   const visibleSteps = showAllSteps ? upcomingSteps : upcomingSteps.slice(0, 2);
 
   return (
@@ -80,11 +80,11 @@ const Overview = () => {
           <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
             {t("overview.focusForToday")}
           </p>
-          {currentBlock ? (
+          {currentStepObj ? (
             <>
-              <h3 className="text-2xl font-bold mt-2">{currentBlock.label}</h3>
+              <h3 className="text-2xl font-bold mt-2">{currentStepObj.title}</h3>
               <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 leading-relaxed">
-                {currentBlock.prompt || currentBlock.label}
+                {currentStepObj.description || currentStepObj.title}
               </p>
               <Button variant="dark" size="md" className="mt-5" onClick={() => navigate(`/step/${currentStep}`)}>
                 {t("overview.startSession")} <FiArrowRight className="ml-2 w-4 h-4" />
@@ -100,23 +100,23 @@ const Overview = () => {
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-semibold text-lg">{t("overview.upcomingSteps")}</h2>
           {upcomingSteps.length > 2 && (
-            <button
-              onClick={() => setShowAllSteps((prev) => !prev)}
+            <Link
+              to="/steps"
               className="text-sm text-primary-600 flex items-center font-medium"
             >
-              {showAllSteps ? t("common.close") : t("overview.viewAll")}
+              {t("overview.viewAll")}
               <FiArrowRight className={`w-4 h-4 ml-1 transition-transform ${showAllSteps ? "rotate-90" : ""}`} />
-            </button>
+            </Link>
           )}
         </div>
         <div className="space-y-5">
-          {visibleSteps.map((block, idx) => {
+          {visibleSteps.map((step, idx) => {
             const stepNumber = currentStep + idx;
             const isCompleted = progress.completedSteps.includes(stepNumber);
             const isCurrent = stepNumber === currentStep;
             return (
               <Link
-                key={block.id}
+                key={step.id}
                 to={`/step/${stepNumber}`}
                 className="flex items-start gap-4 group"
               >
@@ -138,9 +138,9 @@ const Overview = () => {
                   )}
                 </div>
                 <div className="flex-1 min-w-0 pt-0.5">
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">{block.label}</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">{step.title}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
-                    {block.prompt || block.type}
+                    {step.description || step.phaseName}
                   </p>
                 </div>
               </Link>

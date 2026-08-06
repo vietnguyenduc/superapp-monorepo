@@ -145,25 +145,30 @@ export const useAuth = () => {
       const trialPreview = urlParams.get("trial_preview");
       if (trialPreview === "true") {
         const trial = readTrialFromStorage();
-        if (trial) {
-          // Trial already active — keep it
-          window.history.replaceState({}, document.title, window.location.pathname);
-        } else {
-          // Start trial immediately
-          const now = new Date().toISOString();
-          const trialUser = {
-            id: "trial-user",
-            email: "trial@example.com",
-            full_name: "Trial User",
-            role: "admin",
-            company_id: "trial-company",
-            branch_id: "trial-branch",
-            created_at: now,
-            updated_at: now,
-          };
+        const now = new Date().toISOString();
+        const trialUser = trial?.user ?? {
+          id: "trial-user",
+          email: "trial@example.com",
+          full_name: "Trial User",
+          role: "admin",
+          company_id: "trial-company",
+          branch_id: "trial-branch",
+          created_at: now,
+          updated_at: now,
+        };
+        if (!trial) {
           localStorage.setItem(TRIAL_STORAGE_KEY, JSON.stringify({ user: trialUser, started_at: now }));
-          window.history.replaceState({}, document.title, window.location.pathname);
-          // Don't set state here — the primary init flow below will pick it up
+        }
+        setTrialMode(true);
+        window.history.replaceState({}, document.title, window.location.pathname);
+        if (isMounted) {
+          setState({
+            user: trialUser,
+            session: null,
+            loading: false,
+            error: null,
+            isTrial: true,
+          });
         }
       }
     }

@@ -1,5 +1,5 @@
 import { FiCheckCircle } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Card } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useFrameworkProgress } from "../../hooks/useFrameworkProgress";
@@ -7,7 +7,6 @@ import { format } from "date-fns";
 
 const History = () => {
   const { t } = useI18n();
-  const navigate = useNavigate();
   const { progress } = useFrameworkProgress();
 
   const sessions = [...progress.sessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -26,11 +25,7 @@ const History = () => {
       ) : (
         <div className="space-y-3">
           {sessions.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => navigate(`/history/${item.id}`)}
-              className="w-full text-left"
-            >
+            <Link key={item.id} to={`/history/${item.id}`} className="w-full text-left">
               <Card className="flex items-center gap-4 p-4 hover:border-primary-500 transition-colors">
                 <div className="w-12 h-12 rounded-full bg-primary-600 text-white flex items-center justify-center shrink-0">
                   <FiCheckCircle className="w-6 h-6" />
@@ -45,7 +40,7 @@ const History = () => {
                   <path d="M9 18l6-6-6-6" />
                 </svg>
               </Card>
-            </button>
+            </Link>
           ))}
         </div>
       )}

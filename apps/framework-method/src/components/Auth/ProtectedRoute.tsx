@@ -8,10 +8,19 @@ interface ProtectedRouteProps {
 
 const isTrialPreview = () => {
   if (typeof window === "undefined") return false;
-  return (
-    new URLSearchParams(window.location.search).get("trial_preview") === "true" ||
-    localStorage.getItem("framework-method-trial-preview") === "true"
-  );
+  if (new URLSearchParams(window.location.search).get("trial_preview") === "true") return true;
+  if (localStorage.getItem("framework-method-trial-preview") === "true") return true;
+  if (localStorage.getItem("superapp_trial_mode")) return true;
+  const raw = localStorage.getItem("cashflow_trial_user");
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      return !!parsed?.user;
+    } catch {
+      return false;
+    }
+  }
+  return false;
 };
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {

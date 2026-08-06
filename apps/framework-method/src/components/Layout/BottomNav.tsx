@@ -6,8 +6,8 @@ const BottomNav = () => {
   const { t } = useI18n();
 
   const links = [
-    { to: "/dashboard", label: t("nav.overview"), icon: FiGrid },
-    { to: "/overview", label: t("nav.steps"), icon: FiList },
+    { to: "/overview", label: t("nav.overview"), icon: FiGrid },
+    { to: "/steps", label: t("nav.steps"), icon: FiList },
     { to: "/actions", label: t("nav.actions"), icon: FiCheckCircle },
     { to: "/history", label: t("nav.history"), icon: FiClock },
     { to: "/builder", label: t("nav.builder"), icon: FiEdit3 },

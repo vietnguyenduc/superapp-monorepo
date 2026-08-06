@@ -34,8 +34,10 @@ export interface Block {
 export interface Step {
   id: string;
   phase_id: string;
+  phaseName?: string;
   title: string;
   description?: string;
+  imageUrl?: string;
   order_index: number;
   blocks?: Block[];
 }
