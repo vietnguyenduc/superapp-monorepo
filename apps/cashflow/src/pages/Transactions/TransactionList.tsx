@@ -34,7 +34,24 @@ interface TransactionListState {
     name: string | null;
   } | null;
   statusFilter: "all" | "pending" | "completed";
-  groupBy: "" | "day" | "branch" | "transaction_type" | "customer";
+  groupBy: "" | "day" | "week" | "month" | "branch" | "transaction_type" | "customer";
+}
+
+interface GroupSummary {
+  label: string;
+  count: number;
+  increase: number;
+  decrease: number;
+  adjustment: number;
+  net: number;
+}
+
+function getISOWeek(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
 }
 
 const TransactionList: React.FC = () => {
@@ -403,25 +420,74 @@ const TransactionList: React.FC = () => {
 
   const groupedData = useMemo(() => {
     if (!state.groupBy) return null;
-    const formatter = new Intl.DateTimeFormat("vi-VN");
 
-    const keyGetter: Record<Exclude<TransactionListState["groupBy"], "">, (tx: Transaction) => string> = {
-      day: (tx) => formatter.format(new Date(tx.transaction_date)),
-      branch: (tx) => (tx.branch_id ? getBranchName(tx.branch_id) : "Không có văn phòng"),
-      transaction_type: (tx) => getTransactionTypeName(tx.transaction_type),
-      customer: (tx) => tx.customer_name || tx.customer_id ? `Customer #${tx.customer_id}` : "Không có khách hàng",
-    };
+    return state.transactions.reduce<Record<string, GroupSummary>>((acc, tx) => {
+      const d = new Date(tx.transaction_date);
+      let key = "";
+      let label = "";
 
-    return state.transactions.reduce<Record<string, { count: number; total: number }>>((acc, tx) => {
-      const key = state.groupBy ? keyGetter[state.groupBy](tx) : "Khác";
+      switch (state.groupBy) {
+        case "day": {
+          const iso = d.toISOString().slice(0, 10);
+          key = `day:${iso}`;
+          label = formatDate(tx.transaction_date);
+          break;
+        }
+        case "week": {
+          const year = d.getFullYear();
+          const week = getISOWeek(d);
+          key = `week:${year}-${String(week).padStart(2, "0")}`;
+          label = `Tuần ${week}, ${year}`;
+          break;
+        }
+        case "month": {
+          const year = d.getFullYear();
+          const month = d.getMonth() + 1;
+          key = `month:${year}-${String(month).padStart(2, "0")}`;
+          label = `Tháng ${month}/${year}`;
+          break;
+        }
+        case "branch": {
+          const branchName = tx.branch_id ? getBranchName(tx.branch_id) : "Không có văn phòng";
+          key = `branch:${tx.branch_id || "none"}`;
+          label = branchName;
+          break;
+        }
+        case "transaction_type": {
+          const typeName = getTransactionTypeName(tx.transaction_type);
+          key = `type:${tx.transaction_type}`;
+          label = typeName;
+          break;
+        }
+        case "customer": {
+          const customerName =
+            tx.customer_name ||
+            (tx.customer_id ? customers.find((c) => c.id === String(tx.customer_id))?.name : null) ||
+            "Không có khách hàng";
+          key = `customer:${tx.customer_id || "none"}`;
+          label = customerName;
+          break;
+        }
+      }
+
       if (!acc[key]) {
-        acc[key] = { count: 0, total: 0 };
+        acc[key] = { label, count: 0, increase: 0, decrease: 0, adjustment: 0, net: 0 };
+      }
+
+      const delta = getCustomerBalanceDelta(tx.transaction_type, tx.amount);
+      if (tx.transaction_type === "adjustment") {
+        acc[key].adjustment += delta;
+      } else if (delta < 0) {
+        acc[key].increase += Math.abs(delta);
+      } else if (delta > 0) {
+        acc[key].decrease += Math.abs(delta);
       }
       acc[key].count += 1;
-      acc[key].total += tx.amount;
+      acc[key].net += delta;
+
       return acc;
     }, {});
-  }, [state.groupBy, state.transactions, getBranchName]);
+  }, [state.groupBy, state.transactions, getBranchName, customers, getTransactionTypeName]);
 
   const timeLabel = useMemo(() => {
     if (!state.dateRange) return "Tất cả thời gian";
@@ -609,6 +675,8 @@ const TransactionList: React.FC = () => {
               >
                 <option value="">Không nhóm</option>
                 <option value="day">Ngày</option>
+                <option value="week">Tuần</option>
+                <option value="month">Tháng</option>
                 <option value="branch">Văn phòng</option>
                 <option value="transaction_type">Loại giao dịch</option>
                 <option value="customer">Khách hàng</option>
@@ -650,25 +718,30 @@ const TransactionList: React.FC = () => {
                       <tr>
                         <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nhóm</th>
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Số giao dịch</th>
-                        <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng số tiền</th>
+                        <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng phát sinh tăng</th>
+                        <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng phát sinh giảm</th>
+                        <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng điều chỉnh</th>
+                        <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Net</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {Object.entries(groupedData).map(([key, data]) => (
-                        <tr key={key} className="hover:bg-gray-50 dark:hover:bg-gray-700/60">
-                          <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{key}</td>
-                          <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm text-gray-700 dark:text-gray-200">{data.count}</td>
-                          <td
-                            className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${
-                              data.total >= 0
-                                ? "text-green-600 dark:text-green-400"
-                                : "text-red-600 dark:text-red-400"
-                            }`}
-                          >
-                            {formatCurrency(data.total)}
-                          </td>
-                        </tr>
-                      ))}
+                      {Object.entries(groupedData)
+                        .sort(([keyA, a], [keyB, b]) => {
+                          if (state.groupBy === "day" || state.groupBy === "week" || state.groupBy === "month") {
+                            return keyA.localeCompare(keyB);
+                          }
+                          return a.label.localeCompare(b.label);
+                        })
+                        .map(([key, data]) => (
+                          <tr key={key} className="hover:bg-gray-50 dark:hover:bg-gray-700/60">
+                            <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{data.label}</td>
+                            <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm text-gray-700 dark:text-gray-200">{data.count}</td>
+                            <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold text-red-600 dark:text-red-400">{formatCurrency(data.increase)}</td>
+                            <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold text-green-600 dark:text-green-400">{formatCurrency(data.decrease)}</td>
+                            <td className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${data.adjustment >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>{formatCurrency(data.adjustment)}</td>
+                            <td className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${data.net >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>{formatCurrency(data.net)}</td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>

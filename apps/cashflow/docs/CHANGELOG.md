@@ -2,6 +2,10 @@
 
 ## 2026-08-07
 
+### Added
+
+- **Transaction list grouping** — `TransactionList.tsx` now groups by `Ngày` / `Tuần` / `Tháng` and shows a `Tổng hợp theo nhóm` card with `Số giao dịch`, `Tổng phát sinh tăng`, `Tổng phát sinh giảm`, `Tổng điều chỉnh`, and `Net`. Week grouping uses ISO-week calculation; groups are sorted chronologically. Group-by also still supports `Văn phòng`, `Loại giao dịch`, and `Khách hàng`.
+
 ### Changed
 
 - **Settings page refactor** — split `pages/Settings/Settings.tsx` into a shared `useSettingsState` hook, `SettingsContext`, and per-tab components in `pages/Settings/components/tabs/*.tsx`. `colorOptions`/`getColorClass` moved to `pages/Settings/utils.ts`, and the module-level `formatCurrency` duplicate was removed. No behavior changed; all tabs render and switch correctly in local preview.
