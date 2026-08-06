@@ -24,3 +24,10 @@
 - Removed duplicate per-page headers from `Dashboard` and `Calendar`; shared `MobileHeader` now covers them.
 - Added missing i18n keys for evening goals and builder published state.
 - Mobile responsiveness verified on 400px device emulation; bottom nav and mobile header render correctly.
+
+## 2026-08-06 (builder templates)
+
+- Builder now has a template selector: choose an existing template to edit, or create a new one.
+- Template name is editable inline in the header.
+- Publish saves the current template (new or existing) and switches it to active.
+- Auto-save indicator shows "Auto-saved" / "Published" status.

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FiEye, FiUpload, FiTrash2, FiPlus, FiBook, FiInfo, FiSun, FiEdit3, FiStar, FiList, FiType, FiHash, FiGitBranch, FiHome, FiUser } from "react-icons/fi";
+import { FiEye, FiUpload, FiTrash2, FiPlus, FiBook, FiInfo, FiSun, FiEdit3, FiStar, FiList, FiType, FiHash, FiGitBranch, FiHome, FiUser, FiPlusCircle } from "react-icons/fi";
 import { Card, Button, Input } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useFrameworkProgress } from "../../hooks/useFrameworkProgress";
@@ -28,24 +28,26 @@ const Builder = () => {
   const { progress, saveTemplate, setActiveTemplate } = useFrameworkProgress();
 
   const activeTemplate = progress.templates.find((t) => t.id === progress.activeTemplateId);
-  const initialBlocks = activeTemplate ? activeTemplate.blocks : defaultBlocks;
 
-  const [blocks, setBlocks] = useState<Block[]>(initialBlocks);
+  const [templateName, setTemplateName] = useState(activeTemplate?.name || "New Framework");
+  const [blocks, setBlocks] = useState<Block[]>(activeTemplate ? activeTemplate.blocks : defaultBlocks);
   const [preview, setPreview] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("");
 
   useEffect(() => {
-    const next = activeTemplate ? activeTemplate.blocks : defaultBlocks;
-    setBlocks(next);
+    setTemplateName(activeTemplate?.name || "New Framework");
+    setBlocks(activeTemplate ? activeTemplate.blocks : defaultBlocks);
   }, [activeTemplate?.id]);
 
   // Auto-save draft back to active template (debounced)
   useEffect(() => {
     if (!activeTemplate) return;
     const timer = setTimeout(() => {
-      saveTemplate(activeTemplate.name, blocks, activeTemplate.id);
+      saveTemplate(templateName, blocks, activeTemplate.id);
+      setSaveStatus("Auto-saved");
     }, 800);
     return () => clearTimeout(timer);
-  }, [blocks, activeTemplate]);
+  }, [blocks, templateName, activeTemplate]);
 
   const addBlock = (type: BlockType) => {
     const catalog = blockCatalog.find((b) => b.type === type);
@@ -72,10 +74,24 @@ const Builder = () => {
   };
 
   const handlePublish = () => {
-    const name = window.prompt("Template name", activeTemplate?.name || "New Framework");
-    if (!name) return;
+    const name = templateName.trim() || "New Framework";
     saveTemplate(name, blocks, activeTemplate?.id);
-    alert(t("builder.published"));
+    setSaveStatus(t("builder.published"));
+  };
+
+  const handleNewTemplate = () => {
+    setActiveTemplate(null);
+    setTemplateName("New Framework");
+    setBlocks(defaultBlocks);
+    setSaveStatus("");
+  };
+
+  const handleSelectTemplate = (id: string) => {
+    if (id === "new") {
+      handleNewTemplate();
+    } else {
+      setActiveTemplate(id);
+    }
   };
 
   const renderPreview = (block: Block) => {
@@ -119,6 +135,28 @@ const Builder = () => {
 
   const Sidebar = () => (
     <div className="space-y-6">
+      <div>
+        <h3 className="text-sm font-semibold mb-1">Templates</h3>
+        <p className="text-xs text-gray-500 mb-2">Select an existing template to edit, or start a new one.</p>
+        <div className="flex flex-col gap-2">
+          <select
+            value={activeTemplate?.id || "new"}
+            onChange={(e) => handleSelectTemplate(e.target.value)}
+            className="input text-sm"
+          >
+            <option value="new">+ New Framework</option>
+            {progress.templates.map((tmpl) => (
+              <option key={tmpl.id} value={tmpl.id}>
+                {tmpl.name}
+              </option>
+            ))}
+          </select>
+          <Button variant="secondary" size="sm" onClick={handleNewTemplate}>
+            <FiPlusCircle className="w-4 h-4 mr-1" /> New template
+          </Button>
+        </div>
+      </div>
+
       <div>
         <h3 className="text-sm font-semibold mb-1">Insert Blocks</h3>
         <p className="text-xs text-gray-500">Drag elements onto the canvas to build your framework.</p>
@@ -165,10 +203,21 @@ const Builder = () => {
               <FiHome className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="font-bold text-lg">The First Principles Method</h1>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                {activeTemplate ? t("builder.published") : t("builder.draft")}
-              </span>
+              <input
+                type="text"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                className="font-bold text-lg bg-transparent border-0 p-0 focus:ring-0 w-56 md:w-80"
+                placeholder="Template name"
+              />
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                  {activeTemplate ? t("builder.published") : t("builder.draft")}
+                </span>
+                {saveStatus && (
+                  <span className="text-[10px] text-gray-400">{saveStatus}</span>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
