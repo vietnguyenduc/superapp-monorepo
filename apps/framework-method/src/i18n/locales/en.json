@@ -89,6 +89,8 @@
     "edit": "Edit",
     "create": "Create",
     "search": "Search",
-    "continue": "Continue"
+    "continue": "Continue",
+    "back": "Back to home",
+    "close": "Close"
   }
 }

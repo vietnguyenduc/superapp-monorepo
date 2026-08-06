@@ -1,19 +1,84 @@
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { FiChevronLeft, FiBook, FiLink, FiZap, FiCheck, FiMoreHorizontal } from "react-icons/fi";
+import { useEffect, useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { FiChevronLeft, FiBook, FiLink, FiZap, FiCheck } from "react-icons/fi";
 import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
+import { useFrameworkProgress } from "../../hooks/useFrameworkProgress";
 
 type SectionKey = "concepts" | "reference" | "examples";
 
+const stepData: Record<number, { phase: string; title: string; desc: string; image: string }> = {
+  1: {
+    phase: "Discovery",
+    title: "Analyzing Situations",
+    desc: "Before proposing solutions, it is critical to thoroughly understand the current context. This step involves dissecting the problem space, identifying key stakeholders, and mapping out existing constraints and opportunities.",
+    image: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=800&q=80",
+  },
+  2: {
+    phase: "Deconstruction",
+    title: "Deconstruct the Problem",
+    desc: "Break down the core challenge into its most fundamental truths. Ignore previous assumptions and established conventions to find the root causes.",
+    image: "https://images.unsplash.com/photo-1517245386807-b9b94f07e22d?auto=format&fit=crop&w=800&q=80",
+  },
+  3: {
+    phase: "Synthesis",
+    title: "Identify Fundamental Truths",
+    desc: "Separate facts from assumptions to establish a solid foundation before building a solution.",
+    image: "https://images.unsplash.com/photo-1506784983877-45594efa0f91?auto=format&fit=crop&w=800&q=80",
+  },
+  4: {
+    phase: "Strategy",
+    title: "Synthesize New Solutions",
+    desc: "Reassemble the truths to form innovative approaches that address the root cause directly.",
+    image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=800&q=80",
+  },
+  5: {
+    phase: "Execution",
+    title: "Execute with Confidence",
+    desc: "Turn strategy into concrete actions and measure results against the defined objectives.",
+    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80",
+  },
+};
+
 const Step = () => {
   const { stepId } = useParams<{ stepId: string }>();
+  const navigate = useNavigate();
   const { t } = useI18n();
+  const { progress, saveReflection, completeStep } = useFrameworkProgress();
+  const currentStep = Math.min(Math.max(parseInt(stepId || "1", 10), 1), 5);
+  const data = stepData[currentStep];
+
   const [reflections, setReflections] = useState<Record<SectionKey, string>>({
     concepts: "",
     reference: "",
     examples: "",
   });
+
+  useEffect(() => {
+    const saved = progress.reflections[String(currentStep)] || {};
+    setReflections({
+      concepts: saved.concepts || "",
+      reference: saved.reference || "",
+      examples: saved.examples || "",
+    });
+  }, [currentStep, progress.reflections]);
+
+  const handleChange = (key: SectionKey, value: string) => {
+    setReflections((prev) => {
+      const next = { ...prev, [key]: value };
+      saveReflection(String(currentStep), key, value);
+      return next;
+    });
+  };
+
+  const handleComplete = () => {
+    completeStep(currentStep);
+    if (currentStep < 5) {
+      navigate(`/step/${currentStep + 1}`);
+    } else {
+      navigate("/overview");
+    }
+  };
 
   const sections: { key: SectionKey; icon: typeof FiBook; title: string; label: string; content: string; hint: string; placeholder: string }[] = [
     {
@@ -42,7 +107,7 @@ const Step = () => {
       title: t("step.examples"),
       label: "Example",
       content:
-        'Case Study Alpha: Customer support tickets spiked by 40%. Initial assumption was a flawed product release. Step 1 analysis revealed the root cause was actually a recent update to the help documentation UI making it unusable, not the product itself.',
+        "Case Study Alpha: Customer support tickets spiked by 40%. Initial assumption was a flawed product release. Step 1 analysis revealed the root cause was actually a recent update to the help documentation UI making it unusable, not the product itself.",
       hint: "Can you recall a time when a symptom masked the true root cause?",
       placeholder: "Note any similar patterns you've observed...",
     },
@@ -50,6 +115,7 @@ const Step = () => {
 
   const completedCount = Object.values(reflections).filter(Boolean).length;
   const total = sections.length;
+  const allCompleted = completedCount === total;
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -57,25 +123,21 @@ const Step = () => {
         <Link to="/overview" className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300 hover:text-primary-600">
           <FiChevronLeft className="w-4 h-4" /> {t("step.backToFramework")}
         </Link>
-        <span className="text-sm font-medium text-primary-600">{t("step.stepOf", { current: stepId || 1, total: 5 })}</span>
+        <span className="text-sm font-medium text-primary-600">{t("step.stepOf", { current: currentStep, total: 5 })}</span>
       </div>
 
       <div>
         <p className="text-xs font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">
-          Framework Phase: Discovery
+          Framework Phase: {data.phase}
         </p>
-        <h1 className="text-3xl font-bold mt-1 leading-tight">Step 1: Analyzing Situations</h1>
+        <h1 className="text-3xl font-bold mt-1 leading-tight">Step {currentStep}: {data.title}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
-          Before proposing solutions, it is critical to thoroughly understand the current context. This step involves dissecting the problem space, identifying key stakeholders, and mapping out existing constraints and opportunities to ensure a robust foundation for subsequent phases.
+          {data.desc}
         </p>
       </div>
 
       <div className="rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 h-48">
-        <img
-          src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=800&q=80"
-          alt="Step"
-          className="w-full h-full object-cover"
-        />
+        <img src={data.image} alt="Step" className="w-full h-full object-cover" />
       </div>
 
       {sections.map((section) => (
@@ -96,10 +158,10 @@ const Step = () => {
             )}
           </div>
           <div className="p-5 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30">
-            <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 mb-2">Your Reflection</p>
+            <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 mb-2">{t("step.yourReflection")}</p>
             <textarea
               value={reflections[section.key]}
-              onChange={(e) => setReflections((prev) => ({ ...prev, [section.key]: e.target.value }))}
+              onChange={(e) => handleChange(section.key, e.target.value)}
               className="input h-24 resize-none"
               placeholder={section.placeholder}
             />
@@ -110,22 +172,29 @@ const Step = () => {
 
       <Card className="flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${allCompleted ? "bg-primary-600 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-500"}`}>
             <FiCheck className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-bold">All reflections captured</p>
+            <p className="text-sm font-bold">{allCompleted ? t("step.allReflectionsCaptured") : "Reflections in progress"}</p>
             <p className="text-xs text-gray-500">{completedCount} of {total} inputs completed</p>
           </div>
         </div>
-        <FiMoreHorizontal className="w-5 h-5 text-gray-400" />
       </Card>
 
       <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-        Your analysis is complete. Based on your reflections, we are ready to select the optimal tool for the next phase.
+        {allCompleted
+          ? "Your analysis is complete. Based on your reflections, we are ready to select the optimal tool for the next phase."
+          : "Fill in all reflections to complete this step."}
       </p>
 
-      <Button variant="dark" size="lg" className="w-full">
+      <Button
+        variant="dark"
+        size="lg"
+        className="w-full"
+        disabled={!allCompleted}
+        onClick={handleComplete}
+      >
         {t("step.completeStep")}
       </Button>
     </div>
