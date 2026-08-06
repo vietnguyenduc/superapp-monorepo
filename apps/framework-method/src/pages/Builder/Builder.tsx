@@ -152,7 +152,7 @@ const Builder = () => {
             ))}
           </select>
           <Button variant="secondary" size="sm" onClick={handleNewTemplate}>
-            <FiPlusCircle className="w-4 h-4 mr-1" /> New template
+            <FiPlusCircle className="w-4 h-4" /> <span className="hidden sm:inline ml-1">New template</span>
           </Button>
         </div>
       </div>
@@ -207,7 +207,7 @@ const Builder = () => {
                 type="text"
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value)}
-                className="font-bold text-lg bg-transparent border-0 p-0 focus:ring-0 w-56 md:w-80"
+                className="font-bold text-lg bg-transparent border-0 p-0 focus:ring-0 w-full sm:w-56 md:w-80"
                 placeholder="Template name"
               />
               <div className="flex items-center gap-2">
@@ -222,20 +222,22 @@ const Builder = () => {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="secondary" size="sm" onClick={() => setPreview((p) => !p)}>
-              <FiEye className="w-4 h-4 mr-1" /> {t("builder.preview")}
+              <FiEye className="w-4 h-4" /> <span className="hidden sm:inline ml-1">{t("builder.preview")}</span>
             </Button>
             <Button variant="dark" size="sm" onClick={handlePublish}>
-              <FiUpload className="w-4 h-4 mr-1" /> {t("builder.publish")}
+              <FiUpload className="w-4 h-4" /> <span className="hidden sm:inline ml-1">{t("builder.publish")}</span>
             </Button>
-            <button className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center ml-2">
-              <FiUser className="w-4 h-4" />
-            </button>
           </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <aside className="lg:col-span-4 order-first lg:order-none">
+            <div className="lg:sticky lg:top-24 p-5 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
+              <Sidebar />
+            </div>
+          </aside>
           <div className="lg:col-span-8 space-y-4">
             <div className="mb-2">
               <p className="text-xs text-gray-500">Break down complex problems into fundamental truths and build up from there.</p>
@@ -296,11 +298,7 @@ const Builder = () => {
             )}
           </div>
 
-          <div className="hidden lg:block lg:col-span-4">
-            <div className="sticky top-24 p-5 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
-              <Sidebar />
-            </div>
-          </div>
+
         </div>
       </div>
     </div>

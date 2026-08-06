@@ -31,3 +31,11 @@
 - Template name is editable inline in the header.
 - Publish saves the current template (new or existing) and switches it to active.
 - Auto-save indicator shows "Auto-saved" / "Published" status.
+
+## 2026-08-06 (mobile UX)
+
+- Added `Builder` to `BottomNav` so mobile users can open the builder.
+- Replaced mobile header sun icon with a Home icon linking to `/dashboard`.
+- Removed unused builder branch from `MobileHeader` (builder renders its own responsive header).
+- Made `Builder` responsive: template selector and block catalog visible on mobile, header buttons collapse to icon-only, template name input adapts to width.
+- `BottomNav` now also shows on the builder route so mobile users can switch screens without leaving the app.

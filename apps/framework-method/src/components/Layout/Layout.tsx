@@ -22,7 +22,7 @@ const Layout = () => {
       <main className={`mx-auto px-4 py-4 md:py-8 ${isBuilder ? "max-w-7xl" : "max-w-3xl"}`}>
         <Outlet />
       </main>
-      {!isBuilder && <BottomNav />}
+      <BottomNav />
     </div>
   );
 };
