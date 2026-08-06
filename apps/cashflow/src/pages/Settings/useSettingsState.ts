@@ -9,7 +9,7 @@ import { useAuthContext as useAuth } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useNavigate } from "react-router-dom";
 import { backupService, recoveryUtils, type BackupData } from "../../utils/backupRecovery";
-import { isAdmin } from "../../utils/permissions";
+import { isAdmin, canManageAllCustomers } from "../../utils/permissions";
 
 
 
@@ -1228,7 +1228,7 @@ export function useSettingsState() {
 
 
   const handleImportOpeningBalance = async () => {
-    if (!isAdmin(user)) {
+    if (!isAdmin(user) && !canManageAllCustomers(user)) {
       toast.warning("Bạn không có quyền thực hiện thao tác này.");
       return;
     }
@@ -1468,11 +1468,12 @@ export function useSettingsState() {
       { id: "integration", name: "Tích hợp", icon: "🔗" },
       { id: "users", name: "Tài khoản & phân quyền", icon: "👥" },
     ].filter(tab => {
-      // Show users/permissions and opening-balance tabs for admin, admin_master, and admin_company
-      if ((tab.id === "users" || tab.id === "opening-balance") && !isAdmin(user)) return false;
+      // Users/permissions tab is admin-only; opening-balance is also available to staff with customer manage permission
+      if (tab.id === "users" && !isAdmin(user)) return false;
+      if (tab.id === "opening-balance" && !isAdmin(user) && !canManageAllCustomers(user)) return false;
       return true;
     }),
-    [user?.role],
+    [user],
   );
 
   return {
