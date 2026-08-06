@@ -1,5 +1,14 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useMemo } from "react";
 import { FiPlay, FiTrendingUp, FiAnchor } from "react-icons/fi";
+import {
+  startOfDay,
+  parseISO,
+  subDays,
+  eachDayOfInterval,
+  isSameDay,
+  format,
+} from "date-fns";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -10,47 +19,66 @@ import {
 } from "recharts";
 import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
-import { useFrameworkProgress } from "../../hooks/useFrameworkProgress";
-
-const trendData = [
-  { day: "M", value: 45 },
-  { day: "T", value: 62 },
-  { day: "W", value: 58 },
-  { day: "T", value: 75 },
-  { day: "F", value: 70 },
-  { day: "S", value: 85 },
-  { day: "S", value: 78 },
-];
-
-const weekDays = [
-  { label: "T", done: true },
-  { label: "W", done: true },
-  { label: "T", done: true },
-  { label: "F", done: true },
-  { label: "S", done: true },
-  { label: "S", done: true },
-  { label: "M", done: false, today: true },
-];
+import { useFrameworkProgress, getDailySteps } from "../../hooks/useFrameworkProgress";
 
 const Dashboard = () => {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { progress } = useFrameworkProgress();
 
-  const activeProgress = Math.round((progress.completedSteps.length / 5) * 100);
+  const today = startOfDay(new Date());
+  const dailySteps = useMemo(() => getDailySteps(progress), [progress]);
+  const totalSteps = dailySteps.length || 5;
+  const activeProgress = Math.round((progress.completedSteps.length / totalSteps) * 100);
+
+  const sessionDates = useMemo(() => {
+    return progress.sessions
+      .map((s) => startOfDay(parseISO(s.date)))
+      .filter((d) => !isNaN(d.getTime()));
+  }, [progress.sessions]);
+
+  const streak = useMemo(() => {
+    if (!sessionDates.length) return 0;
+    const sorted = [...sessionDates].sort((a, b) => b.getTime() - a.getTime());
+    let last = sorted[0];
+    let count = 0;
+    while (sessionDates.some((d) => isSameDay(d, last))) {
+      count++;
+      last = subDays(last, 1);
+    }
+    return count;
+  }, [sessionDates]);
+
+  const weekDays = useMemo(() => {
+    const start = subDays(today, 6);
+    const days = eachDayOfInterval({ start, end: today });
+    return days.map((d) => {
+      const hasSession = sessionDates.some((sd) => isSameDay(sd, d));
+      return { label: format(d, "EEEEE"), done: hasSession, today: isSameDay(d, today) };
+    });
+  }, [sessionDates, today]);
+
+  const trendData = useMemo(() => {
+    const start = subDays(today, 6);
+    const days = eachDayOfInterval({ start, end: today });
+    return days.map((d) => {
+      const count = sessionDates.filter((sd) => isSameDay(sd, d)).length;
+      return { day: format(d, "EEEEE"), value: count };
+    });
+  }, [sessionDates, today]);
 
   const defaultFrameworks = [
-    { id: "first-principles", name: "The First Principles Method", progress: activeProgress, tag: "Strategy" },
-    { id: "deep-work", name: "Deep Work", progress: 0, tag: "1 / 3h" },
+    { id: "first-principles", name: "The First Principles Method", progress: activeProgress, tag: t("overview.activeFramework") },
+    { id: "deep-work", name: "Deep Work", progress: 0, tag: "" },
     { id: "time-blocking", name: "Time Blocking", progress: 0, tag: "" },
   ];
 
   const frameworks = progress.templates.length
-    ? progress.templates.map((t, idx) => ({
+    ? progress.templates.map((t) => ({
         id: t.id,
         name: t.name,
-        progress: idx === 0 ? activeProgress : 0,
-        tag: idx === 0 ? "Active" : "",
+        progress: t.id === progress.activeTemplateId ? activeProgress : 0,
+        tag: t.id === progress.activeTemplateId ? t("overview.activeFramework") : "",
       }))
     : defaultFrameworks;
 
@@ -69,8 +97,8 @@ const Dashboard = () => {
             <FiAnchor className="w-7 h-7" />
           </div>
           <div>
-            <p className="text-2xl font-bold">12</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t("dashboard.streak", { count: 12 })}</p>
+            <p className="text-2xl font-bold">{streak}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t("dashboard.streak", { count: streak })}</p>
           </div>
         </div>
         <div className="flex justify-between">
