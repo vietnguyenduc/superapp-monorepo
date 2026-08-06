@@ -158,6 +158,10 @@ Recommended workflow to avoid the quota:
 2. **Cash-flow chart negative rect** — `CashFlowChart.tsx` no longer uses a transparent `base` + `delta` stacked waterfall; that pattern produced invalid negative SVG `<rect>` heights whenever a period's net flow pushed the running total across zero. It now renders signed `inflow`/`outflow` bars with `stackOffset="sign"` and a `runningTotal` balance line, which Recharts handles natively for negative values.
 3. **Import tab blocked by default date** — `TransactionImport.tsx` `hasTableChanges` compares the row against `emptyRow` instead of an empty string, so the pre-filled default `transaction_date` no longer triggers the `window.confirm` that was silently dismissed by Playwright and blocked switching to `Nhập hàng loạt`.
 
+4. **Auth profile overwrite / role reset** — `@superapp/iam/src/hooks/useAuth.ts` used `.upsert({ role: "staff" })` on `SIGNED_IN` and `signUp`, which silently overwrote `public.users.role` (and cleared `company_id`) every time an existing user signed in. This caused `admin_master` accounts to become `staff` after login. Changed to `.insert(...)` with `23505` unique-violation ignored.
+
+5. **Admin default company selection** — `CompanyBadge.tsx` and `useCompanyId.ts` now prefer `user.company_id` for `admin_master`/`admin` before `localStorage.selectedCompanyId` and before `companies[0]`. This stops `Dashboard.tsx` from staying in `LoadingFallback` or defaulting to the wrong tenant when no company has been explicitly selected.
+
 ### Still to do for production-grade
 - `Settings.tsx` is 3000+ lines with ~50 `useState` hooks and inline modal JSX; split into tab/page components.
 - `TransactionImport.tsx` / `CustomerImport.tsx` still contain parser/validator/preview logic inline; extract to `utils/importUtils` or dedicated modules.

@@ -4,8 +4,8 @@ import { useCompany } from "@superapp/iam";
 /**
  * Resolves the active company ID for the current user.
  *
- * - For `admin_master`, returns the explicitly selected company (may be undefined
- *   when no company is selected yet — callers should handle that).
+ * - For `admin_master` / `admin`, returns the explicitly selected company,
+ *   then localStorage, then the user's assigned `company_id`.
  * - For all other roles, returns the user's own `company_id`.
  *
  * Centralizing this avoids the repeated inline pattern:
@@ -14,8 +14,10 @@ import { useCompany } from "@superapp/iam";
 export const useCompanyId = (): string | undefined => {
   const { user } = useAuthContext();
   const { selectedCompany } = useCompany();
-  if (user?.role === "admin_master") {
-    return selectedCompany?.id || (typeof window !== "undefined" ? window.localStorage.getItem("selectedCompanyId") || undefined : undefined);
+  const canSwitch = user?.role === "admin_master" || user?.role === "admin";
+  if (canSwitch) {
+    const savedId = typeof window !== "undefined" ? window.localStorage.getItem("selectedCompanyId") || undefined : undefined;
+    return selectedCompany?.id || savedId || user?.company_id;
   }
   return user?.company_id;
 };
