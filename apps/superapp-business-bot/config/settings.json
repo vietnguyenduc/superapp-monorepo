@@ -1,0 +1,5 @@
+{
+  "apps": [
+    { "name": "framework-method", "path": "apps/framework-method", "port": 3009, "tech": "React", "production_url": "" }
+  ]
+}
