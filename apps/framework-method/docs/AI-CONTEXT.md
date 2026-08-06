@@ -7,6 +7,7 @@
 - Auth is email/password only; SSO cross-app works via `detectSessionInUrl` and `AppSwitcher` links with `access_token`/`refresh_token`.
 - Routes are protected by `ProtectedRoute`; unauthenticated users land on `/login`.
 - Port: 5179 (dev), `dist` (build output), `vercel.json` ready for Vercel deployment.
+- See `RELEASE-WORKFLOW.md` for the agreed local → Vercel preview → production verification process.
 
 ## Design Tokens
 
