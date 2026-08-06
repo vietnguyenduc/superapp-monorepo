@@ -47,7 +47,10 @@
     "finalizeStep": "Hoàn tất bước & Tiếp tục",
     "finalizeFramework": "Hoàn tất framework",
     "allReflectionsCaptured": "Đã ghi lại đầy đủ suy ngẫm",
-    "reflectionsInProgress": "Đã hoàn thành {{completed}}/{{total}} phần nhập liệu",
+    "reflectionsInProgressTitle": "Suy ngẫm đang tiến hành",
+    "reflectionsInProgress": "{{completed}}/{{total}} phần nhập liệu đã hoàn thành",
+    "analysisNote": "Hãy đảm bảo bạn đã xem xét kỹ tất cả khái niệm trước khi tiếp tục. Công cụ ở bước tiếp theo phụ thuộc vào ngữ cảnh bạn thu thập được ở đây.",
+    "finalNote": "Phân tích của bạn đã hoàn tất. Dựa trên suy ngẫm, bạn đã sẵn sàng hoàn thiện framework.",
     "hint": "Gợi ý",
     "required": "Bắt buộc",
     "answerPlaceholder": "Nhập suy ngẫm của bạn..."

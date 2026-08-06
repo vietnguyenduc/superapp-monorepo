@@ -47,7 +47,10 @@
     "finalizeStep": "Finalize Step & Proceed",
     "finalizeFramework": "Finalize Framework",
     "allReflectionsCaptured": "All reflections captured",
+    "reflectionsInProgressTitle": "Reflections in progress",
     "reflectionsInProgress": "{{completed}} of {{total}} inputs completed",
+    "analysisNote": "Ensure you have thoroughly reviewed all concepts before proceeding. The tool selection in the next step depends on the specific context gathered here.",
+    "finalNote": "Your analysis is complete. Based on your reflections, you are ready to finalize the framework.",
     "hint": "Hint",
     "required": "Required",
     "answerPlaceholder": "Type your reflection here..."

@@ -176,7 +176,7 @@ const StepPage = () => {
 
   const getQuestion = (block: Block) => {
     if (contentTypes.includes(block.type)) {
-      return block.reflectionQuestion?.trim() || t("step.yourReflection");
+      return t("step.yourReflection");
     }
     return block.prompt?.trim() || t("step.yourReflection");
   };
@@ -324,11 +324,10 @@ const StepPage = () => {
               )}
 
               {showInput && (
-                <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                <div className="space-y-2 pt-3 border-t border-gray-100 dark:border-gray-800">
                   <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{question}</p>
                   {renderInput(block)}
                   {hint && <p className="text-xs text-gray-400 italic">{hint}</p>}
-                  {block.required && !filled && <p className="text-xs text-red-500">{t("step.required")}</p>}
                 </div>
               )}
             </Card>
@@ -336,25 +335,31 @@ const StepPage = () => {
         })}
       </div>
 
-      <Card className="flex items-center gap-4 p-4">
-        <div
-          className={`w-10 h-10 rounded-full flex items-center justify-center ${
-            allRequiredDone ? "bg-primary-600 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-500"
-          }`}
-        >
-          <FiCheck className="w-5 h-5" />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-bold">
-            {completedCount === totalInputs && totalInputs > 0
-              ? t("step.allReflectionsCaptured")
-              : t("step.reflectionsInProgress", { completed: completedCount, total: totalInputs })}
-          </p>
-          <p className="text-xs text-gray-500">
-            {allRequiredDone ? t("common.ready") : t("step.answerPlaceholder")}
-          </p>
+      <Card className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              allRequiredDone ? "bg-primary-600 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-500"
+            }`}
+          >
+            <FiCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-sm font-bold">
+              {completedCount === totalInputs && totalInputs > 0
+                ? t("step.allReflectionsCaptured")
+                : t("step.reflectionsInProgressTitle")}
+            </p>
+            <p className="text-xs text-gray-500">
+              {t("step.reflectionsInProgress", { completed: completedCount, total: totalInputs })}
+            </p>
+          </div>
         </div>
       </Card>
+
+      <p className="text-center text-sm text-gray-500 dark:text-gray-400 px-2">
+        {stepNumber === totalSteps ? t("step.finalNote") : t("step.analysisNote")}
+      </p>
 
       <Button variant="dark" size="lg" className="w-full" disabled={!allRequiredDone} onClick={handleFinalize}>
         {stepNumber === totalSteps ? t("step.finalizeFramework") : t("step.finalizeStep")}
