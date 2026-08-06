@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { FiMoreVertical, FiPlus, FiSun, FiMoon, FiUser } from "react-icons/fi";
+import { FiMoreVertical, FiPlus } from "react-icons/fi";
 import { Card } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
-import { useTheme } from "../../contexts/ThemeContext";
 
 const weekDays = ["S", "M", "T", "W", "T", "F", "S"];
 const days = [
@@ -61,24 +60,10 @@ const events = [
 
 const Calendar = () => {
   const { t } = useI18n();
-  const { theme, toggleTheme } = useTheme();
   const [view, setView] = useState<"month" | "week">("month");
 
   return (
     <div className="space-y-5 animate-fade-in">
-      <header className="flex items-center justify-between py-2">
-        <button
-          onClick={toggleTheme}
-          className="w-10 h-10 rounded-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-200"
-        >
-          {theme === "dark" ? <FiMoon className="w-5 h-5" /> : <FiSun className="w-5 h-5" />}
-        </button>
-        <h2 className="text-lg font-semibold">Monday, Oct 23</h2>
-        <button className="w-10 h-10 rounded-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-200">
-          <FiUser className="w-5 h-5" />
-        </button>
-      </header>
-
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t("calendar.month")}</h1>
         <div className="flex rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-900">

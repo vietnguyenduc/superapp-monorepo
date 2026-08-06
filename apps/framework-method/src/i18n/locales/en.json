@@ -40,7 +40,7 @@
     "reference": "Reference",
     "examples": "Examples",
     "yourReflection": "Your Reflection",
-    "completeStep": "Complete Step & Choose Tool",
+    "completeStep": "Finalize Step & Proceed to Tool Selection",
     "allReflectionsCaptured": "All reflections captured"
   },
   "actions": {
@@ -56,7 +56,10 @@
     "dailyGoals": "Daily Goals",
     "tomorrowFocus": "Tomorrow's Focus",
     "closeDay": "Close the Day",
-    "solidProgress": "Solid Progress"
+    "solidProgress": "Solid Progress",
+    "focusWork": "Focus Work",
+    "adminTasks": "Admin Tasks",
+    "add": "Add"
   },
   "calendar": {
     "month": "Month",
@@ -73,6 +76,7 @@
     "draft": "DRAFT",
     "preview": "Preview",
     "publish": "Publish",
+    "published": "Published",
     "contentBlocks": "Content Blocks",
     "interactionBlocks": "Interaction Blocks",
     "logicPathing": "Logic & Pathing",

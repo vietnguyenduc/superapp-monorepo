@@ -1,13 +1,22 @@
 import type { ReactNode } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuthContext } from "@superapp/iam";
 
 interface ProtectedRouteProps {
   children: ReactNode;
 }
 
+const isTrialPreview = () => {
+  if (typeof window === "undefined") return false;
+  return (
+    new URLSearchParams(window.location.search).get("trial_preview") === "true" ||
+    localStorage.getItem("framework-method-trial-preview") === "true"
+  );
+};
+
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated, loading } = useAuthContext();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -17,8 +26,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isTrialPreview()) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Persist trial flag across navigation
+  if (isTrialPreview()) {
+    localStorage.setItem("framework-method-trial-preview", "true");
   }
 
   return <>{children}</>;

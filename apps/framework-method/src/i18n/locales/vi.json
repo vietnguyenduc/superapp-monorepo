@@ -40,7 +40,7 @@
     "reference": "Tài liệu tham khảo",
     "examples": "Ví dụ",
     "yourReflection": "Suy ngẫm của bạn",
-    "completeStep": "Hoàn thành & Chọn công cụ",
+    "completeStep": "Hoàn tất bước & Chuyển sang chọn công cụ",
     "allReflectionsCaptured": "Đã ghi lại đầy đủ suy ngẫm"
   },
   "actions": {
@@ -56,7 +56,10 @@
     "dailyGoals": "Mục tiêu hàng ngày",
     "tomorrowFocus": "Trọng tâm ngày mai",
     "closeDay": "Kết thúc ngày",
-    "solidProgress": "Tiến bộ vững chắc"
+    "solidProgress": "Tiến bộ vững chắc",
+    "focusWork": "Công việc tập trung",
+    "adminTasks": "Công việc quản trị",
+    "add": "Thêm"
   },
   "calendar": {
     "month": "Tháng",
@@ -73,6 +76,7 @@
     "draft": "NHÁP",
     "preview": "Xem trước",
     "publish": "Xuất bản",
+    "published": "Đã xuất bản",
     "contentBlocks": "Khối nội dung",
     "interactionBlocks": "Khối tương tác",
     "logicPathing": "Logic & định tuyến",

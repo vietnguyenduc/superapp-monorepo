@@ -2,34 +2,76 @@ import { useState } from "react";
 import { FiThumbsUp, FiTarget, FiCalendar, FiPlus, FiPower } from "react-icons/fi";
 import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
-
-const goals = [
-  { category: "Focus Work", target: 3, completed: 3 },
-  { category: "Admin Tasks", target: 2, completed: 1 },
-];
-
-const tomorrowItems = [
-  { id: "1", title: "Finalize Q3 Strategy Deck", note: "Deep work session (9:00 AM - 11:00 AM)", done: false },
-  { id: "2", title: "Weekly Sync with Product Team", note: "Review sprint progress (2:00 PM)", done: false },
-];
+import { useFrameworkProgress } from "../../hooks/useFrameworkProgress";
+import type { TomorrowItem } from "../../hooks/useFrameworkProgress";
 
 const Evening = () => {
   const { t } = useI18n();
-  const [wentWell, setWentWell] = useState("");
-  const [notes, setNotes] = useState("");
+  const { progress, update, closeDay } = useFrameworkProgress();
+  const evening = progress.evening;
+
+  const [newItemTitle, setNewItemTitle] = useState("");
+  const [newItemNote, setNewItemNote] = useState("");
+
+  const updateEvening = (updates: Partial<typeof evening>) => {
+    update({ evening: { ...evening, ...updates } });
+  };
+
+  const addTomorrowItem = () => {
+    if (!newItemTitle.trim()) return;
+    const newItem: TomorrowItem = {
+      id: Date.now().toString(),
+      title: newItemTitle,
+      note: newItemNote,
+      done: false,
+    };
+    updateEvening({ tomorrowItems: [...evening.tomorrowItems, newItem] });
+    setNewItemTitle("");
+    setNewItemNote("");
+  };
+
+  const toggleTomorrowItem = (id: string) => {
+    updateEvening({
+      tomorrowItems: evening.tomorrowItems.map((item) =>
+        item.id === id ? { ...item, done: !item.done } : item
+      ),
+    });
+  };
+
+  const removeTomorrowItem = (id: string) => {
+    updateEvening({
+      tomorrowItems: evening.tomorrowItems.filter((item) => item.id !== id),
+    });
+  };
+
+  const completedFocus = 3;
+  const totalFocus = 3;
+  const completedAdmin = 1;
+  const totalAdmin = 2;
+
+  const goals = [
+    { category: t("evening.focusWork"), target: totalFocus, completed: completedFocus },
+    { category: t("evening.adminTasks"), target: totalAdmin, completed: completedAdmin },
+  ];
+
+  const handleCloseDay = () => {
+    closeDay();
+    // optionally reset evening fields
+    updateEvening({ wentWell: "", notes: "", tomorrowItems: [] });
+  };
 
   return (
     <div className="space-y-5 animate-fade-in">
       <div className="text-center py-4">
-        <h1 className="text-3xl font-bold">{t("evening.eveningReflection")}</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-xs mx-auto">
-          Take a moment to review your day, celebrate the wins, and prepare for tomorrow.
-        </p>
-        <div className="flex justify-center mt-4">
+        <div className="flex justify-center mb-3">
           <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-primary-900/20 text-primary-600 flex items-center justify-center">
             <FiPower className="w-8 h-8" />
           </div>
         </div>
+        <h1 className="text-3xl font-bold">{t("evening.eveningReflection")}</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-xs mx-auto">
+          Take a moment to review your day, celebrate the wins, and prepare for tomorrow.
+        </p>
       </div>
 
       <Card className="p-5">
@@ -40,8 +82,8 @@ const Evening = () => {
           <h2 className="font-semibold text-lg">{t("evening.whatWentWell")}</h2>
         </div>
         <textarea
-          value={wentWell}
-          onChange={(e) => setWentWell(e.target.value)}
+          value={evening.wentWell}
+          onChange={(e) => updateEvening({ wentWell: e.target.value })}
           className="input h-28 resize-none"
           placeholder="Reflect on your achievements, moments of joy, or unexpected successes today..."
         />
@@ -69,10 +111,7 @@ const Evening = () => {
                   </span>
                 </div>
                 <div className="w-full h-2.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-2.5 bg-primary-600 rounded-full"
-                    style={{ width: `${pct}%` }}
-                  />
+                  <div className="h-2.5 bg-primary-600 rounded-full" style={{ width: `${pct}%` }} />
                 </div>
               </div>
             );
@@ -93,31 +132,55 @@ const Evening = () => {
             </div>
             <h2 className="font-semibold text-lg">{t("evening.tomorrowFocus")}</h2>
           </div>
-          <button className="w-8 h-8 rounded-full bg-blue-50 dark:bg-primary-900/20 text-primary-600 flex items-center justify-center">
-            <FiPlus className="w-5 h-5" />
-          </button>
         </div>
         <div className="space-y-3 mb-4">
-          {tomorrowItems.map((item) => (
+          {evening.tomorrowItems.map((item) => (
             <div key={item.id} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-              <input type="checkbox" className="w-5 h-5 mt-0.5 rounded border-gray-300 text-primary-600" />
-              <div>
+              <input
+                type="checkbox"
+                checked={item.done}
+                onChange={() => toggleTomorrowItem(item.id)}
+                className="w-5 h-5 mt-0.5 rounded border-gray-300 text-primary-600"
+              />
+              <div className="flex-1">
                 <p className="text-sm font-medium">{item.title}</p>
                 <p className="text-xs text-gray-500 mt-0.5">{item.note}</p>
               </div>
+              <button onClick={() => removeTomorrowItem(item.id)} className="text-gray-400 hover:text-red-500">
+                <FiPlus className="w-4 h-4 rotate-45" />
+              </button>
             </div>
           ))}
+          <div className="flex flex-col gap-2 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+            <input
+              type="text"
+              value={newItemTitle}
+              onChange={(e) => setNewItemTitle(e.target.value)}
+              placeholder="Add a new focus item..."
+              className="input"
+            />
+            <input
+              type="text"
+              value={newItemNote}
+              onChange={(e) => setNewItemNote(e.target.value)}
+              placeholder="Note / time (optional)"
+              className="input"
+            />
+            <Button variant="secondary" size="sm" onClick={addTomorrowItem}>
+              <FiPlus className="w-4 h-4 mr-1" /> {t("evening.add")}
+            </Button>
+          </div>
         </div>
         <p className="text-xs font-semibold text-gray-700 dark:text-gray-200 mb-2">Notes for Tomorrow</p>
         <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
+          value={evening.notes}
+          onChange={(e) => updateEvening({ notes: e.target.value })}
           className="input h-20 resize-none"
           placeholder="Add any additional context, reminders, or preparation notes for tomorrow's tasks..."
         />
       </Card>
 
-      <Button variant="dark" size="lg" className="w-full">
+      <Button variant="dark" size="lg" className="w-full" onClick={handleCloseDay}>
         <FiPower className="w-5 h-5 mr-2" />
         {t("evening.closeDay")}
       </Button>

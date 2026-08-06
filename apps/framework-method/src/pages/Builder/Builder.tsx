@@ -1,8 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FiEye, FiUpload, FiTrash2, FiPlus, FiBook, FiInfo, FiSun, FiEdit3, FiStar, FiList, FiType, FiHash, FiGitBranch, FiHome, FiUser } from "react-icons/fi";
 import { Card, Button, Input } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
+import { useFrameworkProgress } from "../../hooks/useFrameworkProgress";
 import type { Block, BlockType } from "../../types";
+
+const defaultBlocks: Block[] = [
+  { id: "1", type: "knowledge", label: "Deconstruct the Problem", prompt: "Define the current assumption or problem clearly before breaking it down into fundamental truths.", placeholder: "", required: false, order_index: 0 },
+  { id: "2", type: "example", label: "Example", prompt: "Instead of saying 'batteries are expensive,' identify the cost of the raw materials making up the battery.", placeholder: "", required: false, order_index: 1 },
+  { id: "3", type: "reflection", label: "Reflection Area", prompt: "What is the problem you are trying to solve?", placeholder: "Type your answer here...", required: true, order_index: 2 },
+];
 
 const blockCatalog: { type: BlockType; label: string; icon: typeof FiBook; category: "content" | "interaction" | "logic" }[] = [
   { type: "knowledge", label: "Knowledge", icon: FiBook, category: "content" },
@@ -18,12 +25,27 @@ const blockCatalog: { type: BlockType; label: string; icon: typeof FiBook; categ
 
 const Builder = () => {
   const { t } = useI18n();
-  const [blocks, setBlocks] = useState<Block[]>([
-    { id: "1", type: "knowledge", label: "Deconstruct the Problem", prompt: "Define the current assumption or problem clearly before breaking it down into fundamental truths.", placeholder: "", required: false, order_index: 0 },
-    { id: "2", type: "example", label: "Example", prompt: "Instead of saying 'batteries are expensive,' identify the cost of the raw materials making up the battery.", placeholder: "", required: false, order_index: 1 },
-    { id: "3", type: "reflection", label: "Reflection Area", prompt: "What is the problem you are trying to solve?", placeholder: "Type your answer here...", required: true, order_index: 2 },
-  ]);
+  const { progress, saveTemplate, setActiveTemplate } = useFrameworkProgress();
+
+  const activeTemplate = progress.templates.find((t) => t.id === progress.activeTemplateId);
+  const initialBlocks = activeTemplate ? activeTemplate.blocks : defaultBlocks;
+
+  const [blocks, setBlocks] = useState<Block[]>(initialBlocks);
   const [preview, setPreview] = useState(false);
+
+  useEffect(() => {
+    const next = activeTemplate ? activeTemplate.blocks : defaultBlocks;
+    setBlocks(next);
+  }, [activeTemplate?.id]);
+
+  // Auto-save draft back to active template (debounced)
+  useEffect(() => {
+    if (!activeTemplate) return;
+    const timer = setTimeout(() => {
+      saveTemplate(activeTemplate.name, blocks, activeTemplate.id);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [blocks, activeTemplate]);
 
   const addBlock = (type: BlockType) => {
     const catalog = blockCatalog.find((b) => b.type === type);
@@ -47,6 +69,13 @@ const Builder = () => {
 
   const removeBlock = (id: string) => {
     setBlocks((prev) => prev.filter((b) => b.id !== id));
+  };
+
+  const handlePublish = () => {
+    const name = window.prompt("Template name", activeTemplate?.name || "New Framework");
+    if (!name) return;
+    saveTemplate(name, blocks, activeTemplate?.id);
+    alert(t("builder.published"));
   };
 
   const renderPreview = (block: Block) => {
@@ -125,17 +154,20 @@ const Builder = () => {
   );
 
   return (
-    <div className="animate-fade-in -mx-4 md:-mx-8 -my-6 md:-my-8 min-h-screen md:bg-white md:dark:bg-gray-900">
+    <div className="animate-fade-in -mx-4 md:-mx-0 -my-4 md:-my-0 min-h-screen">
       <header className="sticky top-0 z-30 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 px-4 md:px-8 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <button
+              onClick={() => window.history.back()}
+              className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
+            >
               <FiHome className="w-5 h-5" />
             </button>
             <div>
               <h1 className="font-bold text-lg">The First Principles Method</h1>
               <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                {t("builder.draft")}
+                {activeTemplate ? t("builder.published") : t("builder.draft")}
               </span>
             </div>
           </div>
@@ -143,7 +175,7 @@ const Builder = () => {
             <Button variant="secondary" size="sm" onClick={() => setPreview((p) => !p)}>
               <FiEye className="w-4 h-4 mr-1" /> {t("builder.preview")}
             </Button>
-            <Button variant="dark" size="sm">
+            <Button variant="dark" size="sm" onClick={handlePublish}>
               <FiUpload className="w-4 h-4 mr-1" /> {t("builder.publish")}
             </Button>
             <button className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center ml-2">

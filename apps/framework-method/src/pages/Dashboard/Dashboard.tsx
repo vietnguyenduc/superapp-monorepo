@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { FiPlay, FiSun, FiMoon, FiUser, FiTrendingUp, FiAnchor } from "react-icons/fi";
+import { FiPlay, FiTrendingUp, FiAnchor } from "react-icons/fi";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -10,7 +10,7 @@ import {
 } from "recharts";
 import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
-import { useTheme } from "../../contexts/ThemeContext";
+import { useFrameworkProgress } from "../../hooks/useFrameworkProgress";
 
 const trendData = [
   { day: "M", value: 45 },
@@ -20,12 +20,6 @@ const trendData = [
   { day: "F", value: 70 },
   { day: "S", value: 85 },
   { day: "S", value: 78 },
-];
-
-const frameworks = [
-  { id: "first-principles", name: "The First Principles Method", progress: 40, tag: "Strategy" },
-  { id: "deep-work", name: "Deep Work", progress: 0, tag: "1 / 3h" },
-  { id: "time-blocking", name: "Time Blocking", progress: 0, tag: "" },
 ];
 
 const weekDays = [
@@ -41,26 +35,30 @@ const weekDays = [
 const Dashboard = () => {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
+  const { progress } = useFrameworkProgress();
+
+  const activeProgress = Math.round((progress.completedSteps.length / 5) * 100);
+
+  const defaultFrameworks = [
+    { id: "first-principles", name: "The First Principles Method", progress: activeProgress, tag: "Strategy" },
+    { id: "deep-work", name: "Deep Work", progress: 0, tag: "1 / 3h" },
+    { id: "time-blocking", name: "Time Blocking", progress: 0, tag: "" },
+  ];
+
+  const frameworks = progress.templates.length
+    ? progress.templates.map((t, idx) => ({
+        id: t.id,
+        name: t.name,
+        progress: idx === 0 ? activeProgress : 0,
+        tag: idx === 0 ? "Active" : "",
+      }))
+    : defaultFrameworks;
 
   return (
     <div className="space-y-5 animate-fade-in">
-      <header className="flex items-center justify-between py-2">
-        <button
-          onClick={toggleTheme}
-          className="w-10 h-10 rounded-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-200"
-        >
-          {theme === "dark" ? <FiMoon className="w-5 h-5" /> : <FiSun className="w-5 h-5" />}
-        </button>
-        <h2 className="text-lg font-semibold">Monday, Oct 23</h2>
-        <button className="w-10 h-10 rounded-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-200">
-          <FiUser className="w-5 h-5" />
-        </button>
-      </header>
-
       <div className="text-left">
         <h1 className="text-2xl font-bold">{t("dashboard.goodMorning")}</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm italic border-l-2 border-gray-300 pl-3">
+        <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm italic border-l-2 border-gray-300 dark:border-gray-700 pl-3">
           &quot;Logic is the beginning of wisdom, not the end.&quot;
         </p>
       </div>
@@ -150,12 +148,10 @@ const Dashboard = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm truncate">{fw.name}</p>
-                {fw.tag && (
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wide">{fw.tag}</span>
-                    <span className="text-[10px] text-gray-400">{fw.progress > 0 ? `${fw.progress}%` : ""}</span>
-                  </div>
-                )}
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wide">{fw.tag || "—"}</span>
+                  <span className="text-[10px] text-gray-400">{fw.progress > 0 ? `${fw.progress}%` : ""}</span>
+                </div>
                 {fw.progress > 0 && (
                   <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full mt-1.5">
                     <div className="h-1.5 bg-primary-500 rounded-full" style={{ width: `${fw.progress}%` }} />
