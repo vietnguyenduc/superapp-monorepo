@@ -25,6 +25,12 @@ describe("balanceMath", () => {
       expect(getCustomerBalanceDelta("adjustment", 50)).toBe(50);
     });
 
+    it("negative amounts reverse the direction for payment/charge/refund", () => {
+      expect(getCustomerBalanceDelta("charge", -1000)).toBe(1000);
+      expect(getCustomerBalanceDelta("payment", -1000)).toBe(-1000);
+      expect(getCustomerBalanceDelta("refund", -1000)).toBe(-1000);
+    });
+
     it("ignores case and whitespace", () => {
       expect(getCustomerBalanceDelta("  CHARGE ", 100)).toBe(-100);
     });
@@ -50,6 +56,11 @@ describe("balanceMath", () => {
 
     it("charges do not affect the bank account balance", () => {
       expect(getBankAccountBalanceDelta("charge", 100)).toBe(0);
+    });
+
+    it("negative amounts reverse the cash-flow direction for payment/refund", () => {
+      expect(getBankAccountBalanceDelta("payment", -1000)).toBe(-1000);
+      expect(getBankAccountBalanceDelta("refund", -1000)).toBe(1000);
     });
   });
 

@@ -273,11 +273,11 @@ export const useAuth = () => {
               full_name: meta?.full_name || null,
               role: "staff",
             };
-            const { error: upsertError } = await supabase
+            const { error: insertError } = await supabase
               .from("users")
-              .upsert(profilePayload);
-            if (upsertError) {
-              console.error("Error creating user profile on sign-in:", upsertError);
+              .insert(profilePayload);
+            if (insertError && insertError.code !== "23505") {
+              console.error("Error creating user profile on sign-in:", insertError);
             }
             profile = await fetchUserProfile(session.user.id);
           }
@@ -429,9 +429,9 @@ export const useAuth = () => {
           role: "staff",
         };
 
-        const { error: profileError } = await supabase.from("users").upsert(profilePayload);
+        const { error: profileError } = await supabase.from("users").insert(profilePayload);
 
-        if (profileError) {
+        if (profileError && profileError.code !== "23505") {
           console.error("Error creating profile during sign up:", profileError);
           setState((prev) => ({ ...prev, loading: false, error: profileError.message }));
           return { error: profileError.message };
