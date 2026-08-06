@@ -1,5 +1,10 @@
 # Framework Method — Changelog
 
+## 2026-08-07 (desktop navigation)
+
+- Added a persistent horizontal navigation menu to `Navigation.tsx` for desktop/tablet (`md+`) with links to Overview, Steps, Actions, History, and Builder.
+- Kept the mobile `BottomNav` unchanged; desktop users no longer see an empty header.
+
 ## 2026-08-06 (progress persistence fix)
 
 - Replaced module-level `useSyncExternalStore` singleton in `useFrameworkProgress` with a `ProgressProvider` React Context to ensure all components read/write the same in-memory state.

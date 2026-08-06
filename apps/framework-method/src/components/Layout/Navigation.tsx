@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { FiMoon, FiSun } from "react-icons/fi";
 import { useAuthContext } from "@superapp/iam";
 import { useI18n } from "../../hooks/useI18n";
@@ -17,17 +17,43 @@ const Navigation = () => {
     navigate("/login");
   };
 
+  const navLinks = [
+    { to: "/overview", label: t("nav.overview") },
+    { to: "/steps", label: t("nav.steps") },
+    { to: "/actions", label: t("nav.actions") },
+    { to: "/history", label: t("nav.history") },
+    { to: "/builder", label: t("nav.builder") },
+  ];
+
   return (
     <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
-      <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link to="/dashboard" className="flex items-center gap-2">
+      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+        <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-violet-500 flex items-center justify-center text-white font-bold">
             F
           </div>
           <span className="font-semibold text-lg">{t("app.name")}</span>
         </Link>
 
-        <div className="flex items-center gap-2">
+        <nav className="hidden md:flex items-center gap-1">
+          {navLinks.map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-300"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                }`
+              }
+            >
+              {link.label}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={toggleTheme}
             className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"

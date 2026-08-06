@@ -17,6 +17,12 @@
 - Card: rounded-2xl, subtle shadow, white/light gray background
 - Dark mode toggles `html.dark` class, persisted in `localStorage` as `fm-theme`.
 
+## Layout / Navigation
+
+- `Layout.tsx` renders `MobileHeader` + `BottomNav` on mobile (`md:hidden`) and `Navigation` on desktop (`hidden md:block`).
+- `Navigation.tsx` (desktop) shows the app logo + horizontal links to Overview, Steps, Actions, History, Builder, plus theme toggle and user menu.
+- `BottomNav.tsx` (mobile) is a 5-tab fixed bottom nav.
+
 ## DB Schema
 
 Migration `supabase/migrations/20260527000004_framework_method_schema.sql` creates tables prefixed with `fm_` to avoid collisions in the shared Supabase project:
