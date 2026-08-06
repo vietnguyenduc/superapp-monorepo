@@ -9,7 +9,7 @@ import { useCompanyId } from "../../hooks/useCompanyId";
 import { databaseService } from "../../services/database";
 import type { Customer, Transaction } from "../../types";
 import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor } from "../../utils/formatting";
-import { getCustomerBalanceDelta } from "../../services/businessLogic/balanceMath";
+import { getCustomerBalanceDelta, parseAmount } from "../../services/businessLogic";
 import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
 
@@ -342,7 +342,7 @@ const CustomerDetail: React.FC = () => {
                           </div>
                           <div className="text-right flex-shrink-0 ml-auto">
                             <div className={`text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type, transaction.amount)}`}>
-                              {formatCurrency(getCustomerBalanceDelta(transaction.transaction_type, transaction.amount))}
+                              {formatCurrency(parseAmount(transaction.amount))}
                             </div>
                             <span
                               className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium mt-1 ${getTransactionTypeColor(
@@ -406,7 +406,7 @@ const CustomerDetail: React.FC = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm tabular-nums">
                               <div className={`flex justify-end font-bold ${getTransactionTypeAmountColor(transaction.transaction_type, transaction.amount)}`}>
-                                {formatCurrency(getCustomerBalanceDelta(transaction.transaction_type, transaction.amount))}
+                                {formatCurrency(parseAmount(transaction.amount))}
                               </div>
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">

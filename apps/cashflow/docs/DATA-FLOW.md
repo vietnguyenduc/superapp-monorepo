@@ -88,17 +88,10 @@ Other supporting tables: `transaction_types`, `branches`, `companies`, `users`, 
 
 `handleEditSubmit()`:
 1. Parses the amount with `parseAmount`.
-2. Stores the signed value for all transaction types; `balanceMath.ts` interprets the sign so `charge -1000` reduces debt like a payment.
+2. Preserves the user-entered sign for all transaction types; no `Math.abs` is applied.
 3. Sends `null` for empty `customer_id`/`bank_account_id`/`branch_id`/`reference_number`/`description`.
 4. Includes `transaction_code` and the original `customer_id` so edits do not lose tenant or document context.
 5. `transactionService.updateTransaction()` normalizes the payload, strips immutable/RLS fields, and recalculates balances.
-
-### Transaction list grouping (`TransactionList.tsx`)
-
-A group-by selector produces a `Tổng hợp theo nhóm` table above the transaction list:
-- Group keys: `day` (ISO date), `week` (ISO week), `month` (year-month), plus existing `branch`, `transaction_type`, `customer`.
-- Group summary per key: count, `Tổng phát sinh tăng` (sum of `abs(delta)` for non-adjustment deltas `< 0`), `Tổng phát sinh giảm` (sum of `abs(delta)` for non-adjustment deltas `> 0`), `Tổng điều chỉnh` (signed sum of adjustment deltas), and `Net` (sum of all signed deltas).
-- Day/week/month groups are sorted chronologically by key; other groups are sorted by label.
 
 ### Missing-column fallback
 
@@ -108,7 +101,9 @@ A group-by selector produces a `Tổng hợp theo nhóm` table above the transac
 
 - Negative customer balance = debt (red).
 - Positive/zero customer balance = credit/overpayment (green).
-- `formatting.ts` (`getCustomerListBalanceColor`, `getCustomerDetailBalanceColor`, `getTransactionTypeAmountColor`) and all list/detail components use `getCustomerBalanceDelta` from `balanceMath.ts` to determine the signed amount and color.
+- The **displayed transaction amount** is the raw user-entered value (`parseAmount(amount)`); list/detail components format it with `formatCurrency`.
+- Transaction type colors still indicate direction: `Phát sinh tăng` (charge) is red, `Phát sinh giảm` (payment) / `Hoàn tiền` (refund) are green, `Điều chỉnh` (adjustment) is blue.
+- Balance math (`getCustomerBalanceDelta`, `getBankAccountBalanceDelta`) remains the single source of truth for `total_balance`, bank cash, and dashboard aggregations.
 - Transaction type labels are: `Phát sinh tăng` (charge), `Phát sinh giảm` (payment), `Điều chỉnh` (adjustment), `Hoàn tiền` (refund).
 
 ## Balance math helpers

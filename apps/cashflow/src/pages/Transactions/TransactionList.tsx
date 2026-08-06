@@ -780,7 +780,7 @@ const TransactionList: React.FC = () => {
                       <span
                         className={`text-xs sm:text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type, transaction.amount)}`}
                       >
-                        {formatCurrency(getCustomerBalanceDelta(transaction.transaction_type, transaction.amount))}
+                        {formatCurrency(parseAmount(transaction.amount))}
                       </span>
                     </td>
                     <td className="hidden sm:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
