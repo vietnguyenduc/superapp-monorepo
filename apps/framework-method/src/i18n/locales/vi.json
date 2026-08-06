@@ -31,17 +31,21 @@
     "focusForToday": "Trọng tâm hôm nay",
     "upcomingSteps": "Các bước tiếp theo",
     "viewAll": "Xem tất cả",
-    "startSession": "Bắt đầu phiên"
+    "startSession": "Bắt đầu phiên",
+    "dailyMix": "Mix hàng ngày",
+    "yourFramework": "Framework của bạn",
+    "noFramework": "Chưa chọn framework. Hãy tạo trong Builder."
   },
   "step": {
     "backToFramework": "Quay lại Framework",
     "stepOf": "Bước {{current}} trên {{total}}",
-    "concepts": "Khái niệm",
-    "reference": "Tài liệu tham khảo",
-    "examples": "Ví dụ",
     "yourReflection": "Suy ngẫm của bạn",
-    "completeStep": "Hoàn tất bước & Chuyển sang chọn công cụ",
-    "allReflectionsCaptured": "Đã ghi lại đầy đủ suy ngẫm"
+    "completeStep": "Hoàn tất bước",
+    "completeFramework": "Hoàn tất framework",
+    "allReflectionsCaptured": "Đã ghi lại đầy đủ suy ngẫm",
+    "hint": "Gợi ý",
+    "required": "Bắt buộc",
+    "answerPlaceholder": "Nhập suy ngẫm của bạn..."
   },
   "actions": {
     "committedActions": "Hành động cam kết",
@@ -106,6 +110,8 @@
     "search": "Tìm kiếm",
     "continue": "Tiếp tục",
     "back": "Quay lại trang chủ",
-    "close": "Thu gọn"
+    "close": "Thu gọn",
+    "ready": "Sẵn sàng tiếp tục",
+    "done": "Hoàn tất"
   }
 }

@@ -31,17 +31,21 @@
     "focusForToday": "Focus for Today",
     "upcomingSteps": "Upcoming Steps",
     "viewAll": "View All",
-    "startSession": "Start Session"
+    "startSession": "Start Session",
+    "dailyMix": "Daily Mix",
+    "yourFramework": "Your Framework",
+    "noFramework": "No framework selected. Build one in the Builder."
   },
   "step": {
     "backToFramework": "Back to Framework",
     "stepOf": "Step {{current}} of {{total}}",
-    "concepts": "Concepts",
-    "reference": "Reference",
-    "examples": "Examples",
     "yourReflection": "Your Reflection",
-    "completeStep": "Finalize Step & Proceed to Tool Selection",
-    "allReflectionsCaptured": "All reflections captured"
+    "completeStep": "Complete Step",
+    "completeFramework": "Complete Framework",
+    "allReflectionsCaptured": "All reflections captured",
+    "hint": "Hint",
+    "required": "Required",
+    "answerPlaceholder": "Type your reflection here..."
   },
   "actions": {
     "committedActions": "Committed Actions",
@@ -106,6 +110,8 @@
     "search": "Search",
     "continue": "Continue",
     "back": "Back to home",
-    "close": "Close"
+    "close": "Close",
+    "ready": "Ready to continue",
+    "done": "Done"
   }
 }

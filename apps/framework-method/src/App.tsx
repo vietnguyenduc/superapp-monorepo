@@ -5,6 +5,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import { CompanyProvider } from "@superapp/iam";
+import { ProgressProvider } from "./hooks/useFrameworkProgress";
 import Layout from "./components/Layout/Layout";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import Login from "./pages/Auth/Login";
@@ -21,18 +22,19 @@ import Builder from "./pages/Builder/Builder";
 function App() {
   return (
     <CompanyProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
+      <ProgressProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="overview" element={<Overview />} />
@@ -45,6 +47,7 @@ function App() {
           </Route>
         </Routes>
       </Router>
+      </ProgressProvider>
     </CompanyProvider>
   );
 }

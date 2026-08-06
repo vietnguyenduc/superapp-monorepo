@@ -1,5 +1,13 @@
 # Framework Method — Changelog
 
+## 2026-08-06 (progress persistence fix)
+
+- Replaced module-level `useSyncExternalStore` singleton in `useFrameworkProgress` with a `ProgressProvider` React Context to ensure all components read/write the same in-memory state.
+- All progress mutations (`saveReflection`, `completeStep`, `closeDay`, `saveTemplate`, etc.) now save to `localStorage` synchronously inside the state updater.
+- Debounced reflection saving in `Step` (600 ms) and forced immediate save before `completeStep` to avoid rapid `localStorage` writes.
+- Confirmed in SPA navigation: after completing the final step, `History` now shows the logged "Daily Framework" session immediately.
+- `App.tsx` wraps the app with `ProgressProvider` so the store is stable across route changes.
+
 ## 2026-08-06
 
 - Initial app scaffold with 9 screens (Dashboard, Overview, Step, Actions, Evening, Calendar, History, Builder).

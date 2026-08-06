@@ -1,6 +1,7 @@
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { FiChevronLeft, FiHome } from "react-icons/fi";
 import { format } from "date-fns";
+import { useFrameworkProgress, getDailyBlocks } from "../../hooks/useFrameworkProgress";
 
 const SmileyIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -14,6 +15,8 @@ const SmileyIcon = ({ className }: { className?: string }) => (
 const MobileHeader = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { progress } = useFrameworkProgress();
+  const dailyBlocks = getDailyBlocks(progress);
 
   const today = format(new Date(), "EEEE, MMM d");
 
@@ -27,7 +30,7 @@ const MobileHeader = () => {
           <button onClick={() => navigate("/overview")} className="flex items-center gap-1 text-sm font-medium text-gray-900 dark:text-gray-100">
             <FiChevronLeft className="w-5 h-5" /> Back
           </button>
-          <span className="text-sm font-medium text-primary-600">Step {stepNumber} of 5</span>
+          <span className="text-sm font-medium text-primary-600">Step {stepNumber} of {dailyBlocks.length}</span>
           <div className="w-8" />
         </div>
       </header>
