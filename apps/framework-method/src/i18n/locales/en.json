@@ -1,0 +1,94 @@
+{
+  "app": {
+    "name": "Framework Method",
+    "tagline": "Think from first principles"
+  },
+  "nav": {
+    "overview": "Overview",
+    "steps": "Steps",
+    "actions": "Actions",
+    "history": "History",
+    "calendar": "Calendar",
+    "builder": "Builder",
+    "login": "Login",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "goodMorning": "Good morning.",
+    "quote": "\"Logic is the beginning of wisdom, not the end.\"",
+    "streak": "{{count}} Day Streak",
+    "streakSubtitle": "Consistency is compounding.",
+    "insights": "Insights",
+    "productivityTrend": "Productivity Trend (Last 7 Days)",
+    "beginSession": "Begin Session",
+    "frameworks": "Frameworks",
+    "mostUsed": "Most used this week"
+  },
+  "overview": {
+    "activeFramework": "Active Framework",
+    "progress": "Progress",
+    "stepOf": "Step {{current}} of {{total}} completed",
+    "focusForToday": "Focus for Today",
+    "upcomingSteps": "Upcoming Steps",
+    "viewAll": "View All",
+    "startSession": "Start Session"
+  },
+  "step": {
+    "backToFramework": "Back to Framework",
+    "stepOf": "Step {{current}} of {{total}}",
+    "concepts": "Concepts",
+    "reference": "Reference",
+    "examples": "Examples",
+    "yourReflection": "Your Reflection",
+    "completeStep": "Complete Step & Choose Tool",
+    "allReflectionsCaptured": "All reflections captured"
+  },
+  "actions": {
+    "committedActions": "Committed Actions",
+    "addAction": "Add action",
+    "middayReflection": "Mid-day Reflection",
+    "quickNotes": "Quick Notes",
+    "saveReflection": "Save Reflection"
+  },
+  "evening": {
+    "eveningReflection": "Evening Reflection",
+    "whatWentWell": "What went well?",
+    "dailyGoals": "Daily Goals",
+    "tomorrowFocus": "Tomorrow's Focus",
+    "closeDay": "Close the Day",
+    "solidProgress": "Solid Progress"
+  },
+  "calendar": {
+    "month": "Month",
+    "week": "Week",
+    "scheduledForToday": "Scheduled for Today",
+    "scheduleNew": "Schedule new session"
+  },
+  "history": {
+    "title": "History",
+    "subtitle": "Your completed frameworks and reflections"
+  },
+  "builder": {
+    "title": "Web Builder",
+    "draft": "DRAFT",
+    "preview": "Preview",
+    "publish": "Publish",
+    "contentBlocks": "Content Blocks",
+    "interactionBlocks": "Interaction Blocks",
+    "logicPathing": "Logic & Pathing",
+    "fieldLabel": "Field Label",
+    "userPrompt": "User Prompt",
+    "placeholder": "Placeholder",
+    "required": "Required"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "continue": "Continue"
+  }
+}

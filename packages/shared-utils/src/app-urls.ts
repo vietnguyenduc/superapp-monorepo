@@ -81,6 +81,14 @@ export const APP_DEFINITIONS: AppDefinition[] = [
     envVar: 'VITE_OPERATIONS_APP_URL',
     color: 'bg-cyan-100 text-cyan-600',
   },
+  {
+    id: 'framework-method',
+    name: 'Framework Method',
+    key: 'framework-method',
+    devPort: 5179,
+    envVar: 'VITE_FRAMEWORK_METHOD_APP_URL',
+    color: 'bg-violet-100 text-violet-600',
+  },
 ];
 
 /** Root production domain (without leading dot). */

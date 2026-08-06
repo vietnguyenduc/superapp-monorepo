@@ -11,7 +11,8 @@ const AppSwitcher = () => {
     { id: 'cashflow', name: 'Cashflow', url: import.meta.env.VITE_CASHFLOW_APP_URL || 'http://localhost:5174', color: 'bg-blue-100 text-blue-600' },
     { id: 'hr', name: 'HR & Payroll', url: import.meta.env.VITE_HR_APP_URL || 'http://localhost:5177', color: 'bg-pink-100 text-pink-600' },
     { id: 'accounting', name: 'Accounting', url: import.meta.env.VITE_ACCOUNTING_APP_URL || 'http://localhost:5178', color: 'bg-purple-100 text-purple-600' },
-    { id: 'operations', name: 'Operations', url: import.meta.env.VITE_OPERATIONS_APP_URL || 'http://localhost:3006', color: 'bg-cyan-100 text-cyan-600' }
+    { id: 'operations', name: 'Operations', url: import.meta.env.VITE_OPERATIONS_APP_URL || 'http://localhost:3006', color: 'bg-cyan-100 text-cyan-600' },
+    { id: 'framework-method', name: 'Framework Method', url: import.meta.env.VITE_FRAMEWORK_METHOD_APP_URL || 'http://localhost:5179', color: 'bg-violet-100 text-violet-600' }
   ];
 
   // Try parsing session tokens from localStorage/cookies or pass standard if needed

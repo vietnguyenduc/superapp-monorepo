@@ -1,0 +1,94 @@
+{
+  "app": {
+    "name": "Framework Method",
+    "tagline": "Suy nghĩ từ những nguyên lý đầu tiên"
+  },
+  "nav": {
+    "overview": "Tổng quan",
+    "steps": "Các bước",
+    "actions": "Hành động",
+    "history": "Lịch sử",
+    "calendar": "Lịch",
+    "builder": "Thiết kế",
+    "login": "Đăng nhập",
+    "logout": "Đăng xuất"
+  },
+  "dashboard": {
+    "goodMorning": "Chào buổi sáng.",
+    "quote": "\"Logic là khởi đầu của trí tuệ, không phải là điểm kết thúc.\"",
+    "streak": "Chuỗi {{count}} ngày",
+    "streakSubtitle": "Sự đều đặn tạo nên lợi ích kép.",
+    "insights": "Thông tin",
+    "productivityTrend": "Xu hướng năng suất (7 ngày qua)",
+    "beginSession": "Bắt đầu phiên",
+    "frameworks": "Frameworks",
+    "mostUsed": "Dùng nhiều nhất tuần này"
+  },
+  "overview": {
+    "activeFramework": "Framework đang hoạt động",
+    "progress": "Tiến độ",
+    "stepOf": "Đã hoàn thành {{current}}/{{total}} bước",
+    "focusForToday": "Trọng tâm hôm nay",
+    "upcomingSteps": "Các bước tiếp theo",
+    "viewAll": "Xem tất cả",
+    "startSession": "Bắt đầu phiên"
+  },
+  "step": {
+    "backToFramework": "Quay lại Framework",
+    "stepOf": "Bước {{current}} trên {{total}}",
+    "concepts": "Khái niệm",
+    "reference": "Tài liệu tham khảo",
+    "examples": "Ví dụ",
+    "yourReflection": "Suy ngẫm của bạn",
+    "completeStep": "Hoàn thành & Chọn công cụ",
+    "allReflectionsCaptured": "Đã ghi lại đầy đủ suy ngẫm"
+  },
+  "actions": {
+    "committedActions": "Hành động cam kết",
+    "addAction": "Thêm hành động",
+    "middayReflection": "Suy ngẫm giữa ngày",
+    "quickNotes": "Ghi chú nhanh",
+    "saveReflection": "Lưu suy ngẫm"
+  },
+  "evening": {
+    "eveningReflection": "Suy ngẫm cuối ngày",
+    "whatWentWell": "Điều gì suôn sẻ?",
+    "dailyGoals": "Mục tiêu hàng ngày",
+    "tomorrowFocus": "Trọng tâm ngày mai",
+    "closeDay": "Kết thúc ngày",
+    "solidProgress": "Tiến bộ vững chắc"
+  },
+  "calendar": {
+    "month": "Tháng",
+    "week": "Tuần",
+    "scheduledForToday": "Lịch hôm nay",
+    "scheduleNew": "Lên lịch phiên mới"
+  },
+  "history": {
+    "title": "Lịch sử",
+    "subtitle": "Framework và suy ngẫm đã hoàn thành"
+  },
+  "builder": {
+    "title": "Trình thiết kế",
+    "draft": "NHÁP",
+    "preview": "Xem trước",
+    "publish": "Xuất bản",
+    "contentBlocks": "Khối nội dung",
+    "interactionBlocks": "Khối tương tác",
+    "logicPathing": "Logic & định tuyến",
+    "fieldLabel": "Nhãn trường",
+    "userPrompt": "Câu hỏi người dùng",
+    "placeholder": "Văn bản gợi ý",
+    "required": "Bắt buộc"
+  },
+  "common": {
+    "loading": "Đang tải...",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "create": "Tạo",
+    "search": "Tìm kiếm",
+    "continue": "Tiếp tục"
+  }
+}
