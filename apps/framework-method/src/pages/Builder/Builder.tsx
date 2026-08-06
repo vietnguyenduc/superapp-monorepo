@@ -64,7 +64,7 @@ const blockCatalog: { type: BlockType; label: string; icon: typeof FiBook; categ
 const Builder = () => {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { progress, saveTemplate, setActiveTemplate } = useFrameworkProgress();
+  const { progress, saveTemplate, setActiveTemplate, setDailyTemplates } = useFrameworkProgress();
 
   const activeTemplate = progress.templates.find((t) => t.id === progress.activeTemplateId);
 
@@ -73,6 +73,7 @@ const Builder = () => {
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
+  const [mixIds, setMixIds] = useState<string[]>(progress.dailyTemplateIds || []);
 
   useEffect(() => {
     setTemplateName(activeTemplate?.name || "New Framework");
@@ -80,6 +81,10 @@ const Builder = () => {
     setSelectedStepId(null);
     setSaveStatus("");
   }, [activeTemplate?.id]);
+
+  useEffect(() => {
+    setMixIds(progress.dailyTemplateIds || []);
+  }, [progress.dailyTemplateIds.join(",")]);
 
   // Auto-save draft back to active template (debounced)
   useEffect(() => {
@@ -210,6 +215,16 @@ const Builder = () => {
     updateBlock(stepId, blockId, { options });
   };
 
+  const toggleMix = (id: string) => {
+    setMixIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const applyMix = () => {
+    const ids = mixIds.length ? mixIds : progress.activeTemplateId ? [progress.activeTemplateId] : [];
+    setDailyTemplates(ids);
+    setSaveStatus(t("builder.dailyMixSet"));
+  };
+
   const renderPreview = (block: Block) => {
     switch (block.type) {
       case "knowledge":
@@ -269,14 +284,41 @@ const Builder = () => {
             ))}
           </select>
           <Button variant="secondary" size="sm" onClick={handleNewTemplate}>
-            <FiPlusCircle className="w-4 h-4" /> <span className="ml-1">New template</span>
+            <FiPlusCircle className="w-4 h-4" /> <span className="ml-1">{t("common.create")}</span>
           </Button>
         </div>
       </div>
 
       <div>
+        <h3 className="text-sm font-semibold mb-1">{t("builder.dailyMix")}</h3>
+        <p className="text-xs text-gray-500 mb-2">{t("builder.dailyMixDescription")}</p>
+        {progress.templates.length === 0 ? (
+          <p className="text-xs text-gray-400 italic">{t("builder.noTemplates")}</p>
+        ) : (
+          <>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {progress.templates.map((tmpl) => (
+                <label key={tmpl.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={mixIds.includes(tmpl.id)}
+                    onChange={() => toggleMix(tmpl.id)}
+                    className="w-4 h-4 rounded border-gray-300 text-primary-600"
+                  />
+                  <span className="truncate">{tmpl.name}</span>
+                </label>
+              ))}
+            </div>
+            <Button variant="outline" size="sm" className="w-full mt-3" onClick={applyMix}>
+              {t("builder.setDailyMix")}
+            </Button>
+          </>
+        )}
+      </div>
+
+      <div>
         <Button variant="outline" size="sm" className="w-full" onClick={addStep}>
-          <FiPlus className="w-4 h-4 mr-1" /> Add Step
+          <FiPlus className="w-4 h-4 mr-1" /> {t("builder.addStep") || "Add Step"}
         </Button>
       </div>
 
@@ -367,7 +409,7 @@ const Builder = () => {
             </div>
           </aside>
 
-          <div id="builder-steps" className="lg:col-span-8 space-y-6 overflow-y-auto max-h-[calc(100vh-140px)]">
+          <div id="builder-steps" className="lg:col-span-8 space-y-6">
             {steps.map((step, stepIdx) => (
               <Card
                 key={step.id}
