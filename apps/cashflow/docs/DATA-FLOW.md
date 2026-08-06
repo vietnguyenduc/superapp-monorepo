@@ -88,10 +88,17 @@ Other supporting tables: `transaction_types`, `branches`, `companies`, `users`, 
 
 `handleEditSubmit()`:
 1. Parses the amount with `parseAmount`.
-2. Stores absolute values for `payment`/`charge`/`refund`; `adjustment` keeps the signed value.
+2. Stores the signed value for all transaction types; `balanceMath.ts` interprets the sign so `charge -1000` reduces debt like a payment.
 3. Sends `null` for empty `customer_id`/`bank_account_id`/`branch_id`/`reference_number`/`description`.
 4. Includes `transaction_code` and the original `customer_id` so edits do not lose tenant or document context.
 5. `transactionService.updateTransaction()` normalizes the payload, strips immutable/RLS fields, and recalculates balances.
+
+### Transaction list grouping (`TransactionList.tsx`)
+
+A group-by selector produces a `Tổng hợp theo nhóm` table above the transaction list:
+- Group keys: `day` (ISO date), `week` (ISO week), `month` (year-month), plus existing `branch`, `transaction_type`, `customer`.
+- Group summary per key: count, `Tổng phát sinh tăng` (sum of `abs(delta)` for non-adjustment deltas `< 0`), `Tổng phát sinh giảm` (sum of `abs(delta)` for non-adjustment deltas `> 0`), `Tổng điều chỉnh` (signed sum of adjustment deltas), and `Net` (sum of all signed deltas).
+- Day/week/month groups are sorted chronologically by key; other groups are sorted by label.
 
 ### Missing-column fallback
 
