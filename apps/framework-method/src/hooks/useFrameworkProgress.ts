@@ -9,6 +9,7 @@ export interface ActionItem {
   title: string;
   note: string;
   completed: boolean;
+  createdAt?: string;
 }
 
 export interface TomorrowItem {

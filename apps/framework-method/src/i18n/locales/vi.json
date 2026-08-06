@@ -62,10 +62,21 @@
     "add": "Thêm"
   },
   "calendar": {
-    "month": "Tháng",
+    "day": "Ngày",
     "week": "Tuần",
+    "month": "Tháng",
+    "quarter": "Quý",
+    "today": "Hôm nay",
+    "scheduledFor": "Lịch cho",
     "scheduledForToday": "Lịch hôm nay",
-    "scheduleNew": "Lên lịch phiên mới"
+    "scheduleNew": "Lên lịch phiên mới",
+    "noEvents": "Không có hoạt động nào.",
+    "noEventsGroup": "Không có hoạt động trong nhóm này.",
+    "groups": {
+      "framework": "Framework",
+      "actions": "Hành động",
+      "reflections": "Suy ngẫm"
+    }
   },
   "history": {
     "title": "Lịch sử",

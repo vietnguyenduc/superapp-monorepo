@@ -62,10 +62,21 @@
     "add": "Add"
   },
   "calendar": {
-    "month": "Month",
+    "day": "Day",
     "week": "Week",
+    "month": "Month",
+    "quarter": "Quarter",
+    "today": "Today",
+    "scheduledFor": "Scheduled for",
     "scheduledForToday": "Scheduled for Today",
-    "scheduleNew": "Schedule new session"
+    "scheduleNew": "Schedule new session",
+    "noEvents": "No activities scheduled.",
+    "noEventsGroup": "No activities in this group.",
+    "groups": {
+      "framework": "Framework",
+      "actions": "Actions",
+      "reflections": "Reflections"
+    }
   },
   "history": {
     "title": "History",

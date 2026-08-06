@@ -39,3 +39,13 @@
 - Removed unused builder branch from `MobileHeader` (builder renders its own responsive header).
 - Made `Builder` responsive: template selector and block catalog visible on mobile, header buttons collapse to icon-only, template name input adapts to width.
 - `BottomNav` now also shows on the builder route so mobile users can switch screens without leaving the app.
+
+## 2026-08-06 (calendar views)
+
+- Replaced placeholder `Calendar` with full Day / Week / Month / Quarter views.
+- Three activity groups: Framework (sessions), Actions (committed actions), Reflections (midday, quick notes, evening).
+- Month view shows colored dots per group for each day; clicking a day updates the detail panel.
+- Week view displays 7 day columns with grouped event cards.
+- Quarter view shows 3 mini month grids with days that have activity highlighted.
+- Added `createdAt` to `ActionItem` so actions appear on the calendar on the correct date.
+- Added i18n keys for `day`, `quarter`, `today`, `scheduledFor`, `noEvents`, `noEventsGroup`, and group labels.

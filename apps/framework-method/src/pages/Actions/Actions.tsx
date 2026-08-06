@@ -20,7 +20,7 @@ const Actions = () => {
 
   const addAction = () => {
     if (!newTitle.trim()) return;
-    const newAction: ActionItem = { id: Date.now().toString(), title: newTitle, note: "", completed: false };
+    const newAction: ActionItem = { id: Date.now().toString(), title: newTitle, note: "", completed: false, createdAt: new Date().toISOString() };
     updateActions([...actions, newAction]);
     setNewTitle("");
   };
