@@ -32,7 +32,8 @@ import { useFrameworkProgress } from "../../hooks/useFrameworkProgress";
 const fmt = (date: Date, token: string) => format(date, token, { locale: vi });
 
 type View = "day" | "week" | "month" | "quarter";
-type Group = "framework" | "actions" | "reflections";
+
+type Group = string;
 
 interface CalendarEvent {
   id: string;
@@ -42,22 +43,31 @@ interface CalendarEvent {
   note?: string;
   completed?: boolean;
   timeLabel?: string;
+  priority?: string;
 }
 
-const groupMeta: Record<Group, { labelKey: string; dot: string }> = {
-  framework: {
-    labelKey: "Framework",
-    dot: "bg-blue-500",
-  },
-  actions: {
-    labelKey: "Actions",
-    dot: "bg-amber-500",
-  },
-  reflections: {
-    labelKey: "Reflections",
-    dot: "bg-violet-500",
-  },
+const PALETTE = [
+  "#3b82f6",
+  "#f59e0b",
+  "#10b981",
+  "#8b5cf6",
+  "#ef4444",
+  "#06b6d4",
+  "#ec4899",
+  "#6366f1",
+  "#84cc16",
+  "#f97316",
+  "#14b8a6",
+  "#d946ef",
+];
+
+const hash = (str: string) => {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h << 5) - h + str.charCodeAt(i);
+  return h;
 };
+
+const colorFor = (str: string) => PALETTE[Math.abs(hash(str)) % PALETTE.length];
 
 const Calendar = () => {
   const { t } = useI18n();
@@ -76,7 +86,7 @@ const Calendar = () => {
         id: `session-${session.id}`,
         date: parseISO(session.date),
         title: session.title,
-        group: "framework",
+        group: "Framework",
         note: Object.values(session.reflections || {})
           .filter(Boolean)
           .slice(0, 2)
@@ -85,33 +95,17 @@ const Calendar = () => {
       });
     });
 
-    progress.actions.forEach((action) => {
-      const date = action.createdAt ? parseISO(action.createdAt) : today;
+    (progress.tasks || []).forEach((task) => {
       list.push({
-        id: `action-${action.id}`,
-        date,
-        title: action.title,
-        group: "actions",
-        note: action.note,
-        completed: action.completed,
+        id: `task-${task.id}`,
+        date: parseISO(task.date),
+        title: task.title,
+        group: task.group || t("overview.yourFramework"),
+        note: [task.category, task.subCategory].filter(Boolean).join(" / ") || undefined,
+        completed: task.status === "done",
+        priority: task.priority,
       });
     });
-
-    const addReflection = (key: string, title: string, content?: string) => {
-      if (!content?.trim()) return;
-      list.push({
-        id: `reflection-${key}`,
-        date: today,
-        title,
-        group: "reflections",
-        note: content,
-      });
-    };
-
-    addReflection("midday", t("actions.middayReflection"), progress.middayReflection);
-    addReflection("quick", t("actions.quickNotes"), progress.quickNote);
-    addReflection("evening-well", t("evening.whatWentWell"), progress.evening.wentWell);
-    addReflection("evening-notes", t("evening.notes"), progress.evening.notes);
 
     return list;
   }, [progress, t, today]);
@@ -120,8 +114,11 @@ const Calendar = () => {
     events.filter((e) => isSameDay(startOfDay(e.date), startOfDay(date)));
 
   const groupEvents = (items: CalendarEvent[]) => {
-    const groups: Record<Group, CalendarEvent[]> = { framework: [], actions: [], reflections: [] };
-    items.forEach((item) => groups[item.group].push(item));
+    const groups: Record<Group, CalendarEvent[]> = {};
+    items.forEach((item) => {
+      if (!groups[item.group]) groups[item.group] = [];
+      groups[item.group].push(item);
+    });
     return groups;
   };
 
@@ -161,29 +158,36 @@ const Calendar = () => {
 
     return (
       <div className="space-y-2">
-        {(Object.keys(groups) as Group[]).map((group) =>
-          groups[group].length > 0 ? (
+        {Object.entries(groups).map(([group, groupItems]) =>
+          groupItems.length > 0 ? (
             <div key={group} className="space-y-1">
-              {groups[group].map((event) => (
-                <div
-                  key={event.id}
-                  className={`p-2 rounded-lg text-xs border-l-4 ${
-                    group === "framework"
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/10"
-                      : group === "actions"
-                      ? "border-amber-500 bg-amber-50 dark:bg-amber-900/10"
-                      : "border-violet-500 bg-violet-50 dark:bg-violet-900/10"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className={`font-medium ${event.completed ? "line-through text-gray-400" : ""}`}>
-                      {event.title}
-                    </span>
-                    {event.timeLabel && <span className="text-[10px] text-gray-400">{event.timeLabel}</span>}
-                  </div>
-                  {!compact && event.note && <p className="text-gray-500 truncate mt-0.5">{event.note}</p>}
+              {compact ? (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colorFor(group) }} />
+                  <span className="text-[10px] text-gray-500 truncate">
+                    {group} · {groupItems.length}
+                  </span>
                 </div>
-              ))}
+              ) : (
+                groupItems.map((event) => {
+                  const color = colorFor(event.group);
+                  return (
+                    <div
+                      key={event.id}
+                      className="p-2 rounded-lg text-xs border-l-4"
+                      style={{ borderLeftColor: color, backgroundColor: `${color}1a` }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className={`font-medium ${event.completed ? "line-through text-gray-400" : ""}`}>
+                          {event.title}
+                        </span>
+                        {event.timeLabel && <span className="text-[10px] text-gray-400">{event.timeLabel}</span>}
+                      </div>
+                      {event.note && <p className="text-gray-500 truncate mt-0.5">{event.note}</p>}
+                    </div>
+                  );
+                })
+              )}
             </div>
           ) : null
         )}
@@ -193,40 +197,43 @@ const Calendar = () => {
 
   const DayView = () => {
     const groups = groupEvents(eventsForDate(currentDate));
+    const groupKeys = Object.keys(groups).sort((a, b) => a.localeCompare(b));
     return (
       <div className="space-y-5">
         <div className="text-center">
           <p className="text-sm text-gray-500">{fmt(currentDate, "EEEE")}</p>
           <h2 className="text-3xl font-bold">{fmt(currentDate, "MMM d")}</h2>
         </div>
-        {(Object.keys(groups) as Group[]).map((group) => (
-          <Card key={group} className="p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <span className={`w-3 h-3 rounded-full ${groupMeta[group].dot}`} />
-              <h3 className="font-semibold">{t(`calendar.groups.${group}`) || groupMeta[group].labelKey}</h3>
-              <span className="text-xs text-gray-400 ml-auto">{groups[group].length}</span>
-            </div>
-            {groups[group].length > 0 ? (
+        {groupKeys.length === 0 && <p className="text-sm text-gray-400 text-center py-8">{t("calendar.noEvents")}</p>}
+        {groupKeys.map((group) => {
+          const color = colorFor(group);
+          return (
+            <Card key={group} className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+                <h3 className="font-semibold">{group}</h3>
+                <span className="text-xs text-gray-400 ml-auto">{groups[group].length}</span>
+              </div>
               <div className="space-y-2">
                 {groups[group].map((event) => (
-                  <div key={event.id} className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                  <div
+                    key={event.id}
+                    className="p-3 rounded-xl"
+                    style={{ backgroundColor: `${color}1a` }}
+                  >
                     <div className="flex items-center justify-between">
                       <p className={`font-medium text-sm ${event.completed ? "line-through text-gray-400" : ""}`}>
                         {event.title}
                       </p>
-                      {event.timeLabel && (
-                        <span className="text-xs text-gray-500">{event.timeLabel}</span>
-                      )}
+                      {event.priority && <span className="text-[10px] uppercase text-gray-400">{event.priority}</span>}
                     </div>
                     {event.note && <p className="text-xs text-gray-500 mt-1">{event.note}</p>}
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-sm text-gray-400">{t("calendar.noEventsGroup")}</p>
-            )}
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
     );
   };
@@ -292,9 +299,16 @@ const Calendar = () => {
                   {fmt(day, "d")}
                 </span>
                 <div className="flex flex-wrap justify-center gap-1 mt-1 px-1">
-                  {groups.framework.length > 0 && <span className="w-2 h-2 rounded-full bg-blue-500" />}
-                  {groups.actions.length > 0 && <span className="w-2 h-2 rounded-full bg-amber-500" />}
-                  {groups.reflections.length > 0 && <span className="w-2 h-2 rounded-full bg-violet-500" />}
+                  {Object.entries(groups)
+                    .filter(([, items]) => items.length > 0)
+                    .slice(0, 4)
+                    .map(([group]) => (
+                      <span
+                        key={group}
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: colorFor(group) }}
+                      />
+                    ))}
                 </div>
               </button>
             );
@@ -325,8 +339,7 @@ const Calendar = () => {
               </div>
               <div className="grid grid-cols-7 gap-1">
                 {days.map((day) => {
-                  const groups = groupEvents(eventsForDate(day));
-                  const hasEvents = Object.values(groups).some((g) => g.length > 0);
+                  const hasEvents = eventsForDate(day).length > 0;
                   return (
                     <button
                       key={day.toISOString()}
@@ -361,6 +374,7 @@ const Calendar = () => {
   ];
 
   const detailGroups = groupEvents(eventsForDate(selectedDate));
+  const detailKeys = Object.keys(detailGroups).sort((a, b) => a.localeCompare(b));
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -416,34 +430,38 @@ const Calendar = () => {
               <FiMoreVertical className="w-4 h-4" />
             </button>
           </div>
-          {(Object.keys(detailGroups) as Group[]).map((group) =>
-            detailGroups[group].length > 0 ? (
+          {detailKeys.length === 0 && (
+            <p className="text-sm text-gray-400 py-4">{t("calendar.noEvents") || "No activities scheduled."}</p>
+          )}
+          {detailKeys.map((group) => {
+            const color = colorFor(group);
+            return (
               <div key={group} className="mb-4 last:mb-0">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className={`w-2.5 h-2.5 rounded-full ${groupMeta[group].dot}`} />
-                  <h3 className="text-sm font-semibold">
-                    {t(`calendar.groups.${group}`) || groupMeta[group].labelKey}
-                  </h3>
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+                  <h3 className="text-sm font-semibold">{group}</h3>
+                  <span className="text-xs text-gray-400 ml-auto">{detailGroups[group].length}</span>
                 </div>
                 <div className="space-y-2">
                   {detailGroups[group].map((event) => (
-                    <div key={event.id} className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                    <div
+                      key={event.id}
+                      className="p-3 rounded-xl"
+                      style={{ backgroundColor: `${color}1a` }}
+                    >
                       <div className="flex items-center justify-between">
                         <p className={`font-medium text-sm ${event.completed ? "line-through text-gray-400" : ""}`}>
                           {event.title}
                         </p>
-                        {event.timeLabel && <span className="text-xs text-gray-500">{event.timeLabel}</span>}
+                        {event.priority && <span className="text-[10px] uppercase text-gray-400">{event.priority}</span>}
                       </div>
                       {event.note && <p className="text-xs text-gray-500 mt-1">{event.note}</p>}
                     </div>
                   ))}
                 </div>
               </div>
-            ) : null
-          )}
-          {eventsForDate(selectedDate).length === 0 && (
-            <p className="text-sm text-gray-400">{t("calendar.noEvents") || "No activities scheduled."}</p>
-          )}
+            );
+          })}
           <button className="mt-4 w-full py-3 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-500 hover:border-primary-500 hover:text-primary-600 flex items-center justify-center gap-2">
             <FiPlus className="w-4 h-4" /> {t("calendar.scheduleNew")}
           </button>

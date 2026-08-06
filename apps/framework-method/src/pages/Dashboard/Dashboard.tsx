@@ -27,45 +27,59 @@ const Dashboard = () => {
   const { progress } = useFrameworkProgress();
 
   const today = startOfDay(new Date());
+  const todayKey = format(today, "yyyy-MM-dd");
   const dailySteps = useMemo(() => getDailySteps(progress), [progress]);
   const totalSteps = dailySteps.length || 5;
   const activeProgress = Math.round((progress.completedSteps.length / totalSteps) * 100);
 
-  const sessionDates = useMemo(() => {
-    return progress.sessions
-      .map((s) => startOfDay(parseISO(s.date)))
+  const allTasks = progress.tasks || [];
+
+  const completedTaskDates = useMemo(() => {
+    return allTasks
+      .filter((t) => t.status === "done")
+      .map((t) => startOfDay(parseISO(t.date)))
       .filter((d) => !isNaN(d.getTime()));
-  }, [progress.sessions]);
+  }, [allTasks]);
 
   const streak = useMemo(() => {
-    if (!sessionDates.length) return 0;
-    const sorted = [...sessionDates].sort((a, b) => b.getTime() - a.getTime());
+    if (!completedTaskDates.length) return 0;
+    const sorted = [...completedTaskDates].sort((a, b) => b.getTime() - a.getTime());
     let last = sorted[0];
     let count = 0;
-    while (sessionDates.some((d) => isSameDay(d, last))) {
+    while (completedTaskDates.some((d) => isSameDay(d, last))) {
       count++;
       last = subDays(last, 1);
     }
     return count;
-  }, [sessionDates]);
+  }, [completedTaskDates]);
 
   const weekDays = useMemo(() => {
     const start = subDays(today, 6);
     const days = eachDayOfInterval({ start, end: today });
     return days.map((d) => {
-      const hasSession = sessionDates.some((sd) => isSameDay(sd, d));
-      return { label: format(d, "EEEEE"), done: hasSession, today: isSameDay(d, today) };
+      const hasDoneTask = completedTaskDates.some((sd) => isSameDay(sd, d));
+      return { label: format(d, "EEEEE"), done: hasDoneTask, today: isSameDay(d, today) };
     });
-  }, [sessionDates, today]);
+  }, [completedTaskDates, today]);
 
   const trendData = useMemo(() => {
     const start = subDays(today, 6);
     const days = eachDayOfInterval({ start, end: today });
     return days.map((d) => {
-      const count = sessionDates.filter((sd) => isSameDay(sd, d)).length;
+      const count = allTasks.filter((t) => t.status === "done" && isSameDay(startOfDay(parseISO(t.date)), d)).length;
       return { day: format(d, "EEEEE"), value: count };
     });
-  }, [sessionDates, today]);
+  }, [allTasks, today]);
+
+  const todayStats = useMemo(() => {
+    const tasks = allTasks.filter((t) => startOfDay(parseISO(t.date)).getTime() === today.getTime());
+    return {
+      total: tasks.length,
+      done: tasks.filter((t) => t.status === "done").length,
+      inProgress: tasks.filter((t) => t.status === "in_progress").length,
+      open: tasks.filter((t) => t.status === "todo").length,
+    };
+  }, [allTasks, today]);
 
   const defaultFrameworks = [
     { id: "first-principles", name: "The First Principles Method", progress: activeProgress, tag: t("overview.activeFramework") },
@@ -126,11 +140,25 @@ const Dashboard = () => {
       </Card>
 
       <Card className="p-5">
+        <h2 className="font-semibold text-lg mb-4">{t("overview.todayTasks")}</h2>
+        <div className="grid grid-cols-2 gap-3 mb-2">
+          <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20">
+            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{todayStats.total}</p>
+            <p className="text-xs text-gray-500">{t("overview.taskSummary", { total: todayStats.total, done: todayStats.done, inProgress: todayStats.inProgress }).split("·")[0]}</p>
+          </div>
+          <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/20">
+            <p className="text-2xl font-bold text-green-700 dark:text-green-300">{todayStats.done}</p>
+            <p className="text-xs text-gray-500">{t("common.done")}</p>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-5">
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-semibold text-lg">{t("dashboard.insights")}</h2>
           <FiTrendingUp className="w-5 h-5 text-gray-400" />
         </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Productivity Trend (Last 7 Days)</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Completed tasks (Last 7 Days)</p>
         <div className="h-40">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={trendData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
@@ -178,7 +206,7 @@ const Dashboard = () => {
                 <p className="font-medium text-sm truncate">{fw.name}</p>
                 <div className="flex items-center justify-between mt-1">
                   <span className="text-[10px] text-gray-400 uppercase tracking-wide">{fw.tag || "—"}</span>
-                  <span className="text-[10px] text-gray-400">{fw.progress > 0 ? `${fw.progress}%` : ""}</span>
+                  <span className="text-[10px] text-gray-400">{allTasks.filter((t) => t.group === fw.name && startOfDay(parseISO(t.date)).getTime() === today.getTime()).length} tasks today</span>
                 </div>
                 {fw.progress > 0 && (
                   <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full mt-1.5">

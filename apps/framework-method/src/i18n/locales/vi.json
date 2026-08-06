@@ -34,7 +34,18 @@
     "startSession": "Bắt đầu phiên",
     "dailyMix": "Mix hàng ngày",
     "yourFramework": "Framework của bạn",
-    "noFramework": "Chưa chọn framework. Hãy tạo trong Builder."
+    "noFramework": "Chưa chọn framework. Hãy tạo trong Builder.",
+    "todayTasks": "Việc cần làm hôm nay",
+    "taskSummary": "{{total}} việc · {{done}} hoàn thành · {{inProgress}} đang làm",
+    "addTask": "Thêm việc",
+    "taskTitle": "Tên việc",
+    "taskGroup": "Nhóm",
+    "taskCategory": "Thể loại",
+    "taskSubCategory": "Nhóm con",
+    "taskPriority": "Ưu tiên",
+    "noTasks": "Chưa có việc nào. Thêm việc hoặc chạy framework để tạo.",
+    "editGroup": "Đổi tên nhóm",
+    "groupSummary": "{{count}} việc"
   },
   "step": {
     "backToFramework": "Quay lại Framework",
@@ -134,7 +145,16 @@
     "dependsOnValue": "Giá trị mong đợi",
     "active": "Đang chạy",
     "editThisFramework": "Sửa framework này",
-    "required": "Bắt buộc"
+    "createSampleMix": "Tạo bộ mẫu kết nối",
+    "sampleMixSet": "Đã tạo bộ mẫu kết nối",
+    "required": "Bắt buộc",
+    "createsTask": "Tạo việc từ câu trả lời này",
+    "taskTitle": "Tên công việc tạo ra",
+    "taskTitleHint": "Dùng {{answer}} để chèn câu trả lời. Ví dụ: Hoàn thành {{answer}}",
+    "taskGroup": "Nhóm việc",
+    "taskCategory": "Thể loại",
+    "taskSubCategory": "Nhóm con",
+    "taskPriority": "Ưu tiên việc"
   },
   "common": {
     "loading": "Đang tải...",
@@ -148,6 +168,8 @@
     "back": "Quay lại trang chủ",
     "close": "Thu gọn",
     "ready": "Sẵn sàng tiếp tục",
-    "done": "Hoàn tất"
+    "done": "Hoàn tất",
+    "save": "Lưu",
+    "pending": "Chưa xong"
   }
 }

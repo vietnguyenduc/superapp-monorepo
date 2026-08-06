@@ -316,6 +316,9 @@ const StepPage = () => {
       <div className="text-center">
         <p className="text-sm font-medium text-primary-600 mb-2">
           {t("step.stepOf", { current: stepNumber, total: totalSteps })}
+          {step.templateName && (
+            <span className="ml-2 text-xs text-gray-400 font-normal">· {step.templateName}</span>
+          )}
         </p>
         <h1 className="text-3xl md:text-4xl font-bold leading-tight">
           {t("step.stepTitle", { number: stepNumber, title: step.title }) || `Step ${stepNumber}: ${step.title}`}

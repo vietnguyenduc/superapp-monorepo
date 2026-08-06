@@ -4,8 +4,10 @@ import type { Block, Step } from "../types";
 
 const STORAGE_KEY = "framework-method-progress";
 
+const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
 const makeBlock = (overrides: Partial<Block> & Pick<Block, "type" | "label">): Block => ({
-  id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  id: `block-${uid()}`,
   type: overrides.type,
   label: overrides.label,
   prompt: "",
@@ -22,13 +24,12 @@ const makeBlock = (overrides: Partial<Block> & Pick<Block, "type" | "label">): B
 });
 
 const makeStep = (overrides: Partial<Step> & Pick<Step, "phase_id" | "title">): Step => ({
-  id: `step-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  id: `step-${uid()}`,
   phase_id: overrides.phase_id,
   phaseName: overrides.phaseName,
   title: overrides.title,
   description: "",
   order_index: 0,
-  blocks: [],
   ...overrides,
 });
 
@@ -210,7 +211,9 @@ export function getDailySteps(progress: FrameworkProgress): Step[] {
   const steps: Step[] = [];
   ids.forEach((id) => {
     const template = progress.templates.find((t) => t.id === id);
-    if (template?.steps) steps.push(...template.steps);
+    if (template?.steps) {
+      steps.push(...template.steps.map((s) => ({ ...s, templateName: template.name })));
+    }
   });
   return steps.length ? steps : defaultSteps;
 }
@@ -232,6 +235,26 @@ export interface TomorrowItem {
   title: string;
   note?: string;
   done?: boolean;
+}
+
+export type TaskStatus = "todo" | "in_progress" | "done";
+export type TaskPriority = "low" | "normal" | "high";
+
+export interface Task {
+  id: string;
+  title: string;
+  group: string;
+  category?: string;
+  subCategory?: string;
+  templateId?: string;
+  stepId?: string;
+  blockId?: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  notes?: string;
+  date: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface FrameworkSession {
@@ -266,6 +289,7 @@ export interface FrameworkProgress {
     tomorrowItems: TomorrowItem[];
   };
   sessions: FrameworkSession[];
+  tasks: Task[];
   templates: FrameworkTemplate[];
   activeTemplateId: string | null;
   dailyTemplateIds: string[];
@@ -274,6 +298,14 @@ export interface FrameworkProgress {
 
 function getDefaultProgress(): FrameworkProgress {
   const today = new Date().toISOString().split("T")[0];
+  const defaultTemplateId = "tpl-default";
+  const defaultTemplate: FrameworkTemplate = {
+    id: defaultTemplateId,
+    name: "Framework của bạn",
+    description: "Template mặc định để bạn tùy chỉnh",
+    steps: defaultSteps,
+    updatedAt: new Date().toISOString(),
+  };
   return {
     currentDate: today,
     currentStep: 1,
@@ -285,9 +317,10 @@ function getDefaultProgress(): FrameworkProgress {
     quickNote: "",
     evening: { wentWell: "", notes: "", tomorrowItems: [] },
     sessions: [],
-    templates: [],
-    activeTemplateId: null,
-    dailyTemplateIds: [],
+    tasks: [],
+    templates: [defaultTemplate],
+    activeTemplateId: defaultTemplateId,
+    dailyTemplateIds: [defaultTemplateId],
     lastUpdated: new Date().toISOString(),
   };
 }
@@ -313,6 +346,7 @@ function loadProgress(userKey: string): FrameworkProgress {
         activeTemplateId: saved.activeTemplateId,
         dailyTemplateIds: saved.dailyTemplateIds,
         sessions: saved.sessions,
+        tasks: saved.tasks || [],
         currentDate: today,
         lastUpdated: new Date().toISOString(),
       };
@@ -357,6 +391,11 @@ interface ProgressContextValue {
   saveTemplate: (name: string, description: string, steps: Step[], templateId?: string) => string;
   setActiveTemplate: (templateId: string | null) => void;
   setDailyTemplates: (templateIds: string[]) => void;
+  addTask: (task: Omit<Task, "id" | "createdAt" | "updatedAt">) => Task;
+  updateTask: (id: string, updates: Partial<Task>) => void;
+  toggleTask: (id: string) => void;
+  deleteTask: (id: string) => void;
+  renameTaskGroup: (oldGroup: string, newGroup: string, date: string) => void;
 }
 
 const ProgressContext = createContext<ProgressContextValue | null>(null);
@@ -434,13 +473,63 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
             reflections: { ...blockReflections, ...prev.evening },
           });
         }
+
+        const today = new Date().toISOString().split("T")[0];
+        const now = new Date().toISOString();
+        const existingTaskKeys = new Set(
+          (prev.tasks || [])
+            .filter((t) => t.date === today && t.stepId === step?.id)
+            .map((t) => `${t.stepId}-${t.blockId}`)
+        );
+        const blockAnswers: Record<string, string> = {};
+        (step?.blocks || []).forEach((b) => {
+          const saved = prev.reflections[b.id] || {};
+          blockAnswers[b.id] =
+            saved.reflection?.trim() ||
+            saved.rating?.trim() ||
+            (saved.options ? JSON.parse(saved.options).join(", ") : "") ||
+            "";
+        });
+        const resolveTaskTitle = (block: Block, answer: string): string => {
+          const template = block.taskTitle || "";
+          if (template.includes("{{")) {
+            return template
+              .replace(/{{answer}}/g, answer)
+              .replace(/{{answer:([^}]+)}}/g, (_, id) => blockAnswers[id] || "");
+          }
+          if (template.trim()) return template;
+          if (answer && (block.type === "short_text" || block.type === "number_input")) return answer;
+          return block.label;
+        };
+        const newTasks: Task[] = [];
+        (step?.blocks || []).forEach((b) => {
+          const answer = blockAnswers[b.id] || "";
+          if (!b.createsTask && !answer) return;
+          if (existingTaskKeys.has(`${step?.id}-${b.id}`)) return;
+          newTasks.push({
+            id: `task-${uid()}`,
+            title: resolveTaskTitle(b, answer),
+            group: b.taskGroup || step?.templateName || step?.phaseName || "Framework",
+            category: b.taskCategory || step?.phaseName,
+            subCategory: b.taskSubCategory || b.label,
+            stepId: step?.id,
+            blockId: b.id,
+            status: "todo",
+            priority: b.taskPriority || "normal",
+            date: today,
+            createdAt: now,
+            updatedAt: now,
+          });
+        });
+
         const next = {
           ...prev,
           completedSteps: Array.from(completed).sort((a, b) => a - b),
           completedBlockIds: Array.from(completedBlockIds),
           currentStep: nextStep,
           sessions,
-          lastUpdated: new Date().toISOString(),
+          tasks: [...(prev.tasks || []), ...newTasks],
+          lastUpdated: now,
         };
         saveProgress(userKey, next);
         return next;
@@ -532,6 +621,63 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     [update]
   );
 
+  const mutateTasks = useCallback(
+    (mutator: (tasks: Task[]) => Task[]) => {
+      setProgress((prev) => {
+        const next = { ...prev, tasks: mutator(prev.tasks || []), lastUpdated: new Date().toISOString() };
+        saveProgress(userKey, next);
+        return next;
+      });
+    },
+    [userKey]
+  );
+
+  const addTask = useCallback(
+    (task: Omit<Task, "id" | "createdAt" | "updatedAt">) => {
+      const now = new Date().toISOString();
+      const newTask: Task = { ...task, id: `task-${uid()}`, createdAt: now, updatedAt: now };
+      mutateTasks((tasks) => [...tasks, newTask]);
+      return newTask;
+    },
+    [mutateTasks]
+  );
+
+  const updateTask = useCallback(
+    (id: string, updates: Partial<Task>) => {
+      const now = new Date().toISOString();
+      mutateTasks((tasks) => tasks.map((t) => (t.id === id ? { ...t, ...updates, updatedAt: now } : t)));
+    },
+    [mutateTasks]
+  );
+
+  const toggleTask = useCallback(
+    (id: string) => {
+      mutateTasks((tasks) =>
+        tasks.map((t) =>
+          t.id === id ? { ...t, status: t.status === "done" ? "todo" : "done", updatedAt: new Date().toISOString() } : t
+        )
+      );
+    },
+    [mutateTasks]
+  );
+
+  const deleteTask = useCallback(
+    (id: string) => {
+      mutateTasks((tasks) => tasks.filter((t) => t.id !== id));
+    },
+    [mutateTasks]
+  );
+
+  const renameTaskGroup = useCallback(
+    (oldGroup: string, newGroup: string, date: string) => {
+      const now = new Date().toISOString();
+      mutateTasks((tasks) =>
+        tasks.map((t) => (t.group === oldGroup && t.date === date ? { ...t, group: newGroup, updatedAt: now } : t))
+      );
+    },
+    [mutateTasks]
+  );
+
   const dailySteps = useMemo(() => getDailySteps(progress), [progress]);
   const dailyBlocks = useMemo(() => getDailyBlocks(progress), [progress]);
 
@@ -547,8 +693,29 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       saveTemplate,
       setActiveTemplate,
       setDailyTemplates,
+      addTask,
+      updateTask,
+      toggleTask,
+      deleteTask,
+      renameTaskGroup,
     }),
-    [progress, dailySteps, dailyBlocks, update, saveReflection, completeStep, closeDay, saveTemplate, setActiveTemplate, setDailyTemplates]
+    [
+      progress,
+      dailySteps,
+      dailyBlocks,
+      update,
+      saveReflection,
+      completeStep,
+      closeDay,
+      saveTemplate,
+      setActiveTemplate,
+      setDailyTemplates,
+      addTask,
+      updateTask,
+      toggleTask,
+      deleteTask,
+      renameTaskGroup,
+    ]
   );
 
   return <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>;

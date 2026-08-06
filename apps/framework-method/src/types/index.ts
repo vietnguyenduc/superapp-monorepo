@@ -35,12 +35,19 @@ export interface Block {
   required?: boolean;
   options?: string[];
   order_index: number;
+  createsTask?: boolean;
+  taskTitle?: string;
+  taskPriority?: "low" | "normal" | "high";
+  taskGroup?: string;
+  taskCategory?: string;
+  taskSubCategory?: string;
 }
 
 export interface Step {
   id: string;
   phase_id: string;
   phaseName?: string;
+  templateName?: string;
   title: string;
   description?: string;
   imageUrl?: string;

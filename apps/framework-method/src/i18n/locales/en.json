@@ -34,7 +34,18 @@
     "startSession": "Start Session",
     "dailyMix": "Daily Mix",
     "yourFramework": "Your Framework",
-    "noFramework": "No framework selected. Build one in the Builder."
+    "noFramework": "No framework selected. Build one in the Builder.",
+    "todayTasks": "Today's Tasks",
+    "taskSummary": "{{total}} tasks · {{done}} done · {{inProgress}} in progress",
+    "addTask": "Add task",
+    "taskTitle": "Task title",
+    "taskGroup": "Group",
+    "taskCategory": "Category",
+    "taskSubCategory": "Sub-category",
+    "taskPriority": "Priority",
+    "noTasks": "No tasks yet. Add one or run a framework to generate tasks.",
+    "editGroup": "Rename group",
+    "groupSummary": "{{count}} tasks"
   },
   "step": {
     "backToFramework": "Back to Framework",
@@ -134,7 +145,16 @@
     "dependsOnValue": "Expected value",
     "active": "Active",
     "editThisFramework": "Edit this framework",
-    "required": "Required"
+    "createSampleMix": "Create a connected sample mix",
+    "sampleMixSet": "Sample mix created",
+    "required": "Required",
+    "createsTask": "Create a task from this answer",
+    "taskTitle": "Generated task title",
+    "taskTitleHint": "Use {{answer}} to insert the answer. Example: Finish {{answer}}",
+    "taskGroup": "Task group",
+    "taskCategory": "Task category",
+    "taskSubCategory": "Task sub-category",
+    "taskPriority": "Task priority"
   },
   "common": {
     "loading": "Loading...",
@@ -148,6 +168,7 @@
     "back": "Back to home",
     "close": "Close",
     "ready": "Ready to continue",
-    "done": "Done"
+    "done": "Done",
+    "pending": "Pending"
   }
 }

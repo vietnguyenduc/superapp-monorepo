@@ -233,6 +233,83 @@ const Builder = () => {
     setSaveStatus("");
   };
 
+  const seedSampleTemplates = () => {
+    const priorityBlock: Block = {
+      id: "sample-priority",
+      type: "short_text",
+      label: "Top priority today",
+      prompt: "What is the single most important thing you want to focus on today?",
+      placeholder: "e.g. Finish the product proposal",
+      reflectionQuestion: "",
+      reflectionPlaceholder: "",
+      reflectionHint: "",
+      referenceBlockId: "",
+      showIfBlockId: "",
+      showIfValue: "",
+      required: true,
+      order_index: 0,
+    };
+    const morningStep: Step = {
+      id: "sample-step-morning",
+      phase_id: "morning",
+      phaseName: "Morning",
+      title: "Set today’s priority",
+      description: "Start by naming the one outcome that matters most today.",
+      order_index: 0,
+      blocks: [priorityBlock],
+    };
+
+    const deepWorkBlock: Block = {
+      id: "sample-deep-work",
+      type: "reflection",
+      label: "Shape deep work with priority",
+      prompt: "Your priority today is: {{answer:sample-priority}}. How does it shape the first 90 minutes of deep work?",
+      placeholder: "Write how you will protect time for this priority...",
+      reflectionQuestion: "How does your priority shape your deep work block?",
+      reflectionPlaceholder: "I will schedule a 90-min block before lunch and silence notifications...",
+      reflectionHint: "Use your priority as a filter for every task you accept in the morning.",
+      referenceBlockId: "sample-priority",
+      showIfBlockId: "",
+      showIfValue: "",
+      required: true,
+      order_index: 0,
+    };
+    const reviewBlock: Block = {
+      id: "sample-review",
+      type: "rating",
+      label: "Energy check",
+      prompt: "Rate your current energy level before starting deep work.",
+      placeholder: "",
+      reflectionQuestion: "",
+      reflectionPlaceholder: "",
+      reflectionHint: "",
+      referenceBlockId: "",
+      showIfBlockId: "",
+      showIfValue: "",
+      required: false,
+      options: ["1", "2", "3", "4", "5"],
+      order_index: 1,
+    };
+    const deepStep: Step = {
+      id: "sample-step-deep",
+      phase_id: "deep",
+      phaseName: "Deep work",
+      title: "Run a connected deep-work session",
+      description: "Use the morning priority to decide what gets your focused attention.",
+      order_index: 0,
+      blocks: [deepWorkBlock, reviewBlock],
+    };
+
+    const morningId = saveTemplate("Morning Check-in", "Start the day with one clear priority.", [morningStep]);
+    const deepId = saveTemplate(
+      "Deep Work Framework",
+      "Connect focused work to the morning priority.",
+      [deepStep]
+    );
+    setDailyTemplates([morningId, deepId]);
+    setSaveStatus(t("builder.sampleMixSet"));
+  };
+
   const handleSelectTemplate = (id: string) => {
     if (id === "new") {
       handleNewTemplate();
@@ -311,6 +388,14 @@ const Builder = () => {
           >
             + {t("common.create")}
           </button>
+          {progress.templates.length <= 1 && (
+            <button
+              onClick={seedSampleTemplates}
+              className="text-left px-3 py-2 rounded-xl border border-dashed border-primary-300 text-primary-700 bg-primary-50/50 hover:bg-primary-50 dark:bg-primary-900/10 text-sm transition-colors"
+            >
+              {t("builder.createSampleMix")}
+            </button>
+          )}
           {[...progress.templates]
             .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""))
             .map((tmpl) => {
@@ -671,6 +756,70 @@ const Builder = () => {
                                   className="input text-sm flex-1"
                                 />
                               </div>
+                            </div>
+
+                            <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-3">
+                              <label className="flex items-center gap-2 text-sm">
+                                <input
+                                  type="checkbox"
+                                  checked={block.createsTask || false}
+                                  onChange={(e) => updateBlock(step.id, block.id, { createsTask: e.target.checked })}
+                                  className="w-4 h-4 rounded border-gray-300 text-primary-600"
+                                />
+                                {t("builder.createsTask")}
+                              </label>
+
+                              {(block.createsTask || ["short_text", "number_input", "reflection"].includes(block.type)) && (
+                                <div className="space-y-2 pl-6">
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                      {t("builder.taskTitle")}
+                                    </label>
+                                    <p className="text-[10px] text-gray-400 mb-1.5">{t("builder.taskTitleHint")}</p>
+                                    <input
+                                      type="text"
+                                      value={block.taskTitle || ""}
+                                      onChange={(e) => updateBlock(step.id, block.id, { taskTitle: e.target.value })}
+                                      placeholder={t("builder.taskTitle")}
+                                      className="input text-sm w-full"
+                                    />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <input
+                                      type="text"
+                                      value={block.taskGroup || ""}
+                                      onChange={(e) => updateBlock(step.id, block.id, { taskGroup: e.target.value })}
+                                      placeholder={t("builder.taskGroup")}
+                                      className="input text-sm"
+                                    />
+                                    <select
+                                      value={block.taskPriority || "normal"}
+                                      onChange={(e) =>
+                                        updateBlock(step.id, block.id, { taskPriority: e.target.value as "low" | "normal" | "high" })
+                                      }
+                                      className="input text-sm"
+                                    >
+                                      <option value="low">Low</option>
+                                      <option value="normal">Normal</option>
+                                      <option value="high">High</option>
+                                    </select>
+                                    <input
+                                      type="text"
+                                      value={block.taskCategory || ""}
+                                      onChange={(e) => updateBlock(step.id, block.id, { taskCategory: e.target.value })}
+                                      placeholder={t("builder.taskCategory")}
+                                      className="input text-sm"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={block.taskSubCategory || ""}
+                                      onChange={(e) => updateBlock(step.id, block.id, { taskSubCategory: e.target.value })}
+                                      placeholder={t("builder.taskSubCategory")}
+                                      className="input text-sm"
+                                    />
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </Card>
