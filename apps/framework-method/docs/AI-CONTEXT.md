@@ -29,4 +29,8 @@ Migration `supabase/migrations/20260527000004_framework_method_schema.sql` creat
 
 `fm_profiles`, `fm_frameworks`, `fm_templates`, `fm_phases`, `fm_steps`, `fm_blocks`, `fm_user_template`, `fm_user_progress`, `fm_step_responses`, `fm_actions`, `fm_reflections`, `fm_daily_goals`, `fm_sessions`, `fm_streaks`.
 
+## Tasks
+
+`FrameworkProgress` now stores a `tasks` array. Tasks can be created manually in `Overview` or generated automatically when a `Step` is finalized. Each task has `title`, `group` (editable from `Overview`), `category`, `subCategory`, `status` (`todo` | `in_progress` | `done`), `priority`, `date`, and links to `templateId`/`stepId`/`blockId`.
+
 RLS is enabled on all tables. Users see rows where `user_id = auth.uid()`. Published templates (`status = 'published'`) are readable publicly.

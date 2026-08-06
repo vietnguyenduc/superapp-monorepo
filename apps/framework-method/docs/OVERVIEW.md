@@ -8,9 +8,9 @@ Help users run multi-step thinking frameworks (Discovery → Deconstruction → 
 
 ## Key Features
 
-1. Morning Dashboard — streak, weekly completion, productivity insights, active frameworks.
-2. Overview — progress, focus for today, upcoming steps.
-3. Step Detail — open block cards (Concepts, Reference, Examples) each with their own reflection input, hint, and completion status.
+1. Morning Dashboard — streak, weekly completion, today's task counts, framework task breakdown.
+2. Overview — daily task dashboard: tasks grouped by framework/category/subcategory, status, priority, quick-add, and group renaming.
+3. Step Detail — open block cards (Concepts, Reference, Examples) each with their own reflection input, hint, and completion status; finishing a step generates actionable tasks.
 4. Framework/Template Overlay — switch framework template and view phases.
 5. Actions — committed action list, midday reflection, quick notes.
 6. Evening Reflection — what went well, daily goals, tomorrow's focus, close the day.
@@ -20,6 +20,7 @@ Help users run multi-step thinking frameworks (Discovery → Deconstruction → 
 10. Daily Mix — run multiple templates together as one framework for the day.
 11. Cross-template references — a block can display or depend on an answer from another template via `referenceBlockId` and `{{answer:blockId}}` placeholders.
 12. Conditional logic per block — show/hide a block based on whether another answer contains a value (Tally-style dependency).
+13. Task generation — blocks can create tasks when answered, and `Overview` becomes the daily todo list.
 
 ## Tech Stack
 

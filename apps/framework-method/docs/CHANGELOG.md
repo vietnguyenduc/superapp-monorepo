@@ -1,5 +1,15 @@
 # Framework Method — Changelog
 
+## 2026-08-07 (task-driven daily dashboard)
+
+- Added `Task` model to `FrameworkProgress` (id, title, group, category, subCategory, templateId, stepId, blockId, status, priority, notes, date, createdAt, updatedAt).
+- Added CRUD helpers in `ProgressContext`: `addTask`, `updateTask`, `toggleTask`, `deleteTask`, `renameTaskGroup`.
+- Refactored `Overview` into a daily task dashboard: total/done/in-progress counts, groups, categories, subcategories, quick-add task form, editable group headers, per-task status/priority/delete.
+- `completeStep` now derives tasks from block answers; short_text/reflection answers become task titles, `{{answer}}` and `{{answer:blockId}}` placeholders are resolved.
+- Builder blocks can be marked as task creators (`createsTask`) with configurable `taskTitle`, `taskGroup`, `taskPriority`, `taskCategory`, `taskSubCategory`.
+- `Calendar` and `History` aggregate tasks by group/framework and status; `Dashboard` shows today's task counts and framework task breakdown.
+- Renaming a task group updates only tasks for the current date, so historical data stays intact.
+
 ## 2026-08-07 (daily mix + cross-template references)
 
 - Added `Daily Mix` section in `Builder`: choose one or more templates and `setDailyTemplates` to combine them into a single daily framework.
