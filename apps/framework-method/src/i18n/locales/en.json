@@ -46,6 +46,8 @@
     "completeFramework": "Complete Framework",
     "finalizeStep": "Finalize Step & Proceed",
     "finalizeFramework": "Finalize Framework",
+    "referencedAnswer": "Referenced answer",
+    "referenceMissing": "[answer not yet provided]",
     "allReflectionsCaptured": "All reflections captured",
     "reflectionsInProgressTitle": "Reflections in progress",
     "reflectionsInProgress": "{{completed}} of {{total}} inputs completed",
@@ -123,6 +125,13 @@
     "reflectionQuestion": "Reflection Question",
     "reflectionPlaceholder": "Reflection Placeholder",
     "reflectionHint": "Reflection Hint",
+    "referenceBlock": "Reference previous answer",
+    "referenceBlockDescription": "Display an answer from another block inside this card.",
+    "noReference": "None",
+    "dependsOn": "Show if",
+    "dependsOnDescription": "Only show this block when another answer contains the value below.",
+    "noDependency": "Always show",
+    "dependsOnValue": "Expected value",
     "required": "Required"
   },
   "common": {

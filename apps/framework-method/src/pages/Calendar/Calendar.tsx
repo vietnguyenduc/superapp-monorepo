@@ -23,10 +23,13 @@ import {
   parseISO,
   startOfDay,
 } from "date-fns";
+import { vi } from "date-fns/locale";
 import { FiChevronLeft, FiChevronRight, FiMoreVertical, FiPlus } from "react-icons/fi";
 import { Card } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useFrameworkProgress } from "../../hooks/useFrameworkProgress";
+
+const fmt = (date: Date, token: string) => format(date, token, { locale: vi });
 
 type View = "day" | "week" | "month" | "quarter";
 type Group = "framework" | "actions" | "reflections";
@@ -78,7 +81,7 @@ const Calendar = () => {
           .filter(Boolean)
           .slice(0, 2)
           .join(" "),
-        timeLabel: format(parseISO(session.date), "h:mm a"),
+        timeLabel: fmt(parseISO(session.date), "h:mm a"),
       });
     });
 
@@ -137,14 +140,14 @@ const Calendar = () => {
   };
 
   const titleText = () => {
-    if (view === "day") return format(currentDate, "EEEE, MMM d");
+    if (view === "day") return fmt(currentDate, "EEEE, MMM d");
     if (view === "week") {
       const start = startOfWeek(currentDate, { weekStartsOn: 1 });
       const end = endOfWeek(currentDate, { weekStartsOn: 1 });
-      return `${format(start, "MMM d")} - ${format(end, "MMM d")}`;
+      return `${fmt(start, "MMM d")} - ${fmt(end, "MMM d")}`;
     }
-    if (view === "quarter") return `Q${Math.floor(currentDate.getMonth() / 3) + 1} ${format(currentDate, "yyyy")}`;
-    return format(currentDate, "MMMM yyyy");
+    if (view === "quarter") return `Q${Math.floor(currentDate.getMonth() / 3) + 1} ${fmt(currentDate, "yyyy")}`;
+    return fmt(currentDate, "MMMM yyyy");
   };
 
   const renderDayList = (date: Date, compact = false) => {
@@ -193,8 +196,8 @@ const Calendar = () => {
     return (
       <div className="space-y-5">
         <div className="text-center">
-          <p className="text-sm text-gray-500">{format(currentDate, "EEEE")}</p>
-          <h2 className="text-3xl font-bold">{format(currentDate, "MMM d")}</h2>
+          <p className="text-sm text-gray-500">{fmt(currentDate, "EEEE")}</p>
+          <h2 className="text-3xl font-bold">{fmt(currentDate, "MMM d")}</h2>
         </div>
         {(Object.keys(groups) as Group[]).map((group) => (
           <Card key={group} className="p-5">
@@ -247,8 +250,8 @@ const Calendar = () => {
                   : "border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800"
               }`}
             >
-              <p className="text-[10px] text-gray-400 uppercase">{format(day, "EEE")}</p>
-              <p className={`text-lg font-bold ${isToday(day) ? "text-primary-600" : ""}`}>{format(day, "d")}</p>
+              <p className="text-[10px] text-gray-400 uppercase">{fmt(day, "EEE")}</p>
+              <p className={`text-lg font-bold ${isToday(day) ? "text-primary-600" : ""}`}>{fmt(day, "d")}</p>
               <div className="mt-2 min-h-[60px]">{renderDayList(day, true)}</div>
             </button>
           );
@@ -281,17 +284,17 @@ const Calendar = () => {
                 onClick={() => setSelectedDate(day)}
                 className={`aspect-square p-1 rounded-xl text-sm flex flex-col items-center justify-start transition-colors ${
                   isSelected(day)
-                    ? "bg-primary-50 dark:bg-primary-900/20 ring-1 ring-primary-500"
+                    ? "bg-primary-50 dark:bg-primary-900/20 border-2 border-primary-500"
                     : "hover:bg-gray-50 dark:hover:bg-gray-800"
                 } ${isCurrentMonth ? "text-gray-900 dark:text-gray-100" : "text-gray-300 dark:text-gray-700"}`}
               >
                 <span className={`w-6 h-6 flex items-center justify-center rounded-full ${isToday(day) ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-semibold" : ""}`}>
-                  {format(day, "d")}
+                  {fmt(day, "d")}
                 </span>
-                <div className="flex gap-0.5 mt-1">
-                  {groups.framework.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
-                  {groups.actions.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />}
-                  {groups.reflections.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />}
+                <div className="flex flex-wrap justify-center gap-1 mt-1 px-1">
+                  {groups.framework.length > 0 && <span className="w-2 h-2 rounded-full bg-blue-500" />}
+                  {groups.actions.length > 0 && <span className="w-2 h-2 rounded-full bg-amber-500" />}
+                  {groups.reflections.length > 0 && <span className="w-2 h-2 rounded-full bg-violet-500" />}
                 </div>
               </button>
             );
@@ -314,7 +317,7 @@ const Calendar = () => {
           const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
           return (
             <Card key={month.toISOString()} className="p-4">
-              <h3 className="font-semibold mb-3">{format(month, "MMMM")}</h3>
+              <h3 className="font-semibold mb-3">{fmt(month, "MMMM")}</h3>
               <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-gray-400">
                 {["M", "T", "W", "T", "F", "S", "S"].map((d) => (
                   <div key={d}>{d}</div>
@@ -336,7 +339,7 @@ const Calendar = () => {
                           : "text-gray-500 dark:text-gray-500"
                       }`}
                     >
-                      {format(day, "d")}
+                      {fmt(day, "d")}
                     </button>
                   );
                 })}
@@ -407,7 +410,7 @@ const Calendar = () => {
         <Card className="p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-lg">
-              {`${t("calendar.scheduledFor") || "Scheduled for"} ${format(selectedDate, "MMM d")}`}
+              {`${t("calendar.scheduledFor") || "Scheduled for"} ${fmt(selectedDate, "MMM d")}`}
             </h2>
             <button className="text-gray-400">
               <FiMoreVertical className="w-4 h-4" />

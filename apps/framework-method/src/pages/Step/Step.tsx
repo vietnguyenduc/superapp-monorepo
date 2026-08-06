@@ -108,6 +108,42 @@ const StepPage = () => {
     }
   };
 
+  const resolveAnswer = (id?: string): string => {
+    if (!id) return "";
+    const saved = progress.reflections[id];
+    if (!saved) return t("step.referenceMissing");
+    return (
+      saved.reflection?.trim() ||
+      saved.rating?.trim() ||
+      (saved.options ? JSON.parse(saved.options).join(", ") : "") ||
+      t("step.referenceMissing")
+    );
+  };
+
+  const resolveRefs = (text?: string): string => {
+    if (!text) return "";
+    return text.replace(/\{\{answer:([^}]+)\}\}/g, (_, id) => resolveAnswer(id));
+  };
+
+  const getSavedAnswer = (blockId?: string): string => {
+    if (!blockId) return "";
+    const saved = progress.reflections[blockId];
+    if (!saved) return "";
+    return (
+      saved.reflection?.trim() ||
+      saved.rating?.trim() ||
+      (saved.options ? JSON.parse(saved.options).join(", ") : "")
+    );
+  };
+
+  const isBlockVisible = (block: Block) => {
+    if (!block.showIfBlockId) return true;
+    const answer = getSavedAnswer(block.showIfBlockId);
+    if (!block.showIfValue?.trim()) return answer.length > 0;
+    const expected = block.showIfValue.trim().toLowerCase();
+    return answer.toLowerCase().includes(expected);
+  };
+
   const isCompleted = (block: Block) => {
     if (!hasInput(block)) return true;
     switch (block.type) {
@@ -130,13 +166,14 @@ const StepPage = () => {
   };
 
   const allBlocks = step.blocks || [];
-  const inputBlocks = allBlocks.filter(hasInput);
+  const visibleBlocks = allBlocks.filter(isBlockVisible);
+  const inputBlocks = visibleBlocks.filter(hasInput);
   const completedCount = inputBlocks.filter(isCompleted).length;
   const totalInputs = inputBlocks.length;
-  const allRequiredDone = allBlocks.every((b) => (b.required ? isCompleted(b) : true));
+  const allRequiredDone = visibleBlocks.every((b) => (b.required ? isCompleted(b) : true));
 
   const handleFinalize = () => {
-    allBlocks.forEach((b) => {
+    visibleBlocks.forEach((b) => {
       if (!hasInput(b)) return;
       if (b.type === "multiple_choice") {
         flushReflection(b.id, "options", JSON.stringify(getArrayField(b, "options")));
@@ -157,8 +194,9 @@ const StepPage = () => {
   };
 
   const renderContent = (block: Block) => {
-    if (!block.prompt) return null;
-    const lines = block.prompt.split("\n");
+    const content = resolveRefs(block.prompt);
+    if (!content) return null;
+    const lines = content.split("\n");
     const isList = lines.every((line) => line.startsWith("-") || line.trim() === "");
     if (isList) {
       return (
@@ -171,21 +209,21 @@ const StepPage = () => {
         </ul>
       );
     }
-    return <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">{block.prompt}</p>;
+    return <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">{content}</p>;
   };
 
   const getQuestion = (block: Block) => {
     if (contentTypes.includes(block.type)) {
       return t("step.yourReflection");
     }
-    return block.prompt?.trim() || t("step.yourReflection");
+    return resolveRefs(block.prompt).trim() || t("step.yourReflection");
   };
 
   const getInputPlaceholder = (block: Block) => {
     if (contentTypes.includes(block.type)) {
-      return block.reflectionPlaceholder?.trim() || block.placeholder?.trim() || t("step.answerPlaceholder");
+      return resolveRefs(block.reflectionPlaceholder).trim() || block.placeholder?.trim() || t("step.answerPlaceholder");
     }
-    return block.placeholder?.trim() || t("step.answerPlaceholder");
+    return resolveRefs(block.placeholder).trim() || t("step.answerPlaceholder");
   };
 
   const renderInput = (block: Block) => {
@@ -298,7 +336,7 @@ const StepPage = () => {
       )}
 
       <div className="space-y-4">
-        {allBlocks.map((block) => {
+        {visibleBlocks.map((block) => {
           const Icon = iconByType[block.type] || FiBook;
           const filled = isCompleted(block);
           const showInput = hasInput(block);
@@ -323,11 +361,20 @@ const StepPage = () => {
                 <div className="pl-13">{renderContent(block)}</div>
               )}
 
+              {block.referenceBlockId && (
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-1">
+                    {t("step.referencedAnswer")}
+                  </p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{resolveAnswer(block.referenceBlockId)}</p>
+                </div>
+              )}
+
               {showInput && (
                 <div className="space-y-2 pt-3 border-t border-gray-100 dark:border-gray-800">
                   <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{question}</p>
                   {renderInput(block)}
-                  {hint && <p className="text-xs text-gray-400 italic">{hint}</p>}
+                  {hint && <p className="text-xs text-gray-400 italic">{resolveRefs(hint)}</p>}
                 </div>
               )}
             </Card>

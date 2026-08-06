@@ -35,6 +35,9 @@ const makeBlock = (type: BlockType, label?: string): Block => ({
   reflectionQuestion: "",
   reflectionPlaceholder: "",
   reflectionHint: "",
+  referenceBlockId: "",
+  showIfBlockId: "",
+  showIfValue: "",
   required: false,
   order_index: 0,
 });
@@ -104,6 +107,23 @@ const Builder = () => {
     () => steps.find((s) => s.id === selectedStepId) || steps[steps.length - 1],
     [steps, selectedStepId]
   );
+
+  const allBlockOptions = useMemo(() => {
+    const map = new Map<string, { id: string; label: string; source: string }>();
+    progress.templates.forEach((tmpl) => {
+      tmpl.steps.forEach((s) =>
+        s.blocks?.forEach((b) => {
+          if (!map.has(b.id)) map.set(b.id, { id: b.id, label: b.label, source: tmpl.name });
+        })
+      );
+    });
+    steps.forEach((s) =>
+      s.blocks?.forEach((b) => {
+        if (!map.has(b.id)) map.set(b.id, { id: b.id, label: b.label, source: templateName });
+      })
+    );
+    return Array.from(map.values());
+  }, [progress.templates, steps, templateName]);
 
   const updateSteps = (updater: (prev: Step[]) => Step[]) => {
     setSteps((prev) =>
@@ -562,6 +582,51 @@ const Builder = () => {
                               />
                               {t("builder.required")}
                             </label>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                {t("builder.referenceBlock")}
+                              </label>
+                              <p className="text-[10px] text-gray-400 mb-1.5">{t("builder.referenceBlockDescription")}</p>
+                              <select
+                                value={block.referenceBlockId || ""}
+                                onChange={(e) => updateBlock(step.id, block.id, { referenceBlockId: e.target.value || undefined })}
+                                className="input text-sm"
+                              >
+                                <option value="">{t("builder.noReference")}</option>
+                                {allBlockOptions.map((opt) => (
+                                  <option key={opt.id} value={opt.id}>
+                                    {opt.label} ({opt.source})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                {t("builder.dependsOn")}
+                              </label>
+                              <p className="text-[10px] text-gray-400 mb-1.5">{t("builder.dependsOnDescription")}</p>
+                              <div className="flex gap-2">
+                                <select
+                                  value={block.showIfBlockId || ""}
+                                  onChange={(e) => updateBlock(step.id, block.id, { showIfBlockId: e.target.value || undefined })}
+                                  className="input text-sm flex-1"
+                                >
+                                  <option value="">{t("builder.noDependency")}</option>
+                                  {allBlockOptions.map((opt) => (
+                                    <option key={opt.id} value={opt.id}>
+                                      {opt.label}
+                                    </option>
+                                  ))}
+                                </select>
+                                <input
+                                  type="text"
+                                  value={block.showIfValue || ""}
+                                  onChange={(e) => updateBlock(step.id, block.id, { showIfValue: e.target.value })}
+                                  placeholder={t("builder.dependsOnValue")}
+                                  className="input text-sm flex-1"
+                                />
+                              </div>
+                            </div>
                           </div>
                         </Card>
                       ))}

@@ -46,6 +46,8 @@
     "completeFramework": "Hoàn tất framework",
     "finalizeStep": "Hoàn tất bước & Tiếp tục",
     "finalizeFramework": "Hoàn tất framework",
+    "referencedAnswer": "Câu trả lời tham chiếu",
+    "referenceMissing": "[chưa có câu trả lời]",
     "allReflectionsCaptured": "Đã ghi lại đầy đủ suy ngẫm",
     "reflectionsInProgressTitle": "Suy ngẫm đang tiến hành",
     "reflectionsInProgress": "{{completed}}/{{total}} phần nhập liệu đã hoàn thành",
@@ -123,6 +125,13 @@
     "reflectionQuestion": "Câu hỏi suy ngẫm",
     "reflectionPlaceholder": "Gợi ý nhập suy ngẫm",
     "reflectionHint": "Gợi ý phản hồi",
+    "referenceBlock": "Tham chiếu câu trả lời trước",
+    "referenceBlockDescription": "Hiển thị câu trả lời của block khác trong card này.",
+    "noReference": "Không có",
+    "dependsOn": "Hiện khi",
+    "dependsOnDescription": "Chỉ hiện block này khi câu trả lời khác chứa giá trị bên dưới.",
+    "noDependency": "Luôn hiện",
+    "dependsOnValue": "Giá trị mong đợi",
     "required": "Bắt buộc"
   },
   "common": {

@@ -29,6 +29,9 @@ export interface Block {
   reflectionQuestion?: string;
   reflectionPlaceholder?: string;
   reflectionHint?: string;
+  referenceBlockId?: string;
+  showIfBlockId?: string;
+  showIfValue?: string;
   required?: boolean;
   options?: string[];
   order_index: number;
