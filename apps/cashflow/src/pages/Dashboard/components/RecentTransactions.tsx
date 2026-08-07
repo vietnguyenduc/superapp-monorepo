@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import type { Transaction } from "../../../types";
 import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../../utils/formatting";
-import { getCustomerBalanceDelta, getBankAccountBalanceDelta } from "../../../services/businessLogic/balanceMath";
+import { getCustomerBalanceDelta, getBankAccountBalanceDelta, parseAmount } from "../../../services/businessLogic";
 import { useTransactionTypes } from "../../../contexts/TransactionTypeContext";
 import { databaseService } from "../../../services/database";
 import { useCompanyId } from "../../../hooks/useCompanyId";
@@ -282,7 +282,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                         transaction.amount,
                       )}`}
                     >
-                      {formatCurrency(getCustomerBalanceDelta(transaction.transaction_type, transaction.amount))}
+                      {formatCurrency(parseAmount(transaction.amount))}
                     </div>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-semibold mt-1 ${getTransactionTypeColor(
@@ -381,7 +381,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                         transaction.amount,
                       )}`}
                     >
-                      {formatCurrency(getCustomerBalanceDelta(transaction.transaction_type, transaction.amount))}
+                      {formatCurrency(parseAmount(transaction.amount))}
                     </div>
                   </td>
                   <td className="px-3 py-3 text-center">
@@ -421,7 +421,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
                       transaction.amount,
                     )}`}
                   >
-                    {formatCurrency(getCustomerBalanceDelta(transaction.transaction_type, transaction.amount))}
+                    {formatCurrency(parseAmount(transaction.amount))}
                   </div>
                   <span
                     className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${getTransactionTypeColor(

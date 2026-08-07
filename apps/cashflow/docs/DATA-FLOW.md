@@ -111,7 +111,7 @@ A group-by selector produces a `Tổng hợp theo nhóm` table above the transac
 - `refund -1000` decreases customer balance by 1000, bank cash increases by 1000.
 - `adjustment -1000` / `+1000` is a direct signed correction on both customer and bank.
 - `validateTransactionData` only rejects zero/NaN amounts; negative amounts are accepted for all types.
-- UI display (`TransactionList`, `RecentTransactions`, `Dashboard`) shows `formatCurrency(getCustomerBalanceDelta(...))` with color driven by the signed delta, so a negative charge appears green/positive.
+- UI display (`TransactionList`, `CustomerDetail`, `CustomerDetailModal`, `RecentTransactions`) shows `formatCurrency(parseAmount(amount))` — the raw user-entered value — while color is still driven by the signed delta from `getCustomerBalanceDelta(...)`, so a positive charge appears red (debt) and a negative charge appears green (credit).
 
 ### Missing-column fallback
 

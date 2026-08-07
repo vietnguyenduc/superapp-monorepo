@@ -6,6 +6,10 @@
 
 - **Transaction list grouping** — `TransactionList.tsx` now groups by `Ngày` / `Tuần` / `Tháng` and shows a `Tổng hợp theo nhóm` card with `Số giao dịch`, `Tổng phát sinh tăng`, `Tổng phát sinh giảm`, `Tổng điều chỉnh`, and `Net`. Week grouping uses ISO-week calculation; groups are sorted chronologically. Group-by also still supports `Văn phòng`, `Loại giao dịch`, and `Khách hàng`.
 
+### Fixed
+
+- **Transaction amount display preserves user-entered sign** — `TransactionList`, `CustomerDetail`, `CustomerDetailModal`, and `RecentTransactions` now render `formatCurrency(parseAmount(amount))` instead of `formatCurrency(getCustomerBalanceDelta(...))`, so positive amounts stay positive on screen while type color (red/green/blue) still indicates the transaction direction. Balance math in `balanceMath.ts` continues to drive `total_balance`, bank cash, and dashboard aggregations.
+
 ### Changed
 
 - **Settings page refactor** — split `pages/Settings/Settings.tsx` into a shared `useSettingsState` hook, `SettingsContext`, and per-tab components in `pages/Settings/components/tabs/*.tsx`. `colorOptions`/`getColorClass` moved to `pages/Settings/utils.ts`, and the module-level `formatCurrency` duplicate was removed. No behavior changed; all tabs render and switch correctly in local preview.
