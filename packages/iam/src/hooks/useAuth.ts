@@ -146,7 +146,7 @@ export const useAuth = () => {
       if (trialPreview === "true") {
         const trial = readTrialFromStorage();
         const now = new Date().toISOString();
-        const trialUser = trial?.user ?? {
+        const trialUser = (trial?.user ?? {
           id: "trial-user",
           email: "trial@example.com",
           full_name: "Trial User",
@@ -155,7 +155,7 @@ export const useAuth = () => {
           branch_id: "trial-branch",
           created_at: now,
           updated_at: now,
-        };
+        }) as User;
         if (!trial) {
           localStorage.setItem(TRIAL_STORAGE_KEY, JSON.stringify({ user: trialUser, started_at: now }));
         }
