@@ -58,7 +58,7 @@ All new code must use `src/services/businessLogic/balanceMath.ts`.
 
 Negative `total_balance` = debt. Positive = overpayment/credit.
 
-All balance/amount sign display now flows through `getCustomerBalanceDelta`; `getTransactionMathFactor` delegates to it, so `CustomerDetailModal` / `RecentTransactions` render charge amounts as negative (debt) and payment/refund amounts as positive (credit).
+Balance math still flows through `getCustomerBalanceDelta` for `total_balance`, bank cash, and dashboard aggregations. However, the **displayed transaction amount** is the raw user-entered value (`parseAmount(amount)`), so `TransactionList`, `CustomerDetail`, `CustomerDetailModal`, and `RecentTransactions` show positive amounts with type-based color (charge = red, payment/refund = green, adjustment = blue).
 
 ### Sign-aware amounts (2026-08-05)
 

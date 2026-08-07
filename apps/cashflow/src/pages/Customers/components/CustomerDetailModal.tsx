@@ -4,7 +4,7 @@ import type { Customer, Transaction } from "../../../types";
 import { databaseService } from "../../../services/database";
 import { useCompanyId } from "../../../hooks/useCompanyId";
 import { formatCurrency, formatDate, formatPhoneNumber, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor } from "../../../utils/formatting";
-import { getCustomerBalanceDelta } from "../../../services/businessLogic/balanceMath";
+import { getCustomerBalanceDelta, parseAmount } from "../../../services/businessLogic";
 import { useTransactionTypes } from "../../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../../components/UI/FallbackUI";
 
@@ -375,7 +375,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                             <span
                               className={`text-xs sm:text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type, transaction.amount)}`}
                             >
-                              {formatCurrency(getCustomerBalanceDelta(transaction.transaction_type, transaction.amount))}
+                              {formatCurrency(parseAmount(transaction.amount))}
                             </span>
                           </td>
                           <td className="px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-900 truncate max-w-[150px] sm:max-w-[200px]">

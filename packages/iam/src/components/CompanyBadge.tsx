@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import type { Company } from "@repo/types";
 import { useAuthContext } from "../contexts/AuthProvider";
 import { useCompany } from "../contexts/CompanyContext";
 
