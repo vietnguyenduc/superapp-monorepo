@@ -93,7 +93,7 @@ describe('validateTransactionData', () => {
   });
 
   it('accepts all documented valid transaction types', () => {
-    for (const type of ['payment', 'charge', 'refund', 'adjustment']) {
+    for (const type of ['payment', 'charge', 'refund', 'adjustment', 'deposit']) {
       expect(validateTransactionData({ ...base, transaction_type: type }).isValid).toBe(true);
     }
   });

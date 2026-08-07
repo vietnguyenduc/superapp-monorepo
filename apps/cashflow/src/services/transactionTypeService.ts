@@ -1,7 +1,7 @@
 import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
 import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
-import { validateTransactionTypeData, transformRawTransactionType } from "./businessLogic";
+import { validateTransactionTypeData, transformRawTransactionType, normalizeTransactionType } from "./businessLogic";
 import { insertWithFallback, updateWithFallback } from "./updateHelpers";
 
 export class TransactionTypeService extends BaseService {
@@ -115,22 +115,36 @@ export class TransactionTypeService extends BaseService {
   }
 
   static async toggleTransactionType(id: string, isActive: boolean) {
+    const resolveCanonical = (rowId: string, rowName: string) => {
+      const lowerId = rowId.toLowerCase().trim();
+      if (["payment", "charge", "adjustment", "refund", "deposit"].includes(lowerId)) return lowerId;
+      const normalized = normalizeTransactionType(rowName);
+      if (normalized !== rowName.toLowerCase().trim()) return normalized;
+      return rowName;
+    };
+
     return this.execute(
       async () => {
+        const { data: typeRow } = await apiClient.from("transaction_types").select("name").eq("id", id).maybeSingle();
+        const canonicalName = resolveCanonical(id, String(typeRow?.name ?? ""));
         if (!isActive) {
-          const { data: txs } = await apiClient.from("transactions").select("id").eq("transaction_type", id).limit(1);
+          const { data: txs } = await apiClient.from("transactions").select("id").eq("transaction_type", canonicalName).limit(1);
           if (txs && txs.length > 0) {
             return { data: null, error: { message: "Không thể vô hiệu hóa loại giao dịch vì đang được sử dụng trong giao dịch." } };
           }
         }
-        
+
         const { error } = await apiClient.from("transaction_types").update({ is_active: isActive }).eq("id", id);
         return { data: null, error };
       },
       async () => {
+        const typeRow = (trialGet("transaction_types") || [] as Record<string, unknown>[]).find(
+          (t) => String(t.id ?? "") === id
+        );
+        const canonicalName = resolveCanonical(id, String(typeRow?.name ?? ""));
         if (!isActive) {
           const txs = (trialGet("transactions") || [] as Record<string, unknown>[]).find(
-            (t) => t.transaction_type === id
+            (t) => String(t.transaction_type ?? "") === canonicalName
           );
           if (txs) {
             return { data: null, error: { message: "Không thể vô hiệu hóa loại giao dịch vì đang được sử dụng trong giao dịch." } };
@@ -143,19 +157,33 @@ export class TransactionTypeService extends BaseService {
   }
 
   static async deleteTransactionType(id: string) {
+    const resolveCanonical = (rowId: string, rowName: string) => {
+      const lowerId = rowId.toLowerCase().trim();
+      if (["payment", "charge", "adjustment", "refund", "deposit"].includes(lowerId)) return lowerId;
+      const normalized = normalizeTransactionType(rowName);
+      if (normalized !== rowName.toLowerCase().trim()) return normalized;
+      return rowName;
+    };
+
     return this.execute(
       async () => {
-        const { data: txs } = await apiClient.from("transactions").select("id").eq("transaction_type", id).limit(1);
+        const { data: typeRow } = await apiClient.from("transaction_types").select("name").eq("id", id).maybeSingle();
+        const canonicalName = resolveCanonical(id, String(typeRow?.name ?? ""));
+        const { data: txs } = await apiClient.from("transactions").select("id").eq("transaction_type", canonicalName).limit(1);
         if (txs && txs.length > 0) {
           return { data: null, error: { message: "Không thể xóa loại giao dịch vì đang được sử dụng trong giao dịch. Vui lòng vô hiệu hóa thay vì xóa." } };
         }
-        
+
         const { error } = await apiClient.from("transaction_types").delete().eq("id", id);
         return { data: null, error };
       },
       async () => {
+        const typeRow = (trialGet("transaction_types") || [] as Record<string, unknown>[]).find(
+          (t) => String(t.id ?? "") === id
+        );
+        const canonicalName = resolveCanonical(id, String(typeRow?.name ?? ""));
         const txs = (trialGet("transactions") || [] as Record<string, unknown>[]).find(
-          (t) => t.transaction_type === id
+          (t) => String(t.transaction_type ?? "") === canonicalName
         );
         if (txs) {
           return { data: null, error: { message: "Không thể xóa loại giao dịch vì đang được sử dụng trong giao dịch. Vui lòng vô hiệu hóa thay vì xóa." } };

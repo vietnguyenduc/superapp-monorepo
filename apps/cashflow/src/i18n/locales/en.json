@@ -163,7 +163,8 @@
         "payment": "Payment",
         "charge": "Charge",
         "adjustment": "Adjustment",
-        "refund": "Refund"
+        "refund": "Refund",
+        "deposit": "Deposit"
       }
     },
     "timeLabels": {
@@ -283,6 +284,7 @@
     "charge": "Charge",
     "adjustment": "Adjustment",
     "refund": "Refund",
+    "deposit": "Deposit",
     "transactionNotFound": "Transaction not found",
     "transactionCreated": "Transaction created successfully",
     "transactionUpdated": "Transaction updated successfully",
@@ -295,6 +297,13 @@
     "dateRange": "Date Range",
     "fromDate": "From Date",
     "toDate": "To Date",
+    "types": {
+      "payment": "Payment",
+      "charge": "Charge",
+      "adjustment": "Adjustment",
+      "refund": "Refund",
+      "deposit": "Deposit"
+    },
     "errors": {
       "customerRequired": "Please select a customer",
       "typeRequired": "Please select a transaction type",
@@ -599,13 +608,5 @@
     "accountCreated": "Account created successfully",
     "accountUpdated": "Account updated successfully",
     "accountDeleted": "Account deleted successfully"
-  },
-  "transactions": {
-    "types": {
-      "payment": "Payment received",
-      "charge": "Credit issued",
-      "adjustment": "Adjustment",
-      "refund": "Refund"
-    }
   }
 }

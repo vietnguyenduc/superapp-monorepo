@@ -139,7 +139,7 @@ export interface Transaction {
 
 // Enums
 export type UserRole = "admin_master" | "admin_company" | "admin" | "branch_manager" | "staff";
-export type TransactionType = "payment" | "charge" | "adjustment" | "refund";
+export type TransactionType = "payment" | "charge" | "adjustment" | "refund" | "deposit";
 export type ReportType =
   | "keyMetrics"
   | "customerBalance"

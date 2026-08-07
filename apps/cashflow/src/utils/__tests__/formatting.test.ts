@@ -232,6 +232,7 @@ describe("Formatting Utils", () => {
       expect(formatTransactionType("charge")).toBe("Phát sinh tăng");
       expect(formatTransactionType("adjustment")).toBe("Điều chỉnh");
       expect(formatTransactionType("refund")).toBe("Hoàn tiền");
+      expect(formatTransactionType("deposit")).toBe("Đặt cọc");
     });
 
     it("handles unknown types", () => {
@@ -307,6 +308,8 @@ describe("Formatting Utils", () => {
       expect(getTransactionTypeAmountColor("payment", 1000)).toContain("text-green-600");
       // refund decreases debt -> green
       expect(getTransactionTypeAmountColor("refund", 1000)).toContain("text-green-600");
+      // deposit decreases debt -> green
+      expect(getTransactionTypeAmountColor("deposit", 1000)).toContain("text-green-600");
     });
 
     it("uses the signed amount to color adjustments", () => {

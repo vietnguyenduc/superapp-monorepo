@@ -430,7 +430,11 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
 
   const handleValidateData = useCallback((mode: "single" | "bulk" = "single", dataToValidate?: TransactionInputRow[]) => {
     const targetData = dataToValidate ?? tableData;
-    const dbTypes = transactionTypeCtx.typesForDropdown.map((t) => ({ id: t.id, name: t.name }));
+    const dbTypes = transactionTypeCtx.typesForDropdown.map((t) => ({
+      id: t.id,
+      name: t.name,
+      canonical: t.canonical,
+    }));
     // Build valid customer code set from options ("CODE - Name" -> "code")
     const validCustomerCodes = new Set(
       customerOptions.map((opt) => {

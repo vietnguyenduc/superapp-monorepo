@@ -57,6 +57,7 @@ export const TRANSACTION_TYPES = {
   CHARGE: "charge",
   ADJUSTMENT: "adjustment",
   REFUND: "refund",
+  DEPOSIT: "deposit",
 } as const;
 
 // User Roles

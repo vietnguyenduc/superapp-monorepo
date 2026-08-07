@@ -157,11 +157,12 @@ describe("Import Utils", () => {
       expect(result.errors[2].message).toBe("Amount must be a non-zero number");
     });
 
-    it("allows negative amounts for payment/charge/refund", () => {
+    it("allows negative amounts for payment/charge/refund/deposit", () => {
       const data = [
         { ...validData[0], amount: "-100", transaction_type: "payment" },
         { ...validData[0], amount: "-100", transaction_type: "charge" },
         { ...validData[0], amount: "-100", transaction_type: "refund" },
+        { ...validData[0], amount: "-100", transaction_type: "deposit" },
       ];
 
       const result = validateTransactionData(data);
@@ -198,6 +199,7 @@ describe("Import Utils", () => {
         "charge",
         "adjustment",
         "refund",
+        "deposit",
       ];
 
       validTypes.forEach((type) => {
@@ -212,6 +214,7 @@ describe("Import Utils", () => {
         { ...validData[0], transaction_type: "Payment" },
         { ...validData[0], transaction_type: "CHARGE" },
         { ...validData[0], transaction_type: "Adjustment" },
+        { ...validData[0], transaction_type: "DEPOSIT" },
       ];
 
       const result = validateTransactionData(data);

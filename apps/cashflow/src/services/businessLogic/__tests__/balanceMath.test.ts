@@ -20,6 +20,10 @@ describe("balanceMath", () => {
       expect(getCustomerBalanceDelta("refund", 100)).toBe(100);
     });
 
+    it("deposits increase the customer's balance (reduce debt)", () => {
+      expect(getCustomerBalanceDelta("deposit", 100)).toBe(100);
+    });
+
     it("adjustments use the signed amount", () => {
       expect(getCustomerBalanceDelta("adjustment", -50)).toBe(-50);
       expect(getCustomerBalanceDelta("adjustment", 50)).toBe(50);
@@ -33,6 +37,7 @@ describe("balanceMath", () => {
       expect(getCustomerBalanceDelta("charge", -100)).toBe(100);
       expect(getCustomerBalanceDelta("payment", -100)).toBe(-100);
       expect(getCustomerBalanceDelta("refund", -100)).toBe(-100);
+      expect(getCustomerBalanceDelta("deposit", -100)).toBe(-100);
     });
 
     it("falls back to signed amount for unknown types", () => {
@@ -43,6 +48,10 @@ describe("balanceMath", () => {
   describe("getBankAccountBalanceDelta", () => {
     it("payments increase the bank account balance", () => {
       expect(getBankAccountBalanceDelta("payment", 100)).toBe(100);
+    });
+
+    it("deposits increase the bank account balance", () => {
+      expect(getBankAccountBalanceDelta("deposit", 100)).toBe(100);
     });
 
     it("refunds decrease the bank account balance", () => {
@@ -61,6 +70,7 @@ describe("balanceMath", () => {
     it("reverses the bank cash-flow when amount is negative", () => {
       expect(getBankAccountBalanceDelta("payment", -100)).toBe(-100);
       expect(getBankAccountBalanceDelta("refund", -100)).toBe(100);
+      expect(getBankAccountBalanceDelta("deposit", -100)).toBe(-100);
       expect(getBankAccountBalanceDelta("charge", -100)).toBe(0);
     });
   });
@@ -71,10 +81,11 @@ describe("balanceMath", () => {
         { transaction_type: "charge", amount: 100 },
         { transaction_type: "payment", amount: 30 },
         { transaction_type: "refund", amount: 20 },
+        { transaction_type: "deposit", amount: 15 },
         { transaction_type: "adjustment", amount: -10 },
       ] as const;
-      // opening 0 - charge 100 + payment 30 + refund 20 - adjustment 10 = -60
-      expect(applyTransactionsToCustomerBalance(0, transactions as unknown as { transaction_type: string; amount: number }[])).toBe(-60);
+      // opening 0 - charge 100 + payment 30 + refund 20 + deposit 15 - adjustment 10 = -45
+      expect(applyTransactionsToCustomerBalance(0, transactions as unknown as { transaction_type: string; amount: number }[])).toBe(-45);
     });
   });
 

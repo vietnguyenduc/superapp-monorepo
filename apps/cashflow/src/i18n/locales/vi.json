@@ -173,7 +173,8 @@
         "payment": "Phát sinh giảm",
         "charge": "Phát sinh tăng",
         "adjustment": "Điều chỉnh",
-        "refund": "Hoàn tiền"
+        "refund": "Hoàn tiền",
+        "deposit": "Đặt cọc"
       }
     },
     "timeLabels": {
@@ -364,6 +365,7 @@
     "charge": "Phát sinh tăng",
     "adjustment": "Điều chỉnh",
     "refund": "Hoàn tiền",
+    "deposit": "Đặt cọc",
     "debtIncrease": "Tăng nợ",
     "debtDecrease": "Giảm nợ",
     "transactionNotFound": "Không tìm thấy giao dịch",
@@ -382,7 +384,8 @@
       "payment": "Phát sinh giảm",
       "charge": "Phát sinh tăng",
       "adjustment": "Điều chỉnh",
-      "refund": "Hoàn tiền"
+      "refund": "Hoàn tiền",
+      "deposit": "Đặt cọc"
     },
     "errors": {
       "customerRequired": "Vui lòng chọn khách hàng",
@@ -785,13 +788,5 @@
     "accountCreated": "Tạo tài khoản thành công",
     "accountUpdated": "Cập nhật tài khoản thành công",
     "accountDeleted": "Xóa tài khoản thành công"
-  },
-  "transactions": {
-    "types": {
-      "payment": "Phát sinh giảm",
-      "charge": "Phát sinh tăng",
-      "adjustment": "Điều chỉnh",
-      "refund": "Hoàn tiền"
-    }
   }
 }

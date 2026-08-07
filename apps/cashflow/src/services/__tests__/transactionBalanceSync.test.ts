@@ -152,4 +152,22 @@ describe("transaction balance sync (trial mode)", () => {
     expect(customer?.total_balance).toBe(-85_000_000 + 1_000_000);
     expect(bank?.balance).toBe(150_000_000);
   });
+
+  it("createTransaction with deposit reduces customer debt and increases bank cash", async () => {
+    const result = await transactionService.createTransaction({
+      ...baseTxn,
+      transaction_code: "TXN-TEST-DEPOSIT",
+      transaction_type: "deposit",
+    });
+    expect(result.error).toBeFalsy();
+
+    const customers = (trialGet("customers") || []) as { id: string; total_balance: number }[];
+    const banks = (trialGet("bank_accounts") || []) as { id: string; balance: number }[];
+
+    const customer = customers.find((c) => c.id === "1");
+    const bank = banks.find((b) => b.id === "1");
+
+    expect(customer?.total_balance).toBe(-85_000_000 + 1_000_000);
+    expect(bank?.balance).toBe(150_000_000 + 1_000_000);
+  });
 });
