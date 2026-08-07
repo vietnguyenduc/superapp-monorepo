@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FiStar, FiBook, FiSun, FiInfo, FiEdit3, FiList, FiType, FiHash, FiGitBranch, FiCheck, FiArrowRight } from "react-icons/fi";
+import { FiStar, FiBook, FiSun, FiInfo, FiEdit3, FiList, FiType, FiHash, FiGitBranch, FiCheck, FiArrowRight, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { Card, Button } from "../../components/UI";
+import TaskReview from "../../components/TaskReview/TaskReview";
 import { useI18n } from "../../hooks/useI18n";
 import { useFrameworkProgress, getDailySteps } from "../../hooks/useFrameworkProgress";
 import type { Block, BlockType, Step } from "../../types";
@@ -43,6 +44,7 @@ const StepPage = () => {
   const taskCompleted = task?.status === "done" || stepNumber > totalSteps;
 
   const [answers, setAnswers] = useState<Record<string, Record<string, string>>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const timers = useRef<Record<string, number | null>>({});
 
   useEffect(() => {
@@ -76,18 +78,7 @@ const StepPage = () => {
   }
 
   if (!step || taskCompleted) {
-    return (
-      <div className="space-y-5 animate-fade-in text-center py-10 max-w-3xl mx-auto">
-        <div className="w-20 h-20 rounded-full bg-green-50 dark:bg-green-900/20 text-green-600 flex items-center justify-center mx-auto mb-4">
-          <FiCheck className="w-10 h-10" />
-        </div>
-        <h1 className="text-2xl font-bold">{t("step.taskCompleted") || "Đã hoàn thành"}</h1>
-        <p className="text-gray-500 mt-1">{task.title}</p>
-        <Button variant="dark" onClick={() => navigate("/dashboard")}>
-          {t("nav.dashboard")}
-        </Button>
-      </div>
-    );
+    return <TaskReview taskId={taskId || ""} />;
   }
 
   const flushReflection = (blockId: string, field: string, value: string) => {
@@ -205,11 +196,7 @@ const StepPage = () => {
     });
     completeTaskStep(taskId, stepNumber);
     window.setTimeout(() => {
-      if (stepNumber < totalSteps) {
-        navigate(`/task/${taskId}`);
-      } else {
-        navigate("/dashboard");
-      }
+      navigate(`/task/${taskId}`);
     }, 100);
   };
 
@@ -379,6 +366,8 @@ const StepPage = () => {
           const showInput = hasInput(block);
           const question = getQuestion(block);
           const hint = block.reflectionHint?.trim();
+          const hasLongContent = contentTypes.includes(block.type) && block.prompt?.trim().length > 0;
+          const isExpanded = expanded[block.id] ?? true;
           return (
             <Card key={block.id} className="p-5 space-y-4">
               <div className="flex items-start gap-3">
@@ -389,12 +378,22 @@ const StepPage = () => {
                 >
                   {filled ? <FiCheck className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-900 dark:text-gray-100 text-lg">{block.label}</p>
                 </div>
+                {hasLongContent && (
+                  <button
+                    type="button"
+                    onClick={() => setExpanded((prev) => ({ ...prev, [block.id]: !isExpanded }))}
+                    className="p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    aria-label={isExpanded ? "Thu gọn" : "Mở rộng"}
+                  >
+                    {isExpanded ? <FiChevronUp className="w-5 h-5" /> : <FiChevronDown className="w-5 h-5" />}
+                  </button>
+                )}
               </div>
 
-              {contentTypes.includes(block.type) && block.prompt?.trim() && (
+              {hasLongContent && isExpanded && (
                 <div className="pl-13">{renderContent(block)}</div>
               )}
 

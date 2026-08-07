@@ -250,6 +250,9 @@ export interface TaskRun {
   completedSteps: number[];
   completedBlockIds: string[];
   reflections: Record<string, Record<string, string>>;
+  actions: ActionItem[];
+  note: string;
+  reflection: string;
   sessions: FrameworkSession[];
   startedAt: string;
   lastUpdated: string;
@@ -306,8 +309,78 @@ export interface FrameworkProgress {
   templates: FrameworkTemplate[];
   activeTemplateId: string | null;
   dailyTemplateIds: string[];
+  groupColors: Record<string, string>;
   lastUpdated: string;
 }
+
+const sampleMorningTemplate = (): FrameworkTemplate => {
+  const priorityBlock = makeBlock({
+    id: "block-morning-priority",
+    type: "short_text",
+    label: "Ưu tiên số 1 hôm nay",
+    prompt: "Việc quan trọng nhất hôm nay của bạn là gì?",
+    placeholder: "VD: Hoàn thành đề xuất sản phẩm",
+    required: true,
+    order_index: 0,
+  });
+  const step = makeStep({
+    id: "step-morning-priority",
+    phase_id: "morning",
+    phaseName: "Buổi sáng",
+    title: "Xác định ưu tiên",
+    description: "Bắt đầu ngày bằng một kết quả quan trọng nhất cần đạt được.",
+    order_index: 0,
+    blocks: [priorityBlock],
+  });
+  return {
+    id: "tpl-morning",
+    name: "Kiểm tra buổi sáng",
+    description: "Xác định ưu tiên duy nhất cho ngày hôm nay.",
+    steps: [step],
+    updatedAt: new Date().toISOString(),
+  };
+};
+
+const sampleDeepTemplate = (): FrameworkTemplate => {
+  const planBlock = makeBlock({
+    id: "block-deep-plan",
+    type: "reflection",
+    label: "Lập kế hoạch làm sâu",
+    prompt: "Ưu tiên hôm nay là: {{answer:block-morning-priority}}. Bạn sẽ bảo vệ 90 phút làm việc tập trung như thế nào?",
+    placeholder: "Lên lịch 90 phút trước 12h, tắt thông báo...",
+    reflectionQuestion: "Làm thế nào để ưu tiên này chiếm trọn khối làm việc sâu?",
+    reflectionPlaceholder: "Tôi sẽ tắt thông báo, đặt lịch và chỉ mở một tab duy nhất...",
+    reflectionHint: "Gợi ý: dùng ưu tiên làm màng lọc cho mọi việc bạn nhận vào buổi sáng.",
+    referenceBlockId: "block-morning-priority",
+    required: true,
+    order_index: 0,
+  });
+  const energyBlock = makeBlock({
+    id: "block-energy",
+    type: "rating",
+    label: "Kiểm tra năng lượng",
+    prompt: "Đánh giá mức năng lượng hiện tại của bạn trước khi bắt đầu.",
+    required: false,
+    options: ["1", "2", "3", "4", "5"],
+    order_index: 1,
+  });
+  const step = makeStep({
+    id: "step-deep-work",
+    phase_id: "deep",
+    phaseName: "Làm việc sâu",
+    title: "Chạy một phiên làm việc sâu",
+    description: "Kết nối khối làm việc tập trung với ưu tiên buổi sáng.",
+    order_index: 0,
+    blocks: [planBlock, energyBlock],
+  });
+  return {
+    id: "tpl-deep",
+    name: "Làm việc sâu",
+    description: "Chạy khối làm việc tập trung dựa trên ưu tiên đã chọn.",
+    steps: [step],
+    updatedAt: new Date().toISOString(),
+  };
+};
 
 function getDefaultProgress(): FrameworkProgress {
   const today = new Date().toISOString().split("T")[0];
@@ -319,6 +392,8 @@ function getDefaultProgress(): FrameworkProgress {
     steps: defaultSteps,
     updatedAt: new Date().toISOString(),
   };
+  const morning = sampleMorningTemplate();
+  const deep = sampleDeepTemplate();
   return {
     currentDate: today,
     currentStep: 1,
@@ -332,9 +407,15 @@ function getDefaultProgress(): FrameworkProgress {
     sessions: [],
     tasks: [],
     taskRuns: {},
-    templates: [defaultTemplate],
+    templates: [morning, deep, defaultTemplate],
     activeTemplateId: defaultTemplateId,
-    dailyTemplateIds: [defaultTemplateId],
+    dailyTemplateIds: [morning.id, deep.id, defaultTemplateId],
+    groupColors: {
+      "Daily Mix": "#3b82f6",
+      "Kiểm tra buổi sáng": "#f59e0b",
+      "Làm việc sâu": "#10b981",
+      "Framework của bạn": "#8b5cf6",
+    },
     lastUpdated: new Date().toISOString(),
   };
 }
@@ -413,6 +494,7 @@ interface ProgressContextValue {
   deleteTask: (id: string) => void;
   renameTaskGroup: (oldGroup: string, newGroup: string, date: string) => void;
   getTaskRun: (taskId: string) => TaskRun;
+  updateTaskRun: (taskId: string, updates: Partial<TaskRun>) => void;
 }
 
 const ProgressContext = createContext<ProgressContextValue | null>(null);
@@ -523,7 +605,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
           t.id === taskId
             ? {
                 ...t,
-                status: (stepIndex === steps.length ? "done" : "in_progress") as TaskStatus,
+                status: (t.status === "done" ? "done" : "in_progress") as TaskStatus,
                 updatedAt: now,
               }
             : t
@@ -657,6 +739,9 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
         completedSteps: [],
         completedBlockIds: [],
         reflections: {},
+        actions: [],
+        note: "",
+        reflection: "",
         sessions: [],
         startedAt: now,
         lastUpdated: now,
@@ -711,6 +796,24 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     [userKey]
   );
 
+  const getTaskRun = useCallback(
+    (taskId: string) =>
+      progress.taskRuns[taskId] || {
+        taskId,
+        currentStep: 1,
+        completedSteps: [],
+        completedBlockIds: [],
+        reflections: {},
+        actions: [],
+        note: "",
+        reflection: "",
+        sessions: [],
+        startedAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
+      },
+    [progress.taskRuns]
+  );
+
   const renameTaskGroup = useCallback(
     (oldGroup: string, newGroup: string, date: string) => {
       const now = new Date().toISOString();
@@ -719,6 +822,25 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       );
     },
     [mutateTasks]
+  );
+
+  const updateTaskRun = useCallback(
+    (taskId: string, updates: Partial<TaskRun>) => {
+      setProgress((prev) => {
+        const existing = prev.taskRuns[taskId] || getTaskRun(taskId);
+        const next = {
+          ...prev,
+          taskRuns: {
+            ...prev.taskRuns,
+            [taskId]: { ...existing, ...updates, lastUpdated: new Date().toISOString() },
+          },
+          lastUpdated: new Date().toISOString(),
+        };
+        saveProgress(userKey, next);
+        return next;
+      });
+    },
+    [userKey, getTaskRun]
   );
 
   const dailySteps = useMemo(() => getDailySteps(progress), [progress]);
@@ -730,21 +852,6 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       ? "Daily Mix"
       : activeTemplate?.name || "Framework của bạn";
   }, [progress.templates, progress.activeTemplateId, progress.dailyTemplateIds]);
-
-  const getTaskRun = useCallback(
-    (taskId: string) =>
-      progress.taskRuns[taskId] || {
-        taskId,
-        currentStep: 1,
-        completedSteps: [],
-        completedBlockIds: [],
-        reflections: {},
-        sessions: [],
-        startedAt: new Date().toISOString(),
-        lastUpdated: new Date().toISOString(),
-      },
-    [progress.taskRuns]
-  );
 
   const value = useMemo(
     () => ({
@@ -765,6 +872,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       deleteTask,
       renameTaskGroup,
       getTaskRun,
+      updateTaskRun,
     }),
     [
       progress,
@@ -784,6 +892,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       deleteTask,
       renameTaskGroup,
       getTaskRun,
+      updateTaskRun,
     ]
   );
 

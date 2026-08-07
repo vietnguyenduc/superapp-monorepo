@@ -1,5 +1,23 @@
 # Framework Method — Changelog
 
+## 2026-08-07 (task-first wizard + builder clarity + toggle content)
+
+- Finalized task-first flow: every task has its own `TaskRun` (`currentStep`, `completedSteps`, `reflections`, `sessions`, `actions`, `note`, `reflection`).
+- `Dashboard` is the unified daily task board: create task, group dropdown, editable group names, group color picker.
+- Creating a new task opens the wizard (`/task/:taskId`) that runs the shared framework from `Daily Mix`.
+- After the last wizard step, the task stays `in_progress` and opens `TaskReview` with committed actions, reflection, quick notes, and a summary of block reflections.
+- Removed the global `Actions` tab/navigation; actions are now per-task inside `TaskReview`.
+- `Calendar`/`History` aggregate tasks and sessions, and use configured `groupColors` for group dots.
+- `Step` cards now have a toggle for long content blocks; the user input/reflection area stays visible when content is collapsed.
+- `Builder` clearer template workflow: "+ Tạo" creates a new template immediately, template list shows active tag, "Chạy thử wizard" opens a real task with the current `Daily Mix`, and step/block fields are labeled in Vietnamese.
+- Removed dead `pages/Actions/Actions.tsx`.
+
+## 2026-08-07 (sample templates + editable group dropdown)
+
+- Default `FrameworkProgress` now seeds three connected templates: `Kiểm tra buổi sáng`, `Làm việc sâu`, and `Framework của bạn`, mixed as the initial Daily Framework.
+- Cross-template reference is demonstrated: the deep-work step shows the morning priority answer via `{{answer:block-morning-priority}}`.
+- `Dashboard` group field is now a dropdown of existing groups with a "+ Tạo nhóm mới" option that switches to an editable text input; existing group headers still support rename.
+
 ## 2026-08-07 (task-driven daily dashboard)
 
 - Added `Task` model to `FrameworkProgress` (id, title, group, category, subCategory, templateId, stepId, blockId, status, priority, notes, date, createdAt, updatedAt).

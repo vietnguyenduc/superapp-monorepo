@@ -76,6 +76,8 @@ const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
 
+  const groupColor = (group: string) => progress.groupColors?.[group] || colorFor(group);
+
   const events = useMemo<CalendarEvent[]>(() => {
     const list: CalendarEvent[] = [];
 
@@ -161,14 +163,14 @@ const Calendar = () => {
             <div key={group} className="space-y-1">
               {compact ? (
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colorFor(group) }} />
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: groupColor(group) }} />
                   <span className="text-[10px] text-gray-500 truncate">
                     {group} · {groupItems.length}
                   </span>
                 </div>
               ) : (
                 groupItems.map((event) => {
-                  const color = colorFor(event.group);
+                  const color = groupColor(event.group);
                   return (
                     <div
                       key={event.id}
@@ -204,7 +206,7 @@ const Calendar = () => {
         </div>
         {groupKeys.length === 0 && <p className="text-sm text-gray-400 text-center py-8">{t("calendar.noEvents")}</p>}
         {groupKeys.map((group) => {
-          const color = colorFor(group);
+          const color = groupColor(group);
           return (
             <Card key={group} className="p-5">
               <div className="flex items-center gap-2 mb-3">
@@ -304,7 +306,7 @@ const Calendar = () => {
                       <span
                         key={group}
                         className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: colorFor(group) }}
+                        style={{ backgroundColor: groupColor(group) }}
                       />
                     ))}
                 </div>
@@ -432,7 +434,7 @@ const Calendar = () => {
             <p className="text-sm text-gray-400 py-4">{t("calendar.noEvents") || "No activities scheduled."}</p>
           )}
           {detailKeys.map((group) => {
-            const color = colorFor(group);
+            const color = groupColor(group);
             return (
               <div key={group} className="mb-4 last:mb-0">
                 <div className="flex items-center gap-2 mb-2">

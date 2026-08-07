@@ -17,6 +17,7 @@ import {
   FiArrowLeft,
   FiChevronUp,
   FiChevronDown,
+  FiPlay,
 } from "react-icons/fi";
 import { Card, Button, Input } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
@@ -67,7 +68,7 @@ const Builder = () => {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { progress, saveTemplate, setActiveTemplate, setDailyTemplates } = useFrameworkProgress();
+  const { progress, saveTemplate, setActiveTemplate, setDailyTemplates, addTask } = useFrameworkProgress();
 
   const activeTemplate = progress.templates.find((t) => t.id === progress.activeTemplateId);
 
@@ -227,11 +228,22 @@ const Builder = () => {
   };
 
   const handleNewTemplate = () => {
-    setActiveTemplate(null);
-    setTemplateName("New Framework");
-    setSteps([makeStep("Step 1")]);
+    const id = saveTemplate("New Framework", "", [makeStep("Step 1")]);
+    setActiveTemplate(id);
     setSelectedStepId(null);
-    setSaveStatus("");
+  };
+
+  const handlePreviewWizard = () => {
+    const task = addTask({
+      title: t("builder.previewTaskTitle") || "Xem trước wizard",
+      group: progress.dailyTemplateIds.length > 1 ? "Daily Mix" : activeTemplate?.name || "Framework",
+      category: "",
+      subCategory: "",
+      priority: "normal",
+      date: new Date().toISOString().split("T")[0],
+      status: "todo",
+    });
+    navigate(`/task/${task.id}`);
   };
 
   const seedSampleTemplates = () => {
@@ -545,6 +557,9 @@ const Builder = () => {
             <Button variant="secondary" size="sm" onClick={() => setPreview((p) => !p)}>
               <FiEye className="w-4 h-4" /> <span className="hidden sm:inline ml-1">{t("builder.preview")}</span>
             </Button>
+            <Button variant="secondary" size="sm" onClick={handlePreviewWizard}>
+              <FiPlay className="w-4 h-4" /> <span className="hidden sm:inline ml-1">{t("builder.previewWizard") || "Chạy thử wizard"}</span>
+            </Button>
             <Button variant="dark" size="sm" onClick={handlePublish}>
               <FiUpload className="w-4 h-4" /> <span className="hidden sm:inline ml-1">{t("builder.publish")}</span>
             </Button>
@@ -579,13 +594,14 @@ const Builder = () => {
                           />
                           <button
                             onClick={() => setSelectedStepId(step.id)}
+                            disabled={selectedStepId === step.id}
                             className={`ml-2 px-2 py-1 text-xs font-semibold rounded-md ${
                               selectedStepId === step.id
-                                ? "bg-primary-100 text-primary-700"
+                                ? "bg-primary-100 text-primary-700 cursor-default"
                                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                             }`}
                           >
-                            Select
+                            {selectedStepId === step.id ? t("builder.selectedStep") || "Đang chọn" : t("builder.selectStep") || "Chọn để thêm khối"}
                           </button>
                         </div>
                         <Input

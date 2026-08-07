@@ -20,7 +20,6 @@ const Navigation = () => {
   const navLinks = [
     { to: "/dashboard", label: t("nav.dashboard") },
     { to: "/steps", label: t("nav.steps") },
-    { to: "/actions", label: t("nav.actions") },
     { to: "/calendar", label: t("nav.calendar") },
     { to: "/history", label: t("nav.history") },
     { to: "/builder", label: t("nav.builder") },

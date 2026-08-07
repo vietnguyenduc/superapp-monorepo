@@ -20,8 +20,17 @@
 ## Layout / Navigation
 
 - `Layout.tsx` renders `MobileHeader` + `BottomNav` on mobile (`md:hidden`) and `Navigation` on desktop (`hidden md:block`).
-- `Navigation.tsx` (desktop) shows the app logo + horizontal links to Overview, Steps, Actions, History, Builder, plus theme toggle and user menu.
+- `Navigation.tsx` (desktop) shows the app logo + horizontal links to Dashboard/Overview, Steps, Calendar, History, Builder, plus theme toggle and user menu.
 - `BottomNav.tsx` (mobile) is a 5-tab fixed bottom nav.
+- The global `Actions` tab was removed; committed actions and reflections are now per-task inside `TaskReview`.
+
+## Task-first flow
+
+- `Dashboard` = `Overview`: the single place to see today's tasks, add a task, and edit group names/colors.
+- Creating a task opens `/task/:taskId`, which runs the shared `Daily Mix` framework as a step-by-step wizard.
+- Each task has its own `TaskRun` in `FrameworkProgress.taskRuns` (`currentStep`, `completedSteps`, `completedBlockIds`, `reflections`, `actions`, `note`, `reflection`, `sessions`).
+- Finalizing the last wizard step does **not** mark the task `done`; it renders `TaskReview` so the user can keep editing actions, notes, and reflection.
+- `Step` cards have a content toggle: long `knowledge`/`example`/`hint` text can be collapsed, while the user input/reflection area remains visible.
 
 ## DB Schema
 

@@ -13,7 +13,6 @@ import SignUp from "./pages/Auth/SignUp";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Steps from "./pages/Steps/Steps";
 import Step from "./pages/Step/Step";
-import Actions from "./pages/Actions/Actions";
 import Evening from "./pages/Evening/Evening";
 import Calendar from "./pages/Calendar/Calendar";
 import History from "./pages/History/History";
@@ -42,7 +41,7 @@ function App() {
               <Route path="overview" element={<Navigate to="/dashboard" replace />} />
               <Route path="steps" element={<Steps />} />
               <Route path="task/:taskId" element={<Step />} />
-              <Route path="actions" element={<Actions />} />
+              <Route path="actions" element={<Navigate to="/dashboard" replace />} />
               <Route path="evening" element={<Evening />} />
               <Route path="calendar" element={<Calendar />} />
               <Route path="history" element={<History />} />

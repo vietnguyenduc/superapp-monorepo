@@ -13,10 +13,25 @@ const priorityClass: Record<TaskPriority, string> = {
 
 const priorityOptions: TaskPriority[] = ["low", "normal", "high"];
 
+const PALETTE = [
+  "#3b82f6",
+  "#f59e0b",
+  "#10b981",
+  "#8b5cf6",
+  "#ef4444",
+  "#06b6d4",
+  "#ec4899",
+  "#6366f1",
+  "#84cc16",
+  "#f97316",
+  "#14b8a6",
+  "#d946ef",
+];
+
 const Dashboard = () => {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { progress, frameworkName, addTask, toggleTask, updateTask, deleteTask, renameTaskGroup } = useFrameworkProgress();
+  const { progress, frameworkName, addTask, toggleTask, updateTask, deleteTask, renameTaskGroup, update } = useFrameworkProgress();
 
   const today = new Date().toISOString().split("T")[0];
   const tasks = useMemo(() => (progress.tasks || []).filter((task) => task.date === today), [progress.tasks, today]);
@@ -24,11 +39,14 @@ const Dashboard = () => {
 
   const [newTitle, setNewTitle] = useState("");
   const [newGroup, setNewGroup] = useState(frameworkName);
+  const [newGroupInput, setNewGroupInput] = useState("");
+  const [isNewGroup, setIsNewGroup] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [newSubCategory, setNewSubCategory] = useState("");
   const [newPriority, setNewPriority] = useState<TaskPriority>("normal");
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
   const [groupName, setGroupName] = useState("");
+  const [groupColor, setGroupColor] = useState("");
   const [editingTask, setEditingTask] = useState<string | null>(null);
   const [editTaskTitle, setEditTaskTitle] = useState("");
 
@@ -41,6 +59,12 @@ const Dashboard = () => {
     });
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
   }, [tasks, frameworkName]);
+
+  const existingGroups = useMemo(() => {
+    const set = new Set<string>([frameworkName]);
+    groupedTasks.forEach(([group]) => set.add(group));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [groupedTasks, frameworkName]);
 
   const stats = useMemo(() => {
     const total = tasks.length;
@@ -59,12 +83,17 @@ const Dashboard = () => {
     return Math.round((done / total) * 100);
   };
 
+  const effectiveNewGroup = () => {
+    if (isNewGroup) return newGroupInput.trim() || frameworkName;
+    return newGroup.trim() || frameworkName;
+  };
+
   const handleCreateTask = () => {
     const title = newTitle.trim();
     if (!title) return;
     const task = addTask({
       title,
-      group: newGroup.trim() || frameworkName,
+      group: effectiveNewGroup(),
       category: newCategory.trim() || undefined,
       subCategory: newSubCategory.trim() || undefined,
       status: "in_progress",
@@ -72,6 +101,9 @@ const Dashboard = () => {
       date: today,
     });
     setNewTitle("");
+    setNewGroup(frameworkName);
+    setNewGroupInput("");
+    setIsNewGroup(false);
     setNewCategory("");
     setNewSubCategory("");
     setNewPriority("normal");
@@ -81,12 +113,21 @@ const Dashboard = () => {
   const startRenameGroup = (group: string) => {
     setEditingGroup(group);
     setGroupName(group);
+    setGroupColor(progress.groupColors?.[group] || PALETTE[0]);
   };
 
   const saveRenameGroup = (oldGroup: string) => {
     const next = groupName.trim();
     if (next && next !== oldGroup) {
       renameTaskGroup(oldGroup, next, today);
+      const colors = { ...progress.groupColors };
+      if (colors[oldGroup]) {
+        delete colors[oldGroup];
+      }
+      colors[next] = groupColor;
+      update({ groupColors: colors });
+    } else if (groupColor) {
+      update({ groupColors: { ...progress.groupColors, [oldGroup]: groupColor } });
     }
     setEditingGroup(null);
   };
@@ -170,13 +211,47 @@ const Dashboard = () => {
             placeholder={t("overview.taskTitle")}
             className="flex-1 input"
           />
-          <input
-            type="text"
-            value={newGroup}
-            onChange={(e) => setNewGroup(e.target.value)}
-            placeholder={t("overview.taskGroup")}
-            className="sm:w-40 input"
-          />
+          <div className="flex items-center gap-2">
+            {isNewGroup ? (
+              <input
+                type="text"
+                value={newGroupInput}
+                onChange={(e) => setNewGroupInput(e.target.value)}
+                onKeyDown={(e) => handleKey(e, handleCreateTask)}
+                placeholder={t("overview.newGroup") || "Nhóm mới"}
+                className="sm:w-40 input"
+                autoFocus
+              />
+            ) : (
+              <select
+                value={newGroup}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "__new__") {
+                    setIsNewGroup(true);
+                    setNewGroupInput("");
+                  } else {
+                    setNewGroup(value);
+                  }
+                }}
+                className="sm:w-40 input"
+              >
+                {existingGroups.map((group) => (
+                  <option key={group} value={group}>
+                    {group}
+                  </option>
+                ))}
+                <option value="__new__">{t("overview.newGroupOption") || "+ Tạo nhóm mới"}</option>
+              </select>
+            )}
+            {!isNewGroup && (
+              <span
+                className="w-4 h-4 rounded-full shrink-0"
+                style={{ backgroundColor: progress.groupColors?.[newGroup] || PALETTE[0] }}
+                aria-hidden="true"
+              />
+            )}
+          </div>
           <input
             type="text"
             value={newCategory}
@@ -229,13 +304,31 @@ const Dashboard = () => {
                         autoFocus
                         className="font-semibold text-sm bg-transparent border-b border-primary-500 focus:outline-none"
                       />
+                      <div className="flex items-center gap-1">
+                        {PALETTE.map((c) => (
+                          <button
+                            key={c}
+                            onClick={() => setGroupColor(c)}
+                            onMouseDown={(e) => e.preventDefault()}
+                            className={`w-5 h-5 rounded-full border-2 ${groupColor === c ? "border-gray-900 dark:border-white" : "border-transparent"}`}
+                            style={{ backgroundColor: c }}
+                            aria-label={c}
+                          />
+                        ))}
+                      </div>
                       <button onClick={() => saveRenameGroup(group)} className="text-xs text-primary-600">
                         {t("common.save")}
                       </button>
                     </div>
                   ) : (
                     <>
-                      <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">{group}</h3>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: progress.groupColors?.[group] || PALETTE[0] }}
+                        />
+                        <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">{group}</h3>
+                      </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-400">{t("overview.groupSummary", { count: groupTasks.length })}</span>
                         <button
