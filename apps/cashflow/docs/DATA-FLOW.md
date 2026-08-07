@@ -5,7 +5,7 @@
 Cashflow stores three core entities:
 
 - **customers** — `opening_balance` plus the sum of transaction deltas becomes `total_balance`.
-- **bank_accounts** — `balance` is updated by payment, refund, and adjustment transactions.
+- **bank_accounts** — `balance` is updated by payment, refund, deposit, and adjustment transactions.
 - **transactions** — every financial event; `transaction_type` + `amount` drives all balance math.
 
 Other supporting tables: `transaction_types`, `branches`, `companies`, `users`, `backup_history`, `color_settings`.
@@ -18,7 +18,7 @@ Other supporting tables: `transaction_types`, `branches`, `companies`, `users`, 
 1. Fetches active customers, transactions in the selected range, and bank accounts.
 2. Filters by active `company_id`.
 3. Computes `totalOutstanding` by applying `getCustomerBalanceDelta` over each transaction.
-4. Computes `balanceByBranch` and bank chart cash by applying `getBankAccountBalanceDelta`.
+4. Computes `balanceByBranch` and bank chart cash by applying `getBankAccountBalanceDelta` (deposit is treated as cash in like payment).
 5. Returns `topCustomers` sorted by the computed running balance.
 6. `activeCustomers` is the count of `customers` with `is_active !== false` for the selected tenant. It is *not* derived from transactions in the selected date window, because that produced `0` when the period had no activity.
 
@@ -109,6 +109,7 @@ A group-by selector produces a `Tổng hợp theo nhóm` table above the transac
 - `charge -1000` increases customer balance by 1000 (debt decreases), bank cash 0.
 - `payment -1000` decreases customer balance by 1000 (debt increases), bank cash decreases by 1000.
 - `refund -1000` decreases customer balance by 1000, bank cash increases by 1000.
+- `deposit -1000` decreases customer balance by 1000 (debt increases), bank cash decreases by 1000.
 - `adjustment -1000` / `+1000` is a direct signed correction on both customer and bank.
 - `validateTransactionData` only rejects zero/NaN amounts; negative amounts are accepted for all types.
 - UI display (`TransactionList`, `CustomerDetail`, `CustomerDetailModal`, `RecentTransactions`) shows `formatCurrency(parseAmount(amount))` — the raw user-entered value — while color is still driven by the signed delta from `getCustomerBalanceDelta(...)`, so a positive charge appears red (debt) and a negative charge appears green (credit).
@@ -122,7 +123,7 @@ A group-by selector produces a `Tổng hợp theo nhóm` table above the transac
 - Negative customer balance = debt (red).
 - Positive/zero customer balance = credit/overpayment (green).
 - `formatting.ts` (`getCustomerListBalanceColor`, `getCustomerDetailBalanceColor`, `getTransactionTypeAmountColor`) and all list/detail components use `getCustomerBalanceDelta` from `balanceMath.ts` to determine the signed amount and color.
-- Transaction type labels are: `Phát sinh tăng` (charge), `Phát sinh giảm` (payment), `Điều chỉnh` (adjustment), `Hoàn tiền` (refund).
+- Transaction type labels are: `Phát sinh tăng` (charge), `Phát sinh giảm` (payment), `Điều chỉnh` (adjustment), `Hoàn tiền` (refund), `Đặt cọc` (deposit, purple).
 
 ## Balance math helpers
 
@@ -135,7 +136,7 @@ applyTransactionsToCustomerBalance(opening, txs)
 applyTransactionsToBankAccountBalance(opening, txs)
 ```
 
-All dashboard, customer detail, and transaction write code uses these functions.
+All dashboard, customer detail, and transaction write code uses these functions. `deposit` uses the same customer-balance and bank-cash direction as `payment`.
 
 ## Backup and restore
 
@@ -166,6 +167,6 @@ All deletions are filtered by `company_id` and governed by RLS.
 
 ## Data consistency notes
 
-- `customers.total_balance` and `bank_accounts.balance` are updated at write time by `transactionService` and by the PostgreSQL triggers in `supabase/migrations/030_balance_trigger_sign_convention.sql` (negative balance = debt). A one-time backfill set `total_balance = current_balance` for existing customers.
+- `customers.total_balance` and `bank_accounts.balance` are updated at write time by `transactionService` and by the PostgreSQL triggers in `supabase/migrations/030_balance_trigger_sign_convention.sql` (negative balance = debt). Migration `034_deposit_transaction_type.sql` adds the `deposit` enum value, seeds `transaction_types` rows, and extends the triggers to handle `deposit` like `payment`. A one-time backfill set `total_balance = current_balance` for existing customers.
 - `getCustomerById()` recomputes the balance from transactions as a safety net.
 - `getDashboardMetrics()` recomputes all totals from scratch, so dashboards are never stale.

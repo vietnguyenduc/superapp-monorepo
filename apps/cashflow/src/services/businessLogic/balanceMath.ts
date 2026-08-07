@@ -22,6 +22,7 @@ export function getCustomerBalanceDelta(transactionType: string, amount: number 
       return -magnitude * sign;
     case "payment":
     case "refund":
+    case "deposit":
       return magnitude * sign;
     case "adjustment":
     default:
@@ -45,6 +46,7 @@ export function getBankAccountBalanceDelta(transactionType: string, amount: numb
 
   switch (type) {
     case "payment":
+    case "deposit":
       return magnitude * sign;
     case "refund":
       return -magnitude * sign;

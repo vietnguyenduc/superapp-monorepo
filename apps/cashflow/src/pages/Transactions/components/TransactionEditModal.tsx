@@ -85,10 +85,11 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       transactionTypes.length
         ? transactionTypes
         : [
-            { id: "payment", name: t("transactions.types.payment") },
-            { id: "charge", name: t("transactions.types.charge") },
-            { id: "adjustment", name: t("transactions.types.adjustment") },
-            { id: "refund", name: t("transactions.types.refund") },
+            { id: "payment", canonical: "payment", name: t("transactions.types.payment") },
+            { id: "charge", canonical: "charge", name: t("transactions.types.charge") },
+            { id: "adjustment", canonical: "adjustment", name: t("transactions.types.adjustment") },
+            { id: "refund", canonical: "refund", name: t("transactions.types.refund") },
+            { id: "deposit", canonical: "deposit", name: t("transactions.types.deposit") },
           ],
     [transactionTypes, t],
   );
@@ -244,8 +245,8 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                     }`}
                   >
                     {transactionTypeOptions.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name || getTransactionTypeName(t.id)}
+                      <option key={t.id} value={(t as any).canonical || t.id}>
+                        {t.name || getTransactionTypeName((t as any).canonical || t.id)}
                       </option>
                     ))}
                   </select>

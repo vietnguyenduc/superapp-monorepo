@@ -38,7 +38,7 @@ describe("TransactionTypeContext (ADR-0001 regression guard)", () => {
     vi.clearAllMocks();
   });
 
-  it("returns the raw typeId when types have not loaded yet", async () => {
+  it("returns the static Vietnamese label when types have not loaded yet", async () => {
     // Hang the request so the context stays in loading state.
     vi.mocked(databaseService.transactionTypes.getTransactionTypes).mockReturnValue(
       new Promise(() => {})
@@ -51,7 +51,7 @@ describe("TransactionTypeContext (ADR-0001 regression guard)", () => {
     );
 
     expect(screen.getByTestId("loading").textContent).toBe("true");
-    expect(screen.getByTestId("name").textContent).toBe("payment");
+    expect(screen.getByTestId("name").textContent).toBe("Phát sinh giảm");
   });
 
   it("returns the Vietnamese name once types resolve", async () => {
@@ -89,6 +89,34 @@ describe("TransactionTypeContext (ADR-0001 regression guard)", () => {
       expect(screen.getByTestId("loading").textContent).toBe("false");
     });
     expect(screen.getByTestId("name").textContent).toBe("Phát sinh tăng");
+  });
+
+  it("returns the Vietnamese label for deposit", async () => {
+    vi.mocked(databaseService.transactionTypes.getTransactionTypes).mockResolvedValue({
+      data: [
+        {
+          id: "deposit",
+          name: "Đặt cọc",
+          color: "purple",
+          isActive: true,
+          math_factor: -1,
+          impact_type: "decrease",
+          company_id: null,
+        },
+      ],
+      error: null,
+    });
+
+    render(
+      <TransactionTypeProvider>
+        <Probe id="deposit" />
+      </TransactionTypeProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("loading").textContent).toBe("false");
+    });
+    expect(screen.getByTestId("name").textContent).toBe("Đặt cọc");
   });
 
   it("deduplicates duplicate labels preferring company-scoped UUID rows", async () => {

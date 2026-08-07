@@ -9,6 +9,22 @@ export function normalizeTransactionType(type: string): string {
   const normalized = type.toLowerCase().trim();
   if (
     [
+      "deposit",
+      "đặt cọc",
+      "dat coc",
+      "cọc",
+      "coc",
+      "đặt cọc trước",
+      "dat coc truoc",
+      "tạm ứng",
+      "tam ung",
+      "prepayment",
+    ].includes(normalized)
+  ) {
+    return "deposit";
+  }
+  if (
+    [
       "payment",
       "thu",
       "thanh toán",

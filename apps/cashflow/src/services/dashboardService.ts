@@ -6,6 +6,7 @@ import type { Transaction, TimeRange, Customer, BankAccount, Branch } from "../t
 
 function normalizeTransactionType(input: string) {
   const raw = (input || "").toLowerCase().trim();
+  if (raw === "deposit" || raw === "đặt cọc" || raw === "datcoc" || raw === "tạm ứng" || raw === "tamung") return "deposit";
   if (raw === "payment" || raw === "thu" || raw === "điều chỉnh giảm" || raw === "dieuchinhgiam" || raw === "thanh toán" || raw === "thanhtoan") return "payment";
   if (raw === "charge" || raw === "chi" || raw === "điều chỉnh tăng" || raw === "dieuchinhtang" || raw === "cho nợ" || raw === "chono") return "charge";
   if (raw === "refund" || raw === "hoàn tiền" || raw === "hoantien") return "refund";
@@ -230,7 +231,7 @@ export class DashboardService extends BaseService {
       applyTransactionToBalanceMap(balanceMap, filteredTransactions);
       const outstanding = Array.from(balanceMap.values()).reduce((sum, balance) => sum + balance, 0);
       const activeCustomers = filteredCustomers.filter((c) => c.is_active !== false).length;
-      const currentPaymentCount = filteredTransactions.filter((t) => t.transaction_type === "payment").length;
+      const currentPaymentCount = filteredTransactions.filter((t) => t.transaction_type === "payment" || t.transaction_type === "deposit").length;
       const currentChargeCount = filteredTransactions.filter((t) => t.transaction_type === "charge").length;
 
       const recentTransactions = [...filteredTransactions]
@@ -343,9 +344,9 @@ export class DashboardService extends BaseService {
       0,
     );
 
-    const currentPaymentCount = currentTx.filter((t) => t.transaction_type === "payment").length;
+    const currentPaymentCount = currentTx.filter((t) => t.transaction_type === "payment" || t.transaction_type === "deposit").length;
     const currentChargeCount = currentTx.filter((t) => t.transaction_type === "charge").length;
-    const prevPaymentCount = prevTx.filter((t) => t.transaction_type === "payment").length;
+    const prevPaymentCount = prevTx.filter((t) => t.transaction_type === "payment" || t.transaction_type === "deposit").length;
     const prevChargeCount = prevTx.filter((t) => t.transaction_type === "charge").length;
 
     const activeCustomers = customersAll.filter((c) => c.is_active !== false).length;

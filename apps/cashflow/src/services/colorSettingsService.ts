@@ -11,6 +11,7 @@ export class ColorSettingsService extends BaseService {
       charge: { label: "Phát sinh tăng", bg_color: "bg-red-100", text_color: "text-red-800", dark_bg_color: "dark:bg-red-900", dark_text_color: "dark:text-red-200", amount_color: "text-red-600", dark_amount_color: "dark:text-red-400" },
       adjustment: { label: "Điều chỉnh", bg_color: "bg-blue-100", text_color: "text-blue-800", dark_bg_color: "dark:bg-blue-900", dark_text_color: "dark:text-blue-200", amount_color: "text-blue-600", dark_amount_color: "dark:text-blue-400" },
       refund: { label: "Hoàn tiền", bg_color: "bg-green-100", text_color: "text-green-800", dark_bg_color: "dark:bg-green-900", dark_text_color: "dark:text-green-200", amount_color: "text-green-600", dark_amount_color: "dark:text-green-400" },
+      deposit: { label: "Đặt cọc", bg_color: "bg-purple-100", text_color: "text-purple-800", dark_bg_color: "dark:bg-purple-900", dark_text_color: "dark:text-purple-200", amount_color: "text-purple-600", dark_amount_color: "dark:text-purple-400" },
     };
   }
 
@@ -62,7 +63,7 @@ export class ColorSettingsService extends BaseService {
         const payload = {
           setting_key: "transaction_type_colors",
           setting_value: colors,
-          description: "Màu sắc cho các loại giao dịch (payment, charge, adjustment, refund)",
+          description: "Màu sắc cho các loại giao dịch (payment, charge, adjustment, refund, deposit)",
           updated_at: new Date().toISOString(),
         };
         if (existing?.id) {

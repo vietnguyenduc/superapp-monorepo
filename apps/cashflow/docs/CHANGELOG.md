@@ -1,5 +1,23 @@
 # Changelog — Cashflow
 
+## 2026-08-08
+
+### Added
+
+- **Deposit transaction type (`deposit` / `Đặt cọc`)** — reduces customer debt and increases bank cash like `payment`. Added to `TransactionType` union, `balanceMath.ts`, validation, parsers, import/data-cleaning helpers, UI labels/colors, transaction edit fallback, group summary, dashboard counts, and i18n (`vi`/`en`).
+- **DB migration `034_deposit_transaction_type.sql`** — adds `deposit` to the `transaction_type` enum, extends `update_customer_balance` and `update_bank_account_balance` triggers to handle `deposit` like `payment`, and seeds `deposit` rows into `transaction_types` for existing companies and the global default.
+- **Trial seed** — added `deposit` and `refund` default rows to `trialMockStore.ts` with purple and green colors.
+
+### Fixed
+
+- **Transaction type dropdown/canonical mismatch** — `TransactionTypeContext` now exposes a `canonical` field alongside `name` (display label), and `TransactionEditModal` uses the canonical value for the select while rendering the Vietnamese label. `getNameById`/`getMathFactor`/`findByName` resolve by `id`, `canonical`, or display `name`.
+- **Transaction type guard bug** — `transactionTypeService.toggleTransactionType` and `deleteTransactionType` now look up the type row and guard against `transactions.transaction_type` using the canonical name instead of the `transaction_types.id` (UUID).
+- **i18n duplicate keys** — merged duplicate top-level `transactions` objects in `vi.json` and `en.json` so modal labels (e.g. edit transaction form) render in Vietnamese/English instead of showing raw keys; added `transactions.types.deposit` to the consolidated object.
+
+### Docs
+
+- Updated `AI-CONTEXT.md`, `DATA-FLOW.md`, and `CHANGELOG.md` to document the `deposit` type and the canonical/display split.
+
 ## 2026-08-07
 
 ### Added

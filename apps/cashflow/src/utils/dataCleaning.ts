@@ -299,6 +299,14 @@ export function cleanTransactionType(type: string): TransactionType | null {
     refund: "refund",
     ref: "refund",
     r: "refund",
+    deposit: "deposit",
+    dep: "deposit",
+    d: "deposit",
+    "đặt cọc": "deposit",
+    "dat coc": "deposit",
+    "tạm ứng": "deposit",
+    "tam ung": "deposit",
+    prepayment: "deposit",
   };
 
   return typeMap[normalized] || null;

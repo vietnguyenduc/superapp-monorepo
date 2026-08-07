@@ -27,6 +27,12 @@ const CANONICAL_TYPE_LABELS: Record<string, string> = {
   refund: "Hoàn tiền",
   "hoàn tiền": "Hoàn tiền",
   "hoan tien": "Hoàn tiền",
+  deposit: "Đặt cọc",
+  "đặt cọc": "Đặt cọc",
+  "dat coc": "Đặt cọc",
+  "tạm ứng": "Đặt cọc",
+  "tam ung": "Đặt cọc",
+  prepayment: "Đặt cọc",
 };
 
 function resolveTransactionTypeDisplayName(id: string, rawName: string): string {
@@ -38,6 +44,7 @@ function resolveTransactionTypeDisplayName(id: string, rawName: string): string 
 export interface TransactionTypeItem {
   id: string;
   name: string;
+  canonical: string;
   color: string;
   isActive: boolean;
   math_factor: number;
@@ -88,8 +95,12 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
         const normalized = all.map((t) => {
           const id = String(t.id ?? "");
           const rawName = String(t.name ?? "");
+          const idKey = id.toLowerCase().trim();
+          const nameKey = rawName.toLowerCase().trim();
+          const canonical = CANONICAL_TYPE_LABELS[idKey] ? id : CANONICAL_TYPE_LABELS[nameKey] ? rawName : id;
           return {
             id,
+            canonical,
             name: resolveTransactionTypeDisplayName(id, rawName),
             color: String(t.color || "blue"),
             isActive: t.is_active !== false && t.isActive !== false,
@@ -140,15 +151,25 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
   );
 
   const findByName = useCallback(
-    (name: string) => types.find((t) => t.name.toLowerCase() === name.toLowerCase().trim()),
+    (name: string) =>
+      types.find(
+        (t) =>
+          t.name.toLowerCase() === name.toLowerCase().trim() ||
+          t.canonical.toLowerCase() === name.toLowerCase().trim(),
+      ),
     [types]
   );
 
   const getNameById = useCallback(
     (id: string) => {
       if (!id) return id;
-      const found = types.find((t) => t.id === id);
-      return found?.name || id;
+      const needle = id.toLowerCase().trim();
+      const found =
+        types.find((t) => t.id === id) ||
+        types.find((t) => t.canonical.toLowerCase() === needle) ||
+        types.find((t) => t.name.toLowerCase() === needle);
+      if (found) return found.name;
+      return resolveTransactionTypeDisplayName(id, id);
     },
     [types]
   );
@@ -156,7 +177,11 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
   const getMathFactor = useCallback(
     (id: string) => {
       if (!id) return 1;
-      const found = types.find((t) => t.id === id);
+      const needle = id.toLowerCase().trim();
+      const found =
+        types.find((t) => t.id === id) ||
+        types.find((t) => t.canonical.toLowerCase() === needle) ||
+        types.find((t) => t.name.toLowerCase() === needle);
       return found?.math_factor ?? 1;
     },
     [types]

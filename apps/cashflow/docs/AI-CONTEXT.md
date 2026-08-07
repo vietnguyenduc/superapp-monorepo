@@ -7,7 +7,7 @@
 A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management:
 - Customers and their running balances.
 - Bank accounts and their running balances.
-- Transactions (payment, charge, refund, adjustment) tied to a customer and a bank account.
+- Transactions (payment, charge, refund, adjustment, deposit) tied to a customer and a bank account.
 - Transaction types and branches (multi-tenant configuration).
 - Dashboards, reports, import/export, settings, backups.
 
@@ -54,6 +54,7 @@ All new code must use `src/services/businessLogic/balanceMath.ts`.
 | `charge`  | `-amount`            | `0`             | Customer owes more (debt / công nợ). No cash moved. |
 | `payment` | `+amount`            | `+amount`       | Customer pays → debt decreases, cash increases. |
 | `refund`  | `+amount`            | `-amount`       | Refund to customer → debt decreases, cash decreases. |
+| `deposit` | `+amount`            | `+amount`       | Customer prepays/deposits → debt decreases, cash increases. |
 | `adjustment` | signed amount     | signed amount   | Direct signed correction. |
 
 Negative `total_balance` = debt. Positive = overpayment/credit.
@@ -67,9 +68,10 @@ The amount **sign** now reverses the transaction direction instead of being sile
 - `charge -1000` → customer balance **+1000** (debt decreases), bank cash `0`.
 - `payment -1000` → customer balance **-1000** (debt increases), bank cash **-1000** (cash out).
 - `refund -1000` → customer balance **-1000** (debt increases), bank cash **+1000** (cash in).
+- `deposit -1000` → customer balance **-1000** (debt increases), bank cash **-1000** (cash out).
 - `adjustment -1000` / `+1000` → direct signed correction on both customer and bank.
 
-`getCustomerBalanceDelta` and `getBankAccountBalanceDelta` multiply the type's default magnitude by `Math.sign(amount)`. `validateTransactionData` no longer rejects negative amounts for `payment`/`charge`/`refund`; it only requires a non-zero value. `TransactionList` and `TransactionEditModal` no longer call `Math.abs()` before saving non-adjustment amounts. A negative amount also flips the amount color (e.g. `charge -1000` shows green because it reduces debt).
+`getCustomerBalanceDelta` and `getBankAccountBalanceDelta` multiply the type's default magnitude by `Math.sign(amount)`. `validateTransactionData` no longer rejects negative amounts for `payment`/`charge`/`refund`/`deposit`; it only requires a non-zero value. `TransactionList` and `TransactionEditModal` no longer call `Math.abs()` before saving non-adjustment amounts. A negative amount also flips the amount color (e.g. `charge -1000` shows green because it reduces debt).
 
 ## Recent architectural decisions
 

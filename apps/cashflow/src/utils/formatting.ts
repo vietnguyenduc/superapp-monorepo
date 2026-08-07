@@ -210,6 +210,7 @@ export const formatTransactionType = (type: string): string => {
     charge: "Phát sinh tăng",
     adjustment: "Điều chỉnh",
     refund: "Hoàn tiền",
+    deposit: "Đặt cọc",
   };
   return typeMap[type] || capitalize(type);
 };
@@ -387,6 +388,8 @@ export const getTransactionTypeColor = (
         return "text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-900";
       case "refund":
         return "text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900";
+      case "deposit":
+        return "text-purple-600 bg-purple-100 dark:text-purple-300 dark:bg-purple-900";
       default:
         return "text-gray-600 bg-gray-100 dark:text-gray-300 dark:bg-gray-900";
     }
@@ -439,6 +442,8 @@ export const getTransactionTypeTextColor = (type: string): string => {
         return "text-blue-600";
       case "refund":
         return "text-green-600";
+      case "deposit":
+        return "text-purple-600";
       default:
         return "text-gray-600";
     }

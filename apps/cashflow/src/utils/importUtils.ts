@@ -68,7 +68,7 @@ export function parseTransactionData(rawData: string): RawTransactionData[] {
   });
 }
 
-const VALID_TRANSACTION_TYPES: TransactionType[] = ["payment", "charge", "refund", "adjustment"];
+const VALID_TRANSACTION_TYPES: TransactionType[] = ["payment", "charge", "refund", "adjustment", "deposit"];
 
 function isTransactionTypeToken(value?: string): boolean {
   const normalized = normalizeTransactionType(value || "");
@@ -146,6 +146,7 @@ export function validateTransactionData(
   // Build lookup sets from DB-provided types (fallback to legacy hardcoded if none provided)
   const validTypeIds = validTransactionTypes ? new Set(validTransactionTypes.map((t) => t.id.toLowerCase().trim())) : null;
   const validTypeNames = validTransactionTypes ? new Set(validTransactionTypes.map((t) => t.name.toLowerCase().trim())) : null;
+  const validTypeCanonicals = validTransactionTypes ? new Set(validTransactionTypes.map((t) => (t.canonical || t.name).toLowerCase().trim())) : null;
 
   data.forEach((row, index) => {
     const normalizedType = normalizeTransactionTypeLabel(row.transaction_type || "");
@@ -196,15 +197,16 @@ export function validateTransactionData(
       let isValid = false;
 
       if (validTypeIds && validTypeNames) {
-        // DB-driven validation: match by normalized legacy id, type id, or type name
-        if (validTypeIds.has(rawInput) || validTypeNames.has(rawInput)) {
+        // DB-driven validation: match by normalized legacy id, type id, type name, or canonical id
+        const allValid = [validTypeIds, validTypeNames, validTypeCanonicals];
+        if (allValid.some((set) => set?.has(rawInput))) {
           isValid = true;
-        } else if (normalizedType && (validTypeIds.has(normalizedType) || validTypeNames.has(normalizedType))) {
+        } else if (normalizedType && allValid.some((set) => set?.has(normalizedType))) {
           isValid = true;
         }
       } else {
         // Legacy fallback (should not happen when DB is reachable)
-        const validTypes: TransactionType[] = ["payment", "charge", "adjustment", "refund"];
+        const validTypes: TransactionType[] = ["payment", "charge", "adjustment", "refund", "deposit"];
         isValid = validTypes.includes(normalizedType as TransactionType);
       }
 

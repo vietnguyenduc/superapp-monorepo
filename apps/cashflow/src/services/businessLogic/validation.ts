@@ -81,7 +81,7 @@ export function validateTransactionData(data: Record<string, unknown>): Validati
     errors.push("Ngày giao dịch là bắt buộc");
   }
 
-  const validTypes = ["payment", "charge", "refund", "adjustment"];
+  const validTypes = ["payment", "charge", "refund", "adjustment", "deposit"];
   if (typeof transactionType === "string" && !validTypes.includes(transactionType)) {
     errors.push(`Loại giao dịch phải là một trong: ${validTypes.join(", ")}`);
   }
@@ -125,7 +125,7 @@ export function validateTransactionUpdateData(data: Record<string, unknown>): Va
     if (typeof transactionType !== "string") {
       errors.push("Loại giao dịch phải là chuỗi");
     } else {
-      const validTypes = ["payment", "charge", "refund", "adjustment"];
+      const validTypes = ["payment", "charge", "refund", "adjustment", "deposit"];
       if (!validTypes.includes(transactionType)) {
         errors.push(`Loại giao dịch phải là một trong: ${validTypes.join(", ")}`);
       }

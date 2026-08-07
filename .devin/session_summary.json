@@ -1,0 +1,25 @@
+{
+  "session_id": "721676068b5047f68bb43c936ec822e8",
+  "date": "2026-08-07",
+  "task": "Implement deposit (Đặt cọc) transaction type in apps/cashflow",
+  "branch": "devin/cashflow-deposit",
+  "pr": "https://github.com/vietnguyenduc/superapp-monorepo/pull/84",
+  "outcome": "completed",
+  "highlights": [
+    "Added deposit to TransactionType union, balance math, validation, parsers, import, UI labels/colors, dashboard, group summary",
+    "Fixed canonical/id/name mismatches in TransactionTypeContext, TransactionEditModal, and transactionTypeService",
+    "Merged duplicate transactions i18n keys in vi.json/en.json",
+    "Added idempotent Supabase migration 034 for enum, triggers, and seeds",
+    "Verified locally: edit transaction to deposit, group summary, customer balance, settings, modal labels"
+  ],
+  "verification": {
+    "type_check": "passed",
+    "tests": "317 passed",
+    "build": "passed",
+    "local_preview": "http://localhost:5174"
+  },
+  "next_steps": [
+    "Deploy Vercel preview if user approves",
+    "Run migration 034 against production after merge"
+  ]
+}
