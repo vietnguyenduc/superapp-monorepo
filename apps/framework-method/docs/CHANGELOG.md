@@ -9,7 +9,7 @@
 - Extended `DailyTask` and `Session` types with `category`, `subcategory`, `merit_type`, `merit_size`, `planned_completion_rate`, `merit_earned`, `merit_spent`, and `merit_total`.
 - Added `CATEGORY_META`, `MERIT_SIZE_LABELS`, `BLOCK_TO_CATEGORY`, `calculateMerit`, and `plannedCompletionAdjustment` helpers in `frameworkMethodService.ts`.
 - Exposed `merit`, `updateTask`, and `setPlannedCompletionRate` from `SessionContext`.
-- Redesigned `/calendar` to show 3 color-coded task groups, merit earn/spend controls, a planned-completion slider, and daily Phúc totals.
+- Redesigned `/calendar` to show a month/week calendar picker at the top, 3 color-coded task groups, merit earn/spend controls, a planned-completion slider, and daily Phúc totals.
 - Updated `Dashboard` to show today's merit score, current streak, and a 7-day Phúc trend chart sourced from `getSessionsByDateRange`.
 - Added two new top-level pages: `Kiểm soát Tài chính` (`/finance`) with 5 placeholder buckets and `Luyện thấu triệt` (`/practice`) with 4 practice areas; added routes and navigation entries.
 - Added `nav.finance`, `nav.practice`, `calendar.*`, `financeControl.*`, and `practice.*` i18n keys to `vi.json`/`en.json`.

@@ -1,5 +1,32 @@
 import { useMemo, useState } from "react";
-import { FiPlus, FiSun, FiMoon, FiUser, FiTrendingUp, FiTrendingDown, FiActivity, FiTarget } from "react-icons/fi";
+import {
+  FiPlus,
+  FiSun,
+  FiMoon,
+  FiUser,
+  FiTrendingUp,
+  FiTrendingDown,
+  FiActivity,
+  FiTarget,
+  FiChevronLeft,
+  FiChevronRight,
+} from "react-icons/fi";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  isSameDay,
+  isToday,
+  addMonths,
+  subMonths,
+  addWeeks,
+  subWeeks,
+  parseISO,
+} from "date-fns";
+import { vi } from "date-fns/locale";
 import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -37,12 +64,17 @@ const getSubcategoryOptions = (): Record<TaskCategory, string[]> => {
   return map;
 };
 
+type CalendarView = "month" | "week";
+
 const Calendar = () => {
   const { t } = useI18n();
   const { theme, toggleTheme } = useTheme();
-  const { tasks, session, merit, updateTask, setPlannedCompletionRate, addTask } = useSession();
+  const { tasks, session, merit, updateTask, setPlannedCompletionRate, addTask, sessionDate, setSessionDate } = useSession();
 
   const subcategoryOptions = useMemo(() => getSubcategoryOptions(), []);
+
+  const [view, setView] = useState<CalendarView>("month");
+  const [cursorDate, setCursorDate] = useState<Date>(parseISO(sessionDate));
 
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newCategory, setNewCategory] = useState<TaskCategory>("doi");
@@ -89,11 +121,41 @@ const Calendar = () => {
     await updateTask(task.id, patch);
   };
 
-  const dateLabel = new Date().toLocaleDateString("vi-VN", {
-    weekday: "long",
-    day: "2-digit",
-    month: "2-digit",
-  });
+  const selectedDate = useMemo(() => parseISO(sessionDate), [sessionDate]);
+
+  const dateLabel = format(selectedDate, "EEEE, dd/MM", { locale: vi });
+
+  const calendarDays = useMemo(() => {
+    if (view === "month") {
+      const start = startOfWeek(startOfMonth(cursorDate), { weekStartsOn: 1 });
+      const end = endOfWeek(endOfMonth(cursorDate), { weekStartsOn: 1 });
+      return eachDayOfInterval({ start, end });
+    }
+    const start = startOfWeek(cursorDate, { weekStartsOn: 1 });
+    const end = endOfWeek(cursorDate, { weekStartsOn: 1 });
+    return eachDayOfInterval({ start, end });
+  }, [cursorDate, view]);
+
+  const weekDayLabels = useMemo(() => {
+    const start = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const end = endOfWeek(start, { weekStartsOn: 1 });
+    return eachDayOfInterval({ start, end }).map((d) =>
+      format(d, "EEEEEE", { locale: vi })
+    );
+  }, []);
+
+  const handlePrev = () => {
+    setCursorDate((d) => (view === "month" ? subMonths(d, 1) : subWeeks(d, 1)));
+  };
+
+  const handleNext = () => {
+    setCursorDate((d) => (view === "month" ? addMonths(d, 1) : addWeeks(d, 1)));
+  };
+
+  const handleSelectDate = (d: Date) => {
+    setSessionDate(format(d, "yyyy-MM-dd"));
+    setCursorDate(d);
+  };
 
   const renderCategoryGroup = (category: TaskCategory) => {
     const meta = CATEGORY_META[category];
@@ -216,6 +278,80 @@ const Calendar = () => {
         <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">{t("calendar.title")}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t("calendar.subtitle")}</p>
       </div>
+
+      <Card className="p-5">
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={handlePrev}
+            className="w-9 h-9 rounded-full bg-black/[0.03] dark:bg-white/[0.06] flex items-center justify-center text-gray-700 dark:text-gray-200 active:scale-95 transition-all"
+          >
+            <FiChevronLeft className="w-5 h-5" />
+          </button>
+          <h3 className="font-semibold tracking-tight">
+            {format(cursorDate, "MMMM yyyy", { locale: vi }).replace(/^\w/, (c) => c.toUpperCase())}
+          </h3>
+          <button
+            onClick={handleNext}
+            className="w-9 h-9 rounded-full bg-black/[0.03] dark:bg-white/[0.06] flex items-center justify-center text-gray-700 dark:text-gray-200 active:scale-95 transition-all"
+          >
+            <FiChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex justify-center gap-2 mb-4">
+          <button
+            onClick={() => setView("month")}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              view === "month"
+                ? "bg-primary-600 text-white"
+                : "bg-black/[0.03] dark:bg-white/[0.06] text-gray-600 dark:text-gray-300"
+            }`}
+          >
+            Tháng
+          </button>
+          <button
+            onClick={() => setView("week")}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              view === "week"
+                ? "bg-primary-600 text-white"
+                : "bg-black/[0.03] dark:bg-white/[0.06] text-gray-600 dark:text-gray-300"
+            }`}
+          >
+            Tuần
+          </button>
+        </div>
+
+        <div className={`grid ${view === "month" ? "grid-cols-7 gap-y-1" : "grid-cols-7 gap-2"} mb-2`}>
+          {weekDayLabels.map((label) => (
+            <div key={label} className="text-center text-xs font-medium text-gray-400 py-1">
+              {label}
+            </div>
+          ))}
+        </div>
+
+        <div className={`grid ${view === "month" ? "grid-cols-7 gap-1" : "grid-cols-7 gap-2"}`}>
+          {calendarDays.map((d) => {
+            const isSelected = isSameDay(d, selectedDate);
+            const today = isToday(d);
+            const inCurrentMonth = view === "week" || d.getMonth() === cursorDate.getMonth();
+            return (
+              <button
+                key={d.toISOString()}
+                onClick={() => handleSelectDate(d)}
+                className={`aspect-square rounded-2xl flex flex-col items-center justify-center text-sm font-medium transition-all ${
+                  isSelected
+                    ? "bg-primary-600 text-white shadow-md"
+                    : today
+                    ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 ring-1 ring-primary-600"
+                    : "bg-transparent text-gray-700 dark:text-gray-200 hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
+                } ${!inCurrentMonth ? "opacity-30" : ""}`}
+              >
+                {format(d, "d")}
+              </button>
+            );
+          })}
+        </div>
+      </Card>
 
       <div className="grid grid-cols-3 gap-3">
         <Card className="p-4 text-center">
