@@ -23,3 +23,7 @@ Migration `supabase/migrations/20260527000004_framework_method_schema.sql` creat
 `fm_profiles`, `fm_frameworks`, `fm_templates`, `fm_phases`, `fm_steps`, `fm_blocks`, `fm_user_template`, `fm_user_progress`, `fm_step_responses`, `fm_actions`, `fm_reflections`, `fm_daily_goals`, `fm_sessions`, `fm_streaks`.
 
 RLS is enabled on all tables. Users see rows where `user_id = auth.uid()`. Published templates (`status = 'published'`) are readable publicly.
+
+## Product Decisions
+- The canonical 4-step flow and 6 locked decisions (carry-over, per-task apply/track, non-linear sessions, variable builder items, all-time insights, pin-as-reminder) are documented in `apps/framework-method/docs/PRD-framework-method.md`.
+- New code/refactors for the 4-step flow should start from that PRD and keep the existing screens (Dashboard, Overview, Actions, Evening, Calendar, History, Builder) as shells that are re-wired to the new data model.

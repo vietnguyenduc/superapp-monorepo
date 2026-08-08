@@ -4,7 +4,7 @@ import type { Customer, Transaction } from "../../../types";
 import { databaseService } from "../../../services/database";
 import { useCompanyId } from "../../../hooks/useCompanyId";
 import { formatCurrency, formatDate, formatPhoneNumber, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor } from "../../../utils/formatting";
-import { getCustomerBalanceDelta, parseAmount } from "../../../services/businessLogic";
+import { parseAmount } from "../../../services/businessLogic";
 import { useTransactionTypes } from "../../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../../components/UI/FallbackUI";
 
@@ -21,7 +21,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const companyId = useCompanyId();
-  const { getNameById: getTransactionTypeName, getMathFactor } = useTransactionTypes();
+  const { getNameById: getTransactionTypeName } = useTransactionTypes();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,14 +74,6 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   const totalPurchaseAmount = transactions
     .filter((transaction) => transaction.transaction_type === "charge")
     .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
-
-  const openingBalance = customer.opening_balance ?? 0;
-
-  // Tính công nợ hiện tại real-time từ opening_balance + signed customer deltas
-  // Positive balance = debt (red); negative = credit/overpayment (green)
-  const currentBalance = transactions.reduce((balance, transaction) => {
-    return balance + getCustomerBalanceDelta(transaction.transaction_type, transaction.amount, getMathFactor(transaction.transaction_type));
-  }, openingBalance);
 
   // Tìm giao dịch cuối từ transactions array
   const lastTransactionDate = transactions.length > 0
@@ -254,9 +246,9 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                       Công nợ hiện tại
                     </dt>
                     <dd
-                      className={`mt-0.5 text-xl sm:text-2xl font-bold ${getCustomerDetailBalanceColor(currentBalance)}`}
+                      className={`mt-0.5 text-xl sm:text-2xl font-bold ${getCustomerDetailBalanceColor(customer.total_balance || 0)}`}
                     >
-                      {formatCurrency(currentBalance)}
+                      {formatCurrency(customer.total_balance || 0)}
                     </dd>
                   </div>
 

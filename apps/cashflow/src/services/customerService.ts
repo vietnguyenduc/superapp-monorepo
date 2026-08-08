@@ -1,13 +1,13 @@
 import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
 import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
-import { validateCustomerData, transformRawCustomer, parseAmount, applyTransactionsToCustomerBalance } from "./businessLogic";
+import { validateCustomerData, transformRawCustomer, parseAmount } from "./businessLogic";
 import {
   insertWithFallback,
   bulkInsertWithFallback,
   updateWithFallback,
 } from "./updateHelpers";
-import type { Customer, Transaction } from "../types";
+import type { Customer } from "../types";
 
 export class CustomerService extends BaseService {
   static async getCustomers(filters?: Record<string, unknown>) {
@@ -163,19 +163,9 @@ export class CustomerService extends BaseService {
           updatedByEmail = userData?.email || null;
         }
 
-        const { data: txData } = await apiClient.from("transactions").select("transaction_type, amount").eq("customer_id", id);
-
-        const txRows = (txData || []) as Pick<Transaction, "transaction_type" | "amount">[];
-        const calculatedBalance = applyTransactionsToCustomerBalance(
-          parseAmount(customer.opening_balance) || 0,
-          txRows,
-        );
-
         return {
           data: {
             ...customer,
-            total_balance: calculatedBalance,
-            transaction_count: txRows.length,
             updated_by_email: updatedByEmail,
           },
           error: null
@@ -186,19 +176,9 @@ export class CustomerService extends BaseService {
         const customer = customers.find((c) => c.id === id && (!companyId || c.company_id === companyId));
         if (!customer) return { data: null, error: { message: "Customer not found" } };
 
-        const transactions = (trialGet("transactions") || []) as Transaction[];
-        const txData = transactions.filter((t) => t.customer_id === id);
-
-        const calculatedBalance = applyTransactionsToCustomerBalance(
-          parseAmount(customer.opening_balance) || 0,
-          txData,
-        );
-
         return {
           data: {
             ...customer,
-            total_balance: calculatedBalance,
-            transaction_count: txData.length,
             updated_by_email: null,
           },
           error: null
@@ -417,9 +397,10 @@ export class CustomerService extends BaseService {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
 
-        // Fetch the existing row to know its tenant. We never trust the user payload for company_id.
-        const { data: existingCustomer } = await apiClient.from("customers").select("company_id").eq("id", id).single();
-        const companyIdCheck = (existingCustomer as Record<string, unknown> | null)?.company_id as string | null | undefined;
+        // Fetch the existing row to know its tenant and balance state.
+        const { data: existingCustomer } = await apiClient.from("customers").select("company_id, opening_balance, total_balance").eq("id", id).single();
+        const existing = (existingCustomer as Record<string, unknown> | null) ?? {};
+        const companyIdCheck = existing.company_id as string | null | undefined;
 
         const updatePayload: Record<string, unknown> = {
           ...customerData,
@@ -429,6 +410,17 @@ export class CustomerService extends BaseService {
         delete updatePayload.created_at;
         // Prevent a tenant change from ever being written by a user payload.
         delete updatePayload.company_id;
+
+        // When the opening balance changes, keep total_balance in sync using the
+        // same delta so list and detail stay consistent.
+        if ("opening_balance" in updatePayload) {
+          const oldOpening = parseAmount(existing.opening_balance) || 0;
+          const oldTotal = parseAmount(existing.total_balance) || 0;
+          const newOpening = parseAmount(updatePayload.opening_balance) ?? oldOpening;
+          const newTotal = newOpening + (oldTotal - oldOpening);
+          updatePayload.total_balance = newTotal;
+          updatePayload.current_balance = newTotal;
+        }
 
         const proposedCode = String(updatePayload.customer_code ?? "").trim();
 
@@ -459,6 +451,17 @@ export class CustomerService extends BaseService {
         delete updatePayload.created_at;
         // Prevent a tenant change from ever being written by a user payload.
         delete updatePayload.company_id;
+
+        // When the opening balance changes, keep total_balance in sync using the
+        // same delta so list and detail stay consistent.
+        if ("opening_balance" in updatePayload && existingCustomer) {
+          const oldOpening = parseAmount(existingCustomer.opening_balance) || 0;
+          const oldTotal = parseAmount(existingCustomer.total_balance) || 0;
+          const newOpening = parseAmount(updatePayload.opening_balance) ?? oldOpening;
+          const newTotal = newOpening + (oldTotal - oldOpening);
+          updatePayload.total_balance = newTotal;
+          updatePayload.current_balance = newTotal;
+        }
 
         const proposedCode = String(updatePayload.customer_code ?? "").trim();
 
@@ -499,13 +502,14 @@ export class CustomerService extends BaseService {
         if (fetchErr || !existing) return { data: null, error: fetchErr || { message: "Customer not found" } };
 
         const oldOpening = Number(existing.opening_balance || 0);
-        const oldCurrent = Number(existing.current_balance || 0);
-        const delta = oldCurrent - oldOpening;
-        const newCurrent = newOpening + delta;
+        const oldTotal = Number(existing.total_balance || 0);
+        const delta = oldTotal - oldOpening;
+        const newTotal = newOpening + delta;
 
         const { data, error } = await updateWithFallback("customers", customerId, {
           opening_balance: newOpening,
-          current_balance: newCurrent,
+          total_balance: newTotal,
+          current_balance: newTotal,
           updated_at: new Date().toISOString(),
         });
 
@@ -517,13 +521,14 @@ export class CustomerService extends BaseService {
         if (!existing) return { data: null, error: { message: "Customer not found" } };
 
         const oldOpening = Number(existing.opening_balance || 0);
-        const oldCurrent = Number(existing.current_balance || 0);
-        const delta = oldCurrent - oldOpening;
-        const newCurrent = newOpening + delta;
+        const oldTotal = Number(existing.total_balance || 0);
+        const delta = oldTotal - oldOpening;
+        const newTotal = newOpening + delta;
 
         const result = trialUpdate("customers", customerId, {
           opening_balance: newOpening,
-          current_balance: newCurrent,
+          total_balance: newTotal,
+          current_balance: newTotal,
           updated_at: new Date().toISOString()
         });
 
@@ -554,7 +559,7 @@ export class CustomerService extends BaseService {
         const codes = Object.keys(codeToRow);
         if (codes.length === 0) return { data: { updatedCount: 0, errors }, error: null };
 
-        let query = apiClient.from("customers").select("id,customer_code,opening_balance,current_balance").in("customer_code", codes);
+        let query = apiClient.from("customers").select("id,customer_code,opening_balance,total_balance").in("customer_code", codes);
         if (companyId) query = query.eq("company_id", companyId);
         const { data: customers, error: fetchError } = await query;
         if (fetchError) return { data: { updatedCount: 0, errors: [...errors, { message: fetchError.message }] }, error: fetchError };
@@ -571,11 +576,12 @@ export class CustomerService extends BaseService {
             continue;
           }
           const oldOpening = Number(customer.opening_balance || 0);
-          const oldCurrent = Number(customer.current_balance || 0);
-          const delta = oldCurrent - oldOpening;
+          const oldTotal = Number(customer.total_balance || 0);
+          const delta = oldTotal - oldOpening;
           payload.push({
             id: customer.id,
             opening_balance: opening,
+            total_balance: opening + delta,
             current_balance: opening + delta,
             updated_at: now,
           });
@@ -602,10 +608,11 @@ export class CustomerService extends BaseService {
           if (!customer) { errors.push({ row: i, message: "Customer not found", value: code }); continue; }
 
           const oldOpening = Number(customer.opening_balance || 0);
-          const oldCurrent = Number(customer.current_balance || 0);
-          const delta = oldCurrent - oldOpening;
+          const oldTotal = Number(customer.total_balance || 0);
+          const delta = oldTotal - oldOpening;
           trialUpdate("customers", customer.id, {
             opening_balance: opening,
+            total_balance: opening + delta,
             current_balance: opening + delta,
             updated_at: new Date().toISOString()
           });
