@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "../../utils/toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCompanyId } from "../../hooks/useCompanyId";
@@ -57,6 +58,7 @@ function getISOWeek(date: Date): number {
 
 const TransactionList: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const companyId = useCompanyId();
   const { getNameById: getTransactionTypeName, getMathFactor } = useTransactionTypes();
   const [searchParams] = useSearchParams();
@@ -457,6 +459,16 @@ const TransactionList: React.FC = () => {
     return match?.code || "";
   };
 
+  const getCustomerName = (transaction: Transaction) => {
+    return (
+      transaction.customer_name ||
+      (transaction.customer_id
+        ? customers.find((c) => c.id === String(transaction.customer_id))?.name
+        : null) ||
+      t("transactions.noCustomer")
+    );
+  };
+
   const hasCustomerFilter = Boolean(state.customerFilter?.id);
 
   const paginationInfo = useMemo(() => {
@@ -622,7 +634,7 @@ const TransactionList: React.FC = () => {
           />
 
           {/* Status Tabs */}
-          <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
+          <div className="flex flex-wrap border-b border-gray-200 dark:border-gray-700 mb-4">
             <button
               className={`px-4 py-2 text-sm font-medium ${state.statusFilter === "all" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"}`}
               onClick={() => setState(prev => ({ ...prev, statusFilter: "all", currentPage: 1 }))}
@@ -938,19 +950,157 @@ const TransactionList: React.FC = () => {
               </tbody>
             </table>
           </div>
+        </div>
 
-          {state.totalCount > state.pageSize && (
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-600">
-              <Pagination
-                currentPage={state.currentPage}
-                totalPages={Math.ceil(state.totalCount / state.pageSize)}
-                onPageChange={handlePageChange}
-                totalItems={state.totalCount}
-                itemsPerPage={state.pageSize}
-              />
+        {/* Mobile card list */}
+        <div className="sm:hidden space-y-3">
+          {state.transactions.length === 0 ? (
+            <div className="text-center py-10 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800">
+              <svg
+                className="mx-auto h-10 w-10 text-gray-400 dark:text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              </svg>
+              <p className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                Không có giao dịch nào
+              </p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Thử điều chỉnh bộ lọc hoặc thêm giao dịch mới.
+              </p>
             </div>
+          ) : (
+            state.transactions.map((transaction) => (
+              <div
+                key={transaction.id}
+                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span
+                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTransactionTypeColor(transaction.transaction_type)}`}
+                  >
+                    {getTransactionTypeName(transaction.transaction_type)}
+                  </span>
+                  <span
+                    className={`text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type, transaction.amount)}`}
+                  >
+                    {formatCurrency(parseAmount(transaction.amount))}
+                  </span>
+                </div>
+
+                <div>
+                  {transaction.customer_id ? (
+                    <button
+                      type="button"
+                      className="block text-left font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      onClick={() => navigate(`/customers/${transaction.customer_id}`)}
+                    >
+                      {getCustomerName(transaction)}
+                    </button>
+                  ) : (
+                    <span className="text-gray-500 dark:text-gray-400">Không có khách hàng</span>
+                  )}
+                  {getCustomerCode(transaction.customer_id) ? (
+                    <div className="mt-0.5 font-mono text-xs text-gray-500 dark:text-gray-400">
+                      {getCustomerCode(transaction.customer_id)}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="grid grid-cols-2 gap-y-2 text-xs text-gray-600 dark:text-gray-300">
+                  <div>
+                    <span className="text-gray-400 dark:text-gray-500">Ngày:</span>{" "}
+                    {formatDate(transaction.transaction_date)}
+                  </div>
+                  <div>
+                    <span className="text-gray-400 dark:text-gray-500">Mã GD:</span>{" "}
+                    <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-[10px]">
+                      {transaction.transaction_code}
+                    </span>
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <span className="text-gray-400 dark:text-gray-500">Văn phòng:</span>{" "}
+                    {transaction.branch_name || transaction.branches?.name || getBranchName(transaction.branch_id) || "—"}
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <span className="text-gray-400 dark:text-gray-500">Tài khoản:</span>{" "}
+                    {transaction.bank_account_name || transaction.bank_accounts?.account_name || (transaction.bank_account_id ? `#${transaction.bank_account_id}` : "—")}
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-gray-400 dark:text-gray-500">Người thực hiện:</span>{" "}
+                    {userMap.get(transaction.created_by || "") || transaction.creator_name || transaction.created_by || "—"}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+                  {transaction.status === "pending" ? (
+                    <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                      Chờ duyệt
+                    </span>
+                  ) : transaction.status === "cancelled" ? (
+                    <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                      Đã hủy
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      Hoàn thành
+                    </span>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    {transaction.status === "pending" && (
+                      <button
+                        type="button"
+                        className="min-h-[44px] px-3 py-1.5 rounded-md text-xs font-medium border border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-800 transition-colors"
+                        onClick={async () => {
+                          if (!confirm("Xác nhận duyệt giao dịch vào công nợ?")) return;
+                          const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "completed" });
+                          if (error) toast.error("Lỗi khi duyệt");
+                          else fetchTransactions();
+                        }}
+                      >
+                        Duyệt
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="min-h-[44px] px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      onClick={() => openEditModal(transaction)}
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      type="button"
+                      className="min-h-[44px] px-3 py-1.5 rounded-md text-xs font-medium border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-700 dark:bg-red-900/40 dark:text-red-200 transition-colors"
+                      onClick={() => handleDelete(transaction.id)}
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
           )}
         </div>
+
+        {state.totalCount > state.pageSize && (
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-600">
+            <Pagination
+              currentPage={state.currentPage}
+              totalPages={Math.ceil(state.totalCount / state.pageSize)}
+              onPageChange={handlePageChange}
+              totalItems={state.totalCount}
+              itemsPerPage={state.pageSize}
+            />
+          </div>
+        )}
       </div>
 
       <TransactionEditModal

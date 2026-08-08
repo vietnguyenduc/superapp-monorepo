@@ -93,6 +93,8 @@ A dedicated `Công thức dư nợ` tab in Settings shows the current formula, l
 - **Creator column (`Người thực hiện`)** — `transactionService.getTransactions` joins `users(full_name)` and maps `creator_name`. As a fallback, load `databaseService.users.getUsers()` once and build a `Map<userId, fullName>` for both display cells and the filter dropdown.
 - **Group summary colors** — `Net` (and `Tổng điều chỉnh`) should be red when positive (increases debt) and green when negative (decreases debt). Use `getBalanceColor` or the same `data.net > 0 ? red : data.net < 0 ? green : gray` logic.
 - **Import routing** — `CustomerImport` and `TransactionImport` read `?tab=bulk|single` to switch to the requested tab on navigation. Buttons in `CustomerList` and `TransactionList` route to `/import/<resource>?tab=bulk`.
+- **Mobile-first transaction list** — below the `sm:` breakpoint, `TransactionList` renders a card list instead of the wide table. Each card shows type badge, signed amount, clickable customer name + code, date, branch/bank, creator, status badge, and edit/delete actions. Pagination is shared between desktop and mobile.
+- **Cash-flow chart** — `dashboardService.ts` `aggregateCashFlow` derives the period window from the latest transaction in the selected range (not `new Date()`). Legend/tooltip labels use `Tiền vào` / `Tiền ra` in Vietnamese; inflow bars are `#10b981` and outflow bars are `#f43f5e`.
 
 ## Recent architectural decisions
 

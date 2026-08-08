@@ -104,7 +104,10 @@ function buildPeriodStarts(timeRange: TimeRange, count: number, endDate: Date) {
 
 function aggregateCashFlow(transactions: Transaction[], timeRange: TimeRange, count: number) {
   const map = new Map<string, { date: string; inflow: number; outflow: number; netFlow: number }>();
-  const periodStarts = buildPeriodStarts(timeRange, count, new Date());
+  const endDate = transactions.length
+    ? new Date(Math.max(...transactions.map((tx) => new Date(tx.transaction_date).getTime())))
+    : new Date();
+  const periodStarts = buildPeriodStarts(timeRange, count, endDate);
 
   periodStarts.forEach((start) => {
     const key = dateKeyForRange(start, timeRange);

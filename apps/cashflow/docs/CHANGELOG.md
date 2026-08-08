@@ -53,6 +53,14 @@
 - **i18n duplicate keys** — merged duplicate top-level `transactions` objects in `vi.json` and `en.json` so modal labels (e.g. edit transaction form) render in Vietnamese/English instead of showing raw keys; added `transactions.types.deposit` to the consolidated object.
 - **Migration filename collision** — replaced `034_deposit_transaction_type.sql` with `042_deposit_transaction_type.sql` and made it work for both the `transaction_type` enum and the text CHECK-constraint schema used in production.
 
+### UI/UX (post deposit follow-up)
+
+- **Mobile transaction list empty / overflow** — `TransactionList.tsx` was wrapped in `hidden sm:block`, so phones saw an empty page. Added a `sm:hidden` card view with customer name, code, type badge, amount, date, branch/bank/creator, status, and action buttons. Pagination was moved outside the desktop-only block so it appears on mobile.
+- **Status tabs wrapping** — the filter tab bar now uses `flex-wrap` so `Tất cả` / `Hàng chờ duyệt` / `Đã hoàn thành` wrap on narrow screens instead of forcing horizontal overflow.
+- **Cash-flow chart labels** — `vi.json` `dashboard.inflow`/`dashboard.outflow` changed from `Điều chỉnh tăng`/`Điều chỉnh giảm` to `Tiền vào`/`Tiền ra` so the legend/tooltip match bank cash-flow semantics.
+- **Cash-flow chart period generation** — `dashboardService.ts` `aggregateCashFlow` now builds the period window from the latest transaction date in the selected range instead of `new Date()`, so old data no longer renders as all-zero bars while real transactions sit outside the window.
+- **Cash-flow chart colors** — bar fills now match the legend (`#10b981` for inflow, `#f43f5e` for outflow).
+
 ### Docs
 
 - Updated `AI-CONTEXT.md`, `DATA-FLOW.md`, and `CHANGELOG.md` to document the `deposit` type and the canonical/display split.
