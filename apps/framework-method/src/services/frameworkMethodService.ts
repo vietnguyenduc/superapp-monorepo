@@ -23,6 +23,7 @@ import type {
   RelationshipContact,
   RecurringTask,
   RecurrenceType,
+  PracticeInsight,
 } from "../types";
 import { MERIT_SIZE_POINTS } from "../types";
 
@@ -845,4 +846,46 @@ export const getDaysUntilPeriodEnd = (recurrence: RecurrenceType, from: Date): n
 export const getNextDueDate = (recurrence: RecurrenceType, from: Date): string => {
   const end = getPeriodEnd(recurrence, from);
   return end.toISOString().split("T")[0];
+};
+
+const PRACTICE_INSIGHTS_STORAGE_KEY = "fm_practice_insights_v1";
+
+export const getPracticeInsights = async (userId: string): Promise<PracticeInsight[]> => {
+  try {
+    const raw = localStorage.getItem(PRACTICE_INSIGHTS_STORAGE_KEY);
+    if (raw) {
+      const all = JSON.parse(raw) as PracticeInsight[];
+      return all.filter((i) => i.user_id === userId);
+    }
+  } catch {
+    // ignore parse errors
+  }
+
+  try {
+    const { data, error } = await db.from("fm_practice_insights").select("*").eq("user_id", userId).order("created_at", { ascending: false });
+    if (error) throw error;
+    if (data) {
+      localStorage.setItem(PRACTICE_INSIGHTS_STORAGE_KEY, JSON.stringify(data));
+      return data as PracticeInsight[];
+    }
+  } catch (err) {
+    fallbackLog("getPracticeInsights", err);
+  }
+
+  return [];
+};
+
+export const savePracticeInsights = async (insights: PracticeInsight[]): Promise<void> => {
+  try {
+    localStorage.setItem(PRACTICE_INSIGHTS_STORAGE_KEY, JSON.stringify(insights));
+  } catch {
+    // ignore storage errors
+  }
+
+  try {
+    const { error } = await db.from("fm_practice_insights").upsert(insights, { onConflict: "id" });
+    if (error) throw error;
+  } catch (err) {
+    fallbackLog("savePracticeInsights", err);
+  }
 };

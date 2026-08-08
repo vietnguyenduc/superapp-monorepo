@@ -256,3 +256,15 @@ export interface RecurringTask {
   created_at?: string;
   updated_at?: string;
 }
+
+export type PracticeInsightType = "person" | "environment" | "work" | "self";
+
+export interface PracticeInsight {
+  id: string;
+  user_id: string;
+  type: PracticeInsightType;
+  title: string;
+  fields: Record<string, string>;
+  created_at?: string;
+  updated_at?: string;
+}

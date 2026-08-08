@@ -66,4 +66,5 @@ RLS is enabled on all tables. Users see rows where `user_id = auth.uid()`. Publi
 - `Dashboard` shows today's merit score, streak, and a 7-day Phúc trend chart from `getSessionsByDateRange`.
 - New top-level pages `/finance` (Kiểm soát Tài chính) and `/practice` (Luyện thấu triệt) are linked in `SideNav` and `BottomNav`.
 - `/practice` includes "Thấu triệt mối quan hệ" with six relationship categories (`eternal`, `close`, `social`, `business`, `friends`, `soul`). Contacts store name, age, address, and notes; data persists via `getRelationships`/`saveRelationships`.
+- `/practice` also has a "Thấu triệt" section with four insight types (`person`, `environment`, `work`, `self`), each with its own set of free-text fields; data persists via `getPracticeInsights`/`savePracticeInsights`.
 - `/calendar` includes recurring tasks (`RecurringTask`) with `weekly`/`monthly`/`quarterly`/`half_yearly`/`special` recurrence, configurable `warning_before_days`, a preparation note, and a "Chốt làm" button that converts the recurring task into a daily task for the selected `sessionDate`.
