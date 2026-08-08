@@ -17,7 +17,7 @@ const StepIndicator = ({ step, onChange }: { step: number; onChange?: (s: number
   const steps = [t("session.step1"), t("session.step2"), t("session.step3"), t("session.step4")];
   return (
     <div className="relative flex items-start justify-between mb-6">
-      <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-100 dark:bg-gray-800 -z-10 mx-8" />
+      <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-100 dark:bg-[#2C2C2E] -z-10 mx-10" />
       {steps.map((label, idx) => {
         const num = idx + 1;
         const active = num === step;
@@ -30,12 +30,12 @@ const StepIndicator = ({ step, onChange }: { step: number; onChange?: (s: number
             className="group flex flex-col items-center gap-2 flex-1 min-w-0"
           >
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all border-2 ${
+              className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
                 active
-                  ? "bg-white dark:bg-gray-900 border-primary-600 text-primary-600 shadow-sm"
+                  ? "bg-primary-600 text-white shadow-lg shadow-primary-600/25"
                   : completed
-                  ? "bg-success-600 border-success-600 text-white"
-                  : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400"
+                  ? "bg-success-500 text-white"
+                  : "bg-white dark:bg-[#2C2C2E] text-gray-400 border border-black/[0.06] dark:border-white/[0.08]"
               }`}
             >
               {completed ? <FiCheck className="w-5 h-5" /> : num}
@@ -64,10 +64,10 @@ const BlockTabs = ({ blocks, current, onSelect }: { blocks: Block[]; current: Bl
           <button
             key={block.id}
             onClick={() => onSelect(block.id)}
-            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[2.75rem] ${
+            className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all min-h-[2.75rem] ${
               active
-                ? "bg-primary-600 text-white shadow-sm shadow-primary-600/20"
-                : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                ? "bg-primary-600 text-white shadow-md shadow-primary-600/20"
+                : "bg-white dark:bg-[#2C2C2E] border border-black/[0.05] dark:border-white/[0.06] text-gray-600 dark:text-gray-300 hover:bg-black/[0.02] dark:hover:bg-white/[0.04]"
             }`}
           >
             {language === "en" ? block.name_en : block.name_vi}
@@ -82,10 +82,10 @@ const PinnedTasks = ({ tasks }: { tasks: DailyTask[] }) => {
   const { t } = useI18n();
   if (tasks.length === 0) return null;
   return (
-    <div className="sticky top-16 z-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-100 dark:border-gray-800 rounded-2xl p-3 shadow-sm">
+    <div className="sticky top-16 z-20 card p-4">
       <div className="flex items-center gap-2 mb-2">
         <FiMapPin className="w-4 h-4 text-primary-600" />
-        <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">{t("session.pinnedTasks")}</span>
+        <span className="section-title mb-0">{t("session.pinnedTasks")}</span>
       </div>
       <div className="flex flex-wrap gap-2">
         {tasks.map((task) => (
@@ -124,7 +124,7 @@ const InsightCard = ({ stats }: { stats: { total_done: number; total_applied: nu
 
   return (
     <Card className="p-5 rounded-2xl bg-gradient-to-br from-primary-50/50 to-white dark:from-primary-900/10 dark:to-gray-900 border-primary-100 dark:border-primary-900/20">
-      <p className="text-xs font-semibold uppercase tracking-wider text-primary-600 mb-2">{t("session.didYouKnow")}</p>
+      <p className="section-title text-primary-600 mb-2">{t("session.didYouKnow")}</p>
       <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-200">
         {t("session.insight.text", {
           done: insightLabels.done,
@@ -168,8 +168,8 @@ const SubAccordion = ({
   children: React.ReactNode;
 }) => {
   return (
-    <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 overflow-hidden">
-      <button onClick={onToggle} className="w-full flex items-center justify-between text-left p-4 min-h-[3.5rem] hover:bg-gray-100/50 dark:hover:bg-gray-800/60 transition-colors">
+    <div className="rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.04] overflow-hidden">
+      <button onClick={onToggle} className="w-full flex items-center justify-between text-left p-4 min-h-[3.5rem] hover:bg-black/[0.02] dark:hover:bg-white/[0.04] transition-colors">
         <span className="flex items-center gap-2.5 text-sm font-semibold text-gray-900 dark:text-white">
           {icon}
           {title}
@@ -215,9 +215,9 @@ const SectionAccordion = ({
   const onField = (key: string, value: string) => onChange(key, value, true);
 
   return (
-    <Card className="p-5 rounded-2xl space-y-3 border border-gray-100 dark:border-gray-800 shadow-sm">
+    <Card className="p-5 space-y-3">
       <button onClick={() => setOpen((o) => !o)} className="w-full flex items-center justify-between text-left min-h-[3rem]">
-        <span className="text-lg font-semibold text-gray-900 dark:text-white">{sectionTitle}</span>
+        <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">{sectionTitle}</span>
         <FiChevronRight className={`w-5 h-5 text-gray-400 transition-transform ${open ? "rotate-90" : ""}`} />
       </button>
 
@@ -305,23 +305,23 @@ const KnowledgeModal = ({ entry, onClose }: { entry: KnowledgeEntry; onClose: ()
   const { t, language } = useI18n();
   const navigate = useNavigate();
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-xl">
-        <div className="sticky top-0 bg-white dark:bg-gray-900 px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-          <h3 className="font-semibold">{language === "en" ? entry.title_en : entry.title_vi}</h3>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white dark:bg-[#1C1C1E] rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl border border-black/[0.04] dark:border-white/[0.08]">
+        <div className="sticky top-0 bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl px-5 py-4 border-b border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between">
+          <h3 className="font-semibold text-lg tracking-tight pr-4">{language === "en" ? entry.title_en : entry.title_vi}</h3>
+          <button onClick={onClose} className="p-2 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.06] active:scale-95 transition-all">
             <FiX className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-4 space-y-4">
+        <div className="p-5 space-y-5">
           {entry.image_url && (
             <img
               src={entry.image_url}
               alt={language === "en" ? entry.title_en : entry.title_vi}
-              className="w-full rounded-xl border border-gray-100 dark:border-gray-800"
+              className="w-full rounded-2xl border border-black/[0.04] dark:border-white/[0.06]"
             />
           )}
-          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+          <p className="text-[15px] leading-relaxed text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
             {language === "en" ? entry.content_en : entry.content_vi}
           </p>
           <div className="flex flex-col gap-2 pt-2">
@@ -366,7 +366,7 @@ const SectionItemInput = ({
   };
 
   return (
-    <div className="space-y-3 p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+    <div className="space-y-3 p-4 rounded-2xl bg-white dark:bg-[#2C2C2E] border border-black/[0.04] dark:border-white/[0.06]">
       <div className="flex items-start justify-between gap-3">
         <label className="flex items-center gap-3 text-sm font-semibold text-gray-900 dark:text-white min-h-[2.75rem]">
           <input
@@ -394,7 +394,7 @@ const SectionItemInput = ({
       {enabled && (
         <>
           {itemContent && (
-            <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60">
+            <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04]">
               {itemContent}
             </div>
           )}
@@ -467,7 +467,7 @@ const Step1TaskList = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+      <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
         {t("session.step1Title", { block: language === "en" ? currentBlock?.name_en : currentBlock?.name_vi })}
       </h2>
 
@@ -485,7 +485,7 @@ const Step1TaskList = () => {
       {currentStats && <InsightCard stats={currentStats} />}
 
       <Card className="p-5 rounded-2xl space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t("session.suggestions")}</p>
+        <p className="section-title">{t("session.suggestions")}</p>
         {suggestions.length === 0 ? (
           <p className="text-sm text-gray-500">{t("session.noSuggestions")}</p>
         ) : (
@@ -507,7 +507,7 @@ const Step1TaskList = () => {
       </Card>
 
       <Card className="p-5 rounded-2xl space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t("session.tasksDone")}</p>
+        <p className="section-title">{t("session.tasksDone")}</p>
         {blockTasks.length === 0 ? (
           <p className="text-sm text-gray-500">{t("session.emptyTasks")}</p>
         ) : (
@@ -570,7 +570,7 @@ const Step2Recognize = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t("session.step2Title")}</h2>
+      <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">{t("session.step2Title")}</h2>
 
       <PinnedTasks tasks={blockTasks} />
 
@@ -649,7 +649,7 @@ const PlanField = ({
   };
 
   return (
-    <div className="space-y-3 p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+    <div className="space-y-3 p-4 rounded-2xl bg-white dark:bg-[#2C2C2E] border border-black/[0.04] dark:border-white/[0.06]">
       <div className="flex items-start justify-between gap-3">
         <label className="text-sm font-semibold text-gray-900 dark:text-white">{language === "en" ? item.title_en : item.title_vi}</label>
         {(knowledgeEntry || itemContent) && (
@@ -709,7 +709,7 @@ const Step3Apply = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t("session.step3Title")}</h2>
+      <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">{t("session.step3Title")}</h2>
 
       <PinnedTasks tasks={blockTasks} />
 
@@ -723,7 +723,7 @@ const Step3Apply = () => {
       />
 
       <Card className="p-5 rounded-2xl space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t("session.chooseTask")}</p>
+        <p className="section-title">{t("session.chooseTask")}</p>
         <div className="flex flex-wrap gap-2">
           {blockTasks.map((task) => (
             <button
@@ -810,7 +810,7 @@ const Step4Track = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t("session.step4Title")}</h2>
+      <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">{t("session.step4Title")}</h2>
 
       <PinnedTasks tasks={blockTasks} />
 
@@ -824,7 +824,7 @@ const Step4Track = () => {
       />
 
       <Card className="p-5 rounded-2xl space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t("session.chooseTask")}</p>
+        <p className="section-title">{t("session.chooseTask")}</p>
         <div className="flex flex-wrap gap-2">
           {blockTasks.map((task) => (
             <button
@@ -857,7 +857,7 @@ const Step4Track = () => {
                   {language === "en" ? item.title_en : item.title_vi}
                 </label>
                 {itemContent && (
-                  <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60">
+                  <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04]">
                     {itemContent}
                   </div>
                 )}

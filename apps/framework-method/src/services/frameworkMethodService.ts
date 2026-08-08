@@ -6,8 +6,10 @@ import type {
   BlockStats,
   DailyGoal,
   DailyTask,
+  MeritSize,
   Session,
   StepType,
+  TaskCategory,
   TaskSuggestion,
   Template,
   TemplateSection,
@@ -19,6 +21,7 @@ import type {
   Streak,
   KnowledgeEntry,
 } from "../types";
+import { MERIT_SIZE_POINTS } from "../types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = (sb as unknown) as { from: (table: string) => any };
@@ -41,6 +44,27 @@ export const DEFAULT_BLOCKS: Block[] = [
   { id: "finance", name_vi: "Tài chính", name_en: "Finance", order_index: 3 },
   { id: "family", name_vi: "Gia đình", name_en: "Family", order_index: 4 },
 ];
+
+export const BLOCK_TO_CATEGORY: Record<BlockId, { category: TaskCategory; subcategory: string }> = {
+  self: { category: "doi", subcategory: "Bản thân" },
+  relationship: { category: "dao", subcategory: "Quan hệ" },
+  work: { category: "loi_tu", subcategory: "Công việc" },
+  finance: { category: "loi_tu", subcategory: "Tài chính" },
+  family: { category: "doi", subcategory: "Gia đình" },
+};
+
+export const CATEGORY_META: Record<TaskCategory, { label_vi: string; label_en: string; color: string; gradient: string }> = {
+  doi: { label_vi: "Đời", label_en: "Life", color: "emerald", gradient: "from-emerald-500 to-teal-500" },
+  dao: { label_vi: "Đạo", label_en: "Path", color: "violet", gradient: "from-violet-500 to-fuchsia-500" },
+  loi_tu: { label_vi: "Lợi tư", label_en: "Career", color: "blue", gradient: "from-blue-500 to-cyan-500" },
+};
+
+export const MERIT_SIZE_LABELS: Record<MeritSize, { vi: string; en: string }> = {
+  very_big: { vi: "Rất lớn", en: "Very big" },
+  big: { vi: "Lớn", en: "Big" },
+  medium: { vi: "Vừa", en: "Medium" },
+  small: { vi: "Nhỏ", en: "Small" },
+};
 
 const DEFAULT_SUGGESTIONS: Record<BlockId, string[]> = {
   self: ["Quét nhà", "Rửa chén", "Kính lễ", "Tập thể dục", "Đọc sách"],
@@ -349,6 +373,7 @@ export const createDailyTask = async (
   source: TaskSource,
   date: string
 ): Promise<DailyTask> => {
+  const mapped = BLOCK_TO_CATEGORY[blockId];
   const task: DailyTask = {
     id: genId(),
     user_id: userId,
@@ -358,6 +383,8 @@ export const createDailyTask = async (
     title,
     source,
     status: "pending",
+    category: mapped?.category,
+    subcategory: mapped?.subcategory,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -413,6 +440,7 @@ export const createSession = async (userId: string, date: string): Promise<Sessi
     status: "draft",
     current_step: 1,
     current_block_id: DEFAULT_BLOCKS[0].id,
+    planned_completion_rate: 100,
     started_at: new Date().toISOString(),
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -441,6 +469,66 @@ export const updateSession = async (sessionId: string, updates: Partial<Session>
     fallbackLog("updateSession", err);
   }
   return null;
+};
+
+export const getSessionsByDateRange = async (userId: string, startDate: string, endDate: string): Promise<Session[]> => {
+  try {
+    const { data, error } = await db
+      .from("fm_sessions")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("date", startDate)
+      .lte("date", endDate)
+      .order("date", { ascending: true });
+    if (error) throw error;
+    if (data) return data as Session[];
+  } catch (err) {
+    fallbackLog("getSessionsByDateRange", err);
+  }
+  return [];
+};
+
+export const getDailyTasksForDateRange = async (userId: string, startDate: string, endDate: string): Promise<DailyTask[]> => {
+  try {
+    const { data, error } = await db
+      .from("fm_daily_tasks")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("date", startDate)
+      .lte("date", endDate)
+      .order("date", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    if (data) return data as DailyTask[];
+  } catch (err) {
+    fallbackLog("getDailyTasksForDateRange", err);
+  }
+  return [];
+};
+
+export const plannedCompletionAdjustment = (rate: number): number => {
+  if (rate < 60) return -2;
+  if (rate < 80) return -1;
+  if (rate < 100) return 1;
+  return 2;
+};
+
+export const calculateMerit = (
+  tasks: DailyTask[],
+  plannedCompletionRate?: number
+): { earned: number; spent: number; total: number; adjustment: number } => {
+  let earned = 0;
+  let spent = 0;
+  tasks.forEach((t) => {
+    if (!t.merit_type || !t.merit_size) return;
+    const points = MERIT_SIZE_POINTS[t.merit_size];
+    if (t.merit_type === "earn") earned += points;
+    else spent += points;
+  });
+  const base = earned - spent;
+  const adjustment = plannedCompletionRate === undefined ? 0 : plannedCompletionAdjustment(plannedCompletionRate);
+  const total = base === 0 ? 0 : base + adjustment;
+  return { earned, spent, total, adjustment };
 };
 
 export const getBlockStats = async (userId: string): Promise<Record<BlockId, BlockStats>> => {

@@ -16,6 +16,8 @@ import Calendar from "./pages/Calendar/Calendar";
 import History from "./pages/History/History";
 import Builder from "./pages/Builder/Builder";
 import Knowledge from "./pages/Knowledge/Knowledge";
+import FinanceControl from "./pages/FinanceControl/FinanceControl";
+import Practice from "./pages/Practice/Practice";
 
 function App() {
   return (
@@ -41,6 +43,8 @@ function App() {
             <Route path="history" element={<History />} />
             <Route path="builder" element={<Builder />} />
             <Route path="knowledge" element={<Knowledge />} />
+            <Route path="finance" element={<FinanceControl />} />
+            <Route path="practice" element={<Practice />} />
           </Route>
         </Routes>
       </Router>

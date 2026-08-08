@@ -21,6 +21,16 @@ export interface Block {
 
 export type TaskSource = "suggestion" | "freetext" | "carry_over";
 export type TaskStatus = "pending" | "done";
+export type TaskCategory = "doi" | "dao" | "loi_tu";
+export type MeritType = "earn" | "spend";
+export type MeritSize = "small" | "medium" | "big" | "very_big";
+
+export const MERIT_SIZE_POINTS: Record<MeritSize, number> = {
+  small: 1,
+  medium: 2,
+  big: 3,
+  very_big: 4,
+};
 
 export interface DailyTask {
   id: string;
@@ -31,6 +41,11 @@ export interface DailyTask {
   title: string;
   source: TaskSource;
   status: TaskStatus;
+  category?: TaskCategory;
+  subcategory?: string;
+  merit_type?: MeritType;
+  merit_size?: MeritSize;
+  completion_level?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -45,6 +60,10 @@ export interface Session {
   current_step: number;
   current_block_id?: BlockId;
   draft_payload?: Record<string, unknown>;
+  planned_completion_rate?: number;
+  merit_earned?: number;
+  merit_spent?: number;
+  merit_total?: number;
   started_at?: string;
   ended_at?: string;
   created_at?: string;

@@ -19,6 +19,8 @@
     "calendar": "Lịch",
     "builder": "Thiết kế",
     "knowledge": "Dữ liệu Trí tuệ",
+    "finance": "Tài chính",
+    "practice": "Luyện thấu triệt",
     "login": "Đăng nhập",
     "logout": "Đăng xuất",
     "menu": "Menu"
@@ -129,10 +131,33 @@
     "solidProgress": "Tiến bộ vững chắc"
   },
   "calendar": {
+    "title": "Lịch",
+    "subtitle": "Nhóm việc theo Đời, Đạo, Lợi tư và sổ Phúc nghiệp.",
     "month": "Tháng",
     "week": "Tuần",
     "scheduledForToday": "Lịch hôm nay",
-    "scheduleNew": "Lên lịch phiên mới"
+    "scheduleNew": "Lên lịch phiên mới",
+    "meritEarned": "Phúc tạo",
+    "meritSpent": "Phúc tiêu",
+    "meritTotal": "Tổng Phúc",
+    "plannedCompletion": "Đánh giá mức độ hoàn thành kế hoạch",
+    "adjustment": "Điều chỉnh Phúc",
+    "addTask": "Thêm việc",
+    "group": "Nhóm",
+    "subcategory": "Phân loại",
+    "meritType": "Loại Phúc",
+    "meritSize": "Cỡ việc"
+  },
+  "financeControl": {
+    "title": "Kiểm soát Tài chính",
+    "subtitle": "Theo dõi 5 khoản tài chính hàng ngày.",
+    "totalIncome": "Tổng thu",
+    "totalExpense": "Tổng chi"
+  },
+  "practice": {
+    "title": "Luyện thấu triệt",
+    "subtitle": "Ghi nhận thời gian luyện tập và phản chiếu.",
+    "todayPractice": "Luyện tập hôm nay"
   },
   "history": {
     "title": "Lịch sử",

@@ -19,6 +19,8 @@
     "calendar": "Calendar",
     "builder": "Builder",
     "knowledge": "Knowledge",
+    "finance": "Finance",
+    "practice": "Practice",
     "login": "Login",
     "logout": "Logout",
     "menu": "Menu"
@@ -129,10 +131,33 @@
     "solidProgress": "Solid Progress"
   },
   "calendar": {
+    "title": "Calendar",
+    "subtitle": "Tasks grouped by Life, Path, Career and merit ledger.",
     "month": "Month",
     "week": "Week",
     "scheduledForToday": "Scheduled for Today",
-    "scheduleNew": "Schedule new session"
+    "scheduleNew": "Schedule new session",
+    "meritEarned": "Merit earned",
+    "meritSpent": "Merit spent",
+    "meritTotal": "Total merit",
+    "plannedCompletion": "Planned completion rate",
+    "adjustment": "Merit adjustment",
+    "addTask": "Add task",
+    "group": "Group",
+    "subcategory": "Subcategory",
+    "meritType": "Merit type",
+    "meritSize": "Task size"
+  },
+  "financeControl": {
+    "title": "Finance Control",
+    "subtitle": "Track the 5 daily finance buckets.",
+    "totalIncome": "Total income",
+    "totalExpense": "Total expense"
+  },
+  "practice": {
+    "title": "Deep Practice",
+    "subtitle": "Log practice time and reflection.",
+    "todayPractice": "Today's practice"
   },
   "history": {
     "title": "History",

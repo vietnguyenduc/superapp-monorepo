@@ -31,10 +31,14 @@ interface SessionContextType {
   session: Session | null;
   tasks: DailyTask[];
   pendingCarryOver: DailyTask[];
-  addTask: (blockId: BlockId, title: string, source?: TaskSource) => Promise<void>;
+  addTask: (blockId: BlockId, title: string, source?: TaskSource) => Promise<DailyTask | undefined>;
   toggleTask: (taskId: string) => Promise<void>;
   updateTaskTitle: (taskId: string, title: string) => Promise<void>;
+  updateTask: (taskId: string, updates: Partial<DailyTask>) => Promise<void>;
   removeTask: (taskId: string) => Promise<void>;
+  setPlannedCompletionRate: (rate: number) => Promise<void>;
+  refreshMerit: () => Promise<void>;
+  merit: { earned: number; spent: number; total: number; adjustment: number };
   selectedTaskId: string | null;
   setSelectedTaskId: (id: string | null) => void;
   referenceInputs: Record<string, ReferenceInput>;
@@ -98,6 +102,27 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     },
     [session]
   );
+
+  const merit = useMemo(
+    () => service.calculateMerit(tasks, session?.planned_completion_rate ?? undefined),
+    [tasks, session?.planned_completion_rate]
+  );
+
+  useEffect(() => {
+    if (!session) return;
+    if (
+      session.merit_earned === merit.earned &&
+      session.merit_spent === merit.spent &&
+      session.merit_total === merit.total
+    ) {
+      return;
+    }
+    persistSession({
+      merit_earned: merit.earned,
+      merit_spent: merit.spent,
+      merit_total: merit.total,
+    });
+  }, [session, merit, persistSession]);
 
   const setCurrentBlockIndex = useCallback(
     async (index: number) => {
@@ -250,9 +275,10 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
 
   const addTask = useCallback(
     async (blockId: BlockId, title: string, source: TaskSource = "freetext") => {
-      if (!userId || !session) return;
+      if (!userId || !session) return undefined;
       const task = await service.createDailyTask(userId, session.id, blockId, title, source, sessionDate);
       setTasks((prev) => [...prev, task]);
+      return task;
     },
     [userId, session, sessionDate]
   );
@@ -269,6 +295,28 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     await service.updateDailyTask(taskId, { title });
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, title } : t)));
   }, []);
+
+  const updateTask = useCallback(async (taskId: string, updates: Partial<DailyTask>) => {
+    await service.updateDailyTask(taskId, updates);
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t)));
+  }, []);
+
+  const setPlannedCompletionRate = useCallback(
+    async (rate: number) => {
+      const clamped = Math.max(0, Math.min(100, Math.round(rate)));
+      await persistSession({ planned_completion_rate: clamped });
+    },
+    [persistSession]
+  );
+
+  const refreshMerit = useCallback(async () => {
+    if (!session) return;
+    await persistSession({
+      merit_earned: merit.earned,
+      merit_spent: merit.spent,
+      merit_total: merit.total,
+    });
+  }, [session, merit, persistSession]);
 
   const removeTask = useCallback(async (taskId: string) => {
     // Soft delete via status? For now filter locally; no DB delete to keep history.
@@ -388,7 +436,11 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       addTask,
       toggleTask,
       updateTaskTitle,
+      updateTask,
       removeTask,
+      setPlannedCompletionRate,
+      refreshMerit,
+      merit,
       selectedTaskId,
       setSelectedTaskId,
       referenceInputs,
@@ -427,7 +479,11 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       addTask,
       toggleTask,
       updateTaskTitle,
+      updateTask,
       removeTask,
+      setPlannedCompletionRate,
+      refreshMerit,
+      merit,
       selectedTaskId,
       referenceInputs,
       saveReferenceInput,

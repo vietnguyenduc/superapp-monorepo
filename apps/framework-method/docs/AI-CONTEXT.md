@@ -59,3 +59,9 @@ RLS is enabled on all tables. Users see rows where `user_id = auth.uid()`. Publi
 - The `/knowledge` list follows the mobile mockup: search, filter chips, icon + title + summary + chevron cards.
 - `SessionPage` Step 2 renders the linked knowledge content inside each Concepts/Reference/Examples sub-accordion, then shows the item checklists and reflection inputs. Items with a linked entry or with inline content show a "Đọc lại dữ liệu" button that opens `KnowledgeModal`.
 - `SessionPage` Step 3 shows each plan field with the item title/content and a Knowledge read button; `draft` state keeps edits per selected task before saving.
+- Global Apple-inspired theme refresh in `index.css` (`--fm-bg` `#F5F5F7`, `--fm-bg-dark` `#0D0D0F`, `--fm-surface`, `--fm-border`, `card`, `btn-primary`, `btn-secondary`, `input`, `section-title`) is used by `Card`, `Button`, `Input`, `Layout`, `SideNav`, and `BottomNav`.
+- Tasks now carry `category`/`subcategory` mapped to three groups (`Đời`, `Đạo`, `Lợi tư`) and a Phúc nghiệp ledger with `merit_type`/`merit_size` (`small`/`medium`/`big`/`very_big` = 1/2/3/4 points). `Session` stores `planned_completion_rate` and `merit_earned`/`merit_spent`/`merit_total`.
+- `calculateMerit` and `plannedCompletionAdjustment` helpers in `frameworkMethodService.ts` implement the user's scoring rules: no logged merit tasks = 0 total; completion rate <60% = -2, 60-79% = -1, 80-99% = +1, 100% = +2.
+- `/calendar` groups tasks by the three color-coded groups, lets users set earn/spend + size per task, and shows daily Phúc totals.
+- `Dashboard` shows today's merit score, streak, and a 7-day Phúc trend chart from `getSessionsByDateRange`.
+- New top-level pages `/finance` (Kiểm soát Tài chính) and `/practice` (Luyện thấu triệt) are linked in `SideNav` and `BottomNav`; they are currently shells with placeholder buckets/areas awaiting detailed labels.

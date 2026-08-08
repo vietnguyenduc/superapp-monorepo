@@ -1,5 +1,20 @@
 # Framework Method — Changelog
 
+## 2026-08-04 (Apple HIG + Phúc nghiệp + Finance/Practice pages)
+
+- Refreshed global Apple-inspired design tokens in `index.css` (`--fm-bg`, `--fm-surface`, `--fm-border`, `--fm-primary`, `card`, `btn-primary`, `btn-secondary`, `input`, `section-title`) with system/SF Pro font stack, premium neutral backgrounds (`#F5F5F7` / `#0D0D0F`), frosted glass headers, and `rounded-2xl` surfaces.
+- Updated shared components `Card`, `Button`, `Input`, `Layout`, `SideNav`, and `BottomNav` to use the new tokens, active scale, and consistent `font-semibold tracking-tight` headings.
+- Polished `SessionPage` `StepIndicator`, `BlockTabs`, `PinnedTasks`, `SectionAccordion`, `SubAccordion`, and `KnowledgeModal` with the new token set and removed all-caps labels.
+- Added task category/subcategory mapping (`Đời`, `Đạo`, `Lợi tư`) with color-coded groups and a Phúc nghiệp (merit) ledger.
+- Extended `DailyTask` and `Session` types with `category`, `subcategory`, `merit_type`, `merit_size`, `planned_completion_rate`, `merit_earned`, `merit_spent`, and `merit_total`.
+- Added `CATEGORY_META`, `MERIT_SIZE_LABELS`, `BLOCK_TO_CATEGORY`, `calculateMerit`, and `plannedCompletionAdjustment` helpers in `frameworkMethodService.ts`.
+- Exposed `merit`, `updateTask`, and `setPlannedCompletionRate` from `SessionContext`.
+- Redesigned `/calendar` to show 3 color-coded task groups, merit earn/spend controls, a planned-completion slider, and daily Phúc totals.
+- Updated `Dashboard` to show today's merit score, current streak, and a 7-day Phúc trend chart sourced from `getSessionsByDateRange`.
+- Added two new top-level pages: `Kiểm soát Tài chính` (`/finance`) with 5 placeholder buckets and `Luyện thấu triệt` (`/practice`) with 4 practice areas; added routes and navigation entries.
+- Added `nav.finance`, `nav.practice`, `calendar.*`, `financeControl.*`, and `practice.*` i18n keys to `vi.json`/`en.json`.
+- Validation: `npx tsc -p apps/framework-method/tsconfig.app.json --noEmit` ✅, `npm run lint -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+
 ## 2026-08-04
 
 - Polished the Builder and Knowledge UI after Apple HIG review: consistent `rounded-2xl` cards, 44 px touch targets, compact sticky headers, readable dark-mode contrast, and a single-language title/content form in Builder to avoid the Vi/En split.
