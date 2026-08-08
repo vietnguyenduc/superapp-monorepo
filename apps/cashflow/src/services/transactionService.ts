@@ -437,12 +437,13 @@ export class TransactionService extends BaseService {
 
         const allTxs = (trialGet("transactions") || []) as Transaction[];
         const oldTx = allTxs.find((t) => t.id === id);
+        const oldTxSnapshot = oldTx ? { ...oldTx } : null;
 
         const updatePayload = this._normalizeTransactionPayload(transactionData);
 
         const result = trialUpdate("transactions", id, updatePayload);
-        const newTx = oldTx ? { ...oldTx, ...updatePayload } : updatePayload;
-        this._trialSyncTransactionBalance(oldTx || null, newTx);
+        const newTx = oldTxSnapshot ? { ...oldTxSnapshot, ...updatePayload } : updatePayload;
+        this._trialSyncTransactionBalance(oldTxSnapshot, newTx);
         return { data: result, error: null };
       }
     );
@@ -521,6 +522,37 @@ export class TransactionService extends BaseService {
       });
       return match
         ? { id: String(match.id ?? ""), name: String(match.name ?? "").trim() || null }
+        : { id: null, name: null };
+    };
+
+    const resolveCustomer = (label: string, customers: Record<string, unknown>[]): { id: string | null; name: string | null } => {
+      const raw = (label || "").trim();
+      if (!raw) return { id: null, name: null };
+      const lower = raw.toLowerCase();
+      // Try to extract a code from labels like "CUST0001 - ..." or "... (CUST0001)".
+      let codePart: string | null = null;
+      let namePart: string | null = null;
+      if (lower.includes(" - ")) {
+        const [first, ...rest] = lower.split(" - ");
+        codePart = first.trim();
+        namePart = rest.join(" - ").trim();
+      } else if (lower.includes("(")) {
+        const parens = lower.match(/\(([^)]+)\)/);
+        if (parens) codePart = parens[1].trim();
+        namePart = lower.replace(/\s*\([^)]+\)\s*$/, "").trim();
+      } else {
+        codePart = lower;
+        namePart = lower;
+      }
+      const match = customers.find((c) => {
+        const codes = [String(c.customer_code ?? ""), String(c.id ?? "")].map((n) => n.toLowerCase().trim());
+        const names = [String(c.full_name ?? ""), String(c.name ?? "")].map((n) => n.toLowerCase().trim());
+        if (codePart && codes.includes(codePart)) return true;
+        if (namePart && names.some((n) => n.includes(namePart) || namePart.includes(n))) return true;
+        return false;
+      });
+      return match
+        ? { id: String(match.id ?? ""), name: String(match.full_name ?? match.name ?? "").trim() || null }
         : { id: null, name: null };
     };
 
@@ -633,10 +665,16 @@ export class TransactionService extends BaseService {
       async () => {
         const raw = Array.isArray(rawData) ? rawData : [];
         const now = getNowIso();
+        const mockCustomers = (trialGet("customers") || []) as Record<string, unknown>[];
         const mockBankAccounts = (trialGet("bank_accounts") || []) as Record<string, unknown>[];
         const mockBranches = (trialGet("branches") || []) as Record<string, unknown>[];
 
         const body = raw.map((row) => {
+          const customerInput = typeof row.customer_id === "string" && row.customer_id.trim()
+            ? row.customer_id
+            : typeof row.customer_code === "string"
+            ? row.customer_code
+            : "";
           const bankLabel = typeof row.bank_account === "string" && row.bank_account.trim()
             ? row.bank_account
             : typeof row.bank_account_name === "string"
@@ -648,6 +686,7 @@ export class TransactionService extends BaseService {
             ? row.branch_name
             : "";
 
+          const resolvedCustomer = resolveCustomer(customerInput, mockCustomers);
           const resolvedBank = resolveBankAccount(bankLabel, mockBankAccounts);
           const resolvedBranch = resolveBranch(branchLabel, mockBranches);
 
@@ -657,8 +696,8 @@ export class TransactionService extends BaseService {
           return {
             id: `txn-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
             transaction_code: String(row.transaction_code ?? "").trim() || `TXN${Date.now()}`,
-            customer_id: String(row.customer_id ?? "").trim() || null,
-            customer_name: String(row.customer_name ?? "").trim() || null,
+            customer_id: resolvedCustomer.id || String(row.customer_id ?? "").trim() || null,
+            customer_name: resolvedCustomer.name || String(row.customer_name ?? "").trim() || null,
             bank_account_id: resolvedBank.id || String(row.bank_account_id ?? "").trim() || null,
             bank_account_name: resolvedBank.name || String(row.bank_account_name ?? "").trim() || null,
             branch_id: resolvedBranch.id || String(row.branch_id ?? "").trim() || branchId || null,

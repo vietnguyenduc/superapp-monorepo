@@ -28,6 +28,9 @@
 - **Balance Formula tab duplication** — `BalanceFormulaTab` groups transaction types by canonical name (`deposit`, `payment`, `charge`, `refund`, `adjustment`) and renders one row per canonical type instead of duplicate rows.
 - **TransactionList UI/UX** — customer name/code cells have higher contrast and a sticky customer column; the creator (`Người thực hiện`) column shows the real user name from `databaseService.users.getUsers()` instead of a raw UUID; a synchronized top scrollbar lets users scroll wide tables without reaching the bottom; the group summary `Net` column uses red for positive (increases debt) and green for negative (decreases debt).
 - **Header action button consistency** — new import buttons use the same `Button` component, `size="md"`, and `variant="secondary"` as other header utility actions.
+- **Trial mode import customer resolution** — `transactionService.bulkImportTransactions` trial fallback now resolves `customer_code`/`customer_id` labels against `trialGet("customers")` so single-entry and file imports attach the correct customer and update balances.
+- **Trial mode update balance sync safety** — `transactionService.updateTransaction` trial fallback snapshots `oldTx` with a shallow clone before `trialUpdate`, preventing stale-reference bugs when recomputing the customer/bank balance delta.
+- **Trial seed `created_by`** — mock transactions and `transactionBalanceSync.test.ts` use `"trial-user"` so `Người thực hiện` resolves to "Trial User" in trial mode.
 
 ## 2026-08-08
 
