@@ -85,6 +85,15 @@ The amount **sign** now reverses the transaction direction instead of being sile
 
 A dedicated `Công thức dư nợ` tab in Settings shows the current formula, lists each `transaction_types` row with its `math_factor`/`impact_type`, lets the user toggle the factor, and previews `Dư nợ mới = Đầu kỳ + Số tiền × Hệ số` for an arbitrary amount and type. The factor map is loaded by `transactionTypeService.getTransactionTypeFactorMap` and passed into `transactionService._syncTransactionBalance`, `dashboardService.getDashboardMetrics`, and `getReceivableLedger` so every balance calculation respects the configured convention.
 
+### UI/UX conventions for lists and header actions (2026-08-09)
+
+- **Header buttons** — use `src/components/UI/Button.tsx` with `size="md"`. Primary CTA = `variant="primary"` (blue-teal gradient with white text); utility/export/import actions = `variant="secondary"` (white/gray with dark text). Do not write one-off `<button className="bg-blue-600 ...">` in page headers; it drifts out of sync and breaks dark mode/hover states.
+- **Wide tables** — wrap tables in `overflow-x-auto` and consider a synchronized top scrollbar (`topScrollRef` + `tableContainerRef`) so users can scroll horizontally without dragging the bottom scrollbar. Make the most important column (e.g. customer name) `sticky left-0` with a solid background so it stays visible while scrolling.
+- **Customer name / code in tables** — render name as a clickable `<button>` with `text-gray-900 dark:text-white` and `hover:text-blue-600 dark:hover:text-blue-400`; render code below in `font-mono text-xs text-gray-500 dark:text-gray-400`. Keep both on a high-contrast background.
+- **Creator column (`Người thực hiện`)** — `transactionService.getTransactions` joins `users(full_name)` and maps `creator_name`. As a fallback, load `databaseService.users.getUsers()` once and build a `Map<userId, fullName>` for both display cells and the filter dropdown.
+- **Group summary colors** — `Net` (and `Tổng điều chỉnh`) should be red when positive (increases debt) and green when negative (decreases debt). Use `getBalanceColor` or the same `data.net > 0 ? red : data.net < 0 ? green : gray` logic.
+- **Import routing** — `CustomerImport` and `TransactionImport` read `?tab=bulk|single` to switch to the requested tab on navigation. Buttons in `CustomerList` and `TransactionList` route to `/import/<resource>?tab=bulk`.
+
 ## Recent architectural decisions
 
 - `docs/adr/0001-transaction-type-single-source-of-truth.md`
@@ -105,6 +114,8 @@ A dedicated `Công thức dư nợ` tab in Settings shows the current formula, l
 - **Supabase `.single()`** returns an error when a row is missing; guard with `if (error || !data)`.
 - **`updateWithFallback`** retries updates with unknown columns stripped; useful for production schemas that lag migrations.
 - **Bulk import payloads:** sanitize to the known `transactions` columns before calling `bulkInsertWithFallback` so Supabase does not log 400 errors for UI-only fields (`bank_account_name`, `branch_name`). Also do not select non-existent `branches.branch_name`; the `branches` table only has `name` and `code`.
+- **Trial-mode bulk import:** the UI sends labels (`customer_id` may be `CUST0001 - ...`, `bank_account` may be `Vietcombank - TK Chính`) even in trial mode. The trial fallback must resolve these labels to IDs against `trialGet("customers")` / `trialGet("bank_accounts")` / `trialGet("branches")` before inserting, or transactions will be created with `customer_id: null` and balances will not update.
+- **Trial-mode update balance sync:** always snapshot `oldTx` (e.g. `{ ...oldTx }`) before calling `trialUpdate` when recomputing balance deltas; otherwise the old and new transaction objects can share references and the diff collapses to zero.
 - **Transaction type labels:** dropdowns should use `useTransactionTypes()` canonical labels (`Phát sinh tăng/giảm`, `Điều chỉnh`, `Hoàn tiền`), not raw `transaction_types.name` values.
 - **Edit modals:** keep form state and validation inside dedicated components — `TransactionEditModal` for `TransactionList` and `CustomerFormModal` for `CustomerList`. Avoid inline modal JSX in page files so styling, validation, and i18n can be maintained in one place.
 - **UUID `id` columns:** Supabase `id` columns are `uuid` type. `transformRawCustomer`, `transformRawTransaction`, `transformRawBankAccount`, `transformRawBranch`, `transformRawTransactionType`, and `transformRawBackupHistory` must generate a bare v4 UUID (`crypto.randomUUID()`), not a prefixed string like `branch-<uuid>`. Prefixed IDs will fail to insert.

@@ -13,7 +13,7 @@ const baseTxn = {
   reference_number: "REF-001",
   branch_id: "trial-branch",
   company_id: "trial-company",
-  created_by: "test-user",
+  created_by: "trial-user",
 };
 
 describe("transaction balance sync (trial mode)", () => {

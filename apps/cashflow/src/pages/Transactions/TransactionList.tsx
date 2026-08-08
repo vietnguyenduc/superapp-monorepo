@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { toast } from "../../utils/toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCompanyId } from "../../hooks/useCompanyId";
@@ -11,6 +11,7 @@ import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import Pagination from "../../components/UI/Pagination";
 import PageHeader from "../../components/UI/PageHeader";
+import Button from "../../components/UI/Button";
 import TransactionEditModal, { type TransactionEditFormValues } from "./components/TransactionEditModal";
 
 interface TransactionListState {
@@ -62,6 +63,7 @@ const TransactionList: React.FC = () => {
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [bankAccounts, setBankAccounts] = useState<{ id: string; name: string }[]>([]);
   const [customers, setCustomers] = useState<{ id: string; name: string; code?: string }[]>([]);
+  const [users, setUsers] = useState<{ id: string; full_name: string; email?: string; company_id?: string | null }[]>([]);
   const [transactionTypes, setTransactionTypes] = useState<{ id: string; name: string }[]>([]);
   const [showDateMenu, setShowDateMenu] = useState(false);
   const [customStart, setCustomStart] = useState<string>("");
@@ -162,12 +164,56 @@ const TransactionList: React.FC = () => {
     }
   }, [debouncedSearchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, state.currentPage, state.pageSize, companyId]);
 
+  const userMap = useMemo(() => {
+    const map = new Map<string, string>();
+    users.forEach((u) => map.set(u.id, u.full_name || u.email || u.id));
+    return map;
+  }, [users]);
+
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const topInnerRef = useRef<HTMLDivElement>(null);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateTopScrollWidth = () => {
+      if (tableContainerRef.current && topInnerRef.current) {
+        topInnerRef.current.style.width = `${tableContainerRef.current.scrollWidth}px`;
+      }
+    };
+    updateTopScrollWidth();
+    window.addEventListener("resize", updateTopScrollWidth);
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined" && tableContainerRef.current) {
+      resizeObserver = new ResizeObserver(updateTopScrollWidth);
+      resizeObserver.observe(tableContainerRef.current);
+    }
+    return () => {
+      window.removeEventListener("resize", updateTopScrollWidth);
+      if (resizeObserver && tableContainerRef.current) {
+        resizeObserver.unobserve(tableContainerRef.current);
+      }
+    };
+  }, [state.transactions, state.groupBy]);
+
+  const handleTopScroll = useCallback(() => {
+    if (topScrollRef.current && tableContainerRef.current) {
+      tableContainerRef.current.scrollLeft = topScrollRef.current.scrollLeft;
+    }
+  }, []);
+
+  const handleTableScroll = useCallback(() => {
+    if (tableContainerRef.current && topScrollRef.current) {
+      topScrollRef.current.scrollLeft = tableContainerRef.current.scrollLeft;
+    }
+  }, []);
+
   useEffect(() => {
     const loadFilters = async () => {
-      const [branchResult, bankResult, customerResult, typeResult] = await Promise.all([
+      const [branchResult, bankResult, customerResult, userResult, typeResult] = await Promise.all([
         databaseService.branches.getBranches(companyId),
         databaseService.bankAccounts.getBankAccounts(companyId),
         databaseService.customers.getCustomers({ limit: 500, company_id: companyId }),
+        databaseService.users.getUsers(),
         databaseService.transactionTypes.getTransactionTypes(companyId),
       ]);
 
@@ -204,6 +250,18 @@ const TransactionList: React.FC = () => {
             name: getName(customer, "full_name", "customer_name", "customer_code"),
             code: customer.customer_code == null ? undefined : String(customer.customer_code),
           })),
+        );
+      }
+
+      if (userResult?.data) {
+        const allUsers = userResult.data.map((u: Record<string, unknown>) => ({
+          id: String(u.id ?? ""),
+          full_name: getName(u, "full_name", "email", "name"),
+          email: u.email == null ? undefined : String(u.email),
+          company_id: u.company_id == null ? undefined : String(u.company_id),
+        }));
+        setUsers(
+          companyId ? allUsers.filter((u) => u.company_id === companyId || !u.company_id) : allUsers,
         );
       }
 
@@ -409,14 +467,15 @@ const TransactionList: React.FC = () => {
 
   const userOptions = useMemo(() => {
     const uniqueUsers = new Map<string, string>();
+    users.forEach((u) => uniqueUsers.set(u.id, userMap.get(u.id) || u.id));
     state.transactions.forEach((t) => {
       if (t.created_by) {
-        const displayName = t.creator_name || t.created_by;
+        const displayName = userMap.get(t.created_by) || t.creator_name || t.created_by;
         uniqueUsers.set(t.created_by, displayName);
       }
     });
-    return Array.from(uniqueUsers.entries());
-  }, [state.transactions]);
+    return Array.from(uniqueUsers.entries()).sort(([, a], [, b]) => a.localeCompare(b));
+  }, [state.transactions, users, userMap]);
 
   const groupedData = useMemo(() => {
     if (!state.groupBy) return null;
@@ -520,14 +579,14 @@ const TransactionList: React.FC = () => {
   }
 
   return (
-    <>
+    <div>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <PageHeader
             title="Danh sách giao dịch"
             subtitle="Xem và quản lý tất cả các giao dịch"
             actions={
-              <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 <input
                   type="search"
                   value={state.searchTerm}
@@ -535,13 +594,29 @@ const TransactionList: React.FC = () => {
                   placeholder="Tìm kiếm giao dịch, khách hàng..."
                   className="flex-1 sm:w-72 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
                 />
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="md"
                   onClick={() => fetchTransactions()}
-                  className="px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
                 >
                   Làm mới
-                </button>
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={() => navigate("/import/transactions")}
+                  className="hidden sm:inline-flex"
+                >
+                  Nhập giao dịch
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={() => navigate("/import/transactions?tab=bulk")}
+                  className="hidden sm:inline-flex"
+                >
+                  Nhập hàng loạt
+                </Button>
               </div>
             }
           />
@@ -705,7 +780,7 @@ const TransactionList: React.FC = () => {
             </div>
           )}
 
-          <div className="hidden sm:block overflow-x-auto">
+          <div className="hidden sm:block">
             {groupedData && (
               <div className="mb-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
@@ -738,8 +813,8 @@ const TransactionList: React.FC = () => {
                             <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm text-gray-700 dark:text-gray-200">{data.count}</td>
                             <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold text-red-600 dark:text-red-400">{formatCurrency(data.increase)}</td>
                             <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold text-green-600 dark:text-green-400">{formatCurrency(data.decrease)}</td>
-                            <td className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${data.adjustment >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>{formatCurrency(data.adjustment)}</td>
-                            <td className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${data.net >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>{formatCurrency(data.net)}</td>
+                            <td className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${data.adjustment > 0 ? "text-red-600 dark:text-red-400" : data.adjustment < 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.adjustment)}</td>
+                            <td className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${data.net > 0 ? "text-red-600 dark:text-red-400" : data.net < 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.net)}</td>
                           </tr>
                         ))}
                     </tbody>
@@ -748,13 +823,17 @@ const TransactionList: React.FC = () => {
               </div>
             )}
 
+            <div className="h-4 overflow-x-auto overflow-y-hidden bg-gray-100 dark:bg-gray-800 rounded mb-2" ref={topScrollRef} onScroll={handleTopScroll}>
+              <div ref={topInnerRef} className="h-1" />
+            </div>
+            <div ref={tableContainerRef} className="overflow-x-auto relative" onScroll={handleTableScroll}>
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
+                  <th className="sticky left-0 z-20 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">Khách hàng</th>
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ngày giao dịch</th>
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Loại giao dịch</th>
                   <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Số tiền</th>
-                  <th className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Khách hàng</th>
                   <th className="hidden lg:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Văn phòng</th>
                   <th className="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tài khoản</th>
                   <th className="hidden lg:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Người thực hiện</th>
@@ -766,6 +845,23 @@ const TransactionList: React.FC = () => {
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
                 {state.transactions.map((transaction) => (
                   <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="sticky left-0 z-10 px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+                      {transaction.customer_id ? (
+                        <button
+                          type="button"
+                          className="block text-left text-gray-900 dark:text-white hover:underline hover:text-blue-600 dark:hover:text-blue-400 transition-colors max-w-[10rem] truncate font-medium"
+                          title={transaction.customer_name || customers.find(c => c.id === String(transaction.customer_id))?.name || `Customer #${transaction.customer_id}`}
+                          onClick={() => navigate(`/customers/${transaction.customer_id}`)}
+                        >
+                          {transaction.customer_name || (transaction.customer_id ? customers.find(c => c.id === String(transaction.customer_id))?.name : null) || `Customer #${transaction.customer_id}`}
+                        </button>
+                      ) : (
+                        <span className="text-gray-500 dark:text-gray-400">Không có khách hàng</span>
+                      )}
+                      {getCustomerCode(transaction.customer_id) ? (
+                        <div className="mt-0.5 font-mono text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{getCustomerCode(transaction.customer_id)}</div>
+                      ) : null}
+                    </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                       {formatDate(transaction.transaction_date)}
                     </td>
@@ -783,22 +879,6 @@ const TransactionList: React.FC = () => {
                         {formatCurrency(parseAmount(transaction.amount))}
                       </span>
                     </td>
-                    <td className="hidden sm:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                      {transaction.customer_id ? (
-                        <button
-                          type="button"
-                          className="text-left text-gray-900 dark:text-white hover:underline hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                          onClick={() => navigate(`/customers/${transaction.customer_id}`)}
-                        >
-                          {transaction.customer_name || (transaction.customer_id ? customers.find(c => c.id === String(transaction.customer_id))?.name : null) || `Customer #${transaction.customer_id}`}
-                        </button>
-                      ) : (
-                        <span className="text-gray-500 dark:text-gray-400">Không có khách hàng</span>
-                      )}
-                      {getCustomerCode(transaction.customer_id) ? (
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{getCustomerCode(transaction.customer_id)}</div>
-                      ) : null}
-                    </td>
                     <td className="hidden lg:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
                       {transaction.branch_name || "—"}
                     </td>
@@ -806,7 +886,7 @@ const TransactionList: React.FC = () => {
                       {transaction.bank_account_name || transaction.bank_account_id ? `#${transaction.bank_account_id}` : "Không có tài khoản"}
                     </td>
                     <td className="hidden lg:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                      {transaction.creator_name || transaction.created_by}
+                      {userMap.get(transaction.created_by || "") || transaction.creator_name || transaction.created_by || "—"}
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
                       <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs">
@@ -884,7 +964,8 @@ const TransactionList: React.FC = () => {
         onClose={closeEditModal}
         onSubmit={handleEditSubmit}
       />
-    </>
+    </div>
+  </div>
   );
 };
 

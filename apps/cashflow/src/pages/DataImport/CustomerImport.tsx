@@ -1,5 +1,6 @@
 // Force rebuild marker: 1785085381
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { logger } from "../../utils/logger";
 import { toast } from "../../utils/toast";
 import { useTranslation } from "react-i18next";
@@ -59,6 +60,11 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [activeTab, setActiveTab] = useState<"single" | "bulk">("single");
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "bulk" || tab === "single") setActiveTab(tab);
+  }, [searchParams]);
   const [showPreview, setShowPreview] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
