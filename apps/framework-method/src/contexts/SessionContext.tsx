@@ -14,6 +14,7 @@ import type {
   StepType,
   Template,
   TaskSource,
+  TaskSuggestion,
 } from "../types";
 
 interface SessionContextType {
@@ -45,6 +46,8 @@ interface SessionContextType {
   streak: Streak | null;
   templates: Record<BlockId, Record<StepType, Template>>;
   getTemplate: (blockId: BlockId, stepType: StepType) => Template | null;
+  taskSuggestions: Record<BlockId, TaskSuggestion[]>;
+  updateTaskSuggestions: (blockId: BlockId, suggestions: TaskSuggestion[]) => Promise<void>;
   isLoading: boolean;
   saveDraft: () => Promise<void>;
   completeSession: () => Promise<void>;
@@ -71,6 +74,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [blockStats, setBlockStats] = useState<Record<BlockId, BlockStats>>({} as Record<BlockId, BlockStats>);
   const [streak, setStreak] = useState<Streak | null>(null);
   const [templates, setTemplates] = useState<Record<BlockId, Record<StepType, Template>>>({} as Record<BlockId, Record<StepType, Template>>);
+  const [taskSuggestions, setTaskSuggestions] = useState<Record<BlockId, TaskSuggestion[]>>({} as Record<BlockId, TaskSuggestion[]>);
   const [currentBlockIndex, setCurrentBlockIndexRaw] = useState(0);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
@@ -113,18 +117,20 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
         setCurrentBlockIndexRaw(0);
       }
 
-      const [loadedTasks, carryOver, stats, loadedStreak, allTemplates] = await Promise.all([
+      const [loadedTasks, carryOver, stats, loadedStreak, allTemplates, allSuggestions] = await Promise.all([
         service.getDailyTasksForDate(userId, sessionDate),
         service.getPendingTasksBeforeDate(userId, sessionDate),
         service.getBlockStats(userId),
         service.getStreak(userId),
         Promise.all(loadedBlocks.map((b) => service.getTemplatesForBlock(b.id).then((t) => [b.id, t] as const))),
+        service.getAllTaskSuggestions(),
       ]);
 
       setTasks(loadedTasks);
       setPendingCarryOver(carryOver);
       setBlockStats(stats);
       setStreak(loadedStreak);
+      setTaskSuggestions(allSuggestions);
 
       const templateMap = {} as Record<BlockId, Record<StepType, Template>>;
       allTemplates.forEach(([blockId, t]) => {
@@ -171,6 +177,15 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       return templates[blockId]?.[stepType] ?? null;
     },
     [templates]
+  );
+
+  const updateTaskSuggestions = useCallback(
+    async (blockId: BlockId, suggestions: TaskSuggestion[]) => {
+      const next = { ...taskSuggestions, [blockId]: suggestions };
+      setTaskSuggestions(next);
+      await service.saveTaskSuggestions(next);
+    },
+    [taskSuggestions]
   );
 
   const addTask = useCallback(
@@ -326,6 +341,8 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       streak,
       templates,
       getTemplate,
+      taskSuggestions,
+      updateTaskSuggestions,
       isLoading,
       saveDraft,
       completeSession,
@@ -356,6 +373,8 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       streak,
       templates,
       getTemplate,
+      taskSuggestions,
+      updateTaskSuggestions,
       isLoading,
       saveDraft,
       completeSession,

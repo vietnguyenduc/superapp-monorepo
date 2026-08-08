@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { FiPlus, FiTrash2, FiArrowUp, FiArrowDown, FiEye, FiSave } from "react-icons/fi";
 import { Card, Button, Input } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
+import { useSession } from "../../contexts/SessionContext";
 import { DEFAULT_BLOCKS, DEFAULT_TEMPLATES, genId } from "../../services/frameworkMethodService";
-import type { BlockId, StepType, Template, TemplateSection, TemplateSectionGroup, TemplateSectionItem } from "../../types";
+import type { BlockId, StepType, TaskSuggestion, Template, TemplateSection, TemplateSectionGroup, TemplateSectionItem } from "../../types";
 
 const STEP_TYPES: StepType[] = ["recognize", "apply", "track"];
 
@@ -47,6 +48,49 @@ const Builder = () => {
   const [selectedBlockId, setSelectedBlockId] = useState<BlockId>("self");
   const [selectedStep, setSelectedStep] = useState<StepType>("recognize");
   const [preview, setPreview] = useState(false);
+
+  const { taskSuggestions, updateTaskSuggestions } = useSession();
+  const blockSuggestions = taskSuggestions[selectedBlockId] || [];
+  const suggestionsRef = useRef<TaskSuggestion[]>(blockSuggestions);
+  suggestionsRef.current = blockSuggestions;
+
+  const updateSuggestions = (updater: (prev: TaskSuggestion[]) => TaskSuggestion[]) => {
+    const next = updater(suggestionsRef.current).map((s, i) => ({ ...s, order_index: i }));
+    void updateTaskSuggestions(selectedBlockId, next);
+  };
+
+  const addSuggestion = () => {
+    updateSuggestions((prev) => [
+      ...prev,
+      {
+        id: genId(),
+        block_id: selectedBlockId,
+        title_vi: "Gợi ý mới",
+        title_en: "New suggestion",
+        is_default: false,
+        order_index: prev.length,
+      },
+    ]);
+  };
+
+  const updateSuggestion = (id: string, updates: Partial<TaskSuggestion>) => {
+    updateSuggestions((prev) => prev.map((s) => (s.id === id ? { ...s, ...updates } : s)));
+  };
+
+  const removeSuggestion = (id: string) => {
+    updateSuggestions((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  const moveSuggestion = (index: number, direction: -1 | 1) => {
+    updateSuggestions((prev) => {
+      const next = [...prev];
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= next.length) return prev;
+      const [moved] = next.splice(index, 1);
+      next.splice(newIndex, 0, moved);
+      return next;
+    });
+  };
 
   const currentTemplate = templates[selectedBlockId]?.[selectedStep];
 
@@ -205,6 +249,42 @@ const Builder = () => {
               {language === "en" ? block.name_en : block.name_vi}
             </button>
           ))}
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{t("builder.suggestions")}</p>
+        <div className="space-y-3">
+          {blockSuggestions.map((suggestion, idx) => (
+            <div key={suggestion.id} className="flex items-start gap-2">
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
+                <Input
+                  value={suggestion.title_vi}
+                  onChange={(e) => updateSuggestion(suggestion.id, { title_vi: e.target.value })}
+                  placeholder={t("builder.titleVi")}
+                />
+                <Input
+                  value={suggestion.title_en}
+                  onChange={(e) => updateSuggestion(suggestion.id, { title_en: e.target.value })}
+                  placeholder={t("builder.titleEn")}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <button onClick={() => moveSuggestion(idx, -1)} className="p-1 text-gray-400 hover:text-primary-600">
+                  <FiArrowUp className="w-4 h-4" />
+                </button>
+                <button onClick={() => moveSuggestion(idx, 1)} className="p-1 text-gray-400 hover:text-primary-600">
+                  <FiArrowDown className="w-4 h-4" />
+                </button>
+              </div>
+              <button onClick={() => removeSuggestion(suggestion.id)} className="p-2 text-gray-400 hover:text-red-500">
+                <FiTrash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          <Button variant="secondary" size="sm" onClick={addSuggestion}>
+            <FiPlus className="w-4 h-4 mr-1" /> {t("builder.addItem")}
+          </Button>
         </div>
       </Card>
 

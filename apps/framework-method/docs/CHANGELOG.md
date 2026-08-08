@@ -1,5 +1,15 @@
 # Framework Method — Changelog
 
+## 2026-08-04
+
+- Rewrote Step 1 "Bạn có biết?" insight card as a natural-language sentence with dynamic counts (`total_done`, `total_applied + total_tracked`, `pending_carryover`) instead of a 3-column number grid.
+- Added `session.insight.*` i18n keys in Vietnamese and English to support zero/one/many word forms.
+- Builder now exposes a "Gợi ý việc" section per block so end users can add, edit, reorder, and delete task suggestions as free text; suggestions persist in `localStorage` and are wired into Step 1.
+- Added `getAllTaskSuggestions`/`saveTaskSuggestions` in `frameworkMethodService.ts` with localStorage fallback while `fm_task_suggestions` is unavailable.
+- Step 2 "Việc trong ngày" pinned card is now sticky on scroll, filters by the currently selected block, and hides when the selected block has no tasks.
+- Updated `apps/framework-method/src/types/index.ts` to add `order_index` to `TaskSuggestion`.
+- Verified in browser: Builder edits reflect immediately in `/session` suggestions; Step 2 sticky card follows block selection and disappears for blocks without tasks.
+
 ## 2026-08-09
 
 - Added trial-mode button `Dùng thử không cần tài khoản` to `Login.tsx`.

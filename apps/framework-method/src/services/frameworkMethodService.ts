@@ -49,6 +49,8 @@ const DEFAULT_SUGGESTIONS: Record<BlockId, string[]> = {
   family: ["Nấu ăn", "Đưa đón con", "Dọn dẹp", "Chơi với con"],
 };
 
+const SUGGESTIONS_STORAGE_KEY = "fm_task_suggestions_v1";
+
 const makeItems = (titles: string[], group: TemplateSectionGroup): TemplateSectionItem[] =>
   titles.map((title, idx) => ({
     id: `${group}-${idx}`,
@@ -194,25 +196,76 @@ export const getBlocks = async (): Promise<Block[]> => {
   return DEFAULT_BLOCKS;
 };
 
-export const getTaskSuggestions = async (blockId: BlockId): Promise<TaskSuggestion[]> => {
+const makeDefaultSuggestions = (): Record<BlockId, TaskSuggestion[]> => {
+  const map: Partial<Record<BlockId, TaskSuggestion[]>> = {};
+  (Object.keys(DEFAULT_SUGGESTIONS) as BlockId[]).forEach((blockId) => {
+    map[blockId] = DEFAULT_SUGGESTIONS[blockId].map((title, idx) => ({
+      id: `s-${blockId}-${idx}`,
+      block_id: blockId,
+      title_vi: title,
+      title_en: title,
+      is_default: true,
+      order_index: idx,
+    }));
+  });
+  return map as Record<BlockId, TaskSuggestion[]>;
+};
+
+const readSuggestionsFromStorage = (): Record<BlockId, TaskSuggestion[]> | null => {
+  try {
+    const raw = localStorage.getItem(SUGGESTIONS_STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as Record<BlockId, TaskSuggestion[]>;
+  } catch {
+    // ignore parse errors
+  }
+  return null;
+};
+
+export const getAllTaskSuggestions = async (): Promise<Record<BlockId, TaskSuggestion[]>> => {
+  const fromStorage = readSuggestionsFromStorage();
+  if (fromStorage) return fromStorage;
+
   try {
     const { data, error } = await db
       .from("fm_task_suggestions")
       .select("*")
-      .eq("block_id", blockId)
-      .order("title_vi", { ascending: true });
+      .order("order_index", { ascending: true });
     if (error) throw error;
-    if (data && data.length > 0) return data as TaskSuggestion[];
+    if (data && data.length > 0) {
+      const map: Partial<Record<BlockId, TaskSuggestion[]>> = {};
+      (data as TaskSuggestion[]).forEach((s) => {
+        if (!map[s.block_id]) map[s.block_id] = [];
+        map[s.block_id]!.push(s);
+      });
+      localStorage.setItem(SUGGESTIONS_STORAGE_KEY, JSON.stringify(map));
+      return map as Record<BlockId, TaskSuggestion[]>;
+    }
   } catch (err) {
-    fallbackLog("getTaskSuggestions", err);
+    fallbackLog("getAllTaskSuggestions", err);
   }
-  return DEFAULT_SUGGESTIONS[blockId].map((title, idx) => ({
-    id: `s-${blockId}-${idx}`,
-    block_id: blockId,
-    title_vi: title,
-    title_en: title,
-    is_default: true,
-  }));
+
+  return makeDefaultSuggestions();
+};
+
+export const getTaskSuggestions = async (blockId: BlockId): Promise<TaskSuggestion[]> => {
+  const all = await getAllTaskSuggestions();
+  return all[blockId] ?? makeDefaultSuggestions()[blockId];
+};
+
+export const saveTaskSuggestions = async (suggestions: Record<BlockId, TaskSuggestion[]>): Promise<void> => {
+  try {
+    localStorage.setItem(SUGGESTIONS_STORAGE_KEY, JSON.stringify(suggestions));
+  } catch {
+    // ignore storage errors
+  }
+
+  try {
+    const rows = Object.values(suggestions).flat();
+    const { error } = await db.from("fm_task_suggestions").upsert(rows, { onConflict: "id" });
+    if (error) throw error;
+  } catch (err) {
+    fallbackLog("saveTaskSuggestions", err);
+  }
 };
 
 export const getDailyTasksForDate = async (userId: string, date: string): Promise<DailyTask[]> => {

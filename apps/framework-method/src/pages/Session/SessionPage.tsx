@@ -77,11 +77,16 @@ const Step1TaskList = () => {
     toggleTask,
     removeTask,
     blockStats,
+    taskSuggestions,
     setStep,
   } = useSession();
 
   const [newTask, setNewTask] = useState("");
-  const [suggestions] = useState<string[]>([]);
+
+  const suggestions = useMemo(() => {
+    if (!currentBlock) return [];
+    return (taskSuggestions[currentBlock.id] || []).map((s) => (language === "en" ? s.title_en : s.title_vi));
+  }, [taskSuggestions, currentBlock, language]);
 
   const blockTasks = useMemo(
     () => tasks.filter((t) => t.block_id === currentBlock?.id),
@@ -94,6 +99,22 @@ const Step1TaskList = () => {
   );
 
   const stats = currentBlock ? blockStats[currentBlock.id] : null;
+
+  const insightLabels = useMemo(() => {
+    if (!stats) return null;
+    const { total_done, total_applied, total_tracked, pending_carryover } = stats;
+    const appliedCount = total_applied + total_tracked;
+    const pick = (count: number, zero: string, one: string, other: string) => {
+      if (count === 0) return t(zero, { defaultValue: "" });
+      if (count === 1) return t(one, { defaultValue: "" });
+      return t(other, { count });
+    };
+    return {
+      done: pick(total_done, "session.insight.doneZero", "session.insight.doneOne", "session.insight.done"),
+      applied: pick(appliedCount, "session.insight.appliedZero", "session.insight.appliedOne", "session.insight.applied"),
+      pending: pick(pending_carryover, "session.insight.pendingZero", "session.insight.pendingOne", "session.insight.pending"),
+    };
+  }, [stats, t]);
 
   const handleAdd = (title: string, source: TaskSource = "suggestion") => {
     if (!currentBlock || !title.trim()) return;
@@ -179,23 +200,15 @@ const Step1TaskList = () => {
         </div>
       </Card>
 
-      {stats && (
+      {stats && insightLabels && (
         <Card className="p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{t("session.didYouKnow")}</p>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div>
-              <p className="text-xl font-bold text-primary-600">{stats.total_done}</p>
-              <p className="text-[10px] text-gray-500">{t("session.tasksDone")}</p>
-            </div>
-            <div>
-              <p className="text-xl font-bold text-primary-600">{stats.total_applied + stats.total_tracked}</p>
-              <p className="text-[10px] text-gray-500">{t("session.plansApplied")}</p>
-            </div>
-            <div>
-              <p className="text-xl font-bold text-primary-600">{stats.pending_carryover}</p>
-              <p className="text-[10px] text-gray-500">{t("session.pendingAgain")}</p>
-            </div>
-          </div>
+          <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+            {t("session.insight.prefix")}{" "}
+            <span className="font-semibold text-gray-900 dark:text-gray-100">{insightLabels.done}</span>,{" "}
+            <span className="font-semibold text-gray-900 dark:text-gray-100">{insightLabels.applied}</span>, và{" "}
+            <span className="font-semibold text-gray-900 dark:text-gray-100">{insightLabels.pending}</span>.
+          </p>
         </Card>
       )}
 
@@ -306,6 +319,11 @@ const Step2Recognize = () => {
   const { blocks, currentBlock, setCurrentBlockIndex, tasks, getTemplate, referenceInputs, saveReferenceInput, setStep } = useSession();
   const template = getTemplate(currentBlock?.id || blocks[0]?.id, "recognize");
 
+  const blockTasks = useMemo(
+    () => tasks.filter((t) => t.block_id === currentBlock?.id),
+    [tasks, currentBlock]
+  );
+
   const handleSave = (sectionId: string, itemId: string, content: string, enabled: boolean) => {
     saveReferenceInput(sectionId, itemId, content, enabled);
   };
@@ -314,22 +332,23 @@ const Step2Recognize = () => {
     <div className="space-y-4">
       <h2 className="text-xl font-bold">{t("session.step2Title")}</h2>
 
-      <Card className="p-3 bg-primary-50 dark:bg-primary-900/10 border-primary-100 dark:border-primary-900/30">
-        <p className="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300 mb-2">
-          {t("session.pinnedTasks")}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {tasks.length === 0 && <span className="text-sm text-gray-500 italic">{t("session.noTasksYet")}</span>}
-          {tasks.map((task) => (
-            <span
-              key={task.id}
-              className="px-2 py-1 rounded-md text-xs bg-white dark:bg-gray-800 border border-primary-100 dark:border-primary-900/30"
-            >
-              {task.title}
-            </span>
-          ))}
-        </div>
-      </Card>
+      {blockTasks.length > 0 && (
+        <Card className="p-3 bg-primary-50 dark:bg-primary-900/10 border-primary-100 dark:border-primary-900/30 sticky top-16 md:top-0 z-20">
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300 mb-2">
+            {t("session.pinnedTasks")}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {blockTasks.map((task) => (
+              <span
+                key={task.id}
+                className="px-2 py-1 rounded-md text-xs bg-white dark:bg-gray-800 border border-primary-100 dark:border-primary-900/30"
+              >
+                {task.title}
+              </span>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <BlockTabs
         blocks={blocks}

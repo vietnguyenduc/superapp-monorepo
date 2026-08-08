@@ -146,6 +146,7 @@ export interface TaskSuggestion {
   title_vi: string;
   title_en: string;
   is_default: boolean;
+  order_index?: number;
   created_by?: string;
   company_id?: string;
 }
