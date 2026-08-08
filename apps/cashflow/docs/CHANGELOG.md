@@ -1,5 +1,11 @@
 # Changelog — Cashflow
 
+## 2026-08-10
+
+### Added
+
+- **Apple HIG UI/UX reference** — added `apps/cashflow/docs/APPLE-HIG-UIUX-GUIDE.md` and the repo-wide skill `.agents/skills/apple-design-guidelines/` with the full HIG index (`references/hig-index.md`) and per-page raw notes (`references/raw/*.md`). This captures Apple's design principles, foundations, patterns, and components so future UI/UX work in Cashflow stays consistent and doesn't reintroduce ad-hoc button styles or low-contrast table cells.
+
 ## 2026-08-09
 
 ### Added
