@@ -85,6 +85,15 @@ The amount **sign** now reverses the transaction direction instead of being sile
 
 A dedicated `Công thức dư nợ` tab in Settings shows the current formula, lists each `transaction_types` row with its `math_factor`/`impact_type`, lets the user toggle the factor, and previews `Dư nợ mới = Đầu kỳ + Số tiền × Hệ số` for an arbitrary amount and type. The factor map is loaded by `transactionTypeService.getTransactionTypeFactorMap` and passed into `transactionService._syncTransactionBalance`, `dashboardService.getDashboardMetrics`, and `getReceivableLedger` so every balance calculation respects the configured convention.
 
+### UI/UX conventions for lists and header actions (2026-08-09)
+
+- **Header buttons** — use `src/components/UI/Button.tsx` with `size="md"`. Primary CTA = `variant="primary"` (blue-teal gradient with white text); utility/export/import actions = `variant="secondary"` (white/gray with dark text). Do not write one-off `<button className="bg-blue-600 ...">` in page headers; it drifts out of sync and breaks dark mode/hover states.
+- **Wide tables** — wrap tables in `overflow-x-auto` and consider a synchronized top scrollbar (`topScrollRef` + `tableContainerRef`) so users can scroll horizontally without dragging the bottom scrollbar. Make the most important column (e.g. customer name) `sticky left-0` with a solid background so it stays visible while scrolling.
+- **Customer name / code in tables** — render name as a clickable `<button>` with `text-gray-900 dark:text-white` and `hover:text-blue-600 dark:hover:text-blue-400`; render code below in `font-mono text-xs text-gray-500 dark:text-gray-400`. Keep both on a high-contrast background.
+- **Creator column (`Người thực hiện`)** — `transactionService.getTransactions` joins `users(full_name)` and maps `creator_name`. As a fallback, load `databaseService.users.getUsers()` once and build a `Map<userId, fullName>` for both display cells and the filter dropdown.
+- **Group summary colors** — `Net` (and `Tổng điều chỉnh`) should be red when positive (increases debt) and green when negative (decreases debt). Use `getBalanceColor` or the same `data.net > 0 ? red : data.net < 0 ? green : gray` logic.
+- **Import routing** — `CustomerImport` and `TransactionImport` read `?tab=bulk|single` to switch to the requested tab on navigation. Buttons in `CustomerList` and `TransactionList` route to `/import/<resource>?tab=bulk`.
+
 ## Recent architectural decisions
 
 - `docs/adr/0001-transaction-type-single-source-of-truth.md`
