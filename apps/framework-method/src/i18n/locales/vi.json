@@ -9,15 +9,18 @@
     "signUp": "Đăng ký"
   },
   "nav": {
-    "overview": "Tổng quan",
+    "dashboard": "Tổng quan",
+    "overview": "Chi tiết",
     "steps": "Các bước",
     "session": "Phiên",
     "actions": "Hành động",
+    "evening": "Buổi tối",
     "history": "Lịch sử",
     "calendar": "Lịch",
     "builder": "Thiết kế",
     "login": "Đăng nhập",
-    "logout": "Đăng xuất"
+    "logout": "Đăng xuất",
+    "menu": "Menu"
   },
   "dashboard": {
     "goodMorning": "Chào buổi sáng.",
@@ -132,6 +135,7 @@
     "create": "Tạo",
     "search": "Tìm kiếm",
     "continue": "Tiếp tục",
-    "back": "Quay lại"
+    "back": "Quay lại",
+    "close": "Đóng"
   }
 }

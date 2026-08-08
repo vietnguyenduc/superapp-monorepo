@@ -7,7 +7,7 @@
 - Auth is email/password only; SSO cross-app works via `detectSessionInUrl` and `AppSwitcher` links with `access_token`/`refresh_token`.
 - Routes are protected by `ProtectedRoute`; unauthenticated users land on `/login`.
 - Trial mode: `Login.tsx` has a `Dùng thử không cần tài khoản` button. It calls `startTrial()` from `@superapp/iam` and navigates to `/dashboard`. `ProtectedRoute` now checks `isAuthenticated` (which is `true` for trial users) instead of only `session`, so trial users can access protected routes.
-- Port: 5179 (dev), `dist` (build output), `vercel.json` ready for Vercel deployment.
+- Navigation: `Layout` renders a persistent left sidebar on desktop (`SideNav`) and a hamburger top header on mobile. `BottomNav` provides quick tabs on mobile and now includes `Thiết kế` (Builder). All routes (Dashboard, Overview, Session, Actions, Evening, Calendar, History, Builder) are reachable from the sidebar.
 
 ## Design Tokens
 

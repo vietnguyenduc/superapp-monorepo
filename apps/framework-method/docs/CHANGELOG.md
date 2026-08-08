@@ -5,7 +5,10 @@
 - Added trial-mode button `Dùng thử không cần tài khoản` to `Login.tsx`.
 - `ProtectedRoute` now uses `isAuthenticated` from `@superapp/iam` instead of requiring a Supabase `session`, so trial users can access `/dashboard`, `/session`, `/builder`, etc.
 - Added `login.*` i18n keys for Vietnamese and English.
-- Verified trial login in browser: clicking the button reaches Dashboard with streak/framework cards rendered.
+- Added `SideNav` and updated `Layout` so the app has a persistent left sidebar on desktop and a hamburger drawer on mobile.
+- Updated `BottomNav` to include `Builder` and use `nav.dashboard`/`nav.builder` labels.
+- Added `nav.dashboard`, `nav.evening`, `nav.menu`, `nav.builder`, and `common.close` i18n keys.
+- Verified in browser: trial login reaches Dashboard with visible sidebar; all routes (Dashboard, Overview, Session, Actions, Evening, Calendar, History, Builder) and Builder page are reachable.
 
 ## 2026-08-08
 

@@ -9,15 +9,18 @@
     "signUp": "Sign up"
   },
   "nav": {
+    "dashboard": "Dashboard",
     "overview": "Overview",
     "steps": "Steps",
     "session": "Session",
     "actions": "Actions",
+    "evening": "Evening",
     "history": "History",
     "calendar": "Calendar",
     "builder": "Builder",
     "login": "Login",
-    "logout": "Logout"
+    "logout": "Logout",
+    "menu": "Menu"
   },
   "dashboard": {
     "goodMorning": "Good morning.",
@@ -132,6 +135,7 @@
     "create": "Create",
     "search": "Search",
     "continue": "Continue",
-    "back": "Back"
+    "back": "Back",
+    "close": "Close"
   }
 }
