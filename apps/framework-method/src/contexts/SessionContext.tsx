@@ -77,6 +77,25 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const step = session?.current_step ?? 1;
   const currentBlock = blocks[currentBlockIndex] ?? null;
 
+  const persistSession = useCallback(
+    async (updates: Partial<Session>) => {
+      if (!session) return;
+      const updated = { ...session, ...updates, updated_at: new Date().toISOString() };
+      await service.updateSession(session.id, updates);
+      setSession(updated);
+    },
+    [session]
+  );
+
+  const setCurrentBlockIndex = useCallback(
+    async (index: number) => {
+      const block = blocks[index];
+      setCurrentBlockIndexRaw(index);
+      if (block) await persistSession({ current_block_id: block.id });
+    },
+    [blocks, persistSession]
+  );
+
   const loadData = useCallback(async () => {
     if (!userId) return;
     setIsLoading(true);
@@ -232,16 +251,6 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     [session, tracks]
   );
 
-  const persistSession = useCallback(
-    async (updates: Partial<Session>) => {
-      if (!session) return;
-      const updated = { ...session, ...updates, updated_at: new Date().toISOString() };
-      await service.updateSession(session.id, updates);
-      setSession(updated);
-    },
-    [session]
-  );
-
   const saveDraft = useCallback(async () => {
     await persistSession({
       current_step: step,
@@ -285,15 +294,6 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       await persistSession({ current_step: next });
     },
     [persistSession]
-  );
-
-  const setCurrentBlockIndex = useCallback(
-    async (index: number) => {
-      const block = blocks[index];
-      setCurrentBlockIndexRaw(index);
-      if (block) await persistSession({ current_block_id: block.id });
-    },
-    [blocks, persistSession]
   );
 
   const value = useMemo(
