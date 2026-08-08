@@ -170,19 +170,77 @@ const makeRecognizeSections = (): TemplateSection[] => [
   },
 ];
 
-const makeApplySection = (): TemplateSection[] => [
-  {
-    id: genId(),
-    template_id: "",
-    group: "dua_khuon",
-    title_vi: "Kế hoạch thực hiện",
-    title_en: "Execution Plan",
-    is_toggle: false,
-    is_enabled: true,
-    order_index: 0,
-    items: makeItems(["Bước cụ thể", "Thời gian", "Người hỗ trợ", "Tài nguyên cần", "Kết quả mong đợi"], "dua_khuon"),
-  },
-];
+const makeApplySection = (blockId: BlockId): TemplateSection[] => {
+  const familyItems = [
+    "Thấu triệt",
+    "Tròn chức năng, vai trò, bổn phận, trách nhiệm với gia đình",
+    "Tạo nếp nhà",
+    "Tròn Hiếu Lễ Nghĩa",
+    "Kế thừa trí tuệ cho con cháu",
+  ];
+  const workItems = [
+    "Thấu triệt công việc",
+    "Làm công việc đúng mệnh",
+    "Hành xử và đối nhân xử thế",
+    "Trân trọng và biết ơn",
+    "Tạo phúc, trả nợ ở cơ quan",
+    "Tròn chức năng, vai trò, bổn phận, trách nhiệm trong công việc",
+    "Kiểm soát",
+  ];
+  const relationshipItems = [
+    "Thấu triệt con người",
+    "Phân ra từng mối quan hệ rõ ràng",
+    "Cần trọng các mối quan hệ để không bị lỗi đạo",
+    "Rà soát thường xuyên các mối quan hệ: cứ 3-6 tháng rà soát 1 lần (liên kết với phần rà soát phân loại mối quan hệ trong Luyện thấu triệt)",
+  ];
+  const financeItems = [
+    "Thấu triệt",
+  ];
+  const selfItems = [
+    "Bước cụ thể",
+    "Thời gian",
+    "Người hỗ trợ",
+    "Tài nguyên cần",
+    "Kết quả mong đợi",
+  ];
+
+  const map: Record<BlockId, string[]> = {
+    self: selfItems,
+    family: familyItems,
+    work: workItems,
+    finance: financeItems,
+    relationship: relationshipItems,
+  };
+
+  const titles = map[blockId] ?? selfItems;
+  const sectionTitle: Record<BlockId, string> = {
+    self: "Kế hoạch thực hiện",
+    family: "Khuôn dùng cho Khối Gia đình",
+    work: "Khuôn dùng cho Khối Công việc",
+    finance: "Khuôn dùng cho Khối Tài chính",
+    relationship: "Khuôn đưa trí tuệ vào quan hệ",
+  };
+
+  return [
+    {
+      id: genId(),
+      template_id: "",
+      group: "dua_khuon",
+      title_vi: sectionTitle[blockId] ?? "Kế hoạch thực hiện",
+      title_en: sectionTitle[blockId] ?? "Execution Plan",
+      is_toggle: false,
+      is_enabled: true,
+      order_index: 0,
+      items: titles.map((title, idx) => ({
+        id: `dua-khuon-${blockId}-${idx}`,
+        title_vi: title,
+        title_en: title,
+        default_enabled: true,
+        order_index: idx,
+      })),
+    },
+  ];
+};
 
 const makeTrackSection = (): TemplateSection[] => [
   {
@@ -204,7 +262,7 @@ const makeTrackSection = (): TemplateSection[] => [
 
 export const DEFAULT_TEMPLATES: Record<StepType, TemplateSection[]> = {
   recognize: makeRecognizeSections(),
-  apply: makeApplySection(),
+  apply: makeApplySection("self"),
   track: makeTrackSection(),
 };
 
@@ -564,7 +622,7 @@ export const getBlockStats = async (userId: string): Promise<Record<BlockId, Blo
   return map as Record<BlockId, BlockStats>;
 };
 
-const TEMPLATES_STORAGE_KEY = "fm_templates_v1";
+const TEMPLATES_STORAGE_KEY = "fm_templates_v2";
 const STEP_TYPES: StepType[] = ["recognize", "apply", "track"];
 
 export const buildDefaultTemplates = (): Record<BlockId, Record<StepType, Template>> => {
@@ -573,13 +631,14 @@ export const buildDefaultTemplates = (): Record<BlockId, Record<StepType, Templa
     const byStep: Partial<Record<StepType, Template>> = {};
     STEP_TYPES.forEach((step) => {
       const templateId = genId();
+      const sections = step === "apply" ? makeApplySection(block.id) : DEFAULT_TEMPLATES[step];
       byStep[step] = {
         id: templateId,
         block_id: block.id,
         step_type: step,
         name: `${step} template`,
         status: "published",
-        sections: DEFAULT_TEMPLATES[step].map((section) => ({ ...section, template_id: templateId })),
+        sections: sections.map((section) => ({ ...section, template_id: templateId })),
       };
     });
     result[block.id] = byStep as Record<StepType, Template>;
