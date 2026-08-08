@@ -27,6 +27,15 @@ export class CustomerService extends BaseService {
           query = query.or(`full_name.ilike."${s}",customer_code.ilike."${s}",phone.ilike."${s}",email.ilike."${s}"`);
         }
 
+        const dateRange =
+          typeof filters?.dateRange === "object" && filters?.dateRange
+            ? (filters.dateRange as { start?: string; end?: string })
+            : undefined;
+        const startDate = dateRange?.start || undefined;
+        const endDate = dateRange?.end || undefined;
+        if (startDate) query = query.gte("last_transaction_date", startDate);
+        if (endDate) query = query.lte("last_transaction_date", endDate);
+
         const limit = Number.isFinite(filters?.limit) ? Number(filters.limit) : undefined;
         const offset = Number(filters.offset ?? 0);
 
@@ -80,6 +89,20 @@ export class CustomerService extends BaseService {
             (c.phone && c.phone.toLowerCase().includes(search)) ||
             (c.email && c.email.toLowerCase().includes(search))
           );
+        }
+
+        const dateRange =
+          typeof filters?.dateRange === "object" && filters?.dateRange
+            ? (filters.dateRange as { start?: string; end?: string })
+            : undefined;
+        const startDate = dateRange?.start || undefined;
+        const endDate = dateRange?.end || undefined;
+        if (startDate || endDate) {
+          data = data.filter((c) => {
+            if (!c.last_transaction_date) return false;
+            const datePart = new Date(c.last_transaction_date).toISOString().slice(0, 10);
+            return (!startDate || datePart >= startDate) && (!endDate || datePart <= endDate);
+          });
         }
 
         const sortBy = typeof filters?.sortBy === "string" ? filters.sortBy : "created_at";

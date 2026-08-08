@@ -114,8 +114,8 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
             </div>
           </div>
         </div>
-        {/* Right: Today's Date + Language Switcher + User Menu */}
-        <div className="flex items-center space-x-2 sm:space-x-4">
+        {/* Right: Today's Date + Language Switcher + User Menu (desktop only) */}
+        <div className="hidden lg:flex items-center space-x-2 sm:space-x-4">
           {/* Today's Date - Hidden on mobile */}
           <div className="hidden sm:block text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">
             {formatToday()}
@@ -125,7 +125,7 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
           <AppSwitcher />
           <button
             onClick={handleLanguageChange}
-            className="px-2 sm:px-3 py-1 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 text-xs font-semibold border border-gray-300 dark:border-gray-600 shadow-sm"
+            className="hidden lg:inline-flex px-2 sm:px-3 py-1 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 text-xs font-semibold border border-gray-300 dark:border-gray-600 shadow-sm"
           >
             {i18n.language === "en" ? "ENG" : "VI"}
           </button>

@@ -1,8 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Transaction } from "../../../types";
 import { parseAmount } from "../../../services/businessLogic";
 import Button from "../../../components/UI/Button";
+
+interface CustomerOption {
+  id: string;
+  name: string;
+  code?: string;
+}
 
 export interface TransactionEditFormValues {
   transaction_type: Transaction["transaction_type"];
@@ -61,6 +67,55 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Searchable customer combobox state
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [customerOpen, setCustomerOpen] = useState(false);
+  const customerInputRef = useRef<HTMLInputElement>(null);
+  const customerDropdownRef = useRef<HTMLDivElement>(null);
+
+  const selectedCustomerLabel = useMemo(() => {
+    const selected = customers.find((c) => c.id === form.customer_id);
+    if (!selected) return "";
+    return `${selected.name}${selected.code ? ` (${selected.code})` : ""}`;
+  }, [customers, form.customer_id]);
+
+  const filteredCustomers = useMemo(() => {
+    const q = customerQuery.trim().toLowerCase();
+    if (!q) return customers;
+    return customers.filter((c) =>
+      c.name.toLowerCase().includes(q) || (c.code && c.code.toLowerCase().includes(q))
+    );
+  }, [customers, customerQuery]);
+
+  useEffect(() => {
+    if (customerOpen && customerDropdownRef.current && customerInputRef.current) {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (
+          !customerDropdownRef.current?.contains(event.target as Node) &&
+          !customerInputRef.current?.contains(event.target as Node)
+        ) {
+          setCustomerOpen(false);
+          setCustomerQuery(selectedCustomerLabel);
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [customerOpen, selectedCustomerLabel]);
+
+  useEffect(() => {
+    if (transaction && isOpen) {
+      setCustomerQuery(
+        (() => {
+          const c = customers.find((x) => x.id === String(transaction.customer_id));
+          return c ? `${c.name}${c.code ? ` (${c.code})` : ""}` : "";
+        })()
+      );
+    } else if (!isOpen) {
+      setCustomerQuery("");
+    }
+  }, [transaction, isOpen, customers]);
+
   useEffect(() => {
     if (transaction && isOpen) {
       setForm({
@@ -102,6 +157,20 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
     if (errors[field as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
+  };
+
+  const handleSelectCustomer = (customer: CustomerOption) => {
+    handleChange("customer_id", customer.id);
+    setCustomerQuery(`${customer.name}${customer.code ? ` (${customer.code})` : ""}`);
+    setCustomerOpen(false);
+    customerInputRef.current?.blur();
+  };
+
+  const handleClearCustomer = () => {
+    handleChange("customer_id", "");
+    setCustomerQuery("");
+    setCustomerOpen(true);
+    customerInputRef.current?.focus();
   };
 
   const validate = (): boolean => {
@@ -186,26 +255,82 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
 
             <div className="px-6 py-5 max-h-[calc(100vh-14rem)] overflow-y-auto">
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <div className="sm:col-span-2">
+                <div className="sm:col-span-2" ref={customerDropdownRef}>
                   <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
                     {t("transactions.customer")} <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    value={form.customer_id}
-                    onChange={(e) => handleChange("customer_id", e.target.value)}
-                    className={`block w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-white ${
-                      errors.customer_id
-                        ? "border-red-300 focus:border-red-500 focus:ring-red-500"
-                        : "border-gray-300 dark:border-gray-600 focus:border-indigo-500"
-                    }`}
-                  >
-                    <option value="">{t("common.select")}</option>
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} {c.code ? `(${c.code})` : ""}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <input
+                      ref={customerInputRef}
+                      type="text"
+                      value={customerQuery}
+                      onChange={(e) => {
+                        setCustomerQuery(e.target.value);
+                        setCustomerOpen(true);
+                        if (form.customer_id) {
+                          handleChange("customer_id", "");
+                        }
+                      }}
+                      onFocus={() => setCustomerOpen(true)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") {
+                          e.stopPropagation();
+                          setCustomerOpen(false);
+                          setCustomerQuery(selectedCustomerLabel);
+                        }
+                      }}
+                      placeholder={`${t("common.search")} ${t("transactions.customer")}...`}
+                      className={`block w-full rounded-lg border bg-white px-3 py-2.5 pr-10 text-sm text-gray-900 shadow-sm focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-white ${
+                        errors.customer_id
+                          ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                          : "border-gray-300 dark:border-gray-600 focus:border-indigo-500"
+                      }`}
+                    />
+                    {(customerQuery || form.customer_id) && (
+                      <button
+                        type="button"
+                        onClick={handleClearCustomer}
+                        className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        aria-label={t("common.clear", "Xóa")}
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                    {customerOpen && (
+                      <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                        {filteredCustomers.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                            {t("common.noResults", "Không tìm thấy kết quả")}
+                          </div>
+                        ) : (
+                          filteredCustomers.map((c) => {
+                            const isSelected = c.id === form.customer_id;
+                            return (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onMouseDown={() => handleSelectCustomer(c)}
+                                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                                  isSelected
+                                    ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
+                                    : "text-gray-900 dark:text-white"
+                                }`}
+                              >
+                                <div className="font-medium">{c.name}</div>
+                                {c.code && (
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                                    {c.code}
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+                  </div>
                   {errors.customer_id && (
                     <p className="mt-1.5 flex items-center text-sm text-red-600">
                       <svg
@@ -281,7 +406,7 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                     type="date"
                     value={form.transaction_date}
                     onChange={(e) => handleChange("transaction_date", e.target.value)}
-                    className={`block w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-white ${
+                    className={`block w-full max-w-xs rounded-lg border bg-white px-3 py-2.5 text-left text-sm text-gray-900 shadow-sm focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-white sm:max-w-full ${
                       errors.transaction_date
                         ? "border-red-300 focus:border-red-500 focus:ring-red-500"
                         : "border-gray-300 dark:border-gray-600 focus:border-indigo-500"

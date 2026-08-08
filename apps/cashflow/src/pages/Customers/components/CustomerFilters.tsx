@@ -145,7 +145,7 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
         </Button>
 
         {isOpen && (
-          <div className="absolute z-10 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
+          <div className="absolute z-50 mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-12rem)] overflow-y-auto bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
             <div className="p-4">
               <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
                 Khoảng thời gian
@@ -217,7 +217,7 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mt-4">
                 <Button variant="secondary" size="md" onClick={handleReset}>
                   {t("common.reset")}
                 </Button>

@@ -2,7 +2,13 @@ import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AddButton from "../UI/AddButton";
+import Button from "../UI/Button";
+import AppSwitcher from "./AppSwitcher";
 import { useAuthContext } from "@superapp/iam";
+import { CompanyBadge } from "@superapp/iam";
+import { supabase } from "../../services/supabase";
+import { clearTrialStore } from "../../services/trialMockStore";
+import { logger } from "../../utils/logger";
 import { canImportCustomers, canImportTransactions } from "../../utils/permissions";
 
 // Preload lazy route chunks on hover so navigation feels instant on click.
@@ -30,8 +36,30 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuthContext();
+
+  const displayName =
+    user?.full_name || user?.email || (i18n.language === "vi" ? "Người dùng" : "User");
+  const avatarInitial =
+    displayName?.trim()?.charAt(0)?.toUpperCase() || "U";
+
+  const handleLanguageChange = () => {
+    const next = i18n.language === "en" ? "vi" : "en";
+    i18n.changeLanguage(next);
+    localStorage.setItem("language", next);
+  };
+
+  const handleLogout = async () => {
+    try {
+      clearTrialStore();
+      await supabase.auth.signOut();
+    } catch (error) {
+      logger.error("Error logging out:", error);
+    } finally {
+      navigate("/login", { replace: true });
+    }
+  };
 
   const showImportCustomers = user ? canImportCustomers(user) : false;
   const showImportTransactions = user ? canImportTransactions(user) : false;
@@ -154,28 +182,74 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     <div className="w-80 bg-white dark:bg-gray-900 shadow-sm border-r border-gray-200 dark:border-gray-700 min-h-screen no-scrollbar overflow-y-auto">
       {/* Mobile close button */}
       {onClose && (
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 lg:hidden">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Menu</h2>
-          <button
-            onClick={onClose}
-            className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
-          >
-            <span className="sr-only">Close menu</span>
-            <svg
-              className="block h-6 w-6"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+        <div className="lg:hidden">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Menu</h2>
+            <button
+              onClick={onClose}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+              <span className="sr-only">Close menu</span>
+              <svg
+                className="block h-6 w-6"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* Mobile drawer header: profile, company, app switcher, language, logout */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-600 flex items-center justify-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                {avatarInitial}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                  {displayName}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  {user?.email || ""}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <CompanyBadge />
+                <div className="relative">
+                  <AppSwitcher />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={handleLanguageChange}
+                  className="px-3 py-1.5 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 text-xs font-semibold border border-gray-300 dark:border-gray-600 shadow-sm transition-colors"
+                >
+                  {i18n.language === "en" ? "ENG" : "VI"}
+                </button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleLogout}
+                >
+                  {t("common.logout")}
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
