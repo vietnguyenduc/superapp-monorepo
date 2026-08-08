@@ -1,5 +1,6 @@
-import { supabase } from "./supabase";
+import { supabase as sb } from "./supabase";
 import type {
+  TaskSource,
   Block,
   BlockId,
   BlockStats,
@@ -18,6 +19,8 @@ import type {
   Streak,
 } from "../types";
 
+const db = (sb as unknown) as { from: (table: string) => any };
+
 let idCounter = 0;
 export const genId = () => {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -29,7 +32,7 @@ export const genId = () => {
 
 export const todayStr = () => new Date().toISOString().split("T")[0];
 
-const DEFAULT_BLOCKS: Block[] = [
+export const DEFAULT_BLOCKS: Block[] = [
   { id: "self", name_vi: "Bản thân", name_en: "Self", order_index: 0 },
   { id: "relationship", name_vi: "Quan hệ", name_en: "Relationships", order_index: 1 },
   { id: "work", name_vi: "Công việc", name_en: "Work", order_index: 2 },
@@ -167,7 +170,7 @@ const makeTrackSection = (): TemplateSection[] => [
   },
 ];
 
-const DEFAULT_TEMPLATES: Record<StepType, TemplateSection[]> = {
+export const DEFAULT_TEMPLATES: Record<StepType, TemplateSection[]> = {
   recognize: makeRecognizeSections(),
   apply: makeApplySection(),
   track: makeTrackSection(),
@@ -182,7 +185,7 @@ const fallbackLog = (label: string, err: unknown) => {
 
 export const getBlocks = async (): Promise<Block[]> => {
   try {
-    const { data, error } = await supabase.from("fm_blocks").select("*").order("order_index", { ascending: true });
+    const { data, error } = await db.from("fm_blocks").select("*").order("order_index", { ascending: true });
     if (error) throw error;
     if (data && data.length > 0) return data as Block[];
   } catch (err) {
@@ -193,7 +196,7 @@ export const getBlocks = async (): Promise<Block[]> => {
 
 export const getTaskSuggestions = async (blockId: BlockId): Promise<TaskSuggestion[]> => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("fm_task_suggestions")
       .select("*")
       .eq("block_id", blockId)
@@ -214,7 +217,7 @@ export const getTaskSuggestions = async (blockId: BlockId): Promise<TaskSuggesti
 
 export const getDailyTasksForDate = async (userId: string, date: string): Promise<DailyTask[]> => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("fm_daily_tasks")
       .select("*")
       .eq("user_id", userId)
@@ -230,7 +233,7 @@ export const getDailyTasksForDate = async (userId: string, date: string): Promis
 
 export const getPendingTasksBeforeDate = async (userId: string, date: string): Promise<DailyTask[]> => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("fm_daily_tasks")
       .select("*")
       .eq("user_id", userId)
@@ -266,7 +269,7 @@ export const createDailyTask = async (
     updated_at: new Date().toISOString(),
   };
   try {
-    const { data, error } = await supabase.from("fm_daily_tasks").insert(task).select().single();
+    const { data, error } = await db.from("fm_daily_tasks").insert(task).select().single();
     if (error) throw error;
     if (data) return data as DailyTask;
   } catch (err) {
@@ -277,7 +280,7 @@ export const createDailyTask = async (
 
 export const updateDailyTask = async (taskId: string, updates: Partial<DailyTask>): Promise<DailyTask | null> => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("fm_daily_tasks")
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq("id", taskId)
@@ -293,7 +296,7 @@ export const updateDailyTask = async (taskId: string, updates: Partial<DailyTask
 
 export const getSessionForDate = async (userId: string, date: string): Promise<Session | null> => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("fm_sessions")
       .select("*")
       .eq("user_id", userId)
@@ -322,7 +325,7 @@ export const createSession = async (userId: string, date: string): Promise<Sessi
     updated_at: new Date().toISOString(),
   };
   try {
-    const { data, error } = await supabase.from("fm_sessions").insert(session).select().single();
+    const { data, error } = await db.from("fm_sessions").insert(session).select().single();
     if (error) throw error;
     if (data) return data as Session;
   } catch (err) {
@@ -333,7 +336,7 @@ export const createSession = async (userId: string, date: string): Promise<Sessi
 
 export const updateSession = async (sessionId: string, updates: Partial<Session>): Promise<Session | null> => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("fm_sessions")
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq("id", sessionId)
@@ -350,7 +353,7 @@ export const updateSession = async (sessionId: string, updates: Partial<Session>
 export const getBlockStats = async (userId: string): Promise<Record<BlockId, BlockStats>> => {
   const map: Partial<Record<BlockId, BlockStats>> = {};
   try {
-    const { data, error } = await supabase.from("fm_block_stats").select("*").eq("user_id", userId);
+    const { data, error } = await db.from("fm_block_stats").select("*").eq("user_id", userId);
     if (error) throw error;
     if (data) {
       (data as BlockStats[]).forEach((s) => {
@@ -379,16 +382,17 @@ export const getBlockStats = async (userId: string): Promise<Record<BlockId, Blo
 export const getTemplatesForBlock = async (blockId: BlockId): Promise<Record<StepType, Template>> => {
   const result: Partial<Record<StepType, Template>> = {};
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("fm_templates")
-      .select("*, fm_template_sections(*, items)")
+      .select("*, fm_template_sections(*)")
       .eq("block_id", blockId)
       .eq("status", "published")
       .order("created_at", { ascending: false });
     if (error) throw error;
     if (data) {
-      (data as Template[]).forEach((t) => {
-        result[t.step_type] = t;
+      (data as (Template & { fm_template_sections?: TemplateSection[] })[]).forEach((t) => {
+        const template: Template = { ...t, sections: t.fm_template_sections ?? [] };
+        result[template.step_type] = template;
       });
     }
   } catch (err) {
@@ -413,7 +417,7 @@ export const getTemplatesForBlock = async (blockId: BlockId): Promise<Record<Ste
 export const saveReferenceInputs = async (inputs: ReferenceInput[]): Promise<void> => {
   if (inputs.length === 0) return;
   try {
-    const { error } = await supabase.from("fm_reference_inputs").upsert(inputs, { onConflict: "id" });
+    const { error } = await db.from("fm_reference_inputs").upsert(inputs, { onConflict: "id" });
     if (error) throw error;
   } catch (err) {
     fallbackLog("saveReferenceInputs", err);
@@ -422,7 +426,7 @@ export const saveReferenceInputs = async (inputs: ReferenceInput[]): Promise<voi
 
 export const getReferenceInputsForSession = async (sessionId: string): Promise<ReferenceInput[]> => {
   try {
-    const { data, error } = await supabase.from("fm_reference_inputs").select("*").eq("session_id", sessionId);
+    const { data, error } = await db.from("fm_reference_inputs").select("*").eq("session_id", sessionId);
     if (error) throw error;
     if (data) return data as ReferenceInput[];
   } catch (err) {
@@ -433,7 +437,7 @@ export const getReferenceInputsForSession = async (sessionId: string): Promise<R
 
 export const saveApplyPlan = async (plan: ApplyPlan): Promise<ApplyPlan | null> => {
   try {
-    const { data, error } = await supabase.from("fm_apply_plans").upsert(plan, { onConflict: "daily_task_id" }).select().single();
+    const { data, error } = await db.from("fm_apply_plans").upsert(plan, { onConflict: "daily_task_id" }).select().single();
     if (error) throw error;
     if (data) return data as ApplyPlan;
   } catch (err) {
@@ -444,7 +448,7 @@ export const saveApplyPlan = async (plan: ApplyPlan): Promise<ApplyPlan | null> 
 
 export const getApplyPlanForTask = async (dailyTaskId: string): Promise<ApplyPlan | null> => {
   try {
-    const { data, error } = await supabase.from("fm_apply_plans").select("*").eq("daily_task_id", dailyTaskId).single();
+    const { data, error } = await db.from("fm_apply_plans").select("*").eq("daily_task_id", dailyTaskId).single();
     if (error) throw error;
     if (data) return data as ApplyPlan;
   } catch (err) {
@@ -455,7 +459,7 @@ export const getApplyPlanForTask = async (dailyTaskId: string): Promise<ApplyPla
 
 export const saveTrack = async (track: Track): Promise<Track | null> => {
   try {
-    const { data, error } = await supabase.from("fm_track").upsert(track, { onConflict: "daily_task_id" }).select().single();
+    const { data, error } = await db.from("fm_track").upsert(track, { onConflict: "daily_task_id" }).select().single();
     if (error) throw error;
     if (data) return data as Track;
   } catch (err) {
@@ -466,7 +470,7 @@ export const saveTrack = async (track: Track): Promise<Track | null> => {
 
 export const getTrackForTask = async (dailyTaskId: string): Promise<Track | null> => {
   try {
-    const { data, error } = await supabase.from("fm_track").select("*").eq("daily_task_id", dailyTaskId).single();
+    const { data, error } = await db.from("fm_track").select("*").eq("daily_task_id", dailyTaskId).single();
     if (error) throw error;
     if (data) return data as Track;
   } catch (err) {
@@ -477,7 +481,7 @@ export const getTrackForTask = async (dailyTaskId: string): Promise<Track | null
 
 export const getStreak = async (userId: string): Promise<Streak | null> => {
   try {
-    const { data, error } = await supabase.from("fm_streaks").select("*").eq("user_id", userId).single();
+    const { data, error } = await db.from("fm_streaks").select("*").eq("user_id", userId).single();
     if (error) throw error;
     if (data) return data as Streak;
   } catch (err) {
@@ -488,7 +492,7 @@ export const getStreak = async (userId: string): Promise<Streak | null> => {
 
 export const updateStreak = async (streak: Streak): Promise<Streak | null> => {
   try {
-    const { data, error } = await supabase.from("fm_streaks").upsert(streak).select().single();
+    const { data, error } = await db.from("fm_streaks").upsert(streak).select().single();
     if (error) throw error;
     if (data) return data as Streak;
   } catch (err) {
@@ -499,7 +503,7 @@ export const updateStreak = async (streak: Streak): Promise<Streak | null> => {
 
 export const getSessionsHistory = async (userId: string, limit = 20): Promise<Session[]> => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("fm_sessions")
       .select("*")
       .eq("user_id", userId)
@@ -515,7 +519,7 @@ export const getSessionsHistory = async (userId: string, limit = 20): Promise<Se
 
 export const getDailyGoalsForDate = async (userId: string, date: string): Promise<DailyGoal[]> => {
   try {
-    const { data, error } = await supabase.from("fm_daily_goals").select("*").eq("user_id", userId).eq("date", date);
+    const { data, error } = await db.from("fm_daily_goals").select("*").eq("user_id", userId).eq("date", date);
     if (error) throw error;
     if (data) return data as DailyGoal[];
   } catch (err) {

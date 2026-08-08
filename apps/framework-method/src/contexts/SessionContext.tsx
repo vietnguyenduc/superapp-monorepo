@@ -254,8 +254,8 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     if (!userId) return;
     await persistSession({ current_step: 4, status: "completed", ended_at: new Date().toISOString() });
     const today = service.todayStr();
-    let nextStreak: Streak | null = streak;
-    if (!nextStreak) {
+    let nextStreak: Streak;
+    if (!streak) {
       nextStreak = {
         id: service.genId(),
         user_id: userId,
@@ -264,6 +264,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
         last_active_date: today,
       };
     } else {
+      nextStreak = { ...streak };
       const last = new Date(streak.last_active_date);
       const now = new Date(today);
       const diffDays = Math.round((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));

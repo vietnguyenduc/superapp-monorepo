@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FiPlay, FiSun, FiMoon, FiUser, FiTrendingUp, FiAnchor } from "react-icons/fi";
 import {
   ResponsiveContainer,
@@ -40,6 +40,7 @@ const weekDays = [
 
 const Dashboard = () => {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -169,7 +170,7 @@ const Dashboard = () => {
       <Card className="p-5">
         <h2 className="font-semibold text-lg">Ready to focus?</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">Start a new deep work session.</p>
-        <Button variant="dark" size="lg" className="w-full">
+        <Button variant="dark" size="lg" className="w-full" onClick={() => navigate("/session")}>
           <FiPlay className="w-5 h-5 mr-2" />
           {t("dashboard.beginSession")}
         </Button>

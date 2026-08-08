@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FiChevronRight, FiArrowRight } from "react-icons/fi";
 import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
@@ -20,6 +20,7 @@ const upcomingSteps = [
 
 const Overview = () => {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const [currentStep] = useState(2);
   const [showOverlay, setShowOverlay] = useState(false);
   const totalSteps = 5;
@@ -71,7 +72,7 @@ const Overview = () => {
           <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 leading-relaxed">
             Break down the core challenge into its most fundamental truths. Ignore previous assumptions and established conventions.
           </p>
-          <Button variant="dark" size="md" className="mt-5">
+          <Button variant="dark" size="md" className="mt-5" onClick={() => navigate("/session")}>
             {t("overview.startSession")} <FiArrowRight className="ml-2 w-4 h-4" />
           </Button>
         </div>
@@ -88,7 +89,7 @@ const Overview = () => {
           {upcomingSteps.map((step) => (
             <Link
               key={step.id}
-              to={`/step/${step.id}`}
+              to="/session"
               className="flex items-start gap-4 group"
             >
               <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-primary-900/30 text-primary-700 flex items-center justify-center text-sm font-bold shrink-0">

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiChevronLeft, FiChevronRight, FiPlus, FiTrash2, FiCheck, FiEdit2 } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiPlus, FiTrash2, FiCheck } from "react-icons/fi";
 import { Card, Button, Input } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useSession } from "../../contexts/SessionContext";
-import type { Block, BlockId, DailyTask, TemplateSection, TemplateSectionItem } from "../../types";
+import type { Block, BlockId, DailyTask, TaskSource, TemplateSection, TemplateSectionItem } from "../../types";
 
 const StepIndicator = ({ step, onChange }: { step: number; onChange?: (s: number) => void }) => {
   const { t } = useI18n();
@@ -81,7 +81,7 @@ const Step1TaskList = () => {
   } = useSession();
 
   const [newTask, setNewTask] = useState("");
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions] = useState<string[]>([]);
 
   const blockTasks = useMemo(
     () => tasks.filter((t) => t.block_id === currentBlock?.id),
@@ -95,7 +95,7 @@ const Step1TaskList = () => {
 
   const stats = currentBlock ? blockStats[currentBlock.id] : null;
 
-  const handleAdd = (title: string, source: "suggestion" | "carry_over" = "suggestion") => {
+  const handleAdd = (title: string, source: TaskSource = "suggestion") => {
     if (!currentBlock || !title.trim()) return;
     addTask(currentBlock.id, title, source);
   };
@@ -303,7 +303,7 @@ const SectionItemInput = ({
 
 const Step2Recognize = () => {
   const { t, language } = useI18n();
-  const { blocks, currentBlock, currentBlockIndex, setCurrentBlockIndex, tasks, getTemplate, referenceInputs, saveReferenceInput, setStep } = useSession();
+  const { blocks, currentBlock, setCurrentBlockIndex, tasks, getTemplate, referenceInputs, saveReferenceInput, setStep } = useSession();
   const template = getTemplate(currentBlock?.id || blocks[0]?.id, "recognize");
 
   const handleSave = (sectionId: string, itemId: string, content: string, enabled: boolean) => {
@@ -376,7 +376,7 @@ const Step2Recognize = () => {
 
 const Step3Apply = () => {
   const { t, language } = useI18n();
-  const { currentBlock, blocks, currentBlockIndex, setCurrentBlockIndex, tasks, getTemplate, applyPlans, saveApplyPlan, setStep, setSelectedTaskId, selectedTaskId } = useSession();
+  const { currentBlock, blocks, setCurrentBlockIndex, tasks, getTemplate, applyPlans, saveApplyPlan, setStep, setSelectedTaskId, selectedTaskId } = useSession();
   const template = getTemplate(currentBlock?.id || blocks[0]?.id, "apply");
 
   const blockTasks = useMemo(() => tasks.filter((t) => t.block_id === currentBlock?.id), [tasks, currentBlock]);
@@ -476,7 +476,7 @@ const Step3Apply = () => {
 
 const Step4Track = () => {
   const { t, language } = useI18n();
-  const { currentBlock, blocks, currentBlockIndex, setCurrentBlockIndex, tasks, getTemplate, tracks, saveTrack, completeSession, setStep, setSelectedTaskId, selectedTaskId } = useSession();
+  const { currentBlock, blocks, setCurrentBlockIndex, tasks, getTemplate, tracks, saveTrack, completeSession, setStep, setSelectedTaskId, selectedTaskId } = useSession();
   const template = getTemplate(currentBlock?.id || blocks[0]?.id, "track");
 
   const blockTasks = useMemo(() => tasks.filter((t) => t.block_id === currentBlock?.id), [tasks, currentBlock]);

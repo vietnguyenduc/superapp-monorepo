@@ -1,5 +1,19 @@
 # Framework Method — Changelog
 
+## 2026-08-08
+
+- Refactored `apps/framework-method` to implement the PRD 4-step flow (Khối → Nhận ra → Đưa khuôn → Bám).
+- Wired `SessionProvider` in `App.tsx`; replaced `/step/:stepId` with `/session` route (`SessionPage`).
+- Updated `Dashboard`, `Overview`, and `BottomNav` to link to `/session`.
+- Rewrote `Builder` to edit `Template`/`TemplateSection`/`TemplateSectionItem` per block and per step, with add/remove/reorder sections and items.
+- Added `session.*` and `builder.*` i18n keys for Vietnamese and English.
+- Fixed `SessionContext` streak-null type error and `SessionPage` unused-variable / `TaskSource` type issues.
+- Cast `frameworkMethodService.ts` to a runtime-typed `db` wrapper so queries to `fm_*` tables compile while `@repo/types` `Database` is not regenerated.
+- Exported `DEFAULT_BLOCKS` and `DEFAULT_TEMPLATES` from `frameworkMethodService.ts` so `Builder` and the service share the same fallback data.
+- Removed temporary `src/test-fm.ts`.
+- Cleaned up `packages/shared-utils` unused imports that broke strict `tsc` for dependent apps.
+- Validation: `npx tsc -p apps/framework-method/tsconfig.app.json --noEmit` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+
 ## 2026-08-07
 
 - Added `PRD-framework-method.md` locking the 4-step flow (Khối → Nhận ra → Đưa khuôn → Bám) and 6 product decisions.

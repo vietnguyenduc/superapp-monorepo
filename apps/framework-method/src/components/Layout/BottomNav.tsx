@@ -7,7 +7,7 @@ const BottomNav = () => {
 
   const links = [
     { to: "/dashboard", label: t("nav.overview"), icon: FiGrid },
-    { to: "/overview", label: t("nav.steps"), icon: FiList },
+    { to: "/session", label: t("nav.session"), icon: FiList },
     { to: "/actions", label: t("nav.actions"), icon: FiCheckCircle },
     { to: "/history", label: t("nav.history"), icon: FiClock },
   ];

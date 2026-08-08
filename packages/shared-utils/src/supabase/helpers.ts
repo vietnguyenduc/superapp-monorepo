@@ -1,6 +1,3 @@
-import { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@repo/types';
-
 export type DbResult<T> = {
   data: T | null;
   error: Error | null;

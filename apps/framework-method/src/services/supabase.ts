@@ -1,4 +1,6 @@
 import { createSupabaseClient, createApiClient } from "@superapp/shared-utils";
+import type { SupabaseClient as SupabaseClientType } from "@supabase/supabase-js";
+import type { FrameworkDatabase } from "../types/supabase";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -25,5 +27,7 @@ export const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
 });
 
 export const { apiClient } = createApiClient(supabase);
+
+export const fmSupabase = supabase as unknown as SupabaseClientType<FrameworkDatabase>;
 
 export type SupabaseClient = typeof supabase;

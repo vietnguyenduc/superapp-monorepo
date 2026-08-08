@@ -11,7 +11,8 @@ import Login from "./pages/Auth/Login";
 import SignUp from "./pages/Auth/SignUp";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Overview from "./pages/Overview/Overview";
-import Step from "./pages/Step/Step";
+import { SessionProvider } from "./contexts/SessionContext";
+import SessionPage from "./pages/Session/SessionPage";
 import Actions from "./pages/Actions/Actions";
 import Evening from "./pages/Evening/Evening";
 import Calendar from "./pages/Calendar/Calendar";
@@ -29,14 +30,16 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <Layout />
+                <SessionProvider>
+                  <Layout />
+                </SessionProvider>
               </ProtectedRoute>
             }
           >
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="overview" element={<Overview />} />
-            <Route path="step/:stepId" element={<Step />} />
+            <Route path="session" element={<SessionPage />} />
             <Route path="actions" element={<Actions />} />
             <Route path="evening" element={<Evening />} />
             <Route path="calendar" element={<Calendar />} />
