@@ -141,7 +141,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [userId, sessionDate]);
+  }, [userId, sessionDate, setCurrentBlockIndex]);
 
   useEffect(() => {
     if (userId) loadData();
@@ -359,6 +359,8 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       isLoading,
       saveDraft,
       completeSession,
+      setCurrentBlockIndex,
+      setStep,
       loadData,
     ]
   );

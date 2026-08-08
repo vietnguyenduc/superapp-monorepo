@@ -19,6 +19,7 @@ import type {
   Streak,
 } from "../types";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = (sb as unknown) as { from: (table: string) => any };
 
 let idCounter = 0;
@@ -178,7 +179,6 @@ export const DEFAULT_TEMPLATES: Record<StepType, TemplateSection[]> = {
 
 const fallbackLog = (label: string, err: unknown) => {
   if (import.meta.env.DEV) {
-    // eslint-disable-next-line no-console
     console.warn(`[framework-method] ${label} fallback used`, err);
   }
 };
