@@ -193,6 +193,30 @@ export class TransactionTypeService extends BaseService {
       }
     );
   }
+
+  static buildFactorMap(types: Array<{ id?: unknown; name?: unknown; math_factor?: unknown }>): Record<string, number> {
+    const map: Record<string, number> = {};
+    for (const t of types) {
+      const idKey = String(t.id ?? "").toLowerCase().trim();
+      const nameKey = String(t.name ?? "").toLowerCase().trim();
+      const factor = Number(t.math_factor ?? 1);
+
+      if (idKey) map[idKey] = factor;
+      if (nameKey) map[nameKey] = factor;
+
+      const canonicalId = normalizeTransactionType(idKey);
+      const canonicalName = normalizeTransactionType(nameKey);
+      if (canonicalId && !map[canonicalId]) map[canonicalId] = factor;
+      if (canonicalName && canonicalName !== canonicalId && !map[canonicalName]) map[canonicalName] = factor;
+    }
+    return map;
+  }
+
+  static async getTransactionTypeFactorMap(companyId?: string): Promise<Record<string, number>> {
+    const { data, error } = await this.getTransactionTypes(companyId);
+    if (error || !data) return {};
+    return this.buildFactorMap(data as Array<{ id?: unknown; name?: unknown; math_factor?: unknown }>);
+  }
 }
 
 export const transactionTypeService = {
@@ -200,4 +224,6 @@ export const transactionTypeService = {
   upsertTransactionType: TransactionTypeService.upsertTransactionType.bind(TransactionTypeService),
   toggleTransactionType: TransactionTypeService.toggleTransactionType.bind(TransactionTypeService),
   deleteTransactionType: TransactionTypeService.deleteTransactionType.bind(TransactionTypeService),
+  buildFactorMap: TransactionTypeService.buildFactorMap.bind(TransactionTypeService),
+  getTransactionTypeFactorMap: TransactionTypeService.getTransactionTypeFactorMap.bind(TransactionTypeService),
 };

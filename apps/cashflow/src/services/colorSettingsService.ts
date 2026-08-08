@@ -17,8 +17,9 @@ export class ColorSettingsService extends BaseService {
 
   static getDefaultCustomerBalanceColors() {
     return {
-      customer_list: { positive_balance_color: "text-green-600 dark:text-green-400", zero_or_negative_color: "text-red-600 dark:text-red-400" },
-      customer_detail: { positive_balance_color: "text-green-600 dark:text-green-400", zero_or_negative_color: "text-red-600 dark:text-red-400" },
+      // Positive balance = debt (red); zero/negative = credit/overpayment (green)
+      customer_list: { positive_balance_color: "text-red-600 dark:text-red-400", zero_or_negative_color: "text-green-600 dark:text-green-400" },
+      customer_detail: { positive_balance_color: "text-red-600 dark:text-red-400", zero_or_negative_color: "text-green-600 dark:text-green-400" },
     };
   }
 

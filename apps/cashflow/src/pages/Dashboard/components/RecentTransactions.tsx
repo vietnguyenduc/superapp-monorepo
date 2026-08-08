@@ -22,7 +22,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const companyId = useCompanyId();
-  const { getNameById: getTransactionTypeName } = useTransactionTypes();
+  const { getNameById: getTransactionTypeName, getMathFactor } = useTransactionTypes();
   const [balanceAfterMap, setBalanceAfterMap] = React.useState<Record<string, number>>({});
   const [accountBalanceAfterMap, setAccountBalanceAfterMap] = React.useState<Record<string, number>>({});
   const [bankAccounts, setBankAccounts] = React.useState<Array<{ id: string; name: string }>>([]);
@@ -106,8 +106,8 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
           runningByAccount.get(tx.bank_account_id) ||
           openingByAccount.get(String(tx.bank_account_id)) ||
           0;
-        // Receivable delta (customer): negative = debt, positive = credit/overpayment
-        const deltaReceivable = getCustomerBalanceDelta(tx.transaction_type, tx.amount);
+        // Receivable delta (customer): positive = debt, negative = credit/overpayment
+        const deltaReceivable = getCustomerBalanceDelta(tx.transaction_type, tx.amount, getMathFactor(tx.transaction_type));
 
         // Cash delta (bank account): use single source of truth
         const deltaCash = getBankAccountBalanceDelta(tx.transaction_type, tx.amount);
@@ -126,7 +126,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [companyId]);
+  }, [companyId, getMathFactor]);
 
   // Load color settings on mount
   React.useEffect(() => {

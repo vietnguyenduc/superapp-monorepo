@@ -1,5 +1,24 @@
 # Changelog — Cashflow
 
+## 2026-08-09
+
+### Added
+
+- **Balance Formula (`Công thức dư nợ`) settings tab** — new tab shows `Dư nợ = Đầu kỳ + Σ(Số tiền × Hệ số)`, lists every transaction type with its `math_factor` and impact, lets the user toggle the factor between `+1` (increase debt) and `-1` (decrease debt), and includes a live preview with opening balance, amount, and type selection.
+
+### Fixed
+
+- **Balance sign convention** — `balanceMath.ts` now uses the production convention where `customers.total_balance > 0` means debt. `getCustomerBalanceDelta` honors an explicit `math_factor` (or `transaction_types.math_factor`) and returns `amount * factor`.
+  - `charge` → `+1` (increases debt)
+  - `payment`, `refund`, `deposit` → `-1` (decreases debt)
+  - `adjustment` → `+1` (signed amount)
+- **Color logic** — `formatting.ts` balance colors and `colorSettingsService.ts` defaults now show positive balances as red (debt) and negative/zero balances as green (credit/overpayment).
+- **Dashboard aggregates and sorting** — `dashboardService.ts` now treats positive `total_balance` as debt; `currentIncome`/`currentDebt` use `Math.max(0, -delta)` and `Math.max(0, delta)` respectively, `topCustomers` sorts debtors descending, `debtCustomers`/`creditCustomers` use `> 0`/`< 0`, branch aggregates are swapped, and `getReceivableLedger` increase/decrease columns are aligned with the positive-debt convention.
+- **Transaction sync** — `transactionService.ts` loads the per-company `math_factor` map from `transaction_types` and applies it to customer balance deltas during create, update, delete, and bulk import.
+- **Transaction list group summary** — increase/decrease classification now follows the sign convention and respects each transaction type's `math_factor`.
+- **Recent transactions running balance** — uses the type-specific `math_factor`.
+- **Trial seed balances** — mock customer `total_balance` values are now positive to represent debt.
+
 ## 2026-08-08
 
 ### Added

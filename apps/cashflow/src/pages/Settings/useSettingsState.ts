@@ -1465,6 +1465,7 @@ export function useSettingsState() {
       { id: "branches", name: "Văn phòng", icon: "🏢" },
       { id: "customer-fields", name: "Trường khách hàng", icon: "🧾" },
       { id: "transaction-types", name: "Loại giao dịch", icon: "💳" },
+      { id: "balance-formula", name: "Công thức dư nợ", icon: "🧮" },
       { id: "integration", name: "Tích hợp", icon: "🔗" },
       { id: "users", name: "Tài khoản & phân quyền", icon: "👥" },
     ].filter(tab => {

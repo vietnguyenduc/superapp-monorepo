@@ -190,10 +190,10 @@ const Reports: React.FC = () => {
               ) / filteredCustomers.length
             : 0,
         customersWithDebt: filteredCustomers.filter(
-          (customer) => customer.total_balance < 0,
+          (customer) => customer.total_balance > 0,
         ).length,
         customersWithCredit: filteredCustomers.filter(
-          (customer) => customer.total_balance > 0,
+          (customer) => customer.total_balance < 0,
         ).length,
       },
     };

@@ -7,6 +7,7 @@ import { AppearanceTab } from "./components/tabs/AppearanceTab";
 import { IntegrationTab } from "./components/tabs/IntegrationTab";
 import { OpeningBalanceTab } from "./components/tabs/OpeningBalanceTab";
 import { TransactionTypesTab } from "./components/tabs/TransactionTypesTab";
+import { BalanceFormulaTab } from "./components/tabs/BalanceFormulaTab";
 import { BankAccountsTab } from "./components/tabs/BankAccountsTab";
 import { BranchesTab } from "./components/tabs/BranchesTab";
 import { CustomerFieldsTab } from "./components/tabs/CustomerFieldsTab";
@@ -95,6 +96,7 @@ const SettingsContent: FC = () => {
           {s.activeTab === "integration" && <IntegrationTab />}
           {s.activeTab === "opening-balance" && <OpeningBalanceTab />}
           {s.activeTab === "transaction-types" && <TransactionTypesTab />}
+          {s.activeTab === "balance-formula" && <BalanceFormulaTab />}
           {s.activeTab === "bank-accounts" && <BankAccountsTab />}
           {s.activeTab === "branches" && <BranchesTab />}
           {s.activeTab === "customer-fields" && <CustomerFieldsTab />}

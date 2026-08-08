@@ -100,19 +100,21 @@ All form/entity validators in `src/services/businessLogic/validation.ts` return 
 
 A group-by selector produces a `Tổng hợp theo nhóm` table above the transaction list:
 - Group keys: `day` (ISO date), `week` (ISO week), `month` (year-month), plus existing `branch`, `transaction_type`, `customer`.
-- Group summary per key: count, `Tổng phát sinh tăng` (sum of `abs(delta)` for non-adjustment deltas `< 0`), `Tổng phát sinh giảm` (sum of `abs(delta)` for non-adjustment deltas `> 0`), `Tổng điều chỉnh` (signed sum of adjustment deltas), and `Net` (sum of all signed deltas).
+- Group summary per key: count, `Tổng phát sinh tăng` (sum of `abs(delta)` for non-adjustment deltas `> 0`), `Tổng phát sinh giảm` (sum of `abs(delta)` for non-adjustment deltas `< 0`), `Tổng điều chỉnh` (signed sum of adjustment deltas), and `Net` (sum of all signed deltas).
 - Day/week/month groups are sorted chronologically by key; other groups are sorted by label.
 
 ### Sign-aware amount handling
 
-- `balanceMath.ts` is the single source of truth: `getCustomerBalanceDelta` and `getBankAccountBalanceDelta` multiply the type's default magnitude by `Math.sign(amount)`.
-- `charge -1000` increases customer balance by 1000 (debt decreases), bank cash 0.
-- `payment -1000` decreases customer balance by 1000 (debt increases), bank cash decreases by 1000.
-- `refund -1000` decreases customer balance by 1000, bank cash increases by 1000.
-- `deposit -1000` decreases customer balance by 1000 (debt increases), bank cash decreases by 1000.
+- `balanceMath.ts` is the single source of truth.
+- `getCustomerBalanceDelta(type, amount, mathFactor)` returns `parseAmount(amount) * math_factor`. The `math_factor` is loaded per company from `transaction_types.math_factor` or falls back to canonical defaults: `charge +1`, `payment/refund/deposit -1`, `adjustment +1`.
+- `getBankAccountBalanceDelta` still applies cash-flow semantics: `payment`/`deposit` increase cash, `refund` decreases cash, `charge` has no cash effect, `adjustment` is signed.
+- `charge -1000` → customer balance **-1000** (debt decreases by 1000), bank cash `0`.
+- `payment -1000` → customer balance **+1000** (debt increases by 1000), bank cash **-1000** (cash out).
+- `refund -1000` → customer balance **+1000** (debt increases by 1000), bank cash **+1000** (cash in).
+- `deposit -1000` → customer balance **+1000** (debt increases by 1000), bank cash **-1000** (cash out).
 - `adjustment -1000` / `+1000` is a direct signed correction on both customer and bank.
 - `validateTransactionData` only rejects zero/NaN amounts; negative amounts are accepted for all types.
-- UI display (`TransactionList`, `CustomerDetail`, `CustomerDetailModal`, `RecentTransactions`) shows `formatCurrency(parseAmount(amount))` — the raw user-entered value — while color is still driven by the signed delta from `getCustomerBalanceDelta(...)`, so a positive charge appears red (debt) and a negative charge appears green (credit).
+- UI display (`TransactionList`, `CustomerDetail`, `CustomerDetailModal`, `RecentTransactions`) shows `formatCurrency(parseAmount(amount))` — the raw user-entered value — while color is driven by the signed delta, so positive-debt deltas appear red and negative/credit deltas appear green.
 
 ### Missing-column fallback
 
@@ -120,23 +122,24 @@ A group-by selector produces a `Tổng hợp theo nhóm` table above the transac
 
 ## Sign convention for display
 
-- Negative customer balance = debt (red).
-- Positive/zero customer balance = credit/overpayment (green).
+- **Positive `customers.total_balance` = debt / công nợ (red).**
+- **Negative/zero customer balance = credit / overpayment (green).**
 - `formatting.ts` (`getCustomerListBalanceColor`, `getCustomerDetailBalanceColor`, `getTransactionTypeAmountColor`) and all list/detail components use `getCustomerBalanceDelta` from `balanceMath.ts` to determine the signed amount and color.
 - Transaction type labels are: `Phát sinh tăng` (charge), `Phát sinh giảm` (payment), `Điều chỉnh` (adjustment), `Hoàn tiền` (refund), `Đặt cọc` (deposit, purple).
+- The dedicated **Công thức dư nợ** settings tab shows the formula `Dư nợ = Đầu kỳ + Σ(Số tiền × Hệ số)`, lets users inspect and toggle each transaction type's `math_factor`, and previews the result for an arbitrary opening balance, amount, and type.
 
 ## Balance math helpers
 
 Single source of truth: `src/services/businessLogic/balanceMath.ts`.
 
 ```
-getCustomerBalanceDelta(type, amount)
+getCustomerBalanceDelta(type, amount, mathFactor?)
 getBankAccountBalanceDelta(type, amount)
-applyTransactionsToCustomerBalance(opening, txs)
+applyTransactionsToCustomerBalance(opening, txs, factorMap?)
 applyTransactionsToBankAccountBalance(opening, txs)
 ```
 
-All dashboard, customer detail, and transaction write code uses these functions. `deposit` uses the same customer-balance and bank-cash direction as `payment`.
+`transactionTypeService.buildFactorMap` and `getTransactionTypeFactorMap` load the per-company `math_factor` map from `transaction_types`. `transactionService`, `dashboardService.getDashboardMetrics`, and `dashboardService.getReceivableLedger` pass this map into `getCustomerBalanceDelta` / `applyTransactionsToCustomerBalance` so every balance calculation respects the configured convention. `deposit` uses the same customer-balance and bank-cash direction as `payment`.
 
 ## Backup and restore
 
@@ -167,6 +170,6 @@ All deletions are filtered by `company_id` and governed by RLS.
 
 ## Data consistency notes
 
-- `customers.total_balance` and `bank_accounts.balance` are updated at write time by `transactionService` and by the PostgreSQL triggers in `supabase/migrations/030_balance_trigger_sign_convention.sql` (negative balance = debt). Migration `034_deposit_transaction_type.sql` adds the `deposit` enum value, seeds `transaction_types` rows, and extends the triggers to handle `deposit` like `payment`. A one-time backfill set `total_balance = current_balance` for existing customers.
+- `customers.total_balance` and `bank_accounts.balance` are updated at write time by `transactionService` and by the PostgreSQL triggers in `supabase/migrations/003_functions_triggers.sql` and `030_balance_trigger_sign_convention.sql`. Production uses **positive `total_balance` = debt**. Migration `042_deposit_transaction_type.sql` adds/seeds the `deposit` row in `transaction_types` for existing companies; the app computes customer deltas using `transaction_types.math_factor`.
 - `getCustomerById()` recomputes the balance from transactions as a safety net.
-- `getDashboardMetrics()` recomputes all totals from scratch, so dashboards are never stale.
+- `getDashboardMetrics()` recomputes all totals from scratch using the per-company `math_factor` map, so dashboards are never stale.
