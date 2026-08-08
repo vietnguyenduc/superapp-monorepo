@@ -59,6 +59,8 @@ export interface TemplateSectionItem {
   id: string;
   title_vi: string;
   title_en: string;
+  content_vi?: string;
+  content_en?: string;
   default_enabled: boolean;
   order_index: number;
   knowledge_entry_id?: string;
@@ -74,6 +76,9 @@ export interface TemplateSection {
   is_enabled: boolean;
   order_index: number;
   items: TemplateSectionItem[];
+  concept_knowledge_entry_id?: string;
+  reference_knowledge_entry_id?: string;
+  example_knowledge_entry_id?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -99,6 +104,7 @@ export interface KnowledgeEntry {
   summary_en: string;
   content_vi: string;
   content_en: string;
+  image_url?: string;
   category: "concept" | "framework";
   order_index: number;
   created_at?: string;

@@ -52,3 +52,10 @@ RLS is enabled on all tables. Users see rows where `user_id = auth.uid()`. Publi
 - The sticky "Việc trong ngày" pinned card is present in Step 2, Step 3, and Step 4, filtered by the active block.
 - `Overview`, `Actions`, and `Evening` pages/routes were removed; their logged-task purpose is merged into `History`, which displays tasks grouped by block with plan/track badges.
 - `packages/shared-utils` unused imports (`exportToFile`, `templateData`, `SupabaseClient`, `Database`) were removed so that `tsc -p apps/framework-method/tsconfig.app.json --noEmit` does not fail on cross-package `noUnusedLocals`.
+- `TemplateSection` now carries `concept_knowledge_entry_id`, `reference_knowledge_entry_id`, `example_knowledge_entry_id` so Step 2 Concepts/Reference/Examples can render knowledge content linked in Builder.
+- `TemplateSectionItem` now carries `content_vi`/`content_en` so Step 3 plan fields and Step 2 item panels can show a brief knowledge snippet inline.
+- `KnowledgeEntry` now carries `image_url` and the CRUD form is Title + Summary + Content + Image URL + Category; `vi.json`/`en.json` use `knowledge.*` keys.
+- Builder per-section and per-suggestion forms use a single title input that mirrors to `title_vi`/`title_en`; per-item forms keep a title, a content textarea, and a Knowledge link dropdown.
+- The `/knowledge` list follows the mobile mockup: search, filter chips, icon + title + summary + chevron cards.
+- `SessionPage` Step 2 renders the linked knowledge content inside each Concepts/Reference/Examples sub-accordion, then shows the item checklists and reflection inputs. Items with a linked entry or with inline content show a "Đọc lại dữ liệu" button that opens `KnowledgeModal`.
+- `SessionPage` Step 3 shows each plan field with the item title/content and a Knowledge read button; `draft` state keeps edits per selected task before saving.

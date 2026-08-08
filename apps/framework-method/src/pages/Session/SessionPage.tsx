@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiChevronLeft, FiChevronRight, FiPlus, FiTrash2, FiCheck, FiBookOpen, FiFileText, FiZap, FiClipboard, FiX } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiPlus, FiTrash2, FiCheck, FiBookOpen, FiFileText, FiZap, FiClipboard, FiX, FiMapPin, FiSave, FiChevronDown } from "react-icons/fi";
 import { Card, Button, Input } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useSession } from "../../contexts/SessionContext";
-import type { Block, BlockId, DailyTask, KnowledgeEntry, TaskSource, TemplateSection, TemplateSectionItem } from "../../types";
+import type { Block, BlockId, DailyTask, KnowledgeEntry, TemplateSection, TemplateSectionItem } from "../../types";
 
 const ANALYSIS_KEYS = {
-  reference: "__reference__",
-  examples: "__examples__",
   keyInsights: "__key_insights__",
   detailedNotes: "__detailed_notes__",
   confidence: "__confidence__",
@@ -18,7 +16,8 @@ const StepIndicator = ({ step, onChange }: { step: number; onChange?: (s: number
   const { t } = useI18n();
   const steps = [t("session.step1"), t("session.step2"), t("session.step3"), t("session.step4")];
   return (
-    <div className="flex items-center justify-between mb-6">
+    <div className="relative flex items-start justify-between mb-6">
+      <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-100 dark:bg-gray-800 -z-10 mx-8" />
       {steps.map((label, idx) => {
         const num = idx + 1;
         const active = num === step;
@@ -27,20 +26,27 @@ const StepIndicator = ({ step, onChange }: { step: number; onChange?: (s: number
           <button
             key={num}
             onClick={() => onChange?.(num)}
-            className="flex flex-col items-center gap-1 flex-1"
+            aria-current={active ? "step" : undefined}
+            className="group flex flex-col items-center gap-2 flex-1 min-w-0"
           >
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all border-2 ${
                 active
-                  ? "bg-primary-600 text-white"
+                  ? "bg-white dark:bg-gray-900 border-primary-600 text-primary-600 shadow-sm"
                   : completed
-                  ? "bg-success-600 text-white"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-500"
+                  ? "bg-success-600 border-success-600 text-white"
+                  : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400"
               }`}
             >
-              {completed ? <FiCheck className="w-4 h-4" /> : num}
+              {completed ? <FiCheck className="w-5 h-5" /> : num}
             </div>
-            <span className={`text-[10px] ${active ? "text-primary-600 font-medium" : "text-gray-400"}`}>{label}</span>
+            <span
+              className={`text-xs leading-tight text-center px-1 ${
+                active ? "text-primary-600 font-semibold" : completed ? "text-gray-700 dark:text-gray-300 font-medium" : "text-gray-400"
+              }`}
+            >
+              {label}
+            </span>
           </button>
         );
       })}
@@ -51,20 +57,20 @@ const StepIndicator = ({ step, onChange }: { step: number; onChange?: (s: number
 const BlockTabs = ({ blocks, current, onSelect }: { blocks: Block[]; current: Block | null; onSelect: (id: BlockId) => void }) => {
   const { language } = useI18n();
   return (
-    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-4">
-      {blocks.map((b) => {
-        const active = current?.id === b.id;
+    <div className="flex flex-wrap gap-2">
+      {blocks.map((block) => {
+        const active = current?.id === block.id;
         return (
           <button
-            key={b.id}
-            onClick={() => onSelect(b.id)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+            key={block.id}
+            onClick={() => onSelect(block.id)}
+            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[2.75rem] ${
               active
-                ? "bg-primary-600 text-white"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                ? "bg-primary-600 text-white shadow-sm shadow-primary-600/20"
+                : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
             }`}
           >
-            {language === "en" ? b.name_en : b.name_vi}
+            {language === "en" ? block.name_en : block.name_vi}
           </button>
         );
       })}
@@ -72,190 +78,108 @@ const BlockTabs = ({ blocks, current, onSelect }: { blocks: Block[]; current: Bl
   );
 };
 
-const Step1TaskList = () => {
-  const { t, language } = useI18n();
-  const {
-    blocks,
-    currentBlock,
-    currentBlockIndex,
-    setCurrentBlockIndex,
-    tasks,
-    pendingCarryOver,
-    addTask,
-    toggleTask,
-    removeTask,
-    blockStats,
-    taskSuggestions,
-    setStep,
-  } = useSession();
-
-  const [newTask, setNewTask] = useState("");
-
-  const suggestions = useMemo(() => {
-    if (!currentBlock) return [];
-    return (taskSuggestions[currentBlock.id] || []).map((s) => (language === "en" ? s.title_en : s.title_vi));
-  }, [taskSuggestions, currentBlock, language]);
-
-  const blockTasks = useMemo(
-    () => tasks.filter((t) => t.block_id === currentBlock?.id),
-    [tasks, currentBlock]
+const PinnedTasks = ({ tasks }: { tasks: DailyTask[] }) => {
+  const { t } = useI18n();
+  if (tasks.length === 0) return null;
+  return (
+    <div className="sticky top-16 z-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-100 dark:border-gray-800 rounded-2xl p-3 shadow-sm">
+      <div className="flex items-center gap-2 mb-2">
+        <FiMapPin className="w-4 h-4 text-primary-600" />
+        <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">{t("session.pinnedTasks")}</span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {tasks.map((task) => (
+          <span
+            key={task.id}
+            className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300 truncate max-w-[12rem]"
+            title={task.title}
+          >
+            {task.title}
+          </span>
+        ))}
+      </div>
+    </div>
   );
+};
 
-  const carryForBlock = useMemo(
-    () => pendingCarryOver.filter((t) => t.block_id === currentBlock?.id),
-    [pendingCarryOver, currentBlock]
-  );
-
-  const stats = currentBlock ? blockStats[currentBlock.id] : null;
+const InsightCard = ({ stats }: { stats: { total_done: number; total_applied: number; total_tracked: number; pending_carryover: number } | null }) => {
+  const { t } = useI18n();
 
   const insightLabels = useMemo(() => {
     if (!stats) return null;
-    const { total_done, total_applied, total_tracked, pending_carryover } = stats;
-    const appliedCount = total_applied + total_tracked;
+    const appliedCount = stats.total_applied + stats.total_tracked;
     const pick = (count: number, zero: string, one: string, other: string) => {
       if (count === 0) return t(zero, { defaultValue: "" });
       if (count === 1) return t(one, { defaultValue: "" });
       return t(other, { count });
     };
     return {
-      done: pick(total_done, "session.insight.doneZero", "session.insight.doneOne", "session.insight.done"),
+      done: pick(stats.total_done, "session.insight.doneZero", "session.insight.doneOne", "session.insight.done"),
       applied: pick(appliedCount, "session.insight.appliedZero", "session.insight.appliedOne", "session.insight.applied"),
-      pending: pick(pending_carryover, "session.insight.pendingZero", "session.insight.pendingOne", "session.insight.pending"),
+      pending: pick(stats.pending_carryover, "session.insight.pendingZero", "session.insight.pendingOne", "session.insight.pending"),
     };
   }, [stats, t]);
 
-  const handleAdd = (title: string, source: TaskSource = "suggestion") => {
-    if (!currentBlock || !title.trim()) return;
-    addTask(currentBlock.id, title, source);
-  };
-
-  const handleContinue = async () => {
-    if (currentBlockIndex < blocks.length - 1) {
-      await setCurrentBlockIndex(currentBlockIndex + 1);
-    } else {
-      await setStep(2);
-      await setCurrentBlockIndex(0);
-    }
-  };
+  if (!insightLabels) return null;
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold">
-        {t("session.whatToDoInBlock", { block: language === "en" ? currentBlock?.name_en : currentBlock?.name_vi })}
-      </h2>
+    <Card className="p-5 rounded-2xl bg-gradient-to-br from-primary-50/50 to-white dark:from-primary-900/10 dark:to-gray-900 border-primary-100 dark:border-primary-900/20">
+      <p className="text-xs font-semibold uppercase tracking-wider text-primary-600 mb-2">{t("session.didYouKnow")}</p>
+      <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-200">
+        {t("session.insight.text", {
+          done: insightLabels.done,
+          applied: insightLabels.applied,
+          pending: insightLabels.pending,
+        })}
+      </p>
+    </Card>
+  );
+};
 
-      <BlockTabs
-        blocks={blocks}
-        current={currentBlock}
-        onSelect={async (id) => {
-          const idx = blocks.findIndex((b) => b.id === id);
-          if (idx >= 0) await setCurrentBlockIndex(idx);
-        }}
-      />
-
-      {carryForBlock.length > 0 && (
-        <Card className="p-4 bg-warning-50 dark:bg-warning-900/10 border-warning-100 dark:border-warning-900/30">
-          <p className="text-xs font-semibold uppercase tracking-wider text-warning-700 dark:text-warning-300 mb-2">
-            {t("session.carryOver")}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {carryForBlock.map((task) => (
-              <button
-                key={task.id}
-                onClick={() => handleAdd(task.title, "carry_over")}
-                className="px-3 py-1.5 rounded-full text-sm bg-warning-100 dark:bg-warning-900/20 text-warning-800 dark:text-warning-200 hover:bg-warning-200 dark:hover:bg-warning-900/30"
-              >
-                {task.title}
-              </button>
-            ))}
-          </div>
-        </Card>
+const KnowledgeContent = ({ entry }: { entry: KnowledgeEntry }) => {
+  const { language } = useI18n();
+  return (
+    <div className="space-y-3">
+      {entry.image_url && (
+        <img
+          src={entry.image_url}
+          alt={language === "en" ? entry.title_en : entry.title_vi}
+          className="w-full max-h-48 object-cover rounded-xl border border-gray-100 dark:border-gray-800"
+        />
       )}
-
-      <Card className="p-4">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{t("session.suggestions")}</p>
-        <div className="flex flex-wrap gap-2">
-          {suggestions.map((s) => (
-            <button
-              key={s}
-              onClick={() => handleAdd(s, "suggestion")}
-              className="px-3 py-1.5 rounded-full text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-700"
-            >
-              {s}
-            </button>
-          ))}
-          {suggestions.length === 0 && <p className="text-sm text-gray-400 italic">{t("session.noSuggestions")}</p>}
-        </div>
-      </Card>
-
-      <Card className="p-4">
-        <div className="flex gap-2">
-          <Input
-            placeholder={t("session.addTaskPlaceholder")}
-            value={newTask}
-            onChange={(e) => setNewTask(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleAdd(newTask, "freetext");
-                setNewTask("");
-              }
-            }}
-            className="flex-1"
-          />
-          <Button onClick={() => { handleAdd(newTask, "freetext"); setNewTask(""); }}>
-            <FiPlus className="w-4 h-4" />
-          </Button>
-        </div>
-      </Card>
-
-      {stats && insightLabels && (
-        <Card className="p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{t("session.didYouKnow")}</p>
-          <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-            {t("session.insight.prefix")}{" "}
-            <span className="font-semibold text-gray-900 dark:text-gray-100">{insightLabels.done}</span>,{" "}
-            <span className="font-semibold text-gray-900 dark:text-gray-100">{insightLabels.applied}</span>, và{" "}
-            <span className="font-semibold text-gray-900 dark:text-gray-100">{insightLabels.pending}</span>.
-          </p>
-        </Card>
-      )}
-
-      {blockTasks.length > 0 && (
-        <Card className="p-4 space-y-2">
-          {blockTasks.map((task) => (
-            <TaskRow key={task.id} task={task} onToggle={toggleTask} onRemove={removeTask} />
-          ))}
-        </Card>
-      )}
-
-      <div className="flex gap-2 pt-2">
-        <Button variant="secondary" onClick={() => setStep(1)} className="flex-1">
-          {t("common.save")}
-        </Button>
-        <Button onClick={handleContinue} className="flex-1">
-          {t("common.continue")} <FiChevronRight className="w-4 h-4 ml-1" />
-        </Button>
-      </div>
+      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+        {language === "en" ? entry.content_en : entry.content_vi}
+      </p>
     </div>
   );
 };
 
-const TaskRow = ({ task, onToggle, onRemove }: { task: DailyTask; onToggle: (id: string) => void; onRemove?: (id: string) => void }) => (
-  <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-    <input
-      type="checkbox"
-      checked={task.status === "done"}
-      onChange={() => onToggle(task.id)}
-      className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-    />
-    <span className={`flex-1 text-sm ${task.status === "done" ? "line-through text-gray-400" : ""}`}>{task.title}</span>
-    {onRemove && (
-      <button onClick={() => onRemove(task.id)} className="text-gray-400 hover:text-red-500">
-        <FiTrash2 className="w-4 h-4" />
+const SubAccordion = ({
+  title,
+  icon,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) => {
+  return (
+    <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 overflow-hidden">
+      <button onClick={onToggle} className="w-full flex items-center justify-between text-left p-4 min-h-[3.5rem] hover:bg-gray-100/50 dark:hover:bg-gray-800/60 transition-colors">
+        <span className="flex items-center gap-2.5 text-sm font-semibold text-gray-900 dark:text-white">
+          {icon}
+          {title}
+        </span>
+        {open ? <FiChevronDown className="w-4 h-4 text-gray-500" /> : <FiChevronRight className="w-4 h-4 text-gray-500" />}
       </button>
-    )}
-  </div>
-);
+      {open && <div className="px-4 pb-4">{children}</div>}
+    </div>
+  );
+};
 
 const SectionAccordion = ({
   section,
@@ -267,6 +191,7 @@ const SectionAccordion = ({
   onChange: (itemId: string, value: string, enabled: boolean) => void;
 }) => {
   const { t, language } = useI18n();
+  const { knowledgeEntries } = useSession();
   const [open, setOpen] = useState(true);
   const [conceptsOpen, setConceptsOpen] = useState(true);
   const [referenceOpen, setReferenceOpen] = useState(false);
@@ -274,106 +199,85 @@ const SectionAccordion = ({
 
   const sectionTitle = language === "en" ? section.title_en : section.title_vi;
 
+  const conceptEntry = useMemo(
+    () => knowledgeEntries.find((e) => e.id === section.concept_knowledge_entry_id),
+    [knowledgeEntries, section.concept_knowledge_entry_id]
+  );
+  const referenceEntry = useMemo(
+    () => knowledgeEntries.find((e) => e.id === section.reference_knowledge_entry_id),
+    [knowledgeEntries, section.reference_knowledge_entry_id]
+  );
+  const exampleEntry = useMemo(
+    () => knowledgeEntries.find((e) => e.id === section.example_knowledge_entry_id),
+    [knowledgeEntries, section.example_knowledge_entry_id]
+  );
+
   const onField = (key: string, value: string) => onChange(key, value, true);
 
   return (
-    <Card className="p-4 space-y-3">
-      <button onClick={() => setOpen((o) => !o)} className="w-full flex items-center justify-between text-left">
-        <span className="font-semibold">{sectionTitle}</span>
-        <FiChevronRight className={`w-4 h-4 transition-transform ${open ? "rotate-90" : ""}`} />
+    <Card className="p-5 rounded-2xl space-y-3 border border-gray-100 dark:border-gray-800 shadow-sm">
+      <button onClick={() => setOpen((o) => !o)} className="w-full flex items-center justify-between text-left min-h-[3rem]">
+        <span className="text-lg font-semibold text-gray-900 dark:text-white">{sectionTitle}</span>
+        <FiChevronRight className={`w-5 h-5 text-gray-400 transition-transform ${open ? "rotate-90" : ""}`} />
       </button>
 
       {open && (
-        <div className="space-y-3">
-          <Card className="p-3 bg-gray-50 dark:bg-gray-800/40 border-0 shadow-none">
-            <button
-              onClick={() => setConceptsOpen((o) => !o)}
-              className="w-full flex items-center justify-between text-left"
-            >
-              <span className="flex items-center gap-2 text-sm font-semibold">
-                <FiBookOpen className="w-4 h-4 text-primary-600" />
-                {t("session.concepts")}
-              </span>
-              <FiChevronRight className={`w-4 h-4 transition-transform ${conceptsOpen ? "rotate-90" : ""}`} />
-            </button>
-            {conceptsOpen && (
-              <div className="mt-3 space-y-3">
-                {section.items.map((item) => (
-                  <SectionItemInput key={item.id} item={item} value={values[item.id] || ""} onChange={onChange} />
-                ))}
-              </div>
-            )}
-          </Card>
+        <div className="space-y-4 pt-2">
+          <SubAccordion
+            title={t("session.concepts")}
+            icon={<FiBookOpen className="w-4 h-4 text-primary-600" />}
+            open={conceptsOpen}
+            onToggle={() => setConceptsOpen((o) => !o)}
+          >
+            {conceptEntry ? <KnowledgeContent entry={conceptEntry} /> : <p className="text-sm text-gray-500 italic">{t("session.noConceptKnowledge")}</p>}
+            <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
+              {section.items.map((item) => (
+                <SectionItemInput key={item.id} item={item} value={values[item.id] || ""} onChange={onChange} />
+              ))}
+            </div>
+          </SubAccordion>
 
-          <Card className="p-3 bg-gray-50 dark:bg-gray-800/40 border-0 shadow-none">
-            <button
-              onClick={() => setReferenceOpen((o) => !o)}
-              className="w-full flex items-center justify-between text-left"
-            >
-              <span className="flex items-center gap-2 text-sm font-semibold">
-                <FiFileText className="w-4 h-4 text-primary-600" />
-                {t("session.reference")}
-              </span>
-              <FiChevronRight className={`w-4 h-4 transition-transform ${referenceOpen ? "rotate-90" : ""}`} />
-            </button>
-            {referenceOpen && (
-              <textarea
-                value={values[ANALYSIS_KEYS.reference] || ""}
-                onChange={(e) => onField(ANALYSIS_KEYS.reference, e.target.value)}
-                className="input h-20 resize-none mt-3"
-                placeholder={t("session.referencePlaceholder")}
-              />
-            )}
-          </Card>
+          <SubAccordion
+            title={t("session.reference")}
+            icon={<FiFileText className="w-4 h-4 text-primary-600" />}
+            open={referenceOpen}
+            onToggle={() => setReferenceOpen((o) => !o)}
+          >
+            {referenceEntry ? <KnowledgeContent entry={referenceEntry} /> : <p className="text-sm text-gray-500 italic">{t("session.noReferenceKnowledge")}</p>}
+          </SubAccordion>
 
-          <Card className="p-3 bg-gray-50 dark:bg-gray-800/40 border-0 shadow-none">
-            <button
-              onClick={() => setExamplesOpen((o) => !o)}
-              className="w-full flex items-center justify-between text-left"
-            >
-              <span className="flex items-center gap-2 text-sm font-semibold">
-                <FiZap className="w-4 h-4 text-primary-600" />
-                {t("session.examples")}
-              </span>
-              <FiChevronRight className={`w-4 h-4 transition-transform ${examplesOpen ? "rotate-90" : ""}`} />
-            </button>
-            {examplesOpen && (
-              <textarea
-                value={values[ANALYSIS_KEYS.examples] || ""}
-                onChange={(e) => onField(ANALYSIS_KEYS.examples, e.target.value)}
-                className="input h-20 resize-none mt-3"
-                placeholder={t("session.examplesPlaceholder")}
-              />
-            )}
-          </Card>
+          <SubAccordion
+            title={t("session.examples")}
+            icon={<FiZap className="w-4 h-4 text-primary-600" />}
+            open={examplesOpen}
+            onToggle={() => setExamplesOpen((o) => !o)}
+          >
+            {exampleEntry ? <KnowledgeContent entry={exampleEntry} /> : <p className="text-sm text-gray-500 italic">{t("session.noExampleKnowledge")}</p>}
+          </SubAccordion>
 
-          <Card className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20">
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <div className="rounded-2xl p-5 bg-blue-50/60 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20">
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
               <FiClipboard className="w-4 h-4 text-primary-600" />
               {t("session.yourAnalysis")}
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Input
                 label={t("session.keyInsights")}
                 value={values[ANALYSIS_KEYS.keyInsights] || ""}
                 onChange={(e) => onField(ANALYSIS_KEYS.keyInsights, e.target.value)}
                 placeholder={t("session.keyInsightsPlaceholder")}
               />
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t("session.detailedNotes")}
-                </label>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("session.detailedNotes")}</label>
                 <textarea
                   value={values[ANALYSIS_KEYS.detailedNotes] || ""}
                   onChange={(e) => onField(ANALYSIS_KEYS.detailedNotes, e.target.value)}
-                  className="input h-24 resize-none"
+                  className="input h-28 resize-none"
                   placeholder={t("session.detailedNotesPlaceholder")}
                 />
               </div>
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t("session.confidenceLevel")}
-                </label>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("session.confidenceLevel")}</label>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-gray-500">1</span>
                   <input
@@ -390,7 +294,7 @@ const SectionAccordion = ({
                 </div>
               </div>
             </div>
-          </Card>
+          </div>
         </div>
       )}
     </Card>
@@ -410,7 +314,14 @@ const KnowledgeModal = ({ entry, onClose }: { entry: KnowledgeEntry; onClose: ()
           </button>
         </div>
         <div className="p-4 space-y-4">
-          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+          {entry.image_url && (
+            <img
+              src={entry.image_url}
+              alt={language === "en" ? entry.title_en : entry.title_vi}
+              className="w-full rounded-xl border border-gray-100 dark:border-gray-800"
+            />
+          )}
+          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
             {language === "en" ? entry.content_en : entry.content_vi}
           </p>
           <div className="flex flex-col gap-2 pt-2">
@@ -440,10 +351,24 @@ const SectionItemInput = ({
   const [showKnowledge, setShowKnowledge] = useState(false);
   const knowledgeEntry = item.knowledge_entry_id ? knowledgeEntries.find((e) => e.id === item.knowledge_entry_id) : undefined;
 
+  const itemContent = language === "en" ? item.content_en : item.content_vi;
+
+  const fallbackEntry: KnowledgeEntry = {
+    id: item.id,
+    title_vi: item.title_vi,
+    title_en: item.title_en,
+    content_vi: item.content_vi || "",
+    content_en: item.content_en || "",
+    summary_vi: item.content_vi || "",
+    summary_en: item.content_en || "",
+    category: "concept",
+    order_index: 0,
+  };
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-start justify-between gap-2">
-        <label className="flex items-center gap-2 text-sm font-medium">
+    <div className="space-y-3 p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+      <div className="flex items-start justify-between gap-3">
+        <label className="flex items-center gap-3 text-sm font-semibold text-gray-900 dark:text-white min-h-[2.75rem]">
           <input
             type="checkbox"
             checked={enabled}
@@ -451,14 +376,14 @@ const SectionItemInput = ({
               setEnabled(e.target.checked);
               onChange(item.id, value, e.target.checked);
             }}
-            className="w-4 h-4 rounded border-gray-300 text-primary-600"
+            className="w-5 h-5 rounded-lg border-gray-300 text-primary-600"
           />
           {language === "en" ? item.title_en : item.title_vi}
         </label>
-        {knowledgeEntry && (
+        {(knowledgeEntry || itemContent) && (
           <button
             onClick={() => setShowKnowledge(true)}
-            className="flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700 shrink-0"
+            className="flex items-center gap-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 shrink-0 px-2 py-1 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/10"
             title={t("session.readKnowledge")}
           >
             <FiBookOpen className="w-4 h-4" />
@@ -467,37 +392,168 @@ const SectionItemInput = ({
         )}
       </div>
       {enabled && (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(item.id, e.target.value, enabled)}
-          className="input h-20 resize-none"
-          placeholder={t("session.reflectionPlaceholder")}
-        />
+        <>
+          {itemContent && (
+            <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60">
+              {itemContent}
+            </div>
+          )}
+          <textarea
+            value={value}
+            onChange={(e) => onChange(item.id, e.target.value, enabled)}
+            className="input h-24 resize-none"
+            placeholder={t("session.reflectionPlaceholder")}
+          />
+        </>
       )}
-      {showKnowledge && knowledgeEntry && <KnowledgeModal entry={knowledgeEntry} onClose={() => setShowKnowledge(false)} />}
+      {showKnowledge && <KnowledgeModal entry={knowledgeEntry || fallbackEntry} onClose={() => setShowKnowledge(false)} />}
     </div>
   );
 };
 
-const PinnedTasks = ({ tasks }: { tasks: DailyTask[] }) => {
-  const { t } = useI18n();
-  if (tasks.length === 0) return null;
-  return (
-    <Card className="p-3 bg-primary-50 dark:bg-primary-900/10 border-primary-100 dark:border-primary-900/30 sticky top-16 md:top-0 z-20">
-      <p className="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300 mb-2">
-        {t("session.pinnedTasks")}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {tasks.map((task) => (
-          <span
-            key={task.id}
-            className="px-2 py-1 rounded-md text-xs bg-white dark:bg-gray-800 border border-primary-100 dark:border-primary-900/30"
-          >
-            {task.title}
-          </span>
-        ))}
+const Step1TaskList = () => {
+  const { t, language } = useI18n();
+  const { blocks, currentBlock, setCurrentBlockIndex, tasks, addTask, toggleTask, removeTask, blockStats, taskSuggestions, pendingCarryOver, setStep, isLoading } = useSession();
+
+  const currentStats = currentBlock?.id ? blockStats[currentBlock.id] : null;
+
+  const suggestions = useMemo(() => {
+    if (!currentBlock) return [];
+    const carry = pendingCarryOver.filter((t) => t.block_id === currentBlock.id);
+    const list = taskSuggestions[currentBlock.id] || [];
+    const seen = new Set<string>();
+    const result: { title: string; isCarry: boolean }[] = [];
+    carry.forEach((t) => {
+      if (!seen.has(t.title)) {
+        seen.add(t.title);
+        result.push({ title: t.title, isCarry: true });
+      }
+    });
+    list.forEach((s) => {
+      if (!seen.has(s.title_vi) && !seen.has(s.title_en)) {
+        seen.add(language === "en" ? s.title_en : s.title_vi);
+        result.push({ title: language === "en" ? s.title_en : s.title_vi, isCarry: false });
+      }
+    });
+    return result;
+  }, [currentBlock, pendingCarryOver, taskSuggestions, language]);
+
+  const [newTask, setNewTask] = useState("");
+  const blockTasks = useMemo(() => tasks.filter((t) => t.block_id === currentBlock?.id), [tasks, currentBlock]);
+
+  const handleAddTask = () => {
+    if (!newTask.trim() || !currentBlock) return;
+    addTask(currentBlock.id, newTask.trim(), "freetext");
+    setNewTask("");
+  };
+
+  const handleContinue = async () => {
+    if (!blocks.length) return;
+    const currentIndex = blocks.findIndex((b) => b.id === currentBlock?.id);
+    if (currentIndex < blocks.length - 1) {
+      await setCurrentBlockIndex(currentIndex + 1);
+    } else {
+      setStep(2);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-gray-500">{t("common.loading")}</p>
       </div>
-    </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+        {t("session.step1Title", { block: language === "en" ? currentBlock?.name_en : currentBlock?.name_vi })}
+      </h2>
+
+      <BlockTabs
+        blocks={blocks}
+        current={currentBlock}
+        onSelect={async (id) => {
+          const idx = blocks.findIndex((b) => b.id === id);
+          if (idx >= 0) await setCurrentBlockIndex(idx);
+        }}
+      />
+
+      <PinnedTasks tasks={blockTasks} />
+
+      {currentStats && <InsightCard stats={currentStats} />}
+
+      <Card className="p-5 rounded-2xl space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t("session.suggestions")}</p>
+        {suggestions.length === 0 ? (
+          <p className="text-sm text-gray-500">{t("session.noSuggestions")}</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {suggestions.map((s, idx) => (
+              <button
+                key={`${s.title}-${idx}`}
+                onClick={() => {
+                  if (currentBlock) addTask(currentBlock.id, s.title, s.isCarry ? "carry_over" : "suggestion");
+                }}
+                className="px-4 py-2.5 rounded-full text-sm font-medium bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50/50 dark:hover:bg-primary-900/10 transition-colors min-h-[2.75rem]"
+              >
+                {s.title}
+                {s.isCarry && <span className="ml-1.5 text-xs text-primary-600">({t("session.carryOver")})</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-5 rounded-2xl space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t("session.tasksDone")}</p>
+        {blockTasks.length === 0 ? (
+          <p className="text-sm text-gray-500">{t("session.emptyTasks")}</p>
+        ) : (
+          <div className="space-y-2">
+            {blockTasks.map((task) => (
+              <label key={task.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/40 min-h-[3rem]">
+                <input
+                  type="checkbox"
+                  checked={task.status === "done"}
+                  onChange={() => toggleTask(task.id)}
+                  className="w-5 h-5 rounded border-gray-300 text-primary-600"
+                />
+                <span className={`flex-1 text-sm ${task.status === "done" ? "line-through text-gray-400" : "text-gray-900 dark:text-gray-100"}`}>{task.title}</span>
+                <button
+                  onClick={() => removeTask(task.id)}
+                  aria-label={t("common.delete")}
+                  className="p-2 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
+                  <FiTrash2 className="w-4 h-4" />
+                </button>
+              </label>
+            ))}
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newTask}
+            onChange={(e) => setNewTask(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAddTask()}
+            placeholder={t("session.addTaskPlaceholder")}
+            className="input flex-1"
+          />
+          <Button onClick={handleAddTask} aria-label={t("common.add")}>
+            <FiPlus className="w-4 h-4" />
+          </Button>
+        </div>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={handleContinue}>
+          {t("common.continue")} <FiChevronRight className="w-4 h-4 ml-1" />
+        </Button>
+      </div>
+    </div>
   );
 };
 
@@ -506,18 +562,15 @@ const Step2Recognize = () => {
   const { blocks, currentBlock, setCurrentBlockIndex, tasks, getTemplate, referenceInputs, saveReferenceInput, setStep } = useSession();
   const template = getTemplate(currentBlock?.id || blocks[0]?.id, "recognize");
 
-  const blockTasks = useMemo(
-    () => tasks.filter((t) => t.block_id === currentBlock?.id),
-    [tasks, currentBlock]
-  );
+  const blockTasks = useMemo(() => tasks.filter((t) => t.block_id === currentBlock?.id), [tasks, currentBlock]);
 
   const handleSave = (sectionId: string, itemId: string, content: string, enabled: boolean) => {
     saveReferenceInput(sectionId, itemId, content, enabled);
   };
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold">{t("session.step2Title")}</h2>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t("session.step2Title")}</h2>
 
       <PinnedTasks tasks={blockTasks} />
 
@@ -542,13 +595,7 @@ const Step2Recognize = () => {
             const key = `${section.id}:${item.id}`;
             if (referenceInputs[key]) values[item.id] = referenceInputs[key].content;
           });
-          [
-            ANALYSIS_KEYS.reference,
-            ANALYSIS_KEYS.examples,
-            ANALYSIS_KEYS.keyInsights,
-            ANALYSIS_KEYS.detailedNotes,
-            ANALYSIS_KEYS.confidence,
-          ].forEach((k) => {
+          [ANALYSIS_KEYS.keyInsights, ANALYSIS_KEYS.detailedNotes, ANALYSIS_KEYS.confidence].forEach((k) => {
             const key = `${section.id}:${k}`;
             if (referenceInputs[key]) values[k] = referenceInputs[key].content;
           });
@@ -562,8 +609,8 @@ const Step2Recognize = () => {
           );
         })}
 
-      <div className="flex gap-2 pt-2">
-        <Button variant="secondary" onClick={() => setStep(1)}>
+      <div className="flex gap-3 pt-2">
+        <Button variant="secondary" onClick={() => setStep(1)} className="flex-1">
           <FiChevronLeft className="w-4 h-4 mr-1" /> {t("common.back")}
         </Button>
         <Button onClick={() => setStep(3)} className="flex-1">
@@ -588,14 +635,27 @@ const PlanField = ({
   const [showKnowledge, setShowKnowledge] = useState(false);
   const knowledgeEntry = item.knowledge_entry_id ? knowledgeEntries.find((e) => e.id === item.knowledge_entry_id) : undefined;
 
+  const itemContent = language === "en" ? item.content_en : item.content_vi;
+  const fallbackEntry: KnowledgeEntry = {
+    id: item.id,
+    title_vi: item.title_vi,
+    title_en: item.title_en,
+    content_vi: item.content_vi || "",
+    content_en: item.content_en || "",
+    summary_vi: item.content_vi || "",
+    summary_en: item.content_en || "",
+    category: "concept",
+    order_index: 0,
+  };
+
   return (
-    <div>
-      <div className="flex items-center justify-between gap-2 mb-1">
-        <label className="block text-sm font-medium">{language === "en" ? item.title_en : item.title_vi}</label>
-        {knowledgeEntry && (
+    <div className="space-y-3 p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+      <div className="flex items-start justify-between gap-3">
+        <label className="text-sm font-semibold text-gray-900 dark:text-white">{language === "en" ? item.title_en : item.title_vi}</label>
+        {(knowledgeEntry || itemContent) && (
           <button
             onClick={() => setShowKnowledge(true)}
-            className="flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700 shrink-0"
+            className="flex items-center gap-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 shrink-0 px-2 py-1 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/10"
             title={t("session.readKnowledge")}
           >
             <FiBookOpen className="w-4 h-4" />
@@ -603,44 +663,53 @@ const PlanField = ({
           </button>
         )}
       </div>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} />
-      {showKnowledge && knowledgeEntry && <KnowledgeModal entry={knowledgeEntry} onClose={() => setShowKnowledge(false)} />}
+      {itemContent && (
+        <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60">
+          {itemContent}
+        </div>
+      )}
+      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={t("session.planPlaceholder")} />
+      {showKnowledge && <KnowledgeModal entry={knowledgeEntry || fallbackEntry} onClose={() => setShowKnowledge(false)} />}
     </div>
   );
 };
 
 const Step3Apply = () => {
-  const { t, language } = useI18n();
+  const { t } = useI18n();
   const { currentBlock, blocks, setCurrentBlockIndex, tasks, getTemplate, applyPlans, saveApplyPlan, setStep, setSelectedTaskId, selectedTaskId } = useSession();
   const template = getTemplate(currentBlock?.id || blocks[0]?.id, "apply");
 
   const blockTasks = useMemo(() => tasks.filter((t) => t.block_id === currentBlock?.id), [tasks, currentBlock]);
-  const selected = blockTasks.find((t) => t.id === selectedTaskId) || blockTasks[0] || null;
-
-  const [values, setValues] = useState<Record<string, string>>({});
-
-  const plan = selected ? applyPlans[selected.id] : null;
 
   useEffect(() => {
-    if (plan) setValues(plan.plan_data);
-    else setValues({});
-  }, [selected, plan]);
+    if (blockTasks.length > 0 && !selectedTaskId) {
+      setSelectedTaskId(blockTasks[0].id);
+    }
+  }, [blockTasks, selectedTaskId, setSelectedTaskId]);
+
+  const selectedTask = blockTasks.find((t) => t.id === selectedTaskId);
+  const plan = selectedTaskId ? applyPlans[selectedTaskId] : undefined;
+  const initialPlan = plan?.plan_data || {};
+
+  const [draft, setDraft] = useState<Record<string, string>>(initialPlan);
+
+  useEffect(() => {
+    setDraft(plan?.plan_data || {});
+  }, [selectedTaskId, plan?.plan_data]);
 
   const handleSave = async () => {
-    if (!selected) return;
-    await saveApplyPlan(selected.id, values);
-    // Move to next task without plan
-    const currentIdx = blockTasks.findIndex((t) => t.id === selected.id);
-    const next = blockTasks.slice(currentIdx + 1).find((t) => !applyPlans[t.id]);
-    if (next) setSelectedTaskId(next.id);
-    else setSelectedTaskId(null);
+    if (!selectedTask) return;
+    const items = template?.sections?.[0]?.items || [];
+    const data: Record<string, string> = {};
+    items.forEach((item) => {
+      data[item.id] = draft[item.id] || "";
+    });
+    await saveApplyPlan(selectedTask.id, data);
   };
 
-  const allApplied = useMemo(() => blockTasks.length > 0 && blockTasks.every((t) => applyPlans[t.id]), [blockTasks, applyPlans]);
-
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold">{t("session.step3Title")}</h2>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t("session.step3Title")}</h2>
 
       <PinnedTasks tasks={blockTasks} />
 
@@ -653,56 +722,52 @@ const Step3Apply = () => {
         }}
       />
 
-      <Card className="p-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{t("session.chooseTask")}</p>
+      <Card className="p-5 rounded-2xl space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t("session.chooseTask")}</p>
         <div className="flex flex-wrap gap-2">
-          {blockTasks.map((task) => {
-            const done = !!applyPlans[task.id];
-            return (
-              <button
-                key={task.id}
-                onClick={() => setSelectedTaskId(task.id)}
-                className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  selected?.id === task.id
-                    ? "bg-primary-600 text-white"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
-                }`}
-              >
-                {done && <FiCheck className="w-3 h-3" />}
-                {task.title}
-              </button>
-            );
-          })}
+          {blockTasks.map((task) => (
+            <button
+              key={task.id}
+              onClick={() => setSelectedTaskId(task.id)}
+              className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[2.75rem] ${
+                selectedTaskId === task.id
+                  ? "bg-primary-600 text-white shadow-sm shadow-primary-600/20"
+                  : applyPlans[task.id]
+                  ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                  : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+              }`}
+            >
+              {task.title}
+            </button>
+          ))}
         </div>
       </Card>
 
-      {selected && template?.sections?.map((section) => (
-        <Card key={section.id} className="p-4">
-          <h3 className="font-semibold mb-3">{language === "en" ? section.title_en : section.title_vi}</h3>
-          <div className="space-y-3">
-            {section.items.map((item) => (
+      {selectedTask && (
+        <Card className="p-5 rounded-2xl space-y-5">
+          <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{t("session.planFor", { task: selectedTask.title })}</h3>
+          {template?.sections?.map((section) =>
+            section.items.map((item) => (
               <PlanField
                 key={item.id}
                 item={item}
-                value={values[item.id] || ""}
-                onChange={(value) => setValues((prev) => ({ ...prev, [item.id]: value }))}
+                value={draft[item.id] || ""}
+                onChange={(value) => setDraft((prev) => ({ ...prev, [item.id]: value }))}
               />
-            ))}
-          </div>
-        </Card>
-      ))}
+            ))
+          )}
 
-      {selected && (
-        <Button onClick={handleSave} className="w-full">
-          <FiCheck className="w-4 h-4 mr-1" /> {t("session.savePlan")}
-        </Button>
+          <Button onClick={handleSave}>
+            <FiSave className="w-4 h-4 mr-1" /> {t("session.savePlan")}
+          </Button>
+        </Card>
       )}
 
-      <div className="flex gap-2 pt-2">
+      <div className="flex gap-3 pt-2">
         <Button variant="secondary" onClick={() => setStep(2)}>
           <FiChevronLeft className="w-4 h-4 mr-1" /> {t("common.back")}
         </Button>
-        <Button variant={allApplied ? "primary" : "secondary"} onClick={() => setStep(4)} className="flex-1">
+        <Button onClick={() => setStep(4)} className="flex-1">
           {t("common.continue")} <FiChevronRight className="w-4 h-4 ml-1" />
         </Button>
       </div>
@@ -716,39 +781,36 @@ const Step4Track = () => {
   const template = getTemplate(currentBlock?.id || blocks[0]?.id, "track");
 
   const blockTasks = useMemo(() => tasks.filter((t) => t.block_id === currentBlock?.id), [tasks, currentBlock]);
-  const selected = blockTasks.find((t) => t.id === selectedTaskId) || blockTasks[0] || null;
-
-  const existing = selected ? tracks[selected.id] : null;
-  const [fields, setFields] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (existing) {
-      setFields({ dich: existing.dich, thuc_te: existing.thuc_te, phuong_phap: existing.phuong_phap });
-    } else {
-      setFields({ dich: "", thuc_te: "", phuong_phap: "" });
+    if (blockTasks.length > 0 && !selectedTaskId) {
+      setSelectedTaskId(blockTasks[0].id);
     }
-  }, [selected, existing]);
+  }, [blockTasks, selectedTaskId, setSelectedTaskId]);
 
-  const handleSave = async () => {
-    if (!selected) return;
-    await saveTrack(selected.id, { dich: fields.dich || "", thuc_te: fields.thuc_te || "", phuong_phap: fields.phuong_phap || "" });
-    const currentIdx = blockTasks.findIndex((t) => t.id === selected.id);
-    const next = blockTasks.slice(currentIdx + 1).find((t) => !tracks[t.id]);
-    if (next) setSelectedTaskId(next.id);
-    else setSelectedTaskId(null);
-  };
+  const selectedTask = blockTasks.find((t) => t.id === selectedTaskId);
+  const track = selectedTaskId ? tracks[selectedTaskId] : undefined;
+
+  const [dich, setDich] = useState(track?.dich || "");
+  const [thucTe, setThucTe] = useState(track?.thuc_te || "");
+  const [phuongPhap, setPhuongPhap] = useState(track?.phuong_phap || "");
+
+  useEffect(() => {
+    setDich(track?.dich || "");
+    setThucTe(track?.thuc_te || "");
+    setPhuongPhap(track?.phuong_phap || "");
+  }, [track]);
 
   const allTracked = useMemo(() => blockTasks.length > 0 && blockTasks.every((t) => tracks[t.id]), [blockTasks, tracks]);
 
-  const trackItems = template?.sections?.[0]?.items || [
-    { id: "dich", title_vi: "Đích", title_en: "Goal" },
-    { id: "thuc_te", title_vi: "Thực tế", title_en: "Reality" },
-    { id: "phuong_phap", title_vi: "Phương pháp", title_en: "Method" },
-  ];
+  const handleSave = async () => {
+    if (!selectedTask) return;
+    await saveTrack(selectedTask.id, { dich, thuc_te: thucTe, phuong_phap: phuongPhap });
+  };
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold">{t("session.step4Title")}</h2>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t("session.step4Title")}</h2>
 
       <PinnedTasks tasks={blockTasks} />
 
@@ -761,48 +823,60 @@ const Step4Track = () => {
         }}
       />
 
-      <Card className="p-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{t("session.chooseTask")}</p>
+      <Card className="p-5 rounded-2xl space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t("session.chooseTask")}</p>
         <div className="flex flex-wrap gap-2">
-          {blockTasks.map((task) => {
-            const done = !!tracks[task.id];
-            return (
-              <button
-                key={task.id}
-                onClick={() => setSelectedTaskId(task.id)}
-                className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  selected?.id === task.id
-                    ? "bg-primary-600 text-white"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
-                }`}
-              >
-                {done && <FiCheck className="w-3 h-3" />}
-                {task.title}
-              </button>
-            );
-          })}
+          {blockTasks.map((task) => (
+            <button
+              key={task.id}
+              onClick={() => setSelectedTaskId(task.id)}
+              className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[2.75rem] ${
+                selectedTaskId === task.id
+                  ? "bg-primary-600 text-white shadow-sm shadow-primary-600/20"
+                  : tracks[task.id]
+                  ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                  : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+              }`}
+            >
+              {task.title}
+            </button>
+          ))}
         </div>
       </Card>
 
-      {selected && (
-        <Card className="p-4 space-y-3">
-          {trackItems.map((item) => (
-            <div key={item.id}>
-              <label className="block text-sm font-medium mb-1">{language === "en" ? item.title_en : item.title_vi}</label>
-              <textarea
-                value={fields[item.id] || ""}
-                onChange={(e) => setFields((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                className="input h-20 resize-none"
-              />
-            </div>
-          ))}
-          <Button onClick={handleSave} className="w-full">
-            <FiCheck className="w-4 h-4 mr-1" /> {t("session.saveTrack")}
+      {selectedTask && (
+        <Card className="p-5 rounded-2xl space-y-5">
+          <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{t("session.trackFor", { task: selectedTask.title })}</h3>
+          {template?.sections?.[0]?.items.map((item) => {
+            const value = item.id === "dich" ? dich : item.id === "thuc_te" ? thucTe : phuongPhap;
+            const setter = item.id === "dich" ? setDich : item.id === "thuc_te" ? setThucTe : setPhuongPhap;
+            const itemContent = language === "en" ? item.content_en : item.content_vi;
+            return (
+              <div key={item.id} className="space-y-3 p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
+                <label className="block text-sm font-semibold text-gray-900 dark:text-white">
+                  {language === "en" ? item.title_en : item.title_vi}
+                </label>
+                {itemContent && (
+                  <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60">
+                    {itemContent}
+                  </div>
+                )}
+                <textarea
+                  value={value}
+                  onChange={(e) => setter(e.target.value)}
+                  className="input h-28 resize-none"
+                  placeholder={t("session.trackPlaceholder")}
+                />
+              </div>
+            );
+          })}
+          <Button onClick={handleSave}>
+            <FiSave className="w-4 h-4 mr-1" /> {t("session.saveTrack")}
           </Button>
         </Card>
       )}
 
-      <div className="flex gap-2 pt-2">
+      <div className="flex gap-3 pt-2">
         <Button variant="secondary" onClick={() => setStep(3)}>
           <FiChevronLeft className="w-4 h-4 mr-1" /> {t("common.back")}
         </Button>
@@ -823,10 +897,9 @@ const Step4Track = () => {
 const SessionPage = () => {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { step, setStep, isLoading, saveDraft } = useSession();
+  const { step, setStep, saveDraft } = useSession();
 
   const renderStep = () => {
-    if (isLoading) return <p className="text-center text-gray-500 py-10">{t("common.loading")}</p>;
     switch (step) {
       case 1:
         return <Step1TaskList />;

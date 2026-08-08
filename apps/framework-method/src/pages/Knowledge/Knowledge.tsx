@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { FiTrash2, FiEdit2, FiBookOpen, FiSearch } from "react-icons/fi";
-import { Card, Button, Input } from "../../components/UI";
+import { FiTrash2, FiEdit2, FiBookOpen, FiSearch, FiChevronRight, FiZap } from "react-icons/fi";
+import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useSession } from "../../contexts/SessionContext";
 import type { KnowledgeEntry } from "../../types";
@@ -16,6 +16,7 @@ const emptyEntry: EntryForm = {
   summary_en: "",
   content_vi: "",
   content_en: "",
+  image_url: "",
   category: "concept",
 };
 
@@ -74,67 +75,72 @@ const Knowledge = () => {
         <p className="text-sm text-gray-500 dark:text-gray-400">{t("knowledge.subtitle")}</p>
       </div>
 
-      <Card className="p-4 space-y-3">
-        <h2 className="font-semibold">{editing ? t("knowledge.edit") : t("knowledge.add")}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Input
-            label={t("knowledge.titleVi")}
+      <Card className="p-5 space-y-4 rounded-2xl">
+        <h2 className="text-lg font-semibold">{editing ? t("knowledge.edit") : t("knowledge.add")}</h2>
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("knowledge.fieldTitle")}</label>
+          <input
+            type="text"
             value={form.title_vi}
-            onChange={(e) => setForm({ ...form, title_vi: e.target.value })}
-          />
-          <Input
-            label={t("knowledge.titleEn")}
-            value={form.title_en}
-            onChange={(e) => setForm({ ...form, title_en: e.target.value })}
-          />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Input
-            label={t("knowledge.summaryVi")}
-            value={form.summary_vi}
-            onChange={(e) => setForm({ ...form, summary_vi: e.target.value })}
-          />
-          <Input
-            label={t("knowledge.summaryEn")}
-            value={form.summary_en}
-            onChange={(e) => setForm({ ...form, summary_en: e.target.value })}
-          />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("knowledge.contentVi")}</label>
-            <textarea
-              value={form.content_vi}
-              onChange={(e) => setForm({ ...form, content_vi: e.target.value })}
-              className="input h-24 resize-none"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("knowledge.contentEn")}</label>
-            <textarea
-              value={form.content_en}
-              onChange={(e) => setForm({ ...form, content_en: e.target.value })}
-              className="input h-24 resize-none"
-            />
-          </div>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <select
-            value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value as "concept" | "framework" })}
+            onChange={(e) => setForm({ ...form, title_vi: e.target.value, title_en: e.target.value })}
             className="input"
-          >
-            <option value="concept">{t("knowledge.concept")}</option>
-            <option value="framework">{t("knowledge.framework")}</option>
-          </select>
-          <div className="flex gap-2">
-            <Button onClick={handleSave}>{editing ? t("common.save") : t("knowledge.add")}</Button>
-            {editing && (
-              <Button variant="secondary" onClick={reset}>
-                {t("common.cancel")}
-              </Button>
-            )}
+            placeholder={t("knowledge.titlePlaceholder")}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("knowledge.fieldSummary")}</label>
+          <input
+            type="text"
+            value={form.summary_vi}
+            onChange={(e) => setForm({ ...form, summary_vi: e.target.value, summary_en: e.target.value })}
+            className="input"
+            placeholder={t("knowledge.summaryPlaceholder")}
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("knowledge.imageUrl")}</label>
+            <input
+              type="text"
+              value={form.image_url || ""}
+              onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+              className="input"
+              placeholder="https://..."
+            />
           </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("knowledge.fieldCategory")}</label>
+            <select
+              value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value as "concept" | "framework" })}
+              className="input"
+            >
+              <option value="concept">{t("knowledge.concept")}</option>
+              <option value="framework">{t("knowledge.framework")}</option>
+            </select>
+          </div>
+        </div>
+        {form.image_url && (
+          <div className="flex items-center gap-3">
+            <img src={form.image_url} alt="" className="h-20 w-20 object-cover rounded-xl border border-gray-200 dark:border-gray-700" />
+          </div>
+        )}
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("knowledge.fieldContent")}</label>
+          <textarea
+            value={form.content_vi}
+            onChange={(e) => setForm({ ...form, content_vi: e.target.value, content_en: e.target.value })}
+            className="input h-40 resize-none"
+            placeholder={t("knowledge.contentPlaceholder")}
+          />
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 pt-1">
+          <Button onClick={handleSave}>{editing ? t("common.save") : t("knowledge.add")}</Button>
+          {editing && (
+            <Button variant="secondary" onClick={reset}>
+              {t("common.cancel")}
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -168,29 +174,33 @@ const Knowledge = () => {
 
         {filteredEntries.length === 0 && <p className="text-sm text-gray-500">{t("knowledge.empty")}</p>}
         {filteredEntries.map((entry) => (
-          <Card key={entry.id} className="p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center shrink-0">
-                  <FiBookOpen className="w-5 h-5 text-primary-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">{language === "en" ? entry.title_en : entry.title_vi}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
-                    {language === "en" ? (entry.summary_en || entry.content_en) : (entry.summary_vi || entry.content_vi)}
-                  </p>
-                  <span className="inline-block mt-2 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500">
-                    {entry.category === "concept" ? t("knowledge.concept") : t("knowledge.framework")}
-                  </span>
-                </div>
+          <Card key={entry.id} className="p-4 group">
+            <div className="flex items-start gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center shrink-0">
+                {entry.category === "framework" ? (
+                  <FiZap className="w-6 h-6 text-primary-600" />
+                ) : (
+                  <FiBookOpen className="w-6 h-6 text-primary-600" />
+                )}
               </div>
-              <div className="flex flex-col gap-2 shrink-0">
-                <button onClick={() => startEdit(entry)} className="p-2 text-gray-400 hover:text-primary-600">
-                  <FiEdit2 className="w-4 h-4" />
-                </button>
-                <button onClick={() => removeKnowledgeEntry(entry.id)} className="p-2 text-gray-400 hover:text-red-500">
-                  <FiTrash2 className="w-4 h-4" />
-                </button>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-base leading-snug line-clamp-2">
+                  {language === "en" ? entry.title_en : entry.title_vi}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">
+                  {language === "en" ? (entry.summary_en || entry.content_en) : (entry.summary_vi || entry.content_vi)}
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <FiChevronRight className="w-5 h-5 text-gray-300 group-hover:text-primary-600 transition-colors" />
+                <div className="flex gap-1">
+                  <button onClick={() => startEdit(entry)} className="p-1.5 rounded-full text-gray-400 hover:text-primary-600 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <FiEdit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => removeKnowledgeEntry(entry.id)} className="p-1.5 rounded-full text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <FiTrash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
           </Card>

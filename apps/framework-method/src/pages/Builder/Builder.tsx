@@ -229,18 +229,12 @@ const Builder = () => {
         <div className="space-y-3">
           {blockSuggestions.map((suggestion, idx) => (
             <div key={suggestion.id} className="flex items-start gap-2">
-              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
-                <Input
-                  value={suggestion.title_vi}
-                  onChange={(e) => updateSuggestion(suggestion.id, { title_vi: e.target.value })}
-                  placeholder={t("builder.titleVi")}
-                />
-                <Input
-                  value={suggestion.title_en}
-                  onChange={(e) => updateSuggestion(suggestion.id, { title_en: e.target.value })}
-                  placeholder={t("builder.titleEn")}
-                />
-              </div>
+              <Input
+                value={suggestion.title_vi}
+                onChange={(e) => updateSuggestion(suggestion.id, { title_vi: e.target.value, title_en: e.target.value })}
+                placeholder={t("builder.suggestionTitle")}
+                className="flex-1"
+              />
               <div className="flex flex-col gap-1">
                 <button onClick={() => moveSuggestion(idx, -1)} className="p-1 text-gray-400 hover:text-primary-600">
                   <FiArrowUp className="w-4 h-4" />
@@ -299,18 +293,12 @@ const Builder = () => {
             ) : (
               <div className="space-y-4">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <Input
-                      label={t("builder.titleVi")}
-                      value={section.title_vi}
-                      onChange={(e) => updateSection(section.id, (s) => ({ ...s, title_vi: e.target.value }))}
-                    />
-                    <Input
-                      label={t("builder.titleEn")}
-                      value={section.title_en}
-                      onChange={(e) => updateSection(section.id, (s) => ({ ...s, title_en: e.target.value }))}
-                    />
-                  </div>
+                  <Input
+                    label={t("builder.sectionTitle")}
+                    value={section.title_vi}
+                    onChange={(e) => updateSection(section.id, (s) => ({ ...s, title_vi: e.target.value, title_en: e.target.value }))}
+                    className="flex-1"
+                  />
                   <div className="flex flex-col gap-1">
                     <button onClick={() => moveSection(sectionIndex, -1)} className="p-1 text-gray-400 hover:text-primary-600" aria-label="Move up">
                       <FiArrowUp className="w-4 h-4" />
@@ -331,6 +319,56 @@ const Builder = () => {
                   {t("builder.enabled")}
                 </label>
 
+                {selectedStep === "recognize" && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-gray-500">{t("builder.conceptKnowledge")}</label>
+                      <select
+                        value={section.concept_knowledge_entry_id || ""}
+                        onChange={(e) => updateSection(section.id, (s) => ({ ...s, concept_knowledge_entry_id: e.target.value || undefined }))}
+                        className="input text-sm"
+                      >
+                        <option value="">{t("builder.noKnowledgeLink")}</option>
+                        {knowledgeEntries.map((entry) => (
+                          <option key={entry.id} value={entry.id}>
+                            {language === "en" ? entry.title_en : entry.title_vi}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-gray-500">{t("builder.referenceKnowledge")}</label>
+                      <select
+                        value={section.reference_knowledge_entry_id || ""}
+                        onChange={(e) => updateSection(section.id, (s) => ({ ...s, reference_knowledge_entry_id: e.target.value || undefined }))}
+                        className="input text-sm"
+                      >
+                        <option value="">{t("builder.noKnowledgeLink")}</option>
+                        {knowledgeEntries.map((entry) => (
+                          <option key={entry.id} value={entry.id}>
+                            {language === "en" ? entry.title_en : entry.title_vi}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-gray-500">{t("builder.exampleKnowledge")}</label>
+                      <select
+                        value={section.example_knowledge_entry_id || ""}
+                        onChange={(e) => updateSection(section.id, (s) => ({ ...s, example_knowledge_entry_id: e.target.value || undefined }))}
+                        className="input text-sm"
+                      >
+                        <option value="">{t("builder.noKnowledgeLink")}</option>
+                        {knowledgeEntries.map((entry) => (
+                          <option key={entry.id} value={entry.id}>
+                            {language === "en" ? entry.title_en : entry.title_vi}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-3 pl-4 border-l-2 border-gray-100 dark:border-gray-800">
                   {section.items.map((item, itemIndex) => (
                     <div key={item.id} className="space-y-2">
@@ -344,16 +382,30 @@ const Builder = () => {
                           />
                         </label>
                         <div className="flex-1 space-y-2">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            <Input
-                              value={item.title_vi}
-                              onChange={(e) => updateItem(section.id, item.id, (it) => ({ ...it, title_vi: e.target.value }))}
-                              placeholder={t("builder.titleVi")}
-                            />
-                            <Input
-                              value={item.title_en}
-                              onChange={(e) => updateItem(section.id, item.id, (it) => ({ ...it, title_en: e.target.value }))}
-                              placeholder={t("builder.titleEn")}
+                          <Input
+                            value={item.title_vi}
+                            onChange={(e) =>
+                              updateItem(section.id, item.id, (it) => ({
+                                ...it,
+                                title_vi: e.target.value,
+                                title_en: e.target.value,
+                              }))
+                            }
+                            placeholder={t("builder.itemTitle")}
+                          />
+                          <div className="space-y-1">
+                            <label className="block text-xs font-medium text-gray-500">{t("builder.itemContent")}</label>
+                            <textarea
+                              value={item.content_vi || ""}
+                              onChange={(e) =>
+                                updateItem(section.id, item.id, (it) => ({
+                                  ...it,
+                                  content_vi: e.target.value,
+                                  content_en: e.target.value,
+                                }))
+                              }
+                              className="input h-24 resize-none text-sm"
+                              placeholder={t("builder.itemContentPlaceholder")}
                             />
                           </div>
                           <select

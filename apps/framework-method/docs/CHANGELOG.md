@@ -2,6 +2,15 @@
 
 ## 2026-08-04
 
+- Polished the Builder and Knowledge UI after Apple HIG review: consistent `rounded-2xl` cards, 44 px touch targets, compact sticky headers, readable dark-mode contrast, and a single-language title/content form in Builder to avoid the Vi/En split.
+- Added `image_url` to `KnowledgeEntry` so the Quick View modal and Vault can display diagrams/illustrations; form fields are now Title, Summary, Content, Image URL, Category.
+- Added `concept_knowledge_entry_id`, `reference_knowledge_entry_id`, and `example_knowledge_entry_id` to `TemplateSection`, and linked each `recognize` section to three Knowledge entries in Builder.
+- Step 2 Concepts/Reference/Examples sub-accordions now render the linked Knowledge entry content instead of empty textareas; the item checklist and reflection input are nested below the knowledge content.
+- Step 3 plan fields show each item's `content_vi`/`content_en` and a "Đọc lại dữ liệu" button that opens the linked Knowledge modal.
+- Simplified Builder per-section and per-suggestion forms to a single title input that syncs `title_vi`/`title_en`; per-item forms keep title + content textarea + Knowledge link.
+- Refreshed the `/knowledge` list to match the mobile mockup: search bar, category chips, icon cards with title/summary/chevron.
+- Added `common.add` and renamed `builder.titleVi`/`titleEn` to `builder.sectionTitle`, `builder.suggestionTitle`, `builder.itemTitle` in `vi.json`/`en.json`.
+- Added `TemplateSectionItem.content_vi`/`content_en` to the data model and populated item content from Builder.
 - Added a sticky "Việc trong ngày" pinned card to Step 3 (Đưa khuôn) and Step 4 (Bám), matching Step 2; it follows the selected block and hides when there are no tasks.
 - Wired Builder template edits into `SessionContext`: `updateTemplate` and `saveTemplates` now mutate and persist `templates` (localStorage fallback) so Knowledge links and section/item changes in Builder are reflected in the live session.
 - Added `getAllTemplates`/`saveAllTemplates`/`buildDefaultTemplates` in `frameworkMethodService.ts` so all blocks and steps share one template store.
