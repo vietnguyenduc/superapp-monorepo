@@ -106,11 +106,11 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       const existingSession = await service.getSessionForDate(userId, sessionDate);
       if (existingSession) {
         setSession(existingSession);
-        setCurrentBlockIndex(loadedBlocks.findIndex((b) => b.id === existingSession.current_block_id) ?? 0);
+        setCurrentBlockIndexRaw(loadedBlocks.findIndex((b) => b.id === existingSession.current_block_id) ?? 0);
       } else {
         const newSession = await service.createSession(userId, sessionDate);
         setSession(newSession);
-        setCurrentBlockIndex(0);
+        setCurrentBlockIndexRaw(0);
       }
 
       const [loadedTasks, carryOver, stats, loadedStreak, allTemplates] = await Promise.all([
@@ -160,7 +160,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [userId, sessionDate, setCurrentBlockIndex]);
+  }, [userId, sessionDate]);
 
   useEffect(() => {
     if (userId) loadData();

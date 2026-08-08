@@ -40,4 +40,6 @@ RLS is enabled on all tables. Users see rows where `user_id = auth.uid()`. Publi
 - `Builder` has been rewritten to edit `TemplateSection` + `TemplateSectionItem` per block and per step. It initializes from `DEFAULT_BLOCKS` and `DEFAULT_TEMPLATES` in `frameworkMethodService` so the UI is usable even if Supabase `fm_*` tables are not present yet.
 - `i18n/locales/vi.json` and `en.json` contain `session.*` and `builder.*` keys for the new flow.
 - `frameworkMethodService.ts` still logs errors to `console.warn` in fallback paths and supplies default blocks, suggestions, and templates when DB queries fail.
+- `SessionContext` hook order: `persistSession` and `setCurrentBlockIndex` are declared before `loadData` so `loadData` can safely reference them without a TDZ/`Cannot access before initialization` runtime error.
+- `i18n` is initialized with `lng: "vi"` and `fallbackLng: "vi"` so the app defaults to Vietnamese. `common.back` was added to both locale files.
 - `packages/shared-utils` unused imports (`exportToFile`, `templateData`, `SupabaseClient`, `Database`) were removed so that `tsc -p apps/framework-method/tsconfig.app.json --noEmit` does not fail on cross-package `noUnusedLocals`.
