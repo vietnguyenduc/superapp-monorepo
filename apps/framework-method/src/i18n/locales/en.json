@@ -18,6 +18,7 @@
     "history": "History",
     "calendar": "Calendar",
     "builder": "Builder",
+    "knowledge": "Knowledge",
     "login": "Login",
     "logout": "Logout",
     "menu": "Menu"
@@ -79,6 +80,19 @@
     "plansApplied": "Plans applied",
     "pendingAgain": "Need practice again",
     "recognizeHint": "Reference what you recognize for the {{block}} block.",
+    "concepts": "Concepts",
+    "reference": "Reference",
+    "examples": "Examples",
+    "yourAnalysis": "Your Analysis",
+    "keyInsights": "Key Insights",
+    "detailedNotes": "Detailed Notes",
+    "confidenceLevel": "Confidence Level",
+    "reflectionPlaceholder": "Your reflection...",
+    "referencePlaceholder": "Enter reference material...",
+    "examplesPlaceholder": "Enter examples...",
+    "keyInsightsPlaceholder": "Summarize your key takeaway...",
+    "detailedNotesPlaceholder": "Elaborate on your findings...",
+    "readKnowledge": "Read knowledge",
     "step2Title": "Step 2: Recognize what to do",
     "pinnedTasks": "Today's tasks",
     "noTasksYet": "No tasks yet",
@@ -88,7 +102,7 @@
     "step4Title": "Step 4: Track",
     "saveTrack": "Save track",
     "completeSession": "Complete session",
-    "backToOverview": "Back to overview"
+    "backToDashboard": "Back to dashboard"
   },
   "actions": {
     "committedActions": "Committed Actions",
@@ -113,7 +127,28 @@
   },
   "history": {
     "title": "History",
-    "subtitle": "Your completed frameworks and reflections"
+    "subtitle": "Logged tasks, plans, and tracks.",
+    "hasPlan": "Has plan",
+    "hasTrack": "Has track",
+    "empty": "No tasks logged yet."
+  },
+  "knowledge": {
+    "title": "Knowledge Library",
+    "subtitle": "Centralized library for concepts, references, and examples.",
+    "add": "Add Knowledge",
+    "edit": "Edit Knowledge",
+    "empty": "No knowledge entries yet.",
+    "titleVi": "Title (Vietnamese)",
+    "titleEn": "Title (English)",
+    "summaryVi": "Summary (Vietnamese)",
+    "summaryEn": "Summary (English)",
+    "contentVi": "Content (Vietnamese)",
+    "contentEn": "Content (English)",
+    "searchPlaceholder": "Search concepts, frameworks...",
+    "all": "All",
+    "concept": "Concept",
+    "framework": "Framework",
+    "viewFull": "View full in Vault"
   },
   "builder": {
     "title": "Framework Builder",
@@ -137,7 +172,9 @@
     "fieldLabel": "Field Label",
     "userPrompt": "User Prompt",
     "placeholder": "Placeholder",
-    "required": "Required"
+    "required": "Required",
+    "knowledgeLink": "Knowledge link",
+    "noKnowledgeLink": "No link"
   },
   "common": {
     "loading": "Loading...",

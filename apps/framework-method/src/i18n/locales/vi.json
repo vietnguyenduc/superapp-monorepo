@@ -18,6 +18,7 @@
     "history": "Lịch sử",
     "calendar": "Lịch",
     "builder": "Thiết kế",
+    "knowledge": "Dữ liệu Trí tuệ",
     "login": "Đăng nhập",
     "logout": "Đăng xuất",
     "menu": "Menu"
@@ -79,6 +80,19 @@
     "plansApplied": "Khuôn đã áp",
     "pendingAgain": "Cần thực hành lại",
     "recognizeHint": "Quy chiếu những gì bạn nhận ra cho Khối {{block}}.",
+    "concepts": "Khái niệm",
+    "reference": "Tài liệu tham khảo",
+    "examples": "Ví dụ",
+    "yourAnalysis": "Phân tích của bạn",
+    "keyInsights": "Quan điểm chính",
+    "detailedNotes": "Ghi chú chi tiết",
+    "confidenceLevel": "Mức độ tự tin",
+    "reflectionPlaceholder": "Quy chiếu của bạn...",
+    "referencePlaceholder": "Nhập tài liệu tham khảo...",
+    "examplesPlaceholder": "Nhập ví dụ minh họa...",
+    "keyInsightsPlaceholder": "Tóm tắt quan điểm chính...",
+    "detailedNotesPlaceholder": "Ghi chú chi tiết...",
+    "readKnowledge": "Đọc lại dữ liệu",
     "step2Title": "Bước 2: Nhận ra gì để làm",
     "pinnedTasks": "Việc trong ngày",
     "noTasksYet": "Chưa có việc nào",
@@ -88,7 +102,7 @@
     "step4Title": "Bước 4: Bám",
     "saveTrack": "Lưu theo dõi",
     "completeSession": "Hoàn thành phiên",
-    "backToOverview": "Quay lại tổng quan"
+    "backToDashboard": "Quay lại tổng quan"
   },
   "actions": {
     "committedActions": "Hành động cam kết",
@@ -113,7 +127,28 @@
   },
   "history": {
     "title": "Lịch sử",
-    "subtitle": "Framework và suy ngẫm đã hoàn thành"
+    "subtitle": "Danh sách việc, khuôn và theo dõi đã ghi lại.",
+    "hasPlan": "Có khuôn",
+    "hasTrack": "Có theo dõi",
+    "empty": "Chưa có việc nào được ghi lại."
+  },
+  "knowledge": {
+    "title": "Dữ liệu Trí tuệ",
+    "subtitle": "Kho thư viện tập trung cho các khái niệm, tài liệu và ví dụ.",
+    "add": "Thêm dữ liệu",
+    "edit": "Sửa dữ liệu",
+    "empty": "Chưa có dữ liệu nào.",
+    "titleVi": "Tiêu đề (Tiếng Việt)",
+    "titleEn": "Tiêu đề (Tiếng Anh)",
+    "summaryVi": "Tóm tắt (Tiếng Việt)",
+    "summaryEn": "Tóm tắt (Tiếng Anh)",
+    "contentVi": "Nội dung (Tiếng Việt)",
+    "contentEn": "Nội dung (Tiếng Anh)",
+    "searchPlaceholder": "Tìm kiếm khái niệm, khuôn mẫu...",
+    "all": "Tất cả",
+    "concept": "Khái niệm",
+    "framework": "Khuôn mẫu",
+    "viewFull": "Xem đầy đủ trong Vault"
   },
   "builder": {
     "title": "Thiết kế khuôn",
@@ -137,7 +172,9 @@
     "fieldLabel": "Nhãn trường",
     "userPrompt": "Câu hỏi người dùng",
     "placeholder": "Văn bản gợi ý",
-    "required": "Bắt buộc"
+    "required": "Bắt buộc",
+    "knowledgeLink": "Liên kết dữ liệu",
+    "noKnowledgeLink": "Không liên kết"
   },
   "common": {
     "loading": "Đang tải...",

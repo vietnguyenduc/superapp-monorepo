@@ -17,6 +17,7 @@ import type {
   ApplyPlan,
   Track,
   Streak,
+  KnowledgeEntry,
 } from "../types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -268,6 +269,45 @@ export const saveTaskSuggestions = async (suggestions: Record<BlockId, TaskSugge
   }
 };
 
+const KNOWLEDGE_STORAGE_KEY = "fm_knowledge_v1";
+
+export const getKnowledgeEntries = async (): Promise<KnowledgeEntry[]> => {
+  try {
+    const raw = localStorage.getItem(KNOWLEDGE_STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as KnowledgeEntry[];
+  } catch {
+    // ignore parse errors
+  }
+
+  try {
+    const { data, error } = await db.from("fm_knowledge").select("*").order("order_index", { ascending: true });
+    if (error) throw error;
+    if (data && data.length > 0) {
+      localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(data));
+      return data as KnowledgeEntry[];
+    }
+  } catch (err) {
+    fallbackLog("getKnowledgeEntries", err);
+  }
+
+  return [];
+};
+
+export const saveKnowledgeEntries = async (entries: KnowledgeEntry[]): Promise<void> => {
+  try {
+    localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(entries));
+  } catch {
+    // ignore storage errors
+  }
+
+  try {
+    const { error } = await db.from("fm_knowledge").upsert(entries, { onConflict: "id" });
+    if (error) throw error;
+  } catch (err) {
+    fallbackLog("saveKnowledgeEntries", err);
+  }
+};
+
 export const getDailyTasksForDate = async (userId: string, date: string): Promise<DailyTask[]> => {
   try {
     const { data, error } = await db
@@ -432,39 +472,50 @@ export const getBlockStats = async (userId: string): Promise<Record<BlockId, Blo
   return map as Record<BlockId, BlockStats>;
 };
 
-export const getTemplatesForBlock = async (blockId: BlockId): Promise<Record<StepType, Template>> => {
-  const result: Partial<Record<StepType, Template>> = {};
-  try {
-    const { data, error } = await db
-      .from("fm_templates")
-      .select("*, fm_template_sections(*)")
-      .eq("block_id", blockId)
-      .eq("status", "published")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    if (data) {
-      (data as (Template & { fm_template_sections?: TemplateSection[] })[]).forEach((t) => {
-        const template: Template = { ...t, sections: t.fm_template_sections ?? [] };
-        result[template.step_type] = template;
-      });
-    }
-  } catch (err) {
-    fallbackLog("getTemplatesForBlock", err);
-  }
-  (Object.keys(DEFAULT_TEMPLATES) as StepType[]).forEach((stepType) => {
-    if (!result[stepType]) {
+const TEMPLATES_STORAGE_KEY = "fm_templates_v1";
+const STEP_TYPES: StepType[] = ["recognize", "apply", "track"];
+
+export const buildDefaultTemplates = (): Record<BlockId, Record<StepType, Template>> => {
+  const result: Partial<Record<BlockId, Record<StepType, Template>>> = {};
+  DEFAULT_BLOCKS.forEach((block) => {
+    const byStep: Partial<Record<StepType, Template>> = {};
+    STEP_TYPES.forEach((step) => {
       const templateId = genId();
-      result[stepType] = {
+      byStep[step] = {
         id: templateId,
-        block_id: blockId,
-        step_type: stepType,
-        name: `${stepType} template`,
+        block_id: block.id,
+        step_type: step,
+        name: `${step} template`,
         status: "published",
-        sections: DEFAULT_TEMPLATES[stepType].map((s) => ({ ...s, template_id: templateId })),
+        sections: DEFAULT_TEMPLATES[step].map((section) => ({ ...section, template_id: templateId })),
       };
-    }
+    });
+    result[block.id] = byStep as Record<StepType, Template>;
   });
-  return result as Record<StepType, Template>;
+  return result as Record<BlockId, Record<StepType, Template>>;
+};
+
+export const getAllTemplates = async (): Promise<Record<BlockId, Record<StepType, Template>>> => {
+  try {
+    const raw = localStorage.getItem(TEMPLATES_STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as Record<BlockId, Record<StepType, Template>>;
+  } catch {
+    // ignore parse errors
+  }
+  return buildDefaultTemplates();
+};
+
+export const saveAllTemplates = async (templates: Record<BlockId, Record<StepType, Template>>): Promise<void> => {
+  try {
+    localStorage.setItem(TEMPLATES_STORAGE_KEY, JSON.stringify(templates));
+  } catch {
+    // ignore storage errors
+  }
+};
+
+export const getTemplatesForBlock = async (blockId: BlockId): Promise<Record<StepType, Template>> => {
+  const all = await getAllTemplates();
+  return all[blockId] ?? buildDefaultTemplates()[blockId];
 };
 
 export const saveReferenceInputs = async (inputs: ReferenceInput[]): Promise<void> => {

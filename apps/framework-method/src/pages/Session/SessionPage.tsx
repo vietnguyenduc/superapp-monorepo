@@ -1,10 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiChevronLeft, FiChevronRight, FiPlus, FiTrash2, FiCheck } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiPlus, FiTrash2, FiCheck, FiBookOpen, FiFileText, FiZap, FiClipboard, FiX } from "react-icons/fi";
 import { Card, Button, Input } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useSession } from "../../contexts/SessionContext";
-import type { Block, BlockId, DailyTask, TaskSource, TemplateSection, TemplateSectionItem } from "../../types";
+import type { Block, BlockId, DailyTask, KnowledgeEntry, TaskSource, TemplateSection, TemplateSectionItem } from "../../types";
+
+const ANALYSIS_KEYS = {
+  reference: "__reference__",
+  examples: "__examples__",
+  keyInsights: "__key_insights__",
+  detailedNotes: "__detailed_notes__",
+  confidence: "__confidence__",
+};
 
 const StepIndicator = ({ step, onChange }: { step: number; onChange?: (s: number) => void }) => {
   const { t } = useI18n();
@@ -258,22 +266,162 @@ const SectionAccordion = ({
   values: Record<string, string>;
   onChange: (itemId: string, value: string, enabled: boolean) => void;
 }) => {
-  const { language } = useI18n();
+  const { t, language } = useI18n();
   const [open, setOpen] = useState(true);
+  const [conceptsOpen, setConceptsOpen] = useState(true);
+  const [referenceOpen, setReferenceOpen] = useState(false);
+  const [examplesOpen, setExamplesOpen] = useState(false);
+
+  const sectionTitle = language === "en" ? section.title_en : section.title_vi;
+
+  const onField = (key: string, value: string) => onChange(key, value, true);
+
   return (
-    <Card className="p-4">
+    <Card className="p-4 space-y-3">
       <button onClick={() => setOpen((o) => !o)} className="w-full flex items-center justify-between text-left">
-        <span className="font-semibold">{language === "en" ? section.title_en : section.title_vi}</span>
+        <span className="font-semibold">{sectionTitle}</span>
         <FiChevronRight className={`w-4 h-4 transition-transform ${open ? "rotate-90" : ""}`} />
       </button>
+
       {open && (
-        <div className="mt-4 space-y-3">
-          {section.items.map((item) => (
-            <SectionItemInput key={item.id} item={item} value={values[item.id] || ""} onChange={onChange} />
-          ))}
+        <div className="space-y-3">
+          <Card className="p-3 bg-gray-50 dark:bg-gray-800/40 border-0 shadow-none">
+            <button
+              onClick={() => setConceptsOpen((o) => !o)}
+              className="w-full flex items-center justify-between text-left"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <FiBookOpen className="w-4 h-4 text-primary-600" />
+                {t("session.concepts")}
+              </span>
+              <FiChevronRight className={`w-4 h-4 transition-transform ${conceptsOpen ? "rotate-90" : ""}`} />
+            </button>
+            {conceptsOpen && (
+              <div className="mt-3 space-y-3">
+                {section.items.map((item) => (
+                  <SectionItemInput key={item.id} item={item} value={values[item.id] || ""} onChange={onChange} />
+                ))}
+              </div>
+            )}
+          </Card>
+
+          <Card className="p-3 bg-gray-50 dark:bg-gray-800/40 border-0 shadow-none">
+            <button
+              onClick={() => setReferenceOpen((o) => !o)}
+              className="w-full flex items-center justify-between text-left"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <FiFileText className="w-4 h-4 text-primary-600" />
+                {t("session.reference")}
+              </span>
+              <FiChevronRight className={`w-4 h-4 transition-transform ${referenceOpen ? "rotate-90" : ""}`} />
+            </button>
+            {referenceOpen && (
+              <textarea
+                value={values[ANALYSIS_KEYS.reference] || ""}
+                onChange={(e) => onField(ANALYSIS_KEYS.reference, e.target.value)}
+                className="input h-20 resize-none mt-3"
+                placeholder={t("session.referencePlaceholder")}
+              />
+            )}
+          </Card>
+
+          <Card className="p-3 bg-gray-50 dark:bg-gray-800/40 border-0 shadow-none">
+            <button
+              onClick={() => setExamplesOpen((o) => !o)}
+              className="w-full flex items-center justify-between text-left"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <FiZap className="w-4 h-4 text-primary-600" />
+                {t("session.examples")}
+              </span>
+              <FiChevronRight className={`w-4 h-4 transition-transform ${examplesOpen ? "rotate-90" : ""}`} />
+            </button>
+            {examplesOpen && (
+              <textarea
+                value={values[ANALYSIS_KEYS.examples] || ""}
+                onChange={(e) => onField(ANALYSIS_KEYS.examples, e.target.value)}
+                className="input h-20 resize-none mt-3"
+                placeholder={t("session.examplesPlaceholder")}
+              />
+            )}
+          </Card>
+
+          <Card className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <FiClipboard className="w-4 h-4 text-primary-600" />
+              {t("session.yourAnalysis")}
+            </h3>
+            <div className="space-y-3">
+              <Input
+                label={t("session.keyInsights")}
+                value={values[ANALYSIS_KEYS.keyInsights] || ""}
+                onChange={(e) => onField(ANALYSIS_KEYS.keyInsights, e.target.value)}
+                placeholder={t("session.keyInsightsPlaceholder")}
+              />
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t("session.detailedNotes")}
+                </label>
+                <textarea
+                  value={values[ANALYSIS_KEYS.detailedNotes] || ""}
+                  onChange={(e) => onField(ANALYSIS_KEYS.detailedNotes, e.target.value)}
+                  className="input h-24 resize-none"
+                  placeholder={t("session.detailedNotesPlaceholder")}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t("session.confidenceLevel")}
+                </label>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-500">1</span>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    step="1"
+                    value={Number(values[ANALYSIS_KEYS.confidence] || 3)}
+                    onChange={(e) => onField(ANALYSIS_KEYS.confidence, e.target.value)}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+                  />
+                  <span className="text-xs text-gray-500">5</span>
+                  <span className="text-sm font-medium w-4">{values[ANALYSIS_KEYS.confidence] || 3}</span>
+                </div>
+              </div>
+            </div>
+          </Card>
         </div>
       )}
     </Card>
+  );
+};
+
+const KnowledgeModal = ({ entry, onClose }: { entry: KnowledgeEntry; onClose: () => void }) => {
+  const { t, language } = useI18n();
+  const navigate = useNavigate();
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-xl">
+        <div className="sticky top-0 bg-white dark:bg-gray-900 px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <h3 className="font-semibold">{language === "en" ? entry.title_en : entry.title_vi}</h3>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+            <FiX className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-4 space-y-4">
+          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+            {language === "en" ? entry.content_en : entry.content_vi}
+          </p>
+          <div className="flex flex-col gap-2 pt-2">
+            <Button onClick={() => navigate("/knowledge")}>{t("knowledge.viewFull")}</Button>
+            <Button variant="secondary" onClick={onClose}>
+              {t("common.close")}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -286,31 +434,70 @@ const SectionItemInput = ({
   value: string;
   onChange: (itemId: string, value: string, enabled: boolean) => void;
 }) => {
-  const { language } = useI18n();
+  const { t, language } = useI18n();
+  const { knowledgeEntries } = useSession();
   const [enabled, setEnabled] = useState(item.default_enabled);
+  const [showKnowledge, setShowKnowledge] = useState(false);
+  const knowledgeEntry = item.knowledge_entry_id ? knowledgeEntries.find((e) => e.id === item.knowledge_entry_id) : undefined;
+
   return (
     <div className="space-y-2">
-      <label className="flex items-center gap-2 text-sm font-medium">
-        <input
-          type="checkbox"
-          checked={enabled}
-          onChange={(e) => {
-            setEnabled(e.target.checked);
-            onChange(item.id, value, e.target.checked);
-          }}
-          className="w-4 h-4 rounded border-gray-300 text-primary-600"
-        />
-        {language === "en" ? item.title_en : item.title_vi}
-      </label>
+      <div className="flex items-start justify-between gap-2">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => {
+              setEnabled(e.target.checked);
+              onChange(item.id, value, e.target.checked);
+            }}
+            className="w-4 h-4 rounded border-gray-300 text-primary-600"
+          />
+          {language === "en" ? item.title_en : item.title_vi}
+        </label>
+        {knowledgeEntry && (
+          <button
+            onClick={() => setShowKnowledge(true)}
+            className="flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700 shrink-0"
+            title={t("session.readKnowledge")}
+          >
+            <FiBookOpen className="w-4 h-4" />
+            {t("session.readKnowledge")}
+          </button>
+        )}
+      </div>
       {enabled && (
         <textarea
           value={value}
           onChange={(e) => onChange(item.id, e.target.value, enabled)}
           className="input h-20 resize-none"
-          placeholder={language === "en" ? "Your reflection..." : "Quy chiếu của bạn..."}
+          placeholder={t("session.reflectionPlaceholder")}
         />
       )}
+      {showKnowledge && knowledgeEntry && <KnowledgeModal entry={knowledgeEntry} onClose={() => setShowKnowledge(false)} />}
     </div>
+  );
+};
+
+const PinnedTasks = ({ tasks }: { tasks: DailyTask[] }) => {
+  const { t } = useI18n();
+  if (tasks.length === 0) return null;
+  return (
+    <Card className="p-3 bg-primary-50 dark:bg-primary-900/10 border-primary-100 dark:border-primary-900/30 sticky top-16 md:top-0 z-20">
+      <p className="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300 mb-2">
+        {t("session.pinnedTasks")}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {tasks.map((task) => (
+          <span
+            key={task.id}
+            className="px-2 py-1 rounded-md text-xs bg-white dark:bg-gray-800 border border-primary-100 dark:border-primary-900/30"
+          >
+            {task.title}
+          </span>
+        ))}
+      </div>
+    </Card>
   );
 };
 
@@ -332,23 +519,7 @@ const Step2Recognize = () => {
     <div className="space-y-4">
       <h2 className="text-xl font-bold">{t("session.step2Title")}</h2>
 
-      {blockTasks.length > 0 && (
-        <Card className="p-3 bg-primary-50 dark:bg-primary-900/10 border-primary-100 dark:border-primary-900/30 sticky top-16 md:top-0 z-20">
-          <p className="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300 mb-2">
-            {t("session.pinnedTasks")}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {blockTasks.map((task) => (
-              <span
-                key={task.id}
-                className="px-2 py-1 rounded-md text-xs bg-white dark:bg-gray-800 border border-primary-100 dark:border-primary-900/30"
-              >
-                {task.title}
-              </span>
-            ))}
-          </div>
-        </Card>
-      )}
+      <PinnedTasks tasks={blockTasks} />
 
       <BlockTabs
         blocks={blocks}
@@ -371,6 +542,16 @@ const Step2Recognize = () => {
             const key = `${section.id}:${item.id}`;
             if (referenceInputs[key]) values[item.id] = referenceInputs[key].content;
           });
+          [
+            ANALYSIS_KEYS.reference,
+            ANALYSIS_KEYS.examples,
+            ANALYSIS_KEYS.keyInsights,
+            ANALYSIS_KEYS.detailedNotes,
+            ANALYSIS_KEYS.confidence,
+          ].forEach((k) => {
+            const key = `${section.id}:${k}`;
+            if (referenceInputs[key]) values[k] = referenceInputs[key].content;
+          });
           return (
             <SectionAccordion
               key={section.id}
@@ -389,6 +570,41 @@ const Step2Recognize = () => {
           {t("common.continue")} <FiChevronRight className="w-4 h-4 ml-1" />
         </Button>
       </div>
+    </div>
+  );
+};
+
+const PlanField = ({
+  item,
+  value,
+  onChange,
+}: {
+  item: TemplateSectionItem;
+  value: string;
+  onChange: (value: string) => void;
+}) => {
+  const { t, language } = useI18n();
+  const { knowledgeEntries } = useSession();
+  const [showKnowledge, setShowKnowledge] = useState(false);
+  const knowledgeEntry = item.knowledge_entry_id ? knowledgeEntries.find((e) => e.id === item.knowledge_entry_id) : undefined;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <label className="block text-sm font-medium">{language === "en" ? item.title_en : item.title_vi}</label>
+        {knowledgeEntry && (
+          <button
+            onClick={() => setShowKnowledge(true)}
+            className="flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700 shrink-0"
+            title={t("session.readKnowledge")}
+          >
+            <FiBookOpen className="w-4 h-4" />
+            {t("session.readKnowledge")}
+          </button>
+        )}
+      </div>
+      <Input value={value} onChange={(e) => onChange(e.target.value)} />
+      {showKnowledge && knowledgeEntry && <KnowledgeModal entry={knowledgeEntry} onClose={() => setShowKnowledge(false)} />}
     </div>
   );
 };
@@ -425,6 +641,8 @@ const Step3Apply = () => {
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold">{t("session.step3Title")}</h2>
+
+      <PinnedTasks tasks={blockTasks} />
 
       <BlockTabs
         blocks={blocks}
@@ -463,13 +681,12 @@ const Step3Apply = () => {
           <h3 className="font-semibold mb-3">{language === "en" ? section.title_en : section.title_vi}</h3>
           <div className="space-y-3">
             {section.items.map((item) => (
-              <div key={item.id}>
-                <label className="block text-sm font-medium mb-1">{language === "en" ? item.title_en : item.title_vi}</label>
-                <Input
-                  value={values[item.id] || ""}
-                  onChange={(e) => setValues((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                />
-              </div>
+              <PlanField
+                key={item.id}
+                item={item}
+                value={values[item.id] || ""}
+                onChange={(value) => setValues((prev) => ({ ...prev, [item.id]: value }))}
+              />
             ))}
           </div>
         </Card>
@@ -532,6 +749,8 @@ const Step4Track = () => {
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-bold">{t("session.step4Title")}</h2>
+
+      <PinnedTasks tasks={blockTasks} />
 
       <BlockTabs
         blocks={blocks}
@@ -625,8 +844,8 @@ const SessionPage = () => {
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/overview")}>
-          <FiChevronLeft className="w-4 h-4 mr-1" /> {t("session.backToOverview")}
+        <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
+          <FiChevronLeft className="w-4 h-4 mr-1" /> {t("session.backToDashboard")}
         </Button>
         <Button variant="secondary" size="sm" onClick={saveDraft}>
           {t("common.save")}

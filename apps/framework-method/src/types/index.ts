@@ -61,6 +61,7 @@ export interface TemplateSectionItem {
   title_en: string;
   default_enabled: boolean;
   order_index: number;
+  knowledge_entry_id?: string;
 }
 
 export interface TemplateSection {
@@ -88,6 +89,20 @@ export interface Template {
   created_at?: string;
   updated_at?: string;
   sections?: TemplateSection[];
+}
+
+export interface KnowledgeEntry {
+  id: string;
+  title_vi: string;
+  title_en: string;
+  summary_vi: string;
+  summary_en: string;
+  content_vi: string;
+  content_en: string;
+  category: "concept" | "framework";
+  order_index: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ReferenceInput {

@@ -142,7 +142,7 @@ const Dashboard = () => {
           {frameworks.map((fw) => (
             <Link
               key={fw.id}
-              to={`/overview?framework=${fw.id}`}
+              to="/session"
               className="flex items-center gap-3 group"
             >
               <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-primary-900/20 text-primary-600 flex items-center justify-center font-bold text-lg">

@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { FiGrid, FiList, FiCheckCircle, FiClock, FiTool } from "react-icons/fi";
+import { FiGrid, FiList, FiClock, FiTool, FiBookOpen } from "react-icons/fi";
 import { useI18n } from "../../hooks/useI18n";
 
 const BottomNav = () => {
@@ -8,9 +8,9 @@ const BottomNav = () => {
   const links = [
     { to: "/dashboard", label: t("nav.dashboard"), icon: FiGrid },
     { to: "/session", label: t("nav.session"), icon: FiList },
-    { to: "/actions", label: t("nav.actions"), icon: FiCheckCircle },
     { to: "/history", label: t("nav.history"), icon: FiClock },
     { to: "/builder", label: t("nav.builder"), icon: FiTool },
+    { to: "/knowledge", label: t("nav.knowledge"), icon: FiBookOpen },
   ];
 
   return (

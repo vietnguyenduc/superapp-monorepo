@@ -10,14 +10,12 @@ import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import Login from "./pages/Auth/Login";
 import SignUp from "./pages/Auth/SignUp";
 import Dashboard from "./pages/Dashboard/Dashboard";
-import Overview from "./pages/Overview/Overview";
 import { SessionProvider } from "./contexts/SessionContext";
 import SessionPage from "./pages/Session/SessionPage";
-import Actions from "./pages/Actions/Actions";
-import Evening from "./pages/Evening/Evening";
 import Calendar from "./pages/Calendar/Calendar";
 import History from "./pages/History/History";
 import Builder from "./pages/Builder/Builder";
+import Knowledge from "./pages/Knowledge/Knowledge";
 
 function App() {
   return (
@@ -38,13 +36,11 @@ function App() {
           >
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="overview" element={<Overview />} />
             <Route path="session" element={<SessionPage />} />
-            <Route path="actions" element={<Actions />} />
-            <Route path="evening" element={<Evening />} />
             <Route path="calendar" element={<Calendar />} />
             <Route path="history" element={<History />} />
             <Route path="builder" element={<Builder />} />
+            <Route path="knowledge" element={<Knowledge />} />
           </Route>
         </Routes>
       </Router>

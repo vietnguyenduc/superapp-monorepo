@@ -3,7 +3,7 @@ import { FiPlus, FiTrash2, FiArrowUp, FiArrowDown, FiEye, FiSave } from "react-i
 import { Card, Button, Input } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useSession } from "../../contexts/SessionContext";
-import { DEFAULT_BLOCKS, DEFAULT_TEMPLATES, genId } from "../../services/frameworkMethodService";
+import { DEFAULT_BLOCKS, genId } from "../../services/frameworkMethodService";
 import type { BlockId, StepType, TaskSuggestion, Template, TemplateSection, TemplateSectionGroup, TemplateSectionItem } from "../../types";
 
 const STEP_TYPES: StepType[] = ["recognize", "apply", "track"];
@@ -22,34 +22,12 @@ const GROUP_LABELS: Record<TemplateSectionGroup, { vi: string; en: string }> = {
   bam: { vi: "Bám", en: "Track" },
 };
 
-const buildDefaultTemplates = (): Record<BlockId, Record<StepType, Template>> => {
-  const result: Partial<Record<BlockId, Record<StepType, Template>>> = {};
-  DEFAULT_BLOCKS.forEach((block) => {
-    const byStep: Partial<Record<StepType, Template>> = {};
-    STEP_TYPES.forEach((step) => {
-      const templateId = genId();
-      byStep[step] = {
-        id: templateId,
-        block_id: block.id,
-        step_type: step,
-        name: `${STEP_LABELS[step].vi} — ${block.name_vi}`,
-        status: "published",
-        sections: DEFAULT_TEMPLATES[step].map((section) => ({ ...section, template_id: templateId })),
-      };
-    });
-    result[block.id] = byStep as Record<StepType, Template>;
-  });
-  return result as Record<BlockId, Record<StepType, Template>>;
-};
-
 const Builder = () => {
   const { t, language } = useI18n();
-  const [templates, setTemplates] = useState<Record<BlockId, Record<StepType, Template>>>(buildDefaultTemplates);
+  const { templates, taskSuggestions, updateTaskSuggestions, knowledgeEntries, updateTemplate: updateTemplateContext, saveTemplates } = useSession();
   const [selectedBlockId, setSelectedBlockId] = useState<BlockId>("self");
   const [selectedStep, setSelectedStep] = useState<StepType>("recognize");
   const [preview, setPreview] = useState(false);
-
-  const { taskSuggestions, updateTaskSuggestions } = useSession();
   const blockSuggestions = taskSuggestions[selectedBlockId] || [];
   const suggestionsRef = useRef<TaskSuggestion[]>(blockSuggestions);
   suggestionsRef.current = blockSuggestions;
@@ -95,13 +73,7 @@ const Builder = () => {
   const currentTemplate = templates[selectedBlockId]?.[selectedStep];
 
   const updateTemplate = (updater: (template: Template) => Template) => {
-    setTemplates((prev) => ({
-      ...prev,
-      [selectedBlockId]: {
-        ...prev[selectedBlockId],
-        [selectedStep]: updater(prev[selectedBlockId][selectedStep]),
-      },
-    }));
+    updateTemplateContext(selectedBlockId, selectedStep, updater);
   };
 
   const moveSection = (index: number, direction: -1 | 1) => {
@@ -227,7 +199,7 @@ const Builder = () => {
           <Button variant="secondary" size="sm" onClick={() => setPreview((p) => !p)}>
             <FiEye className="w-4 h-4 mr-1" /> {preview ? t("builder.edit") : t("builder.preview")}
           </Button>
-          <Button size="sm" onClick={() => {}}>
+          <Button size="sm" onClick={() => saveTemplates()}>
             <FiSave className="w-4 h-4 mr-1" /> {t("builder.publish")}
           </Button>
         </div>
@@ -371,17 +343,31 @@ const Builder = () => {
                             className="w-4 h-4 rounded border-gray-300 text-primary-600"
                           />
                         </label>
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
-                          <Input
-                            value={item.title_vi}
-                            onChange={(e) => updateItem(section.id, item.id, (it) => ({ ...it, title_vi: e.target.value }))}
-                            placeholder={t("builder.titleVi")}
-                          />
-                          <Input
-                            value={item.title_en}
-                            onChange={(e) => updateItem(section.id, item.id, (it) => ({ ...it, title_en: e.target.value }))}
-                            placeholder={t("builder.titleEn")}
-                          />
+                        <div className="flex-1 space-y-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <Input
+                              value={item.title_vi}
+                              onChange={(e) => updateItem(section.id, item.id, (it) => ({ ...it, title_vi: e.target.value }))}
+                              placeholder={t("builder.titleVi")}
+                            />
+                            <Input
+                              value={item.title_en}
+                              onChange={(e) => updateItem(section.id, item.id, (it) => ({ ...it, title_en: e.target.value }))}
+                              placeholder={t("builder.titleEn")}
+                            />
+                          </div>
+                          <select
+                            value={item.knowledge_entry_id || ""}
+                            onChange={(e) => updateItem(section.id, item.id, (it) => ({ ...it, knowledge_entry_id: e.target.value || undefined }))}
+                            className="input text-sm"
+                          >
+                            <option value="">{t("builder.noKnowledgeLink")}</option>
+                            {knowledgeEntries.map((entry) => (
+                              <option key={entry.id} value={entry.id}>
+                                {language === "en" ? entry.title_en : entry.title_vi}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                         <div className="flex flex-col gap-1">
                           <button onClick={() => moveItem(section.id, itemIndex, -1)} className="p-1 text-gray-400 hover:text-primary-600">

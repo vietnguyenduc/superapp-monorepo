@@ -15,6 +15,7 @@ import type {
   Template,
   TaskSource,
   TaskSuggestion,
+  KnowledgeEntry,
 } from "../types";
 
 interface SessionContextType {
@@ -46,8 +47,14 @@ interface SessionContextType {
   streak: Streak | null;
   templates: Record<BlockId, Record<StepType, Template>>;
   getTemplate: (blockId: BlockId, stepType: StepType) => Template | null;
+  updateTemplate: (blockId: BlockId, stepType: StepType, updater: (template: Template) => Template) => void;
+  saveTemplates: () => Promise<void>;
   taskSuggestions: Record<BlockId, TaskSuggestion[]>;
   updateTaskSuggestions: (blockId: BlockId, suggestions: TaskSuggestion[]) => Promise<void>;
+  knowledgeEntries: KnowledgeEntry[];
+  addKnowledgeEntry: (entry: Omit<KnowledgeEntry, "id" | "order_index" | "created_at" | "updated_at">) => Promise<void>;
+  updateKnowledgeEntry: (id: string, updates: Partial<KnowledgeEntry>) => Promise<void>;
+  removeKnowledgeEntry: (id: string) => Promise<void>;
   isLoading: boolean;
   saveDraft: () => Promise<void>;
   completeSession: () => Promise<void>;
@@ -75,6 +82,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [streak, setStreak] = useState<Streak | null>(null);
   const [templates, setTemplates] = useState<Record<BlockId, Record<StepType, Template>>>({} as Record<BlockId, Record<StepType, Template>>);
   const [taskSuggestions, setTaskSuggestions] = useState<Record<BlockId, TaskSuggestion[]>>({} as Record<BlockId, TaskSuggestion[]>);
+  const [knowledgeEntries, setKnowledgeEntries] = useState<KnowledgeEntry[]>([]);
   const [currentBlockIndex, setCurrentBlockIndexRaw] = useState(0);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
@@ -117,13 +125,14 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
         setCurrentBlockIndexRaw(0);
       }
 
-      const [loadedTasks, carryOver, stats, loadedStreak, allTemplates, allSuggestions] = await Promise.all([
+      const [loadedTasks, carryOver, stats, loadedStreak, loadedTemplates, allSuggestions, loadedKnowledge] = await Promise.all([
         service.getDailyTasksForDate(userId, sessionDate),
         service.getPendingTasksBeforeDate(userId, sessionDate),
         service.getBlockStats(userId),
         service.getStreak(userId),
-        Promise.all(loadedBlocks.map((b) => service.getTemplatesForBlock(b.id).then((t) => [b.id, t] as const))),
+        service.getAllTemplates(),
         service.getAllTaskSuggestions(),
+        service.getKnowledgeEntries(),
       ]);
 
       setTasks(loadedTasks);
@@ -131,12 +140,8 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       setBlockStats(stats);
       setStreak(loadedStreak);
       setTaskSuggestions(allSuggestions);
-
-      const templateMap = {} as Record<BlockId, Record<StepType, Template>>;
-      allTemplates.forEach(([blockId, t]) => {
-        templateMap[blockId] = t;
-      });
-      setTemplates(templateMap);
+      setKnowledgeEntries(loadedKnowledge);
+      setTemplates(loadedTemplates);
 
       if (existingSession) {
         const [inputs, plans, trackRows] = await Promise.all([
@@ -179,6 +184,27 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     [templates]
   );
 
+  const updateTemplate = useCallback(
+    (blockId: BlockId, stepType: StepType, updater: (template: Template) => Template) => {
+      setTemplates((prev) => {
+        const current = prev[blockId]?.[stepType];
+        if (!current) return prev;
+        return {
+          ...prev,
+          [blockId]: {
+            ...prev[blockId],
+            [stepType]: updater(current),
+          },
+        };
+      });
+    },
+    []
+  );
+
+  const saveTemplates = useCallback(async () => {
+    await service.saveAllTemplates(templates);
+  }, [templates]);
+
   const updateTaskSuggestions = useCallback(
     async (blockId: BlockId, suggestions: TaskSuggestion[]) => {
       const next = { ...taskSuggestions, [blockId]: suggestions };
@@ -186,6 +212,40 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       await service.saveTaskSuggestions(next);
     },
     [taskSuggestions]
+  );
+
+  const addKnowledgeEntry = useCallback(
+    async (entry: Omit<KnowledgeEntry, "id" | "order_index" | "created_at" | "updated_at">) => {
+      const newEntry: KnowledgeEntry = {
+        ...entry,
+        id: service.genId(),
+        order_index: knowledgeEntries.length,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      const next = [...knowledgeEntries, newEntry];
+      setKnowledgeEntries(next);
+      await service.saveKnowledgeEntries(next);
+    },
+    [knowledgeEntries]
+  );
+
+  const updateKnowledgeEntry = useCallback(
+    async (id: string, updates: Partial<KnowledgeEntry>) => {
+      const next = knowledgeEntries.map((e) => (e.id === id ? { ...e, ...updates, updated_at: new Date().toISOString() } : e));
+      setKnowledgeEntries(next);
+      await service.saveKnowledgeEntries(next);
+    },
+    [knowledgeEntries]
+  );
+
+  const removeKnowledgeEntry = useCallback(
+    async (id: string) => {
+      const next = knowledgeEntries.filter((e) => e.id !== id).map((e, i) => ({ ...e, order_index: i }));
+      setKnowledgeEntries(next);
+      await service.saveKnowledgeEntries(next);
+    },
+    [knowledgeEntries]
   );
 
   const addTask = useCallback(
@@ -341,8 +401,14 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       streak,
       templates,
       getTemplate,
+      updateTemplate,
+      saveTemplates,
       taskSuggestions,
       updateTaskSuggestions,
+      knowledgeEntries,
+      addKnowledgeEntry,
+      updateKnowledgeEntry,
+      removeKnowledgeEntry,
       isLoading,
       saveDraft,
       completeSession,
@@ -373,8 +439,14 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       streak,
       templates,
       getTemplate,
+      updateTemplate,
+      saveTemplates,
       taskSuggestions,
       updateTaskSuggestions,
+      knowledgeEntries,
+      addKnowledgeEntry,
+      updateKnowledgeEntry,
+      removeKnowledgeEntry,
       isLoading,
       saveDraft,
       completeSession,

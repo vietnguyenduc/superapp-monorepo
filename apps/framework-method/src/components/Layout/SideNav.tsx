@@ -1,13 +1,11 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   FiGrid,
-  FiClipboard,
   FiList,
-  FiCheckCircle,
-  FiMoon,
   FiCalendar,
   FiClock,
   FiTool,
+  FiBookOpen,
   FiLogOut,
   FiX,
 } from "react-icons/fi";
@@ -26,13 +24,11 @@ const SideNav = ({ open, onClose }: SideNavProps) => {
 
   const links = [
     { to: "/dashboard", label: t("nav.dashboard"), icon: FiGrid },
-    { to: "/overview", label: t("nav.overview"), icon: FiClipboard },
     { to: "/session", label: t("nav.session"), icon: FiList },
-    { to: "/actions", label: t("nav.actions"), icon: FiCheckCircle },
-    { to: "/evening", label: t("nav.evening"), icon: FiMoon },
     { to: "/calendar", label: t("nav.calendar"), icon: FiCalendar },
     { to: "/history", label: t("nav.history"), icon: FiClock },
     { to: "/builder", label: t("nav.builder"), icon: FiTool },
+    { to: "/knowledge", label: t("nav.knowledge"), icon: FiBookOpen },
   ];
 
   const handleLogout = async () => {
