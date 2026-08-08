@@ -416,14 +416,14 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
             dataKey="inflow"
             name={t("dashboard.inflow")}
             stackId="flow"
-            fill="#22c55e"
+            fill="#10b981"
             barSize={barSize}
           />
           <Bar
             dataKey="outflow"
             name={t("dashboard.outflow")}
             stackId="flow"
-            fill="#f97316"
+            fill="#f43f5e"
             barSize={barSize}
           />
           {showBalance && (

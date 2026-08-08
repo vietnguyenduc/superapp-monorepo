@@ -130,8 +130,8 @@
       "quarter": "Quý",
       "year": "Năm"
     },
-    "inflow": "Điều chỉnh tăng",
-    "outflow": "Điều chỉnh giảm",
+    "inflow": "Tiền vào",
+    "outflow": "Tiền ra",
     "netFlow": "Dòng tiền ròng",
     "ofTotal": "của tổng",
     "startBalance": "Số dư đầu kỳ",
