@@ -28,7 +28,7 @@ A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management
 ## Important files
 
 - `src/services/transactionService.ts` — CRUD + bulk import + **write-time balance sync**.
-- `src/services/customerService.ts` — customer CRUD + `getCustomerById` recomputes balance from `opening_balance + Σ(transaction deltas)`.
+- `src/services/customerService.ts` — customer CRUD; `getCustomerById` returns the stored `total_balance` without recomputing it, so list and detail stay identical.
 - `src/services/bankAccountService.ts` — bank account CRUD.
 - `src/services/backupHistoryService.ts` — backup history CRUD + `saveBackupToDatabase`, `loadBackupData`, `revertTableFromBackup` delegates.
 - `src/utils/backupRecovery.ts` — backup creation, import/export, and **restore with cross-table ID remapping**.
@@ -66,6 +66,10 @@ Công nợ = Đầu kỳ + Phát sinh tăng - Phát sinh giảm + Điều chỉn
 | `adjustment` | `+1`     | signed amount        | signed amount   | Direct signed correction (`+amount` or `-amount`). |
 
 Positive balance color = **red** (debt). Negative/zero balance color = **green** (credit/overpayment).
+
+### Customer balance source of truth
+
+`customers.total_balance` is the single source of truth for the customer's current debt. `CustomerDetailModal` and `CustomerDetail` display `customer.total_balance` directly; `getCustomerById` does not recompute it from `opening_balance + transactions` anymore. When `opening_balance` changes, `updateCustomer`, `updateCustomerOpeningBalance`, and `bulkUpdateOpeningBalances` adjust `total_balance` by the same delta so the cached value stays correct. The backfill migration `supabase/migrations/043_recalculate_customer_total_balances.sql` rebuilds `total_balance` from `opening_balance + Σ(amount × math_factor)` using `transaction_types.math_factor` (or canonical factors as fallback).
 
 The **displayed transaction amount** is the raw user-entered value (`parseAmount(amount)`), so `TransactionList`, `CustomerDetail`, `CustomerDetailModal`, and `RecentTransactions` show positive amounts while type-based color (charge = red, payment/refund/deposit = green, adjustment = blue) indicates the transaction direction.
 
