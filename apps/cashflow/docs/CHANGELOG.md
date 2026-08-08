@@ -1,5 +1,21 @@
 # Changelog — Cashflow
 
+## 2026-08-11
+
+### Added
+
+- **Searchable customer select in TransactionEditModal** — replaced the native `<select>` for `customer_id` with a combobox: type a customer name or code, see a filtered dropdown, and click/tap to select. The selected value is still stored as `customer_id`.
+- **Mobile header declutter** — on viewports below `lg`, the sticky top bar now only shows the hamburger menu and app title. The company badge, app switcher, language toggle, user profile, and logout were moved into a dedicated panel at the top of the mobile sidebar drawer (`Sidebar.tsx`). The mobile drawer width was widened to `w-80` so the app-switcher dropdown fits.
+- **Date filter for CustomerList** — the existing `CustomerFilters` date range now actually filters the customer list by `last_transaction_date` (Supabase live + trial fallback). The dropdown was raised to `z-50`, capped to `max-h-[calc(100vh-12rem)]` with scroll, and constrained to `max-w-[calc(100vw-2rem)]` so it is not cut off on small screens.
+- **CustomerList table readability** — increased row/header padding (`px-3 py-3`), bumped header text to `text-xs`, cell text to `text-sm`, name text to `text-sm sm:text-base`, and raised the mobile table max-height from `calc(100vh - 36rem)` to `calc(100vh - 18rem)` so the table is no longer short/squat. The mobile balance amount now uses `getCustomerListBalanceColor` so positive debt renders red and credit/overpayment renders green.
+- **CustomerList filter action wrap** — the page-size, column visibility, bulk-edit, and export buttons now wrap on mobile (`flex-wrap`) instead of being hidden in an unlabeled horizontal scroll.
+- **TransactionEditModal date input layout** — the `transaction_date` field is capped to `max-w-xs` on mobile (`sm:max-w-full` on desktop) and left-aligned so it no longer stretches across the full modal width.
+
+### Fixed
+
+- Mobile header controls were duplicated/crowded; now all context actions live in the mobile drawer, leaving the sticky header minimal.
+- Customer table mobile `total_balance` color used `>= 0 ? green` which inverted the debt convention; now uses the shared balance color helper.
+
 ## 2026-08-10
 
 ### Added

@@ -161,19 +161,19 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   }
 
   return (
-    <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 max-h-[calc(100vh_-_36rem)] sm:max-h-[calc(100vh_-_260px)] [&::-webkit-scrollbar:horizontal]:h-2 [&::-webkit-scrollbar-thumb:horizontal]:rounded [&::-webkit-scrollbar-thumb:horizontal]:bg-gray-300/70 hover:[&::-webkit-scrollbar-thumb:horizontal]:bg-gray-400/80">
+    <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 max-h-[calc(100vh_-_18rem)] sm:max-h-[calc(100vh_-_240px)] [&::-webkit-scrollbar:horizontal]:h-2 [&::-webkit-scrollbar-thumb:horizontal]:rounded [&::-webkit-scrollbar-thumb:horizontal]:bg-gray-300/70 hover:[&::-webkit-scrollbar-thumb:horizontal]:bg-gray-400/80">
       <table className="w-full min-w-max divide-y divide-gray-300 dark:divide-gray-600">
         <thead className="bg-gray-50 dark:bg-gray-700">
           <tr>
             <th
               scope="col"
-              className="hidden sm:table-cell px-2 py-2 text-left text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap w-14 sticky top-0 z-10 bg-gray-50 dark:bg-gray-700"
+              className="hidden sm:table-cell px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap w-14 sticky top-0 z-10 bg-gray-50 dark:bg-gray-700"
             >
               <span>GD</span>
             </th>
             <th
               scope="col"
-              className={`${isVisible("customerCode") ? "hidden sm:table-cell" : "hidden"} px-2 py-2 text-left text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap w-16 sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("customerCode") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap w-16 sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
               onClick={() => handleSort("customer_code")}
             >
               <div className="flex items-center space-x-1">
@@ -183,7 +183,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("fullName") ? "" : "hidden"} px-2 py-2 text-left text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap min-w-[10rem] max-w-[18rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("fullName") ? "" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap min-w-[10rem] max-w-[18rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
               onClick={() => handleSort("full_name")}
             >
               <div className="flex items-center space-x-1">
@@ -193,7 +193,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("balance") ? "hidden md:table-cell text-right" : "hidden"} px-2 py-2 text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap min-w-[6rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("balance") ? "hidden md:table-cell text-right" : "hidden"} px-3 py-3 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap min-w-[6rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
               onClick={() => handleSort("total_balance")}
             >
               <div className="flex items-center justify-end space-x-1">
@@ -203,7 +203,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-2 py-2 text-left text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-normal leading-tight min-w-[6rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-normal leading-tight min-w-[6rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
               onClick={() => handleSort("last_transaction_date")}
             >
               <div className="flex items-center space-x-1">
@@ -213,7 +213,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("phone") ? "hidden sm:table-cell" : "hidden"} px-2 py-2 text-left text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap min-w-[6rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("phone") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap min-w-[6rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
               onClick={() => handleSort("phone")}
             >
               <div className="flex items-center space-x-1">
@@ -223,7 +223,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("address") ? "hidden xl:table-cell" : "hidden"} px-2 py-2 text-left text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-normal leading-tight min-w-[8rem] max-w-[14rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("address") ? "hidden xl:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-normal leading-tight min-w-[8rem] max-w-[14rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
               onClick={() => handleSort("address")}
             >
               <div className="flex items-center space-x-1">
@@ -233,7 +233,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("workingMethod") ? "hidden lg:table-cell" : "hidden"} px-2 py-2 text-left text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-normal leading-tight min-w-[8rem] max-w-[12rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("workingMethod") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-normal leading-tight min-w-[8rem] max-w-[12rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
               onClick={() => handleSort("working_method")}
             >
               <div className="flex items-center space-x-1">
@@ -241,7 +241,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                 {getSortIcon("working_method")}
               </div>
             </th>
-            <th scope="col" className="relative px-2 py-2 w-16 sticky top-0 z-10 bg-gray-50 dark:bg-gray-700">
+            <th scope="col" className="relative px-3 py-3 w-16 sticky top-0 z-10 bg-gray-50 dark:bg-gray-700">
               <span className="sr-only">Thao tác</span>
             </th>
           </tr>
@@ -257,7 +257,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
               onMouseLeave={() => setHoveredRow(null)}
               onClick={() => onCustomerSelect(customer)}
             >
-              <td className="hidden sm:table-cell px-2 py-2 whitespace-nowrap w-14">
+              <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap w-14">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -281,10 +281,10 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                   </svg>
                 </button>
               </td>
-              <td className={`${isVisible("customerCode") ? "hidden sm:table-cell" : "hidden"} px-2 py-2 whitespace-nowrap w-16`}>
+              <td className={`${isVisible("customerCode") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 whitespace-nowrap w-16`}>
                 <div className="text-xs font-bold font-mono text-gray-900 dark:text-white">{customer.customer_code}</div>
               </td>
-              <td className={`${isVisible("fullName") ? "" : "hidden"} px-2 py-2 min-w-[8rem] max-w-none sm:max-w-[16rem] lg:max-w-[20rem]`}>
+              <td className={`${isVisible("fullName") ? "" : "hidden"} px-3 py-3 min-w-[8rem] max-w-none sm:max-w-[16rem] lg:max-w-[20rem]`}>
                 <div className={`flex items-center justify-between gap-2 sm:hidden mb-1 ${isVisible("customerCode") ? "" : "hidden"}`}>
                   <button
                     onClick={(e) => {
@@ -313,14 +313,14 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                     {customer.customer_code}
                   </span>
                 </div>
-                <div className={`text-xs sm:text-sm font-bold text-gray-900 dark:text-white leading-snug line-clamp-2 whitespace-normal break-words ${isVisible("fullName") ? "" : "hidden"}`} title={customer.full_name}>
+                <div className={`text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-snug line-clamp-2 whitespace-normal break-words ${isVisible("fullName") ? "" : "hidden"}`} title={customer.full_name}>
                   {customer.full_name}
                 </div>
                 {customer.email && (
                   <div className="text-xs text-gray-600 dark:text-gray-300 line-clamp-1 whitespace-normal break-words mt-0.5" title={customer.email}>{customer.email}</div>
                 )}
                 {/* Mobile details */}
-                <div className="md:hidden mt-1.5 space-y-0.5 text-[10px] text-gray-600 dark:text-gray-300">
+                <div className="md:hidden mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-300">
                   {customer.phone && (
                     <a
                       href={`tel:${customer.phone}`}
@@ -350,42 +350,38 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                     </span>
                   </div>
                   <div
-                    className={`text-xs font-bold ${
-                      (customer.total_balance || 0) >= 0
-                        ? "text-green-600 dark:text-green-300"
-                        : "text-red-600 dark:text-red-300"
-                    }`}
+                    className={`text-sm font-bold ${getCustomerListBalanceColor(customer.total_balance || 0)}`}
                   >
                     {formatCurrency(customer.total_balance || 0)}
                   </div>
                 </div>
               </td>
-              <td className={`${isVisible("balance") ? "hidden md:table-cell text-right" : "hidden"} px-2 py-2 whitespace-nowrap min-w-[5rem]`}>
+              <td className={`${isVisible("balance") ? "hidden md:table-cell text-right" : "hidden"} px-3 py-3 whitespace-nowrap min-w-[5rem]`}>
                 <div
                   className={`text-xs font-medium ${getCustomerListBalanceColor(customer.total_balance || 0)}`}
                 >
                   {formatCurrency(customer.total_balance || 0)}
                 </div>
               </td>
-              <td className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-2 py-2 whitespace-nowrap min-w-[6rem] text-xs text-gray-900 dark:text-white`}>
+              <td className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 whitespace-nowrap min-w-[6rem] text-sm text-gray-900 dark:text-white`}>
                 {customer.last_transaction_date
                   ? formatDate(customer.last_transaction_date)
                   : t("customers.noTransactions")}
               </td>
-              <td className={`${isVisible("phone") ? "hidden sm:table-cell" : "hidden"} px-2 py-2 whitespace-nowrap min-w-[6rem] text-xs text-gray-900 dark:text-white`}>
+              <td className={`${isVisible("phone") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 whitespace-nowrap min-w-[6rem] text-sm text-gray-900 dark:text-white`}>
                 {customer.phone ? formatPhoneNumber(customer.phone) : "-"}
               </td>
-              <td className={`${isVisible("address") ? "hidden xl:table-cell" : "hidden"} px-2 py-2 text-xs text-gray-900 dark:text-white min-w-[6rem] max-w-[10rem] lg:max-w-[14rem]`}>
+              <td className={`${isVisible("address") ? "hidden xl:table-cell" : "hidden"} px-3 py-3 text-sm text-gray-900 dark:text-white min-w-[6rem] max-w-[10rem] lg:max-w-[14rem]`}>
                 <div className="line-clamp-2 whitespace-normal break-words leading-snug">
                   {customer.address || "-"}
                 </div>
               </td>
-              <td className={`${isVisible("workingMethod") ? "hidden lg:table-cell" : "hidden"} px-2 py-2 text-xs text-gray-900 dark:text-white min-w-[6rem] max-w-[10rem] lg:max-w-[12rem]`}>
+              <td className={`${isVisible("workingMethod") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 text-sm text-gray-900 dark:text-white min-w-[6rem] max-w-[10rem] lg:max-w-[12rem]`}>
                 <div className="truncate" title={customer.working_method || undefined}>
                   {customer.working_method || "-"}
                 </div>
               </td>
-              <td className="px-2 py-2 whitespace-nowrap w-16">
+              <td className="px-3 py-3 whitespace-nowrap w-16">
                 <div className="flex items-center justify-end sm:justify-start space-x-1">
                   <button
                     onClick={(e) => {

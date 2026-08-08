@@ -131,6 +131,7 @@ const CustomerList: React.FC = () => {
         offset,
         sortBy: state.sortBy,
         sortOrder: state.sortOrder,
+        dateRange: state.dateRange || undefined,
       });
 
       if (result.error) {
@@ -150,7 +151,7 @@ const CustomerList: React.FC = () => {
         loading: false,
       }));
     }
-  }, [companyId, state.currentPage, state.pageSize, debouncedSearchTerm, state.sortBy, state.sortOrder]);
+  }, [companyId, state.currentPage, state.pageSize, debouncedSearchTerm, state.sortBy, state.sortOrder, state.dateRange]);
 
   // Load customers on mount and when filters change
   useEffect(() => {
@@ -169,6 +170,7 @@ const CustomerList: React.FC = () => {
           offset: 0,
           sortBy: "created_at",
           sortOrder: "desc",
+          dateRange: state.dateRange || undefined,
         });
         const all = (result.data || []) as Customer[];
         const total = all.reduce((sum, c) => sum + (Number(c.total_balance) || 0), 0);
@@ -178,7 +180,7 @@ const CustomerList: React.FC = () => {
       }
     };
     fetchAll();
-  }, [companyId, debouncedSearchTerm]);
+  }, [companyId, debouncedSearchTerm, state.dateRange]);
 
   // Handle search
   const handleSearch = useCallback((searchTerm: string) => {
@@ -596,7 +598,7 @@ const CustomerList: React.FC = () => {
                 dateRange={state.dateRange}
                 onDateRangeChange={handleDateRangeChange}
               />
-              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 overflow-x-auto sm:overflow-visible no-scrollbar">
                 <select
                   value={state.pageSize}
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
