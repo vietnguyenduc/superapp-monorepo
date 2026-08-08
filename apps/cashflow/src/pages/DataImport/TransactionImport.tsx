@@ -206,6 +206,11 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   const [showPreview, setShowPreview] = useState(false);
   const [activeTab, setActiveTab] = useState<"single" | "bulk">("single");
 
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "bulk" || tab === "single") setActiveTab(tab);
+  }, [searchParams]);
+
   const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState("");
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
