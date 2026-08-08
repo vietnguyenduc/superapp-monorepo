@@ -15,6 +15,7 @@
 - Added `RelationshipContact` types/categories and localStorage/Supabase-backed CRUD in `frameworkMethodService.ts`; exposed on `/practice` under "Thấu triệt mối quan hệ" with 6 relationship types and name/age/address/notes fields.
 - Added `RecurringTask` type and recurrence engine (`weekly`/`monthly`/`quarterly`/`half_yearly`/`special`) with configurable warning-before-days, period-end math, and a note field; surfaced on `/calendar` under "Việc định kỳ" with a one-click "Chốt làm" that converts the recurring task into a daily task for the selected date.
 - Added `PracticeInsight` type and localStorage/Supabase-backed CRUD in `frameworkMethodService.ts`; exposed on `/practice` under "Thấu triệt" with four insight types (person, environment, work, self) and per-type fields.
+- Added `CALENDAR_PRESETS` quick-add cards on `/calendar` for common Vietnamese recurring schedules: "Mồng 1 & 15 âm lịch", "10 ngày ăn chay", and "Lễ giỗ, tế họ". Each preset creates ready-to-use `RecurringTask` entries.
 - Added `nav.finance`, `nav.practice`, `calendar.*`, `financeControl.*`, and `practice.*` i18n keys to `vi.json`/`en.json`.
 - Validation: `npx tsc -p apps/framework-method/tsconfig.app.json --noEmit` ✅, `npm run lint -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
 

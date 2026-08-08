@@ -51,6 +51,34 @@ const CATEGORY_TO_DEFAULT_BLOCK: Record<TaskCategory, BlockId> = {
   loi_tu: "work",
 };
 
+const CALENDAR_PRESETS: { id: string; label: string; icon: string; tasks: Partial<RecurringTask>[] }[] = [
+  {
+    id: "lunar_1_15",
+    label: "Mồng 1 & 15 âm lịch",
+    icon: "🌙",
+    tasks: [
+      { title: "Mồng 1 âm lịch", category: "dao", subcategory: "Quan hệ", recurrence: "special", warning_before_days: 1, note: "Ngày mồng 1 âm lịch", merit_type: "earn", merit_size: "medium" },
+      { title: "Rằm 15 âm lịch", category: "dao", subcategory: "Quan hệ", recurrence: "special", warning_before_days: 1, note: "Ngày 15 âm lịch", merit_type: "earn", merit_size: "medium" },
+    ],
+  },
+  {
+    id: "vegetarian_10",
+    label: "10 ngày ăn chay",
+    icon: "🥗",
+    tasks: [
+      { title: "Ăn chay", category: "dao", subcategory: "Quan hệ", recurrence: "special", warning_before_days: 1, note: "10 ngày ăn chay theo lịch cá nhân", merit_type: "earn", merit_size: "small" },
+    ],
+  },
+  {
+    id: "memorial_days",
+    label: "Lễ giỗ, tế họ",
+    icon: "🕯️",
+    tasks: [
+      { title: "Giỗ / Tế họ", category: "doi", subcategory: "Gia đình", recurrence: "special", warning_before_days: 7, note: "Các ngày lễ giỗ, tế họ trong năm", merit_type: "earn", merit_size: "big" },
+    ],
+  },
+];
+
 const getTaskCategory = (task: DailyTask): TaskCategory => {
   if (task.category) return task.category;
   return BLOCK_TO_CATEGORY[task.block_id]?.category ?? "doi";
@@ -191,6 +219,33 @@ const Calendar = () => {
   const handleRecCategoryChange = (category: TaskCategory) => {
     setRecCategory(category);
     setRecSubcategory(subcategoryOptions[category][0] ?? "");
+  };
+
+  const handleAddPreset = async (presetId: string) => {
+    if (!userId) return;
+    const preset = CALENDAR_PRESETS.find((p) => p.id === presetId);
+    if (!preset) return;
+
+    const now = new Date();
+    const newTasks: RecurringTask[] = preset.tasks.map((task) => ({
+      id: genId(),
+      user_id: userId,
+      title: task.title || "",
+      category: (task.category as TaskCategory) ?? "doi",
+      subcategory: task.subcategory,
+      recurrence: (task.recurrence as RecurrenceType) ?? "special",
+      warning_before_days: task.warning_before_days ?? 3,
+      note: task.note,
+      next_due_date: getNextDueDate((task.recurrence as RecurrenceType) ?? "special", now),
+      merit_type: task.merit_type as MeritType,
+      merit_size: task.merit_size as MeritSize,
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
+    }));
+
+    const next = [...newTasks, ...recurringTasks];
+    setRecurringTasks(next);
+    await saveRecurringTasks(next);
   };
 
   const selectedDate = useMemo(() => parseISO(sessionDate), [sessionDate]);
@@ -752,6 +807,26 @@ const Calendar = () => {
               </div>
             );
           })}
+        </div>
+      </Card>
+
+      <Card className="p-5 space-y-4">
+        <div>
+          <h3 className="font-semibold tracking-tight">Gợi ý bộ lịch</h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Thêm nhanh các lịch định kỳ phổ biến.</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {CALENDAR_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              onClick={() => handleAddPreset(preset.id)}
+              className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] text-left hover:bg-black/[0.04] dark:hover:bg-white/[0.06] active:scale-95 transition-all"
+            >
+              <span className="text-2xl block mb-2">{preset.icon}</span>
+              <p className="font-medium text-sm">{preset.label}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{preset.tasks.length} việc định kỳ</p>
+            </button>
+          ))}
         </div>
       </Card>
     </div>
