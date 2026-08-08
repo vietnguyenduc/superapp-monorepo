@@ -8,20 +8,20 @@ import {
 
 describe("balanceMath", () => {
   describe("getCustomerBalanceDelta", () => {
-    it("charges reduce the customer's balance (debt)", () => {
-      expect(getCustomerBalanceDelta("charge", 100)).toBe(-100);
+    it("charges increase the customer's debt (positive delta)", () => {
+      expect(getCustomerBalanceDelta("charge", 100)).toBe(100);
     });
 
-    it("payments increase the customer's balance (reduce debt)", () => {
-      expect(getCustomerBalanceDelta("payment", 100)).toBe(100);
+    it("payments reduce the customer's debt (negative delta)", () => {
+      expect(getCustomerBalanceDelta("payment", 100)).toBe(-100);
     });
 
-    it("refunds increase the customer's balance (reduce debt)", () => {
-      expect(getCustomerBalanceDelta("refund", 100)).toBe(100);
+    it("refunds reduce the customer's debt (negative delta)", () => {
+      expect(getCustomerBalanceDelta("refund", 100)).toBe(-100);
     });
 
-    it("deposits increase the customer's balance (reduce debt)", () => {
-      expect(getCustomerBalanceDelta("deposit", 100)).toBe(100);
+    it("deposits reduce the customer's debt (negative delta)", () => {
+      expect(getCustomerBalanceDelta("deposit", 100)).toBe(-100);
     });
 
     it("adjustments use the signed amount", () => {
@@ -30,18 +30,23 @@ describe("balanceMath", () => {
     });
 
     it("ignores case and whitespace", () => {
-      expect(getCustomerBalanceDelta("  CHARGE ", 100)).toBe(-100);
+      expect(getCustomerBalanceDelta("  CHARGE ", 100)).toBe(100);
     });
 
     it("reverses the customer effect when amount is negative", () => {
-      expect(getCustomerBalanceDelta("charge", -100)).toBe(100);
-      expect(getCustomerBalanceDelta("payment", -100)).toBe(-100);
-      expect(getCustomerBalanceDelta("refund", -100)).toBe(-100);
-      expect(getCustomerBalanceDelta("deposit", -100)).toBe(-100);
+      expect(getCustomerBalanceDelta("charge", -100)).toBe(-100);
+      expect(getCustomerBalanceDelta("payment", -100)).toBe(100);
+      expect(getCustomerBalanceDelta("refund", -100)).toBe(100);
+      expect(getCustomerBalanceDelta("deposit", -100)).toBe(100);
     });
 
     it("falls back to signed amount for unknown types", () => {
       expect(getCustomerBalanceDelta("unknown", -25)).toBe(-25);
+    });
+
+    it("honours an explicit mathFactor", () => {
+      expect(getCustomerBalanceDelta("payment", 100, 1)).toBe(100);
+      expect(getCustomerBalanceDelta("charge", 100, -1)).toBe(-100);
     });
   });
 
@@ -76,7 +81,7 @@ describe("balanceMath", () => {
   });
 
   describe("applyTransactionsToCustomerBalance", () => {
-    it("produces the dashboard 'total outstanding' sign convention", () => {
+    it("produces the positive-debt convention", () => {
       const transactions = [
         { transaction_type: "charge", amount: 100 },
         { transaction_type: "payment", amount: 30 },
@@ -84,8 +89,17 @@ describe("balanceMath", () => {
         { transaction_type: "deposit", amount: 15 },
         { transaction_type: "adjustment", amount: -10 },
       ] as const;
-      // opening 0 - charge 100 + payment 30 + refund 20 + deposit 15 - adjustment 10 = -45
-      expect(applyTransactionsToCustomerBalance(0, transactions as unknown as { transaction_type: string; amount: number }[])).toBe(-45);
+      // opening 0 + charge 100 - payment 30 - refund 20 - deposit 15 - adjustment 10 = 25
+      expect(applyTransactionsToCustomerBalance(0, transactions as unknown as { transaction_type: string; amount: number }[])).toBe(25);
+    });
+
+    it("honours an optional factorMap", () => {
+      const transactions = [
+        { transaction_type: "custom_increase", amount: 100 },
+        { transaction_type: "custom_decrease", amount: 40 },
+      ] as const;
+      const factorMap = { custom_increase: 1, custom_decrease: -1 };
+      expect(applyTransactionsToCustomerBalance(0, transactions as unknown as { transaction_type: string; amount: number }[], factorMap)).toBe(60);
     });
   });
 

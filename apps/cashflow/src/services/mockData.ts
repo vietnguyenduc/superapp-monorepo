@@ -530,7 +530,7 @@ export const dashboardMockData = {
       full_name: "Công ty TNHH ABC",
       phone: "0123456789",
       email: "info@abc.com.vn",
-      total_balance: -85000000, // 85M VND debt
+      total_balance: 85000000, // 85M VND debt
       last_transaction_date: "2024-01-28T14:30:00Z",
     },
     {
@@ -539,7 +539,7 @@ export const dashboardMockData = {
       full_name: "Công ty CP XYZ",
       phone: "0987654321",
       email: "contact@xyz.com.vn",
-      total_balance: -72000000, // 72M VND debt
+      total_balance: 72000000, // 72M VND debt
       last_transaction_date: "2024-01-28T10:15:00Z",
     },
     {
@@ -548,7 +548,7 @@ export const dashboardMockData = {
       full_name: "Công ty TNHH DEF",
       phone: "0369852147",
       email: "hello@def.com.vn",
-      total_balance: -65000000, // 65M VND debt
+      total_balance: 65000000, // 65M VND debt
       last_transaction_date: "2024-01-28T09:45:00Z",
     },
     {
@@ -557,7 +557,7 @@ export const dashboardMockData = {
       full_name: "Công ty TNHH Global Tech",
       phone: "0912345678",
       email: "info@globaltech.com.vn",
-      total_balance: -58000000, // 58M VND debt
+      total_balance: 58000000, // 58M VND debt
       last_transaction_date: "2024-01-27T15:20:00Z",
     },
     {
@@ -566,7 +566,7 @@ export const dashboardMockData = {
       full_name: "Công ty CP Phát triển Đô thị",
       phone: "0823456789",
       email: "contact@phattriendo.com.vn",
-      total_balance: -52000000, // 52M VND debt
+      total_balance: 52000000, // 52M VND debt
       last_transaction_date: "2024-01-27T11:45:00Z",
     },
     {
@@ -575,7 +575,7 @@ export const dashboardMockData = {
       full_name: "Công ty TNHH Thương mại Dịch vụ XNK",
       phone: "0934567890",
       email: "info@tmxnk.com.vn",
-      total_balance: -48000000, // 48M VND debt
+      total_balance: 48000000, // 48M VND debt
       last_transaction_date: "2024-01-26T16:30:00Z",
     },
     {
@@ -584,7 +584,7 @@ export const dashboardMockData = {
       full_name: "Công ty CP Đầu tư Bất động sản",
       phone: "0845678901",
       email: "contact@bds.com.vn",
-      total_balance: -45000000, // 45M VND debt
+      total_balance: 45000000, // 45M VND debt
       last_transaction_date: "2024-01-26T14:15:00Z",
     },
     {
@@ -593,7 +593,7 @@ export const dashboardMockData = {
       full_name: "Công ty TNHH Sản xuất Vật liệu XD",
       phone: "0756789012",
       email: "info@vlxd.com.vn",
-      total_balance: -42000000, // 42M VND debt
+      total_balance: 42000000, // 42M VND debt
       last_transaction_date: "2024-01-25T10:45:00Z",
     },
     {
@@ -602,7 +602,7 @@ export const dashboardMockData = {
       full_name: "Công ty CP Vận tải & Logistics",
       phone: "0967890123",
       email: "contact@vtlogistics.com.vn",
-      total_balance: -38000000, // 38M VND debt
+      total_balance: 38000000, // 38M VND debt
       last_transaction_date: "2024-01-25T09:30:00Z",
     },
     {
@@ -611,7 +611,7 @@ export const dashboardMockData = {
       full_name: "Công ty TNHH Xuất nhập khẩu Nông sản",
       phone: "0878901234",
       email: "info@xnknongsan.com.vn",
-      total_balance: -35000000, // 35M VND debt
+      total_balance: 35000000, // 35M VND debt
       last_transaction_date: "2024-01-24T16:45:00Z",
     },
   ],

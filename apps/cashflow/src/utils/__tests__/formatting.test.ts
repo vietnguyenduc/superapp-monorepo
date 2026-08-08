@@ -290,13 +290,13 @@ describe("Formatting Utils", () => {
   });
 
   describe("customer balance colors", () => {
-    it("returns red for negative balance (debt) and green for positive balance (credit)", () => {
-      expect(getCustomerListBalanceColor(-100)).toContain("text-red-600");
-      expect(getCustomerListBalanceColor(-100)).toContain("dark:text-red-400");
-      expect(getCustomerListBalanceColor(100)).toContain("text-green-600");
-      expect(getCustomerListBalanceColor(100)).toContain("dark:text-green-400");
-      expect(getCustomerDetailBalanceColor(-100)).toContain("text-red-600");
-      expect(getCustomerDetailBalanceColor(100)).toContain("text-green-600");
+    it("returns red for positive balance (debt) and green for negative balance (credit)", () => {
+      expect(getCustomerListBalanceColor(100)).toContain("text-red-600");
+      expect(getCustomerListBalanceColor(100)).toContain("dark:text-red-400");
+      expect(getCustomerListBalanceColor(-100)).toContain("text-green-600");
+      expect(getCustomerListBalanceColor(-100)).toContain("dark:text-green-400");
+      expect(getCustomerDetailBalanceColor(100)).toContain("text-red-600");
+      expect(getCustomerDetailBalanceColor(-100)).toContain("text-green-600");
     });
   });
 
@@ -313,8 +313,8 @@ describe("Formatting Utils", () => {
     });
 
     it("uses the signed amount to color adjustments", () => {
-      expect(getTransactionTypeAmountColor("adjustment", 500)).toContain("text-green-600");
-      expect(getTransactionTypeAmountColor("adjustment", -500)).toContain("text-red-600");
+      expect(getTransactionTypeAmountColor("adjustment", 500)).toContain("text-red-600");
+      expect(getTransactionTypeAmountColor("adjustment", -500)).toContain("text-green-600");
     });
   });
 

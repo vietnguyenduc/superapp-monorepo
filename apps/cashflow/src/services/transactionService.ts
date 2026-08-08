@@ -3,6 +3,7 @@ import { apiClient } from "./supabase";
 import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
 import { validateTransactionData, validateTransactionUpdateData, transformRawTransaction, parseAmount, normalizeTransactionType, getCustomerBalanceDelta, getBankAccountBalanceDelta } from "./businessLogic";
 import { updateWithFallback, insertWithFallback, bulkInsertWithFallback } from "./updateHelpers";
+import { transactionTypeService } from "./transactionTypeService";
 import { v4 as uuid } from "uuid";
 import type { Transaction, Customer, BankAccount, Branch, User } from "../types";
 
@@ -106,18 +107,31 @@ export class TransactionService extends BaseService {
     await apiClient.from("bank_accounts").update({ balance: newBalance, updated_at: getNowIso() }).eq("id", accountId);
   }
 
+  private static async _getLiveFactorMap(companyId?: string | null): Promise<Record<string, number>> {
+    return transactionTypeService.getTransactionTypeFactorMap(companyId || undefined);
+  }
+
+  private static _getTrialFactorMap(): Record<string, number> {
+    return transactionTypeService.buildFactorMap(trialGet("transaction_types") || []);
+  }
+
   private static async _syncTransactionBalance(
     previous: Record<string, unknown> | null,
     current: Record<string, unknown> | null,
     companyId?: string | null,
+    factorMap?: Record<string, number>,
   ) {
     if (!previous && !current) return;
 
     const oldTx = previous ? this._balanceFields(previous) : null;
     const newTx = current ? this._balanceFields(current) : null;
 
-    const oldCustomerDelta = oldTx ? getCustomerBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0;
-    const newCustomerDelta = newTx ? getCustomerBalanceDelta(newTx.transaction_type, newTx.amount) : 0;
+    if (!factorMap) {
+      factorMap = await this._getLiveFactorMap(companyId || newTx?.company_id || oldTx?.company_id);
+    }
+
+    const oldCustomerDelta = oldTx ? getCustomerBalanceDelta(oldTx.transaction_type, oldTx.amount, factorMap[oldTx.transaction_type]) : 0;
+    const newCustomerDelta = newTx ? getCustomerBalanceDelta(newTx.transaction_type, newTx.amount, factorMap[newTx.transaction_type]) : 0;
     const oldBankDelta = oldTx ? getBankAccountBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0;
     const newBankDelta = newTx ? getBankAccountBalanceDelta(newTx.transaction_type, newTx.amount) : 0;
 
@@ -179,14 +193,17 @@ export class TransactionService extends BaseService {
   private static _trialSyncTransactionBalance(
     previous: Record<string, unknown> | null,
     current: Record<string, unknown> | null,
+    factorMap?: Record<string, number>,
   ) {
     if (!previous && !current) return;
+
+    if (!factorMap) factorMap = this._getTrialFactorMap();
 
     const oldTx = previous ? this._balanceFields(previous) : null;
     const newTx = current ? this._balanceFields(current) : null;
 
-    const oldCustomerDelta = oldTx ? getCustomerBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0;
-    const newCustomerDelta = newTx ? getCustomerBalanceDelta(newTx.transaction_type, newTx.amount) : 0;
+    const oldCustomerDelta = oldTx ? getCustomerBalanceDelta(oldTx.transaction_type, oldTx.amount, factorMap[oldTx.transaction_type]) : 0;
+    const newCustomerDelta = newTx ? getCustomerBalanceDelta(newTx.transaction_type, newTx.amount, factorMap[newTx.transaction_type]) : 0;
     const oldBankDelta = oldTx ? getBankAccountBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0;
     const newBankDelta = newTx ? getBankAccountBalanceDelta(newTx.transaction_type, newTx.amount) : 0;
 
@@ -606,8 +623,9 @@ export class TransactionService extends BaseService {
           body.map(pickTransactionColumns) as Record<string, unknown>[],
         );
         if (!error) {
+          const factorMap = await this._getLiveFactorMap(companyId || null);
           for (const row of body) {
-            await this._syncTransactionBalance(null, row as Record<string, unknown>, companyId || null);
+            await this._syncTransactionBalance(null, row as Record<string, unknown>, companyId || null, factorMap);
           }
         }
         return { data: data || [], error };
@@ -658,8 +676,9 @@ export class TransactionService extends BaseService {
         });
 
         const inserted = body.map((tx) => trialInsert("transactions", tx as Record<string, unknown>));
+        const factorMap = this._getTrialFactorMap();
         for (const tx of body) {
-          this._trialSyncTransactionBalance(null, tx as Record<string, unknown>);
+          this._trialSyncTransactionBalance(null, tx as Record<string, unknown>, factorMap);
         }
         return { data: inserted, error: null };
       }

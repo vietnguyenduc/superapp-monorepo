@@ -2,17 +2,8 @@ import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
 import { getTrialMode, trialGet } from "./trialMockStore";
 import { parseAmount, applyTransactionsToCustomerBalance, getCustomerBalanceDelta, getBankAccountBalanceDelta } from "./businessLogic";
+import { transactionTypeService } from "./transactionTypeService";
 import type { Transaction, TimeRange, Customer, BankAccount, Branch } from "../types";
-
-function normalizeTransactionType(input: string) {
-  const raw = (input || "").toLowerCase().trim();
-  if (raw === "deposit" || raw === "đặt cọc" || raw === "datcoc" || raw === "tạm ứng" || raw === "tamung") return "deposit";
-  if (raw === "payment" || raw === "thu" || raw === "điều chỉnh giảm" || raw === "dieuchinhgiam" || raw === "thanh toán" || raw === "thanhtoan") return "payment";
-  if (raw === "charge" || raw === "chi" || raw === "điều chỉnh tăng" || raw === "dieuchinhtang" || raw === "cho nợ" || raw === "chono") return "charge";
-  if (raw === "refund" || raw === "hoàn tiền" || raw === "hoantien") return "refund";
-  if (raw === "adjustment" || raw === "điều chỉnh" || raw === "dieuchinh") return "adjustment";
-  return "payment";
-}
 
 function inflowOutflowByType(type: string, amount: number) {
   const delta = getBankAccountBalanceDelta(type, amount);
@@ -190,11 +181,12 @@ function isInScope(
 function applyTransactionToBalanceMap(
   balanceMap: Map<string, number>,
   transactions: Transaction[],
+  factorMap?: Record<string, number>,
 ) {
   for (const tx of transactions) {
     if (!tx.customer_id) continue;
     const previous = balanceMap.get(tx.customer_id) || 0;
-    const delta = getCustomerBalanceDelta(tx.transaction_type, tx.amount);
+    const delta = getCustomerBalanceDelta(tx.transaction_type, tx.amount, factorMap?.[tx.transaction_type]);
     balanceMap.set(tx.customer_id, previous + delta);
   }
 }
@@ -208,6 +200,8 @@ export class DashboardService extends BaseService {
       const mockCustomers = (trialGet("customers") || []) as Customer[];
       const mockBankAccounts = (trialGet("bank_accounts") || []) as BankAccount[];
       const mockBranches = (trialGet("branches") || []) as Branch[];
+      const mockTransactionTypes = (trialGet("transaction_types") || []) as Record<string, unknown>[];
+      const factorMap = transactionTypeService.buildFactorMap(mockTransactionTypes);
 
       const filteredTransactions = mockTransactions.filter((tx) => isInScope(tx, companyId, branchId));
       const filteredCustomers = mockCustomers.filter((customer) => isInScope(customer, companyId, branchId));
@@ -217,18 +211,18 @@ export class DashboardService extends BaseService {
       );
 
       const currentIncome = filteredTransactions.reduce(
-        (s, t) => s + Math.max(0, getCustomerBalanceDelta(t.transaction_type, t.amount)),
+        (s, t) => s + Math.max(0, -getCustomerBalanceDelta(t.transaction_type, t.amount, factorMap[t.transaction_type])),
         0,
       );
       const currentDebt = filteredTransactions.reduce(
-        (s, t) => s + Math.max(0, -getCustomerBalanceDelta(t.transaction_type, t.amount)),
+        (s, t) => s + Math.max(0, getCustomerBalanceDelta(t.transaction_type, t.amount, factorMap[t.transaction_type])),
         0,
       );
       const balanceMap = new Map<string, number>();
       filteredCustomers.forEach((customer) => {
         balanceMap.set(customer.id, parseAmount(customer.opening_balance ?? customer.current_balance ?? customer.total_balance));
       });
-      applyTransactionToBalanceMap(balanceMap, filteredTransactions);
+      applyTransactionToBalanceMap(balanceMap, filteredTransactions, factorMap);
       const outstanding = Array.from(balanceMap.values()).reduce((sum, balance) => sum + balance, 0);
       const activeCustomers = filteredCustomers.filter((c) => c.is_active !== false).length;
       const currentPaymentCount = filteredTransactions.filter((t) => t.transaction_type === "payment" || t.transaction_type === "deposit").length;
@@ -240,7 +234,7 @@ export class DashboardService extends BaseService {
 
       const topCustomers = filteredCustomers
         .map((customer) => ({ ...customer, total_balance: balanceMap.get(customer.id) ?? customer.total_balance }))
-        .sort((a, b) => a.total_balance - b.total_balance)
+        .sort((a, b) => b.total_balance - a.total_balance)
         .slice(0, 10);
 
       const balanceByBankAccount = filteredBankAccounts.map((b) => ({
@@ -295,6 +289,8 @@ export class DashboardService extends BaseService {
       apiClient.from("branches").select("id, name"),
     ]);
 
+    const factorMap = await transactionTypeService.getTransactionTypeFactorMap(companyId);
+
     const transactionsAll: Transaction[] = (txResult.data || []) as Transaction[];
     const transactions = transactionsAll.filter((transaction) => isInScope(transaction, companyId, branchId));
     const customersAll = ((custResult.data || []) as Customer[]).filter((customer) =>
@@ -328,19 +324,19 @@ export class DashboardService extends BaseService {
     const prevTx = transactions.filter((tx) => inRange(tx, prevStart, prevEnd));
 
     const currentIncome = currentTx.reduce(
-      (s, t) => s + Math.max(0, getCustomerBalanceDelta(t.transaction_type, t.amount)),
+      (s, t) => s + Math.max(0, -getCustomerBalanceDelta(t.transaction_type, t.amount, factorMap[t.transaction_type])),
       0,
     );
     const currentDebt = currentTx.reduce(
-      (s, t) => s + Math.max(0, -getCustomerBalanceDelta(t.transaction_type, t.amount)),
+      (s, t) => s + Math.max(0, getCustomerBalanceDelta(t.transaction_type, t.amount, factorMap[t.transaction_type])),
       0,
     );
     const prevIncome = prevTx.reduce(
-      (s, t) => s + Math.max(0, getCustomerBalanceDelta(t.transaction_type, t.amount)),
+      (s, t) => s + Math.max(0, -getCustomerBalanceDelta(t.transaction_type, t.amount, factorMap[t.transaction_type])),
       0,
     );
     const prevDebt = prevTx.reduce(
-      (s, t) => s + Math.max(0, -getCustomerBalanceDelta(t.transaction_type, t.amount)),
+      (s, t) => s + Math.max(0, getCustomerBalanceDelta(t.transaction_type, t.amount, factorMap[t.transaction_type])),
       0,
     );
 
@@ -356,7 +352,7 @@ export class DashboardService extends BaseService {
     for (const c of customersAll) {
       balanceMap.set(c.id, parseAmount(c.opening_balance));
     }
-    applyTransactionToBalanceMap(balanceMap, transactions);
+    applyTransactionToBalanceMap(balanceMap, transactions, factorMap);
     const outstanding = Array.from(balanceMap.values()).reduce((s, v) => s + v, 0);
 
     const prevBalanceMap = new Map(balanceMap);
@@ -367,7 +363,7 @@ export class DashboardService extends BaseService {
     for (const tx of transactions.filter((t) => new Date(t.transaction_date) <= prevEnd)) {
       if (!tx.customer_id) continue;
       const prev = prevBalanceMap.get(tx.customer_id) || 0;
-      const delta = getCustomerBalanceDelta(tx.transaction_type, tx.amount);
+      const delta = getCustomerBalanceDelta(tx.transaction_type, tx.amount, factorMap[tx.transaction_type]);
       prevBalanceMap.set(tx.customer_id, prev + delta);
     }
     const prevOutstanding = Array.from(prevBalanceMap.values()).reduce((s, v) => s + v, 0);
@@ -401,8 +397,8 @@ export class DashboardService extends BaseService {
     const balanceByBankAccount = balanceByBankAccountAll.slice().sort((a, b) => a.balance - b.balance);
 
     const customersWithBalance = customersAll.map((c) => ({ ...c, total_balance: balanceMap.get(c.id) ?? c.current_balance ?? c.total_balance }));
-    const debtCustomers = customersWithBalance.filter((c) => c.total_balance < 0).sort((a, b) => a.total_balance - b.total_balance);
-    const creditCustomers = customersWithBalance.filter((c) => c.total_balance >= 0).sort((a, b) => b.total_balance - a.total_balance);
+    const debtCustomers = customersWithBalance.filter((c) => c.total_balance > 0).sort((a, b) => b.total_balance - a.total_balance);
+    const creditCustomers = customersWithBalance.filter((c) => c.total_balance < 0).sort((a, b) => a.total_balance - b.total_balance);
     const topCustomers = [...debtCustomers, ...creditCustomers];
 
     const customerNameMap = new Map(customersAll.map((c) => [c.id, c.full_name || c.customer_code || c.id] as const));
@@ -417,9 +413,9 @@ export class DashboardService extends BaseService {
     for (const tx of currentTx) {
       const branchIdForTx = tx.branch_id ? String(tx.branch_id) : "";
       const prev = branchAgg.get(branchIdForTx) || { incomeAmount: 0, debtAmount: 0 };
-      const delta = getCustomerBalanceDelta(tx.transaction_type, tx.amount);
-      prev.incomeAmount += Math.max(0, delta);
-      prev.debtAmount += Math.max(0, -delta);
+      const delta = getCustomerBalanceDelta(tx.transaction_type, tx.amount, factorMap[tx.transaction_type]);
+      prev.incomeAmount += Math.max(0, -delta);
+      prev.debtAmount += Math.max(0, delta);
       branchAgg.set(branchIdForTx, prev);
     }
 
@@ -458,6 +454,9 @@ export class DashboardService extends BaseService {
 
     const transactionsAll: Transaction[] = (txResult.data || []) as Transaction[];
     const transactions = branchId ? transactionsAll.filter((t) => t.branch_id === branchId) : transactionsAll;
+
+    const companyId = (transactionsAll[0] as { company_id?: string } | undefined)?.company_id;
+    const factorMap = await transactionTypeService.getTransactionTypeFactorMap(companyId);
     const customersAll = (custResult.data || []) as Customer[];
 
     const count = timeRange === "day" ? rangeCount?.day || 7 : timeRange === "week" ? rangeCount?.week || 8 : timeRange === "month" ? rangeCount?.month || 7 : timeRange === "quarter" ? rangeCount?.quarter || 8 : 2;
@@ -470,7 +469,7 @@ export class DashboardService extends BaseService {
     const openingBalanceFromCustomers = customersAll
       .filter((c) => !branchId || c.branch_id === branchId)
       .reduce((sum, c) => sum + parseAmount(c.opening_balance), 0);
-    const openingBalance = openingBalanceFromCustomers + applyTransactionsToCustomerBalance(0, txBeforeStart);
+    const openingBalance = openingBalanceFromCustomers + applyTransactionsToCustomerBalance(0, txBeforeStart, factorMap);
 
     const txInPeriod = transactions.filter((t) => {
       const ts = new Date(t.transaction_date).getTime();
@@ -481,11 +480,11 @@ export class DashboardService extends BaseService {
     const branchNameMap = new Map(branches.map((b) => [b.id, b.name] as const));
     const customerNameMap = new Map(customersAll.map((c) => [c.id, c.full_name || c.customer_code || c.id] as const));
 
-    const rowEffect = (t: Transaction) => getCustomerBalanceDelta(t.transaction_type, t.amount);
+    const rowEffect = (t: Transaction) => getCustomerBalanceDelta(t.transaction_type, t.amount, factorMap[t.transaction_type]);
 
-    const rowIncrease = (t: Transaction) => Math.max(0, -rowEffect(t));
+    const rowIncrease = (t: Transaction) => Math.max(0, rowEffect(t));
 
-    const rowDecrease = (t: Transaction) => Math.max(0, rowEffect(t));
+    const rowDecrease = (t: Transaction) => Math.max(0, -rowEffect(t));
 
     let runningBalance = openingBalance;
     const rows = txInPeriod.map((t) => {

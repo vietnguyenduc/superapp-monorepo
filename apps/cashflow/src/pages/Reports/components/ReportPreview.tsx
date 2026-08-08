@@ -181,9 +181,11 @@ const ReportPreview: React.FC<ReportPreviewProps> = ({
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <span
                         className={
-                          customer.total_balance < 0
+                          customer.total_balance > 0
                             ? "text-red-600"
-                            : "text-green-600"
+                            : customer.total_balance < 0
+                            ? "text-green-600"
+                            : "text-gray-600"
                         }
                       >
                         {formatCurrency(customer.total_balance)}

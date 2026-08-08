@@ -29,12 +29,12 @@ const TopCustomers: React.FC<TopCustomersProps> = ({
   const displayCustomers = customers
     .slice()
     .sort((a, b) => {
-      const aHasDebt = a.total_balance < 0;
-      const bHasDebt = b.total_balance < 0;
+      const aHasDebt = a.total_balance > 0;
+      const bHasDebt = b.total_balance > 0;
       if (aHasDebt !== bHasDebt) return aHasDebt ? -1 : 1;
       return aHasDebt
-        ? a.total_balance - b.total_balance
-        : b.total_balance - a.total_balance;
+        ? b.total_balance - a.total_balance
+        : a.total_balance - b.total_balance;
     })
     .slice(0, maxItems);
 

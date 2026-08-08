@@ -39,7 +39,7 @@ describe("transaction balance sync (trial mode)", () => {
     const customer = customers.find((c) => c.id === "1");
     const bank = banks.find((b) => b.id === "1");
 
-    expect(customer?.total_balance).toBe(-85_000_000 + 1_000_000); // payment reduces debt
+    expect(customer?.total_balance).toBe(85_000_000 - 1_000_000); // payment reduces debt
     expect(customer?.last_transaction_date).toBe("2024-02-01T10:00:00Z");
     expect(bank?.balance).toBe(150_000_000 + 1_000_000); // payment increases bank cash
   });
@@ -54,7 +54,7 @@ describe("transaction balance sync (trial mode)", () => {
     const customer = customers.find((c) => c.id === "1");
     const bank = banks.find((b) => b.id === "1");
 
-    expect(customer?.total_balance).toBe(-85_000_000 - 1_000_000);
+    expect(customer?.total_balance).toBe(85_000_000 + 1_000_000);
     expect(bank?.balance).toBe(150_000_000); // charge has no cash effect
   });
 
@@ -75,8 +75,8 @@ describe("transaction balance sync (trial mode)", () => {
     const customer = customers.find((c) => c.id === "1");
     const bank = banks.find((b) => b.id === "1");
 
-    // payment 2M -> customer -85M + 2M, bank +2M
-    expect(customer?.total_balance).toBe(-85_000_000 + 2_000_000);
+    // payment 2M -> customer 85M - 2M, bank +2M
+    expect(customer?.total_balance).toBe(85_000_000 - 2_000_000);
     expect(bank?.balance).toBe(150_000_000 + 2_000_000);
   });
 
@@ -94,8 +94,8 @@ describe("transaction balance sync (trial mode)", () => {
     const customer1 = customers.find((c) => c.id === "1");
     const customer2 = customers.find((c) => c.id === "2");
 
-    expect(customer1?.total_balance).toBe(-85_000_000); // original restored
-    expect(customer2?.total_balance).toBe(-72_000_000 + 1_000_000); // customer 2 original -72M + payment 1M
+    expect(customer1?.total_balance).toBe(85_000_000); // original restored
+    expect(customer2?.total_balance).toBe(72_000_000 - 1_000_000); // customer 2 original 72M - payment 1M
   });
 
   it("deleteTransaction reverses the balance impact", async () => {
@@ -111,7 +111,7 @@ describe("transaction balance sync (trial mode)", () => {
     const customer = customers.find((c) => c.id === "1");
     const bank = banks.find((b) => b.id === "1");
 
-    expect(customer?.total_balance).toBe(-85_000_000);
+    expect(customer?.total_balance).toBe(85_000_000);
     expect(bank?.balance).toBe(150_000_000);
   });
 
@@ -130,7 +130,7 @@ describe("transaction balance sync (trial mode)", () => {
     const customer = customers.find((c) => c.id === "1");
     const bank = banks.find((b) => b.id === "1");
 
-    expect(customer?.total_balance).toBe(-85_000_000 - 1_000_000);
+    expect(customer?.total_balance).toBe(85_000_000 + 1_000_000);
     expect(bank?.balance).toBe(150_000_000 - 1_000_000);
   });
 
@@ -149,7 +149,7 @@ describe("transaction balance sync (trial mode)", () => {
     const customer = customers.find((c) => c.id === "1");
     const bank = banks.find((b) => b.id === "1");
 
-    expect(customer?.total_balance).toBe(-85_000_000 + 1_000_000);
+    expect(customer?.total_balance).toBe(85_000_000 - 1_000_000);
     expect(bank?.balance).toBe(150_000_000);
   });
 
@@ -167,7 +167,7 @@ describe("transaction balance sync (trial mode)", () => {
     const customer = customers.find((c) => c.id === "1");
     const bank = banks.find((b) => b.id === "1");
 
-    expect(customer?.total_balance).toBe(-85_000_000 + 1_000_000);
+    expect(customer?.total_balance).toBe(85_000_000 - 1_000_000);
     expect(bank?.balance).toBe(150_000_000 + 1_000_000);
   });
 });

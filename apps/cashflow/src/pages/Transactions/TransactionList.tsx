@@ -57,7 +57,7 @@ function getISOWeek(date: Date): number {
 const TransactionList: React.FC = () => {
   const navigate = useNavigate();
   const companyId = useCompanyId();
-  const { getNameById: getTransactionTypeName } = useTransactionTypes();
+  const { getNameById: getTransactionTypeName, getMathFactor } = useTransactionTypes();
   const [searchParams] = useSearchParams();
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [bankAccounts, setBankAccounts] = useState<{ id: string; name: string }[]>([]);
@@ -474,12 +474,12 @@ const TransactionList: React.FC = () => {
         acc[key] = { label, count: 0, increase: 0, decrease: 0, adjustment: 0, net: 0 };
       }
 
-      const delta = getCustomerBalanceDelta(tx.transaction_type, tx.amount);
+      const delta = getCustomerBalanceDelta(tx.transaction_type, tx.amount, getMathFactor(tx.transaction_type));
       if (tx.transaction_type === "adjustment") {
         acc[key].adjustment += delta;
-      } else if (delta < 0) {
-        acc[key].increase += Math.abs(delta);
       } else if (delta > 0) {
+        acc[key].increase += Math.abs(delta);
+      } else if (delta < 0) {
         acc[key].decrease += Math.abs(delta);
       }
       acc[key].count += 1;
@@ -487,7 +487,7 @@ const TransactionList: React.FC = () => {
 
       return acc;
     }, {});
-  }, [state.groupBy, state.transactions, getBranchName, customers, getTransactionTypeName]);
+  }, [state.groupBy, state.transactions, getBranchName, customers, getTransactionTypeName, getMathFactor]);
 
   const timeLabel = useMemo(() => {
     if (!state.dateRange) return "Tất cả thời gian";

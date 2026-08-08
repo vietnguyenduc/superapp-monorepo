@@ -21,7 +21,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const companyId = useCompanyId();
-  const { getNameById: getTransactionTypeName } = useTransactionTypes();
+  const { getNameById: getTransactionTypeName, getMathFactor } = useTransactionTypes();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,9 +78,9 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   const openingBalance = customer.opening_balance ?? 0;
 
   // Tính công nợ hiện tại real-time từ opening_balance + signed customer deltas
-  // Negative balance = debt (red); positive = credit/overpayment (green)
+  // Positive balance = debt (red); negative = credit/overpayment (green)
   const currentBalance = transactions.reduce((balance, transaction) => {
-    return balance + getCustomerBalanceDelta(transaction.transaction_type, transaction.amount);
+    return balance + getCustomerBalanceDelta(transaction.transaction_type, transaction.amount, getMathFactor(transaction.transaction_type));
   }, openingBalance);
 
   // Tìm giao dịch cuối từ transactions array

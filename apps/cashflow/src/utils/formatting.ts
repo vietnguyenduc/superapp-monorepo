@@ -347,23 +347,24 @@ export function getCustomerListBalanceColor(balance: number): string {
   const colors = cachedBalanceColors;
   if (!colors || !colors.customer_list) {
     // Fallback to hardcoded colors if not loaded yet
-    // Negative balance = debt (red); positive/zero = credit (green)
-    return balance < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400";
+    // Positive balance = debt (red); zero/negative = credit/overpayment (green)
+    return balance > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400";
   }
 
   const listColors = colors.customer_list;
-  return balance < 0 ? listColors.zero_or_negative_color : listColors.positive_balance_color;
+  return balance > 0 ? listColors.positive_balance_color : listColors.zero_or_negative_color;
 }
 
 export function getCustomerDetailBalanceColor(balance: number): string {
   const colors = cachedBalanceColors;
   if (!colors || !colors.customer_detail) {
     // Fallback to hardcoded colors if not loaded yet
-    return balance < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400";
+    // Positive balance = debt (red); zero/negative = credit/overpayment (green)
+    return balance > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400";
   }
 
   const detailColors = colors.customer_detail;
-  return balance < 0 ? detailColors.zero_or_negative_color : detailColors.positive_balance_color;
+  return balance > 0 ? detailColors.positive_balance_color : detailColors.zero_or_negative_color;
 }
 
 /**
@@ -415,11 +416,11 @@ export const getTransactionTypeAmountColor = (
   amount?: number,
 ): string => {
   // Amount color follows the customer-balance convention:
-  // negative signed delta = debt (red), positive = credit/cash-in (green).
+  // positive signed delta = debt-increasing (red), negative = debt-decreasing/cash-in (green).
   // For display without an amount, use a unit value to infer the sign from the type.
   const signed = getCustomerBalanceDelta(type, amount ?? 1);
-  if (signed < 0) return "text-red-600 dark:text-red-400";
-  if (signed > 0) return "text-green-600 dark:text-green-400";
+  if (signed > 0) return "text-red-600 dark:text-red-400";
+  if (signed < 0) return "text-green-600 dark:text-green-400";
   return "text-gray-600 dark:text-gray-400";
 };
 
@@ -495,9 +496,10 @@ export const getTransactionTypeNameFromDB = (typeId: string, cachedTypes?: any[]
 };
 
 export const getBalanceColor = (balance: number): string => {
-  if (balance < 0) {
+  // Positive balance = debt (red); zero/negative = credit/overpayment (green)
+  if (balance > 0) {
     return "text-red-600";
-  } else if (balance > 0) {
+  } else if (balance < 0) {
     return "text-green-600";
   }
   return "text-gray-600";
