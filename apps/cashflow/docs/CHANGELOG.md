@@ -1,5 +1,13 @@
 # Changelog — Cashflow
 
+## 2026-08-12
+
+### Fixed
+
+- **Customer list/detail debt mismatch** — `customers.total_balance` is now the single source of truth displayed everywhere. `CustomerDetailModal` no longer recomputes a separate `currentBalance` from `opening_balance + transactions`, and `customerService.getCustomerById` no longer overrides the stored `total_balance`.
+- **Opening balance sync** — `customerService.updateCustomer`, `updateCustomerOpeningBalance`, and `bulkUpdateOpeningBalances` now update `total_balance` (and `current_balance` for backwards compatibility) by the same delta when `opening_balance` changes, so the list and detail stay consistent after edits.
+- **Backfill migration** — `supabase/migrations/043_recalculate_customer_total_balances.sql` recalculates `total_balance` for every customer from `opening_balance + Σ(amount × math_factor)` using `transaction_types.math_factor` (or canonical factors as fallback) and `positive = debt` convention.
+
 ## 2026-08-11
 
 ### Added
