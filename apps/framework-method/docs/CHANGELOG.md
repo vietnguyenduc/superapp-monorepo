@@ -1,5 +1,12 @@
 # Framework Method — Changelog
 
+## 2026-08-09
+
+- Added trial-mode button `Dùng thử không cần tài khoản` to `Login.tsx`.
+- `ProtectedRoute` now uses `isAuthenticated` from `@superapp/iam` instead of requiring a Supabase `session`, so trial users can access `/dashboard`, `/session`, `/builder`, etc.
+- Added `login.*` i18n keys for Vietnamese and English.
+- Verified trial login in browser: clicking the button reaches Dashboard with streak/framework cards rendered.
+
 ## 2026-08-08
 
 - Set `i18n` default language to Vietnamese (`lng: "vi"`, `fallbackLng: "vi"`) and added missing `common.back` key in `vi.json`/`en.json`.

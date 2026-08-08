@@ -3,6 +3,11 @@
     "name": "Framework Method",
     "tagline": "Suy nghĩ từ những nguyên lý đầu tiên"
   },
+  "login": {
+    "trial": "Dùng thử không cần tài khoản",
+    "noAccount": "Chưa có tài khoản?",
+    "signUp": "Đăng ký"
+  },
   "nav": {
     "overview": "Tổng quan",
     "steps": "Các bước",

@@ -3,6 +3,11 @@
     "name": "Framework Method",
     "tagline": "Think from first principles"
   },
+  "login": {
+    "trial": "Try without an account",
+    "noAccount": "Don't have an account?",
+    "signUp": "Sign up"
+  },
   "nav": {
     "overview": "Overview",
     "steps": "Steps",
