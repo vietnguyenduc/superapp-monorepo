@@ -9,83 +9,145 @@ export interface User {
   avatar_url?: string;
 }
 
-export type BlockType =
-  | "knowledge"
-  | "example"
-  | "hint"
-  | "reflection"
-  | "rating"
-  | "multiple_choice"
-  | "short_text"
-  | "number_input"
-  | "routing";
+export type BlockId = "self" | "relationship" | "work" | "finance" | "family";
 
 export interface Block {
-  id: string;
-  type: BlockType;
-  label: string;
-  prompt?: string;
-  placeholder?: string;
-  required?: boolean;
-  options?: string[];
+  id: BlockId;
+  name_vi: string;
+  name_en: string;
   order_index: number;
+  icon?: string;
 }
 
-export interface Step {
+export type TaskSource = "suggestion" | "freetext" | "carry_over";
+export type TaskStatus = "pending" | "done";
+
+export interface DailyTask {
   id: string;
-  phase_id: string;
+  user_id: string;
+  block_id: BlockId;
+  session_id?: string;
+  date: string;
   title: string;
-  description?: string;
-  order_index: number;
-  blocks?: Block[];
+  source: TaskSource;
+  status: TaskStatus;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export interface Phase {
+export type SessionStatus = "draft" | "in_progress" | "completed";
+
+export interface Session {
   id: string;
-  framework_id: string;
-  name: string;
-  order_index: number;
-  steps: Step[];
+  user_id: string;
+  date: string;
+  status: SessionStatus;
+  current_step: number;
+  current_block_id?: BlockId;
+  draft_payload?: Record<string, unknown>;
+  started_at?: string;
+  ended_at?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export interface Framework {
+export type StepType = "recognize" | "apply" | "track";
+
+export type TemplateSectionGroup = "nguyen_ly" | "dao" | "phap" | "dua_khuon" | "bam";
+
+export interface TemplateSectionItem {
   id: string;
-  name: string;
-  description?: string;
-  status: "draft" | "published";
-  phases: Phase[];
-  created_by?: string;
-  created_at: string;
-  updated_at: string;
+  title_vi: string;
+  title_en: string;
+  default_enabled: boolean;
+  order_index: number;
+}
+
+export interface TemplateSection {
+  id: string;
+  template_id: string;
+  group: TemplateSectionGroup;
+  title_vi: string;
+  title_en: string;
+  is_toggle: boolean;
+  is_enabled: boolean;
+  order_index: number;
+  items: TemplateSectionItem[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Template {
   id: string;
-  framework_id: string;
+  block_id?: BlockId;
+  step_type: StepType;
   name: string;
-  description?: string;
   status: "draft" | "published";
-  created_at: string;
-  updated_at: string;
+  created_by?: string;
+  company_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  sections?: TemplateSection[];
 }
 
-export interface Action {
+export interface ReferenceInput {
   id: string;
-  user_id: string;
-  title: string;
-  description?: string;
-  completed: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Reflection {
-  id: string;
-  user_id: string;
-  step_id?: string;
+  session_id: string;
+  section_id: string;
+  item_id: string;
   content: string;
-  type: "midday" | "evening" | "step";
-  created_at: string;
+  is_enabled: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ApplyPlan {
+  id: string;
+  daily_task_id: string;
+  session_id: string;
+  plan_data: Record<string, string>;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Track {
+  id: string;
+  daily_task_id: string;
+  session_id: string;
+  dich: string;
+  thuc_te: string;
+  phuong_phap: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Streak {
+  id: string;
+  user_id: string;
+  current_streak: number;
+  longest_streak: number;
+  last_active_date: string;
+}
+
+export interface BlockStats {
+  id: string;
+  user_id: string;
+  block_id: BlockId;
+  total_done: number;
+  total_applied: number;
+  total_tracked: number;
+  pending_carryover: number;
+  updated_at?: string;
+}
+
+export interface TaskSuggestion {
+  id: string;
+  block_id: BlockId;
+  title_vi: string;
+  title_en: string;
+  is_default: boolean;
+  created_by?: string;
+  company_id?: string;
 }
 
 export interface DailyGoal {
@@ -97,29 +159,21 @@ export interface DailyGoal {
   date: string;
 }
 
-export interface Session {
+export interface Reflection {
   id: string;
   user_id: string;
-  framework_id?: string;
-  started_at: string;
-  ended_at?: string;
-  duration_minutes?: number;
+  step_id?: string;
+  content: string;
+  type: "midday" | "evening" | "step";
+  created_at?: string;
 }
 
-export interface Streak {
+export interface CommittedAction {
   id: string;
   user_id: string;
-  current_streak: number;
-  longest_streak: number;
-  last_active_date: string;
-}
-
-export interface StepResponse {
-  id: string;
-  user_id: string;
-  step_id: string;
-  block_responses: Record<string, string | number | string[]>;
+  title: string;
+  description?: string;
   completed: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
