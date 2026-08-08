@@ -218,3 +218,41 @@ export interface CommittedAction {
   created_at?: string;
   updated_at?: string;
 }
+
+export type RelationshipCategory =
+  | "eternal"
+  | "close"
+  | "social"
+  | "business"
+  | "friends"
+  | "soul";
+
+export interface RelationshipContact {
+  id: string;
+  user_id: string;
+  name: string;
+  age?: number;
+  address?: string;
+  category: RelationshipCategory;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type RecurrenceType = "weekly" | "monthly" | "quarterly" | "half_yearly" | "special";
+
+export interface RecurringTask {
+  id: string;
+  user_id: string;
+  title: string;
+  category?: TaskCategory;
+  subcategory?: string;
+  recurrence: RecurrenceType;
+  warning_before_days: number;
+  note?: string;
+  next_due_date?: string;
+  merit_type?: MeritType;
+  merit_size?: MeritSize;
+  created_at?: string;
+  updated_at?: string;
+}

@@ -20,6 +20,9 @@ import type {
   Track,
   Streak,
   KnowledgeEntry,
+  RelationshipContact,
+  RecurringTask,
+  RecurrenceType,
 } from "../types";
 import { MERIT_SIZE_POINTS } from "../types";
 
@@ -718,4 +721,128 @@ export const getDailyGoalsForDate = async (userId: string, date: string): Promis
     fallbackLog("getDailyGoalsForDate", err);
   }
   return [];
+};
+
+const RELATIONSHIPS_STORAGE_KEY = "fm_relationships_v1";
+
+export const getRelationships = async (userId: string): Promise<RelationshipContact[]> => {
+  try {
+    const raw = localStorage.getItem(RELATIONSHIPS_STORAGE_KEY);
+    if (raw) {
+      const all = JSON.parse(raw) as RelationshipContact[];
+      return all.filter((r) => r.user_id === userId);
+    }
+  } catch {
+    // ignore parse errors
+  }
+
+  try {
+    const { data, error } = await db.from("fm_relationships").select("*").eq("user_id", userId).order("created_at", { ascending: false });
+    if (error) throw error;
+    if (data) {
+      localStorage.setItem(RELATIONSHIPS_STORAGE_KEY, JSON.stringify(data));
+      return data as RelationshipContact[];
+    }
+  } catch (err) {
+    fallbackLog("getRelationships", err);
+  }
+
+  return [];
+};
+
+export const saveRelationships = async (relationships: RelationshipContact[]): Promise<void> => {
+  try {
+    localStorage.setItem(RELATIONSHIPS_STORAGE_KEY, JSON.stringify(relationships));
+  } catch {
+    // ignore storage errors
+  }
+
+  try {
+    const { error } = await db.from("fm_relationships").upsert(relationships, { onConflict: "id" });
+    if (error) throw error;
+  } catch (err) {
+    fallbackLog("saveRelationships", err);
+  }
+};
+
+const RECURRING_STORAGE_KEY = "fm_recurring_tasks_v1";
+
+export const getRecurringTasks = async (userId: string): Promise<RecurringTask[]> => {
+  try {
+    const raw = localStorage.getItem(RECURRING_STORAGE_KEY);
+    if (raw) {
+      const all = JSON.parse(raw) as RecurringTask[];
+      return all.filter((r) => r.user_id === userId);
+    }
+  } catch {
+    // ignore parse errors
+  }
+
+  try {
+    const { data, error } = await db.from("fm_recurring_tasks").select("*").eq("user_id", userId).order("created_at", { ascending: false });
+    if (error) throw error;
+    if (data) {
+      localStorage.setItem(RECURRING_STORAGE_KEY, JSON.stringify(data));
+      return data as RecurringTask[];
+    }
+  } catch (err) {
+    fallbackLog("getRecurringTasks", err);
+  }
+
+  return [];
+};
+
+export const saveRecurringTasks = async (tasks: RecurringTask[]): Promise<void> => {
+  try {
+    localStorage.setItem(RECURRING_STORAGE_KEY, JSON.stringify(tasks));
+  } catch {
+    // ignore storage errors
+  }
+
+  try {
+    const { error } = await db.from("fm_recurring_tasks").upsert(tasks, { onConflict: "id" });
+    if (error) throw error;
+  } catch (err) {
+    fallbackLog("saveRecurringTasks", err);
+  }
+};
+
+export const getPeriodEnd = (recurrence: RecurrenceType, from: Date): Date => {
+  const d = new Date(from);
+  switch (recurrence) {
+    case "weekly":
+      d.setDate(d.getDate() + (7 - d.getDay() + 1) % 7);
+      break;
+    case "monthly":
+      d.setMonth(d.getMonth() + 1);
+      d.setDate(0);
+      break;
+    case "quarterly": {
+      const quarter = Math.floor(d.getMonth() / 3);
+      d.setFullYear(d.getFullYear(), (quarter + 1) * 3, 0);
+      break;
+    }
+    case "half_yearly": {
+      const half = Math.floor(d.getMonth() / 6);
+      d.setFullYear(d.getFullYear(), (half + 1) * 6, 0);
+      break;
+    }
+    case "special":
+    default:
+      d.setFullYear(d.getFullYear() + 100);
+      break;
+  }
+  d.setHours(23, 59, 59, 999);
+  return d;
+};
+
+export const getDaysUntilPeriodEnd = (recurrence: RecurrenceType, from: Date): number => {
+  const end = getPeriodEnd(recurrence, from);
+  const diff = end.getTime() - from.getTime();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+};
+
+export const getNextDueDate = (recurrence: RecurrenceType, from: Date): string => {
+  const end = getPeriodEnd(recurrence, from);
+  return end.toISOString().split("T")[0];
 };

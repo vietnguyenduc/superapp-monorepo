@@ -64,4 +64,6 @@ RLS is enabled on all tables. Users see rows where `user_id = auth.uid()`. Publi
 - `calculateMerit` and `plannedCompletionAdjustment` helpers in `frameworkMethodService.ts` implement the user's scoring rules: no logged merit tasks = 0 total; completion rate <60% = -2, 60-79% = -1, 80-99% = +1, 100% = +2.
 - `/calendar` shows a month/week date picker at the top. Selecting a date reloads that day's tasks/session via `SessionContext.setSessionDate`. Below the calendar are the three color-coded task groups, earn/spend + size controls, and daily Phúc totals.
 - `Dashboard` shows today's merit score, streak, and a 7-day Phúc trend chart from `getSessionsByDateRange`.
-- New top-level pages `/finance` (Kiểm soát Tài chính) and `/practice` (Luyện thấu triệt) are linked in `SideNav` and `BottomNav`; they are currently shells with placeholder buckets/areas awaiting detailed labels.
+- New top-level pages `/finance` (Kiểm soát Tài chính) and `/practice` (Luyện thấu triệt) are linked in `SideNav` and `BottomNav`.
+- `/practice` includes "Thấu triệt mối quan hệ" with six relationship categories (`eternal`, `close`, `social`, `business`, `friends`, `soul`). Contacts store name, age, address, and notes; data persists via `getRelationships`/`saveRelationships`.
+- `/calendar` includes recurring tasks (`RecurringTask`) with `weekly`/`monthly`/`quarterly`/`half_yearly`/`special` recurrence, configurable `warning_before_days`, a preparation note, and a "Chốt làm" button that converts the recurring task into a daily task for the selected `sessionDate`.
