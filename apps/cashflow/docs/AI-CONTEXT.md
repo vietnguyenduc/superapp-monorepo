@@ -106,6 +106,13 @@ A dedicated `Công thức dư nợ` tab in Settings shows the current formula, l
 - `getCompanyId()` from `@superapp/shared-utils` returns the active company.
 - Trial mode seeds use `trial-company` and `trial-branch`.
 
+## UI/UX reference
+
+- Apple HIG guide for Cashflow: `apps/cashflow/docs/APPLE-HIG-UIUX-GUIDE.md`
+- Apple HIG full index and per-page notes: `.agents/skills/apple-design-guidelines/`
+- Core convention summary: positive `total_balance` = debt (red); negative/zero = credit/overpayment (green/gray). Transaction type color badges: `charge` red, `payment`/`refund`/`deposit` green, `adjustment` blue.
+- Use `src/components/UI/Button.tsx` with `variant="primary"` for the single main action and `variant="secondary"` for import/export/filter actions. Never write one-off `<button className="bg-blue-600 ...">`.
+
 ## Common pitfalls
 
 - **Vite env checks:** use `import.meta.env.DEV`, not `process.env.NODE_ENV`.
