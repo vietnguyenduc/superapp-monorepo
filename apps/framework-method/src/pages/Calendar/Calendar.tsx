@@ -109,6 +109,7 @@ const Calendar = () => {
   const { tasks, session, merit, updateTask, setPlannedCompletionRate, addTask, sessionDate, setSessionDate, userId, karma } = useSession();
 
   const [selectedKarmaEvent, setSelectedKarmaEvent] = useState<KarmaEvent | null>(null);
+  const [selectedKarmaAction, setSelectedKarmaAction] = useState<"recognize" | "stop" | "resolve" | null>(null);
 
   const subcategoryOptions = useMemo(() => getSubcategoryOptions(), []);
 
@@ -531,9 +532,10 @@ const Calendar = () => {
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Countdown: {countdown.label} · Trích {e.reserved_amount} điểm · Đã cấn trừ {e.prepaid || 0}</p>
                 {isPending && (
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => setSelectedKarmaEvent(e)}>Dừng / Giải</Button>
-                    <Button size="sm" className="flex-1" onClick={() => setSelectedKarmaEvent(e)}>Nhận ra</Button>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button variant="outline" size="sm" className="flex-1 min-w-[5rem]" onClick={() => { setSelectedKarmaEvent(e); setSelectedKarmaAction("recognize"); }}>Nhận ra</Button>
+                    <Button variant="outline" size="sm" className="flex-1 min-w-[5rem]" onClick={() => { setSelectedKarmaEvent(e); setSelectedKarmaAction("stop"); }}>Dừng</Button>
+                    <Button size="sm" className="flex-1 min-w-[5rem]" onClick={() => { setSelectedKarmaEvent(e); setSelectedKarmaAction("resolve"); }}>Giải</Button>
                   </div>
                 )}
               </div>
@@ -785,7 +787,7 @@ const Calendar = () => {
         </div>
       </Card>
 
-      {selectedKarmaEvent && <KarmaActionModal event={selectedKarmaEvent} onClose={() => setSelectedKarmaEvent(null)} />}
+      {selectedKarmaEvent && <KarmaActionModal event={selectedKarmaEvent} initialAction={selectedKarmaAction || "stop"} onClose={() => { setSelectedKarmaEvent(null); setSelectedKarmaAction(null); }} />}
     </div>
   );
 };

@@ -1506,6 +1506,9 @@ export const performKarmaAction = async (
   if (payload.action === "recognize") {
     event.status = "recognized";
     event.recognized_at = now;
+    event.note = payload.note;
+    event.image_url = payload.imageUrl;
+    event.khuon_rows = payload.khuonRows;
   } else if (payload.action === "stop") {
     const amount = Math.max(0, payload.amount ?? 0);
     if (amount > 0) {

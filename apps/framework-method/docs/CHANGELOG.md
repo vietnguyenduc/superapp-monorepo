@@ -9,6 +9,7 @@
 - `Dashboard` now shows the remaining Nghiệp báo balance, a progress bar, and the countdown to the next Trổ canh with "Dừng nghiệp" / "Giải cảnh" actions.
 - `Calendar` includes a "Trổ canh" section listing upcoming monthly/quarterly events, their countdown/status (`Chưa nhận ra`, `Đã nhận ra`, `Đã giải cảnh`, `Đã tự động trừ`), and action buttons.
 - Added `KarmaActionModal` component for `Nhận ra`, `Dừng nghiệp`, and `Giải cảnh` actions. It captures note, image URL, and an editable `Khuôn dừng nghiệp` table (target + money) that persists as the user's karma template.
+- `KarmaActionModal` now accepts an `initialAction` prop so `Dashboard` and `Calendar` action buttons open directly on the correct tab; `Dashboard` karma buttons are disabled until `karma.nextEvent` has loaded.
 
 ## 2026-08-04 (Apple HIG + Phúc nghiệp + Finance/Practice pages)
 

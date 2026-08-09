@@ -22,6 +22,7 @@ const Dashboard = () => {
   const { theme, toggleTheme } = useTheme();
   const { merit, streak, userId, karma } = useSession();
   const [selectedEvent, setSelectedEvent] = useState<KarmaEvent | null>(null);
+  const [selectedAction, setSelectedAction] = useState<"recognize" | "stop" | "resolve" | null>(null);
 
   const [history, setHistory] = useState<Session[]>([]);
 
@@ -92,10 +93,13 @@ const Dashboard = () => {
           />
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex-1" onClick={() => karma.nextEvent && setSelectedEvent(karma.nextEvent)}>
+          <Button variant="outline" size="sm" className="flex-1" disabled={!karma.nextEvent} onClick={() => { setSelectedEvent(karma.nextEvent); setSelectedAction("recognize"); }}>
+            Nhận ra
+          </Button>
+          <Button variant="outline" size="sm" className="flex-1" disabled={!karma.nextEvent} onClick={() => { setSelectedEvent(karma.nextEvent); setSelectedAction("stop"); }}>
             Dừng nghiệp
           </Button>
-          <Button size="sm" className="flex-1" onClick={() => karma.nextEvent && setSelectedEvent(karma.nextEvent)}>
+          <Button size="sm" className="flex-1" disabled={!karma.nextEvent} onClick={() => { setSelectedEvent(karma.nextEvent); setSelectedAction("resolve"); }}>
             Giải cảnh
           </Button>
         </div>
@@ -193,7 +197,7 @@ const Dashboard = () => {
         </Button>
       </Card>
 
-      {selectedEvent && <KarmaActionModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
+      {selectedEvent && <KarmaActionModal event={selectedEvent} initialAction={selectedAction || "stop"} onClose={() => { setSelectedEvent(null); setSelectedAction(null); }} />}
     </div>
   );
 };

@@ -8,12 +8,13 @@ import type { KarmaEvent, KarmaTemplateRow } from "../types";
 interface KarmaActionModalProps {
   event: KarmaEvent;
   onClose: () => void;
+  initialAction?: "recognize" | "stop" | "resolve";
 }
 
-const KarmaActionModal = ({ event, onClose }: KarmaActionModalProps) => {
+const KarmaActionModal = ({ event, onClose, initialAction = "stop" }: KarmaActionModalProps) => {
   const { performKarmaAction, karmaTemplate, updateKarmaTemplate } = useSession();
 
-  const [action, setAction] = useState<"recognize" | "stop" | "resolve">("stop");
+  const [action, setAction] = useState<"recognize" | "stop" | "resolve">(initialAction);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState(event.note || "");
   const [imageUrl, setImageUrl] = useState(event.image_url || "");
@@ -117,6 +118,7 @@ const KarmaActionModal = ({ event, onClose }: KarmaActionModalProps) => {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder={action === "resolve" ? String(remaining) : "Nhập số điểm"}
+              disabled={action === "resolve"}
             />
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">Còn phải trả</label>
