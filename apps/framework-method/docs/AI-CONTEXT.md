@@ -83,3 +83,4 @@ RLS is enabled on all tables. Users see rows where `user_id = auth.uid()`. Publi
 - Merit / Phúc reflection gate: `DailyTask` added `merit_reflected`, `merit_points`, `reflection_outcome`, `reflection_mind`. `calculateMerit` ignores un-reflected tasks; only after the user fills the `MeritReflectionModal` is the point total updated.
 - `Calendar` has a dedicated `Sổ Phúc` card listing all merit-marked tasks, and `Trổ canh` is split into `Cảnh hiện tại`, `Cảnh tương lai`, and `Lịch sử cảnh`.
 - `Dashboard` hero gamifies Nghiệp vs Phúc side-by-side, showing karma balance vs earned merit with opposing progress bars and quick action buttons including the new `recite` (Đọc Sám) action.
+- Dashboard framework list section label (`dashboard.frameworks`) changed to "Đưa khuôn trí tuệ vào cuộc sống" in Vietnamese and "Apply wisdom frameworks to life" in English; related framework label keys use "Khuôn"/"framework" consistently.

@@ -33,11 +33,11 @@
     "insights": "Insights",
     "productivityTrend": "Productivity Trend (Last 7 Days)",
     "beginSession": "Begin Session",
-    "frameworks": "Frameworks",
+    "frameworks": "Apply wisdom frameworks to life",
     "mostUsed": "Most used this week"
   },
   "overview": {
-    "activeFramework": "Active Framework",
+    "activeFramework": "Active framework",
     "progress": "Progress",
     "stepOf": "Step {{current}} of {{total}} completed",
     "focusForToday": "Focus for Today",
@@ -46,7 +46,7 @@
     "startSession": "Start Session"
   },
   "step": {
-    "backToFramework": "Back to Framework",
+    "backToFramework": "Back to framework",
     "stepOf": "Step {{current}} of {{total}}",
     "concepts": "Concepts",
     "reference": "Reference",

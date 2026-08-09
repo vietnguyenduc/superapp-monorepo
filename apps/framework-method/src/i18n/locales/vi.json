@@ -33,11 +33,11 @@
     "insights": "Thông tin",
     "productivityTrend": "Xu hướng năng suất (7 ngày qua)",
     "beginSession": "Bắt đầu phiên",
-    "frameworks": "Frameworks",
+    "frameworks": "Đưa khuôn trí tuệ vào cuộc sống",
     "mostUsed": "Dùng nhiều nhất tuần này"
   },
   "overview": {
-    "activeFramework": "Framework đang hoạt động",
+    "activeFramework": "Khuôn đang hoạt động",
     "progress": "Tiến độ",
     "stepOf": "Đã hoàn thành {{current}}/{{total}} bước",
     "focusForToday": "Trọng tâm hôm nay",
@@ -46,7 +46,7 @@
     "startSession": "Bắt đầu phiên"
   },
   "step": {
-    "backToFramework": "Quay lại Framework",
+    "backToFramework": "Quay lại Khuôn",
     "stepOf": "Bước {{current}} trên {{total}}",
     "concepts": "Khái niệm",
     "reference": "Tài liệu tham khảo",

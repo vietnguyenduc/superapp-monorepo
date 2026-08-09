@@ -2,6 +2,7 @@
 
 ## 2026-08-04 (Gamify Nghiệp vs Phúc + Sổ Phúc reflection)
 
+- Renamed Dashboard section label `dashboard.frameworks` to "Đưa khuôn trí tuệ vào cuộc sống" (vi) / "Apply wisdom frameworks to life" (en); `activeFramework` and `backToFramework` keys normalized to lowercase "framework" in English and "Khuôn" in Vietnamese.
 - Extended `DailyTask` with `merit_reflected`, `merit_points`, `reflection_outcome`, and `reflection_mind`; `calculateMerit` now only counts points after the user has reflected and confirmed the score.
 - Added `MeritReflectionModal` component for the "Đo tâm & Đo Phúc" step: user records outcome, mind state, and final merit points before the task is counted.
 - Added a dedicated "Sổ Phúc" section on `/calendar` that lists all tasks with a merit type, shows current create/spend/total, and opens the reflection modal per task.
