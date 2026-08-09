@@ -16,6 +16,12 @@ const emptyEntry: EntryForm = {
   summary_en: "",
   content_vi: "",
   content_en: "",
+  cot_y_vi: "",
+  cot_y_en: "",
+  cot_cua_cot_vi: "",
+  cot_cua_cot_en: "",
+  loi_vi: "",
+  loi_en: "",
   image_url: "",
   category: "concept",
 };
@@ -57,6 +63,8 @@ const Knowledge = () => {
         language === "en" ? entry.title_en : entry.title_vi,
         language === "en" ? entry.summary_en : entry.summary_vi,
         language === "en" ? entry.content_en : entry.content_vi,
+        language === "en" ? entry.cot_cua_cot_en : entry.cot_cua_cot_vi,
+        language === "en" ? entry.loi_en : entry.loi_vi,
       ].join(" ").toLowerCase();
       return hay.includes(q);
     });
@@ -97,6 +105,15 @@ const Knowledge = () => {
             placeholder={t("knowledge.summaryPlaceholder")}
           />
         </div>
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("knowledge.cotCuaCot")}</label>
+          <textarea
+            value={form.cot_cua_cot_vi || ""}
+            onChange={(e) => setForm({ ...form, cot_cua_cot_vi: e.target.value, cot_cua_cot_en: e.target.value })}
+            className="input h-20 resize-none"
+            placeholder={t("knowledge.cotCuaCotPlaceholder")}
+          />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("knowledge.imageUrl")}</label>
@@ -126,12 +143,12 @@ const Knowledge = () => {
           </div>
         )}
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("knowledge.fieldContent")}</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("knowledge.loi")}</label>
           <textarea
-            value={form.content_vi}
-            onChange={(e) => setForm({ ...form, content_vi: e.target.value, content_en: e.target.value })}
+            value={form.loi_vi || form.content_vi || ""}
+            onChange={(e) => setForm({ ...form, loi_vi: e.target.value, loi_en: e.target.value, content_vi: e.target.value, content_en: e.target.value })}
             className="input h-40 resize-none"
-            placeholder={t("knowledge.contentPlaceholder")}
+            placeholder={t("knowledge.loiPlaceholder")}
           />
         </div>
         <div className="flex flex-col sm:flex-row gap-3 pt-1">
@@ -188,7 +205,7 @@ const Knowledge = () => {
                   {language === "en" ? entry.title_en : entry.title_vi}
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">
-                  {language === "en" ? (entry.summary_en || entry.content_en) : (entry.summary_vi || entry.content_vi)}
+                  {language === "en" ? (entry.cot_cua_cot_en || entry.summary_en || entry.content_en) : (entry.cot_cua_cot_vi || entry.summary_vi || entry.content_vi)}
                 </p>
               </div>
               <div className="flex flex-col items-end gap-2 shrink-0">

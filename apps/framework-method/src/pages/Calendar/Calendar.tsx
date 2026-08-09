@@ -16,6 +16,9 @@ import {
   FiClock,
   FiCheckCircle,
   FiFeather,
+  FiCalendar,
+  FiBookOpen,
+  FiZap,
 } from "react-icons/fi";
 import {
   format,
@@ -112,7 +115,7 @@ type CalendarView = "month" | "week";
 const Calendar = () => {
   const { t } = useI18n();
   const { theme, toggleTheme } = useTheme();
-  const { tasks, session, merit, updateTask, setPlannedCompletionRate, addTask, sessionDate, setSessionDate, userId, karma } = useSession();
+  const { tasks, session, merit, updateTask, setPlannedCompletionRate, addTask, sessionDate, setSessionDate, userId, karma, applyPlans, tracks } = useSession();
 
   const [selectedKarmaEvent, setSelectedKarmaEvent] = useState<KarmaEvent | null>(null);
   const [selectedKarmaAction, setSelectedKarmaAction] = useState<"recognize" | "stop" | "resolve" | "recite" | null>(null);
@@ -535,6 +538,140 @@ const Calendar = () => {
           </p>
         </Card>
       </div>
+
+      <Card className="p-5 space-y-5">
+        <div className="flex items-center gap-2">
+          <FiCalendar className="w-5 h-5 text-primary-600" />
+          <h3 className="font-semibold tracking-tight">Nhật ký ngày {format(selectedDate, "dd/MM/yyyy")}</h3>
+        </div>
+        {(() => {
+          const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
+          const frameworkTasks = tasks.filter((t) => applyPlans[t.id] || tracks[t.id]);
+          const doneTasks = tasks.filter((t) => t.status === "done");
+          const meritDoneTasks = tasks.filter((t) => t.merit_type && t.merit_size && t.merit_reflected);
+          const dueRecurring = recurringTasks.filter((t) => t.next_due_date === selectedDateStr);
+          const dueKarmaEvents = karma.events.filter((e) => e.due_date === selectedDateStr);
+
+          return (
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary-600">Đưa khuôn trí tuệ vào cuộc sống</p>
+                {frameworkTasks.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Chưa có khuôn nào được áp dụng trong ngày này.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {frameworkTasks.map((task) => {
+                      const plan = applyPlans[task.id];
+                      const track = tracks[task.id];
+                      const meta = CATEGORY_META[getTaskCategory(task)];
+                      return (
+                        <div key={task.id} className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                          <div className="flex items-center gap-2 mb-2">
+                            <FiBookOpen className="w-4 h-4 text-primary-600" />
+                            <p className="font-medium text-sm">{task.title}</p>
+                            <span className="text-xs text-gray-500">{meta.label_vi}</span>
+                          </div>
+                          {plan && Object.entries(plan.plan_data).length > 0 && (
+                            <div className="space-y-1 mb-2">
+                              <p className="text-xs font-medium text-gray-600 dark:text-gray-300">Khuôn đã lập:</p>
+                              {Object.entries(plan.plan_data).map(([k, v]) => (
+                                <p key={k} className="text-xs text-gray-500 dark:text-gray-400"><span className="font-medium">{k}:</span> {v}</p>
+                              ))}
+                            </div>
+                          )}
+                          {track && (
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                              <p className="text-gray-500 dark:text-gray-400"><span className="font-medium">Đích:</span> {track.dich}</p>
+                              <p className="text-gray-500 dark:text-gray-400"><span className="font-medium">Thực tế:</span> {track.thuc_te}</p>
+                              <p className="text-gray-500 dark:text-gray-400"><span className="font-medium">Phương pháp:</span> {track.phuong_phap}</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">Việc Đời · Đạo · Lợi tư đã làm</p>
+                {doneTasks.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Chưa có việc nào hoàn thành.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {doneTasks.map((task) => {
+                      const meta = CATEGORY_META[getTaskCategory(task)];
+                      return (
+                        <div key={task.id} className="flex items-center gap-2 p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${meta.gradient ? "bg-gradient-to-br " + meta.gradient : "bg-gray-400"}`}>
+                            <FiCheckCircle className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm">{task.title}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{meta.label_vi} · {getTaskSubcategory(task) || meta.label_vi}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">Phúc / Tiêu Phúc đã ghi nhận</p>
+                {meritDoneTasks.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Chưa có Phúc nào được ghi nhận.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {meritDoneTasks.map((task) => {
+                      const points = task.merit_points ?? MERIT_SIZE_POINTS[task.merit_size as MeritSize];
+                      return (
+                        <div key={task.id} className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                          <div className="flex items-center gap-2">
+                            <FiFeather className={`w-4 h-4 ${task.merit_type === "earn" ? "text-emerald-600" : "text-red-600"}`} />
+                            <p className="font-medium text-sm">{task.title}</p>
+                          </div>
+                          <span className={`text-sm font-bold ${task.merit_type === "earn" ? "text-emerald-600" : "text-red-600"}`}>
+                            {task.merit_type === "earn" ? "+" : "-"}{points}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">Sự kiện trong ngày</p>
+                {dueRecurring.length === 0 && dueKarmaEvents.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Không có sự kiện nào trong ngày này.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {dueRecurring.map((task) => (
+                      <div key={task.id} className="flex items-center gap-2 p-3 rounded-2xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800">
+                        <FiZap className="w-4 h-4 text-amber-600" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm">{task.title}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{task.recurrence === "special" ? "Dịp đặc biệt" : task.recurrence} · {task.subcategory || CATEGORY_META[task.category || "doi"].label_vi}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {dueKarmaEvents.map((e) => (
+                      <div key={e.id} className="flex items-center gap-2 p-3 rounded-2xl bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-800">
+                        <FiAlertCircle className="w-4 h-4 text-rose-600" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm">{e.period === "monthly" ? "Trổ canh tháng" : "Trổ canh quý"}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Trích {e.reserved_amount} điểm · {e.status === "pending" ? "Chưa nhận ra" : e.status === "recognized" ? "Đã nhận ra" : e.status === "resolved" ? "Đã giải cảnh" : "Đã tự động trừ"}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+      </Card>
 
       {(() => {
         const todayStrValue = format(new Date(), "yyyy-MM-dd");

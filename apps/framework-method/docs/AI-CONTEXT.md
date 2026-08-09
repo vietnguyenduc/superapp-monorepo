@@ -84,3 +84,6 @@ RLS is enabled on all tables. Users see rows where `user_id = auth.uid()`. Publi
 - `Calendar` has a dedicated `Sổ Phúc` card listing all merit-marked tasks, and `Trổ canh` is split into `Cảnh hiện tại`, `Cảnh tương lai`, and `Lịch sử cảnh`.
 - `Dashboard` hero gamifies Nghiệp vs Phúc side-by-side, showing karma balance vs earned merit with opposing progress bars and quick action buttons including the new `recite` (Đọc Sám) action.
 - Dashboard framework list section label (`dashboard.frameworks`) changed to "Đưa khuôn trí tuệ vào cuộc sống" in Vietnamese and "Apply wisdom frameworks to life" in English; related framework label keys use "Khuôn"/"framework" consistently.
+- `nav.session` is now "Đưa khuôn trí tuệ vào Sống" / "Apply wisdom to life".
+- `History` has been merged into `/calendar`; there is no standalone History page/route. Clicking a date in the calendar opens a day-detail "Nhật ký ngày" panel with applied frameworks (plans/tracks), completed tasks by category, reflected merit, recurring events due, and karma events for that date.
+- `KnowledgeEntry` exposes three content levels: `Cốt ý` (`summary_vi`/`summary_en`), `Cốt của Cốt` (`cot_cua_cot_vi`/`cot_cua_cot_en`), and `Lõi` (`loi_vi`/`loi_en`, mirrored to `content_vi`/`content_en` for backward compatibility). The `/knowledge` form and list show all three levels and search across them.

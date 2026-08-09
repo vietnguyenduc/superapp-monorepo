@@ -13,7 +13,6 @@ import Dashboard from "./pages/Dashboard/Dashboard";
 import { SessionProvider } from "./contexts/SessionContext";
 import SessionPage from "./pages/Session/SessionPage";
 import Calendar from "./pages/Calendar/Calendar";
-import History from "./pages/History/History";
 import Builder from "./pages/Builder/Builder";
 import Knowledge from "./pages/Knowledge/Knowledge";
 import FinanceControl from "./pages/FinanceControl/FinanceControl";
@@ -40,7 +39,6 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="session" element={<SessionPage />} />
             <Route path="calendar" element={<Calendar />} />
-            <Route path="history" element={<History />} />
             <Route path="builder" element={<Builder />} />
             <Route path="knowledge" element={<Knowledge />} />
             <Route path="finance" element={<FinanceControl />} />

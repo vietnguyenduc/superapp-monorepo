@@ -3,7 +3,6 @@ import {
   FiGrid,
   FiList,
   FiCalendar,
-  FiClock,
   FiTool,
   FiBookOpen,
   FiLogOut,
@@ -30,7 +29,6 @@ const SideNav = ({ open, onClose }: SideNavProps) => {
     { to: "/calendar", label: t("nav.calendar"), icon: FiCalendar },
     { to: "/finance", label: t("nav.finance"), icon: FiDollarSign },
     { to: "/practice", label: t("nav.practice"), icon: FiZap },
-    { to: "/history", label: t("nav.history"), icon: FiClock },
     { to: "/builder", label: t("nav.builder"), icon: FiTool },
     { to: "/knowledge", label: t("nav.knowledge"), icon: FiBookOpen },
   ];

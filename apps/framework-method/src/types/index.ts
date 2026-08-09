@@ -132,6 +132,12 @@ export interface KnowledgeEntry {
   summary_en: string;
   content_vi: string;
   content_en: string;
+  cot_y_vi?: string;
+  cot_y_en?: string;
+  cot_cua_cot_vi?: string;
+  cot_cua_cot_en?: string;
+  loi_vi?: string;
+  loi_en?: string;
   image_url?: string;
   category: "concept" | "framework";
   order_index: number;

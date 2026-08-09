@@ -9,6 +9,9 @@
 - Split the `/calendar` "Trổ canh" card into "Cảnh hiện tại" (current monthly/quarterly), "Cảnh tương lai" (upcoming), and "Lịch sử cảnh" (past) sections.
 - Redesigned `/dashboard` hero card as "Trận chiến Nghiệp — Phúc": side-by-side karma balance vs merit earned, opposing progress bars, countdown to next Trổ canh, and four action buttons: Nhận ra / Dừng nghiệp / Đọc Sám / Giải cảnh.
 - Extended `KarmaActionModal` and `performKarmaAction` with a new `recite` action for "Đọc Sám / Sám hối" prepayment against an upcoming Trổ canh.
+- Renamed `nav.session` to "Đưa khuôn trí tuệ vào Sống" (vi) / "Apply wisdom to life" (en).
+- Merged `History` into `/calendar`: removed the standalone `History` page, route, and navigation entry; selecting any date in the calendar now reveals a day-detail "Nhật ký ngày" panel showing frameworks applied (`applyPlans`/`tracks`), completed `Đời/Đạo/Lợi tư` tasks, earned/spent merit, recurring events due that day, and `Trổ canh` karma events.
+- Split `KnowledgeEntry` into three content levels: `Cốt ý` (`summary`), `Cốt của Cốt` (`cot_cua_cot`), and `Lõi` (`loi`/`content`); added form fields and search support; old `content` remains the fallback `Lõi` value for backward compatibility.
 - Validation: `npm run lint -w framework-method` ✅, `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
 
 ## 2026-08-04 (Nghiệp báo + Trổ canh)
