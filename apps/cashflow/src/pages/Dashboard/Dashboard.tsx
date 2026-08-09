@@ -243,15 +243,14 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 w-full">
       <div className="px-4 sm:px-6 lg:px-8 w-full">
-        {/* Fixed Time Range Selector */}
-        <div className="fixed top-16 left-0 right-0 z-40 px-4 sm:px-6 lg:px-8 py-1.5 bg-gray-50/5 dark:bg-gray-900/5 border-b border-gray-100/10 dark:border-gray-700/10 lg:left-64">
+        {/* Time Range Selector - sticky below header */}
+        <div className="sticky top-16 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-1.5 bg-gray-50/95 dark:bg-gray-900/95 border-b border-gray-100/10 dark:border-gray-700/10">
           <div className="flex justify-end">
             <div className="inline-flex rounded-2xl bg-white/90 dark:bg-gray-800/90 p-1 shadow-[0_4px_12px_rgba(15,23,42,0.10)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.30)] border border-gray-200/80 dark:border-gray-600/80 ring-1 ring-gray-200/60 dark:ring-gray-600/60 max-w-[calc(100vw-2rem)]">
               <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
             </div>
           </div>
         </div>
-        <div className="h-10 sm:h-12" />
 
         <div className="flex items-center justify-between mb-4">
           <PageHeader title={t("dashboard.title")} subtitle={t("dashboard.subtitle")} />

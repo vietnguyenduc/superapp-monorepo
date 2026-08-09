@@ -4,8 +4,10 @@
 
 ### Fixed
 
-- **Neutral customer debt balances** — removed red/green coloring from customer `total_balance` in `CustomerTable`, `CustomerDetail`, `CustomerDetailModal`, and `CustomerList` summary. Transaction amounts continue to use their type-based colors (`getTransactionTypeAmountColor`).
+- **Neutral customer debt balances** — removed red/green coloring from customer `total_balance` in `CustomerTable`, `CustomerDetail`, `CustomerDetailModal`, `CustomerList` summary, and `TopCustomers` dashboard rows. Transaction amounts continue to use their type-based colors (`getTransactionTypeAmountColor`).
 - **Mobile customer-table layout** — action buttons (edit/delete/transactions) are now rendered inside each mobile card header instead of a separate mid-card column; the name and address can wrap; the table header is hidden on small screens; row padding is slightly larger for better touch targets.
+- **Dashboard time-range selector overlay** — converted the `fixed` selector container on `Dashboard.tsx` to `sticky` so it no longer sits on top of the sticky navigation and blocks the top action buttons on mobile.
+- **Mobile floating action button overlap** — raised the `Layout.tsx` FAB to `bottom-20` on small screens (above the fixed bottom nav) and increased `main` padding-bottom to `pb-36` so the last page content is not hidden behind the FAB on scroll.
 
 ## 2026-08-12
 
