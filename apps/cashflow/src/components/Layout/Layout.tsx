@@ -74,7 +74,7 @@ const Layout: React.FC = () => {
         </div>
         {/* Main content - full width, flush left */}
         <main className="flex-1 min-w-0 w-full overflow-x-hidden">
-          <div className="p-4 sm:p-6 lg:p-8 w-full pb-24 lg:pb-8">
+          <div className="p-4 sm:p-6 lg:p-8 w-full pb-36 lg:pb-8">
             {/* Page transition: fade-in + slight slide-up on route change.
                 Key on pathname so React remounts the wrapper, retriggering the CSS animation. */}
             <div
@@ -95,7 +95,7 @@ const Layout: React.FC = () => {
           setSidebarOpen(false);
           navigate("/import/transactions");
         }}
-        className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 inline-flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-50 dark:focus:ring-offset-gray-900 transition-transform ${
+        className={`fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-40 inline-flex h-14 w-14 lg:h-16 lg:w-16 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-50 dark:focus:ring-offset-gray-900 transition-transform ${
           sidebarOpen ? "scale-0 pointer-events-none" : "scale-100"
         }`}
         aria-label="Thêm giao dịch mới"

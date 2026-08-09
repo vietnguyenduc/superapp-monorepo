@@ -104,13 +104,7 @@ const TopCustomers: React.FC<TopCustomersProps> = ({
                     {customer.full_name}
                   </p>
                   <div className="text-right hidden sm:block">
-                    <p
-                      className={`text-sm sm:text-base font-bold ${
-                        customer.total_balance >= 0
-                          ? "text-red-600 dark:text-red-300"
-                          : "text-green-600 dark:text-green-300"
-                      }`}
-                    >
+                    <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
                       {formatCurrency(customer.total_balance)}
                     </p>
                   </div>
@@ -132,13 +126,7 @@ const TopCustomers: React.FC<TopCustomersProps> = ({
                         <span className="text-xs sm:text-xs">{customer.phone}</span>
                       </a>
                     )}
-                    <span
-                      className={`text-sm font-semibold sm:hidden ${
-                        customer.total_balance >= 0
-                          ? "text-red-600 dark:text-red-300"
-                          : "text-green-600 dark:text-green-300"
-                      }`}
-                    >
+                    <span className="text-sm font-semibold sm:hidden text-gray-900 dark:text-white">
                       {formatCurrency(customer.total_balance)}
                     </span>
                   </div>

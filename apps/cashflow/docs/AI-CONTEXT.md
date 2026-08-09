@@ -65,7 +65,7 @@ Công nợ = Đầu kỳ + Phát sinh tăng - Phát sinh giảm + Điều chỉn
 | `deposit` | `-1`        | `-amount`            | `+amount`       | Customer prepays/deposits (đặt cọc) → debt decreases, cash increases. |
 | `adjustment` | `+1`     | signed amount        | signed amount   | Direct signed correction (`+amount` or `-amount`). |
 
-Positive balance color = **red** (debt). Negative/zero balance color = **green** (credit/overpayment).
+Transaction amount color = **red** for debt-increasing types (`charge`), **green** for debt-decreasing types (`payment`/`refund`/`deposit`), and **blue/gray** for `adjustment`. Customer running-balance text (`total_balance`) is rendered in neutral colors; do not color-code it red/green.
 
 ### Customer balance source of truth
 
@@ -101,9 +101,11 @@ A dedicated `Công thức dư nợ` tab in Settings shows the current formula, l
 - **Forms on mobile** — avoid native `<select>` for long lists (e.g. customer picker). Use a searchable combobox with an input + filtered dropdown, clear button, and click/tap selection. Date inputs should not stretch full-width on mobile; cap with `max-w-xs` and left-align the text.
 - **Mobile header** — keep the sticky top bar minimal (hamburger + app title only). Move company badge, app switcher, language toggle, user profile, and logout into the mobile sidebar drawer. Ensure drawer width is wide enough for the app-switcher dropdown (`w-80`).
 - **Dropdowns on mobile** — use `z-50` (above the fixed bottom nav `z-50`) and `max-h-[calc(100vh-12rem)]` with `overflow-y-auto` so they are not clipped by the viewport or covered by other sticky elements. Constrain width to `max-w-[calc(100vw-2rem)]`.
-- **Customer table mobile** — rows should not be too short/squat. Use `px-3 py-3`, `text-sm` cells, and a sensible `max-h` so enough rows are visible. Use the shared balance color helper (`getCustomerListBalanceColor`) so positive debt is red and credit/overpayment is green on mobile details too.
+- **Customer table mobile** — rows should not be too short/squat. Use `px-3 py-3`, `text-sm` cells, and a sensible `max-h` so enough rows are visible. Customer `total_balance` text stays neutral (no red/green) on both desktop and mobile cards; only transaction amounts carry the type-based color.
 - **Filter action rows** — on mobile, let utility buttons wrap (`flex-wrap`) instead of hiding them in a horizontal overflow, so users can see all options without discovering a hidden scroll.
 - **Cash-flow chart** — `dashboardService.ts` `aggregateCashFlow` derives the period window from the latest transaction in the selected range (not `new Date()`). Legend/tooltip labels use `Tiền vào` / `Tiền ra` in Vietnamese; inflow bars are `#10b981` and outflow bars are `#f43f5e`.
+- **Balance color rule** — customer running-balance text (`total_balance` in lists, detail, dashboard top customers) should be neutral (`text-gray-900 dark:text-white`) so users read the number without a false good/bad signal. Only transaction *amounts* use type-based colors (`getTransactionTypeAmountColor`) and status badges use their semantic colors.
+- **Sticky/fixed z-ordering on mobile** — keep the main sticky header at `z-[200]`, time-range/selectors at `z-40`, fixed FAB above the `z-50` bottom nav (`bottom-20` on mobile so it does not overlap the nav), and add enough `pb-36` bottom padding to `main` so long lists scroll clear of the FAB.
 
 ## Recent architectural decisions
 
@@ -121,7 +123,7 @@ A dedicated `Công thức dư nợ` tab in Settings shows the current formula, l
 
 - Apple HIG guide for Cashflow: `apps/cashflow/docs/APPLE-HIG-UIUX-GUIDE.md`
 - Apple HIG full index and per-page notes: `.agents/skills/apple-design-guidelines/`
-- Core convention summary: positive `total_balance` = debt (red); negative/zero = credit/overpayment (green/gray). Transaction type color badges: `charge` red, `payment`/`refund`/`deposit` green, `adjustment` blue.
+- Core convention summary: positive `total_balance` = debt, negative/zero = credit/overpayment. **Customer running balances are rendered in neutral text**; only transaction *amounts* carry the type-based red/green semantic color. Transaction type color badges: `charge` red, `payment`/`refund`/`deposit` green, `adjustment` blue.
 - Use `src/components/UI/Button.tsx` with `variant="primary"` for the single main action and `variant="secondary"` for import/export/filter actions. Never write one-off `<button className="bg-blue-600 ...">`.
 
 ## Common pitfalls
