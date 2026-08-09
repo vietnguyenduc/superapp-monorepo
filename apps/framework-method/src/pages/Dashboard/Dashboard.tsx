@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FiPlay, FiSun, FiMoon, FiUser, FiTrendingUp, FiAnchor, FiActivity, FiZap } from "react-icons/fi";
+import { FiPlay, FiSun, FiMoon, FiUser, FiTrendingUp, FiAnchor, FiActivity, FiZap, FiAlertCircle } from "react-icons/fi";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useSession } from "../../contexts/SessionContext";
 import { getSessionsByDateRange, todayStr } from "../../services/frameworkMethodService";
-import type { Session } from "../../types";
+import KarmaActionModal from "../../components/KarmaActionModal";
+import type { Session, KarmaEvent } from "../../types";
 
 const frameworks = [
   { id: "first-principles", name: "The First Principles Method", progress: 40, tag: "Strategy" },
@@ -19,7 +20,8 @@ const Dashboard = () => {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { merit, streak, userId } = useSession();
+  const { merit, streak, userId, karma } = useSession();
+  const [selectedEvent, setSelectedEvent] = useState<KarmaEvent | null>(null);
 
   const [history, setHistory] = useState<Session[]>([]);
 
@@ -66,6 +68,38 @@ const Dashboard = () => {
           &quot;Logic is the beginning of wisdom, not the end.&quot;
         </p>
       </div>
+
+      <Card className="p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-600">
+              <FiAlertCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Nghiệp báo còn lại</p>
+              <p className="text-xl font-bold">{karma.account?.balance ?? 1000} <span className="text-sm font-normal text-gray-500">/ {karma.account?.initial ?? 1000}</span></p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Trổ canh tiếp theo</p>
+            <p className="text-sm font-semibold">{karma.countdown.label}</p>
+          </div>
+        </div>
+        <div className="w-full h-2 bg-gray-100 dark:bg-white/[0.06] rounded-full overflow-hidden">
+          <div
+            className="h-2 bg-gradient-to-r from-rose-500 to-amber-500 rounded-full transition-all"
+            style={{ width: `${karma.percent}%` }}
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="flex-1" onClick={() => karma.nextEvent && setSelectedEvent(karma.nextEvent)}>
+            Dừng nghiệp
+          </Button>
+          <Button size="sm" className="flex-1" onClick={() => karma.nextEvent && setSelectedEvent(karma.nextEvent)}>
+            Giải cảnh
+          </Button>
+        </div>
+      </Card>
 
       <div className="grid grid-cols-3 gap-3">
         <Card className="p-4 text-center">
@@ -158,6 +192,8 @@ const Dashboard = () => {
           {t("dashboard.beginSession")}
         </Button>
       </Card>
+
+      {selectedEvent && <KarmaActionModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
     </div>
   );
 };

@@ -1,5 +1,15 @@
 # Framework Method — Changelog
 
+## 2026-08-04 (Nghiệp báo + Trổ canh)
+
+- Added the `KarmaAccount`, `KarmaEvent`, `KarmaPayment`, and `KarmaTemplate` types plus `DEFAULT_KARMA_TEMPLATE_ROWS` for a per-user Nghiệp báo gamification system.
+- Each user starts with 1000 Nghiệp báo points. Daily positive `merit.total` offsets reduce the balance; monthly and quarterly `Trổ canh` events reserve and deduct 20 points when triggered.
+- Added `getKarmaAccount`, `saveKarmaAccount`, `getKarmaEvents`, `saveKarmaEvents`, `getKarmaPayments`, `saveKarmaPayments`, `getKarmaTemplate`, `saveKarmaTemplate`, `generateKarmaEvents`, `getKarmaEventCountdown`, `syncKarmaEvents`, `updateKarmaDailyOffset`, and `performKarmaAction` in `frameworkMethodService.ts` (localStorage + Supabase fallback).
+- `SessionContext` loads the karma account, auto-generates monthly/quarterly `Trổ canh` events, syncs triggered events on load, and updates the daily offset whenever `merit.total` changes.
+- `Dashboard` now shows the remaining Nghiệp báo balance, a progress bar, and the countdown to the next Trổ canh with "Dừng nghiệp" / "Giải cảnh" actions.
+- `Calendar` includes a "Trổ canh" section listing upcoming monthly/quarterly events, their countdown/status (`Chưa nhận ra`, `Đã nhận ra`, `Đã giải cảnh`, `Đã tự động trừ`), and action buttons.
+- Added `KarmaActionModal` component for `Nhận ra`, `Dừng nghiệp`, and `Giải cảnh` actions. It captures note, image URL, and an editable `Khuôn dừng nghiệp` table (target + money) that persists as the user's karma template.
+
 ## 2026-08-04 (Apple HIG + Phúc nghiệp + Finance/Practice pages)
 
 - Refreshed global Apple-inspired design tokens in `index.css` (`--fm-bg`, `--fm-surface`, `--fm-border`, `--fm-primary`, `card`, `btn-primary`, `btn-secondary`, `input`, `section-title`) with system/SF Pro font stack, premium neutral backgrounds (`#F5F5F7` / `#0D0D0F`), frosted glass headers, and `rounded-2xl` surfaces.

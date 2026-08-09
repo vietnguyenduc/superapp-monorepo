@@ -11,6 +11,7 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiTrash2,
+  FiAlertCircle,
 } from "react-icons/fi";
 import {
   format,
@@ -32,6 +33,7 @@ import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useSession } from "../../contexts/SessionContext";
+import KarmaActionModal from "../../components/KarmaActionModal";
 import {
   CATEGORY_META,
   MERIT_SIZE_LABELS,
@@ -41,9 +43,10 @@ import {
   saveRecurringTasks,
   getDaysUntilPeriodEnd,
   getNextDueDate,
+  getKarmaEventCountdown,
   genId,
 } from "../../services/frameworkMethodService";
-import type { TaskCategory, MeritType, MeritSize, DailyTask, BlockId, RecurringTask, RecurrenceType } from "../../types";
+import type { TaskCategory, MeritType, MeritSize, DailyTask, BlockId, RecurringTask, RecurrenceType, KarmaEvent } from "../../types";
 
 const CATEGORY_TO_DEFAULT_BLOCK: Record<TaskCategory, BlockId> = {
   doi: "self",
@@ -103,7 +106,9 @@ type CalendarView = "month" | "week";
 const Calendar = () => {
   const { t } = useI18n();
   const { theme, toggleTheme } = useTheme();
-  const { tasks, session, merit, updateTask, setPlannedCompletionRate, addTask, sessionDate, setSessionDate, userId } = useSession();
+  const { tasks, session, merit, updateTask, setPlannedCompletionRate, addTask, sessionDate, setSessionDate, userId, karma } = useSession();
+
+  const [selectedKarmaEvent, setSelectedKarmaEvent] = useState<KarmaEvent | null>(null);
 
   const subcategoryOptions = useMemo(() => getSubcategoryOptions(), []);
 
@@ -504,6 +509,40 @@ const Calendar = () => {
       </div>
 
       <Card className="p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FiAlertCircle className="w-5 h-5 text-rose-600" />
+            <h3 className="font-semibold tracking-tight">Trổ canh</h3>
+          </div>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Còn {karma.account?.balance ?? 1000} / {karma.account?.initial ?? 1000} Nghiệp báo</span>
+        </div>
+        <div className="space-y-3">
+          {karma.events.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">Chưa có sự kiện Trổ canh nào.</p>}
+          {karma.events.slice(0, 6).map((e) => {
+            const countdown = getKarmaEventCountdown(e);
+            const statusLabel =
+              e.status === "pending" ? "Chưa nhận ra" : e.status === "recognized" ? "Đã nhận ra" : e.status === "resolved" ? "Đã giải cảnh" : "Đã tự động trừ";
+            const isPending = e.status === "pending" || e.status === "recognized";
+            return (
+              <div key={e.id} className="p-4 rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-black/[0.01] dark:bg-white/[0.02]">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium text-sm">{e.period === "monthly" ? "Trổ canh tháng" : "Trổ canh quý"} · {e.due_date}</span>
+                  <span className={`text-xs px-2 py-1 rounded-full ${isPending ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30"}`}>{statusLabel}</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Countdown: {countdown.label} · Trích {e.reserved_amount} điểm · Đã cấn trừ {e.prepaid || 0}</p>
+                {isPending && (
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => setSelectedKarmaEvent(e)}>Dừng / Giải</Button>
+                    <Button size="sm" className="flex-1" onClick={() => setSelectedKarmaEvent(e)}>Nhận ra</Button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      <Card className="p-5 space-y-4">
         <div className="flex items-center gap-2">
           <FiTarget className="w-5 h-5 text-primary-600" />
           <h3 className="font-semibold tracking-tight">Đánh giá mức độ hoàn thành kế hoạch</h3>
@@ -745,6 +784,8 @@ const Calendar = () => {
           ))}
         </div>
       </Card>
+
+      {selectedKarmaEvent && <KarmaActionModal event={selectedKarmaEvent} onClose={() => setSelectedKarmaEvent(null)} />}
     </div>
   );
 };

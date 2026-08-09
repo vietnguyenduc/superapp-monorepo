@@ -26,6 +26,12 @@ import type {
   PracticeInsight,
   IncomeEntry,
   FinanceExpense,
+  KarmaAccount,
+  KarmaEvent,
+  KarmaEventPeriod,
+  KarmaPayment,
+  KarmaTemplate,
+  KarmaTemplateRow,
 } from "../types";
 import { MERIT_SIZE_POINTS } from "../types";
 
@@ -1125,4 +1131,424 @@ export const savePracticeInsights = async (insights: PracticeInsight[]): Promise
   } catch (err) {
     fallbackLog("savePracticeInsights", err);
   }
+};
+
+const KARMA_ACCOUNT_STORAGE_KEY = "fm_karma_account_v1";
+const KARMA_EVENTS_STORAGE_KEY = "fm_karma_events_v1";
+const KARMA_PAYMENTS_STORAGE_KEY = "fm_karma_payments_v1";
+const KARMA_TEMPLATE_STORAGE_KEY = "fm_karma_template_v1";
+
+export const DEFAULT_KARMA_INITIAL = 1000;
+
+export const DEFAULT_KARMA_TEMPLATE_ROWS: KarmaTemplateRow[] = [
+  { id: "1", target: "Bố mẹ", amount: 500000 },
+  { id: "2", target: "Thầy cô", amount: 500000 },
+  { id: "3", target: "Vợ/chồng", amount: 300000 },
+  { id: "4", target: "Con cái", amount: 300000 },
+  { id: "5", target: "Anh chị em", amount: 200000 },
+  { id: "6", target: "Bạn bè", amount: 200000 },
+  { id: "7", target: "Đối tác / khách hàng", amount: 300000 },
+  { id: "8", target: "Cộng đồng / người lạ", amount: 100000 },
+];
+
+export const getKarmaPeriodEnd = (period: KarmaEventPeriod, from: Date): Date => {
+  const d = new Date(from);
+  switch (period) {
+    case "monthly":
+      d.setMonth(d.getMonth() + 1);
+      d.setDate(0);
+      break;
+    case "quarterly": {
+      const quarter = Math.floor(d.getMonth() / 3);
+      d.setFullYear(d.getFullYear(), (quarter + 1) * 3, 0);
+      break;
+    }
+  }
+  d.setHours(23, 59, 59, 999);
+  return d;
+};
+
+export const getKarmaPeriodStart = (period: KarmaEventPeriod, from: Date): Date => {
+  const d = new Date(from);
+  switch (period) {
+    case "monthly":
+      d.setDate(1);
+      break;
+    case "quarterly": {
+      const quarter = Math.floor(d.getMonth() / 3);
+      d.setMonth(quarter * 3, 1);
+      break;
+    }
+  }
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+export const createKarmaAccount = (userId: string): KarmaAccount => ({
+  user_id: userId,
+  initial: DEFAULT_KARMA_INITIAL,
+  balance: DEFAULT_KARMA_INITIAL,
+  daily_offsets: {},
+  updated_at: new Date().toISOString(),
+});
+
+export const getKarmaAccount = async (userId: string): Promise<KarmaAccount> => {
+  try {
+    const raw = localStorage.getItem(KARMA_ACCOUNT_STORAGE_KEY);
+    if (raw) {
+      const all = JSON.parse(raw) as Record<string, KarmaAccount>;
+      if (all[userId]) return all[userId];
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    const { data, error } = await db.from("fm_karma_accounts").select("*").eq("user_id", userId).single();
+    if (error) throw error;
+    if (data) return data as KarmaAccount;
+  } catch (err) {
+    fallbackLog("getKarmaAccount", err);
+  }
+
+  return createKarmaAccount(userId);
+};
+
+export const saveKarmaAccount = async (account: KarmaAccount): Promise<void> => {
+  account.updated_at = new Date().toISOString();
+  try {
+    const raw = localStorage.getItem(KARMA_ACCOUNT_STORAGE_KEY);
+    const all: Record<string, KarmaAccount> = raw ? JSON.parse(raw) : {};
+    all[account.user_id] = account;
+    localStorage.setItem(KARMA_ACCOUNT_STORAGE_KEY, JSON.stringify(all));
+  } catch {
+    // ignore
+  }
+
+  try {
+    const { error } = await db.from("fm_karma_accounts").upsert(account, { onConflict: "user_id" });
+    if (error) throw error;
+  } catch (err) {
+    fallbackLog("saveKarmaAccount", err);
+  }
+};
+
+export const getKarmaTemplate = async (userId: string): Promise<KarmaTemplate> => {
+  try {
+    const raw = localStorage.getItem(KARMA_TEMPLATE_STORAGE_KEY);
+    if (raw) {
+      const all = JSON.parse(raw) as Record<string, KarmaTemplate>;
+      if (all[userId]) return all[userId];
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    const { data, error } = await db.from("fm_karma_templates").select("*").eq("user_id", userId).single();
+    if (error) throw error;
+    if (data) return { user_id: userId, rows: (data.rows as KarmaTemplateRow[]) || DEFAULT_KARMA_TEMPLATE_ROWS } as KarmaTemplate;
+  } catch (err) {
+    fallbackLog("getKarmaTemplate", err);
+  }
+
+  return { user_id: userId, rows: DEFAULT_KARMA_TEMPLATE_ROWS };
+};
+
+export const saveKarmaTemplate = async (template: KarmaTemplate): Promise<void> => {
+  try {
+    const raw = localStorage.getItem(KARMA_TEMPLATE_STORAGE_KEY);
+    const all: Record<string, KarmaTemplate> = raw ? JSON.parse(raw) : {};
+    all[template.user_id] = template;
+    localStorage.setItem(KARMA_TEMPLATE_STORAGE_KEY, JSON.stringify(all));
+  } catch {
+    // ignore
+  }
+
+  try {
+    const { error } = await db.from("fm_karma_templates").upsert(template, { onConflict: "user_id" });
+    if (error) throw error;
+  } catch (err) {
+    fallbackLog("saveKarmaTemplate", err);
+  }
+};
+
+export const getKarmaEvents = async (userId: string): Promise<KarmaEvent[]> => {
+  try {
+    const raw = localStorage.getItem(KARMA_EVENTS_STORAGE_KEY);
+    if (raw) {
+      const all = JSON.parse(raw) as Record<string, KarmaEvent[]>;
+      return (all[userId] || []).filter((e) => e.user_id === userId);
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    const { data, error } = await db.from("fm_karma_events").select("*").eq("user_id", userId).order("due_date", { ascending: true });
+    if (error) throw error;
+    if (data) {
+      localStorage.setItem(KARMA_EVENTS_STORAGE_KEY, JSON.stringify({ ...(JSON.parse(localStorage.getItem(KARMA_EVENTS_STORAGE_KEY) || "{}")), [userId]: data }));
+      return data as KarmaEvent[];
+    }
+  } catch (err) {
+    fallbackLog("getKarmaEvents", err);
+  }
+
+  return [];
+};
+
+export const saveKarmaEvents = async (userId: string, events: KarmaEvent[]): Promise<void> => {
+  try {
+    const raw = localStorage.getItem(KARMA_EVENTS_STORAGE_KEY);
+    const all: Record<string, KarmaEvent[]> = raw ? JSON.parse(raw) : {};
+    all[userId] = events;
+    localStorage.setItem(KARMA_EVENTS_STORAGE_KEY, JSON.stringify(all));
+  } catch {
+    // ignore
+  }
+
+  try {
+    const { error } = await db.from("fm_karma_events").upsert(events, { onConflict: "id" });
+    if (error) throw error;
+  } catch (err) {
+    fallbackLog("saveKarmaEvents", err);
+  }
+};
+
+export const getKarmaPayments = async (userId: string): Promise<KarmaPayment[]> => {
+  try {
+    const raw = localStorage.getItem(KARMA_PAYMENTS_STORAGE_KEY);
+    if (raw) {
+      const all = JSON.parse(raw) as Record<string, KarmaPayment[]>;
+      return (all[userId] || []).filter((p) => p.user_id === userId);
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    const { data, error } = await db.from("fm_karma_payments").select("*").eq("user_id", userId).order("created_at", { ascending: true });
+    if (error) throw error;
+    if (data) {
+      localStorage.setItem(KARMA_PAYMENTS_STORAGE_KEY, JSON.stringify({ ...(JSON.parse(localStorage.getItem(KARMA_PAYMENTS_STORAGE_KEY) || "{}")), [userId]: data }));
+      return data as KarmaPayment[];
+    }
+  } catch (err) {
+    fallbackLog("getKarmaPayments", err);
+  }
+
+  return [];
+};
+
+export const saveKarmaPayments = async (userId: string, payments: KarmaPayment[]): Promise<void> => {
+  try {
+    const raw = localStorage.getItem(KARMA_PAYMENTS_STORAGE_KEY);
+    const all: Record<string, KarmaPayment[]> = raw ? JSON.parse(raw) : {};
+    all[userId] = payments;
+    localStorage.setItem(KARMA_PAYMENTS_STORAGE_KEY, JSON.stringify(all));
+  } catch {
+    // ignore
+  }
+
+  try {
+    const { error } = await db.from("fm_karma_payments").upsert(payments, { onConflict: "id" });
+    if (error) throw error;
+  } catch (err) {
+    fallbackLog("saveKarmaPayments", err);
+  }
+};
+
+export const generateKarmaEvents = (userId: string, from: Date = new Date(), monthsToGenerate = 12): KarmaEvent[] => {
+  const events: KarmaEvent[] = [];
+  const seen = new Set<string>();
+
+  for (let i = 0; i < monthsToGenerate; i++) {
+    const d = new Date(from);
+    d.setMonth(d.getMonth() + i);
+    const monthlyEnd = getKarmaPeriodEnd("monthly", d);
+    const keyM = `monthly-${monthlyEnd.toISOString().split("T")[0]}`;
+    if (!seen.has(keyM)) {
+      seen.add(keyM);
+      events.push({
+        id: genId(),
+        user_id: userId,
+        period: "monthly",
+        due_date: monthlyEnd.toISOString().split("T")[0],
+        status: "pending",
+        reserved_amount: 20,
+        prepaid: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+
+    if (i % 3 === 0) {
+      const quarterStart = new Date(from);
+      quarterStart.setMonth(quarterStart.getMonth() + i);
+      const quarterlyEnd = getKarmaPeriodEnd("quarterly", quarterStart);
+      const keyQ = `quarterly-${quarterlyEnd.toISOString().split("T")[0]}`;
+      if (!seen.has(keyQ)) {
+        seen.add(keyQ);
+        events.push({
+          id: genId(),
+          user_id: userId,
+          period: "quarterly",
+          due_date: quarterlyEnd.toISOString().split("T")[0],
+          status: "pending",
+          reserved_amount: 20,
+          prepaid: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      }
+    }
+  }
+
+  return events.sort((a, b) => a.due_date.localeCompare(b.due_date));
+};
+
+export const getNextKarmaEvent = (events: KarmaEvent[]): KarmaEvent | null => {
+  const today = todayStr();
+  return events.find((e) => e.due_date >= today && (e.status === "pending" || e.status === "recognized")) || null;
+};
+
+export const getKarmaEventCountdown = (event: KarmaEvent | null): { days: number; hours: number; label: string } => {
+  if (!event) return { days: 0, hours: 0, label: "—" };
+  const now = new Date();
+  const due = new Date(event.due_date);
+  due.setHours(23, 59, 59, 999);
+  const diff = due.getTime() - now.getTime();
+  if (diff <= 0) return { days: 0, hours: 0, label: "Đang diễn ra" };
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  return { days, hours, label: `${days} ngày ${hours} giờ` };
+};
+
+export const computeKarmaBalance = (account: KarmaAccount, payments: KarmaPayment[]): number => {
+  const totalOffsets = Object.values(account.daily_offsets).reduce((s, v) => s + (v || 0), 0);
+  const totalPayments = payments.reduce((s, p) => s + (p.amount || 0), 0);
+  return Math.max(account.initial - totalOffsets - totalPayments, 0);
+};
+
+export const syncKarmaEvents = async (userId: string, account: KarmaAccount, events: KarmaEvent[], payments: KarmaPayment[]): Promise<{ account: KarmaAccount; events: KarmaEvent[]; payments: KarmaPayment[] }> => {
+  const today = todayStr();
+  const now = new Date().toISOString();
+  let changed = false;
+
+  const updatedEvents = events.map((e) => ({ ...e }));
+  const updatedPayments = [...payments];
+
+  updatedEvents.forEach((e) => {
+    if ((e.status === "pending" || e.status === "recognized") && e.due_date < today) {
+      const deduction = Math.max(0, e.reserved_amount - e.prepaid);
+      if (deduction > 0) {
+        updatedPayments.push({
+          id: genId(),
+          user_id: userId,
+          event_id: e.id,
+          type: "pay",
+          amount: deduction,
+          note: `Trổ canh ${e.period === "monthly" ? "tháng" : "quý"} ${e.due_date} tự động trừ`,
+          created_at: now,
+        });
+      }
+      e.status = "triggered";
+      e.triggered_at = now;
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    const newAccount = { ...account, balance: computeKarmaBalance(account, updatedPayments) };
+    await Promise.all([saveKarmaAccount(newAccount), saveKarmaEvents(userId, updatedEvents), saveKarmaPayments(userId, updatedPayments)]);
+    return { account: newAccount, events: updatedEvents, payments: updatedPayments };
+  }
+
+  return { account, events, payments };
+};
+
+export const updateKarmaDailyOffset = async (
+  account: KarmaAccount,
+  payments: KarmaPayment[],
+  date: string,
+  meritTotal: number
+): Promise<KarmaAccount> => {
+  const offset = Math.max(0, meritTotal);
+  if (account.daily_offsets[date] === offset) return account;
+  const next = { ...account, daily_offsets: { ...account.daily_offsets, [date]: offset } };
+  next.balance = computeKarmaBalance(next, payments);
+  await saveKarmaAccount(next);
+  return next;
+};
+
+export const performKarmaAction = async (
+  userId: string,
+  account: KarmaAccount,
+  events: KarmaEvent[],
+  payments: KarmaPayment[],
+  payload: {
+    eventId: string;
+    action: "recognize" | "stop" | "resolve";
+    amount?: number;
+    note?: string;
+    imageUrl?: string;
+    khuonRows?: KarmaTemplateRow[];
+  }
+): Promise<{ account: KarmaAccount; events: KarmaEvent[]; payments: KarmaPayment[] }> => {
+  const now = new Date().toISOString();
+  const updatedEvents = events.map((e) => ({ ...e }));
+  const event = updatedEvents.find((e) => e.id === payload.eventId);
+  if (!event) return { account, events, payments };
+
+  const updatedPayments = [...payments];
+
+  if (payload.action === "recognize") {
+    event.status = "recognized";
+    event.recognized_at = now;
+  } else if (payload.action === "stop") {
+    const amount = Math.max(0, payload.amount ?? 0);
+    if (amount > 0) {
+      event.prepaid = (event.prepaid || 0) + amount;
+      updatedPayments.push({
+        id: genId(),
+        user_id: userId,
+        event_id: event.id,
+        type: "pay",
+        amount,
+        note: payload.note || `Dừng nghiệp trước ${event.period === "monthly" ? "tháng" : "quý"} ${event.due_date}`,
+        image_url: payload.imageUrl,
+        khuon_rows: payload.khuonRows,
+        created_at: now,
+      });
+    }
+    event.note = payload.note;
+    event.image_url = payload.imageUrl;
+    event.khuon_rows = payload.khuonRows;
+  } else if (payload.action === "resolve") {
+    const remaining = Math.max(0, event.reserved_amount - (event.prepaid || 0));
+    if (remaining > 0) {
+      event.prepaid = event.reserved_amount;
+      updatedPayments.push({
+        id: genId(),
+        user_id: userId,
+        event_id: event.id,
+        type: "pay",
+        amount: remaining,
+        note: payload.note || `Giải cảnh ${event.period === "monthly" ? "tháng" : "quý"} ${event.due_date}`,
+        image_url: payload.imageUrl,
+        khuon_rows: payload.khuonRows,
+        created_at: now,
+      });
+    }
+    event.status = "resolved";
+    event.resolved_at = now;
+    event.note = payload.note;
+    event.image_url = payload.imageUrl;
+    event.khuon_rows = payload.khuonRows;
+  }
+
+  const newAccount = { ...account, balance: computeKarmaBalance(account, updatedPayments) };
+  await Promise.all([saveKarmaAccount(newAccount), saveKarmaEvents(userId, updatedEvents), saveKarmaPayments(userId, updatedPayments)]);
+  return { account: newAccount, events: updatedEvents, payments: updatedPayments };
 };

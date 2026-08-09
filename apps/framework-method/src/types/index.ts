@@ -306,3 +306,56 @@ export interface FinanceExpense {
   created_at?: string;
   updated_at?: string;
 }
+
+export type KarmaEventStatus = "pending" | "recognized" | "resolved" | "triggered";
+export type KarmaEventPeriod = "monthly" | "quarterly";
+export type KarmaActionType = "stop" | "pay";
+
+export interface KarmaTemplateRow {
+  id: string;
+  target: string;
+  amount: number;
+}
+
+export interface KarmaTemplate {
+  user_id: string;
+  rows: KarmaTemplateRow[];
+}
+
+export interface KarmaEvent {
+  id: string;
+  user_id: string;
+  period: KarmaEventPeriod;
+  due_date: string;
+  status: KarmaEventStatus;
+  reserved_amount: number;
+  prepaid: number;
+  recognized_at?: string;
+  resolved_at?: string;
+  triggered_at?: string;
+  note?: string;
+  image_url?: string;
+  khuon_rows?: KarmaTemplateRow[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface KarmaPayment {
+  id: string;
+  user_id: string;
+  event_id?: string;
+  type: KarmaActionType;
+  amount: number;
+  note?: string;
+  image_url?: string;
+  khuon_rows?: KarmaTemplateRow[];
+  created_at: string;
+}
+
+export interface KarmaAccount {
+  user_id: string;
+  initial: number;
+  balance: number;
+  daily_offsets: Record<string, number>;
+  updated_at: string;
+}

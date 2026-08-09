@@ -16,6 +16,11 @@ import type {
   TaskSource,
   TaskSuggestion,
   KnowledgeEntry,
+  KarmaAccount,
+  KarmaEvent,
+  KarmaPayment,
+  KarmaTemplate,
+  KarmaTemplateRow,
 } from "../types";
 
 interface SessionContextType {
@@ -74,6 +79,25 @@ interface SessionContextType {
   saveDraft: () => Promise<void>;
   completeSession: () => Promise<void>;
   refresh: () => Promise<void>;
+  karma: {
+    account: KarmaAccount | null;
+    events: KarmaEvent[];
+    payments: KarmaPayment[];
+    nextEvent: KarmaEvent | null;
+    countdown: { days: number; hours: number; label: string };
+    percent: number;
+  };
+  karmaTemplate: KarmaTemplate | null;
+  updateKarmaTemplate: (rows: KarmaTemplateRow[]) => Promise<void>;
+  performKarmaAction: (payload: {
+    eventId: string;
+    action: "recognize" | "stop" | "resolve";
+    amount?: number;
+    note?: string;
+    imageUrl?: string;
+    khuonRows?: KarmaTemplateRow[];
+  }) => Promise<void>;
+  syncKarma: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextType | null>(null);
@@ -98,6 +122,10 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [templates, setTemplates] = useState<Record<BlockId, Record<StepType, Template>>>({} as Record<BlockId, Record<StepType, Template>>);
   const [taskSuggestions, setTaskSuggestions] = useState<Record<BlockId, TaskSuggestion[]>>({} as Record<BlockId, TaskSuggestion[]>);
   const [knowledgeEntries, setKnowledgeEntries] = useState<KnowledgeEntry[]>([]);
+  const [karmaAccount, setKarmaAccount] = useState<KarmaAccount | null>(null);
+  const [karmaEvents, setKarmaEvents] = useState<KarmaEvent[]>([]);
+  const [karmaPayments, setKarmaPayments] = useState<KarmaPayment[]>([]);
+  const [karmaTemplate, setKarmaTemplate] = useState<KarmaTemplate | null>(null);
   const [currentBlockIndex, setCurrentBlockIndexRaw] = useState(0);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
@@ -119,6 +147,15 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     [tasks, session?.planned_completion_rate]
   );
 
+  const karma = useMemo(() => {
+    const nextEvent = service.getNextKarmaEvent(karmaEvents);
+    const countdown = service.getKarmaEventCountdown(nextEvent);
+    const initial = karmaAccount?.initial ?? service.DEFAULT_KARMA_INITIAL;
+    const balance = karmaAccount?.balance ?? initial;
+    const percent = initial > 0 ? Math.max(0, Math.min(100, Math.round((balance / initial) * 100))) : 0;
+    return { account: karmaAccount, events: karmaEvents, payments: karmaPayments, nextEvent, countdown, percent };
+  }, [karmaAccount, karmaEvents, karmaPayments]);
+
   useEffect(() => {
     if (!session) return;
     if (
@@ -134,6 +171,17 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       merit_total: merit.total,
     });
   }, [session, merit, persistSession]);
+
+  useEffect(() => {
+    if (!karmaAccount || !sessionDate) return;
+    const offset = Math.max(0, merit.total);
+    if (karmaAccount.daily_offsets[sessionDate] === offset) return;
+    const run = async () => {
+      const updated = await service.updateKarmaDailyOffset(karmaAccount, karmaPayments, sessionDate, merit.total);
+      setKarmaAccount(updated);
+    };
+    run();
+  }, [karmaAccount, karmaEvents, karmaPayments, sessionDate, merit.total]);
 
   const setCurrentBlockIndex = useCallback(
     async (index: number) => {
@@ -178,6 +226,23 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       setTaskSuggestions(allSuggestions);
       setKnowledgeEntries(loadedKnowledge);
       setTemplates(loadedTemplates);
+
+      const [loadedAccount, loadedEvents, loadedPayments, loadedKarmaTemplate] = await Promise.all([
+        service.getKarmaAccount(userId),
+        service.getKarmaEvents(userId),
+        service.getKarmaPayments(userId),
+        service.getKarmaTemplate(userId),
+      ]);
+      let account = loadedAccount;
+      let events = loadedEvents.length > 0 ? loadedEvents : service.generateKarmaEvents(userId);
+      if (loadedEvents.length === 0) await service.saveKarmaEvents(userId, events);
+      const synced = await service.syncKarmaEvents(userId, account, events, loadedPayments);
+      account = synced.account;
+      events = synced.events;
+      setKarmaAccount(account);
+      setKarmaEvents(events);
+      setKarmaPayments(synced.payments);
+      setKarmaTemplate(loadedKarmaTemplate);
 
       if (existingSession) {
         const [inputs, plans, trackRows] = await Promise.all([
@@ -515,6 +580,35 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     if (saved) setStreak(saved);
   }, [userId, streak, persistSession, maxStep]);
 
+  const performKarmaAction = useCallback(
+    async (payload: { eventId: string; action: "recognize" | "stop" | "resolve"; amount?: number; note?: string; imageUrl?: string; khuonRows?: KarmaTemplateRow[] }) => {
+      if (!userId || !karmaAccount) return;
+      const result = await service.performKarmaAction(userId, karmaAccount, karmaEvents, karmaPayments, payload);
+      setKarmaAccount(result.account);
+      setKarmaEvents(result.events);
+      setKarmaPayments(result.payments);
+    },
+    [userId, karmaAccount, karmaEvents, karmaPayments]
+  );
+
+  const updateKarmaTemplate = useCallback(
+    async (rows: KarmaTemplateRow[]) => {
+      if (!userId) return;
+      const template: KarmaTemplate = { user_id: userId, rows };
+      await service.saveKarmaTemplate(template);
+      setKarmaTemplate(template);
+    },
+    [userId]
+  );
+
+  const syncKarma = useCallback(async () => {
+    if (!userId || !karmaAccount) return;
+    const synced = await service.syncKarmaEvents(userId, karmaAccount, karmaEvents, karmaPayments);
+    setKarmaAccount(synced.account);
+    setKarmaEvents(synced.events);
+    setKarmaPayments(synced.payments);
+  }, [userId, karmaAccount, karmaEvents, karmaPayments]);
+
   const setStep = useCallback(
     async (next: number) => {
       await persistSession({ current_step: next });
@@ -579,9 +673,19 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       renameStep,
       moveStep,
       refresh: loadData,
+      karma,
+      karmaTemplate,
+      updateKarmaTemplate,
+      performKarmaAction,
+      syncKarma,
     }),
     [
       userId,
+      karma,
+      karmaTemplate,
+      updateKarmaTemplate,
+      performKarmaAction,
+      syncKarma,
       sessionDate,
       blocks,
       currentBlockIndex,
