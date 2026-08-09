@@ -1,5 +1,12 @@
 # Changelog — Cashflow
 
+## 2026-08-04
+
+### Fixed
+
+- **Neutral customer debt balances** — removed red/green coloring from customer `total_balance` in `CustomerTable`, `CustomerDetail`, `CustomerDetailModal`, and `CustomerList` summary. Transaction amounts continue to use their type-based colors (`getTransactionTypeAmountColor`).
+- **Mobile customer-table layout** — action buttons (edit/delete/transactions) are now rendered inside each mobile card header instead of a separate mid-card column; the name and address can wrap; the table header is hidden on small screens; row padding is slightly larger for better touch targets.
+
 ## 2026-08-12
 
 ### Fixed
