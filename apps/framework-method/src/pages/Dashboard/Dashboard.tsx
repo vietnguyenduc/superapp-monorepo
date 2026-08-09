@@ -1,26 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { FiPlay, FiSun, FiMoon, FiUser, FiTrendingUp, FiAnchor, FiActivity, FiZap, FiAlertCircle, FiCrosshair, FiHeart } from "react-icons/fi";
+import { format, parseISO } from "date-fns";
+import { vi } from "date-fns/locale";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useSession } from "../../contexts/SessionContext";
-import { getSessionsByDateRange, todayStr } from "../../services/frameworkMethodService";
+import { getSessionsByDateRange, todayStr, DEFAULT_BLOCKS } from "../../services/frameworkMethodService";
 import KarmaActionModal from "../../components/KarmaActionModal";
-import type { Session, KarmaEvent } from "../../types";
-
-const frameworks = [
-  { id: "first-principles", name: "The First Principles Method", progress: 40, tag: "Strategy" },
-  { id: "deep-work", name: "Deep Work", progress: 0, tag: "1 / 3h" },
-  { id: "time-blocking", name: "Time Blocking", progress: 0, tag: "" },
-];
+import type { Session, KarmaEvent, BlockId, BlockStats } from "../../types";
 
 const Dashboard = () => {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { merit, streak, userId, karma } = useSession();
+  const { merit, streak, userId, karma, blockStats } = useSession();
   const [selectedEvent, setSelectedEvent] = useState<KarmaEvent | null>(null);
   const [selectedAction, setSelectedAction] = useState<"recognize" | "stop" | "resolve" | "recite" | null>(null);
 
@@ -29,7 +25,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (!userId) return;
     const end = todayStr();
-    const start = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const start = new Date(Date.now() - 89 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     getSessionsByDateRange(userId, start, end).then(setHistory);
   }, [userId]);
 
@@ -47,6 +43,20 @@ const Dashboard = () => {
     }
     return days;
   }, [history]);
+
+  const frameworkStats = useMemo(() => {
+    const entries = Object.entries(blockStats) as [BlockId, BlockStats][];
+    const topBlock = [...entries].sort((a, b) => (b[1].total_done + b[1].total_applied + b[1].total_tracked) - (a[1].total_done + a[1].total_applied + a[1].total_tracked))[0];
+    const topApplied = [...entries].sort((a, b) => b[1].total_applied - a[1].total_applied)[0];
+    const topTracked = [...entries].sort((a, b) => b[1].total_tracked - a[1].total_tracked)[0];
+    const topStep = (topApplied?.[1].total_applied ?? 0) >= (topTracked?.[1].total_tracked ?? 0)
+      ? { label: "Đưa khuôn", block: topApplied?.[0] }
+      : { label: "Bám theo dõi", block: topTracked?.[0] };
+    const topMeritEarned = [...history].sort((a, b) => (b.merit_earned ?? 0) - (a.merit_earned ?? 0))[0];
+    const topMeritSpent = [...history].sort((a, b) => (b.merit_spent ?? 0) - (a.merit_spent ?? 0))[0];
+    const blockName = (id?: BlockId) => DEFAULT_BLOCKS.find((b) => b.id === id)?.name_vi || id || "—";
+    return { topBlock, topStep, topMeritEarned, topMeritSpent, blockName };
+  }, [blockStats, history]);
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -75,10 +85,10 @@ const Dashboard = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FiCrosshair className="w-5 h-5 text-rose-600" />
-            <h2 className="font-semibold text-lg tracking-tight">Trận chiến Nghiệp — Phúc</h2>
+            <h2 className="font-semibold text-lg tracking-tight">Nghiệp - Phúc của bạn trong kiếp này</h2>
           </div>
           <div className="text-right">
-            <p className="text-xs text-gray-500 dark:text-gray-400">Trổ canh tiếp theo</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Trổ cảnh tiếp theo</p>
             <p className="text-sm font-semibold text-rose-600">{karma.countdown.label}</p>
           </div>
         </div>
@@ -173,32 +183,41 @@ const Dashboard = () => {
 
       <Card className="p-5">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="font-semibold text-lg tracking-tight">{t("dashboard.frameworks")}</h2>
+          <h2 className="font-semibold text-lg tracking-tight">Đưa khuôn trí tuệ vào cuộc sống</h2>
           <FiAnchor className="w-5 h-5 text-gray-400" />
         </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{t("dashboard.mostUsed")}</p>
-        <div className="space-y-4">
-          {frameworks.map((fw) => (
-            <Link key={fw.id} to="/session" className="flex items-center gap-3 group">
-              <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-900/20 text-primary-600 flex items-center justify-center font-bold text-lg">
-                {fw.name[0]}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{fw.name}</p>
-                {fw.tag && (
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wide">{fw.tag}</span>
-                    <span className="text-[10px] text-gray-400">{fw.progress > 0 ? `${fw.progress}%` : ""}</span>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Thống kê tổng hợp</p>
+        <div className="space-y-3">
+          {(() => {
+            const { topBlock, topStep, topMeritEarned, topMeritSpent, blockName } = frameworkStats;
+            const earnedDate = topMeritEarned?.date ? format(parseISO(topMeritEarned.date), "dd/MM/yyyy", { locale: vi }) : "—";
+            const spentDate = topMeritSpent?.date ? format(parseISO(topMeritSpent.date), "dd/MM/yyyy", { locale: vi }) : "—";
+            const total = (topBlock?.[1].total_done ?? 0) + (topBlock?.[1].total_applied ?? 0) + (topBlock?.[1].total_tracked ?? 0);
+            return (
+              <>
+                <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Khuôn hoàn thành nhiều nhất</p>
+                  <p className="font-semibold text-sm text-gray-900 dark:text-white mt-0.5">{blockName(topBlock?.[0])} · {total} lần</p>
+                </div>
+                <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Bước thực hành nhiều nhất</p>
+                  <p className="font-semibold text-sm text-gray-900 dark:text-white mt-0.5">{topStep.label} · {blockName(topStep.block)}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-2xl bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 text-center">
+                    <p className="text-xs text-emerald-600 font-medium mb-1">Ngày tạo Phúc nhiều nhất</p>
+                    <p className="text-lg font-bold text-emerald-600">+{topMeritEarned?.merit_earned ?? 0}</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">{earnedDate}</p>
                   </div>
-                )}
-                {fw.progress > 0 && (
-                  <div className="w-full h-1.5 bg-gray-100 dark:bg-white/[0.06] rounded-full mt-1.5">
-                    <div className="h-1.5 bg-primary-500 rounded-full" style={{ width: `${fw.progress}%` }} />
+                  <div className="p-3 rounded-2xl bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20 text-center">
+                    <p className="text-xs text-rose-600 font-medium mb-1">Ngày tiêu Phúc / Ân oán nhiều nhất</p>
+                    <p className="text-lg font-bold text-rose-600">-{topMeritSpent?.merit_spent ?? 0}</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">{spentDate}</p>
                   </div>
-                )}
-              </div>
-            </Link>
-          ))}
+                </div>
+              </>
+            );
+          })()}
         </div>
       </Card>
 

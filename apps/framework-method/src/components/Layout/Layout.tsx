@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import { FiMenu } from "react-icons/fi";
 import BottomNav from "./BottomNav";
 import SideNav from "./SideNav";
+import GlobalTaskFab from "./GlobalTaskFab";
 import { useI18n } from "../../hooks/useI18n";
 
 const Layout = () => {
@@ -32,6 +33,7 @@ const Layout = () => {
       </main>
 
       <BottomNav />
+      <GlobalTaskFab />
     </div>
   );
 };

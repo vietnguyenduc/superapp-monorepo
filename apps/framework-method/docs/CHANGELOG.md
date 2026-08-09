@@ -1,5 +1,17 @@
 # Framework Method — Changelog
 
+## 2026-08-04 (Calendar + Session + Dashboard refinement)
+
+- Fixed typo `Trổ canh` → `Trổ cảnh` across `Calendar.tsx`, `Dashboard.tsx`, `KarmaActionModal.tsx`, and `frameworkMethodService.ts`.
+- Removed `merit_type` / `merit_size` fields from the `/calendar` new-task form; merit is only evaluated after a task has been applied in `/session`.
+- Moved planned-completion slider (`Đánh giá mức độ hoàn thành kế hoạch`) and merit reflection (`Đo tâm & Đo Phúc`) into `/session` Step 4 (`Đưa khuôn trí tuệ vào Sống`). Selecting a task now shows earn/spend type, size picker, and opens `MeritReflectionModal`.
+- Redesigned `/calendar` "Nhật ký" card with dynamic period selector (Ngày / Tuần / Tháng / Quý / Năm / Tùy chọn) and custom date inputs; removed the separate `Đời/Đạo/Lợi tư` and `Sổ Phúc` lists below the calendar. The journal now shows period summary, applied frameworks, completed tasks, merit totals, recurring events, and karma events for the selected range.
+- Added a global sticky round `+` FAB (`GlobalTaskFab`) on every protected page for quick task creation.
+- Redesigned the `Lễ giỗ, tế họ` calendar preset to open a user-input modal for custom title, date, warning days, and preparation note before creating a `RecurringTask`.
+- Dashboard hero card renamed from "Trận chiến Nghiệp — Phúc" to "Nghiệp - Phúc của bạn trong kiếp này".
+- Dashboard framework-usage card now shows real stats: top completed block, top practiced step (Đưa khuôn / Bám theo dõi), day with most merit earned, and day with most merit spent / Ân oán.
+- Validation: `npm run lint -w framework-method` ✅, `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+
 ## 2026-08-04 (Gamify Nghiệp vs Phúc + Sổ Phúc reflection)
 
 - Renamed Dashboard section label `dashboard.frameworks` to "Đưa khuôn trí tuệ vào cuộc sống" (vi) / "Apply wisdom frameworks to life" (en); `activeFramework` and `backToFramework` keys normalized to lowercase "framework" in English and "Khuôn" in Vietnamese.

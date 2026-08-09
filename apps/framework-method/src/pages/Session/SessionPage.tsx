@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiChevronLeft, FiChevronRight, FiPlus, FiTrash2, FiCheck, FiBookOpen, FiFileText, FiZap, FiClipboard, FiX, FiMapPin, FiSave, FiChevronDown } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiPlus, FiTrash2, FiCheck, FiBookOpen, FiFileText, FiZap, FiClipboard, FiX, FiMapPin, FiSave, FiChevronDown, FiActivity } from "react-icons/fi";
 import { Card, Button, Input } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useSession } from "../../contexts/SessionContext";
-import type { Block, BlockId, DailyTask, KnowledgeEntry, StepType, TemplateSection, TemplateSectionItem } from "../../types";
+import MeritReflectionModal from "../../components/MeritReflectionModal";
+import { plannedCompletionAdjustment, MERIT_SIZE_LABELS } from "../../services/frameworkMethodService";
+import type { Block, BlockId, DailyTask, KnowledgeEntry, StepType, TemplateSection, TemplateSectionItem, MeritSize, MeritType } from "../../types";
 
 const ANALYSIS_KEYS = {
   keyInsights: "__key_insights__",
@@ -856,7 +858,7 @@ const Step3Apply = () => {
 
 const Step4Track = () => {
   const { t, language } = useI18n();
-  const { currentBlock, blocks, setCurrentBlockIndex, tasks, getTemplate, tracks, saveTrack, completeSession, setStep, setSelectedTaskId, selectedTaskId, currentStepType, isLastStep, prevStep, nextStep } = useSession();
+  const { currentBlock, blocks, setCurrentBlockIndex, tasks, getTemplate, tracks, saveTrack, completeSession, setStep, setSelectedTaskId, selectedTaskId, currentStepType, isLastStep, prevStep, nextStep, updateTask, setPlannedCompletionRate, session } = useSession();
   const template = getTemplate(currentBlock?.id || blocks[0]?.id, currentStepType || "track");
 
   const blockTasks = useMemo(() => tasks.filter((t) => t.block_id === currentBlock?.id), [tasks, currentBlock]);
@@ -873,6 +875,7 @@ const Step4Track = () => {
   const [dich, setDich] = useState(track?.dich || "");
   const [thucTe, setThucTe] = useState(track?.thuc_te || "");
   const [phuongPhap, setPhuongPhap] = useState(track?.phuong_phap || "");
+  const [reflectingTask, setReflectingTask] = useState<DailyTask | null>(null);
 
   useEffect(() => {
     setDich(track?.dich || "");
@@ -888,6 +891,8 @@ const Step4Track = () => {
   };
 
   const title = language === "en" ? template?.name_en || template?.name_vi || t("session.step4Title") : template?.name_vi || t("session.step4Title");
+  const plannedRate = session?.planned_completion_rate ?? 100;
+  const adjustment = plannedCompletionAdjustment(plannedRate);
 
   return (
     <div className="space-y-6">
@@ -954,6 +959,80 @@ const Step4Track = () => {
           <Button onClick={handleSave}>
             <FiSave className="w-4 h-4 mr-1" /> {t("session.saveTrack")}
           </Button>
+
+          <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] space-y-3">
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">Phúc nghiệp</p>
+            <div className="flex flex-wrap gap-2">
+              {(["earn", "spend"] as MeritType[]).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => updateTask(selectedTask.id, { merit_type: type, merit_size: selectedTask.merit_size || "small" })}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+                    selectedTask.merit_type === type
+                      ? type === "earn"
+                        ? "bg-emerald-500 text-white"
+                        : "bg-red-500 text-white"
+                      : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300"
+                  }`}
+                >
+                  {type === "earn" ? "Tạo Phúc" : "Tiêu Phúc"}
+                </button>
+              ))}
+            </div>
+            {selectedTask.merit_type && (
+              <div className="flex flex-wrap gap-2">
+                {(Object.keys(MERIT_SIZE_LABELS) as MeritSize[]).map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => updateTask(selectedTask.id, { merit_type: selectedTask.merit_type || "earn", merit_size: size })}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+                      selectedTask.merit_size === size
+                        ? "bg-primary-600 text-white"
+                        : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300"
+                    }`}
+                  >
+                    {MERIT_SIZE_LABELS[size][language === "en" ? "en" : "vi"]}
+                  </button>
+                ))}
+              </div>
+            )}
+            {selectedTask.merit_type && selectedTask.merit_size && (
+              <Button
+                onClick={() => setReflectingTask(selectedTask)}
+                variant="secondary"
+                size="sm"
+              >
+                {selectedTask.merit_reflected ? "Đo lại" : "Đo tâm & Đo Phúc"}
+              </Button>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {session && (
+        <Card className="p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <FiActivity className="w-5 h-5 text-primary-600" />
+            <h3 className="font-semibold tracking-tight">Đánh giá mức độ hoàn thành kế hoạch</h3>
+          </div>
+          <div className="flex items-center gap-4">
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={plannedRate}
+              onChange={(e) => setPlannedCompletionRate(Number(e.target.value))}
+              className="flex-1 h-2 rounded-lg appearance-none bg-gray-200 dark:bg-gray-700 accent-primary-600"
+            />
+            <span className="text-sm font-semibold w-12 text-right">{plannedRate}%</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-500">Điều chỉnh Phúc:</span>
+            <span className={`font-semibold ${adjustment >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+              {adjustment >= 0 ? `+${adjustment}` : adjustment}
+            </span>
+          </div>
         </Card>
       )}
 
@@ -971,6 +1050,8 @@ const Step4Track = () => {
           </Button>
         )}
       </div>
+
+      {reflectingTask && <MeritReflectionModal task={reflectingTask} onClose={() => setReflectingTask(null)} />}
     </div>
   );
 };

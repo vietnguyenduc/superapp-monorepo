@@ -1449,7 +1449,7 @@ export const syncKarmaEvents = async (userId: string, account: KarmaAccount, eve
           event_id: e.id,
           type: "pay",
           amount: deduction,
-          note: `Trổ canh ${e.period === "monthly" ? "tháng" : "quý"} ${e.due_date} tự động trừ`,
+          note: `Trổ cảnh ${e.period === "monthly" ? "tháng" : "quý"} ${e.due_date} tự động trừ`,
           created_at: now,
         });
       }

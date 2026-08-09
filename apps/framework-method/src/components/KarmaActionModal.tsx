@@ -84,7 +84,7 @@ const KarmaActionModal = ({ event, onClose, initialAction = "stop" }: KarmaActio
           <div>
             <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {event.period === "monthly" ? "Trổ canh tháng" : "Trổ canh quý"} · Hạn {event.due_date}
+              {event.period === "monthly" ? "Trổ cảnh tháng" : "Trổ cảnh quý"} · Hạn {event.due_date}
             </p>
           </div>
           <button onClick={onClose} className="p-2 rounded-2xl hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">

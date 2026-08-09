@@ -91,7 +91,7 @@ interface SessionContextType {
   updateKarmaTemplate: (rows: KarmaTemplateRow[]) => Promise<void>;
   performKarmaAction: (payload: {
     eventId: string;
-    action: "recognize" | "stop" | "resolve";
+    action: "recognize" | "stop" | "resolve" | "recite";
     amount?: number;
     note?: string;
     imageUrl?: string;

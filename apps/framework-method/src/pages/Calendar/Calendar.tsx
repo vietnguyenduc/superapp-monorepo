@@ -7,7 +7,6 @@ import {
   FiTrendingUp,
   FiTrendingDown,
   FiActivity,
-  FiTarget,
   FiChevronLeft,
   FiChevronRight,
   FiTrash2,
@@ -26,9 +25,14 @@ import {
   endOfMonth,
   startOfWeek,
   endOfWeek,
+  startOfQuarter,
+  endOfQuarter,
+  startOfYear,
+  endOfYear,
   eachDayOfInterval,
   isSameDay,
   isToday,
+  isValid,
   addMonths,
   subMonths,
   addWeeks,
@@ -36,17 +40,14 @@ import {
   parseISO,
 } from "date-fns";
 import { vi } from "date-fns/locale";
-import { Card, Button } from "../../components/UI";
+import { Card, Button, Input } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useSession } from "../../contexts/SessionContext";
 import KarmaActionModal from "../../components/KarmaActionModal";
-import MeritReflectionModal from "../../components/MeritReflectionModal";
 import {
   CATEGORY_META,
-  MERIT_SIZE_LABELS,
   BLOCK_TO_CATEGORY,
-  plannedCompletionAdjustment,
   getRecurringTasks,
   saveRecurringTasks,
   getDaysUntilPeriodEnd,
@@ -55,7 +56,7 @@ import {
   genId,
 } from "../../services/frameworkMethodService";
 import { MERIT_SIZE_POINTS } from "../../types";
-import type { TaskCategory, MeritType, MeritSize, DailyTask, BlockId, RecurringTask, RecurrenceType, KarmaEvent } from "../../types";
+import type { TaskCategory, DailyTask, BlockId, RecurringTask, RecurrenceType, KarmaEvent } from "../../types";
 
 const CATEGORY_TO_DEFAULT_BLOCK: Record<TaskCategory, BlockId> = {
   doi: "self",
@@ -69,8 +70,8 @@ const CALENDAR_PRESETS: { id: string; label: string; icon: string; tasks: Partia
     label: "Mồng 1 & 15 âm lịch",
     icon: "🌙",
     tasks: [
-      { title: "Mồng 1 âm lịch", category: "dao", subcategory: "Quan hệ", recurrence: "special", warning_before_days: 1, note: "Ngày mồng 1 âm lịch", merit_type: "earn", merit_size: "medium" },
-      { title: "Rằm 15 âm lịch", category: "dao", subcategory: "Quan hệ", recurrence: "special", warning_before_days: 1, note: "Ngày 15 âm lịch", merit_type: "earn", merit_size: "medium" },
+      { title: "Mồng 1 âm lịch", category: "dao", subcategory: "Quan hệ", recurrence: "special", warning_before_days: 1, note: "Ngày mồng 1 âm lịch" },
+      { title: "Rằm 15 âm lịch", category: "dao", subcategory: "Quan hệ", recurrence: "special", warning_before_days: 1, note: "Ngày 15 âm lịch" },
     ],
   },
   {
@@ -78,7 +79,7 @@ const CALENDAR_PRESETS: { id: string; label: string; icon: string; tasks: Partia
     label: "10 ngày ăn chay",
     icon: "🥗",
     tasks: [
-      { title: "Ăn chay", category: "dao", subcategory: "Quan hệ", recurrence: "special", warning_before_days: 1, note: "10 ngày ăn chay theo lịch cá nhân", merit_type: "earn", merit_size: "small" },
+      { title: "Ăn chay", category: "dao", subcategory: "Quan hệ", recurrence: "special", warning_before_days: 1, note: "10 ngày ăn chay theo lịch cá nhân" },
     ],
   },
   {
@@ -86,7 +87,7 @@ const CALENDAR_PRESETS: { id: string; label: string; icon: string; tasks: Partia
     label: "Lễ giỗ, tế họ",
     icon: "🕯️",
     tasks: [
-      { title: "Giỗ / Tế họ", category: "doi", subcategory: "Gia đình", recurrence: "special", warning_before_days: 7, note: "Các ngày lễ giỗ, tế họ trong năm", merit_type: "earn", merit_size: "big" },
+      { title: "Giỗ / Tế họ", category: "doi", subcategory: "Gia đình", recurrence: "special", warning_before_days: 7, note: "Các ngày lễ giỗ, tế họ trong năm" },
     ],
   },
 ];
@@ -115,11 +116,10 @@ type CalendarView = "month" | "week";
 const Calendar = () => {
   const { t } = useI18n();
   const { theme, toggleTheme } = useTheme();
-  const { tasks, session, merit, updateTask, setPlannedCompletionRate, addTask, sessionDate, setSessionDate, userId, karma, applyPlans, tracks } = useSession();
+  const { tasks, merit, updateTask, addTask, toggleTask, removeTask, sessionDate, setSessionDate, userId, karma, applyPlans, tracks } = useSession();
 
   const [selectedKarmaEvent, setSelectedKarmaEvent] = useState<KarmaEvent | null>(null);
   const [selectedKarmaAction, setSelectedKarmaAction] = useState<"recognize" | "stop" | "resolve" | "recite" | null>(null);
-  const [selectedReflectionTask, setSelectedReflectionTask] = useState<DailyTask | null>(null);
 
   const subcategoryOptions = useMemo(() => getSubcategoryOptions(), []);
 
@@ -129,12 +129,27 @@ const Calendar = () => {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newCategory, setNewCategory] = useState<TaskCategory>("doi");
   const [newSubcategory, setNewSubcategory] = useState(subcategoryOptions.doi[0] ?? "");
-  const [newMeritType, setNewMeritType] = useState<MeritType>("earn");
-  const [newMeritSize, setNewMeritSize] = useState<MeritSize>("small");
   const [isRecurring, setIsRecurring] = useState(false);
   const [newRecurrence, setNewRecurrence] = useState<RecurrenceType>("monthly");
   const [newWarningDays, setNewWarningDays] = useState("3");
   const [newNote, setNewNote] = useState("");
+
+  const [journalPeriod, setJournalPeriod] = useState<"day" | "week" | "month" | "quarter" | "year" | "custom">("day");
+  const [customStart, setCustomStart] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [customEnd, setCustomEnd] = useState(format(new Date(), "yyyy-MM-dd"));
+
+  const [memorialOpen, setMemorialOpen] = useState(false);
+  const [memorialTitle, setMemorialTitle] = useState("");
+  const [memorialDate, setMemorialDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [memorialWarningDays, setMemorialWarningDays] = useState("7");
+  const [memorialNote, setMemorialNote] = useState("");
+
+  const resetMemorial = () => {
+    setMemorialTitle("");
+    setMemorialDate(format(new Date(), "yyyy-MM-dd"));
+    setMemorialWarningDays("7");
+    setMemorialNote("");
+  };
 
   const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
 
@@ -143,17 +158,7 @@ const Calendar = () => {
     getRecurringTasks(userId).then(setRecurringTasks);
   }, [userId]);
 
-  const plannedRate = session?.planned_completion_rate ?? 100;
-  const adjustment = plannedCompletionAdjustment(plannedRate);
 
-  const groupedTasks = useMemo(() => {
-    const groups: Record<TaskCategory, DailyTask[]> = { doi: [], dao: [], loi_tu: [] };
-    tasks.forEach((task) => {
-      const category = getTaskCategory(task);
-      groups[category].push(task);
-    });
-    return groups;
-  }, [tasks]);
 
   const handleCategoryChange = (category: TaskCategory) => {
     setNewCategory(category);
@@ -183,8 +188,6 @@ const Calendar = () => {
         warning_before_days: Number(newWarningDays) || 3,
         note: newNote.trim() || undefined,
         next_due_date: getNextDueDate(newRecurrence, new Date()),
-        merit_type: newMeritType,
-        merit_size: newMeritSize,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -201,18 +204,9 @@ const Calendar = () => {
       await updateTask(task.id, {
         category: newCategory,
         subcategory: newSubcategory,
-        merit_type: newMeritType,
-        merit_size: newMeritSize,
       });
     }
     resetNewTask();
-  };
-
-  const handleUpdateTask = async (
-    task: DailyTask,
-    patch: Partial<DailyTask>
-  ) => {
-    await updateTask(task.id, patch);
   };
 
   const handleDeleteRecurring = async (id: string) => {
@@ -228,8 +222,6 @@ const Calendar = () => {
       await updateTask(created.id, {
         category: task.category,
         subcategory: task.subcategory,
-        merit_type: task.merit_type,
-        merit_size: task.merit_size,
       });
     }
   };
@@ -250,8 +242,6 @@ const Calendar = () => {
       warning_before_days: task.warning_before_days ?? 3,
       note: task.note,
       next_due_date: getNextDueDate((task.recurrence as RecurrenceType) ?? "special", now),
-      merit_type: task.merit_type as MeritType,
-      merit_size: task.merit_size as MeritSize,
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
     }));
@@ -261,9 +251,59 @@ const Calendar = () => {
     await saveRecurringTasks(next);
   };
 
+  const handleAddMemorial = async () => {
+    if (!userId || !memorialTitle.trim()) return;
+    const newTask: RecurringTask = {
+      id: genId(),
+      user_id: userId,
+      title: memorialTitle.trim(),
+      category: "doi",
+      subcategory: "Gia đình",
+      recurrence: "special",
+      warning_before_days: Number(memorialWarningDays) || 7,
+      note: memorialNote.trim() || undefined,
+      next_due_date: memorialDate,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    const next = [newTask, ...recurringTasks];
+    setRecurringTasks(next);
+    await saveRecurringTasks(next);
+    resetMemorial();
+    setMemorialOpen(false);
+  };
+
   const selectedDate = useMemo(() => parseISO(sessionDate), [sessionDate]);
 
   const dateLabel = format(selectedDate, "EEEE, dd/MM", { locale: vi });
+
+  const periodRange = useMemo(() => {
+    switch (journalPeriod) {
+      case "day":
+        return { start: selectedDate, end: selectedDate };
+      case "week":
+        return { start: startOfWeek(selectedDate, { weekStartsOn: 1 }), end: endOfWeek(selectedDate, { weekStartsOn: 1 }) };
+      case "month":
+        return { start: startOfMonth(selectedDate), end: endOfMonth(selectedDate) };
+      case "quarter":
+        return { start: startOfQuarter(selectedDate), end: endOfQuarter(selectedDate) };
+      case "year":
+        return { start: startOfYear(selectedDate), end: endOfYear(selectedDate) };
+      case "custom": {
+        const s = parseISO(customStart);
+        const e = parseISO(customEnd);
+        return { start: isValid(s) ? s : selectedDate, end: isValid(e) ? e : selectedDate };
+      }
+    }
+  }, [journalPeriod, selectedDate, customStart, customEnd]);
+
+  const periodStartStr = format(periodRange.start, "yyyy-MM-dd");
+  const periodEndStr = format(periodRange.end, "yyyy-MM-dd");
+
+  const isInPeriod = (d?: string) => !!d && d >= periodStartStr && d <= periodEndStr;
+
+  const periodTasks = tasks.filter((t) => isInPeriod(t.date));
+  const periodDoneCount = periodTasks.filter((t) => t.status === "done").length;
 
   const calendarDays = useMemo(() => {
     if (view === "month") {
@@ -295,128 +335,6 @@ const Calendar = () => {
   const handleSelectDate = (d: Date) => {
     setSessionDate(format(d, "yyyy-MM-dd"));
     setCursorDate(d);
-  };
-
-  const renderCategoryGroup = (category: TaskCategory) => {
-    const meta = CATEGORY_META[category];
-    const groupTasks = groupedTasks[category];
-
-    return (
-      <Card key={category} className="p-5 overflow-hidden">
-        <div className="flex items-center gap-3 mb-4">
-          <div
-            className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${meta.gradient} text-white flex items-center justify-center shadow-md`}
-          >
-            <span className="font-bold text-sm">{meta.label_vi[0]}</span>
-          </div>
-          <div>
-            <h3 className="font-semibold text-lg tracking-tight">{meta.label_vi}</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{groupTasks.length} việc</p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          {groupTasks.length === 0 && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 py-2">
-              Chưa có việc nào trong nhóm {meta.label_vi.toLowerCase()}.
-            </p>
-          )}
-          {groupTasks.map((task) => (
-            <div
-              key={task.id}
-              className="flex flex-col gap-3 p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm text-gray-900 dark:text-gray-50">{task.title}</p>
-                  <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-white/[0.06] text-gray-600 dark:text-gray-300">
-                      {getTaskSubcategory(task) || meta.label_vi}
-                    </span>
-                    {task.merit_type && task.merit_size && (
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                          task.merit_type === "earn"
-                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
-                            : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300"
-                        }`}
-                      >
-                        {task.merit_type === "earn" ? "Tạo Phúc" : "Tiêu Phúc"} ·{" "}
-                        {MERIT_SIZE_LABELS[task.merit_size].vi}
-                      </span>
-                    )}
-                    {task.merit_reflected && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300">
-                        <FiCheckCircle className="w-3 h-3 mr-0.5" /> {task.merit_type === "earn" ? "+" : "-"}
-                        {task.merit_points ?? MERIT_SIZE_POINTS[task.merit_size as MeritSize]}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {task.merit_type && task.merit_size && (
-                    <button
-                      onClick={() => setSelectedReflectionTask(task)}
-                      className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        task.merit_reflected
-                          ? "bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300"
-                          : "bg-emerald-500 text-white"
-                      }`}
-                    >
-                      {task.merit_reflected ? "Đo lại" : "Đo tâm"}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleUpdateTask(task, { merit_type: undefined, merit_size: undefined, merit_reflected: false })}
-                    className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                  >
-                    Bỏ Phúc
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-gray-500">Phúc:</span>
-                <div className="flex rounded-xl overflow-hidden border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#2C2C2E]">
-                  {(["earn", "spend"] as MeritType[]).map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => handleUpdateTask(task, { merit_type: type })}
-                      className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                        task.merit_type === type
-                          ? type === "earn"
-                            ? "bg-emerald-500 text-white"
-                            : "bg-red-500 text-white"
-                          : "text-gray-500 hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
-                      }`}
-                    >
-                      {type === "earn" ? "Tạo" : "Tiêu"}
-                    </button>
-                  ))}
-                </div>
-
-                <span className="text-xs text-gray-500 ml-1">Cỡ:</span>
-                <div className="flex rounded-xl overflow-hidden border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#2C2C2E]">
-                  {(Object.keys(MERIT_SIZE_LABELS) as MeritSize[]).map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => handleUpdateTask(task, { merit_type: task.merit_type || "earn", merit_size: size })}
-                      className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                        task.merit_size === size
-                          ? "bg-primary-600 text-white"
-                          : "text-gray-500 hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
-                      }`}
-                    >
-                      {MERIT_SIZE_LABELS[size].vi}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-    );
   };
 
   return (
@@ -540,24 +458,95 @@ const Calendar = () => {
       </div>
 
       <Card className="p-5 space-y-5">
-        <div className="flex items-center gap-2">
-          <FiCalendar className="w-5 h-5 text-primary-600" />
-          <h3 className="font-semibold tracking-tight">Nhật ký ngày {format(selectedDate, "dd/MM/yyyy")}</h3>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <FiCalendar className="w-5 h-5 text-primary-600" />
+            <h3 className="font-semibold tracking-tight">Nhật ký</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { value: "day", label: "Ngày" },
+              { value: "week", label: "Tuần" },
+              { value: "month", label: "Tháng" },
+              { value: "quarter", label: "Quý" },
+              { value: "year", label: "Năm" },
+              { value: "custom", label: "Tùy chọn" },
+            ].map((p) => (
+              <button
+                key={p.value}
+                onClick={() => setJournalPeriod(p.value as typeof journalPeriod)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+                  journalPeriod === p.value
+                    ? "bg-primary-600 text-white"
+                    : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          {journalPeriod === "custom" && (
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="input"
+              />
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="input"
+              />
+            </div>
+          )}
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {format(periodRange.start, "dd/MM/yyyy")} - {format(periodRange.end, "dd/MM/yyyy")} · {periodTasks.length} việc · {periodDoneCount} hoàn thành
+          </p>
         </div>
         {(() => {
-          const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
-          const frameworkTasks = tasks.filter((t) => applyPlans[t.id] || tracks[t.id]);
-          const doneTasks = tasks.filter((t) => t.status === "done");
-          const meritDoneTasks = tasks.filter((t) => t.merit_type && t.merit_size && t.merit_reflected);
-          const dueRecurring = recurringTasks.filter((t) => t.next_due_date === selectedDateStr);
-          const dueKarmaEvents = karma.events.filter((e) => e.due_date === selectedDateStr);
+          const frameworkTasks = periodTasks.filter((t) => applyPlans[t.id] || tracks[t.id]);
+          const doneTasks = periodTasks.filter((t) => t.status === "done");
+          const meritDoneTasks = periodTasks.filter((t) => t.merit_type && t.merit_reflected);
+          const dueRecurring = recurringTasks.filter((t) => isInPeriod(t.next_due_date));
+          const dueKarmaEvents = karma.events.filter((e) => isInPeriod(e.due_date));
+          const getPoints = (t: DailyTask) => t.merit_points ?? (t.merit_size ? MERIT_SIZE_POINTS[t.merit_size] : 0);
+          const periodEarned = periodTasks
+            .filter((t) => t.merit_type === "earn" && t.merit_reflected)
+            .reduce((sum, t) => sum + getPoints(t), 0);
+          const periodSpent = periodTasks
+            .filter((t) => t.merit_type === "spend" && t.merit_reflected)
+            .reduce((sum, t) => sum + getPoints(t), 0);
+          const periodTotal = periodEarned - periodSpent;
 
           return (
             <div className="space-y-5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Tổng việc</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">{periodTasks.length}</p>
+                </div>
+                <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Hoàn thành</p>
+                  <p className="text-lg font-bold text-emerald-600">{doneTasks.length}</p>
+                </div>
+                <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Phúc tạo</p>
+                  <p className="text-lg font-bold text-emerald-600">+{periodEarned}</p>
+                </div>
+                <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Tổng Phúc</p>
+                  <p className={`text-lg font-bold ${periodTotal >= 0 ? "text-primary-600" : "text-red-600"}`}>
+                    {periodTotal >= 0 ? `+${periodTotal}` : periodTotal}
+                  </p>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-primary-600">Đưa khuôn trí tuệ vào cuộc sống</p>
                 {frameworkTasks.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Chưa có khuôn nào được áp dụng trong ngày này.</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Chưa có khuôn nào được áp dụng trong kỳ này.</p>
                 ) : (
                   <div className="space-y-3">
                     {frameworkTasks.map((task) => {
@@ -568,7 +557,7 @@ const Calendar = () => {
                         <div key={task.id} className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
                           <div className="flex items-center gap-2 mb-2">
                             <FiBookOpen className="w-4 h-4 text-primary-600" />
-                            <p className="font-medium text-sm">{task.title}</p>
+                            <p className="font-medium text-sm text-gray-900 dark:text-gray-50">{task.title}</p>
                             <span className="text-xs text-gray-500">{meta.label_vi}</span>
                           </div>
                           {plan && Object.entries(plan.plan_data).length > 0 && (
@@ -594,22 +583,37 @@ const Calendar = () => {
               </div>
 
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">Việc Đời · Đạo · Lợi tư đã làm</p>
-                {doneTasks.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Chưa có việc nào hoàn thành.</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-200">Việc trong kỳ</p>
+                {periodTasks.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Chưa có việc nào trong kỳ này.</p>
                 ) : (
                   <div className="space-y-2">
-                    {doneTasks.map((task) => {
+                    {periodTasks.map((task) => {
                       const meta = CATEGORY_META[getTaskCategory(task)];
+                      const points = getPoints(task);
                       return (
-                        <div key={task.id} className="flex items-center gap-2 p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${meta.gradient ? "bg-gradient-to-br " + meta.gradient : "bg-gray-400"}`}>
-                            <FiCheckCircle className="w-4 h-4" />
-                          </div>
+                        <div key={task.id} className="flex items-center gap-3 p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                          <button onClick={() => toggleTask(task.id)} className="flex-shrink-0">
+                            {task.status === "done" ? (
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${meta.gradient ? "bg-gradient-to-br " + meta.gradient : "bg-gray-400"}`}>
+                                <FiCheckCircle className="w-4 h-4" />
+                              </div>
+                            ) : (
+                              <div className="w-8 h-8 rounded-full border-2 border-gray-300 dark:border-gray-600" />
+                            )}
+                          </button>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm">{task.title}</p>
+                            <p className={`font-medium text-sm ${task.status === "done" ? "line-through text-gray-400" : "text-gray-900 dark:text-gray-50"}`}>{task.title}</p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">{meta.label_vi} · {getTaskSubcategory(task) || meta.label_vi}</p>
+                            {task.merit_reflected && task.merit_type && (
+                              <span className={`inline-flex items-center px-2 py-0.5 mt-1 rounded-full text-[10px] font-medium ${task.merit_type === "earn" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300" : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300"}`}>
+                                {task.merit_type === "earn" ? "+" : "-"}{points} Phúc
+                              </span>
+                            )}
                           </div>
+                          <button onClick={() => removeTask(task.id)} className="text-gray-400 hover:text-red-500 p-1">
+                            <FiTrash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       );
                     })}
@@ -624,12 +628,12 @@ const Calendar = () => {
                 ) : (
                   <div className="space-y-2">
                     {meritDoneTasks.map((task) => {
-                      const points = task.merit_points ?? MERIT_SIZE_POINTS[task.merit_size as MeritSize];
+                      const points = getPoints(task);
                       return (
                         <div key={task.id} className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
                           <div className="flex items-center gap-2">
                             <FiFeather className={`w-4 h-4 ${task.merit_type === "earn" ? "text-emerald-600" : "text-red-600"}`} />
-                            <p className="font-medium text-sm">{task.title}</p>
+                            <p className="font-medium text-sm text-gray-900 dark:text-gray-50">{task.title}</p>
                           </div>
                           <span className={`text-sm font-bold ${task.merit_type === "earn" ? "text-emerald-600" : "text-red-600"}`}>
                             {task.merit_type === "earn" ? "+" : "-"}{points}
@@ -642,16 +646,16 @@ const Calendar = () => {
               </div>
 
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">Sự kiện trong ngày</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">Sự kiện trong kỳ</p>
                 {dueRecurring.length === 0 && dueKarmaEvents.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Không có sự kiện nào trong ngày này.</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Không có sự kiện nào trong kỳ này.</p>
                 ) : (
                   <div className="space-y-2">
                     {dueRecurring.map((task) => (
                       <div key={task.id} className="flex items-center gap-2 p-3 rounded-2xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800">
                         <FiZap className="w-4 h-4 text-amber-600" />
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{task.title}</p>
+                          <p className="font-medium text-sm text-gray-900 dark:text-gray-50">{task.title}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">{task.recurrence === "special" ? "Dịp đặc biệt" : task.recurrence} · {task.subcategory || CATEGORY_META[task.category || "doi"].label_vi}</p>
                         </div>
                       </div>
@@ -660,8 +664,8 @@ const Calendar = () => {
                       <div key={e.id} className="flex items-center gap-2 p-3 rounded-2xl bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-800">
                         <FiAlertCircle className="w-4 h-4 text-rose-600" />
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{e.period === "monthly" ? "Trổ canh tháng" : "Trổ canh quý"}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Trích {e.reserved_amount} điểm · {e.status === "pending" ? "Chưa nhận ra" : e.status === "recognized" ? "Đã nhận ra" : e.status === "resolved" ? "Đã giải cảnh" : "Đã tự động trừ"}</p>
+                          <p className="font-medium text-sm text-gray-900 dark:text-gray-50">{e.period === "monthly" ? "Trổ cảnh tháng" : "Trổ cảnh quý"}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{format(parseISO(e.due_date), "dd/MM/yyyy")} · Trích {e.reserved_amount} điểm · {e.status === "pending" ? "Chưa nhận ra" : e.status === "recognized" ? "Đã nhận ra" : e.status === "resolved" ? "Đã giải cảnh" : "Đã tự động trừ"}</p>
                         </div>
                       </div>
                     ))}
@@ -679,7 +683,12 @@ const Calendar = () => {
         const currentQuarterly = karma.events.find((e) => e.period === "quarterly" && e.due_date >= todayStrValue && (e.status === "pending" || e.status === "recognized"));
         const currentEvents = ([currentMonthly, currentQuarterly].filter(Boolean)) as KarmaEvent[];
         const currentIds = new Set(currentEvents.map((e) => e.id));
-        const futureEvents = karma.events.filter((e) => !currentIds.has(e.id) && e.due_date >= todayStrValue && (e.status === "pending" || e.status === "recognized")).slice(0, 4);
+        const futureCandidates = [...karma.events]
+          .filter((e) => !currentIds.has(e.id) && e.due_date > todayStrValue && (e.status === "pending" || e.status === "recognized"))
+          .sort((a, b) => a.due_date.localeCompare(b.due_date));
+        const futureMonthly = futureCandidates.find((e) => e.period === "monthly");
+        const futureQuarterly = futureCandidates.find((e) => e.period === "quarterly");
+        const futureEvents = ([futureMonthly, futureQuarterly].filter(Boolean)) as KarmaEvent[];
         const pastEvents = [...karma.events].reverse().filter((e) => e.due_date < todayStrValue || e.status === "resolved" || e.status === "triggered");
 
         const renderEvent = (e: KarmaEvent) => {
@@ -689,7 +698,7 @@ const Calendar = () => {
           return (
             <div key={e.id} className="p-4 rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-black/[0.01] dark:bg-white/[0.02]">
               <div className="flex items-center justify-between mb-1">
-                <span className="font-medium text-sm">{e.period === "monthly" ? "Trổ canh tháng" : "Trổ canh quý"} · {e.due_date}</span>
+                <span className="font-medium text-sm">{e.period === "monthly" ? "Trổ cảnh tháng" : "Trổ cảnh quý"} · {e.due_date}</span>
                 <span className={`text-xs px-2 py-1 rounded-full ${isPending ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30"}`}>{statusLabel}</span>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-2"><FiClock className="inline w-3 h-3 mr-1" />{countdown.label} · Trích {e.reserved_amount} điểm · Đã cấn trừ {e.prepaid || 0}</p>
@@ -710,7 +719,7 @@ const Calendar = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FiAlertCircle className="w-5 h-5 text-rose-600" />
-                <h3 className="font-semibold tracking-tight">Trổ canh</h3>
+                <h3 className="font-semibold tracking-tight">Trổ cảnh</h3>
               </div>
               <span className="text-xs text-gray-500 dark:text-gray-400">Còn {karma.account?.balance ?? 1000} / {karma.account?.initial ?? 1000} Nghiệp báo</span>
             </div>
@@ -736,33 +745,6 @@ const Calendar = () => {
           </Card>
         );
       })()}
-
-      <Card className="p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <FiTarget className="w-5 h-5 text-primary-600" />
-          <h3 className="font-semibold tracking-tight">Đánh giá mức độ hoàn thành kế hoạch</h3>
-        </div>
-        <div className="flex items-center gap-4">
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={5}
-            value={plannedRate}
-            onChange={(e) => setPlannedCompletionRate(Number(e.target.value))}
-            className="flex-1 h-2 rounded-lg appearance-none bg-gray-200 dark:bg-gray-700 accent-primary-600"
-          />
-          <span className="text-sm font-semibold w-12 text-right">{plannedRate}%</span>
-        </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-500">Điều chỉnh Phúc:</span>
-          <span
-            className={`font-semibold ${adjustment >= 0 ? "text-emerald-600" : "text-red-600"}`}
-          >
-            {adjustment >= 0 ? `+${adjustment}` : adjustment}
-          </span>
-        </div>
-      </Card>
 
       <Card className="p-5 space-y-4">
         <h3 className="font-semibold tracking-tight">Thêm việc mới</h3>
@@ -805,45 +787,6 @@ const Calendar = () => {
                 </option>
               ))}
             </select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Loại Phúc</label>
-            <div className="flex rounded-xl overflow-hidden border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#2C2C2E]">
-              {(["earn", "spend"] as MeritType[]).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => setNewMeritType(type)}
-                  className={`flex-1 py-2 text-xs font-medium transition-colors ${
-                    newMeritType === type
-                      ? type === "earn"
-                        ? "bg-emerald-500 text-white"
-                        : "bg-red-500 text-white"
-                      : "text-gray-600 dark:text-gray-300 hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
-                  }`}
-                >
-                  {type === "earn" ? "Tạo" : "Tiêu"}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Cỡ việc</label>
-            <div className="flex rounded-xl overflow-hidden border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#2C2C2E]">
-              {(Object.keys(MERIT_SIZE_LABELS) as MeritSize[]).map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setNewMeritSize(size)}
-                  className={`flex-1 py-2 text-xs font-medium transition-colors ${
-                    newMeritSize === size ? "bg-primary-600 text-white" : "text-gray-600 dark:text-gray-300 hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
-                  }`}
-                >
-                  {MERIT_SIZE_LABELS[size].vi}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
 
@@ -894,59 +837,6 @@ const Calendar = () => {
           <FiPlus className="w-4 h-4 mr-2" />
           {isRecurring ? "Thêm việc định kỳ" : "Thêm việc"}
         </Button>
-      </Card>
-
-      <div className="space-y-4">
-        {(["doi", "dao", "loi_tu"] as TaskCategory[]).map(renderCategoryGroup)}
-      </div>
-
-      <Card className="p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FiFeather className="w-5 h-5 text-emerald-600" />
-            <h3 className="font-semibold tracking-tight">Sổ Phúc</h3>
-          </div>
-          <div className="flex gap-2 text-xs">
-            <span className="text-emerald-600 font-medium">Tạo {merit.earned}</span>
-            <span className="text-gray-300">|</span>
-            <span className="text-red-600 font-medium">Tiêu {merit.spent}</span>
-            <span className="text-gray-300">|</span>
-            <span className="text-primary-600 font-medium">Tổng {merit.total >= 0 ? `+${merit.total}` : merit.total}</span>
-          </div>
-        </div>
-        <div className="space-y-3">
-          {tasks.filter((t) => t.merit_type && t.merit_size).length === 0 && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 py-2">Chưa có việc Phúc nào. Chọn Tạo/Tiêu Phúc ở từng việc rồi Đo tâm.</p>
-          )}
-          {tasks
-            .filter((t) => t.merit_type && t.merit_size)
-            .map((task) => {
-              const points = task.merit_points ?? MERIT_SIZE_POINTS[task.merit_size as MeritSize];
-              return (
-                <div key={task.id} className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm">{task.title}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{getTaskSubcategory(task)} · {CATEGORY_META[getTaskCategory(task)].label_vi}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs font-bold ${task.merit_type === "earn" ? "text-emerald-600" : "text-red-600"}`}>
-                      {task.merit_type === "earn" ? "+" : "-"}{points}
-                    </span>
-                    <button
-                      onClick={() => setSelectedReflectionTask(task)}
-                      className={`text-xs px-2.5 py-1.5 rounded-full font-medium ${
-                        task.merit_reflected
-                          ? "bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300"
-                          : "bg-emerald-500 text-white"
-                      }`}
-                    >
-                      {task.merit_reflected ? "Đo lại" : "Đo tâm"}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-        </div>
       </Card>
 
       <Card className="p-5 space-y-4">
@@ -1018,19 +908,59 @@ const Calendar = () => {
           {CALENDAR_PRESETS.map((preset) => (
             <button
               key={preset.id}
-              onClick={() => handleAddPreset(preset.id)}
+              onClick={() => (preset.id === "memorial_days" ? setMemorialOpen(true) : handleAddPreset(preset.id))}
               className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] text-left hover:bg-black/[0.04] dark:hover:bg-white/[0.06] active:scale-95 transition-all"
             >
               <span className="text-2xl block mb-2">{preset.icon}</span>
               <p className="font-medium text-sm">{preset.label}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{preset.tasks.length} việc định kỳ</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{preset.id === "memorial_days" ? "Tùy chỉnh ngày" : `${preset.tasks.length} việc định kỳ`}</p>
             </button>
           ))}
         </div>
       </Card>
 
+      {memorialOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+          <Card className="w-full max-w-md p-5 space-y-4 animate-slide-up">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🕯️</span>
+              <h3 className="font-semibold tracking-tight">Thêm ngày lễ giỗ / tế họ</h3>
+            </div>
+            <Input
+              value={memorialTitle}
+              onChange={(e) => setMemorialTitle(e.target.value)}
+              placeholder="Tên ngày lễ (ví dụ: Giỗ ông bà...)"
+            />
+            <input
+              type="date"
+              value={memorialDate}
+              onChange={(e) => setMemorialDate(e.target.value)}
+              className="input w-full"
+            />
+            <input
+              type="number"
+              min={0}
+              value={memorialWarningDays}
+              onChange={(e) => setMemorialWarningDays(e.target.value)}
+              placeholder="Cảnh báo trước (ngày)"
+              className="input w-full"
+            />
+            <textarea
+              value={memorialNote}
+              onChange={(e) => setMemorialNote(e.target.value)}
+              placeholder="Ghi chú chuẩn bị..."
+              rows={3}
+              className="input resize-none w-full"
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="outline" onClick={() => { resetMemorial(); setMemorialOpen(false); }}>Hủy</Button>
+              <Button onClick={handleAddMemorial} disabled={!memorialTitle.trim()}>Thêm</Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
       {selectedKarmaEvent && <KarmaActionModal event={selectedKarmaEvent} initialAction={selectedKarmaAction || "stop"} onClose={() => { setSelectedKarmaEvent(null); setSelectedKarmaAction(null); }} />}
-      {selectedReflectionTask && <MeritReflectionModal task={selectedReflectionTask} onClose={() => setSelectedReflectionTask(null)} />}
     </div>
   );
 };
