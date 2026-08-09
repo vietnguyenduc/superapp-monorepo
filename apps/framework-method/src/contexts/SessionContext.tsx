@@ -581,7 +581,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   }, [userId, streak, persistSession, maxStep]);
 
   const performKarmaAction = useCallback(
-    async (payload: { eventId: string; action: "recognize" | "stop" | "resolve"; amount?: number; note?: string; imageUrl?: string; khuonRows?: KarmaTemplateRow[] }) => {
+    async (payload: { eventId: string; action: "recognize" | "stop" | "resolve" | "recite"; amount?: number; note?: string; imageUrl?: string; khuonRows?: KarmaTemplateRow[] }) => {
       if (!userId || !karmaAccount) return;
       const result = await service.performKarmaAction(userId, karmaAccount, karmaEvents, karmaPayments, payload);
       setKarmaAccount(result.account);

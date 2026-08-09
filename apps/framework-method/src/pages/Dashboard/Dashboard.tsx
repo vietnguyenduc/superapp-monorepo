@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FiPlay, FiSun, FiMoon, FiUser, FiTrendingUp, FiAnchor, FiActivity, FiZap, FiAlertCircle } from "react-icons/fi";
+import { FiPlay, FiSun, FiMoon, FiUser, FiTrendingUp, FiAnchor, FiActivity, FiZap, FiAlertCircle, FiCrosshair, FiHeart } from "react-icons/fi";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
@@ -22,7 +22,7 @@ const Dashboard = () => {
   const { theme, toggleTheme } = useTheme();
   const { merit, streak, userId, karma } = useSession();
   const [selectedEvent, setSelectedEvent] = useState<KarmaEvent | null>(null);
-  const [selectedAction, setSelectedAction] = useState<"recognize" | "stop" | "resolve" | null>(null);
+  const [selectedAction, setSelectedAction] = useState<"recognize" | "stop" | "resolve" | "recite" | null>(null);
 
   const [history, setHistory] = useState<Session[]>([]);
 
@@ -70,38 +70,52 @@ const Dashboard = () => {
         </p>
       </div>
 
-      <Card className="p-5 space-y-4">
+      <Card className="p-5 space-y-4 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 via-amber-400 to-emerald-500" />
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-600">
-              <FiAlertCircle className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Nghiệp báo còn lại</p>
-              <p className="text-xl font-bold">{karma.account?.balance ?? 1000} <span className="text-sm font-normal text-gray-500">/ {karma.account?.initial ?? 1000}</span></p>
-            </div>
+          <div className="flex items-center gap-2">
+            <FiCrosshair className="w-5 h-5 text-rose-600" />
+            <h2 className="font-semibold text-lg tracking-tight">Trận chiến Nghiệp — Phúc</h2>
           </div>
           <div className="text-right">
             <p className="text-xs text-gray-500 dark:text-gray-400">Trổ canh tiếp theo</p>
-            <p className="text-sm font-semibold">{karma.countdown.label}</p>
+            <p className="text-sm font-semibold text-rose-600">{karma.countdown.label}</p>
           </div>
         </div>
-        <div className="w-full h-2 bg-gray-100 dark:bg-white/[0.06] rounded-full overflow-hidden">
-          <div
-            className="h-2 bg-gradient-to-r from-rose-500 to-amber-500 rounded-full transition-all"
-            style={{ width: `${karma.percent}%` }}
-          />
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex-1" disabled={!karma.nextEvent} onClick={() => { setSelectedEvent(karma.nextEvent); setSelectedAction("recognize"); }}>
-            Nhận ra
-          </Button>
-          <Button variant="outline" size="sm" className="flex-1" disabled={!karma.nextEvent} onClick={() => { setSelectedEvent(karma.nextEvent); setSelectedAction("stop"); }}>
-            Dừng nghiệp
-          </Button>
-          <Button size="sm" className="flex-1" disabled={!karma.nextEvent} onClick={() => { setSelectedEvent(karma.nextEvent); setSelectedAction("resolve"); }}>
-            Giải cảnh
-          </Button>
+
+        {(() => {
+          const phucPercent = Math.min(100, Math.max(0, Math.round((merit.earned / (karma.account?.initial || 1000)) * 100)));
+          return (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 rounded-2xl bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20">
+                <div className="flex items-center justify-center gap-1 text-xs font-medium text-rose-600 mb-1">
+                  <FiAlertCircle className="w-3.5 h-3.5" /> Nghiệp còn lại
+                </div>
+                <p className="text-3xl font-bold text-rose-600">{karma.account?.balance ?? 1000}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">/ {karma.account?.initial ?? 1000}</p>
+                <div className="w-full h-2 bg-rose-100 dark:bg-rose-900/30 rounded-full overflow-hidden mt-2">
+                  <div className="h-2 bg-gradient-to-r from-rose-500 to-amber-500 rounded-full transition-all" style={{ width: `${karma.percent}%` }} />
+                </div>
+              </div>
+              <div className="text-center p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20">
+                <div className="flex items-center justify-center gap-1 text-xs font-medium text-emerald-600 mb-1">
+                  <FiHeart className="w-3.5 h-3.5" /> Phúc tạo được
+                </div>
+                <p className="text-3xl font-bold text-emerald-600">{merit.earned}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">+{merit.total} hôm nay</p>
+                <div className="w-full h-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-full overflow-hidden mt-2">
+                  <div className="h-2 bg-emerald-500 rounded-full transition-all" style={{ width: `${phucPercent}%` }} />
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <Button variant="outline" size="sm" disabled={!karma.nextEvent} onClick={() => { if (karma.nextEvent) { setSelectedEvent(karma.nextEvent); setSelectedAction("recognize"); } }}>Nhận ra</Button>
+          <Button variant="outline" size="sm" disabled={!karma.nextEvent} onClick={() => { if (karma.nextEvent) { setSelectedEvent(karma.nextEvent); setSelectedAction("stop"); } }}>Dừng nghiệp</Button>
+          <Button variant="outline" size="sm" disabled={!karma.nextEvent} onClick={() => { if (karma.nextEvent) { setSelectedEvent(karma.nextEvent); setSelectedAction("recite"); } }}>Đọc Sám</Button>
+          <Button size="sm" disabled={!karma.nextEvent} onClick={() => { if (karma.nextEvent) { setSelectedEvent(karma.nextEvent); setSelectedAction("resolve"); } }}>Giải cảnh</Button>
         </div>
       </Card>
 

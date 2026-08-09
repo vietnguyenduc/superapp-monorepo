@@ -592,8 +592,8 @@ export const calculateMerit = (
   let earned = 0;
   let spent = 0;
   tasks.forEach((t) => {
-    if (!t.merit_type || !t.merit_size) return;
-    const points = MERIT_SIZE_POINTS[t.merit_size];
+    if (!t.merit_type || !t.merit_size || !t.merit_reflected) return;
+    const points = t.merit_points ?? MERIT_SIZE_POINTS[t.merit_size];
     if (t.merit_type === "earn") earned += points;
     else spent += points;
   });
@@ -1489,7 +1489,7 @@ export const performKarmaAction = async (
   payments: KarmaPayment[],
   payload: {
     eventId: string;
-    action: "recognize" | "stop" | "resolve";
+    action: "recognize" | "stop" | "resolve" | "recite";
     amount?: number;
     note?: string;
     imageUrl?: string;
@@ -1509,17 +1509,21 @@ export const performKarmaAction = async (
     event.note = payload.note;
     event.image_url = payload.imageUrl;
     event.khuon_rows = payload.khuonRows;
-  } else if (payload.action === "stop") {
+  } else if (payload.action === "stop" || payload.action === "recite") {
     const amount = Math.max(0, payload.amount ?? 0);
     if (amount > 0) {
       event.prepaid = (event.prepaid || 0) + amount;
+      const defaultNote =
+        payload.action === "recite"
+          ? `Đọc Sám / Sám hối ${event.period === "monthly" ? "tháng" : "quý"} ${event.due_date}`
+          : `Dừng nghiệp trước ${event.period === "monthly" ? "tháng" : "quý"} ${event.due_date}`;
       updatedPayments.push({
         id: genId(),
         user_id: userId,
         event_id: event.id,
         type: "pay",
         amount,
-        note: payload.note || `Dừng nghiệp trước ${event.period === "monthly" ? "tháng" : "quý"} ${event.due_date}`,
+        note: payload.note || defaultNote,
         image_url: payload.imageUrl,
         khuon_rows: payload.khuonRows,
         created_at: now,

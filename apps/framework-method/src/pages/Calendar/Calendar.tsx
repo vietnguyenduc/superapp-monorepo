@@ -12,6 +12,10 @@ import {
   FiChevronRight,
   FiTrash2,
   FiAlertCircle,
+  FiRotateCcw,
+  FiClock,
+  FiCheckCircle,
+  FiFeather,
 } from "react-icons/fi";
 import {
   format,
@@ -34,6 +38,7 @@ import { useI18n } from "../../hooks/useI18n";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useSession } from "../../contexts/SessionContext";
 import KarmaActionModal from "../../components/KarmaActionModal";
+import MeritReflectionModal from "../../components/MeritReflectionModal";
 import {
   CATEGORY_META,
   MERIT_SIZE_LABELS,
@@ -46,6 +51,7 @@ import {
   getKarmaEventCountdown,
   genId,
 } from "../../services/frameworkMethodService";
+import { MERIT_SIZE_POINTS } from "../../types";
 import type { TaskCategory, MeritType, MeritSize, DailyTask, BlockId, RecurringTask, RecurrenceType, KarmaEvent } from "../../types";
 
 const CATEGORY_TO_DEFAULT_BLOCK: Record<TaskCategory, BlockId> = {
@@ -109,7 +115,8 @@ const Calendar = () => {
   const { tasks, session, merit, updateTask, setPlannedCompletionRate, addTask, sessionDate, setSessionDate, userId, karma } = useSession();
 
   const [selectedKarmaEvent, setSelectedKarmaEvent] = useState<KarmaEvent | null>(null);
-  const [selectedKarmaAction, setSelectedKarmaAction] = useState<"recognize" | "stop" | "resolve" | null>(null);
+  const [selectedKarmaAction, setSelectedKarmaAction] = useState<"recognize" | "stop" | "resolve" | "recite" | null>(null);
+  const [selectedReflectionTask, setSelectedReflectionTask] = useState<DailyTask | null>(null);
 
   const subcategoryOptions = useMemo(() => getSubcategoryOptions(), []);
 
@@ -335,14 +342,34 @@ const Calendar = () => {
                         {MERIT_SIZE_LABELS[task.merit_size].vi}
                       </span>
                     )}
+                    {task.merit_reflected && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300">
+                        <FiCheckCircle className="w-3 h-3 mr-0.5" /> {task.merit_type === "earn" ? "+" : "-"}
+                        {task.merit_points ?? MERIT_SIZE_POINTS[task.merit_size as MeritSize]}
+                      </span>
+                    )}
                   </div>
                 </div>
-                <button
-                  onClick={() => handleUpdateTask(task, { merit_type: undefined, merit_size: undefined })}
-                  className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                >
-                  Bỏ Phúc
-                </button>
+                <div className="flex items-center gap-2">
+                  {task.merit_type && task.merit_size && (
+                    <button
+                      onClick={() => setSelectedReflectionTask(task)}
+                      className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        task.merit_reflected
+                          ? "bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300"
+                          : "bg-emerald-500 text-white"
+                      }`}
+                    >
+                      {task.merit_reflected ? "Đo lại" : "Đo tâm"}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleUpdateTask(task, { merit_type: undefined, merit_size: undefined, merit_reflected: false })}
+                    className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  >
+                    Bỏ Phúc
+                  </button>
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -509,40 +536,69 @@ const Calendar = () => {
         </Card>
       </div>
 
-      <Card className="p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FiAlertCircle className="w-5 h-5 text-rose-600" />
-            <h3 className="font-semibold tracking-tight">Trổ canh</h3>
-          </div>
-          <span className="text-xs text-gray-500 dark:text-gray-400">Còn {karma.account?.balance ?? 1000} / {karma.account?.initial ?? 1000} Nghiệp báo</span>
-        </div>
-        <div className="space-y-3">
-          {karma.events.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">Chưa có sự kiện Trổ canh nào.</p>}
-          {karma.events.slice(0, 6).map((e) => {
-            const countdown = getKarmaEventCountdown(e);
-            const statusLabel =
-              e.status === "pending" ? "Chưa nhận ra" : e.status === "recognized" ? "Đã nhận ra" : e.status === "resolved" ? "Đã giải cảnh" : "Đã tự động trừ";
-            const isPending = e.status === "pending" || e.status === "recognized";
-            return (
-              <div key={e.id} className="p-4 rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-black/[0.01] dark:bg-white/[0.02]">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-sm">{e.period === "monthly" ? "Trổ canh tháng" : "Trổ canh quý"} · {e.due_date}</span>
-                  <span className={`text-xs px-2 py-1 rounded-full ${isPending ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30"}`}>{statusLabel}</span>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Countdown: {countdown.label} · Trích {e.reserved_amount} điểm · Đã cấn trừ {e.prepaid || 0}</p>
-                {isPending && (
-                  <div className="flex gap-2 flex-wrap">
-                    <Button variant="outline" size="sm" className="flex-1 min-w-[5rem]" onClick={() => { setSelectedKarmaEvent(e); setSelectedKarmaAction("recognize"); }}>Nhận ra</Button>
-                    <Button variant="outline" size="sm" className="flex-1 min-w-[5rem]" onClick={() => { setSelectedKarmaEvent(e); setSelectedKarmaAction("stop"); }}>Dừng</Button>
-                    <Button size="sm" className="flex-1 min-w-[5rem]" onClick={() => { setSelectedKarmaEvent(e); setSelectedKarmaAction("resolve"); }}>Giải</Button>
-                  </div>
-                )}
+      {(() => {
+        const todayStrValue = format(new Date(), "yyyy-MM-dd");
+        const currentMonthly = karma.events.find((e) => e.period === "monthly" && e.due_date >= todayStrValue && (e.status === "pending" || e.status === "recognized"));
+        const currentQuarterly = karma.events.find((e) => e.period === "quarterly" && e.due_date >= todayStrValue && (e.status === "pending" || e.status === "recognized"));
+        const currentEvents = ([currentMonthly, currentQuarterly].filter(Boolean)) as KarmaEvent[];
+        const currentIds = new Set(currentEvents.map((e) => e.id));
+        const futureEvents = karma.events.filter((e) => !currentIds.has(e.id) && e.due_date >= todayStrValue && (e.status === "pending" || e.status === "recognized")).slice(0, 4);
+        const pastEvents = [...karma.events].reverse().filter((e) => e.due_date < todayStrValue || e.status === "resolved" || e.status === "triggered");
+
+        const renderEvent = (e: KarmaEvent) => {
+          const countdown = getKarmaEventCountdown(e);
+          const statusLabel = e.status === "pending" ? "Chưa nhận ra" : e.status === "recognized" ? "Đã nhận ra" : e.status === "resolved" ? "Đã giải cảnh" : "Đã tự động trừ";
+          const isPending = e.status === "pending" || e.status === "recognized";
+          return (
+            <div key={e.id} className="p-4 rounded-2xl border border-black/[0.04] dark:border-white/[0.06] bg-black/[0.01] dark:bg-white/[0.02]">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-medium text-sm">{e.period === "monthly" ? "Trổ canh tháng" : "Trổ canh quý"} · {e.due_date}</span>
+                <span className={`text-xs px-2 py-1 rounded-full ${isPending ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30"}`}>{statusLabel}</span>
               </div>
-            );
-          })}
-        </div>
-      </Card>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2"><FiClock className="inline w-3 h-3 mr-1" />{countdown.label} · Trích {e.reserved_amount} điểm · Đã cấn trừ {e.prepaid || 0}</p>
+              {isPending && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <Button variant="outline" size="sm" onClick={() => { setSelectedKarmaEvent(e); setSelectedKarmaAction("recognize"); }}>Nhận ra</Button>
+                  <Button variant="outline" size="sm" onClick={() => { setSelectedKarmaEvent(e); setSelectedKarmaAction("stop"); }}>Dừng</Button>
+                  <Button variant="outline" size="sm" onClick={() => { setSelectedKarmaEvent(e); setSelectedKarmaAction("recite"); }}>Đọc Sám</Button>
+                  <Button size="sm" onClick={() => { setSelectedKarmaEvent(e); setSelectedKarmaAction("resolve"); }}>Giải</Button>
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        return (
+          <Card className="p-5 space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FiAlertCircle className="w-5 h-5 text-rose-600" />
+                <h3 className="font-semibold tracking-tight">Trổ canh</h3>
+              </div>
+              <span className="text-xs text-gray-500 dark:text-gray-400">Còn {karma.account?.balance ?? 1000} / {karma.account?.initial ?? 1000} Nghiệp báo</span>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">Cảnh hiện tại</p>
+              {currentEvents.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">Không có cảnh hiện tại nào.</p>}
+              {currentEvents.map(renderEvent)}
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary-600">Cảnh tương lai</p>
+              {futureEvents.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">Không có cảnh sắp tới.</p>}
+              {futureEvents.map(renderEvent)}
+            </div>
+
+            {pastEvents.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 flex items-center gap-1"><FiRotateCcw className="w-3.5 h-3.5" /> Lịch sử cảnh</p>
+                {pastEvents.map(renderEvent)}
+              </div>
+            )}
+          </Card>
+        );
+      })()}
 
       <Card className="p-5 space-y-4">
         <div className="flex items-center gap-2">
@@ -708,6 +764,55 @@ const Calendar = () => {
       </div>
 
       <Card className="p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FiFeather className="w-5 h-5 text-emerald-600" />
+            <h3 className="font-semibold tracking-tight">Sổ Phúc</h3>
+          </div>
+          <div className="flex gap-2 text-xs">
+            <span className="text-emerald-600 font-medium">Tạo {merit.earned}</span>
+            <span className="text-gray-300">|</span>
+            <span className="text-red-600 font-medium">Tiêu {merit.spent}</span>
+            <span className="text-gray-300">|</span>
+            <span className="text-primary-600 font-medium">Tổng {merit.total >= 0 ? `+${merit.total}` : merit.total}</span>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {tasks.filter((t) => t.merit_type && t.merit_size).length === 0 && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 py-2">Chưa có việc Phúc nào. Chọn Tạo/Tiêu Phúc ở từng việc rồi Đo tâm.</p>
+          )}
+          {tasks
+            .filter((t) => t.merit_type && t.merit_size)
+            .map((task) => {
+              const points = task.merit_points ?? MERIT_SIZE_POINTS[task.merit_size as MeritSize];
+              return (
+                <div key={task.id} className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{task.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{getTaskSubcategory(task)} · {CATEGORY_META[getTaskCategory(task)].label_vi}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-bold ${task.merit_type === "earn" ? "text-emerald-600" : "text-red-600"}`}>
+                      {task.merit_type === "earn" ? "+" : "-"}{points}
+                    </span>
+                    <button
+                      onClick={() => setSelectedReflectionTask(task)}
+                      className={`text-xs px-2.5 py-1.5 rounded-full font-medium ${
+                        task.merit_reflected
+                          ? "bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300"
+                          : "bg-emerald-500 text-white"
+                      }`}
+                    >
+                      {task.merit_reflected ? "Đo lại" : "Đo tâm"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      </Card>
+
+      <Card className="p-5 space-y-4">
         <h3 className="font-semibold tracking-tight">Việc định kỳ</h3>
 
         <div className="space-y-3">
@@ -788,6 +893,7 @@ const Calendar = () => {
       </Card>
 
       {selectedKarmaEvent && <KarmaActionModal event={selectedKarmaEvent} initialAction={selectedKarmaAction || "stop"} onClose={() => { setSelectedKarmaEvent(null); setSelectedKarmaAction(null); }} />}
+      {selectedReflectionTask && <MeritReflectionModal task={selectedReflectionTask} onClose={() => setSelectedReflectionTask(null)} />}
     </div>
   );
 };

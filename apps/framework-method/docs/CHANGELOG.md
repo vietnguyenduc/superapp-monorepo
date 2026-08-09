@@ -1,5 +1,15 @@
 # Framework Method — Changelog
 
+## 2026-08-04 (Gamify Nghiệp vs Phúc + Sổ Phúc reflection)
+
+- Extended `DailyTask` with `merit_reflected`, `merit_points`, `reflection_outcome`, and `reflection_mind`; `calculateMerit` now only counts points after the user has reflected and confirmed the score.
+- Added `MeritReflectionModal` component for the "Đo tâm & Đo Phúc" step: user records outcome, mind state, and final merit points before the task is counted.
+- Added a dedicated "Sổ Phúc" section on `/calendar` that lists all tasks with a merit type, shows current create/spend/total, and opens the reflection modal per task.
+- Split the `/calendar` "Trổ canh" card into "Cảnh hiện tại" (current monthly/quarterly), "Cảnh tương lai" (upcoming), and "Lịch sử cảnh" (past) sections.
+- Redesigned `/dashboard` hero card as "Trận chiến Nghiệp — Phúc": side-by-side karma balance vs merit earned, opposing progress bars, countdown to next Trổ canh, and four action buttons: Nhận ra / Dừng nghiệp / Đọc Sám / Giải cảnh.
+- Extended `KarmaActionModal` and `performKarmaAction` with a new `recite` action for "Đọc Sám / Sám hối" prepayment against an upcoming Trổ canh.
+- Validation: `npm run lint -w framework-method` ✅, `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+
 ## 2026-08-04 (Nghiệp báo + Trổ canh)
 
 - Added the `KarmaAccount`, `KarmaEvent`, `KarmaPayment`, and `KarmaTemplate` types plus `DEFAULT_KARMA_TEMPLATE_ROWS` for a per-user Nghiệp báo gamification system.

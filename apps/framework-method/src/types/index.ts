@@ -45,6 +45,10 @@ export interface DailyTask {
   subcategory?: string;
   merit_type?: MeritType;
   merit_size?: MeritSize;
+  merit_reflected?: boolean;
+  merit_points?: number;
+  reflection_outcome?: string;
+  reflection_mind?: string;
   completion_level?: number;
   created_at?: string;
   updated_at?: string;

@@ -8,13 +8,29 @@ import type { KarmaEvent, KarmaTemplateRow } from "../types";
 interface KarmaActionModalProps {
   event: KarmaEvent;
   onClose: () => void;
-  initialAction?: "recognize" | "stop" | "resolve";
+  initialAction?: "recognize" | "stop" | "resolve" | "recite";
 }
+
+type KarmaModalAction = "recognize" | "stop" | "resolve" | "recite";
+
+const ACTION_LABELS: Record<KarmaModalAction, string> = {
+  recognize: "Nhận ra",
+  stop: "Dừng nghiệp",
+  resolve: "Giải cảnh",
+  recite: "Đọc Sám",
+};
+
+const ACTION_TITLES: Record<KarmaModalAction, string> = {
+  recognize: "Nhận ra cảnh",
+  stop: "Dừng nghiệp trước",
+  resolve: "Giải cảnh",
+  recite: "Đọc Sám / Trả nghiệp",
+};
 
 const KarmaActionModal = ({ event, onClose, initialAction = "stop" }: KarmaActionModalProps) => {
   const { performKarmaAction, karmaTemplate, updateKarmaTemplate } = useSession();
 
-  const [action, setAction] = useState<"recognize" | "stop" | "resolve">(initialAction);
+  const [action, setAction] = useState<KarmaModalAction>(initialAction);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState(event.note || "");
   const [imageUrl, setImageUrl] = useState(event.image_url || "");
@@ -28,7 +44,7 @@ const KarmaActionModal = ({ event, onClose, initialAction = "stop" }: KarmaActio
 
   useEffect(() => {
     if (action === "resolve") setAmount(String(remaining));
-    else if (action === "stop") setAmount("");
+    else if (action === "stop" || action === "recite") setAmount("");
   }, [action, remaining]);
 
   const handleRowChange = (index: number, field: keyof KarmaTemplateRow, value: string | number) => {
@@ -59,7 +75,7 @@ const KarmaActionModal = ({ event, onClose, initialAction = "stop" }: KarmaActio
     onClose();
   };
 
-  const title = action === "recognize" ? "Nhận ra cảnh" : action === "stop" ? "Dừng nghiệp trước" : "Giải cảnh";
+  const title = ACTION_TITLES[action];
 
   return (
     <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
@@ -76,37 +92,20 @@ const KarmaActionModal = ({ event, onClose, initialAction = "stop" }: KarmaActio
           </button>
         </div>
 
-        <div className="flex gap-2">
-          <button
-            onClick={() => setAction("recognize")}
-            className={`flex-1 py-2 rounded-2xl text-sm font-medium border ${
-              action === "recognize"
-                ? "border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300"
-                : "border-gray-200 dark:border-white/[0.08] text-gray-600 dark:text-gray-300"
-            }`}
-          >
-            Nhận ra
-          </button>
-          <button
-            onClick={() => setAction("stop")}
-            className={`flex-1 py-2 rounded-2xl text-sm font-medium border ${
-              action === "stop"
-                ? "border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300"
-                : "border-gray-200 dark:border-white/[0.08] text-gray-600 dark:text-gray-300"
-            }`}
-          >
-            Dừng nghiệp
-          </button>
-          <button
-            onClick={() => setAction("resolve")}
-            className={`flex-1 py-2 rounded-2xl text-sm font-medium border ${
-              action === "resolve"
-                ? "border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300"
-                : "border-gray-200 dark:border-white/[0.08] text-gray-600 dark:text-gray-300"
-            }`}
-          >
-            Giải cảnh
-          </button>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {(Object.keys(ACTION_LABELS) as KarmaModalAction[]).map((a) => (
+            <button
+              key={a}
+              onClick={() => setAction(a)}
+              className={`py-2 rounded-2xl text-xs sm:text-sm font-medium border truncate ${
+                action === a
+                  ? "border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300"
+                  : "border-gray-200 dark:border-white/[0.08] text-gray-600 dark:text-gray-300"
+              }`}
+            >
+              {ACTION_LABELS[a]}
+            </button>
+          ))}
         </div>
 
         {action !== "recognize" && (
