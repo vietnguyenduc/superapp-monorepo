@@ -22,6 +22,9 @@
 - Replaced the Builder "Ví dụ" knowledge dropdown with a free-text rich-text editor and upgraded per-item `content_vi`/`content_en` inputs to the same `RichTextEditor`. The editor supports bold, italic, heading, unordered list, and image URL insertion. Added `example_content_vi`/`example_content_en` to `TemplateSection`; `SessionPage` renders both item content and section example content as HTML.
 - Added `nav.finance`, `nav.practice`, `calendar.*`, `financeControl.*`, and `practice.*` i18n keys to `vi.json`/`en.json`.
 - Validation: `npx tsc -p apps/framework-method/tsconfig.app.json --noEmit` ✅, `npm run lint -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+- `/calendar` new-task form now includes a "Việc định kỳ" checkbox; when checked it reveals recurrence, warning lead time, and preparation-note fields and saves the task as a `RecurringTask`. The old standalone recurring-task form was removed; recurring tasks still appear in the same list with `Chốt làm` conversion.
+- Made `Template.step_type` a `string` and added `name_vi`/`name_en`/`order_index` to `Template`; `frameworkMethodService.ts` now provides `DEFAULT_STEP_CONFIG`, `normalizeTemplates`, `getOrderedStepTypes`, and `createCustomTemplate`.
+- Builder now supports per-block custom step creation (inserted after the selected step), reordering with up/down arrows, and deletion of custom steps. `SessionPage` derives step labels and step count dynamically from `SessionContext.stepTypes`; built-in `recognize`/`apply`/`track` steps retain their specialized UIs regardless of position, while any other step type renders a generic `GenericStep`.
 
 ## 2026-08-04
 

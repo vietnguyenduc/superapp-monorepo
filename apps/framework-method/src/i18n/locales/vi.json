@@ -239,7 +239,10 @@
     "itemContentPlaceholder": "Nhập dữ liệu lý thuyết, ví dụ, gợi ý...",
     "conceptKnowledge": "Khái niệm (Concepts)",
     "referenceKnowledge": "Tài liệu tham khảo (Reference)",
-    "exampleKnowledge": "Ví dụ (Examples)"
+    "exampleKnowledge": "Ví dụ (Examples)",
+    "newStepPlaceholder": "Tên bước mới",
+    "addStep": "Thêm bước",
+    "addStepHint": "Bước mới sẽ được chèn sau bước đang chọn. Dùng mũi tên để sắp xếp."
   },
   "common": {
     "loading": "Đang tải...",

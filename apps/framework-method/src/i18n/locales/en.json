@@ -239,7 +239,10 @@
     "itemContentPlaceholder": "Enter theory data, examples, hints...",
     "conceptKnowledge": "Concept knowledge",
     "referenceKnowledge": "Reference knowledge",
-    "exampleKnowledge": "Example knowledge"
+    "exampleKnowledge": "Example knowledge",
+    "newStepPlaceholder": "New step name",
+    "addStep": "Add step",
+    "addStepHint": "New step is inserted after the selected step. Use arrows to reorder."
   },
   "common": {
     "loading": "Loading...",

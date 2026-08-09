@@ -53,6 +53,17 @@ interface SessionContextType {
   getTemplate: (blockId: BlockId, stepType: StepType) => Template | null;
   updateTemplate: (blockId: BlockId, stepType: StepType, updater: (template: Template) => Template) => void;
   saveTemplates: () => Promise<void>;
+  stepTypes: StepType[];
+  maxStep: number;
+  effectiveStep: number;
+  currentStepType: StepType | null;
+  isLastStep: boolean;
+  prevStep: number;
+  nextStep: number;
+  addStep: (blockId: BlockId, afterStepType: StepType, name_vi: string, name_en: string) => void;
+  removeStep: (blockId: BlockId, stepType: StepType) => void;
+  renameStep: (blockId: BlockId, stepType: StepType, name_vi: string, name_en: string) => void;
+  moveStep: (blockId: BlockId, stepType: StepType, direction: -1 | 1) => void;
   taskSuggestions: Record<BlockId, TaskSuggestion[]>;
   updateTaskSuggestions: (blockId: BlockId, suggestions: TaskSuggestion[]) => Promise<void>;
   knowledgeEntries: KnowledgeEntry[];
@@ -230,6 +241,98 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     await service.saveAllTemplates(templates);
   }, [templates]);
 
+  const stepTypes = useMemo(() => service.getOrderedStepTypes(currentBlock?.id, templates), [currentBlock, templates]);
+  const maxStep = useMemo(() => 1 + stepTypes.length, [stepTypes]);
+  const effectiveStep = useMemo(() => Math.min(Math.max(step, 1), maxStep || 1), [step, maxStep]);
+  const currentStepType = useMemo(() => (effectiveStep <= 1 ? null : stepTypes[effectiveStep - 2] || null), [effectiveStep, stepTypes]);
+  const isLastStep = useMemo(() => effectiveStep === maxStep, [effectiveStep, maxStep]);
+  const prevStep = useMemo(() => Math.max(1, effectiveStep - 1), [effectiveStep]);
+  const nextStep = useMemo(() => Math.min(maxStep, effectiveStep + 1), [effectiveStep, maxStep]);
+
+  const normalizeBlockTemplates = useCallback((blockTemplates: Record<StepType, Template>): Record<StepType, Template> => {
+    const values = Object.values(blockTemplates)
+      .filter((t): t is Template => Boolean(t))
+      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+      .map((t, i) => ({ ...t, order_index: i * 10 }));
+    const record: Record<StepType, Template> = {};
+    values.forEach((t) => (record[t.step_type] = t));
+    return record;
+  }, []);
+
+  const addStep = useCallback(
+    (blockId: BlockId, afterStepType: StepType, name_vi: string, name_en: string) => {
+      setTemplates((prev) => {
+        const blockTemplates = prev[blockId] || {};
+        const ordered = Object.values(blockTemplates)
+          .filter((t): t is Template => Boolean(t))
+          .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+        const afterIndex = ordered.findIndex((t) => t.step_type === afterStepType);
+        const insertIndex = afterIndex >= 0 ? afterIndex + 1 : ordered.length;
+        const beforeOrder = ordered[insertIndex - 1]?.order_index ?? -10;
+        const afterOrder = ordered[insertIndex]?.order_index ?? (ordered.length + 1) * 10;
+        const newOrder = beforeOrder + (afterOrder - beforeOrder) / 2;
+        const newStepType = `custom_${service.genId()}`;
+        const newTemplate = service.createCustomTemplate(blockId, newStepType, name_vi, name_en, newOrder);
+        const next = ordered.map((t) => ({ ...t }));
+        next.splice(insertIndex, 0, newTemplate);
+        const record: Record<StepType, Template> = {};
+        next.forEach((t, i) => (record[t.step_type] = { ...t, order_index: i * 10 }));
+        return { ...prev, [blockId]: record };
+      });
+    },
+    []
+  );
+
+  const removeStep = useCallback(
+    (blockId: BlockId, stepType: StepType) => {
+      if (service.BUILT_IN_STEP_TYPES.has(stepType)) return;
+      setTemplates((prev) => {
+        const blockTemplates = { ...(prev[blockId] || {}) };
+        delete blockTemplates[stepType];
+        return { ...prev, [blockId]: normalizeBlockTemplates(blockTemplates) };
+      });
+    },
+    [normalizeBlockTemplates]
+  );
+
+  const renameStep = useCallback(
+    (blockId: BlockId, stepType: StepType, name_vi: string, name_en: string) => {
+      setTemplates((prev) => {
+        const template = prev[blockId]?.[stepType];
+        if (!template) return prev;
+        return {
+          ...prev,
+          [blockId]: {
+            ...prev[blockId],
+            [stepType]: { ...template, name: name_vi, name_vi, name_en },
+          },
+        };
+      });
+    },
+    []
+  );
+
+  const moveStep = useCallback(
+    (blockId: BlockId, stepType: StepType, direction: -1 | 1) => {
+      setTemplates((prev) => {
+        const blockTemplates = prev[blockId] || {};
+        const ordered = Object.values(blockTemplates)
+          .filter((t): t is Template => Boolean(t))
+          .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+        const index = ordered.findIndex((t) => t.step_type === stepType);
+        const newIndex = index + direction;
+        if (index < 0 || newIndex < 0 || newIndex >= ordered.length) return prev;
+        const next = [...ordered];
+        const [moved] = next.splice(index, 1);
+        next.splice(newIndex, 0, moved);
+        const record: Record<StepType, Template> = {};
+        next.forEach((t, i) => (record[t.step_type] = { ...t, order_index: i * 10 }));
+        return { ...prev, [blockId]: record };
+      });
+    },
+    []
+  );
+
   const updateTaskSuggestions = useCallback(
     async (blockId: BlockId, suggestions: TaskSuggestion[]) => {
       const next = { ...taskSuggestions, [blockId]: suggestions };
@@ -376,15 +479,15 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
 
   const saveDraft = useCallback(async () => {
     await persistSession({
-      current_step: step,
+      current_step: effectiveStep,
       current_block_id: currentBlock?.id,
       status: "draft",
     });
-  }, [persistSession, step, currentBlock]);
+  }, [persistSession, effectiveStep, currentBlock]);
 
   const completeSession = useCallback(async () => {
     if (!userId) return;
-    await persistSession({ current_step: 4, status: "completed", ended_at: new Date().toISOString() });
+    await persistSession({ current_step: maxStep, status: "completed", ended_at: new Date().toISOString() });
     const today = service.todayStr();
     let nextStreak: Streak;
     if (!streak) {
@@ -410,7 +513,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     }
     const saved = await service.updateStreak(nextStreak);
     if (saved) setStreak(saved);
-  }, [userId, streak, persistSession]);
+  }, [userId, streak, persistSession, maxStep]);
 
   const setStep = useCallback(
     async (next: number) => {
@@ -429,6 +532,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       setCurrentBlockIndex,
       currentBlock,
       step,
+      effectiveStep,
       setStep,
       session,
       tasks,
@@ -464,6 +568,16 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       isLoading,
       saveDraft,
       completeSession,
+      stepTypes,
+      maxStep,
+      currentStepType,
+      isLastStep,
+      prevStep,
+      nextStep,
+      addStep,
+      removeStep,
+      renameStep,
+      moveStep,
       refresh: loadData,
     }),
     [
@@ -473,6 +587,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       currentBlockIndex,
       currentBlock,
       step,
+      effectiveStep,
       session,
       tasks,
       pendingCarryOver,
@@ -509,6 +624,16 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       setCurrentBlockIndex,
       setStep,
       loadData,
+      stepTypes,
+      maxStep,
+      currentStepType,
+      isLastStep,
+      prevStep,
+      nextStep,
+      addStep,
+      removeStep,
+      renameStep,
+      moveStep,
     ]
   );
 

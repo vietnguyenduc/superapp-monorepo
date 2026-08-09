@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FiPlus, FiTrash2, FiArrowUp, FiArrowDown, FiEye, FiSave } from "react-icons/fi";
 import { Card, Button, Input, RichTextEditor } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
@@ -6,13 +6,7 @@ import { useSession } from "../../contexts/SessionContext";
 import { DEFAULT_BLOCKS, genId } from "../../services/frameworkMethodService";
 import type { BlockId, StepType, TaskSuggestion, Template, TemplateSection, TemplateSectionGroup, TemplateSectionItem } from "../../types";
 
-const STEP_TYPES: StepType[] = ["recognize", "apply", "track"];
-
-const STEP_LABELS: Record<StepType, { vi: string; en: string }> = {
-  recognize: { vi: "Bước 2: Nhận ra", en: "Step 2: Recognize" },
-  apply: { vi: "Bước 3: Đưa khuôn", en: "Step 3: Apply" },
-  track: { vi: "Bước 4: Bám", en: "Step 4: Track" },
-};
+const BUILT_IN_STEPS = new Set(["recognize", "apply", "track"]);
 
 const GROUP_LABELS: Record<TemplateSectionGroup, { vi: string; en: string }> = {
   nguyen_ly: { vi: "Nguyên lý", en: "Principles" },
@@ -24,10 +18,11 @@ const GROUP_LABELS: Record<TemplateSectionGroup, { vi: string; en: string }> = {
 
 const Builder = () => {
   const { t, language } = useI18n();
-  const { templates, taskSuggestions, updateTaskSuggestions, knowledgeEntries, updateTemplate: updateTemplateContext, saveTemplates } = useSession();
+  const { templates, taskSuggestions, updateTaskSuggestions, knowledgeEntries, updateTemplate: updateTemplateContext, saveTemplates, addStep, removeStep, moveStep } = useSession();
   const [selectedBlockId, setSelectedBlockId] = useState<BlockId>("self");
   const [selectedStep, setSelectedStep] = useState<StepType>("recognize");
   const [preview, setPreview] = useState(false);
+  const [newStepName, setNewStepName] = useState("");
   const blockSuggestions = taskSuggestions[selectedBlockId] || [];
   const suggestionsRef = useRef<TaskSuggestion[]>(blockSuggestions);
   suggestionsRef.current = blockSuggestions;
@@ -69,6 +64,20 @@ const Builder = () => {
       return next;
     });
   };
+
+  const orderedSteps = useMemo(() => {
+    const byStep = templates[selectedBlockId] || {};
+    return Object.values(byStep)
+      .filter((t): t is Template => Boolean(t))
+      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+  }, [templates, selectedBlockId]);
+
+  useEffect(() => {
+    const exists = orderedSteps.some((s) => s.step_type === selectedStep);
+    if (!exists && orderedSteps[0]) {
+      setSelectedStep(orderedSteps[0].step_type);
+    }
+  }, [orderedSteps, selectedStep]);
 
   const currentTemplate = templates[selectedBlockId]?.[selectedStep];
 
@@ -176,14 +185,20 @@ const Builder = () => {
 
   const [newSectionGroup, setNewSectionGroup] = useState<TemplateSectionGroup>("nguyen_ly");
 
-  const stepLabel = (step: StepType) => (language === "en" ? STEP_LABELS[step].en : STEP_LABELS[step].vi);
+  const stepLabel = (stepType: StepType) => {
+    const template = templates[selectedBlockId]?.[stepType];
+    const vi = template?.name_vi || template?.name || stepType;
+    const en = template?.name_en || template?.name_vi || template?.name || stepType;
+    return language === "en" ? en : vi;
+  };
   const sectionTitle = (section: TemplateSection) => (language === "en" ? section.title_en : section.title_vi);
   const itemTitle = (item: TemplateSectionItem) => (language === "en" ? item.title_en : item.title_vi);
 
   const availableGroups = useMemo<TemplateSectionGroup[]>(() => {
     if (selectedStep === "recognize") return ["nguyen_ly", "dao", "phap"];
     if (selectedStep === "apply") return ["dua_khuon"];
-    return ["bam"];
+    if (selectedStep === "track") return ["bam"];
+    return ["nguyen_ly", "dao", "phap", "dua_khuon", "bam"];
   }, [selectedStep]);
 
   if (!currentTemplate) return null;
@@ -254,23 +269,63 @@ const Builder = () => {
         </div>
       </Card>
 
-      <Card className="p-4">
+      <Card className="p-4 space-y-3">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{t("builder.step")}</p>
-        <div className="flex flex-wrap gap-2">
-          {STEP_TYPES.map((step) => (
-            <button
-              key={step}
-              onClick={() => setSelectedStep(step)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                selectedStep === step
-                  ? "bg-primary-600 text-white"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-              }`}
-            >
-              {stepLabel(step)}
-            </button>
+        <div className="space-y-2">
+          {orderedSteps.map((template) => (
+            <div key={template.step_type} className="flex items-center gap-2">
+              <button
+                onClick={() => setSelectedStep(template.step_type)}
+                className={`flex-1 text-left px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  selectedStep === template.step_type
+                    ? "bg-primary-600 text-white"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                }`}
+              >
+                {stepLabel(template.step_type)}
+              </button>
+              <button onClick={() => moveStep(selectedBlockId, template.step_type, -1)} className="p-2 text-gray-400 hover:text-primary-600" aria-label="Move up">
+                <FiArrowUp className="w-4 h-4" />
+              </button>
+              <button onClick={() => moveStep(selectedBlockId, template.step_type, 1)} className="p-2 text-gray-400 hover:text-primary-600" aria-label="Move down">
+                <FiArrowDown className="w-4 h-4" />
+              </button>
+              {!BUILT_IN_STEPS.has(template.step_type) && (
+                <button onClick={() => removeStep(selectedBlockId, template.step_type)} className="p-2 text-gray-400 hover:text-red-500" aria-label="Delete step">
+                  <FiTrash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           ))}
         </div>
+        <div className="flex items-center gap-2">
+          <Input
+            value={newStepName}
+            onChange={(e) => setNewStepName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && newStepName.trim()) {
+                const name = newStepName.trim();
+                addStep(selectedBlockId, selectedStep, name, name);
+                setNewStepName("");
+              }
+            }}
+            placeholder={t("builder.newStepPlaceholder")}
+            className="flex-1"
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              if (!newStepName.trim()) return;
+              const name = newStepName.trim();
+              addStep(selectedBlockId, selectedStep, name, name);
+              setNewStepName("");
+            }}
+          >
+            <FiPlus className="w-4 h-4 mr-1" /> {t("builder.addStep")}
+          </Button>
+        </div>
+        <p className="text-xs text-gray-400">{t("builder.addStepHint")}</p>
       </Card>
 
       <div className="space-y-4">

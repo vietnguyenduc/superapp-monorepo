@@ -4,7 +4,7 @@ import { FiChevronLeft, FiChevronRight, FiPlus, FiTrash2, FiCheck, FiBookOpen, F
 import { Card, Button, Input } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useSession } from "../../contexts/SessionContext";
-import type { Block, BlockId, DailyTask, KnowledgeEntry, TemplateSection, TemplateSectionItem } from "../../types";
+import type { Block, BlockId, DailyTask, KnowledgeEntry, StepType, TemplateSection, TemplateSectionItem } from "../../types";
 
 const ANALYSIS_KEYS = {
   keyInsights: "__key_insights__",
@@ -13,12 +13,21 @@ const ANALYSIS_KEYS = {
 };
 
 const StepIndicator = ({ step, onChange }: { step: number; onChange?: (s: number) => void }) => {
-  const { t } = useI18n();
-  const steps = [t("session.step1"), t("session.step2"), t("session.step3"), t("session.step4")];
+  const { t, language } = useI18n();
+  const { currentBlock, templates, stepTypes } = useSession();
+  const labels = useMemo(() => {
+    const stepLabels = stepTypes.map((st) => {
+      const template = currentBlock?.id ? templates[currentBlock.id]?.[st] : undefined;
+      const vi = template?.name_vi || template?.name || st;
+      const en = template?.name_en || template?.name_vi || template?.name || st;
+      return language === "en" ? en : vi;
+    });
+    return [t("session.step1"), ...stepLabels];
+  }, [t, language, currentBlock, templates, stepTypes]);
   return (
     <div className="relative flex items-start justify-between mb-6">
       <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-100 dark:bg-[#2C2C2E] -z-10 mx-10" />
-      {steps.map((label, idx) => {
+      {labels.map((label, idx) => {
         const num = idx + 1;
         const active = num === step;
         const completed = num < step;
@@ -569,8 +578,8 @@ const Step1TaskList = () => {
 
 const Step2Recognize = () => {
   const { t, language } = useI18n();
-  const { blocks, currentBlock, setCurrentBlockIndex, tasks, getTemplate, referenceInputs, saveReferenceInput, setStep } = useSession();
-  const template = getTemplate(currentBlock?.id || blocks[0]?.id, "recognize");
+  const { blocks, currentBlock, setCurrentBlockIndex, tasks, getTemplate, referenceInputs, saveReferenceInput, setStep, currentStepType, prevStep, nextStep } = useSession();
+  const template = getTemplate(currentBlock?.id || blocks[0]?.id, currentStepType || "recognize");
 
   const blockTasks = useMemo(() => tasks.filter((t) => t.block_id === currentBlock?.id), [tasks, currentBlock]);
 
@@ -578,9 +587,11 @@ const Step2Recognize = () => {
     saveReferenceInput(sectionId, itemId, content, enabled);
   };
 
+  const title = language === "en" ? template?.name_en || template?.name_vi || t("session.step2Title") : template?.name_vi || t("session.step2Title");
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">{t("session.step2Title")}</h2>
+      <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">{title}</h2>
 
       <PinnedTasks tasks={blockTasks} />
 
@@ -620,10 +631,66 @@ const Step2Recognize = () => {
         })}
 
       <div className="flex gap-3 pt-2">
-        <Button variant="secondary" onClick={() => setStep(1)} className="flex-1">
+        <Button variant="secondary" onClick={() => setStep(prevStep)} className="flex-1">
           <FiChevronLeft className="w-4 h-4 mr-1" /> {t("common.back")}
         </Button>
-        <Button onClick={() => setStep(3)} className="flex-1">
+        <Button onClick={() => setStep(nextStep)} className="flex-1">
+          {t("common.continue")} <FiChevronRight className="w-4 h-4 ml-1" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const GenericStep = ({ stepType }: { stepType: StepType }) => {
+  const { t, language } = useI18n();
+  const { blocks, currentBlock, setCurrentBlockIndex, tasks, getTemplate, referenceInputs, saveReferenceInput, setStep, prevStep, nextStep } = useSession();
+  const template = getTemplate(currentBlock?.id || blocks[0]?.id, stepType);
+
+  const blockTasks = useMemo(() => tasks.filter((t) => t.block_id === currentBlock?.id), [tasks, currentBlock]);
+
+  const handleSave = (sectionId: string, itemId: string, content: string, enabled: boolean) => {
+    saveReferenceInput(sectionId, itemId, content, enabled);
+  };
+
+  const title = language === "en" ? template?.name_en || template?.name_vi || stepType : template?.name_vi || stepType;
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">{title}</h2>
+
+      <PinnedTasks tasks={blockTasks} />
+
+      <BlockTabs
+        blocks={blocks}
+        current={currentBlock}
+        onSelect={async (id) => {
+          const idx = blocks.findIndex((b) => b.id === id);
+          if (idx >= 0) await setCurrentBlockIndex(idx);
+        }}
+      />
+
+      {template?.sections?.map((section) => {
+        const values: Record<string, string> = {};
+        section.items.forEach((item) => {
+          const key = `${section.id}:${item.id}`;
+          if (referenceInputs[key]) values[item.id] = referenceInputs[key].content;
+        });
+        return (
+          <SectionAccordion
+            key={section.id}
+            section={section}
+            values={values}
+            onChange={(itemId, value, enabled) => handleSave(section.id, itemId, value, enabled)}
+          />
+        );
+      })}
+
+      <div className="flex gap-3 pt-2">
+        <Button variant="secondary" onClick={() => setStep(prevStep)} className="flex-1">
+          <FiChevronLeft className="w-4 h-4 mr-1" /> {t("common.back")}
+        </Button>
+        <Button onClick={() => setStep(nextStep)} className="flex-1">
           {t("common.continue")} <FiChevronRight className="w-4 h-4 ml-1" />
         </Button>
       </div>
@@ -685,9 +752,9 @@ const PlanField = ({
 };
 
 const Step3Apply = () => {
-  const { t } = useI18n();
-  const { currentBlock, blocks, setCurrentBlockIndex, tasks, getTemplate, applyPlans, saveApplyPlan, setStep, setSelectedTaskId, selectedTaskId } = useSession();
-  const template = getTemplate(currentBlock?.id || blocks[0]?.id, "apply");
+  const { t, language } = useI18n();
+  const { currentBlock, blocks, setCurrentBlockIndex, tasks, getTemplate, applyPlans, saveApplyPlan, setStep, setSelectedTaskId, selectedTaskId, currentStepType, prevStep, nextStep } = useSession();
+  const template = getTemplate(currentBlock?.id || blocks[0]?.id, currentStepType || "apply");
 
   const blockTasks = useMemo(() => tasks.filter((t) => t.block_id === currentBlock?.id), [tasks, currentBlock]);
 
@@ -717,9 +784,11 @@ const Step3Apply = () => {
     await saveApplyPlan(selectedTask.id, data);
   };
 
+  const title = language === "en" ? template?.name_en || template?.name_vi || t("session.step3Title") : template?.name_vi || t("session.step3Title");
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">{t("session.step3Title")}</h2>
+      <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">{title}</h2>
 
       <PinnedTasks tasks={blockTasks} />
 
@@ -774,10 +843,10 @@ const Step3Apply = () => {
       )}
 
       <div className="flex gap-3 pt-2">
-        <Button variant="secondary" onClick={() => setStep(2)}>
+        <Button variant="secondary" onClick={() => setStep(prevStep)}>
           <FiChevronLeft className="w-4 h-4 mr-1" /> {t("common.back")}
         </Button>
-        <Button onClick={() => setStep(4)} className="flex-1">
+        <Button onClick={() => setStep(nextStep)} className="flex-1">
           {t("common.continue")} <FiChevronRight className="w-4 h-4 ml-1" />
         </Button>
       </div>
@@ -787,8 +856,8 @@ const Step3Apply = () => {
 
 const Step4Track = () => {
   const { t, language } = useI18n();
-  const { currentBlock, blocks, setCurrentBlockIndex, tasks, getTemplate, tracks, saveTrack, completeSession, setStep, setSelectedTaskId, selectedTaskId } = useSession();
-  const template = getTemplate(currentBlock?.id || blocks[0]?.id, "track");
+  const { currentBlock, blocks, setCurrentBlockIndex, tasks, getTemplate, tracks, saveTrack, completeSession, setStep, setSelectedTaskId, selectedTaskId, currentStepType, isLastStep, prevStep, nextStep } = useSession();
+  const template = getTemplate(currentBlock?.id || blocks[0]?.id, currentStepType || "track");
 
   const blockTasks = useMemo(() => tasks.filter((t) => t.block_id === currentBlock?.id), [tasks, currentBlock]);
 
@@ -818,9 +887,11 @@ const Step4Track = () => {
     await saveTrack(selectedTask.id, { dich, thuc_te: thucTe, phuong_phap: phuongPhap });
   };
 
+  const title = language === "en" ? template?.name_en || template?.name_vi || t("session.step4Title") : template?.name_vi || t("session.step4Title");
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">{t("session.step4Title")}</h2>
+      <h2 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">{title}</h2>
 
       <PinnedTasks tasks={blockTasks} />
 
@@ -887,16 +958,16 @@ const Step4Track = () => {
       )}
 
       <div className="flex gap-3 pt-2">
-        <Button variant="secondary" onClick={() => setStep(3)}>
+        <Button variant="secondary" onClick={() => setStep(prevStep)}>
           <FiChevronLeft className="w-4 h-4 mr-1" /> {t("common.back")}
         </Button>
-        {allTracked ? (
+        {isLastStep && allTracked ? (
           <Button onClick={completeSession} className="flex-1">
             {t("session.completeSession")} <FiCheck className="w-4 h-4 ml-1" />
           </Button>
         ) : (
-          <Button variant="secondary" onClick={() => setStep(3)} className="flex-1">
-            {t("common.continue")}
+          <Button onClick={() => setStep(isLastStep ? prevStep : nextStep)} className="flex-1">
+            {t("common.continue")} <FiChevronRight className="w-4 h-4 ml-1" />
           </Button>
         )}
       </div>
@@ -907,21 +978,15 @@ const Step4Track = () => {
 const SessionPage = () => {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { step, setStep, saveDraft } = useSession();
+  const { effectiveStep, setStep, saveDraft, currentStepType } = useSession();
 
   const renderStep = () => {
-    switch (step) {
-      case 1:
-        return <Step1TaskList />;
-      case 2:
-        return <Step2Recognize />;
-      case 3:
-        return <Step3Apply />;
-      case 4:
-        return <Step4Track />;
-      default:
-        return <Step1TaskList />;
-    }
+    if (effectiveStep === 1) return <Step1TaskList />;
+    if (currentStepType === "recognize") return <Step2Recognize />;
+    if (currentStepType === "apply") return <Step3Apply />;
+    if (currentStepType === "track") return <Step4Track />;
+    if (currentStepType) return <GenericStep stepType={currentStepType} />;
+    return <Step1TaskList />;
   };
 
   return (
@@ -934,7 +999,7 @@ const SessionPage = () => {
           {t("common.save")}
         </Button>
       </div>
-      <StepIndicator step={step} onChange={setStep} />
+      <StepIndicator step={effectiveStep} onChange={setStep} />
       {renderStep()}
     </div>
   );

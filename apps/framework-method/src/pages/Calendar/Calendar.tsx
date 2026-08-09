@@ -115,17 +115,12 @@ const Calendar = () => {
   const [newSubcategory, setNewSubcategory] = useState(subcategoryOptions.doi[0] ?? "");
   const [newMeritType, setNewMeritType] = useState<MeritType>("earn");
   const [newMeritSize, setNewMeritSize] = useState<MeritSize>("small");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [newRecurrence, setNewRecurrence] = useState<RecurrenceType>("monthly");
+  const [newWarningDays, setNewWarningDays] = useState("3");
+  const [newNote, setNewNote] = useState("");
 
   const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
-  const [showRecurringForm, setShowRecurringForm] = useState(false);
-  const [recTitle, setRecTitle] = useState("");
-  const [recCategory, setRecCategory] = useState<TaskCategory>("doi");
-  const [recSubcategory, setRecSubcategory] = useState(subcategoryOptions.doi[0] ?? "");
-  const [recRecurrence, setRecRecurrence] = useState<RecurrenceType>("monthly");
-  const [recWarningDays, setRecWarningDays] = useState("3");
-  const [recNote, setRecNote] = useState("");
-  const [recMeritType, setRecMeritType] = useState<MeritType>("earn");
-  const [recMeritSize, setRecMeritSize] = useState<MeritSize>("small");
 
   useEffect(() => {
     if (!userId) return;
@@ -149,8 +144,41 @@ const Calendar = () => {
     setNewSubcategory(subcategoryOptions[category][0] ?? "");
   };
 
+  const resetNewTask = () => {
+    setNewTaskTitle("");
+    setIsRecurring(false);
+    setNewRecurrence("monthly");
+    setNewWarningDays("3");
+    setNewNote("");
+  };
+
   const handleAddTask = async () => {
     if (!newTaskTitle.trim()) return;
+    if (!userId) return;
+
+    if (isRecurring) {
+      const newTask: RecurringTask = {
+        id: genId(),
+        user_id: userId,
+        title: newTaskTitle.trim(),
+        category: newCategory,
+        subcategory: newSubcategory,
+        recurrence: newRecurrence,
+        warning_before_days: Number(newWarningDays) || 3,
+        note: newNote.trim() || undefined,
+        next_due_date: getNextDueDate(newRecurrence, new Date()),
+        merit_type: newMeritType,
+        merit_size: newMeritSize,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      const next = [newTask, ...recurringTasks];
+      setRecurringTasks(next);
+      await saveRecurringTasks(next);
+      resetNewTask();
+      return;
+    }
+
     const blockId = CATEGORY_TO_DEFAULT_BLOCK[newCategory];
     const task = await addTask(blockId, newTaskTitle.trim());
     if (task) {
@@ -161,7 +189,7 @@ const Calendar = () => {
         merit_size: newMeritSize,
       });
     }
-    setNewTaskTitle("");
+    resetNewTask();
   };
 
   const handleUpdateTask = async (
@@ -169,32 +197,6 @@ const Calendar = () => {
     patch: Partial<DailyTask>
   ) => {
     await updateTask(task.id, patch);
-  };
-
-  const handleAddRecurring = async () => {
-    if (!userId || !recTitle.trim()) return;
-    const newTask: RecurringTask = {
-      id: genId(),
-      user_id: userId,
-      title: recTitle.trim(),
-      category: recCategory,
-      subcategory: recSubcategory,
-      recurrence: recRecurrence,
-      warning_before_days: Number(recWarningDays) || 3,
-      note: recNote.trim() || undefined,
-      next_due_date: getNextDueDate(recRecurrence, new Date()),
-      merit_type: recMeritType,
-      merit_size: recMeritSize,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    const next = [newTask, ...recurringTasks];
-    setRecurringTasks(next);
-    await saveRecurringTasks(next);
-    setRecTitle("");
-    setRecNote("");
-    setRecWarningDays("3");
-    setShowRecurringForm(false);
   };
 
   const handleDeleteRecurring = async (id: string) => {
@@ -214,11 +216,6 @@ const Calendar = () => {
         merit_size: task.merit_size,
       });
     }
-  };
-
-  const handleRecCategoryChange = (category: TaskCategory) => {
-    setRecCategory(category);
-    setRecSubcategory(subcategoryOptions[category][0] ?? "");
   };
 
   const handleAddPreset = async (presetId: string) => {
@@ -616,39 +613,22 @@ const Calendar = () => {
           </div>
         </div>
 
-        <Button onClick={handleAddTask} className="w-full" disabled={!newTaskTitle.trim()}>
-          <FiPlus className="w-4 h-4 mr-2" />
-          Thêm việc
-        </Button>
-      </Card>
+        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+          <input
+            type="checkbox"
+            checked={isRecurring}
+            onChange={(e) => setIsRecurring(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 text-primary-600"
+          />
+          Việc định kỳ
+        </label>
 
-      <div className="space-y-4">
-        {(["doi", "dao", "loi_tu"] as TaskCategory[]).map(renderCategoryGroup)}
-      </div>
-
-      <Card className="p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold tracking-tight">Việc định kỳ</h3>
-          <button
-            onClick={() => setShowRecurringForm((s) => !s)}
-            className="w-9 h-9 rounded-full bg-primary-50 dark:bg-primary-900/20 text-primary-600 flex items-center justify-center active:scale-95 transition-all"
-          >
-            <FiPlus className="w-5 h-5" />
-          </button>
-        </div>
-
-        {showRecurringForm && (
+        {isRecurring && (
           <div className="space-y-3 p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
-            <input
-              value={recTitle}
-              onChange={(e) => setRecTitle(e.target.value)}
-              placeholder="Tên việc định kỳ..."
-              className="input"
-            />
             <div className="grid grid-cols-2 gap-3">
               <select
-                value={recRecurrence}
-                onChange={(e) => setRecRecurrence(e.target.value as RecurrenceType)}
+                value={newRecurrence}
+                onChange={(e) => setNewRecurrence(e.target.value as RecurrenceType)}
                 className="input"
               >
                 <option value="weekly">Hàng tuần</option>
@@ -660,98 +640,34 @@ const Calendar = () => {
               <input
                 type="number"
                 min={0}
-                value={recWarningDays}
-                onChange={(e) => setRecWarningDays(e.target.value)}
+                value={newWarningDays}
+                onChange={(e) => setNewWarningDays(e.target.value)}
                 placeholder="Cảnh báo trước (ngày)"
                 className="input"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Nhóm</label>
-                <div className="flex rounded-xl overflow-hidden border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#2C2C2E]">
-                  {(Object.keys(CATEGORY_META) as TaskCategory[]).map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => handleRecCategoryChange(cat)}
-                      className={`flex-1 py-2 text-xs font-medium transition-colors ${
-                        recCategory === cat
-                          ? "bg-primary-600 text-white"
-                          : "text-gray-600 dark:text-gray-300 hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
-                      }`}
-                    >
-                      {CATEGORY_META[cat].label_vi}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Phân loại</label>
-                <select
-                  value={recSubcategory}
-                  onChange={(e) => setRecSubcategory(e.target.value)}
-                  className="input w-full py-2 text-sm"
-                >
-                  {subcategoryOptions[recCategory].map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Loại Phúc</label>
-                <div className="flex rounded-xl overflow-hidden border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#2C2C2E]">
-                  {(["earn", "spend"] as MeritType[]).map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => setRecMeritType(type)}
-                      className={`flex-1 py-2 text-xs font-medium transition-colors ${
-                        recMeritType === type
-                          ? type === "earn"
-                            ? "bg-emerald-500 text-white"
-                            : "bg-red-500 text-white"
-                          : "text-gray-600 dark:text-gray-300 hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
-                      }`}
-                    >
-                      {type === "earn" ? "Tạo" : "Tiêu"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Cỡ việc</label>
-                <div className="flex rounded-xl overflow-hidden border border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#2C2C2E]">
-                  {(Object.keys(MERIT_SIZE_LABELS) as MeritSize[]).map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setRecMeritSize(size)}
-                      className={`flex-1 py-2 text-xs font-medium transition-colors ${
-                        recMeritSize === size
-                          ? "bg-primary-600 text-white"
-                          : "text-gray-600 dark:text-gray-300 hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
-                      }`}
-                    >
-                      {MERIT_SIZE_LABELS[size].vi}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
             <textarea
-              value={recNote}
-              onChange={(e) => setRecNote(e.target.value)}
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
               placeholder="Ghi chú chuẩn bị trước khi làm..."
               rows={3}
               className="input resize-none"
             />
-            <Button onClick={handleAddRecurring} className="w-full" disabled={!recTitle.trim()}>
-              Thêm việc định kỳ
-            </Button>
           </div>
         )}
+
+        <Button onClick={handleAddTask} className="w-full" disabled={!newTaskTitle.trim()}>
+          <FiPlus className="w-4 h-4 mr-2" />
+          {isRecurring ? "Thêm việc định kỳ" : "Thêm việc"}
+        </Button>
+      </Card>
+
+      <div className="space-y-4">
+        {(["doi", "dao", "loi_tu"] as TaskCategory[]).map(renderCategoryGroup)}
+      </div>
+
+      <Card className="p-5 space-y-4">
+        <h3 className="font-semibold tracking-tight">Việc định kỳ</h3>
 
         <div className="space-y-3">
           {recurringTasks.length === 0 && (

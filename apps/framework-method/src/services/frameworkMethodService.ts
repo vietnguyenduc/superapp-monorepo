@@ -262,11 +262,13 @@ const makeTrackSection = (): TemplateSection[] => [
   },
 ];
 
-export const DEFAULT_TEMPLATES: Record<StepType, TemplateSection[]> = {
-  recognize: makeRecognizeSections(),
-  apply: makeApplySection("self"),
-  track: makeTrackSection(),
-};
+export const DEFAULT_STEP_CONFIG: { step_type: StepType; name_vi: string; name_en: string; order_index: number; sections: TemplateSection[] }[] = [
+  { step_type: "recognize", name_vi: "Bước 2: Nhận ra", name_en: "Step 2: Recognize", order_index: 0, sections: makeRecognizeSections() },
+  { step_type: "apply", name_vi: "Bước 3: Đưa khuôn", name_en: "Step 3: Apply", order_index: 1, sections: makeApplySection("self") },
+  { step_type: "track", name_vi: "Bước 4: Bám", name_en: "Step 4: Track", order_index: 2, sections: makeTrackSection() },
+];
+
+export const BUILT_IN_STEP_TYPES = new Set(DEFAULT_STEP_CONFIG.map((s) => s.step_type));
 
 const fallbackLog = (label: string, err: unknown) => {
   if (import.meta.env.DEV) {
@@ -625,20 +627,22 @@ export const getBlockStats = async (userId: string): Promise<Record<BlockId, Blo
 };
 
 const TEMPLATES_STORAGE_KEY = "fm_templates_v2";
-const STEP_TYPES: StepType[] = ["recognize", "apply", "track"];
 
 export const buildDefaultTemplates = (): Record<BlockId, Record<StepType, Template>> => {
   const result: Partial<Record<BlockId, Record<StepType, Template>>> = {};
   DEFAULT_BLOCKS.forEach((block) => {
     const byStep: Partial<Record<StepType, Template>> = {};
-    STEP_TYPES.forEach((step) => {
+    DEFAULT_STEP_CONFIG.forEach((config) => {
       const templateId = genId();
-      const sections = step === "apply" ? makeApplySection(block.id) : DEFAULT_TEMPLATES[step];
-      byStep[step] = {
+      const sections = config.step_type === "apply" ? makeApplySection(block.id) : config.sections;
+      byStep[config.step_type] = {
         id: templateId,
         block_id: block.id,
-        step_type: step,
-        name: `${step} template`,
+        step_type: config.step_type,
+        name: config.name_vi,
+        name_vi: config.name_vi,
+        name_en: config.name_en,
+        order_index: config.order_index,
         status: "published",
         sections: sections.map((section) => ({ ...section, template_id: templateId })),
       };
@@ -649,12 +653,14 @@ export const buildDefaultTemplates = (): Record<BlockId, Record<StepType, Templa
 };
 
 export const getAllTemplates = async (): Promise<Record<BlockId, Record<StepType, Template>>> => {
+  let rawTemplates: Record<BlockId, Record<StepType, Template>> | null = null;
   try {
     const raw = localStorage.getItem(TEMPLATES_STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as Record<BlockId, Record<StepType, Template>>;
+    if (raw) rawTemplates = JSON.parse(raw) as Record<BlockId, Record<StepType, Template>>;
   } catch {
     // ignore parse errors
   }
+  if (rawTemplates) return normalizeTemplates(rawTemplates);
   return buildDefaultTemplates();
 };
 
@@ -669,6 +675,99 @@ export const saveAllTemplates = async (templates: Record<BlockId, Record<StepTyp
 export const getTemplatesForBlock = async (blockId: BlockId): Promise<Record<StepType, Template>> => {
   const all = await getAllTemplates();
   return all[blockId] ?? buildDefaultTemplates()[blockId];
+};
+
+export const normalizeTemplates = (
+  templates: Record<BlockId, Record<StepType, Template>>
+): Record<BlockId, Record<StepType, Template>> => {
+  const defaults = buildDefaultTemplates();
+  const result = {} as Record<BlockId, Record<StepType, Template>>;
+  (Object.keys(defaults) as BlockId[]).forEach((blockId) => {
+    const blockTemplates: Record<StepType, Template> = {};
+    const existing = templates[blockId] || {};
+    DEFAULT_STEP_CONFIG.forEach((config) => {
+      const existingTemplate = existing[config.step_type];
+      blockTemplates[config.step_type] = {
+        ...existingTemplate,
+        id: existingTemplate?.id || genId(),
+        block_id: blockId,
+        step_type: config.step_type,
+        name: existingTemplate?.name_vi || config.name_vi,
+        name_vi: existingTemplate?.name_vi || config.name_vi,
+        name_en: existingTemplate?.name_en || config.name_en,
+        order_index: existingTemplate?.order_index ?? config.order_index,
+        status: existingTemplate?.status || "published",
+        sections:
+          existingTemplate?.sections && existingTemplate.sections.length > 0
+            ? existingTemplate.sections
+            : config.sections.map((section) => ({ ...section, template_id: existingTemplate?.id || genId() })),
+        updated_at: existingTemplate?.updated_at || new Date().toISOString(),
+      } as Template;
+    });
+    Object.values(existing).forEach((template) => {
+      if (BUILT_IN_STEP_TYPES.has(template.step_type)) return;
+      blockTemplates[template.step_type] = {
+        ...template,
+        name: template.name_vi || template.name || "Bước tùy chỉnh",
+        name_vi: template.name_vi || template.name || "Bước tùy chỉnh",
+        name_en: template.name_en || template.name || "Custom step",
+      } as Template;
+    });
+    result[blockId] = blockTemplates;
+  });
+  return result;
+};
+
+export const getOrderedStepTypes = (blockId: BlockId | undefined, templates: Record<BlockId, Record<StepType, Template>>): StepType[] => {
+  if (!blockId) return [];
+  const byStep = templates[blockId] || {};
+  return Object.values(byStep)
+    .filter((t): t is Template => Boolean(t))
+    .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+    .map((t) => t.step_type);
+};
+
+export const createCustomTemplate = (
+  blockId: BlockId,
+  stepType: StepType,
+  name_vi: string,
+  name_en: string,
+  order_index: number
+): Template => {
+  const templateId = genId();
+  return {
+    id: templateId,
+    block_id: blockId,
+    step_type: stepType,
+    name: name_vi,
+    name_vi,
+    name_en,
+    order_index,
+    status: "published",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    sections: [
+      {
+        id: genId(),
+        template_id: templateId,
+        group: "dua_khuon",
+        title_vi: name_vi,
+        title_en: name_en,
+        is_toggle: true,
+        is_enabled: true,
+        order_index: 0,
+        items: [
+          {
+            id: genId(),
+            title_vi: "Mục mới",
+            title_en: "New item",
+            default_enabled: true,
+            order_index: 0,
+          },
+        ],
+      },
+    ],
+  };
 };
 
 export const saveReferenceInputs = async (inputs: ReferenceInput[]): Promise<void> => {

@@ -70,7 +70,7 @@ export interface Session {
   updated_at?: string;
 }
 
-export type StepType = "recognize" | "apply" | "track";
+export type StepType = string;
 
 export type TemplateSectionGroup = "nguyen_ly" | "dao" | "phap" | "dua_khuon" | "bam";
 
@@ -109,6 +109,9 @@ export interface Template {
   block_id?: BlockId;
   step_type: StepType;
   name: string;
+  name_vi?: string;
+  name_en?: string;
+  order_index?: number;
   status: "draft" | "published";
   created_by?: string;
   company_id?: string;
