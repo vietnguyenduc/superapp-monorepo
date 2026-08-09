@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getCustomerListBalanceColor } from "../../../utils/formatting";
 import type { Customer } from "../../../types";
 import {
   formatCurrency,
@@ -93,18 +92,6 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
 
   const isVisible = (key: string) => visibleColumns[key] !== false;
 
-  const getStatusBadge = (isActive: boolean) => {
-    return isActive ? (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-        {t("customers.status.active")}
-      </span>
-    ) : (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-        {t("customers.status.inactive")}
-      </span>
-    );
-  };
-
   const handleViewTransactions = (e: React.MouseEvent, customer: Customer) => {
     e.stopPropagation();
     onCustomerAction("transactions", customer);
@@ -162,8 +149,8 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
 
   return (
     <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 max-h-[calc(100vh_-_18rem)] sm:max-h-[calc(100vh_-_240px)] [&::-webkit-scrollbar:horizontal]:h-2 [&::-webkit-scrollbar-thumb:horizontal]:rounded [&::-webkit-scrollbar-thumb:horizontal]:bg-gray-300/70 hover:[&::-webkit-scrollbar-thumb:horizontal]:bg-gray-400/80">
-      <table className="w-full min-w-max divide-y divide-gray-300 dark:divide-gray-600">
-        <thead className="bg-gray-50 dark:bg-gray-700">
+      <table className="w-full min-w-0 sm:min-w-max divide-y divide-gray-300 dark:divide-gray-600">
+        <thead className="hidden sm:table-header-group bg-gray-50 dark:bg-gray-700">
           <tr>
             <th
               scope="col"
@@ -241,7 +228,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                 {getSortIcon("working_method")}
               </div>
             </th>
-            <th scope="col" className="relative px-3 py-3 w-16 sticky top-0 z-10 bg-gray-50 dark:bg-gray-700">
+            <th scope="col" className="hidden sm:table-cell relative px-3 py-3 w-16 sticky top-0 z-10 bg-gray-50 dark:bg-gray-700">
               <span className="sr-only">Thao tác</span>
             </th>
           </tr>
@@ -284,34 +271,52 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
               <td className={`${isVisible("customerCode") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 whitespace-nowrap w-16`}>
                 <div className="text-xs font-bold font-mono text-gray-900 dark:text-white">{customer.customer_code}</div>
               </td>
-              <td className={`${isVisible("fullName") ? "" : "hidden"} px-3 py-3 min-w-[8rem] max-w-none sm:max-w-[16rem] lg:max-w-[20rem]`}>
-                <div className={`flex items-center justify-between gap-2 sm:hidden mb-1 ${isVisible("customerCode") ? "" : "hidden"}`}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewTransactions(e, customer);
-                    }}
-                    className="inline-flex items-center justify-center px-2 py-1 text-[10px] font-semibold rounded-full text-blue-700 dark:text-blue-200 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-900/70 transition-colors"
-                    title="Xem giao dịch"
-                  >
-                    <svg
-                      className="w-3 h-3 mr-1"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+              <td className={`${isVisible("fullName") ? "" : "hidden"} w-full sm:w-auto px-4 py-4 sm:px-3 sm:py-3 min-w-0 sm:min-w-[8rem] max-w-full sm:max-w-[16rem] lg:max-w-[20rem]`}>
+                <div className={`flex items-center justify-between gap-2 sm:hidden mb-2 ${isVisible("customerCode") ? "" : "hidden"}`}>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewTransactions(e, customer);
+                      }}
+                      className="inline-flex items-center justify-center px-2 py-1 text-[10px] font-semibold rounded-full text-blue-700 dark:text-blue-200 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-900/70 transition-colors"
+                      title="Xem giao dịch"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                    </svg>
-                    <span>GD</span>
-                  </button>
-                  <span className="text-[10px] font-mono text-gray-500 dark:text-gray-300">
-                    {customer.customer_code}
-                  </span>
+                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span>GD</span>
+                    </button>
+                    <span className="text-[10px] font-mono text-gray-500 dark:text-gray-300">
+                      {customer.customer_code}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCustomerAction("edit", customer);
+                      }}
+                      className="p-1.5 text-gray-600 hover:text-green-600 bg-white border border-gray-300 rounded hover:bg-green-50 transition-colors"
+                      title="Sửa"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCustomerAction("delete", customer);
+                      }}
+                      className="p-1.5 text-gray-600 hover:text-red-600 bg-white border border-gray-300 rounded hover:bg-red-50 transition-colors"
+                      title="Xóa"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 <div className={`text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-snug line-clamp-2 whitespace-normal break-words ${isVisible("fullName") ? "" : "hidden"}`} title={customer.full_name}>
                   {customer.full_name}
@@ -320,12 +325,12 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                   <div className="text-xs text-gray-600 dark:text-gray-300 line-clamp-1 whitespace-normal break-words mt-0.5" title={customer.email}>{customer.email}</div>
                 )}
                 {/* Mobile details */}
-                <div className="md:hidden mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-300">
+                <div className="md:hidden mt-3 space-y-1.5 text-xs text-gray-600 dark:text-gray-300">
                   {customer.phone && (
                     <a
                       href={`tel:${customer.phone}`}
                       onClick={(event) => event.stopPropagation()}
-                      className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
+                      className="flex items-center gap-1.5 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -333,13 +338,13 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                       <span>{formatPhoneNumber(customer.phone)}</span>
                     </a>
                   )}
-                  <div className="flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-start gap-1.5">
+                    <svg className="w-3 h-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
-                    <span className="truncate">{customer.address || "-"}</span>
+                    <span className="break-words whitespace-normal line-clamp-2">{customer.address || "-"}</span>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -349,17 +354,15 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                         : t("customers.noTransactions")}
                     </span>
                   </div>
-                  <div
-                    className={`text-sm font-bold ${getCustomerListBalanceColor(customer.total_balance || 0)}`}
-                  >
-                    {formatCurrency(customer.total_balance || 0)}
+                  <div className="text-right pt-1">
+                    <span className="text-base font-bold text-gray-900 dark:text-white">
+                      {formatCurrency(customer.total_balance || 0)}
+                    </span>
                   </div>
                 </div>
               </td>
               <td className={`${isVisible("balance") ? "hidden md:table-cell text-right" : "hidden"} px-3 py-3 whitespace-nowrap min-w-[5rem]`}>
-                <div
-                  className={`text-xs font-medium ${getCustomerListBalanceColor(customer.total_balance || 0)}`}
-                >
+                <div className="text-xs font-medium text-gray-900 dark:text-white">
                   {formatCurrency(customer.total_balance || 0)}
                 </div>
               </td>
@@ -381,7 +384,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                   {customer.working_method || "-"}
                 </div>
               </td>
-              <td className="px-3 py-3 whitespace-nowrap w-16">
+              <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap w-16">
                 <div className="flex items-center justify-end sm:justify-start space-x-1">
                   <button
                     onClick={(e) => {

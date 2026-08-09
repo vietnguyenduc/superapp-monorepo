@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { Customer, Transaction } from "../../../types";
 import { databaseService } from "../../../services/database";
 import { useCompanyId } from "../../../hooks/useCompanyId";
-import { formatCurrency, formatDate, formatPhoneNumber, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor } from "../../../utils/formatting";
+import { formatCurrency, formatDate, formatPhoneNumber, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../../utils/formatting";
 import { parseAmount } from "../../../services/businessLogic";
 import { useTransactionTypes } from "../../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../../components/UI/FallbackUI";
@@ -246,7 +246,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                       Công nợ hiện tại
                     </dt>
                     <dd
-                      className={`mt-0.5 text-xl sm:text-2xl font-bold ${getCustomerDetailBalanceColor(customer.total_balance || 0)}`}
+                      className="mt-0.5 text-xl sm:text-2xl font-bold text-gray-900 dark:text-white"
                     >
                       {formatCurrency(customer.total_balance || 0)}
                     </dd>

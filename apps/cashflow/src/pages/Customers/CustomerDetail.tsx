@@ -8,7 +8,7 @@ import { useAuthContext as useAuth } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { databaseService } from "../../services/database";
 import type { Customer, Transaction } from "../../types";
-import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getCustomerDetailBalanceColor, getTransactionTypeAmountColor } from "../../utils/formatting";
+import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../utils/formatting";
 import { parseAmount } from "../../services/businessLogic";
 import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
@@ -286,7 +286,7 @@ const CustomerDetail: React.FC = () => {
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
                   Số dư hiện tại
                 </label>
-                <p className={`text-lg font-bold ${getCustomerDetailBalanceColor(customer.total_balance)}`}>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">
                   {formatCurrency(customer.total_balance)}
                 </p>
               </div>
