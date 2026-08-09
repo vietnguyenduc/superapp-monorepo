@@ -98,6 +98,8 @@ export interface TemplateSection {
   concept_knowledge_entry_id?: string;
   reference_knowledge_entry_id?: string;
   example_knowledge_entry_id?: string;
+  example_content_vi?: string;
+  example_content_en?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -265,6 +267,39 @@ export interface PracticeInsight {
   type: PracticeInsightType;
   title: string;
   fields: Record<string, string>;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type IncomeMode = "estimate" | "exact";
+
+export interface IncomeEntry {
+  id: string;
+  user_id: string;
+  amount: number;
+  mode: IncomeMode;
+  date: string;
+  title?: string;
+  note?: string;
+  installments?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type FinanceExpenseCategory =
+  | "family"
+  | "savings"
+  | "merit_debt"
+  | "reinvest"
+  | "personal";
+
+export interface FinanceExpense {
+  id: string;
+  user_id: string;
+  income_id: string;
+  category: FinanceExpenseCategory;
+  amount: number;
+  note?: string;
   created_at?: string;
   updated_at?: string;
 }

@@ -252,7 +252,16 @@ const SectionAccordion = ({
             open={examplesOpen}
             onToggle={() => setExamplesOpen((o) => !o)}
           >
-            {exampleEntry ? <KnowledgeContent entry={exampleEntry} /> : <p className="text-sm text-gray-500 italic">{t("session.noExampleKnowledge")}</p>}
+            {section.example_content_vi ? (
+              <div
+                className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 prose dark:prose-invert max-w-none"
+                dangerouslySetInnerHTML={{ __html: language === "en" ? section.example_content_en || section.example_content_vi : section.example_content_vi }}
+              />
+            ) : exampleEntry ? (
+              <KnowledgeContent entry={exampleEntry} />
+            ) : (
+              <p className="text-sm text-gray-500 italic">{t("session.noExampleKnowledge")}</p>
+            )}
           </SubAccordion>
 
           <div className="rounded-2xl p-5 bg-blue-50/60 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20">
@@ -394,9 +403,10 @@ const SectionItemInput = ({
       {enabled && (
         <>
           {itemContent && (
-            <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04]">
-              {itemContent}
-            </div>
+            <div
+              className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] prose dark:prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: itemContent }}
+            />
           )}
           <textarea
             value={value}

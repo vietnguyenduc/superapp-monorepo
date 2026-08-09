@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { FiPlus, FiTrash2, FiArrowUp, FiArrowDown, FiEye, FiSave } from "react-icons/fi";
-import { Card, Button, Input } from "../../components/UI";
+import { Card, Button, Input, RichTextEditor } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useSession } from "../../contexts/SessionContext";
 import { DEFAULT_BLOCKS, genId } from "../../services/frameworkMethodService";
@@ -353,18 +353,11 @@ const Builder = () => {
                     </div>
                     <div className="space-y-1">
                       <label className="block text-xs font-medium text-gray-500">{t("builder.exampleKnowledge")}</label>
-                      <select
-                        value={section.example_knowledge_entry_id || ""}
-                        onChange={(e) => updateSection(section.id, (s) => ({ ...s, example_knowledge_entry_id: e.target.value || undefined }))}
-                        className="input text-sm"
-                      >
-                        <option value="">{t("builder.noKnowledgeLink")}</option>
-                        {knowledgeEntries.map((entry) => (
-                          <option key={entry.id} value={entry.id}>
-                            {language === "en" ? entry.title_en : entry.title_vi}
-                          </option>
-                        ))}
-                      </select>
+                      <RichTextEditor
+                        value={section.example_content_vi || ""}
+                        onChange={(html) => updateSection(section.id, (s) => ({ ...s, example_content_vi: html, example_content_en: html }))}
+                        placeholder={t("builder.itemContentPlaceholder")}
+                      />
                     </div>
                   </div>
                 )}
@@ -395,16 +388,15 @@ const Builder = () => {
                           />
                           <div className="space-y-1">
                             <label className="block text-xs font-medium text-gray-500">{t("builder.itemContent")}</label>
-                            <textarea
+                            <RichTextEditor
                               value={item.content_vi || ""}
-                              onChange={(e) =>
+                              onChange={(html) =>
                                 updateItem(section.id, item.id, (it) => ({
                                   ...it,
-                                  content_vi: e.target.value,
-                                  content_en: e.target.value,
+                                  content_vi: html,
+                                  content_en: html,
                                 }))
                               }
-                              className="input h-24 resize-none text-sm"
                               placeholder={t("builder.itemContentPlaceholder")}
                             />
                           </div>

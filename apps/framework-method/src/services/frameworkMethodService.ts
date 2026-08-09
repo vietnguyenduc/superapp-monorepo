@@ -24,6 +24,8 @@ import type {
   RecurringTask,
   RecurrenceType,
   PracticeInsight,
+  IncomeEntry,
+  FinanceExpense,
 } from "../types";
 import { MERIT_SIZE_POINTS } from "../types";
 
@@ -932,6 +934,83 @@ export const getPracticeInsights = async (userId: string): Promise<PracticeInsig
   }
 
   return [];
+};
+
+const FINANCE_INCOME_STORAGE_KEY = "fm_finance_income_v1";
+const FINANCE_EXPENSE_STORAGE_KEY = "fm_finance_expenses_v1";
+
+export const getFinanceIncome = async (userId: string): Promise<IncomeEntry[]> => {
+  try {
+    const raw = localStorage.getItem(FINANCE_INCOME_STORAGE_KEY);
+    if (raw) {
+      const all = JSON.parse(raw) as IncomeEntry[];
+      return all.filter((i) => i.user_id === userId).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
+  } catch {
+    // ignore
+  }
+  try {
+    const { data, error } = await db.from("fm_income_entries").select("*").eq("user_id", userId).order("date", { ascending: false });
+    if (error) throw error;
+    if (data) {
+      localStorage.setItem(FINANCE_INCOME_STORAGE_KEY, JSON.stringify(data));
+      return data as IncomeEntry[];
+    }
+  } catch (err) {
+    fallbackLog("getFinanceIncome", err);
+  }
+  return [];
+};
+
+export const saveFinanceIncome = async (income: IncomeEntry[]): Promise<void> => {
+  try {
+    localStorage.setItem(FINANCE_INCOME_STORAGE_KEY, JSON.stringify(income));
+  } catch {
+    // ignore
+  }
+  try {
+    const { error } = await db.from("fm_income_entries").upsert(income, { onConflict: "id" });
+    if (error) throw error;
+  } catch (err) {
+    fallbackLog("saveFinanceIncome", err);
+  }
+};
+
+export const getFinanceExpenses = async (userId: string): Promise<FinanceExpense[]> => {
+  try {
+    const raw = localStorage.getItem(FINANCE_EXPENSE_STORAGE_KEY);
+    if (raw) {
+      const all = JSON.parse(raw) as FinanceExpense[];
+      return all.filter((e) => e.user_id === userId);
+    }
+  } catch {
+    // ignore
+  }
+  try {
+    const { data, error } = await db.from("fm_finance_expenses").select("*").eq("user_id", userId);
+    if (error) throw error;
+    if (data) {
+      localStorage.setItem(FINANCE_EXPENSE_STORAGE_KEY, JSON.stringify(data));
+      return data as FinanceExpense[];
+    }
+  } catch (err) {
+    fallbackLog("getFinanceExpenses", err);
+  }
+  return [];
+};
+
+export const saveFinanceExpenses = async (expenses: FinanceExpense[]): Promise<void> => {
+  try {
+    localStorage.setItem(FINANCE_EXPENSE_STORAGE_KEY, JSON.stringify(expenses));
+  } catch {
+    // ignore
+  }
+  try {
+    const { error } = await db.from("fm_finance_expenses").upsert(expenses, { onConflict: "id" });
+    if (error) throw error;
+  } catch (err) {
+    fallbackLog("saveFinanceExpenses", err);
+  }
 };
 
 export const savePracticeInsights = async (insights: PracticeInsight[]): Promise<void> => {
