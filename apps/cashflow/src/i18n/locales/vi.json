@@ -146,6 +146,13 @@
     "accountNumber": "Số tài khoản",
     "balance": "Số dư",
     "trend": "Xu hướng",
+    "description": "Diễn giải",
+    "customer": "Khách hàng",
+    "account": "Tài khoản",
+    "date": "Ngày giao dịch",
+    "amount": "Số tiền",
+    "type": "Loại",
+    "currentBalance": "Số dư hiện tại",
     "createTransaction": "Tạo giao dịch",
     "transactionList": "Danh sách giao dịch",
     "transactions": {

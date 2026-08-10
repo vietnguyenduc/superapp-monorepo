@@ -8,6 +8,9 @@
 - **Mobile customer-table layout** — action buttons (edit/delete/transactions) are now rendered inside each mobile card header instead of a separate mid-card column; the name and address can wrap; the table header is hidden on small screens; row padding is slightly larger for better touch targets.
 - **Dashboard time-range selector overlay** — converted the `fixed` selector container on `Dashboard.tsx` to `sticky` so it no longer sits on top of the sticky navigation and blocks the top action buttons on mobile.
 - **Mobile floating action button overlap** — raised the `Layout.tsx` FAB to `bottom-20` on small screens (above the fixed bottom nav) and increased `main` padding-bottom to `pb-36` so the last page content is not hidden behind the FAB on scroll.
+- **Dashboard recent-transactions header translations** — added missing `dashboard.description`, `dashboard.customer`, `dashboard.account`, `dashboard.date`, `dashboard.amount`, `dashboard.type`, and `dashboard.currentBalance` keys to `vi.json` and `en.json` so the tablet table no longer shows raw i18n keys.
+- **Customer list readability** — widened `fullName` (`min-w-[14rem]` / `max-w-[24rem]`) and `lastTransaction` (`min-w-[9rem]`) columns and removed `line-clamp-2` from the customer-name cell so long company names wrap instead of being truncated.
+- **Settings tab layout** — converted the horizontal scrolling tab nav in `Settings.tsx` into a responsive vertical grid (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`) to avoid horizontal scroll and make the 10 settings tabs easier to reach on mobile.
 
 ## 2026-08-12
 

@@ -106,6 +106,9 @@ A dedicated `Công thức dư nợ` tab in Settings shows the current formula, l
 - **Cash-flow chart** — `dashboardService.ts` `aggregateCashFlow` derives the period window from the latest transaction in the selected range (not `new Date()`). Legend/tooltip labels use `Tiền vào` / `Tiền ra` in Vietnamese; inflow bars are `#10b981` and outflow bars are `#f43f5e`.
 - **Balance color rule** — customer running-balance text (`total_balance` in lists, detail, dashboard top customers) should be neutral (`text-gray-900 dark:text-white`) so users read the number without a false good/bad signal. Only transaction *amounts* use type-based colors (`getTransactionTypeAmountColor`) and status badges use their semantic colors.
 - **Sticky/fixed z-ordering on mobile** — keep the main sticky header at `z-[200]`, time-range/selectors at `z-40`, fixed FAB above the `z-50` bottom nav (`bottom-20` on mobile so it does not overlap the nav), and add enough `pb-36` bottom padding to `main` so long lists scroll clear of the FAB.
+- **Dashboard recent-transactions table headers** — `RecentTransactions.tsx` tablet table uses `t("dashboard.description")`, `t("dashboard.customer")`, `t("dashboard.account")`, `t("dashboard.date")`, `t("dashboard.amount")`, `t("dashboard.type")`, and `BalanceByBankChart.tsx` uses `t("dashboard.currentBalance")`; these keys must exist in both `vi.json` and `en.json`.
+- **Customer list column widths** — in `CustomerTable.tsx`, keep `fullName` readable with `min-w-[14rem] max-w-[24rem]`, `lastTransaction` with `min-w-[9rem]`, and remove `line-clamp-2` from the customer-name cell so long company names wrap.
+- **Settings navigation** — `Settings.tsx` renders the 10 settings tabs as a responsive vertical grid (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`) instead of a horizontal scrolling nav so all tabs are visible on mobile without horizontal swipe.
 
 ## Recent architectural decisions
 

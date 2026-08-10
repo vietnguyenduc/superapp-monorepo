@@ -136,6 +136,13 @@
     "accountNumber": "Account Number",
     "balance": "Balance",
     "trend": "Trend",
+    "description": "Description",
+    "customer": "Customer",
+    "account": "Account",
+    "date": "Transaction Date",
+    "amount": "Amount",
+    "type": "Type",
+    "currentBalance": "Current Balance",
     "createTransaction": "Create Transaction",
     "transactionList": "Transaction List",
     "transactions": {
