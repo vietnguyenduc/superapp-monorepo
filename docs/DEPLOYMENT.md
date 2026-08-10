@@ -141,15 +141,16 @@ Hoặc trigger qua Vercel Dashboard → project → Deployments → Redeploy.
 
 ## CI/CD
 
-### GitHub Actions (if configured)
+### GitHub Actions
 
 - On push to `viet`: lint + type-check + test
 - On PR to `main`: full test suite + build verification
-- On merge to `main`: Vercel auto-deploys
+- `Deploy changed Vercel apps` (`workflow_dispatch`): deploy tay các app đã thay đổi từ `main` lên production.
+- `Auto-deploy production after Vercel quota reset` (schedule `*/10 * * * *` + `workflow_dispatch`): tự động kiểm tra production deployment của từng app so với commit `main` mới nhất; nếu lệch (do Vercel Hobby rate-limit chưa kịp deploy) thì deploy bù. Dùng Vercel API để lấy `githubCommitSha` của production deployment hiện tại và `git diff` để chỉ deploy app có thay đổi thực sự.
 
 ### Vercel Auto-Deploy
 
-Vercel connected to GitHub repo. Mỗi push trigger build cho apps có thay đổi (Vercel detects `apps/<app>/` path changes).
+Vercel connected to GitHub repo. Mỗi push trigger build cho apps có thay đổi (Vercel detects `apps/<app>/` path changes). Nếu Vercel Hobby quota đầy tại thời điểm merge, auto-deploy có thể bị bỏ lỡ; workflow `auto-deploy-on-quota-reset` sẽ retry trong các lần chạy cron tiếp theo.
 
 ## Verification Checklist
 
