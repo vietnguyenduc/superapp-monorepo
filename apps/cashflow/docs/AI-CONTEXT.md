@@ -28,8 +28,10 @@ A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management
 ## Important files
 
 - `src/services/transactionService.ts` — CRUD + bulk import + **write-time balance sync**.
-- `src/services/customerService.ts` — customer CRUD; `getCustomerById` returns the stored `total_balance` without recomputing it, so list and detail stay identical.
-- `src/services/bankAccountService.ts` — bank account CRUD.
+- `src/services/customerService.ts` — customer CRUD; defaults to `status='active'`; use `status='all'` to include pending/rejected.
+- `src/services/bankAccountService.ts` — bank account CRUD; optional `status` filter.
+- `src/services/branchService.ts` — branch CRUD; optional `status` filter.
+- `src/services/approvalService.ts` — generic `updateEntityStatus(table, id, status, companyId)` used by `ApprovalsPage`.
 - `src/services/backupHistoryService.ts` — backup history CRUD + `saveBackupToDatabase`, `loadBackupData`, `revertTableFromBackup` delegates.
 - `src/utils/backupRecovery.ts` — backup creation, import/export, and **restore with cross-table ID remapping**.
 - `src/services/dashboardService.ts` — dashboard KPIs, balance by bank, top customers; uses shared `balanceMath.ts`.
@@ -116,6 +118,13 @@ A dedicated `Công thức dư nợ` tab in Settings shows the current formula, l
 - `canBypassTransactionApproval(user)` returns `true` for `admin_master`, `admin`, `admin_company`, plus any `staff` with `staff_permissions.transactions.bypass_approval`. `getInitialTransactionStatus(user, saveAsDraft)` returns `draft` if `saveAsDraft` is `true`, `completed` if bypass applies, otherwise `pending`.
 - `TransactionImport` single/bulk flows call `databaseService.transactions.bulkImportTransactions(...)` with `status` set to `getInitialTransactionStatus(user, saveAsDraft)`. Two buttons are provided: "Lưu nháp" (save as draft) and the existing import button (completed/pending based on role).
 - `transactionService.ts` balance sync now ignores delta for any transaction whose `status` is not `completed`. This means draft/pending/rejected rows do not move `customers.total_balance` or `bank_accounts.balance`; status transitions reverse/adjust deltas correctly.
+
+## Unified approvals & per-company approval settings (2026-08-16)
+
+- New `ApprovalsPage` at `/approvals` (sidebar item visible only to admin roles) lists all pending `transactions`, `customers`, `bank_accounts`, and `branches` in one place. Admin can approve or reject each item; approved transactions become `completed` (and trigger balance sync through `transactionService.updateTransaction`), while customers/bank accounts/branches become `active`; rejected items become `rejected`.
+- `Settings` has a new `Phân quyền duyệt` tab where admin toggles which entity types require approval on creation (`companies.approval_settings` JSONB: `transactions`, `customers`, `bank_accounts`, `branches`). All default to `true`.
+- `customers`, `bank_accounts`, and `branches` now have a `status` column (`active` / `pending` / `rejected`). New records compute initial status via `getInitialEntityStatus(user, entityType, company.approval_settings, saveAsDraft, hasPermission)`. Helpers `canBypassEntityApproval` and `getInitialTransactionStatusWithSettings` combine user role, the relevant staff permission, and the per-company approval setting.
+- `customerService.getCustomers` defaults to `status = 'active'`; pass `status: 'all'` to include pending/rejected. `bankAccountService.getBankAccounts` and `branchService.getBranches` accept an optional `status` parameter. Dropdowns in `TransactionList`, `TransactionImport`, and `Dashboard` request `active` records only so pending items are not selectable.
 
 ## Recent architectural decisions
 

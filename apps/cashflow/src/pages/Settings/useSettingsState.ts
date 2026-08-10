@@ -9,7 +9,7 @@ import { useAuthContext as useAuth } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useNavigate } from "react-router-dom";
 import { backupService, recoveryUtils, type BackupData } from "../../utils/backupRecovery";
-import { isAdmin } from "../../utils/permissions";
+import { isAdmin, getInitialEntityStatus, canEditBankAccountSettings, canEditBranchSettings } from "../../utils/permissions";
 
 
 
@@ -41,6 +41,7 @@ interface BankAccount {
   balance: number;
   openingBalance?: number;
   isActive: boolean;
+  status?: string;
   branch_id?: string;
   company_id?: string;
 }
@@ -53,6 +54,7 @@ interface Branch {
   address: string;
   phone: string;
   isActive: boolean;
+  status?: string;
   company_id?: string;
   code?: string;
 }
@@ -179,6 +181,56 @@ export function useSettingsState() {
     settings: false,
     reports: false,
   });
+
+  const defaultApprovalSettings = {
+    transactions: true,
+    customers: true,
+    bank_accounts: true,
+    branches: true,
+  };
+
+  const [approvalSettings, setApprovalSettings] = useState<{
+    transactions: boolean;
+    customers: boolean;
+    bank_accounts: boolean;
+    branches: boolean;
+  }>(defaultApprovalSettings);
+
+  useEffect(() => {
+    const settings = user?.company?.approval_settings;
+    if (settings) {
+      setApprovalSettings((prev) => ({
+        transactions: settings.transactions ?? prev.transactions,
+        customers: settings.customers ?? prev.customers,
+        bank_accounts: settings.bank_accounts ?? prev.bank_accounts,
+        branches: settings.branches ?? prev.branches,
+      }));
+    }
+  }, [user?.company?.approval_settings]);
+
+  const handleApprovalSettingChange = useCallback((key: string, value: boolean) => {
+    setApprovalSettings((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const saveApprovalSettings = useCallback(async () => {
+    if (!companyId) {
+      setError("Không xác định được công ty");
+      return;
+    }
+    try {
+      const { error: saveError } = await supabase
+        .from("companies")
+        .update({ approval_settings: approvalSettings })
+        .eq("id", companyId)
+        .select()
+        .maybeSingle();
+      if (saveError) throw saveError;
+      setSuccessMessage("Đã lưu cấu hình duyệt");
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không lưu được cấu hình duyệt");
+    }
+  }, [companyId, approvalSettings]);
 
 
   // Opening balance import state
@@ -615,6 +667,7 @@ export function useSettingsState() {
           balance: account.balance,
           openingBalance: account.opening_balance ?? 0,
           isActive: account.is_active,
+          status: account.status,
           branch_id: account.branch_id,
           company_id: account.company_id,
         })) || [];
@@ -633,6 +686,7 @@ export function useSettingsState() {
           address: branch.address,
           phone: branch.phone,
           isActive: branch.is_active,
+          status: branch.status,
           company_id: branch.company_id,
           code: branch.code,
         })) || [];
@@ -822,6 +876,15 @@ export function useSettingsState() {
     }
 
     try {
+      const status = editingBankAccount
+        ? (editingBankAccount.status || "active")
+        : getInitialEntityStatus(
+            user,
+            "bank_accounts",
+            user?.company?.approval_settings,
+            false,
+            canEditBankAccountSettings(user),
+          );
       const payload: any = {
         id: editingBankAccount?.id,
         bank_name: (bankAccountForm.bankName || "").trim(),
@@ -829,6 +892,7 @@ export function useSettingsState() {
         account_name: (bankAccountForm.accountName || "").trim(),
         balance: nextBalance,
         is_active: editingBankAccount?.isActive ?? true,
+        status,
         branch_id: finalBranchId,
         company_id: finalCompanyId,
       };
@@ -849,6 +913,7 @@ export function useSettingsState() {
         const openingValue = Number.isFinite(Number((saved as any).opening_balance))
           ? Number((saved as any).opening_balance)
           : nextOpening;
+        const status = (saved as any).status || (editingBankAccount ? editingBankAccount.status : "active");
         const next = exists
           ? prev.map((b) =>
               b.id === saved.id
@@ -861,6 +926,7 @@ export function useSettingsState() {
                     balance: balanceValue,
                     openingBalance: openingValue,
                     isActive: (saved as any).is_active !== false,
+                    status,
                   }
                 : b,
             )
@@ -874,6 +940,7 @@ export function useSettingsState() {
                 balance: balanceValue,
                 openingBalance: openingValue,
                 isActive: (saved as any).is_active !== false,
+                status,
               },
               ...prev,
             ];
@@ -1140,6 +1207,15 @@ export function useSettingsState() {
       const fallbackCompanyId = branches.length > 0 ? branches[0].company_id : (bankAccounts.length > 0 ? bankAccounts[0].company_id : undefined);
       const finalCompanyId = editingBranch?.company_id || companyId || user?.company_id || user?.branch?.company_id || fallbackCompanyId;
 
+      const status = editingBranch
+        ? (editingBranch.status || "active")
+        : getInitialEntityStatus(
+            user,
+            "branches",
+            user?.company?.approval_settings,
+            false,
+            canEditBranchSettings(user),
+          );
       const payload: any = {
         id: editingBranch?.id,
         name: (branchForm.name || "").trim(),
@@ -1147,6 +1223,8 @@ export function useSettingsState() {
         phone: (branchForm.phone || "").trim(),
         company_id: finalCompanyId,
         code: editingBranch?.code || `BR-${Date.now()}`,
+        is_active: editingBranch?.isActive ?? true,
+        status,
       };
       const res = await databaseService.branches.upsertBranch(payload);
       if (res.error) throw new Error(getErrorMessage(res.error));
@@ -1159,9 +1237,10 @@ export function useSettingsState() {
       };
       setBranches((prev) => {
         const exists = prev.some((b) => b.id === saved.id);
+        const status = saved.status || (editingBranch ? editingBranch.status : "active");
         const next = exists
-          ? prev.map((b) => (b.id === saved.id ? { id: saved.id, name: saved.name, address: saved.address || "", phone: saved.phone || "", isActive: saved.is_active !== false } : b))
-          : [{ id: saved.id, name: saved.name, address: saved.address || "", phone: saved.phone || "", isActive: saved.is_active !== false }, ...prev];
+          ? prev.map((b) => (b.id === saved.id ? { id: saved.id, name: saved.name, address: saved.address || "", phone: saved.phone || "", isActive: saved.is_active !== false, status } : b))
+          : [{ id: saved.id, name: saved.name, address: saved.address || "", phone: saved.phone || "", isActive: saved.is_active !== false, status }, ...prev];
         return next;
       });
       setIsBranchModalOpen(false);
@@ -1466,11 +1545,12 @@ export function useSettingsState() {
       { id: "customer-fields", name: "Trường khách hàng", icon: "🧾" },
       { id: "transaction-types", name: "Loại giao dịch", icon: "💳" },
       { id: "balance-formula", name: "Công thức dư nợ", icon: "🧮" },
+      { id: "approval-settings", name: "Phân quyền duyệt", icon: "✅" },
       { id: "integration", name: "Tích hợp", icon: "🔗" },
       { id: "users", name: "Tài khoản & phân quyền", icon: "👥" },
     ].filter(tab => {
       // Show users/permissions and opening-balance tabs for admin, admin_master, and admin_company
-      if ((tab.id === "users" || tab.id === "opening-balance") && !isAdmin(user)) return false;
+      if ((tab.id === "users" || tab.id === "opening-balance" || tab.id === "approval-settings") && !isAdmin(user)) return false;
       return true;
     }),
     [user?.role],
@@ -1615,6 +1695,10 @@ export function useSettingsState() {
     loadUsers,
     handleUpdateUserRole,
     handlePromoteToAdminMaster,
+    approvalSettings,
+    setApprovalSettings,
+    handleApprovalSettingChange,
+    saveApprovalSettings,
     tabs
   };
 }

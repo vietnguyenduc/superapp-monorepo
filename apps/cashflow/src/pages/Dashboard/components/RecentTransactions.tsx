@@ -38,7 +38,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   React.useEffect(() => {
     let isMounted = true;
     const loadBranches = async () => {
-      const response = await databaseService.branches.getBranches(companyId);
+      const response = await databaseService.branches.getBranches(companyId, "active");
       if (!response?.data || !isMounted) return;
       const map = response.data.reduce((acc: Record<string, string>, branch: Record<string, unknown>) => {
         const rawName = String(branch.name ?? branch.branch_name ?? branch.code ?? branch.id ?? "");
@@ -59,7 +59,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   React.useEffect(() => {
     let isMounted = true;
     const loadBankAccounts = async () => {
-      const response = await databaseService.bankAccounts.getBankAccounts(companyId);
+      const response = await databaseService.bankAccounts.getBankAccounts(companyId, "active");
       if (!response?.data || !isMounted) return;
       setBankAccounts(
         response.data.map((account: Record<string, unknown>) => ({
@@ -82,8 +82,9 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
           page: 1,
           pageSize: 5000,
           company_id: companyId,
+          status: "completed",
         }),
-        databaseService.bankAccounts.getBankAccounts(companyId),
+        databaseService.bankAccounts.getBankAccounts(companyId, "active"),
       ]);
       if (!txRes?.data || !isMounted) return;
 

@@ -1,5 +1,19 @@
 # Changelog — Cashflow
 
+## 2026-08-16
+
+### Added
+
+- **Unified Approvals page** — new `/approvals` route and sidebar item (admin only) that lists pending `transactions`, `customers`, `bank_accounts`, and `branches`. Admin can approve (status becomes `completed`/`active`) or reject (status becomes `rejected`) each item from one screen. `ApprovalsPage` is lazy-loaded and uses `approvalService.updateEntityStatus` for non-transaction entities; transactions reuse `transactionService.updateTransaction` so balance deltas are applied on approval.
+- **Per-company approval settings** — `Settings` has a new `Phân quyền duyệt` tab (admin only) with toggles for `transactions`, `customers`, `bank_accounts`, and `branches`. When a category is ON, staff creations go to `pending` and wait for admin approval; when OFF, staff can create directly if they have the relevant permission. Settings are persisted in `companies.approval_settings` JSONB.
+- **Entity status columns** — `customers`, `bank_accounts`, and `branches` now have a `status` column (`active` | `pending` | `rejected`). Default is `active`; new records created by staff respect `getInitialEntityStatus` and the company approval settings. Existing records are backfilled to `active`.
+- **Status-based filtering in services** — `customerService.getCustomers` defaults to `status = 'active'` (use `status: 'all'` to bypass). `bankAccountService.getBankAccounts` and `branchService.getBranches` accept an optional `status` parameter. Transaction/customer/bank/branch dropdowns in `TransactionList`, `TransactionImport`, and `Dashboard` now request only `active` records so pending items are not selectable.
+
+### Migration
+
+- `supabase/migrations/046_entity_pending_status.sql` — adds `status` columns to `customers`, `bank_accounts`, and `branches` with `active` default and backfills existing rows.
+- `supabase/migrations/047_company_approval_settings.sql` — adds `companies.approval_settings` JSONB with all categories enabled by default and backfills existing companies.
+
 ## 2026-08-15
 
 ### Added
@@ -11,13 +25,6 @@
 ### Migration
 
 - `supabase/migrations/045_transaction_status_draft_rejected.sql` — migrates the `transactions.status` CHECK constraint to allow `draft`, `pending`, `completed`, `rejected`; maps any existing `cancelled` rows to `rejected`; keeps default `completed` for backward-compatible inserts.
-
-## 2026-08-14
-
-### Fixed
-
-- **Transaction list columns and pagination** — `TransactionList` now uses `transactionService.getTransactions` with server-side `bank_account_id`, `created_by`, and `status` filters and exact `count`, so pagination and the `Hiển thị X - Y / Z` summary are correct. Added a page-size selector (10/20/50/100) and a `Cột hiển thị` dropdown so users can toggle optional columns. Date and customer columns are now the first two frozen columns (date leftmost) to match the requested layout.
-- **Transaction list branch/creator columns** — `Văn phòng` and `Người thực hiện` are now regular visible columns by default instead of hidden behind `lg`/`md` breakpoints.
 
 ## 2026-08-13
 
