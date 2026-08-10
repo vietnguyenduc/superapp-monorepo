@@ -12,8 +12,9 @@
 ### UI/UX (Apple HIG)
 
 - `ApprovalsPage` now uses entity-type SVG icons, colored badges, `formatCurrency`/`formatDate`, and an empty-state illustration with a refresh action; filter pills have `role="tab"` and `aria-selected` and meet 44 px touch targets.
-- `Settings` tab grid replaces emoji with inline SVG icons, adds `role="tab"`/`aria-selected`, increases touch target to `min-h-[52px]`, and highlights the active tab with a subtle shadow.
+- `Settings` tab grid replaces emoji with inline SVG icons, adds `role="tab"`/`aria-selected`, increases touch target to `min-h-[52px]`, highlights the active tab with a subtle shadow, and improves dark-mode contrast.
 - `TransactionList` and `CustomerList` pagination info now shows `0 / 0` instead of `1-0 / 0` when there are no results.
+- `TransactionList` status tabs use bright `dark:text-*` colors and high-contrast active badges; date/column trigger buttons use SVG chevrons instead of emojis; action buttons have explicit `dark:bg-gray-800` backgrounds so they remain legible in dark mode.
 
 ### Migration
 
