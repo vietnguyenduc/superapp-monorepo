@@ -487,6 +487,7 @@ const TransactionList: React.FC = () => {
   const hasCustomerFilter = Boolean(state.customerFilter?.id);
 
   const paginationInfo = useMemo(() => {
+    if (state.totalCount === 0) return { start: 0, end: 0, total: 0 };
     const start = (state.currentPage - 1) * state.pageSize + 1;
     const end = Math.min(state.currentPage * state.pageSize, state.totalCount);
     return { start, end, total: state.totalCount };

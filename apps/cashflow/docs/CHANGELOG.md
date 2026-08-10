@@ -9,6 +9,12 @@
 - **Entity status columns** — `customers`, `bank_accounts`, and `branches` now have a `status` column (`active` | `pending` | `rejected`). Default is `active`; new records created by staff respect `getInitialEntityStatus` and the company approval settings. Existing records are backfilled to `active`.
 - **Status-based filtering in services** — `customerService.getCustomers` defaults to `status = 'active'` (use `status: 'all'` to bypass). `bankAccountService.getBankAccounts` and `branchService.getBranches` accept an optional `status` parameter. Transaction/customer/bank/branch dropdowns in `TransactionList`, `TransactionImport`, and `Dashboard` now request only `active` records so pending items are not selectable.
 
+### UI/UX (Apple HIG)
+
+- `ApprovalsPage` now uses entity-type SVG icons, colored badges, `formatCurrency`/`formatDate`, and an empty-state illustration with a refresh action; filter pills have `role="tab"` and `aria-selected` and meet 44 px touch targets.
+- `Settings` tab grid replaces emoji with inline SVG icons, adds `role="tab"`/`aria-selected`, increases touch target to `min-h-[52px]`, and highlights the active tab with a subtle shadow.
+- `TransactionList` and `CustomerList` pagination info now shows `0 / 0` instead of `1-0 / 0` when there are no results.
+
 ### Migration
 
 - `supabase/migrations/046_entity_pending_status.sql` — adds `status` columns to `customers`, `bank_accounts`, and `branches` with `active` default and backfills existing rows.
