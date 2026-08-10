@@ -13,7 +13,7 @@ export class TransactionService extends BaseService {
   private static async _getTransactionForBalanceSync(id: string) {
     const { data, error } = await apiClient
       .from("transactions")
-      .select("customer_id, bank_account_id, transaction_type, amount, transaction_date, company_id")
+      .select("customer_id, bank_account_id, transaction_type, amount, transaction_date, company_id, status")
       .eq("id", id)
       .single();
     if (error || !data) return null;
@@ -28,7 +28,12 @@ export class TransactionService extends BaseService {
       amount: tx.amount ?? 0,
       transaction_date: String(tx.transaction_date || getNowIso()),
       company_id: tx.company_id ? String(tx.company_id) : null,
+      status: String(tx.status || ""),
     };
+  }
+
+  private static _completedDelta(delta: number, status: string | null | undefined) {
+    return status === "completed" ? delta : 0;
   }
 
   private static _normalizeTransactionPayload(payload: Record<string, unknown>): Record<string, unknown> {
@@ -130,10 +135,10 @@ export class TransactionService extends BaseService {
       factorMap = await this._getLiveFactorMap(companyId || newTx?.company_id || oldTx?.company_id);
     }
 
-    const oldCustomerDelta = oldTx ? getCustomerBalanceDelta(oldTx.transaction_type, oldTx.amount, factorMap[oldTx.transaction_type]) : 0;
-    const newCustomerDelta = newTx ? getCustomerBalanceDelta(newTx.transaction_type, newTx.amount, factorMap[newTx.transaction_type]) : 0;
-    const oldBankDelta = oldTx ? getBankAccountBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0;
-    const newBankDelta = newTx ? getBankAccountBalanceDelta(newTx.transaction_type, newTx.amount) : 0;
+    const oldCustomerDelta = this._completedDelta(oldTx ? getCustomerBalanceDelta(oldTx.transaction_type, oldTx.amount, factorMap[oldTx.transaction_type]) : 0, oldTx?.status);
+    const newCustomerDelta = this._completedDelta(newTx ? getCustomerBalanceDelta(newTx.transaction_type, newTx.amount, factorMap[newTx.transaction_type]) : 0, newTx?.status);
+    const oldBankDelta = this._completedDelta(oldTx ? getBankAccountBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0, oldTx?.status);
+    const newBankDelta = this._completedDelta(newTx ? getBankAccountBalanceDelta(newTx.transaction_type, newTx.amount) : 0, newTx?.status);
 
     const oldCustomer = oldTx?.customer_id;
     const newCustomer = newTx?.customer_id;
@@ -202,10 +207,10 @@ export class TransactionService extends BaseService {
     const oldTx = previous ? this._balanceFields(previous) : null;
     const newTx = current ? this._balanceFields(current) : null;
 
-    const oldCustomerDelta = oldTx ? getCustomerBalanceDelta(oldTx.transaction_type, oldTx.amount, factorMap[oldTx.transaction_type]) : 0;
-    const newCustomerDelta = newTx ? getCustomerBalanceDelta(newTx.transaction_type, newTx.amount, factorMap[newTx.transaction_type]) : 0;
-    const oldBankDelta = oldTx ? getBankAccountBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0;
-    const newBankDelta = newTx ? getBankAccountBalanceDelta(newTx.transaction_type, newTx.amount) : 0;
+    const oldCustomerDelta = this._completedDelta(oldTx ? getCustomerBalanceDelta(oldTx.transaction_type, oldTx.amount, factorMap[oldTx.transaction_type]) : 0, oldTx?.status);
+    const newCustomerDelta = this._completedDelta(newTx ? getCustomerBalanceDelta(newTx.transaction_type, newTx.amount, factorMap[newTx.transaction_type]) : 0, newTx?.status);
+    const oldBankDelta = this._completedDelta(oldTx ? getBankAccountBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0, oldTx?.status);
+    const newBankDelta = this._completedDelta(newTx ? getBankAccountBalanceDelta(newTx.transaction_type, newTx.amount) : 0, newTx?.status);
 
     const oldCustomer = oldTx?.customer_id;
     const newCustomer = newTx?.customer_id;
@@ -658,6 +663,7 @@ export class TransactionService extends BaseService {
             description: String(r.description ?? "").trim() || null,
             reference_number: String(r.reference_number ?? "").trim() || null,
             transaction_date: parsedDate,
+            status: String(r.status ?? "").trim() || "completed",
             created_at: now,
             updated_at: now,
           };
@@ -722,6 +728,7 @@ export class TransactionService extends BaseService {
             description: String(row.description ?? "").trim() || null,
             reference_number: String(row.reference_number ?? "").trim() || null,
             transaction_date: String(row.transaction_date ?? "").trim() || now,
+            status: String(row.status ?? "").trim() || "completed",
             created_at: now,
             updated_at: now,
           };

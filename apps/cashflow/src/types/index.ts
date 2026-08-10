@@ -117,7 +117,7 @@ export interface Transaction {
   created_by: string | null;
   created_at: string;
   updated_at: string;
-  status?: string | null; // 'pending' | 'completed' | 'cancelled'
+  status?: TransactionStatus | null;
   customers?: {
     full_name?: string;
     customer_code?: string;
@@ -136,6 +136,8 @@ export interface Transaction {
   branch_name?: string;
   creator_name?: string;
 }
+
+export type TransactionStatus = "draft" | "pending" | "completed" | "rejected";
 
 // Enums
 export type UserRole = "admin_master" | "admin_company" | "admin" | "branch_manager" | "staff";

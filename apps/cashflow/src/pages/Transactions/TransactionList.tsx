@@ -5,7 +5,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useDebounce } from "../../hooks/useDebounce";
 import { databaseService } from "../../services/database";
-import type { Transaction } from "../../types";
+import type { Transaction, TransactionStatus } from "../../types";
+import { useAuthContext as useAuth } from "@superapp/iam";
+import { canApproveTransactions } from "../../utils/permissions";
 import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../utils/formatting";
 import { getCustomerBalanceDelta, parseAmount } from "../../services/businessLogic";
 import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
@@ -35,7 +37,7 @@ interface TransactionListState {
     id: string | null;
     name: string | null;
   } | null;
-  statusFilter: "all" | "pending" | "completed";
+  statusFilter: "all" | TransactionStatus;
   groupBy: "" | "day" | "week" | "month" | "branch" | "transaction_type" | "customer";
 }
 
@@ -60,6 +62,8 @@ const TransactionList: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const companyId = useCompanyId();
+  const { user } = useAuth();
+  const canApprove = canApproveTransactions(user);
   const {
     getNameById: getTransactionTypeName,
     getMathFactor,
@@ -646,25 +650,35 @@ const TransactionList: React.FC = () => {
 
           {/* Status Tabs */}
           <div className="flex flex-wrap border-b border-gray-200 dark:border-gray-700 mb-4">
-            <button
-              className={`px-4 py-2 text-sm font-medium ${state.statusFilter === "all" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"}`}
-              onClick={() => setState(prev => ({ ...prev, statusFilter: "all", currentPage: 1 }))}
-            >
-              Tất cả
-            </button>
-            <button
-              className={`px-4 py-2 text-sm font-medium flex items-center gap-2 ${state.statusFilter === "pending" ? "text-amber-600 border-b-2 border-amber-600" : "text-gray-500 hover:text-gray-700"}`}
-              onClick={() => setState(prev => ({ ...prev, statusFilter: "pending", currentPage: 1 }))}
-            >
-              Hàng chờ duyệt
-              {state.statusFilter === "pending" && <span className="bg-amber-100 text-amber-700 py-0.5 px-2 rounded-full text-xs">{state.totalCount}</span>}
-            </button>
-            <button
-              className={`px-4 py-2 text-sm font-medium ${state.statusFilter === "completed" ? "text-green-600 border-b-2 border-green-600" : "text-gray-500 hover:text-gray-700"}`}
-              onClick={() => setState(prev => ({ ...prev, statusFilter: "completed", currentPage: 1 }))}
-            >
-              Đã hoàn thành
-            </button>
+            {[
+              { key: "all", label: "Tất cả", color: "blue" },
+              { key: "draft", label: "Nháp", color: "gray" },
+              { key: "pending", label: "Chờ duyệt", color: "amber" },
+              { key: "completed", label: "Hoàn thành", color: "green" },
+              { key: "rejected", label: "Từ chối", color: "red" },
+            ].map((tab) => {
+              const active = state.statusFilter === tab.key;
+              const colorClass =
+                tab.color === "blue"
+                  ? "text-blue-600 border-blue-600"
+                  : tab.color === "gray"
+                  ? "text-gray-600 border-gray-600"
+                  : tab.color === "amber"
+                  ? "text-amber-600 border-amber-600"
+                  : tab.color === "green"
+                  ? "text-green-600 border-green-600"
+                  : "text-red-600 border-red-600";
+              return (
+                <button
+                  key={tab.key}
+                  className={`px-4 py-2 text-sm font-medium flex items-center gap-2 ${active ? `${colorClass} border-b-2` : "text-gray-500 hover:text-gray-700"}`}
+                  onClick={() => setState(prev => ({ ...prev, statusFilter: tab.key as typeof prev.statusFilter, currentPage: 1 }))}
+                >
+                  {tab.label}
+                  {active && tab.key !== "all" && <span className={`py-0.5 px-2 rounded-full text-xs ${tab.color === "amber" ? "bg-amber-100 text-amber-700" : tab.color === "red" ? "bg-red-100 text-red-700" : tab.color === "green" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>{state.totalCount}</span>}
+                </button>
+              );
+            })}
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700 mb-4 space-y-3">
@@ -993,28 +1007,56 @@ const TransactionList: React.FC = () => {
                       )}
                       {visibleColumnKeys.includes("status") && (
                         <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                          {transaction.status === 'pending' ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">Chờ duyệt</span>
-                          ) : transaction.status === 'cancelled' ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">Đã hủy</span>
+                          {transaction.status === "draft" ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">Nháp</span>
+                          ) : transaction.status === "pending" ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Chờ duyệt</span>
+                          ) : transaction.status === "rejected" ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Từ chối</span>
                           ) : (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">Hoàn thành</span>
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Hoàn thành</span>
                           )}
                         </td>
                       )}
                       <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
                         <div className="flex items-center gap-2">
-                          {transaction.status === 'pending' && (
+                          {transaction.status === "draft" && (
                             <button
                               type="button"
-                              className="px-2 py-1 rounded border border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-800 font-medium"
+                              className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium"
                               onClick={async () => {
-                                if (!confirm("Xác nhận duyệt giao dịch vào công nợ?")) return;
-                                const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: 'completed' });
+                                if (!confirm("Gửi giao dịch Nháp để chờ duyệt?")) return;
+                                const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "pending" });
+                                if (error) toast.error("Lỗi khi gửi duyệt"); else fetchTransactions();
+                              }}
+                            >
+                              Gửi duyệt
+                            </button>
+                          )}
+                          {canApprove && (transaction.status === "pending" || transaction.status === "rejected") && (
+                            <button
+                              type="button"
+                              className="px-2 py-1 rounded border border-green-300 dark:border-green-600 text-green-700 dark:text-green-200 bg-green-50 dark:bg-green-900/40 hover:bg-green-100 dark:hover:bg-green-800 font-medium"
+                              onClick={async () => {
+                                if (!confirm("Duyệt giao dịch vào công nợ?")) return;
+                                const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "completed" });
                                 if (error) toast.error("Lỗi khi duyệt"); else fetchTransactions();
                               }}
                             >
                               Duyệt
+                            </button>
+                          )}
+                          {canApprove && transaction.status === "pending" && (
+                            <button
+                              type="button"
+                              className="px-2 py-1 rounded border border-red-300 dark:border-red-600 text-red-700 dark:text-red-200 bg-red-50 dark:bg-red-900/40 hover:bg-red-100 dark:hover:bg-red-800 font-medium"
+                              onClick={async () => {
+                                if (!confirm("Từ chối giao dịch này?")) return;
+                                const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "rejected" });
+                                if (error) toast.error("Lỗi khi từ chối"); else fetchTransactions();
+                              }}
+                            >
+                              Từ chối
                             </button>
                           )}
                           <button
@@ -1128,13 +1170,17 @@ const TransactionList: React.FC = () => {
                 </div>
 
                 <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
-                  {transaction.status === "pending" ? (
+                  {transaction.status === "draft" ? (
+                    <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                      Nháp
+                    </span>
+                  ) : transaction.status === "pending" ? (
                     <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                       Chờ duyệt
                     </span>
-                  ) : transaction.status === "cancelled" ? (
+                  ) : transaction.status === "rejected" ? (
                     <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                      Đã hủy
+                      Từ chối
                     </span>
                   ) : (
                     <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
@@ -1143,18 +1189,46 @@ const TransactionList: React.FC = () => {
                   )}
 
                   <div className="flex items-center gap-2">
-                    {transaction.status === "pending" && (
+                    {transaction.status === "draft" && (
                       <button
                         type="button"
-                        className="min-h-[44px] px-3 py-1.5 rounded-md text-xs font-medium border border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-800 transition-colors"
+                        className="min-h-[44px] px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         onClick={async () => {
-                          if (!confirm("Xác nhận duyệt giao dịch vào công nợ?")) return;
+                          if (!confirm("Gửi giao dịch Nháp để chờ duyệt?")) return;
+                          const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "pending" });
+                          if (error) toast.error("Lỗi khi gửi duyệt");
+                          else fetchTransactions();
+                        }}
+                      >
+                        Gửi duyệt
+                      </button>
+                    )}
+                    {canApprove && (transaction.status === "pending" || transaction.status === "rejected") && (
+                      <button
+                        type="button"
+                        className="min-h-[44px] px-3 py-1.5 rounded-md text-xs font-medium border border-green-300 dark:border-green-600 text-green-700 dark:text-green-200 bg-green-50 dark:bg-green-900/40 hover:bg-green-100 dark:hover:bg-green-800 transition-colors"
+                        onClick={async () => {
+                          if (!confirm("Duyệt giao dịch vào công nợ?")) return;
                           const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "completed" });
                           if (error) toast.error("Lỗi khi duyệt");
                           else fetchTransactions();
                         }}
                       >
                         Duyệt
+                      </button>
+                    )}
+                    {canApprove && transaction.status === "pending" && (
+                      <button
+                        type="button"
+                        className="min-h-[44px] px-3 py-1.5 rounded-md text-xs font-medium border border-red-300 dark:border-red-600 text-red-700 dark:text-red-200 bg-red-50 dark:bg-red-900/40 hover:bg-red-100 dark:hover:bg-red-800 transition-colors"
+                        onClick={async () => {
+                          if (!confirm("Từ chối giao dịch này?")) return;
+                          const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "rejected" });
+                          if (error) toast.error("Lỗi khi từ chối");
+                          else fetchTransactions();
+                        }}
+                      >
+                        Từ chối
                       </button>
                     )}
                     <button
