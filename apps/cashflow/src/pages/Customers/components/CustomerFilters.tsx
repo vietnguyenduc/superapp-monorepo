@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import Button from "../../../components/UI/Button";
+import { formatCompactCurrency } from "../../../utils/formatting";
 
 interface CustomerFiltersProps {
   dateRange: { start: string; end: string } | null;
@@ -293,7 +294,7 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200">
             {dateRange ? formatDateRange() : ""}
             {dateRange && (balanceRange?.min != null || balanceRange?.max != null) && " · "}
-            {(balanceRange?.min != null || balanceRange?.max != null) && `${balanceRange?.min ?? 0} - ${balanceRange?.max ?? "∞"}`}
+            {(balanceRange?.min != null || balanceRange?.max != null) && `${formatCompactCurrency(balanceRange?.min ?? 0)} - ${balanceRange?.max != null ? formatCompactCurrency(balanceRange.max) : "∞"}`}
             <button
               onClick={clearFilters}
               className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-primary-400 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-700 hover:text-primary-500 dark:hover:text-primary-100 focus:outline-none focus:bg-primary-500 focus:text-white"
