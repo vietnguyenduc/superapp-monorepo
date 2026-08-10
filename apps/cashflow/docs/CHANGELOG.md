@@ -11,6 +11,11 @@
 
 - Renamed the customer-card `GD` button to `Xem giao dịch` for clarity, and made the mobile action row wrap gracefully when the label is longer.
 
+### Fixed
+
+- `CustomerFilters` balance-range inputs now keep local min/max state so changing one bound no longer overwrites the other; the active filter pill formats values with `formatCompactCurrency`.
+- Trial seed data now includes `status: 'active'` for customers, so `CustomerList` filters work in trial mode.
+
 ### Migration
 
 - `supabase/migrations/046_entity_pending_status.sql` — adds `status` columns to `customers`, `bank_accounts`, and `branches` with `active` default and backfills existing rows.
