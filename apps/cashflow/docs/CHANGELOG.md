@@ -1,5 +1,12 @@
 # Changelog — Cashflow
 
+## 2026-08-14
+
+### Fixed
+
+- **Transaction list columns and pagination** — `TransactionList` now uses `transactionService.getTransactions` with server-side `bank_account_id`, `created_by`, and `status` filters and exact `count`, so pagination and the `Hiển thị X - Y / Z` summary are correct. Added a page-size selector (10/20/50/100) and a `Cột hiển thị` dropdown so users can toggle optional columns. Date and customer columns are now the first two frozen columns (date leftmost) to match the requested layout.
+- **Transaction list branch/creator columns** — `Văn phòng` and `Người thực hiện` are now regular visible columns by default instead of hidden behind `lg`/`md` breakpoints.
+
 ## 2026-08-13
 
 ### Fixed

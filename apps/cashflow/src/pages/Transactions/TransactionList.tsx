@@ -96,6 +96,36 @@ const TransactionList: React.FC = () => {
 
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
 
+  const COLUMN_OPTIONS = [
+    { key: "date", label: "Ngày giao dịch", always: true },
+    { key: "customer", label: "Khách hàng", always: true },
+    { key: "type", label: "Loại giao dịch" },
+    { key: "amount", label: "Số tiền" },
+    { key: "branch", label: "Văn phòng" },
+    { key: "bank", label: "Tài khoản" },
+    { key: "creator", label: "Người thực hiện" },
+    { key: "code", label: "Mã GD" },
+    { key: "status", label: "Trạng thái" },
+    { key: "actions", label: "Hành động", always: true },
+  ];
+
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() =>
+    COLUMN_OPTIONS.reduce((acc, col) => {
+      acc[col.key] = true;
+      return acc;
+    }, {} as Record<string, boolean>)
+  );
+  const [showColumnMenu, setShowColumnMenu] = useState(false);
+
+  const toggleColumn = (key: string) => {
+    setVisibleColumns((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const visibleColumnKeys = useMemo(
+    () => COLUMN_OPTIONS.filter((col) => col.always || visibleColumns[col.key]).map((col) => col.key),
+    [visibleColumns]
+  );
+
   // Initialize customer filter from URL params
   useEffect(() => {
     const customerId = searchParams.get("customer_id");
@@ -131,6 +161,8 @@ const TransactionList: React.FC = () => {
         transaction_type: state.transactionType || undefined,
         customer_id: state.customerFilter?.id || undefined,
         branch_id: state.branchFilter || undefined,
+        bank_account_id: state.bankAccountFilter || undefined,
+        created_by: state.userFilter || undefined,
         status: state.statusFilter === "all" ? undefined : state.statusFilter,
         company_id: companyId,
         page: state.currentPage,
@@ -138,26 +170,17 @@ const TransactionList: React.FC = () => {
       };
 
       const response = await databaseService.transactions.getTransactions(filters);
-      
+
       if (response.error) {
         throw new Error(response.error);
       }
 
       const rawTransactions = response.data || [];
-      const filteredTransactions = rawTransactions.filter((transaction) => {
-        if (state.bankAccountFilter && transaction.bank_account_id !== state.bankAccountFilter) {
-          return false;
-        }
-        if (state.userFilter && transaction.created_by !== state.userFilter) {
-          return false;
-        }
-        return true;
-      });
 
       setState((prev) => ({
         ...prev,
-        transactions: filteredTransactions,
-        totalCount: filteredTransactions.length,
+        transactions: rawTransactions,
+        totalCount: response.count ?? rawTransactions.length,
         loading: false,
       }));
     } catch (err) {
@@ -198,7 +221,7 @@ const TransactionList: React.FC = () => {
         resizeObserver.unobserve(tableContainerRef.current);
       }
     };
-  }, [state.transactions, state.groupBy]);
+  }, [state.transactions, state.groupBy, visibleColumnKeys]);
 
   const handleTopScroll = useCallback(() => {
     if (topScrollRef.current && tableContainerRef.current) {
@@ -289,6 +312,10 @@ const TransactionList: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     setState((prev) => ({ ...prev, currentPage: page }));
+  };
+
+  const handlePageSizeChange = (pageSize: number) => {
+    setState((prev) => ({ ...prev, pageSize, currentPage: 1 }));
   };
 
   const handleSearch = (term: string) => {
@@ -752,11 +779,60 @@ const TransactionList: React.FC = () => {
                 <option value="transaction_type">Loại giao dịch</option>
                 <option value="customer">Khách hàng</option>
               </select>
+
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowColumnMenu((v) => !v)}
+                  className={`w-full inline-flex items-center justify-between rounded-md border ${showColumnMenu ? "border-blue-500 ring-2 ring-blue-100" : "border-gray-300 dark:border-gray-700"} bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-white`}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <span aria-hidden>⚙️</span>
+                    Cột hiển thị
+                  </span>
+                  <span aria-hidden>▾</span>
+                </button>
+                {showColumnMenu && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setShowColumnMenu(false)} />
+                    <div className="absolute z-40 right-0 mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-1">
+                      {COLUMN_OPTIONS.map((col) => (
+                        <label
+                          key={col.key}
+                          className={`flex items-center gap-2 px-2 py-1.5 rounded text-sm ${col.always ? "text-gray-400 cursor-not-allowed" : "hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={col.always || visibleColumns[col.key]}
+                            disabled={col.always}
+                            onChange={() => toggleColumn(col.key)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-gray-900 dark:text-white">{col.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center justify-start sm:justify-end">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="text-sm text-gray-600 dark:text-gray-300">
                 Hiển thị {paginationInfo.start} - {paginationInfo.end} / {paginationInfo.total} giao dịch
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600 dark:text-gray-300">Số dòng/trang:</label>
+                <select
+                  className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1 text-sm"
+                  value={state.pageSize}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
               </div>
             </div>
           </div>
@@ -823,117 +899,145 @@ const TransactionList: React.FC = () => {
               <div ref={topInnerRef} className="h-1" />
             </div>
             <div ref={tableContainerRef} className="overflow-x-auto relative" onScroll={handleTableScroll}>
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th className="sticky left-0 z-20 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">Khách hàng</th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ngày giao dịch</th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Loại giao dịch</th>
-                  <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Số tiền</th>
-                  <th className="hidden lg:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Văn phòng</th>
-                  <th className="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tài khoản</th>
-                  <th className="hidden lg:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Người thực hiện</th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mã GD</th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trạng thái</th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hành động</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
-                {state.transactions.map((transaction) => (
-                  <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="sticky left-0 z-10 px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
-                      {transaction.customer_id ? (
-                        <button
-                          type="button"
-                          className="block text-left text-gray-900 dark:text-white hover:underline hover:text-blue-600 dark:hover:text-blue-400 transition-colors max-w-[10rem] truncate font-medium"
-                          title={transaction.customer_name || customers.find(c => c.id === String(transaction.customer_id))?.name || `Customer #${transaction.customer_id}`}
-                          onClick={() => navigate(`/customers/${transaction.customer_id}`)}
-                        >
-                          {transaction.customer_name || (transaction.customer_id ? customers.find(c => c.id === String(transaction.customer_id))?.name : null) || `Customer #${transaction.customer_id}`}
-                        </button>
-                      ) : (
-                        <span className="text-gray-500 dark:text-gray-400">Không có khách hàng</span>
-                      )}
-                      {getCustomerCode(transaction.customer_id) ? (
-                        <div className="mt-0.5 font-mono text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{getCustomerCode(transaction.customer_id)}</div>
-                      ) : null}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                      {formatDate(transaction.transaction_date)}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTransactionTypeColor(transaction.transaction_type)}`}
-                      >
-                        {getTransactionTypeName(transaction.transaction_type)}
-                      </span>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
-                      <span
-                        className={`text-xs sm:text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type, transaction.amount)}`}
-                      >
-                        {formatCurrency(parseAmount(transaction.amount))}
-                      </span>
-                    </td>
-                    <td className="hidden lg:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                      {transaction.branch_name || "—"}
-                    </td>
-                    <td className="hidden md:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                      {transaction.bank_account_name || transaction.bank_account_id ? `#${transaction.bank_account_id}` : "Không có tài khoản"}
-                    </td>
-                    <td className="hidden lg:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                      {userMap.get(transaction.created_by || "") || transaction.creator_name || transaction.created_by || "—"}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
-                      <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs">
-                        {transaction.transaction_code}
-                      </span>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      {transaction.status === 'pending' ? (
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">Chờ duyệt</span>
-                      ) : transaction.status === 'cancelled' ? (
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">Đã hủy</span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">Hoàn thành</span>
-                      )}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                      <div className="flex items-center gap-2">
-                        {transaction.status === 'pending' && (
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="sticky left-0 z-30 w-32 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">Ngày giao dịch</th>
+                    <th className="sticky left-32 z-20 w-48 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">Khách hàng</th>
+                    {visibleColumnKeys.includes("type") && (
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Loại giao dịch</th>
+                    )}
+                    {visibleColumnKeys.includes("amount") && (
+                      <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Số tiền</th>
+                    )}
+                    {visibleColumnKeys.includes("branch") && (
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Văn phòng</th>
+                    )}
+                    {visibleColumnKeys.includes("bank") && (
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tài khoản</th>
+                    )}
+                    {visibleColumnKeys.includes("creator") && (
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Người thực hiện</th>
+                    )}
+                    {visibleColumnKeys.includes("code") && (
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mã GD</th>
+                    )}
+                    {visibleColumnKeys.includes("status") && (
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trạng thái</th>
+                    )}
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hành động</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+                  {state.transactions.map((transaction) => (
+                    <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="sticky left-0 z-20 w-32 px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+                        {formatDate(transaction.transaction_date)}
+                      </td>
+                      <td className="sticky left-32 z-10 w-48 px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+                        {transaction.customer_id ? (
                           <button
                             type="button"
-                            className="px-2 py-1 rounded border border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-800 font-medium"
-                            onClick={async () => {
-                              if (!confirm("Xác nhận duyệt giao dịch vào công nợ?")) return;
-                              const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: 'completed' });
-                              if (error) toast.error("Lỗi khi duyệt"); else fetchTransactions();
-                            }}
+                            className="block text-left bg-transparent p-0 border-none text-gray-900 dark:text-white hover:underline hover:text-blue-600 dark:hover:text-blue-400 transition-colors max-w-44 truncate font-medium"
+                            title={transaction.customer_name || customers.find(c => c.id === String(transaction.customer_id))?.name || `Customer #${transaction.customer_id}`}
+                            onClick={() => navigate(`/customers/${transaction.customer_id}`)}
                           >
-                            Duyệt
+                            {transaction.customer_name || (transaction.customer_id ? customers.find(c => c.id === String(transaction.customer_id))?.name : null) || `Customer #${transaction.customer_id}`}
                           </button>
+                        ) : (
+                          <span className="text-gray-500 dark:text-gray-400">Không có khách hàng</span>
                         )}
-                        <button
-                          type="button"
-                          className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          onClick={() => openEditModal(transaction)}
-                        >
-                          Sửa
-                        </button>
-                        <button
-                          type="button"
-                          className="px-2 py-1 rounded border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-700 dark:bg-red-900/40 dark:text-red-200"
-                          onClick={() => handleDelete(transaction.id)}
-                        >
-                          Xóa
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        {getCustomerCode(transaction.customer_id) ? (
+                          <div className="mt-0.5 font-mono text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{getCustomerCode(transaction.customer_id)}</div>
+                        ) : null}
+                      </td>
+                      {visibleColumnKeys.includes("type") && (
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTransactionTypeColor(transaction.transaction_type)}`}
+                          >
+                            {getTransactionTypeName(transaction.transaction_type)}
+                          </span>
+                        </td>
+                      )}
+                      {visibleColumnKeys.includes("amount") && (
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
+                          <span
+                            className={`text-xs sm:text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type, transaction.amount)}`}
+                          >
+                            {formatCurrency(parseAmount(transaction.amount))}
+                          </span>
+                        </td>
+                      )}
+                      {visibleColumnKeys.includes("branch") && (
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
+                          {transaction.branch_name || "—"}
+                        </td>
+                      )}
+                      {visibleColumnKeys.includes("bank") && (
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
+                          {transaction.bank_account_name || transaction.bank_account_id ? `#${transaction.bank_account_id}` : "Không có tài khoản"}
+                        </td>
+                      )}
+                      {visibleColumnKeys.includes("creator") && (
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
+                          {userMap.get(transaction.created_by || "") || transaction.creator_name || transaction.created_by || "—"}
+                        </td>
+                      )}
+                      {visibleColumnKeys.includes("code") && (
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
+                          <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs">
+                            {transaction.transaction_code}
+                          </span>
+                        </td>
+                      )}
+                      {visibleColumnKeys.includes("status") && (
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                          {transaction.status === 'pending' ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">Chờ duyệt</span>
+                          ) : transaction.status === 'cancelled' ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">Đã hủy</span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">Hoàn thành</span>
+                          )}
+                        </td>
+                      )}
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
+                        <div className="flex items-center gap-2">
+                          {transaction.status === 'pending' && (
+                            <button
+                              type="button"
+                              className="px-2 py-1 rounded border border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-800 font-medium"
+                              onClick={async () => {
+                                if (!confirm("Xác nhận duyệt giao dịch vào công nợ?")) return;
+                                const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: 'completed' });
+                                if (error) toast.error("Lỗi khi duyệt"); else fetchTransactions();
+                              }}
+                            >
+                              Duyệt
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            onClick={() => openEditModal(transaction)}
+                          >
+                            Sửa
+                          </button>
+                          <button
+                            type="button"
+                            className="px-2 py-1 rounded border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-700 dark:bg-red-900/40 dark:text-red-200"
+                            onClick={() => handleDelete(transaction.id)}
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
         </div>
 
         {/* Mobile card list */}
@@ -1074,7 +1178,7 @@ const TransactionList: React.FC = () => {
           )}
         </div>
 
-        {state.totalCount > state.pageSize && (
+        {state.totalCount > 0 && (
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-600">
             <Pagination
               currentPage={state.currentPage}
