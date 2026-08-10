@@ -6,17 +6,19 @@ import { insertWithFallback, updateWithFallback } from "./updateHelpers";
 import type { BankAccount } from "../types";
 
 export class BankAccountService extends BaseService {
-  static async getBankAccounts(companyId?: string) {
+  static async getBankAccounts(companyId?: string, status?: string) {
     return this.execute(
       async () => {
         let query = apiClient.from("bank_accounts").select("*");
         if (companyId) query = query.eq("company_id", companyId);
+        if (status) query = query.eq("status", status);
         const { data, error } = await query;
         return { data, error };
       },
       async () => {
         let data = (trialGet("bank_accounts") || []) as BankAccount[];
         if (companyId) data = data.filter((b) => b.company_id === companyId);
+        if (status) data = data.filter((b) => b.status === status);
         return { data, error: null };
       }
     );

@@ -18,6 +18,9 @@ export class CustomerService extends BaseService {
         const companyFilter = typeof filters?.company_id === "string" ? filters.company_id : undefined;
         if (companyFilter) query = query.eq("company_id", companyFilter);
 
+        const statusFilter = typeof filters?.status === "string" ? filters.status : "active";
+        if (statusFilter && statusFilter !== "all") query = query.eq("status", statusFilter);
+
         const search = typeof filters?.search === "string" ? filters.search.trim() : "";
         if (search) {
           // Quote the ilike value so PostgREST treats commas/parentheses as literal text
@@ -80,6 +83,9 @@ export class CustomerService extends BaseService {
         let data = (trialGet("customers") || []) as Customer[];
         const companyFilter = typeof filters?.company_id === "string" ? filters.company_id : undefined;
         if (companyFilter) data = data.filter((c) => c.company_id === companyFilter);
+
+        const statusFilter = typeof filters?.status === "string" ? filters.status : "active";
+        if (statusFilter && statusFilter !== "all") data = data.filter((c) => c.status === statusFilter);
 
         const search = typeof filters?.search === "string" ? filters.search.toLowerCase().trim() : "";
         if (search) {

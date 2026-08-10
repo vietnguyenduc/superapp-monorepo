@@ -1,5 +1,5 @@
 // Granular permission checking utility
-import type { User as AppUser } from '../types';
+import type { User as AppUser, ApprovalSettings } from '../types';
 
 interface UserPermissions {
   import_customers?: boolean; // legacy flat key
@@ -141,6 +141,53 @@ export function getInitialTransactionStatus(user: User | null | undefined, saveA
   if (!user) return "pending";
   if (canBypassTransactionApproval(user)) return "completed";
   return "pending";
+}
+
+// Generic approval gate used for customers, bank accounts, branches, and other entities.
+// Staff can create directly only if they hold the relevant permission OR if the company
+// approval config exempts that entity type from approval.
+export function canBypassEntityApproval(
+  user: User | null | undefined,
+  entityType: keyof ApprovalSettings,
+  approvalSettings?: ApprovalSettings | null,
+  hasPermission = false,
+): boolean {
+  if (!user) return false;
+  if (user.role === 'admin_master' || user.role === 'admin' || user.role === 'admin_company') return true;
+  if (approvalSettings && approvalSettings[entityType] === false) return true;
+  return hasPermission;
+}
+
+export function getInitialEntityStatus(
+  user: User | null | undefined,
+  entityType: keyof ApprovalSettings,
+  approvalSettings?: ApprovalSettings | null,
+  saveAsDraft = false,
+  hasPermission = false,
+): "draft" | "active" | "pending" {
+  if (saveAsDraft) return "draft";
+  if (!user) return "pending";
+  if (canBypassEntityApproval(user, entityType, approvalSettings, hasPermission)) return "active";
+  return "pending";
+}
+
+// Same as getInitialTransactionStatus but also respects per-company approval config.
+export function getInitialTransactionStatusWithSettings(
+  user: User | null | undefined,
+  approvalSettings?: ApprovalSettings | null,
+  saveAsDraft = false,
+): "draft" | "pending" | "completed" {
+  if (saveAsDraft) return "draft";
+  if (!user) return "pending";
+  const hasPermission = canBypassTransactionApproval(user);
+  if (canBypassEntityApproval(user, "transactions", approvalSettings, hasPermission)) return "completed";
+  return "pending";
+}
+
+// True for any role that can approve/reject items in the unified approvals queue.
+export function canApproveEntities(user: User | null | undefined): boolean {
+  if (!user) return false;
+  return user.role === 'admin_master' || user.role === 'admin' || user.role === 'admin_company';
 }
 
 // Check if user can edit general settings

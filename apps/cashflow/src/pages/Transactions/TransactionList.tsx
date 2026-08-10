@@ -242,9 +242,9 @@ const TransactionList: React.FC = () => {
   useEffect(() => {
     const loadFilters = async () => {
       const [branchResult, bankResult, customerResult, userResult] = await Promise.all([
-        databaseService.branches.getBranches(companyId),
-        databaseService.bankAccounts.getBankAccounts(companyId),
-        databaseService.customers.getCustomers({ limit: 500, company_id: companyId }),
+        databaseService.branches.getBranches(companyId, "active"),
+        databaseService.bankAccounts.getBankAccounts(companyId, "active"),
+        databaseService.customers.getCustomers({ limit: 500, company_id: companyId, status: "active" }),
         databaseService.users.getUsers(),
       ]);
 

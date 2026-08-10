@@ -219,7 +219,7 @@ export const backupService = {
           await databaseService.customers.getCustomers({
             company_id: options.company_id,
             branch_id: options.branch_id,
-            is_active: true,
+            status: "all",
           });
         backupData.customers = customers;
         backupData.metadata.totalCustomers = customers.length;

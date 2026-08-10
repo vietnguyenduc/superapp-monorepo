@@ -12,7 +12,7 @@ import {
   validateTransactionData,
   parseTransactionData,
 } from "../../utils/importUtils";
-import { canImportTransactions, getInitialTransactionStatus } from "../../utils/permissions";
+import { canImportTransactions, getInitialTransactionStatusWithSettings } from "../../utils/permissions";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import { databaseService } from "../../services/database";
 import Button from "../../components/UI/Button";
@@ -229,9 +229,9 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         return;
       }
       const [customerResult, bankResult, branchResult] = await Promise.all([
-        databaseService.customers.getCustomers({ limit: 2000, company_id: companyId }),
-        databaseService.bankAccounts.getBankAccounts(companyId),
-        databaseService.branches.getBranches(companyId),
+        databaseService.customers.getCustomers({ limit: 2000, company_id: companyId, status: "active" }),
+        databaseService.bankAccounts.getBankAccounts(companyId, "active"),
+        databaseService.branches.getBranches(companyId, "active"),
       ]);
 
       if (customerResult?.data) {
@@ -533,7 +533,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
       }
 
       const branchId = user?.branch_id || null;
-      const initialStatus = getInitialTransactionStatus(user, saveAsDraft);
+      const initialStatus = getInitialTransactionStatusWithSettings(user, user?.company?.approval_settings, saveAsDraft);
       const dataWithStatus = dataToImport.map((row) => ({ ...row, status: initialStatus }));
       setImportSuccess(null);
       setImportError(null);

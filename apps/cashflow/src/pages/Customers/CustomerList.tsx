@@ -7,6 +7,7 @@ import { useAuthContext as useAuth } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useDebounce } from "../../hooks/useDebounce";
 import { databaseService } from "../../services/database";
+import { getInitialEntityStatus, canManageAllCustomers } from "../../utils/permissions";
 import type { Customer } from "../../types";
 import { LoadingFallback, ErrorFallback } from "../../components/UI/FallbackUI";
 import {
@@ -422,10 +423,18 @@ const CustomerList: React.FC = () => {
         let result;
 
         if (state.formMode === "create") {
+          const status = getInitialEntityStatus(
+            user,
+            "customers",
+            user?.company?.approval_settings,
+            false,
+            canManageAllCustomers(user),
+          );
           result = await databaseService.customers.createCustomer({
             ...customerData,
             company_id: customerData.company_id ?? companyId ?? null,
             branch_id: customerData.branch_id ?? user?.branch_id ?? null,
+            status,
           });
         } else {
           result = await databaseService.customers.updateCustomer(

@@ -24,6 +24,7 @@ const CustomerImport = lazyWithRetry(() => import("./pages/DataImport/CustomerIm
 const Settings = lazyWithRetry(() => import("./pages/Settings/Settings"));
 const Profile = lazyWithRetry(() => import("./pages/Profile/Profile"));
 const Manual = lazyWithRetry(() => import("./pages/Manual/Manual"));
+const ApprovalsPage = lazyWithRetry(() => import("./pages/Approvals"));
 const Login = lazyWithRetry(() => import("./pages/Auth/Login"));
 const SignUp = lazyWithRetry(() => import("./pages/Auth/SignUp"));
 const ResetPassword = lazyWithRetry(() => import("./pages/Auth/ResetPassword"));
@@ -77,6 +78,7 @@ function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="profile" element={<Profile />} />
             <Route path="manual" element={<Manual />} />
+            <Route path="approvals" element={<ApprovalsPage />} />
             <Route path="import/transactions" element={<TransactionImport />} />
             <Route path="import/customers" element={<CustomerImport />} />
           </Route>

@@ -13,6 +13,7 @@ import { BranchesTab } from "./components/tabs/BranchesTab";
 import { CustomerFieldsTab } from "./components/tabs/CustomerFieldsTab";
 import { UsersTab } from "./components/tabs/UsersTab";
 import { BackupTab } from "./components/tabs/BackupTab";
+import { ApprovalSettingsTab } from "./components/tabs/ApprovalSettingsTab";
 
 const Settings: FC = () => {
   const settings = useSettingsState();
@@ -104,6 +105,7 @@ const SettingsContent: FC = () => {
           {s.activeTab === "branches" && <BranchesTab />}
           {s.activeTab === "customer-fields" && <CustomerFieldsTab />}
           {s.activeTab === "users" && <UsersTab />}
+          {s.activeTab === "approval-settings" && <ApprovalSettingsTab />}
           {s.activeTab === "backup" && <BackupTab />}
         </div>
       </div>

@@ -9,7 +9,7 @@ import { useAuthContext } from "@superapp/iam";
 import { captureException } from "@superapp/shared-utils";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import type { Customer, ImportData, ImportError } from "../../types";
-import { canImportCustomers } from "../../utils/permissions";
+import { canImportCustomers, getInitialEntityStatus, canManageAllCustomers } from "../../utils/permissions";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import { databaseService } from "../../services/database";
 import Button from "../../components/UI/Button";
@@ -372,6 +372,13 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     }
 
     const branchId = user?.branch_id || null; // Admin can have null branch_id
+    const status = getInitialEntityStatus(
+      user,
+      "customers",
+      user?.company?.approval_settings,
+      false,
+      canManageAllCustomers(user),
+    );
 
     // Only import rows that are not already known duplicates. Duplicates that
     // appeared between preview and import will be skipped gracefully by the
@@ -384,6 +391,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
         notes: customer.notes,
         branch_id: branchId,
         company_id: companyId,
+        status,
       }));
 
     setIsProcessing(true);
@@ -521,12 +529,20 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     setSingleError(null);
     setIsCreatingSingle(true);
     try {
+      const status = getInitialEntityStatus(
+        user,
+        "customers",
+        user?.company?.approval_settings,
+        false,
+        canManageAllCustomers(user),
+      );
       const payload = {
         ...singleCustomer,
         customer_code: code,
         phone,
         branch_id: branchId,
         company_id: companyId,
+        status,
       };
       const result = await databaseService.customers.createCustomer(payload);
       if (result.error) {

@@ -12,6 +12,13 @@ export interface StaffPermissions {
   [key: string]: boolean | undefined;
 }
 
+export interface ApprovalSettings {
+  transactions?: boolean;
+  customers?: boolean;
+  bank_accounts?: boolean;
+  branches?: boolean;
+}
+
 export interface Company {
   id: string;
   name: string;
@@ -22,6 +29,7 @@ export interface Company {
   phone?: string;
   email?: string;
   website?: string;
+  approval_settings?: ApprovalSettings | null;
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -42,6 +50,7 @@ export interface Branch {
   created_at: string;
   updated_at: string;
   is_active: boolean;
+  status?: string | null;
 }
 
 export interface User {
@@ -72,6 +81,7 @@ export interface BankAccount {
   company_id?: string;
   balance: number;
   is_active: boolean;
+  status?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -92,6 +102,7 @@ export interface Customer {
   current_balance?: number;
   last_transaction_date?: string;
   is_active: boolean;
+  status?: string | null;
   created_at: string;
   updated_at: string;
   updated_by?: string | null;

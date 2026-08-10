@@ -6,17 +6,19 @@ import { insertWithFallback, updateWithFallback } from "./updateHelpers";
 import type { Branch } from "../types";
 
 export class BranchService extends BaseService {
-  static async getBranches(companyId?: string) {
+  static async getBranches(companyId?: string, status?: string) {
     return this.execute(
       async () => {
         let query = apiClient.from("branches").select("*");
         if (companyId) query = query.eq("company_id", companyId);
+        if (status) query = query.eq("status", status);
         const { data, error } = await query;
         return { data, error };
       },
       async () => {
         let data = (trialGet("branches") || []) as Branch[];
         if (companyId) data = data.filter((b) => b.company_id === companyId);
+        if (status) data = data.filter((b) => b.status === status);
         return { data, error: null };
       }
     );

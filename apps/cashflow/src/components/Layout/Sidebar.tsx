@@ -9,7 +9,7 @@ import { CompanyBadge } from "@superapp/iam";
 import { supabase } from "../../services/supabase";
 import { clearTrialStore } from "../../services/trialMockStore";
 import { logger } from "../../utils/logger";
-import { canImportCustomers, canImportTransactions } from "../../utils/permissions";
+import { canImportCustomers, canImportTransactions, canApproveEntities } from "../../utils/permissions";
 
 // Preload lazy route chunks on hover so navigation feels instant on click.
 // The import() is cached by the bundler — clicking later reuses the same chunk.
@@ -19,6 +19,7 @@ const routePrefetch: Record<string, () => Promise<unknown>> = {
   "/transactions": () => import("../../pages/Transactions/TransactionList"),
   "/settings": () => import("../../pages/Settings/Settings"),
   "/manual": () => import("../../pages/Manual/Manual"),
+  "/approvals": () => import("../../pages/Approvals"),
 };
 
 interface MenuItem {
@@ -64,7 +65,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const showImportCustomers = user ? canImportCustomers(user) : false;
   const showImportTransactions = user ? canImportTransactions(user) : false;
 
-  const menuItems: MenuItem[] = [
+  const menuItems: MenuItem[] = ([
     {
       path: "/dashboard",
       name: t("navigation.dashboard"),
@@ -132,6 +133,25 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       hasAddButton: showImportTransactions,
       addAction: () => navigate("/import/transactions"),
     },
+    canApproveEntities(user) && {
+      path: "/approvals",
+      name: "Duyệt",
+      icon: (
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      ),
+    },
     {
       path: "/settings",
       name: t("navigation.settings"),
@@ -176,7 +196,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
         </svg>
       ),
     },
-  ];
+  ] as (MenuItem | false)[]).filter((item): item is MenuItem => Boolean(item));
 
   return (
     <div className="w-80 bg-white dark:bg-gray-900 shadow-sm border-r border-gray-200 dark:border-gray-700 min-h-screen no-scrollbar overflow-y-auto">

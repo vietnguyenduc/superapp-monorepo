@@ -9,6 +9,7 @@ import { reportService } from "./reportService";
 import { userService } from "./user-service";
 import { colorSettingsService } from "./colorSettingsService";
 import { backupHistoryService } from "./backupHistoryService";
+import { approvalService } from "./approvalService";
 
 // Export all services as a single object to match the import in Dashboard.tsx
 export const databaseService = {
@@ -22,6 +23,7 @@ export const databaseService = {
   users: userService,
   colorSettings: colorSettingsService,
   backupHistory: backupHistoryService,
+  approvals: approvalService,
 };
 
 export type { Customer, Transaction, BankAccount, TransactionType, Branch, TimeRange, CashFlowData } from "../types";
