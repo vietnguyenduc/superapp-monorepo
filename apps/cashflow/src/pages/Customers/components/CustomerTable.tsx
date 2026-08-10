@@ -154,13 +154,13 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
           <tr>
             <th
               scope="col"
-              className="hidden sm:table-cell px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap w-14 sticky top-0 z-10 bg-gray-50 dark:bg-gray-700"
+              className="hidden sm:table-cell px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap w-14 sticky top-0 left-0 z-20 bg-gray-50 dark:bg-gray-700"
             >
               <span>GD</span>
             </th>
             <th
               scope="col"
-              className={`${isVisible("customerCode") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap w-16 sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("customerCode") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap w-16 sticky top-0 sm:sticky sm:left-[3.5rem] z-20 bg-gray-50 dark:bg-gray-700`}
               onClick={() => handleSort("customer_code")}
             >
               <div className="flex items-center space-x-1">
@@ -170,7 +170,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("fullName") ? "" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-normal min-w-[14rem] max-w-[24rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("fullName") ? "" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-normal w-full sm:w-[14rem] sticky top-0 sm:sticky sm:left-[7.5rem] z-20 bg-gray-50 dark:bg-gray-700`}
               onClick={() => handleSort("full_name")}
             >
               <div className="flex items-center space-x-1">
@@ -180,7 +180,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("balance") ? "hidden md:table-cell text-right" : "hidden"} px-3 py-3 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap min-w-[6rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("balance") ? "hidden md:table-cell text-right" : "hidden"} px-3 py-3 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap w-[6rem] sticky top-0 md:sticky md:left-[21.5rem] z-20 bg-gray-50 dark:bg-gray-700`}
               onClick={() => handleSort("total_balance")}
             >
               <div className="flex items-center justify-end space-x-1">
@@ -190,7 +190,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap leading-tight min-w-[9rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap leading-tight w-[9rem] sticky top-0 lg:sticky lg:left-[27.5rem] z-20 bg-gray-50 dark:bg-gray-700`}
               onClick={() => handleSort("last_transaction_date")}
             >
               <div className="flex items-center space-x-1">
@@ -237,14 +237,14 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
           {customers.map((customer) => (
             <tr
               key={customer.id}
-              className={`hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-200 dark:border-gray-600 ${
+              className={`group hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-200 dark:border-gray-600 ${
                 hoveredRow === customer.id ? "bg-gray-100 dark:bg-gray-700" : ""
               }`}
               onMouseEnter={() => setHoveredRow(customer.id)}
               onMouseLeave={() => setHoveredRow(null)}
               onClick={() => onCustomerSelect(customer)}
             >
-              <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap w-14">
+              <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap w-14 sticky left-0 z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-700">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -268,10 +268,10 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                   </svg>
                 </button>
               </td>
-              <td className={`${isVisible("customerCode") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 whitespace-nowrap w-16`}>
+              <td className={`${isVisible("customerCode") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 whitespace-nowrap w-16 sm:sticky sm:left-[3.5rem] z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-700`}>
                 <div className="text-xs font-bold font-mono text-gray-900 dark:text-white">{customer.customer_code}</div>
               </td>
-              <td className={`${isVisible("fullName") ? "" : "hidden"} w-full sm:w-auto px-4 py-4 sm:px-3 sm:py-3 min-w-0 sm:min-w-[14rem] max-w-full sm:max-w-[20rem] lg:max-w-[24rem]`}>
+              <td className={`${isVisible("fullName") ? "" : "hidden"} w-full sm:w-[14rem] px-4 py-4 sm:px-3 sm:py-3 sm:sticky sm:left-[7.5rem] z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-700`}>
                 <div className={`flex items-center justify-between gap-2 sm:hidden mb-2 ${isVisible("customerCode") ? "" : "hidden"}`}>
                   <div className="flex items-center gap-2">
                     <button
@@ -361,12 +361,12 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                   </div>
                 </div>
               </td>
-              <td className={`${isVisible("balance") ? "hidden md:table-cell text-right" : "hidden"} px-3 py-3 whitespace-nowrap min-w-[5rem]`}>
+              <td className={`${isVisible("balance") ? "hidden md:table-cell text-right" : "hidden"} px-3 py-3 whitespace-nowrap w-[6rem] md:sticky md:left-[21.5rem] z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-700`}>
                 <div className="text-xs font-medium text-gray-900 dark:text-white">
                   {formatCurrency(customer.total_balance || 0)}
                 </div>
               </td>
-              <td className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 whitespace-nowrap min-w-[9rem] text-sm text-gray-900 dark:text-white`}>
+              <td className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 whitespace-nowrap w-[9rem] lg:sticky lg:left-[27.5rem] z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-700 text-sm text-gray-900 dark:text-white`}>
                 {customer.last_transaction_date
                   ? formatDate(customer.last_transaction_date)
                   : t("customers.noTransactions")}
