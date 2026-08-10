@@ -67,6 +67,7 @@ const seedData = {
     branch_id: "trial-branch",
     company_id: "trial-company",
     is_active: true,
+    status: 'active',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     partner_type: 'customer',

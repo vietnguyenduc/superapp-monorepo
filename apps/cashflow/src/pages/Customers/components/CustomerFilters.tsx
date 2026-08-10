@@ -2,19 +2,31 @@ import React, { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
 import { useTranslation } from "react-i18next";
 import Button from "../../../components/UI/Button";
+import { formatCompactCurrency } from "../../../utils/formatting";
 
 interface CustomerFiltersProps {
   dateRange: { start: string; end: string } | null;
   onDateRangeChange: (dateRange: { start: string; end: string } | null) => void;
+  balanceRange: { min: number | null; max: number | null } | null;
+  onBalanceRangeChange: (balanceRange: { min: number | null; max: number | null } | null) => void;
 }
 
 const CustomerFilters: React.FC<CustomerFiltersProps> = ({
   dateRange,
   onDateRangeChange,
+  balanceRange,
+  onBalanceRangeChange,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [minInput, setMinInput] = useState(balanceRange?.min ?? "");
+  const [maxInput, setMaxInput] = useState(balanceRange?.max ?? "");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
+
+  useEffect(() => {
+    setMinInput(balanceRange?.min ?? "");
+    setMaxInput(balanceRange?.max ?? "");
+  }, [balanceRange?.min, balanceRange?.max]);
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -82,6 +94,7 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
 
   const clearFilters = () => {
     onDateRangeChange(null);
+    onBalanceRangeChange(null);
     setIsOpen(false);
   };
 
@@ -106,6 +119,30 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
   const handleApply = () => {
     setIsOpen(false);
   };
+
+  const handleMinChange = (value: string) => {
+    const num = value === "" ? null : Number(value);
+    const nextMin = Number.isFinite(num) && num !== null ? num : null;
+    const nextMax = maxInput === "" ? null : Number(maxInput);
+    setMinInput(value);
+    onBalanceRangeChange({
+      min: nextMin,
+      max: Number.isFinite(nextMax) ? nextMax : null,
+    });
+  };
+
+  const handleMaxChange = (value: string) => {
+    const num = value === "" ? null : Number(value);
+    const nextMax = Number.isFinite(num) && num !== null ? num : null;
+    const nextMin = minInput === "" ? null : Number(minInput);
+    setMaxInput(value);
+    onBalanceRangeChange({
+      min: Number.isFinite(nextMin) ? nextMin : null,
+      max: nextMax,
+    });
+  };
+
+  const hasActiveFilters = Boolean(dateRange) || (balanceRange?.min != null) || (balanceRange?.max != null);
 
   return (
     <div className="flex flex-wrap gap-2 items-center">
@@ -230,11 +267,34 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
         )}
       </div>
 
+      {/* Balance Range Filter */}
+      <div className="flex items-center gap-2">
+        <input
+          type="number"
+          inputMode="numeric"
+          placeholder="Dư nợ từ"
+          value={minInput}
+          onChange={(e) => handleMinChange(e.target.value)}
+          className="w-28 sm:w-32 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+        <span className="text-gray-400">-</span>
+        <input
+          type="number"
+          inputMode="numeric"
+          placeholder="Dư nợ đến"
+          value={maxInput}
+          onChange={(e) => handleMaxChange(e.target.value)}
+          className="w-28 sm:w-32 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+      </div>
+
       {/* Active Filters Display */}
-      {dateRange && (
+      {hasActiveFilters && (
         <div className="flex items-center space-x-2">
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200">
-            {formatDateRange()}
+            {dateRange ? formatDateRange() : ""}
+            {dateRange && (balanceRange?.min != null || balanceRange?.max != null) && " · "}
+            {(balanceRange?.min != null || balanceRange?.max != null) && `${formatCompactCurrency(balanceRange?.min ?? 0)} - ${balanceRange?.max != null ? formatCompactCurrency(balanceRange.max) : "∞"}`}
             <button
               onClick={clearFilters}
               className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-primary-400 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-700 hover:text-primary-500 dark:hover:text-primary-100 focus:outline-none focus:bg-primary-500 focus:text-white"
