@@ -21,6 +21,8 @@ export interface AppDefinition {
   /** Optional VITE_ env-var override (takes precedence over auto-detection) */
   envVar?: string;
   color: string;
+  /** If true, the app is hidden from the App Switcher (e.g. beta/pre-launch). */
+  hidden?: boolean;
 }
 
 /** Canonical list of all superapp applications. */
@@ -84,10 +86,11 @@ export const APP_DEFINITIONS: AppDefinition[] = [
   {
     id: 'framework-method',
     name: 'Framework Method',
-    key: 'framework-method',
+    key: 'framework',
     devPort: 5179,
     envVar: 'VITE_FRAMEWORK_METHOD_APP_URL',
     color: 'bg-violet-100 text-violet-600',
+    hidden: true,
   },
 ];
 
