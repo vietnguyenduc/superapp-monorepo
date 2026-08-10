@@ -29,7 +29,7 @@ const AppSwitcher: React.FC<AppSwitcherProps> = ({
   const isAdmin = userRole ? adminRoles.includes(userRole) : false;
 
   const visibleApps: (AppDefinition & { url: string })[] = APP_DEFINITIONS
-    .filter(app => app.id !== 'admin' || isAdmin)
+    .filter(app => !app.hidden && (app.id !== 'admin' || isAdmin))
     .map(app => ({ ...app, url: resolveAppUrl(app, env) }));
 
   useEffect(() => {

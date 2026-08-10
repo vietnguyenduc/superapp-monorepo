@@ -5,7 +5,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useDebounce } from "../../hooks/useDebounce";
 import { databaseService } from "../../services/database";
-import type { Transaction } from "../../types";
+import type { Transaction, TransactionStatus } from "../../types";
+import { useAuthContext as useAuth } from "@superapp/iam";
+import { canApproveTransactions } from "../../utils/permissions";
 import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../utils/formatting";
 import { getCustomerBalanceDelta, parseAmount } from "../../services/businessLogic";
 import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
@@ -35,7 +37,7 @@ interface TransactionListState {
     id: string | null;
     name: string | null;
   } | null;
-  statusFilter: "all" | "pending" | "completed";
+  statusFilter: "all" | TransactionStatus;
   groupBy: "" | "day" | "week" | "month" | "branch" | "transaction_type" | "customer";
 }
 
@@ -60,6 +62,8 @@ const TransactionList: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const companyId = useCompanyId();
+  const { user } = useAuth();
+  const canApprove = canApproveTransactions(user);
   const {
     getNameById: getTransactionTypeName,
     getMathFactor,
@@ -96,6 +100,36 @@ const TransactionList: React.FC = () => {
 
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
 
+  const COLUMN_OPTIONS = [
+    { key: "date", label: "Ngày giao dịch", always: true },
+    { key: "customer", label: "Khách hàng", always: true },
+    { key: "type", label: "Loại giao dịch" },
+    { key: "amount", label: "Số tiền" },
+    { key: "branch", label: "Văn phòng" },
+    { key: "bank", label: "Tài khoản" },
+    { key: "creator", label: "Người thực hiện" },
+    { key: "code", label: "Mã GD" },
+    { key: "status", label: "Trạng thái" },
+    { key: "actions", label: "Hành động", always: true },
+  ];
+
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() =>
+    COLUMN_OPTIONS.reduce((acc, col) => {
+      acc[col.key] = true;
+      return acc;
+    }, {} as Record<string, boolean>)
+  );
+  const [showColumnMenu, setShowColumnMenu] = useState(false);
+
+  const toggleColumn = (key: string) => {
+    setVisibleColumns((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const visibleColumnKeys = useMemo(
+    () => COLUMN_OPTIONS.filter((col) => col.always || visibleColumns[col.key]).map((col) => col.key),
+    [visibleColumns]
+  );
+
   // Initialize customer filter from URL params
   useEffect(() => {
     const customerId = searchParams.get("customer_id");
@@ -131,6 +165,8 @@ const TransactionList: React.FC = () => {
         transaction_type: state.transactionType || undefined,
         customer_id: state.customerFilter?.id || undefined,
         branch_id: state.branchFilter || undefined,
+        bank_account_id: state.bankAccountFilter || undefined,
+        created_by: state.userFilter || undefined,
         status: state.statusFilter === "all" ? undefined : state.statusFilter,
         company_id: companyId,
         page: state.currentPage,
@@ -138,26 +174,17 @@ const TransactionList: React.FC = () => {
       };
 
       const response = await databaseService.transactions.getTransactions(filters);
-      
+
       if (response.error) {
         throw new Error(response.error);
       }
 
       const rawTransactions = response.data || [];
-      const filteredTransactions = rawTransactions.filter((transaction) => {
-        if (state.bankAccountFilter && transaction.bank_account_id !== state.bankAccountFilter) {
-          return false;
-        }
-        if (state.userFilter && transaction.created_by !== state.userFilter) {
-          return false;
-        }
-        return true;
-      });
 
       setState((prev) => ({
         ...prev,
-        transactions: filteredTransactions,
-        totalCount: filteredTransactions.length,
+        transactions: rawTransactions,
+        totalCount: response.count ?? rawTransactions.length,
         loading: false,
       }));
     } catch (err) {
@@ -198,7 +225,7 @@ const TransactionList: React.FC = () => {
         resizeObserver.unobserve(tableContainerRef.current);
       }
     };
-  }, [state.transactions, state.groupBy]);
+  }, [state.transactions, state.groupBy, visibleColumnKeys]);
 
   const handleTopScroll = useCallback(() => {
     if (topScrollRef.current && tableContainerRef.current) {
@@ -215,9 +242,9 @@ const TransactionList: React.FC = () => {
   useEffect(() => {
     const loadFilters = async () => {
       const [branchResult, bankResult, customerResult, userResult] = await Promise.all([
-        databaseService.branches.getBranches(companyId),
-        databaseService.bankAccounts.getBankAccounts(companyId),
-        databaseService.customers.getCustomers({ limit: 500, company_id: companyId }),
+        databaseService.branches.getBranches(companyId, "active"),
+        databaseService.bankAccounts.getBankAccounts(companyId, "active"),
+        databaseService.customers.getCustomers({ limit: 500, company_id: companyId, status: "active" }),
         databaseService.users.getUsers(),
       ]);
 
@@ -289,6 +316,10 @@ const TransactionList: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     setState((prev) => ({ ...prev, currentPage: page }));
+  };
+
+  const handlePageSizeChange = (pageSize: number) => {
+    setState((prev) => ({ ...prev, pageSize, currentPage: 1 }));
   };
 
   const handleSearch = (term: string) => {
@@ -456,6 +487,7 @@ const TransactionList: React.FC = () => {
   const hasCustomerFilter = Boolean(state.customerFilter?.id);
 
   const paginationInfo = useMemo(() => {
+    if (state.totalCount === 0) return { start: 0, end: 0, total: 0 };
     const start = (state.currentPage - 1) * state.pageSize + 1;
     const end = Math.min(state.currentPage * state.pageSize, state.totalCount);
     return { start, end, total: state.totalCount };
@@ -619,25 +651,43 @@ const TransactionList: React.FC = () => {
 
           {/* Status Tabs */}
           <div className="flex flex-wrap border-b border-gray-200 dark:border-gray-700 mb-4">
-            <button
-              className={`px-4 py-2 text-sm font-medium ${state.statusFilter === "all" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"}`}
-              onClick={() => setState(prev => ({ ...prev, statusFilter: "all", currentPage: 1 }))}
-            >
-              Tất cả
-            </button>
-            <button
-              className={`px-4 py-2 text-sm font-medium flex items-center gap-2 ${state.statusFilter === "pending" ? "text-amber-600 border-b-2 border-amber-600" : "text-gray-500 hover:text-gray-700"}`}
-              onClick={() => setState(prev => ({ ...prev, statusFilter: "pending", currentPage: 1 }))}
-            >
-              Hàng chờ duyệt
-              {state.statusFilter === "pending" && <span className="bg-amber-100 text-amber-700 py-0.5 px-2 rounded-full text-xs">{state.totalCount}</span>}
-            </button>
-            <button
-              className={`px-4 py-2 text-sm font-medium ${state.statusFilter === "completed" ? "text-green-600 border-b-2 border-green-600" : "text-gray-500 hover:text-gray-700"}`}
-              onClick={() => setState(prev => ({ ...prev, statusFilter: "completed", currentPage: 1 }))}
-            >
-              Đã hoàn thành
-            </button>
+            {[
+              { key: "all", label: "Tất cả", color: "blue" },
+              { key: "draft", label: "Nháp", color: "gray" },
+              { key: "pending", label: "Chờ duyệt", color: "amber" },
+              { key: "completed", label: "Hoàn thành", color: "green" },
+              { key: "rejected", label: "Từ chối", color: "red" },
+            ].map((tab) => {
+              const active = state.statusFilter === tab.key;
+              const colorClass =
+                tab.color === "blue"
+                  ? "text-blue-600 dark:text-blue-300 border-blue-600 dark:border-blue-300"
+                  : tab.color === "gray"
+                  ? "text-gray-600 dark:text-gray-300 border-gray-600 dark:border-gray-300"
+                  : tab.color === "amber"
+                  ? "text-amber-600 dark:text-amber-300 border-amber-600 dark:border-amber-300"
+                  : tab.color === "green"
+                  ? "text-green-600 dark:text-green-300 border-green-600 dark:border-green-300"
+                  : "text-red-600 dark:text-red-300 border-red-600 dark:border-red-300";
+              const badgeClass =
+                tab.color === "amber"
+                  ? "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300"
+                  : tab.color === "red"
+                  ? "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300"
+                  : tab.color === "green"
+                  ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300";
+              return (
+                <button
+                  key={tab.key}
+                  className={`px-4 py-2 text-sm font-medium flex items-center gap-2 transition-colors ${active ? `${colorClass} border-b-2` : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"}`}
+                  onClick={() => setState(prev => ({ ...prev, statusFilter: tab.key as typeof prev.statusFilter, currentPage: 1 }))}
+                >
+                  {tab.label}
+                  {active && tab.key !== "all" && <span className={`py-0.5 px-2 rounded-full text-xs ${badgeClass}`}>{state.totalCount}</span>}
+                </button>
+              );
+            })}
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700 mb-4 space-y-3">
@@ -649,21 +699,29 @@ const TransactionList: React.FC = () => {
                   className={`w-full inline-flex items-center justify-between rounded-md border ${showDateMenu ? "border-blue-500 ring-2 ring-blue-100" : "border-gray-300 dark:border-gray-700"} bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-white`}
                 >
                   <span className="inline-flex items-center gap-2">
-                    <span aria-hidden>📅</span>
+                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
                     {timeLabel}
                   </span>
-                  <span aria-hidden>▾</span>
+                  <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </button>
                 {showDateMenu && (
                   <div className="absolute z-50 mt-2 w-full max-w-xs sm:max-w-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 space-y-3">
                     <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">Khoảng thời gian</div>
                     <div className="grid grid-cols-1 gap-2">
-                      <button className="text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-sm" onClick={() => applyPresetRange("today")}>Hôm nay</button>
-                      <button className="text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-sm" onClick={() => applyPresetRange("lastWeek")}>Tuần trước</button>
-                      <button className="text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-sm" onClick={() => applyPresetRange("thisMonth")}>Tháng này</button>
-                      <button className="text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-sm" onClick={() => applyPresetRange("thisQuarter")}>Quý này</button>
-                      <button className="text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-sm" onClick={() => applyPresetRange("thisYear")}>Năm nay</button>
-                      <button className="text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-sm" onClick={() => applyPresetRange("all")}>Tất cả thời gian</button>
+                      {[
+                        { k: "today", l: "Hôm nay" },
+                        { k: "lastWeek", l: "Tuần trước" },
+                        { k: "thisMonth", l: "Tháng này" },
+                        { k: "thisQuarter", l: "Quý này" },
+                        { k: "thisYear", l: "Năm nay" },
+                        { k: "all", l: "Tất cả thời gian" },
+                      ].map((o) => (
+                        <button key={o.k} className="text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-sm text-gray-900 dark:text-white transition-colors" onClick={() => applyPresetRange(o.k as any)}>{o.l}</button>
+                      ))}
                     </div>
                     <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">Tùy chọn</div>
                     <div className="space-y-2">
@@ -752,11 +810,65 @@ const TransactionList: React.FC = () => {
                 <option value="transaction_type">Loại giao dịch</option>
                 <option value="customer">Khách hàng</option>
               </select>
+
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowColumnMenu((v) => !v)}
+                  className={`w-full inline-flex items-center justify-between rounded-md border ${showColumnMenu ? "border-blue-500 ring-2 ring-blue-100" : "border-gray-300 dark:border-gray-700"} bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-white`}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Cột hiển thị
+                  </span>
+                  <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {showColumnMenu && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setShowColumnMenu(false)} />
+                    <div className="absolute z-40 right-0 mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-1">
+                      {COLUMN_OPTIONS.map((col) => (
+                        <label
+                          key={col.key}
+                          className={`flex items-center gap-2 px-2 py-1.5 rounded text-sm ${col.always ? "text-gray-400 dark:text-gray-500 cursor-not-allowed" : "hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={col.always || visibleColumns[col.key]}
+                            disabled={col.always}
+                            onChange={() => toggleColumn(col.key)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-gray-900 dark:text-white">{col.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center justify-start sm:justify-end">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="text-sm text-gray-600 dark:text-gray-300">
                 Hiển thị {paginationInfo.start} - {paginationInfo.end} / {paginationInfo.total} giao dịch
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600 dark:text-gray-300">Số dòng/trang:</label>
+                <select
+                  className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1 text-sm"
+                  value={state.pageSize}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
               </div>
             </div>
           </div>
@@ -823,117 +935,173 @@ const TransactionList: React.FC = () => {
               <div ref={topInnerRef} className="h-1" />
             </div>
             <div ref={tableContainerRef} className="overflow-x-auto relative" onScroll={handleTableScroll}>
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th className="sticky left-0 z-20 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">Khách hàng</th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ngày giao dịch</th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Loại giao dịch</th>
-                  <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Số tiền</th>
-                  <th className="hidden lg:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Văn phòng</th>
-                  <th className="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tài khoản</th>
-                  <th className="hidden lg:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Người thực hiện</th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mã GD</th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trạng thái</th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hành động</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
-                {state.transactions.map((transaction) => (
-                  <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="sticky left-0 z-10 px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
-                      {transaction.customer_id ? (
-                        <button
-                          type="button"
-                          className="block text-left text-gray-900 dark:text-white hover:underline hover:text-blue-600 dark:hover:text-blue-400 transition-colors max-w-[10rem] truncate font-medium"
-                          title={transaction.customer_name || customers.find(c => c.id === String(transaction.customer_id))?.name || `Customer #${transaction.customer_id}`}
-                          onClick={() => navigate(`/customers/${transaction.customer_id}`)}
-                        >
-                          {transaction.customer_name || (transaction.customer_id ? customers.find(c => c.id === String(transaction.customer_id))?.name : null) || `Customer #${transaction.customer_id}`}
-                        </button>
-                      ) : (
-                        <span className="text-gray-500 dark:text-gray-400">Không có khách hàng</span>
-                      )}
-                      {getCustomerCode(transaction.customer_id) ? (
-                        <div className="mt-0.5 font-mono text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{getCustomerCode(transaction.customer_id)}</div>
-                      ) : null}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                      {formatDate(transaction.transaction_date)}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTransactionTypeColor(transaction.transaction_type)}`}
-                      >
-                        {getTransactionTypeName(transaction.transaction_type)}
-                      </span>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
-                      <span
-                        className={`text-xs sm:text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type, transaction.amount)}`}
-                      >
-                        {formatCurrency(parseAmount(transaction.amount))}
-                      </span>
-                    </td>
-                    <td className="hidden lg:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                      {transaction.branch_name || "—"}
-                    </td>
-                    <td className="hidden md:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                      {transaction.bank_account_name || transaction.bank_account_id ? `#${transaction.bank_account_id}` : "Không có tài khoản"}
-                    </td>
-                    <td className="hidden lg:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                      {userMap.get(transaction.created_by || "") || transaction.creator_name || transaction.created_by || "—"}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
-                      <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs">
-                        {transaction.transaction_code}
-                      </span>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      {transaction.status === 'pending' ? (
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">Chờ duyệt</span>
-                      ) : transaction.status === 'cancelled' ? (
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">Đã hủy</span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">Hoàn thành</span>
-                      )}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                      <div className="flex items-center gap-2">
-                        {transaction.status === 'pending' && (
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="sticky left-0 z-30 w-32 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">Ngày giao dịch</th>
+                    <th className="sticky left-32 z-20 w-48 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">Khách hàng</th>
+                    {visibleColumnKeys.includes("type") && (
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Loại giao dịch</th>
+                    )}
+                    {visibleColumnKeys.includes("amount") && (
+                      <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Số tiền</th>
+                    )}
+                    {visibleColumnKeys.includes("branch") && (
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Văn phòng</th>
+                    )}
+                    {visibleColumnKeys.includes("bank") && (
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tài khoản</th>
+                    )}
+                    {visibleColumnKeys.includes("creator") && (
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Người thực hiện</th>
+                    )}
+                    {visibleColumnKeys.includes("code") && (
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mã GD</th>
+                    )}
+                    {visibleColumnKeys.includes("status") && (
+                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trạng thái</th>
+                    )}
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hành động</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+                  {state.transactions.map((transaction) => (
+                    <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="sticky left-0 z-20 w-32 px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+                        {formatDate(transaction.transaction_date)}
+                      </td>
+                      <td className="sticky left-32 z-10 w-48 px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+                        {transaction.customer_id ? (
                           <button
                             type="button"
-                            className="px-2 py-1 rounded border border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-800 font-medium"
-                            onClick={async () => {
-                              if (!confirm("Xác nhận duyệt giao dịch vào công nợ?")) return;
-                              const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: 'completed' });
-                              if (error) toast.error("Lỗi khi duyệt"); else fetchTransactions();
-                            }}
+                            className="block text-left bg-transparent p-0 border-none text-gray-900 dark:text-white hover:underline hover:text-blue-600 dark:hover:text-blue-400 transition-colors max-w-44 truncate font-medium"
+                            title={transaction.customer_name || customers.find(c => c.id === String(transaction.customer_id))?.name || `Customer #${transaction.customer_id}`}
+                            onClick={() => navigate(`/customers/${transaction.customer_id}`)}
                           >
-                            Duyệt
+                            {transaction.customer_name || (transaction.customer_id ? customers.find(c => c.id === String(transaction.customer_id))?.name : null) || `Customer #${transaction.customer_id}`}
                           </button>
+                        ) : (
+                          <span className="text-gray-500 dark:text-gray-400">Không có khách hàng</span>
                         )}
-                        <button
-                          type="button"
-                          className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          onClick={() => openEditModal(transaction)}
-                        >
-                          Sửa
-                        </button>
-                        <button
-                          type="button"
-                          className="px-2 py-1 rounded border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-700 dark:bg-red-900/40 dark:text-red-200"
-                          onClick={() => handleDelete(transaction.id)}
-                        >
-                          Xóa
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        {getCustomerCode(transaction.customer_id) ? (
+                          <div className="mt-0.5 font-mono text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{getCustomerCode(transaction.customer_id)}</div>
+                        ) : null}
+                      </td>
+                      {visibleColumnKeys.includes("type") && (
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTransactionTypeColor(transaction.transaction_type)}`}
+                          >
+                            {getTransactionTypeName(transaction.transaction_type)}
+                          </span>
+                        </td>
+                      )}
+                      {visibleColumnKeys.includes("amount") && (
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
+                          <span
+                            className={`text-xs sm:text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type, transaction.amount)}`}
+                          >
+                            {formatCurrency(parseAmount(transaction.amount))}
+                          </span>
+                        </td>
+                      )}
+                      {visibleColumnKeys.includes("branch") && (
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
+                          {transaction.branch_name || "—"}
+                        </td>
+                      )}
+                      {visibleColumnKeys.includes("bank") && (
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
+                          {transaction.bank_account_name || transaction.bank_account_id ? `#${transaction.bank_account_id}` : "Không có tài khoản"}
+                        </td>
+                      )}
+                      {visibleColumnKeys.includes("creator") && (
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
+                          {userMap.get(transaction.created_by || "") || transaction.creator_name || transaction.created_by || "—"}
+                        </td>
+                      )}
+                      {visibleColumnKeys.includes("code") && (
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
+                          <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs">
+                            {transaction.transaction_code}
+                          </span>
+                        </td>
+                      )}
+                      {visibleColumnKeys.includes("status") && (
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                          {transaction.status === "draft" ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">Nháp</span>
+                          ) : transaction.status === "pending" ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Chờ duyệt</span>
+                          ) : transaction.status === "rejected" ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Từ chối</span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Hoàn thành</span>
+                          )}
+                        </td>
+                      )}
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
+                        <div className="flex items-center gap-2">
+                          {transaction.status === "draft" && (
+                            <button
+                              type="button"
+                              className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium"
+                              onClick={async () => {
+                                if (!confirm("Gửi giao dịch Nháp để chờ duyệt?")) return;
+                                const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "pending" });
+                                if (error) toast.error("Lỗi khi gửi duyệt"); else fetchTransactions();
+                              }}
+                            >
+                              Gửi duyệt
+                            </button>
+                          )}
+                          {canApprove && (transaction.status === "pending" || transaction.status === "rejected") && (
+                            <button
+                              type="button"
+                              className="px-2 py-1 rounded border border-green-300 dark:border-green-600 text-green-700 dark:text-green-200 bg-green-50 dark:bg-green-900/40 hover:bg-green-100 dark:hover:bg-green-800 font-medium"
+                              onClick={async () => {
+                                if (!confirm("Duyệt giao dịch vào công nợ?")) return;
+                                const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "completed" });
+                                if (error) toast.error("Lỗi khi duyệt"); else fetchTransactions();
+                              }}
+                            >
+                              Duyệt
+                            </button>
+                          )}
+                          {canApprove && transaction.status === "pending" && (
+                            <button
+                              type="button"
+                              className="px-2 py-1 rounded border border-red-300 dark:border-red-600 text-red-700 dark:text-red-200 bg-red-50 dark:bg-red-900/40 hover:bg-red-100 dark:hover:bg-red-800 font-medium"
+                              onClick={async () => {
+                                if (!confirm("Từ chối giao dịch này?")) return;
+                                const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "rejected" });
+                                if (error) toast.error("Lỗi khi từ chối"); else fetchTransactions();
+                              }}
+                            >
+                              Từ chối
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            onClick={() => openEditModal(transaction)}
+                          >
+                            Sửa
+                          </button>
+                          <button
+                            type="button"
+                            className="px-2 py-1 rounded border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-700 dark:bg-red-900/40 dark:text-red-200"
+                            onClick={() => handleDelete(transaction.id)}
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
         </div>
 
         {/* Mobile card list */}
@@ -1024,13 +1192,17 @@ const TransactionList: React.FC = () => {
                 </div>
 
                 <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
-                  {transaction.status === "pending" ? (
+                  {transaction.status === "draft" ? (
+                    <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                      Nháp
+                    </span>
+                  ) : transaction.status === "pending" ? (
                     <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                       Chờ duyệt
                     </span>
-                  ) : transaction.status === "cancelled" ? (
+                  ) : transaction.status === "rejected" ? (
                     <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                      Đã hủy
+                      Từ chối
                     </span>
                   ) : (
                     <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
@@ -1039,12 +1211,26 @@ const TransactionList: React.FC = () => {
                   )}
 
                   <div className="flex items-center gap-2">
-                    {transaction.status === "pending" && (
+                    {transaction.status === "draft" && (
                       <button
                         type="button"
-                        className="min-h-[44px] px-3 py-1.5 rounded-md text-xs font-medium border border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-800 transition-colors"
+                        className="min-h-[44px] px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         onClick={async () => {
-                          if (!confirm("Xác nhận duyệt giao dịch vào công nợ?")) return;
+                          if (!confirm("Gửi giao dịch Nháp để chờ duyệt?")) return;
+                          const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "pending" });
+                          if (error) toast.error("Lỗi khi gửi duyệt");
+                          else fetchTransactions();
+                        }}
+                      >
+                        Gửi duyệt
+                      </button>
+                    )}
+                    {canApprove && (transaction.status === "pending" || transaction.status === "rejected") && (
+                      <button
+                        type="button"
+                        className="min-h-[44px] px-3 py-1.5 rounded-md text-xs font-medium border border-green-300 dark:border-green-600 text-green-700 dark:text-green-200 bg-green-50 dark:bg-green-900/40 hover:bg-green-100 dark:hover:bg-green-800 transition-colors"
+                        onClick={async () => {
+                          if (!confirm("Duyệt giao dịch vào công nợ?")) return;
                           const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "completed" });
                           if (error) toast.error("Lỗi khi duyệt");
                           else fetchTransactions();
@@ -1053,9 +1239,23 @@ const TransactionList: React.FC = () => {
                         Duyệt
                       </button>
                     )}
+                    {canApprove && transaction.status === "pending" && (
+                      <button
+                        type="button"
+                        className="min-h-[44px] px-3 py-1.5 rounded-md text-xs font-medium border border-red-300 dark:border-red-600 text-red-700 dark:text-red-200 bg-red-50 dark:bg-red-900/40 hover:bg-red-100 dark:hover:bg-red-800 transition-colors"
+                        onClick={async () => {
+                          if (!confirm("Từ chối giao dịch này?")) return;
+                          const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "rejected" });
+                          if (error) toast.error("Lỗi khi từ chối");
+                          else fetchTransactions();
+                        }}
+                      >
+                        Từ chối
+                      </button>
+                    )}
                     <button
                       type="button"
-                      className="min-h-[44px] px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      className="min-h-[44px] px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                       onClick={() => openEditModal(transaction)}
                     >
                       Sửa
@@ -1074,7 +1274,7 @@ const TransactionList: React.FC = () => {
           )}
         </div>
 
-        {state.totalCount > state.pageSize && (
+        {state.totalCount > 0 && (
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-600">
             <Pagination
               currentPage={state.currentPage}

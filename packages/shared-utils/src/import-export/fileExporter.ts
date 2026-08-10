@@ -180,12 +180,6 @@ export function generateTemplate(
     throw new Error('No columns provided');
   }
 
-  // Create a single row with column headers
-  const templateData = columns.reduce((acc, col) => {
-    acc[col] = '';
-    return acc;
-  }, {} as Record<string, string>);
-
   // Export as CSV
   const csv = columns.join(',') + '\n';
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

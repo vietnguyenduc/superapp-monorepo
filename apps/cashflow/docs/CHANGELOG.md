@@ -1,5 +1,38 @@
 # Changelog — Cashflow
 
+## 2026-08-16
+
+### Added
+
+- **Unified Approvals page** — new `/approvals` route and sidebar item (admin only) that lists pending `transactions`, `customers`, `bank_accounts`, and `branches`. Admin can approve (status becomes `completed`/`active`) or reject (status becomes `rejected`) each item from one screen. `ApprovalsPage` is lazy-loaded and uses `approvalService.updateEntityStatus` for non-transaction entities; transactions reuse `transactionService.updateTransaction` so balance deltas are applied on approval.
+- **Per-company approval settings** — `Settings` has a new `Phân quyền duyệt` tab (admin only) with toggles for `transactions`, `customers`, `bank_accounts`, and `branches`. When a category is ON, staff creations go to `pending` and wait for admin approval; when OFF, staff can create directly if they have the relevant permission. Settings are persisted in `companies.approval_settings` JSONB.
+- **Entity status columns** — `customers`, `bank_accounts`, and `branches` now have a `status` column (`active` | `pending` | `rejected`). Default is `active`; new records created by staff respect `getInitialEntityStatus` and the company approval settings. Existing records are backfilled to `active`.
+- **Status-based filtering in services** — `customerService.getCustomers` defaults to `status = 'active'` (use `status: 'all'` to bypass). `bankAccountService.getBankAccounts` and `branchService.getBranches` accept an optional `status` parameter. Transaction/customer/bank/branch dropdowns in `TransactionList`, `TransactionImport`, and `Dashboard` now request only `active` records so pending items are not selectable.
+
+### UI/UX (Apple HIG)
+
+- `ApprovalsPage` now uses entity-type SVG icons, colored badges, `formatCurrency`/`formatDate`, and an empty-state illustration with a refresh action; filter pills have `role="tab"` and `aria-selected` and meet 44 px touch targets.
+- `Settings` tab grid replaces emoji with inline SVG icons, adds `role="tab"`/`aria-selected`, increases touch target to `min-h-[52px]`, highlights the active tab with a subtle shadow, and improves dark-mode contrast.
+- `TransactionList` and `CustomerList` pagination info now shows `0 / 0` instead of `1-0 / 0` when there are no results.
+- `TransactionList` status tabs use bright `dark:text-*` colors and high-contrast active badges; date/column trigger buttons use SVG chevrons instead of emojis; action buttons have explicit `dark:bg-gray-800` backgrounds so they remain legible in dark mode.
+
+### Migration
+
+- `supabase/migrations/046_entity_pending_status.sql` — adds `status` columns to `customers`, `bank_accounts`, and `branches` with `active` default and backfills existing rows.
+- `supabase/migrations/047_company_approval_settings.sql` — adds `companies.approval_settings` JSONB with all categories enabled by default and backfills existing companies.
+
+## 2026-08-15
+
+### Added
+
+- **Transaction status workflow** — transactions now have four statuses: `Nháp` (draft), `Chờ duyệt` (pending), `Hoàn thành` (completed), and `Từ chối` (rejected). `TransactionList` shows a tab for each status and a status badge per row. `admin-company`, `admin`, and `admin-master` accounts can create transactions as completed directly; `staff` accounts create transactions as pending unless `staff_permissions.transactions.bypass_approval` is enabled. Every new transaction can be saved as a draft from `TransactionImport` using the new "Lưu nháp" buttons.
+- **Staff `bypass_approval` permission** — `UsersTab` now has a toggle "Tạo giao dịch không cần duyệt" in the Giao dịch section, stored in `staff_permissions.transactions.bypass_approval` and honored by `getInitialTransactionStatus` and `canApproveTransactions` helpers.
+- **Status-aware balance sync** — `transactionService.ts` only applies balance deltas for transactions whose `status === "completed"`. Draft/pending/rejected rows do not affect `customers.total_balance` or `bank_accounts.balance`; status transitions (e.g. completed → rejected) reverse/adjust deltas correctly.
+
+### Migration
+
+- `supabase/migrations/045_transaction_status_draft_rejected.sql` — migrates the `transactions.status` CHECK constraint to allow `draft`, `pending`, `completed`, `rejected`; maps any existing `cancelled` rows to `rejected`; keeps default `completed` for backward-compatible inserts.
+
 ## 2026-08-13
 
 ### Fixed

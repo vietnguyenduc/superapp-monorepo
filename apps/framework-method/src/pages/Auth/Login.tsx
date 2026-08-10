@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuthContext } from "@superapp/iam";
 import { supabase } from "../../services/supabase";
 import { Button, Input } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 
 const Login = () => {
   const { t } = useI18n();
+  const { startTrial } = useAuthContext();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -59,12 +61,26 @@ const Login = () => {
           </Button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
-          Don&apos;t have an account?{" "}
-          <Link to="/signup" className="text-primary-600 hover:underline">
-            Sign up
-          </Link>
-        </p>
+        <div className="mt-4 space-y-3">
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full"
+            onClick={() => {
+              startTrial();
+              navigate("/dashboard");
+            }}
+          >
+            {t("login.trial")}
+          </Button>
+
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+            {t("login.noAccount")}{" "}
+            <Link to="/signup" className="text-primary-600 hover:underline">
+              {t("login.signUp")}
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

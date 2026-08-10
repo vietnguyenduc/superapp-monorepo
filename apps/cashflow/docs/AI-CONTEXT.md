@@ -28,8 +28,10 @@ A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management
 ## Important files
 
 - `src/services/transactionService.ts` — CRUD + bulk import + **write-time balance sync**.
-- `src/services/customerService.ts` — customer CRUD; `getCustomerById` returns the stored `total_balance` without recomputing it, so list and detail stay identical.
-- `src/services/bankAccountService.ts` — bank account CRUD.
+- `src/services/customerService.ts` — customer CRUD; defaults to `status='active'`; use `status='all'` to include pending/rejected.
+- `src/services/bankAccountService.ts` — bank account CRUD; optional `status` filter.
+- `src/services/branchService.ts` — branch CRUD; optional `status` filter.
+- `src/services/approvalService.ts` — generic `updateEntityStatus(table, id, status, companyId)` used by `ApprovalsPage`.
 - `src/services/backupHistoryService.ts` — backup history CRUD + `saveBackupToDatabase`, `loadBackupData`, `revertTableFromBackup` delegates.
 - `src/utils/backupRecovery.ts` — backup creation, import/export, and **restore with cross-table ID remapping**.
 - `src/services/dashboardService.ts` — dashboard KPIs, balance by bank, top customers; uses shared `balanceMath.ts`.
@@ -41,7 +43,7 @@ A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management
 - `src/services/trialMockStore.ts` — trial-mode localStorage store.
 - `src/services/supabase.ts` — `apiClient`.
 - `src/utils/formatting.ts` — `formatCurrency`, `formatDate`, `getTransactionMathFactor`.
-- `src/pages/Transactions/TransactionList.tsx` — transaction list with group-by `Ngày` / `Tuần` / `Tháng` / `Văn phòng` / `Loại giao dịch` / `Khách hàng`. Group summary uses `getCustomerBalanceDelta` to separate `Tổng phát sinh tăng`, `Tổng phát sinh giảm`, `Tổng điều chỉnh`, and `Net`.
+- `src/pages/Transactions/TransactionList.tsx` — transaction list with server-side pagination (page-size selector), column-visibility dropdown, frozen `Ngày giao dịch` + `Khách hàng` columns, and group-by `Ngày` / `Tuần` / `Tháng` / `Văn phòng` / `Loại giao dịch` / `Khách hàng`. Group summary uses `getCustomerBalanceDelta` to separate `Tổng phát sinh tăng`, `Tổng phát sinh giảm`, `Tổng điều chỉnh`, and `Net`.
 - `src/pages/Settings/Settings.tsx` — provider shell + `SettingsContent`; per-tab JSX in `pages/Settings/components/tabs/*.tsx`; state in `useSettingsState.ts`; shared context in `SettingsContext.tsx`; `colorOptions`/`getColorClass` in `Settings/utils.ts`.
 - `src/types/index.ts` and `src/types/database.types.ts` — TS types.
 
@@ -105,10 +107,25 @@ A dedicated `Công thức dư nợ` tab in Settings shows the current formula, l
 - **Filter action rows** — on mobile, let utility buttons wrap (`flex-wrap`) instead of hiding them in a horizontal overflow, so users can see all options without discovering a hidden scroll.
 - **Cash-flow chart** — `dashboardService.ts` `aggregateCashFlow` derives the period window from the latest transaction in the selected range (not `new Date()`). Legend/tooltip labels use `Tiền vào` / `Tiền ra` in Vietnamese; inflow bars are `#10b981` and outflow bars are `#f43f5e`.
 - **Balance color rule** — customer running-balance text (`total_balance` in lists, detail, dashboard top customers) should be neutral (`text-gray-900 dark:text-white`) so users read the number without a false good/bad signal. Only transaction *amounts* use type-based colors (`getTransactionTypeAmountColor`) and status badges use their semantic colors.
+- **Dark-mode contrast** — status/filter tabs and icon-only action buttons must use `dark:text-*` variants with light enough values (e.g., `dark:text-blue-300`, `dark:text-gray-200`) and explicit `dark:bg-gray-800` / `dark:bg-gray-900` backgrounds. Replace emoji dropdown triggers with SVG icons so they render consistently and respect currentColor.
 - **Sticky/fixed z-ordering on mobile** — keep the main sticky header at `z-[200]`, time-range/selectors at `z-40`, fixed FAB above the `z-50` bottom nav (`bottom-20` on mobile so it does not overlap the nav), and add enough `pb-36` bottom padding to `main` so long lists scroll clear of the FAB.
 - **Dashboard recent-transactions table headers** — `RecentTransactions.tsx` tablet table uses `t("dashboard.description")`, `t("dashboard.customer")`, `t("dashboard.account")`, `t("dashboard.date")`, `t("dashboard.amount")`, `t("dashboard.type")`, and `BalanceByBankChart.tsx` uses `t("dashboard.currentBalance")`; these keys must exist in both `vi.json` and `en.json`.
 - **Customer list column widths / freeze panes** — in `CustomerTable.tsx`, keep `fullName` readable (`w-[14rem]` so long names wrap), `lastTransaction` (`w-[9rem]`), and remove `line-clamp-2` from the customer-name cell. Freeze the first columns (`GD`, `Mã`, `Tên khách hàng`, `Công nợ`, `Giao dịch cuối`) with fixed widths and `sticky` left offsets so customer name and last-transaction date stay visible during horizontal scroll.
 - **Settings navigation** — `Settings.tsx` renders the 10 settings tabs as a responsive vertical grid (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`) instead of a horizontal scrolling nav so all tabs are visible on mobile without horizontal swipe.
+
+## Transaction status workflow (2026-08-15)
+
+- `Transaction.status` values are `draft` / `pending` / `completed` / `rejected` (VN labels: Nháp / Chờ duyệt / Hoàn thành / Từ chối). `TransactionList` renders a tab for each status and a status badge per row. Approval actions (Duyệt / Từ chối / Gửi duyệt) are shown based on `canApproveTransactions(user)`.
+- `canBypassTransactionApproval(user)` returns `true` for `admin_master`, `admin`, `admin_company`, plus any `staff` with `staff_permissions.transactions.bypass_approval`. `getInitialTransactionStatus(user, saveAsDraft)` returns `draft` if `saveAsDraft` is `true`, `completed` if bypass applies, otherwise `pending`.
+- `TransactionImport` single/bulk flows call `databaseService.transactions.bulkImportTransactions(...)` with `status` set to `getInitialTransactionStatus(user, saveAsDraft)`. Two buttons are provided: "Lưu nháp" (save as draft) and the existing import button (completed/pending based on role).
+- `transactionService.ts` balance sync now ignores delta for any transaction whose `status` is not `completed`. This means draft/pending/rejected rows do not move `customers.total_balance` or `bank_accounts.balance`; status transitions reverse/adjust deltas correctly.
+
+## Unified approvals & per-company approval settings (2026-08-16)
+
+- New `ApprovalsPage` at `/approvals` (sidebar item visible only to admin roles) lists all pending `transactions`, `customers`, `bank_accounts`, and `branches` in one place. Admin can approve or reject each item; approved transactions become `completed` (and trigger balance sync through `transactionService.updateTransaction`), while customers/bank accounts/branches become `active`; rejected items become `rejected`.
+- `Settings` has a new `Phân quyền duyệt` tab where admin toggles which entity types require approval on creation (`companies.approval_settings` JSONB: `transactions`, `customers`, `bank_accounts`, `branches`). All default to `true`.
+- `customers`, `bank_accounts`, and `branches` now have a `status` column (`active` / `pending` / `rejected`). New records compute initial status via `getInitialEntityStatus(user, entityType, company.approval_settings, saveAsDraft, hasPermission)`. Helpers `canBypassEntityApproval` and `getInitialTransactionStatusWithSettings` combine user role, the relevant staff permission, and the per-company approval setting.
+- `customerService.getCustomers` defaults to `status = 'active'`; pass `status: 'all'` to include pending/rejected. `bankAccountService.getBankAccounts` and `branchService.getBranches` accept an optional `status` parameter. Dropdowns in `TransactionList`, `TransactionImport`, and `Dashboard` request `active` records only so pending items are not selectable.
 
 ## Recent architectural decisions
 

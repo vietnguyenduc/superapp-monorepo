@@ -10,13 +10,13 @@ import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import Login from "./pages/Auth/Login";
 import SignUp from "./pages/Auth/SignUp";
 import Dashboard from "./pages/Dashboard/Dashboard";
-import Overview from "./pages/Overview/Overview";
-import Step from "./pages/Step/Step";
-import Actions from "./pages/Actions/Actions";
-import Evening from "./pages/Evening/Evening";
+import { SessionProvider } from "./contexts/SessionContext";
+import SessionPage from "./pages/Session/SessionPage";
 import Calendar from "./pages/Calendar/Calendar";
-import History from "./pages/History/History";
 import Builder from "./pages/Builder/Builder";
+import Knowledge from "./pages/Knowledge/Knowledge";
+import FinanceControl from "./pages/FinanceControl/FinanceControl";
+import Practice from "./pages/Practice/Practice";
 
 function App() {
   return (
@@ -29,19 +29,20 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <Layout />
+                <SessionProvider>
+                  <Layout />
+                </SessionProvider>
               </ProtectedRoute>
             }
           >
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="overview" element={<Overview />} />
-            <Route path="step/:stepId" element={<Step />} />
-            <Route path="actions" element={<Actions />} />
-            <Route path="evening" element={<Evening />} />
+            <Route path="session" element={<SessionPage />} />
             <Route path="calendar" element={<Calendar />} />
-            <Route path="history" element={<History />} />
             <Route path="builder" element={<Builder />} />
+            <Route path="knowledge" element={<Knowledge />} />
+            <Route path="finance" element={<FinanceControl />} />
+            <Route path="practice" element={<Practice />} />
           </Route>
         </Routes>
       </Router>

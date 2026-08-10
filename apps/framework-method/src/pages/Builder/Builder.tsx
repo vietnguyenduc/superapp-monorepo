@@ -1,226 +1,520 @@
-import { useState } from "react";
-import { FiEye, FiUpload, FiTrash2, FiPlus, FiBook, FiInfo, FiSun, FiEdit3, FiStar, FiList, FiType, FiHash, FiGitBranch, FiHome, FiUser } from "react-icons/fi";
-import { Card, Button, Input } from "../../components/UI";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { FiPlus, FiTrash2, FiArrowUp, FiArrowDown, FiEye, FiSave } from "react-icons/fi";
+import { Card, Button, Input, RichTextEditor } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
-import type { Block, BlockType } from "../../types";
+import { useSession } from "../../contexts/SessionContext";
+import { DEFAULT_BLOCKS, genId } from "../../services/frameworkMethodService";
+import type { BlockId, StepType, TaskSuggestion, Template, TemplateSection, TemplateSectionGroup, TemplateSectionItem } from "../../types";
 
-const blockCatalog: { type: BlockType; label: string; icon: typeof FiBook; category: "content" | "interaction" | "logic" }[] = [
-  { type: "knowledge", label: "Knowledge", icon: FiBook, category: "content" },
-  { type: "example", label: "Example", icon: FiSun, category: "content" },
-  { type: "hint", label: "Hint", icon: FiInfo, category: "content" },
-  { type: "reflection", label: "Reflection Area", icon: FiEdit3, category: "interaction" },
-  { type: "rating", label: "Rating Area", icon: FiStar, category: "interaction" },
-  { type: "multiple_choice", label: "Multiple Choice", icon: FiList, category: "interaction" },
-  { type: "short_text", label: "Short Text", icon: FiType, category: "interaction" },
-  { type: "number_input", label: "Number Input", icon: FiHash, category: "interaction" },
-  { type: "routing", label: "Routing & Templates", icon: FiGitBranch, category: "logic" },
-];
+const BUILT_IN_STEPS = new Set(["recognize", "apply", "track"]);
+
+const GROUP_LABELS: Record<TemplateSectionGroup, { vi: string; en: string }> = {
+  nguyen_ly: { vi: "Nguyên lý", en: "Principles" },
+  dao: { vi: "Đạo", en: "Ways" },
+  phap: { vi: "Pháp", en: "Methods" },
+  dua_khuon: { vi: "Đưa khuôn", en: "Apply" },
+  bam: { vi: "Bám", en: "Track" },
+};
 
 const Builder = () => {
-  const { t } = useI18n();
-  const [blocks, setBlocks] = useState<Block[]>([
-    { id: "1", type: "knowledge", label: "Deconstruct the Problem", prompt: "Define the current assumption or problem clearly before breaking it down into fundamental truths.", placeholder: "", required: false, order_index: 0 },
-    { id: "2", type: "example", label: "Example", prompt: "Instead of saying 'batteries are expensive,' identify the cost of the raw materials making up the battery.", placeholder: "", required: false, order_index: 1 },
-    { id: "3", type: "reflection", label: "Reflection Area", prompt: "What is the problem you are trying to solve?", placeholder: "Type your answer here...", required: true, order_index: 2 },
-  ]);
+  const { t, language } = useI18n();
+  const { templates, taskSuggestions, updateTaskSuggestions, knowledgeEntries, updateTemplate: updateTemplateContext, saveTemplates, addStep, removeStep, moveStep } = useSession();
+  const [selectedBlockId, setSelectedBlockId] = useState<BlockId>("self");
+  const [selectedStep, setSelectedStep] = useState<StepType>("recognize");
   const [preview, setPreview] = useState(false);
+  const [newStepName, setNewStepName] = useState("");
+  const blockSuggestions = taskSuggestions[selectedBlockId] || [];
+  const suggestionsRef = useRef<TaskSuggestion[]>(blockSuggestions);
+  suggestionsRef.current = blockSuggestions;
 
-  const addBlock = (type: BlockType) => {
-    const catalog = blockCatalog.find((b) => b.type === type);
-    setBlocks((prev) => [
+  const updateSuggestions = (updater: (prev: TaskSuggestion[]) => TaskSuggestion[]) => {
+    const next = updater(suggestionsRef.current).map((s, i) => ({ ...s, order_index: i }));
+    void updateTaskSuggestions(selectedBlockId, next);
+  };
+
+  const addSuggestion = () => {
+    updateSuggestions((prev) => [
       ...prev,
       {
-        id: Date.now().toString(),
-        type,
-        label: catalog?.label || type,
-        prompt: "",
-        placeholder: "",
-        required: false,
+        id: genId(),
+        block_id: selectedBlockId,
+        title_vi: "Gợi ý mới",
+        title_en: "New suggestion",
+        is_default: false,
         order_index: prev.length,
       },
     ]);
   };
 
-  const updateBlock = (id: string, updates: Partial<Block>) => {
-    setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, ...updates } : b)));
+  const updateSuggestion = (id: string, updates: Partial<TaskSuggestion>) => {
+    updateSuggestions((prev) => prev.map((s) => (s.id === id ? { ...s, ...updates } : s)));
   };
 
-  const removeBlock = (id: string) => {
-    setBlocks((prev) => prev.filter((b) => b.id !== id));
+  const removeSuggestion = (id: string) => {
+    updateSuggestions((prev) => prev.filter((s) => s.id !== id));
   };
 
-  const renderPreview = (block: Block) => {
-    switch (block.type) {
-      case "knowledge":
-      case "example":
-      case "hint":
-        return <p className="text-sm text-gray-600 dark:text-gray-300">{block.prompt || "Content preview"}</p>;
-      case "reflection":
-      case "short_text":
-        return <input className="input" readOnly placeholder={block.placeholder} />;
-      case "number_input":
-        return <input type="number" className="input" readOnly placeholder={block.placeholder} />;
-      case "multiple_choice":
-      case "rating":
-        return (
-          <div className="flex gap-2 flex-wrap">
-            {(block.options || ["Option 1", "Option 2"]).map((opt) => (
-              <span key={opt} className="px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-xs">
-                {opt}
-              </span>
-            ))}
-          </div>
-        );
-      case "routing":
-        return <p className="text-sm text-violet-600">→ {block.prompt || "Route to template"}</p>;
-      default:
-        return null;
+  const moveSuggestion = (index: number, direction: -1 | 1) => {
+    updateSuggestions((prev) => {
+      const next = [...prev];
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= next.length) return prev;
+      const [moved] = next.splice(index, 1);
+      next.splice(newIndex, 0, moved);
+      return next;
+    });
+  };
+
+  const orderedSteps = useMemo(() => {
+    const byStep = templates[selectedBlockId] || {};
+    return Object.values(byStep)
+      .filter((t): t is Template => Boolean(t))
+      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+  }, [templates, selectedBlockId]);
+
+  useEffect(() => {
+    const exists = orderedSteps.some((s) => s.step_type === selectedStep);
+    if (!exists && orderedSteps[0]) {
+      setSelectedStep(orderedSteps[0].step_type);
     }
+  }, [orderedSteps, selectedStep]);
+
+  const currentTemplate = templates[selectedBlockId]?.[selectedStep];
+
+  const updateTemplate = (updater: (template: Template) => Template) => {
+    updateTemplateContext(selectedBlockId, selectedStep, updater);
   };
 
-  const SidebarBlock = ({ label, icon: Icon, onClick }: { label: string; icon: typeof FiBook; onClick: () => void }) => (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-3 w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors text-left"
-    >
-      <Icon className="w-5 h-5 text-primary-600" />
-      <span className="text-sm font-medium">{label}</span>
-    </button>
-  );
+  const moveSection = (index: number, direction: -1 | 1) => {
+    updateTemplate((template) => {
+      const sections = [...template.sections!];
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= sections.length) return template;
+      const [moved] = sections.splice(index, 1);
+      sections.splice(newIndex, 0, moved);
+      return { ...template, sections: sections.map((s, i) => ({ ...s, order_index: i })) };
+    });
+  };
 
-  const Sidebar = () => (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-sm font-semibold mb-1">Insert Blocks</h3>
-        <p className="text-xs text-gray-500">Drag elements onto the canvas to build your framework.</p>
-      </div>
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Content Blocks</p>
-        <div className="grid grid-cols-2 gap-2">
-          {blockCatalog.filter((b) => b.category === "content").map((b) => (
-            <button
-              key={b.type}
-              onClick={() => addBlock(b.type)}
-              className="flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors"
-            >
-              <b.icon className="w-5 h-5 text-primary-600" />
-              <span className="text-xs text-center leading-tight">{b.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Interaction Blocks</p>
-        <div className="space-y-2">
-          {blockCatalog.filter((b) => b.category === "interaction").map((b) => (
-            <SidebarBlock key={b.type} label={b.label} icon={b.icon} onClick={() => addBlock(b.type)} />
-          ))}
-        </div>
-      </div>
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Logic & Pathing</p>
-        <SidebarBlock label="Routing & Templates" icon={FiGitBranch} onClick={() => addBlock("routing")} />
-      </div>
-    </div>
-  );
+  const updateSection = (sectionId: string, updater: (section: TemplateSection) => TemplateSection) => {
+    updateTemplate((template) => ({
+      ...template,
+      sections: template.sections!.map((s) => (s.id === sectionId ? updater(s) : s)),
+    }));
+  };
+
+  const addSection = (group: TemplateSectionGroup) => {
+    updateTemplate((template) => {
+      const order = template.sections!.length;
+      const sectionId = genId();
+      return {
+        ...template,
+        sections: [
+          ...template.sections!,
+          {
+            id: sectionId,
+            template_id: template.id,
+            group,
+            title_vi: GROUP_LABELS[group].vi,
+            title_en: GROUP_LABELS[group].en,
+            is_toggle: true,
+            is_enabled: true,
+            order_index: order,
+            items: [
+              {
+                id: genId(),
+                title_vi: "Mục mới",
+                title_en: "New item",
+                default_enabled: true,
+                order_index: 0,
+              },
+            ],
+          },
+        ],
+      };
+    });
+  };
+
+  const removeSection = (sectionId: string) => {
+    updateTemplate((template) => ({
+      ...template,
+      sections: template.sections!.filter((s) => s.id !== sectionId).map((s, i) => ({ ...s, order_index: i })),
+    }));
+  };
+
+  const moveItem = (sectionId: string, itemIndex: number, direction: -1 | 1) => {
+    updateSection(sectionId, (section) => {
+      const items = [...section.items];
+      const newIndex = itemIndex + direction;
+      if (newIndex < 0 || newIndex >= items.length) return section;
+      const [moved] = items.splice(itemIndex, 1);
+      items.splice(newIndex, 0, moved);
+      return { ...section, items: items.map((it, i) => ({ ...it, order_index: i })) };
+    });
+  };
+
+  const updateItem = (sectionId: string, itemId: string, updater: (item: TemplateSectionItem) => TemplateSectionItem) => {
+    updateSection(sectionId, (section) => ({
+      ...section,
+      items: section.items.map((it) => (it.id === itemId ? updater(it) : it)),
+    }));
+  };
+
+  const addItem = (sectionId: string) => {
+    updateSection(sectionId, (section) => ({
+      ...section,
+      items: [
+        ...section.items,
+        {
+          id: genId(),
+          title_vi: "Mục mới",
+          title_en: "New item",
+          default_enabled: true,
+          order_index: section.items.length,
+        },
+      ],
+    }));
+  };
+
+  const removeItem = (sectionId: string, itemId: string) => {
+    updateSection(sectionId, (section) => ({
+      ...section,
+      items: section.items.filter((it) => it.id !== itemId).map((it, i) => ({ ...it, order_index: i })),
+    }));
+  };
+
+  const [newSectionGroup, setNewSectionGroup] = useState<TemplateSectionGroup>("nguyen_ly");
+
+  const stepLabel = (stepType: StepType) => {
+    const template = templates[selectedBlockId]?.[stepType];
+    const vi = template?.name_vi || template?.name || stepType;
+    const en = template?.name_en || template?.name_vi || template?.name || stepType;
+    return language === "en" ? en : vi;
+  };
+  const sectionTitle = (section: TemplateSection) => (language === "en" ? section.title_en : section.title_vi);
+  const itemTitle = (item: TemplateSectionItem) => (language === "en" ? item.title_en : item.title_vi);
+
+  const availableGroups = useMemo<TemplateSectionGroup[]>(() => {
+    if (selectedStep === "recognize") return ["nguyen_ly", "dao", "phap"];
+    if (selectedStep === "apply") return ["dua_khuon"];
+    if (selectedStep === "track") return ["bam"];
+    return ["nguyen_ly", "dao", "phap", "dua_khuon", "bam"];
+  }, [selectedStep]);
+
+  if (!currentTemplate) return null;
 
   return (
-    <div className="animate-fade-in -mx-4 md:-mx-8 -my-6 md:-my-8 min-h-screen md:bg-white md:dark:bg-gray-900">
-      <header className="sticky top-0 z-30 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 px-4 md:px-8 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-              <FiHome className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="font-bold text-lg">The First Principles Method</h1>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                {t("builder.draft")}
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setPreview((p) => !p)}>
-              <FiEye className="w-4 h-4 mr-1" /> {t("builder.preview")}
-            </Button>
-            <Button variant="dark" size="sm">
-              <FiUpload className="w-4 h-4 mr-1" /> {t("builder.publish")}
-            </Button>
-            <button className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center ml-2">
-              <FiUser className="w-4 h-4" />
-            </button>
-          </div>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">{t("builder.title")}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t("builder.subtitle")}</p>
         </div>
-      </header>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setPreview((p) => !p)}>
+            <FiEye className="w-4 h-4 mr-1" /> {preview ? t("builder.edit") : t("builder.preview")}
+          </Button>
+          <Button size="sm" onClick={() => saveTemplates()}>
+            <FiSave className="w-4 h-4 mr-1" /> {t("builder.publish")}
+          </Button>
+        </div>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-8 space-y-4">
-            <div className="mb-2">
-              <p className="text-xs text-gray-500">Break down complex problems into fundamental truths and build up from there.</p>
+      <Card className="p-4">
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{t("builder.block")}</p>
+        <div className="flex flex-wrap gap-2">
+          {DEFAULT_BLOCKS.map((block) => (
+            <button
+              key={block.id}
+              onClick={() => setSelectedBlockId(block.id)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                selectedBlockId === block.id
+                  ? "bg-primary-600 text-white"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+              }`}
+            >
+              {language === "en" ? block.name_en : block.name_vi}
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{t("builder.suggestions")}</p>
+        <div className="space-y-3">
+          {blockSuggestions.map((suggestion, idx) => (
+            <div key={suggestion.id} className="flex items-start gap-2">
+              <Input
+                value={suggestion.title_vi}
+                onChange={(e) => updateSuggestion(suggestion.id, { title_vi: e.target.value, title_en: e.target.value })}
+                placeholder={t("builder.suggestionTitle")}
+                className="flex-1"
+              />
+              <div className="flex flex-col gap-1">
+                <button onClick={() => moveSuggestion(idx, -1)} className="p-1 text-gray-400 hover:text-primary-600">
+                  <FiArrowUp className="w-4 h-4" />
+                </button>
+                <button onClick={() => moveSuggestion(idx, 1)} className="p-1 text-gray-400 hover:text-primary-600">
+                  <FiArrowDown className="w-4 h-4" />
+                </button>
+              </div>
+              <button onClick={() => removeSuggestion(suggestion.id)} className="p-2 text-gray-400 hover:text-red-500">
+                <FiTrash2 className="w-4 h-4" />
+              </button>
             </div>
-            {blocks.map((block) => (
-              <Card key={block.id} className="relative">
-                {!preview ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400">
-                        {block.type.replace("_", " ")}
-                      </span>
-                      <button onClick={() => removeBlock(block.id)} className="text-gray-400 hover:text-red-500">
-                        <FiTrash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <Input
-                      label={t("builder.fieldLabel")}
-                      value={block.label}
-                      onChange={(e) => updateBlock(block.id, { label: e.target.value })}
-                    />
-                    <Input
-                      label={t("builder.userPrompt")}
-                      value={block.prompt || ""}
-                      onChange={(e) => updateBlock(block.id, { prompt: e.target.value })}
-                    />
-                    <Input
-                      label={t("builder.placeholder")}
-                      value={block.placeholder || ""}
-                      onChange={(e) => updateBlock(block.id, { placeholder: e.target.value })}
-                    />
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={block.required}
-                        onChange={(e) => updateBlock(block.id, { required: e.target.checked })}
-                        className="w-4 h-4 rounded border-gray-300 text-primary-600"
-                      />
-                      {t("builder.required")}
-                    </label>
-                  </div>
-                ) : (
+          ))}
+          <Button variant="secondary" size="sm" onClick={addSuggestion}>
+            <FiPlus className="w-4 h-4 mr-1" /> {t("builder.addItem")}
+          </Button>
+        </div>
+      </Card>
+
+      <Card className="p-4 space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{t("builder.step")}</p>
+        <div className="space-y-2">
+          {orderedSteps.map((template) => (
+            <div key={template.step_type} className="flex items-center gap-2">
+              <button
+                onClick={() => setSelectedStep(template.step_type)}
+                className={`flex-1 text-left px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  selectedStep === template.step_type
+                    ? "bg-primary-600 text-white"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                }`}
+              >
+                {stepLabel(template.step_type)}
+              </button>
+              <button onClick={() => moveStep(selectedBlockId, template.step_type, -1)} className="p-2 text-gray-400 hover:text-primary-600" aria-label="Move up">
+                <FiArrowUp className="w-4 h-4" />
+              </button>
+              <button onClick={() => moveStep(selectedBlockId, template.step_type, 1)} className="p-2 text-gray-400 hover:text-primary-600" aria-label="Move down">
+                <FiArrowDown className="w-4 h-4" />
+              </button>
+              {!BUILT_IN_STEPS.has(template.step_type) && (
+                <button onClick={() => removeStep(selectedBlockId, template.step_type)} className="p-2 text-gray-400 hover:text-red-500" aria-label="Delete step">
+                  <FiTrash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <Input
+            value={newStepName}
+            onChange={(e) => setNewStepName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && newStepName.trim()) {
+                const name = newStepName.trim();
+                addStep(selectedBlockId, selectedStep, name, name);
+                setNewStepName("");
+              }
+            }}
+            placeholder={t("builder.newStepPlaceholder")}
+            className="flex-1"
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              if (!newStepName.trim()) return;
+              const name = newStepName.trim();
+              addStep(selectedBlockId, selectedStep, name, name);
+              setNewStepName("");
+            }}
+          >
+            <FiPlus className="w-4 h-4 mr-1" /> {t("builder.addStep")}
+          </Button>
+        </div>
+        <p className="text-xs text-gray-400">{t("builder.addStepHint")}</p>
+      </Card>
+
+      <div className="space-y-4">
+        {currentTemplate.sections!.map((section, sectionIndex) => (
+          <Card key={section.id} className={`p-4 ${!section.is_enabled ? "opacity-60" : ""}`}>
+            {preview ? (
+              <div className="space-y-2">
+                <p className="font-semibold">{sectionTitle(section)}</p>
+                {section.is_enabled && (
                   <div className="space-y-2">
-                    <p className="font-medium">{block.label}</p>
-                    {block.prompt && <p className="text-xs text-gray-500 dark:text-gray-400">{block.prompt}</p>}
-                    {renderPreview(block)}
+                    {section.items.map((item) => (
+                      <div key={item.id} className="flex items-start gap-2 text-sm">
+                        <input type="checkbox" checked={item.default_enabled} readOnly className="mt-1" />
+                        <span>{itemTitle(item)}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
-              </Card>
-            ))}
-            {!preview && (
-              <button
-                onClick={() => addBlock("reflection")}
-                className="w-full py-3 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-500 hover:border-primary-500 hover:text-primary-600 flex items-center justify-center gap-2"
-              >
-                <FiPlus className="w-4 h-4" /> Add block
-              </button>
-            )}
-          </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-start justify-between gap-2">
+                  <Input
+                    label={t("builder.sectionTitle")}
+                    value={section.title_vi}
+                    onChange={(e) => updateSection(section.id, (s) => ({ ...s, title_vi: e.target.value, title_en: e.target.value }))}
+                    className="flex-1"
+                  />
+                  <div className="flex flex-col gap-1">
+                    <button onClick={() => moveSection(sectionIndex, -1)} className="p-1 text-gray-400 hover:text-primary-600" aria-label="Move up">
+                      <FiArrowUp className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => moveSection(sectionIndex, 1)} className="p-1 text-gray-400 hover:text-primary-600" aria-label="Move down">
+                      <FiArrowDown className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
 
-          <div className="hidden lg:block lg:col-span-4">
-            <div className="sticky top-24 p-5 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
-              <Sidebar />
-            </div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={section.is_enabled}
+                    onChange={(e) => updateSection(section.id, (s) => ({ ...s, is_enabled: e.target.checked }))}
+                    className="w-4 h-4 rounded border-gray-300 text-primary-600"
+                  />
+                  {t("builder.enabled")}
+                </label>
+
+                {selectedStep === "recognize" && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-gray-500">{t("builder.conceptKnowledge")}</label>
+                      <select
+                        value={section.concept_knowledge_entry_id || ""}
+                        onChange={(e) => updateSection(section.id, (s) => ({ ...s, concept_knowledge_entry_id: e.target.value || undefined }))}
+                        className="input text-sm"
+                      >
+                        <option value="">{t("builder.noKnowledgeLink")}</option>
+                        {knowledgeEntries.map((entry) => (
+                          <option key={entry.id} value={entry.id}>
+                            {language === "en" ? entry.title_en : entry.title_vi}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-gray-500">{t("builder.referenceKnowledge")}</label>
+                      <select
+                        value={section.reference_knowledge_entry_id || ""}
+                        onChange={(e) => updateSection(section.id, (s) => ({ ...s, reference_knowledge_entry_id: e.target.value || undefined }))}
+                        className="input text-sm"
+                      >
+                        <option value="">{t("builder.noKnowledgeLink")}</option>
+                        {knowledgeEntries.map((entry) => (
+                          <option key={entry.id} value={entry.id}>
+                            {language === "en" ? entry.title_en : entry.title_vi}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-gray-500">{t("builder.exampleKnowledge")}</label>
+                      <RichTextEditor
+                        value={section.example_content_vi || ""}
+                        onChange={(html) => updateSection(section.id, (s) => ({ ...s, example_content_vi: html, example_content_en: html }))}
+                        placeholder={t("builder.itemContentPlaceholder")}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-3 pl-4 border-l-2 border-gray-100 dark:border-gray-800">
+                  {section.items.map((item, itemIndex) => (
+                    <div key={item.id} className="space-y-2">
+                      <div className="flex items-start gap-2">
+                        <label className="flex items-center gap-2 mt-2">
+                          <input
+                            type="checkbox"
+                            checked={item.default_enabled}
+                            onChange={(e) => updateItem(section.id, item.id, (it) => ({ ...it, default_enabled: e.target.checked }))}
+                            className="w-4 h-4 rounded border-gray-300 text-primary-600"
+                          />
+                        </label>
+                        <div className="flex-1 space-y-2">
+                          <Input
+                            value={item.title_vi}
+                            onChange={(e) =>
+                              updateItem(section.id, item.id, (it) => ({
+                                ...it,
+                                title_vi: e.target.value,
+                                title_en: e.target.value,
+                              }))
+                            }
+                            placeholder={t("builder.itemTitle")}
+                          />
+                          <div className="space-y-1">
+                            <label className="block text-xs font-medium text-gray-500">{t("builder.itemContent")}</label>
+                            <RichTextEditor
+                              value={item.content_vi || ""}
+                              onChange={(html) =>
+                                updateItem(section.id, item.id, (it) => ({
+                                  ...it,
+                                  content_vi: html,
+                                  content_en: html,
+                                }))
+                              }
+                              placeholder={t("builder.itemContentPlaceholder")}
+                            />
+                          </div>
+                          <select
+                            value={item.knowledge_entry_id || ""}
+                            onChange={(e) => updateItem(section.id, item.id, (it) => ({ ...it, knowledge_entry_id: e.target.value || undefined }))}
+                            className="input text-sm"
+                          >
+                            <option value="">{t("builder.noKnowledgeLink")}</option>
+                            {knowledgeEntries.map((entry) => (
+                              <option key={entry.id} value={entry.id}>
+                                {language === "en" ? entry.title_en : entry.title_vi}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <button onClick={() => moveItem(section.id, itemIndex, -1)} className="p-1 text-gray-400 hover:text-primary-600">
+                            <FiArrowUp className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => moveItem(section.id, itemIndex, 1)} className="p-1 text-gray-400 hover:text-primary-600">
+                            <FiArrowDown className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <button onClick={() => removeItem(section.id, item.id)} className="p-2 text-gray-400 hover:text-red-500">
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <Button variant="secondary" size="sm" onClick={() => addItem(section.id)}>
+                    <FiPlus className="w-4 h-4 mr-1" /> {t("builder.addItem")}
+                  </Button>
+                </div>
+
+                <div className="flex justify-end">
+                  <button onClick={() => removeSection(section.id)} className="text-sm text-red-500 hover:text-red-600 flex items-center gap-1">
+                    <FiTrash2 className="w-4 h-4" /> {t("builder.removeSection")}
+                  </button>
+                </div>
+              </div>
+            )}
+          </Card>
+        ))}
+
+        {!preview && (
+          <div className="flex items-center gap-3">
+            <select
+              value={newSectionGroup}
+              onChange={(e) => setNewSectionGroup(e.target.value as TemplateSectionGroup)}
+              className="input"
+            >
+              {availableGroups.map((g) => (
+                <option key={g} value={g}>
+                  {language === "en" ? GROUP_LABELS[g].en : GROUP_LABELS[g].vi}
+                </option>
+              ))}
+            </select>
+            <Button variant="secondary" size="sm" onClick={() => addSection(newSectionGroup)}>
+              <FiPlus className="w-4 h-4 mr-1" /> {t("builder.addSection")}
+            </Button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
  * Backup and restore service utilities
  */
 
-import { exportToJSON, exportToExcel, exportToFile } from '../import-export';
+import { exportToJSON, exportToExcel } from '../import-export';
 
 export interface BackupOptions {
   includeMetadata?: boolean;

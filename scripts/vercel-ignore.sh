@@ -41,6 +41,10 @@ else
 fi
 
 if [ "$BASE_SHA" = "$HEAD_SHA" ] || [ -z "$BASE_SHA" ]; then
+  if [ "$REF" = "viet" ] || [ "$REF" = "main" ]; then
+    echo "Could not determine diff base for '$REF'; building to keep deployment current."
+    exit 1
+  fi
   echo "Could not determine diff base; skipping build to protect quota."
   exit 0
 fi

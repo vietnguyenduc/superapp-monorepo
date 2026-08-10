@@ -1,114 +1,171 @@
-import { Link } from "react-router-dom";
-import { FiPlay, FiSun, FiMoon, FiUser, FiTrendingUp, FiAnchor } from "react-icons/fi";
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-} from "recharts";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { FiPlay, FiSun, FiMoon, FiUser, FiTrendingUp, FiAnchor, FiActivity, FiZap, FiAlertCircle, FiCrosshair, FiHeart } from "react-icons/fi";
+import { format, parseISO } from "date-fns";
+import { vi } from "date-fns/locale";
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useTheme } from "../../contexts/ThemeContext";
-
-const trendData = [
-  { day: "M", value: 45 },
-  { day: "T", value: 62 },
-  { day: "W", value: 58 },
-  { day: "T", value: 75 },
-  { day: "F", value: 70 },
-  { day: "S", value: 85 },
-  { day: "S", value: 78 },
-];
-
-const frameworks = [
-  { id: "first-principles", name: "The First Principles Method", progress: 40, tag: "Strategy" },
-  { id: "deep-work", name: "Deep Work", progress: 0, tag: "1 / 3h" },
-  { id: "time-blocking", name: "Time Blocking", progress: 0, tag: "" },
-];
-
-const weekDays = [
-  { label: "T", done: true },
-  { label: "W", done: true },
-  { label: "T", done: true },
-  { label: "F", done: true },
-  { label: "S", done: true },
-  { label: "S", done: true },
-  { label: "M", done: false, today: true },
-];
+import { useSession } from "../../contexts/SessionContext";
+import { getSessionsByDateRange, todayStr, DEFAULT_BLOCKS } from "../../services/frameworkMethodService";
+import KarmaActionModal from "../../components/KarmaActionModal";
+import type { Session, KarmaEvent, BlockId, BlockStats } from "../../types";
 
 const Dashboard = () => {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { merit, streak, userId, karma, blockStats } = useSession();
+  const [selectedEvent, setSelectedEvent] = useState<KarmaEvent | null>(null);
+  const [selectedAction, setSelectedAction] = useState<"recognize" | "stop" | "resolve" | "recite" | null>(null);
+
+  const [history, setHistory] = useState<Session[]>([]);
+
+  useEffect(() => {
+    if (!userId) return;
+    const end = todayStr();
+    const start = new Date(Date.now() - 89 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    getSessionsByDateRange(userId, start, end).then(setHistory);
+  }, [userId]);
+
+  const trendData = useMemo(() => {
+    const map: Record<string, number> = {};
+    history.forEach((s) => {
+      map[s.date] = s.merit_total ?? 0;
+    });
+    const days: { day: string; value: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+      const dateStr = d.toISOString().split("T")[0];
+      const label = d.toLocaleDateString("vi-VN", { weekday: "short" }).replace(".", "");
+      days.push({ day: label, value: map[dateStr] ?? 0 });
+    }
+    return days;
+  }, [history]);
+
+  const frameworkStats = useMemo(() => {
+    const entries = Object.entries(blockStats) as [BlockId, BlockStats][];
+    const topBlock = [...entries].sort((a, b) => (b[1].total_done + b[1].total_applied + b[1].total_tracked) - (a[1].total_done + a[1].total_applied + a[1].total_tracked))[0];
+    const topApplied = [...entries].sort((a, b) => b[1].total_applied - a[1].total_applied)[0];
+    const topTracked = [...entries].sort((a, b) => b[1].total_tracked - a[1].total_tracked)[0];
+    const topStep = (topApplied?.[1].total_applied ?? 0) >= (topTracked?.[1].total_tracked ?? 0)
+      ? { label: "Đưa khuôn", block: topApplied?.[0] }
+      : { label: "Bám theo dõi", block: topTracked?.[0] };
+    const topMeritEarned = [...history].sort((a, b) => (b.merit_earned ?? 0) - (a.merit_earned ?? 0))[0];
+    const topMeritSpent = [...history].sort((a, b) => (b.merit_spent ?? 0) - (a.merit_spent ?? 0))[0];
+    const blockName = (id?: BlockId) => DEFAULT_BLOCKS.find((b) => b.id === id)?.name_vi || id || "—";
+    return { topBlock, topStep, topMeritEarned, topMeritSpent, blockName };
+  }, [blockStats, history]);
 
   return (
     <div className="space-y-5 animate-fade-in">
       <header className="flex items-center justify-between py-2">
         <button
           onClick={toggleTheme}
-          className="w-10 h-10 rounded-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-200"
+          className="w-10 h-10 rounded-full bg-white dark:bg-[#2C2C2E] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center text-gray-700 dark:text-gray-200 active:scale-95 transition-all"
         >
           {theme === "dark" ? <FiMoon className="w-5 h-5" /> : <FiSun className="w-5 h-5" />}
         </button>
-        <h2 className="text-lg font-semibold">Monday, Oct 23</h2>
-        <button className="w-10 h-10 rounded-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-200">
+        <h2 className="text-lg font-semibold tracking-tight">{t("dashboard.goodMorning")}</h2>
+        <button className="w-10 h-10 rounded-full bg-white dark:bg-[#2C2C2E] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center text-gray-700 dark:text-gray-200">
           <FiUser className="w-5 h-5" />
         </button>
       </header>
 
       <div className="text-left">
-        <h1 className="text-2xl font-bold">{t("dashboard.goodMorning")}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">{t("dashboard.goodMorning")}</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm italic border-l-2 border-gray-300 pl-3">
           &quot;Logic is the beginning of wisdom, not the end.&quot;
         </p>
       </div>
 
-      <Card className="p-5">
-        <div className="flex items-center gap-4 mb-5">
-          <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-primary-900/20 text-primary-600 flex items-center justify-center">
-            <FiAnchor className="w-7 h-7" />
+      <Card className="p-5 space-y-4 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 via-amber-400 to-emerald-500" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FiCrosshair className="w-5 h-5 text-rose-600" />
+            <h2 className="font-semibold text-lg tracking-tight">Nghiệp - Phúc của bạn trong kiếp này</h2>
           </div>
-          <div>
-            <p className="text-2xl font-bold">12</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t("dashboard.streak", { count: 12 })}</p>
+          <div className="text-right">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Trổ cảnh tiếp theo</p>
+            <p className="text-sm font-semibold text-rose-600">{karma.countdown.label}</p>
           </div>
         </div>
-        <div className="flex justify-between">
-          {weekDays.map((day, idx) => (
-            <div
-              key={idx}
-              className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold ${
-                day.today
-                  ? "bg-white dark:bg-gray-950 text-primary-600 border-2 border-primary-600"
-                  : day.done
-                  ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-400"
-              }`}
-            >
-              {day.done && !day.today ? (
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                  <path d="M20 6L9 17l-5-5" />
-                </svg>
-              ) : (
-                day.label
-              )}
+
+        {(() => {
+          const phucPercent = Math.min(100, Math.max(0, Math.round((merit.earned / (karma.account?.initial || 1000)) * 100)));
+          return (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 rounded-2xl bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20">
+                <div className="flex items-center justify-center gap-1 text-xs font-medium text-rose-600 mb-1">
+                  <FiAlertCircle className="w-3.5 h-3.5" /> Nghiệp còn lại
+                </div>
+                <p className="text-3xl font-bold text-rose-600">{karma.account?.balance ?? 1000}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">/ {karma.account?.initial ?? 1000}</p>
+                <div className="w-full h-2 bg-rose-100 dark:bg-rose-900/30 rounded-full overflow-hidden mt-2">
+                  <div className="h-2 bg-gradient-to-r from-rose-500 to-amber-500 rounded-full transition-all" style={{ width: `${karma.percent}%` }} />
+                </div>
+              </div>
+              <div className="text-center p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20">
+                <div className="flex items-center justify-center gap-1 text-xs font-medium text-emerald-600 mb-1">
+                  <FiHeart className="w-3.5 h-3.5" /> Phúc tạo được
+                </div>
+                <p className="text-3xl font-bold text-emerald-600">{merit.earned}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">+{merit.total} hôm nay</p>
+                <div className="w-full h-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-full overflow-hidden mt-2">
+                  <div className="h-2 bg-emerald-500 rounded-full transition-all" style={{ width: `${phucPercent}%` }} />
+                </div>
+              </div>
             </div>
-          ))}
+          );
+        })()}
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <Button variant="outline" size="sm" disabled={!karma.nextEvent} onClick={() => { if (karma.nextEvent) { setSelectedEvent(karma.nextEvent); setSelectedAction("recognize"); } }}>Nhận ra</Button>
+          <Button variant="outline" size="sm" disabled={!karma.nextEvent} onClick={() => { if (karma.nextEvent) { setSelectedEvent(karma.nextEvent); setSelectedAction("stop"); } }}>Dừng nghiệp</Button>
+          <Button variant="outline" size="sm" disabled={!karma.nextEvent} onClick={() => { if (karma.nextEvent) { setSelectedEvent(karma.nextEvent); setSelectedAction("recite"); } }}>Đọc Sám</Button>
+          <Button size="sm" disabled={!karma.nextEvent} onClick={() => { if (karma.nextEvent) { setSelectedEvent(karma.nextEvent); setSelectedAction("resolve"); } }}>Giải cảnh</Button>
         </div>
       </Card>
 
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="p-4 text-center">
+          <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-primary-50 dark:bg-primary-900/20 text-primary-600 mx-auto mb-2">
+            <FiAnchor className="w-5 h-5" />
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t("dashboard.streak", { count: streak?.current_streak ?? 0 })}</p>
+          <p className="text-xl font-bold">{streak?.current_streak ?? 0}</p>
+        </Card>
+        <Card className="p-4 text-center">
+          <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 mx-auto mb-2">
+            <FiActivity className="w-5 h-5" />
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Phúc hôm nay</p>
+          <p className={`text-xl font-bold ${merit.total >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+            {merit.total >= 0 ? `+${merit.total}` : merit.total}
+          </p>
+        </Card>
+        <Card className="p-4 text-center">
+          <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 mx-auto mb-2">
+            <FiZap className="w-5 h-5" />
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Tổng Phúc</p>
+          <p className="text-xl font-bold text-violet-600">{history.reduce((sum, s) => sum + (s.merit_total ?? 0), 0)}</p>
+        </Card>
+      </div>
+
       <Card className="p-5">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="font-semibold text-lg">{t("dashboard.insights")}</h2>
+          <h2 className="font-semibold text-lg tracking-tight">{t("dashboard.productivityTrend")}</h2>
           <FiTrendingUp className="w-5 h-5 text-gray-400" />
         </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Productivity Trend (Last 7 Days)</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Phúc nghiệp (7 ngày qua)</p>
         <div className="h-40">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={trendData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
               <defs>
-                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="colorMerit" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#2563eb" stopOpacity={0.25} />
                   <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
                 </linearGradient>
@@ -118,14 +175,7 @@ const Dashboard = () => {
               <Tooltip
                 contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
               />
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke="#2563eb"
-                strokeWidth={2}
-                fillOpacity={1}
-                fill="url(#colorValue)"
-              />
+              <Area type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2} fillOpacity={1} fill="url(#colorMerit)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -133,47 +183,54 @@ const Dashboard = () => {
 
       <Card className="p-5">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="font-semibold text-lg">{t("dashboard.frameworks")}</h2>
+          <h2 className="font-semibold text-lg tracking-tight">Đưa khuôn trí tuệ vào cuộc sống</h2>
           <FiAnchor className="w-5 h-5 text-gray-400" />
         </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Most used this week</p>
-        <div className="space-y-4">
-          {frameworks.map((fw) => (
-            <Link
-              key={fw.id}
-              to={`/overview?framework=${fw.id}`}
-              className="flex items-center gap-3 group"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-primary-900/20 text-primary-600 flex items-center justify-center font-bold text-lg">
-                {fw.name[0]}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{fw.name}</p>
-                {fw.tag && (
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wide">{fw.tag}</span>
-                    <span className="text-[10px] text-gray-400">{fw.progress > 0 ? `${fw.progress}%` : ""}</span>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Thống kê tổng hợp</p>
+        <div className="space-y-3">
+          {(() => {
+            const { topBlock, topStep, topMeritEarned, topMeritSpent, blockName } = frameworkStats;
+            const earnedDate = topMeritEarned?.date ? format(parseISO(topMeritEarned.date), "dd/MM/yyyy", { locale: vi }) : "—";
+            const spentDate = topMeritSpent?.date ? format(parseISO(topMeritSpent.date), "dd/MM/yyyy", { locale: vi }) : "—";
+            const total = (topBlock?.[1].total_done ?? 0) + (topBlock?.[1].total_applied ?? 0) + (topBlock?.[1].total_tracked ?? 0);
+            return (
+              <>
+                <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Khuôn hoàn thành nhiều nhất</p>
+                  <p className="font-semibold text-sm text-gray-900 dark:text-white mt-0.5">{blockName(topBlock?.[0])} · {total} lần</p>
+                </div>
+                <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Bước thực hành nhiều nhất</p>
+                  <p className="font-semibold text-sm text-gray-900 dark:text-white mt-0.5">{topStep.label} · {blockName(topStep.block)}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-2xl bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 text-center">
+                    <p className="text-xs text-emerald-600 font-medium mb-1">Ngày tạo Phúc nhiều nhất</p>
+                    <p className="text-lg font-bold text-emerald-600">+{topMeritEarned?.merit_earned ?? 0}</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">{earnedDate}</p>
                   </div>
-                )}
-                {fw.progress > 0 && (
-                  <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full mt-1.5">
-                    <div className="h-1.5 bg-primary-500 rounded-full" style={{ width: `${fw.progress}%` }} />
+                  <div className="p-3 rounded-2xl bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20 text-center">
+                    <p className="text-xs text-rose-600 font-medium mb-1">Ngày tiêu Phúc / Ân oán nhiều nhất</p>
+                    <p className="text-lg font-bold text-rose-600">-{topMeritSpent?.merit_spent ?? 0}</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">{spentDate}</p>
                   </div>
-                )}
-              </div>
-            </Link>
-          ))}
+                </div>
+              </>
+            );
+          })()}
         </div>
       </Card>
 
       <Card className="p-5">
-        <h2 className="font-semibold text-lg">Ready to focus?</h2>
+        <h2 className="font-semibold text-lg tracking-tight">Ready to focus?</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">Start a new deep work session.</p>
-        <Button variant="dark" size="lg" className="w-full">
+        <Button variant="dark" size="lg" className="w-full" onClick={() => navigate("/session")}>
           <FiPlay className="w-5 h-5 mr-2" />
           {t("dashboard.beginSession")}
         </Button>
       </Card>
+
+      {selectedEvent && <KarmaActionModal event={selectedEvent} initialAction={selectedAction || "stop"} onClose={() => { setSelectedEvent(null); setSelectedAction(null); }} />}
     </div>
   );
 };
