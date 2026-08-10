@@ -41,18 +41,18 @@ END $$;
 
 -- 2. Seed the deposit transaction type for every existing company and as a global default.
 INSERT INTO public.transaction_types (id, company_id, name, color, math_factor, impact_type, is_active)
-SELECT gen_random_uuid()::text, c.id, 'deposit', 'purple', -1, 'decrease', true
+SELECT gen_random_uuid()::text, c.id, 'Đặt cọc', 'purple', -1, 'decrease', true
 FROM public.companies c
 WHERE NOT EXISTS (
     SELECT 1 FROM public.transaction_types tt
     WHERE tt.company_id = c.id
-      AND tt.name = 'deposit'
+      AND tt.name = 'Đặt cọc'
 );
 
 INSERT INTO public.transaction_types (id, company_id, name, color, math_factor, impact_type, is_active)
-SELECT gen_random_uuid()::text, NULL, 'deposit', 'purple', -1, 'decrease', true
+SELECT gen_random_uuid()::text, NULL, 'Đặt cọc', 'purple', -1, 'decrease', true
 WHERE NOT EXISTS (
     SELECT 1 FROM public.transaction_types tt
     WHERE tt.company_id IS NULL
-      AND tt.name = 'deposit'
+      AND tt.name = 'Đặt cọc'
 );

@@ -60,10 +60,10 @@ export const useAuth = () => {
       .from("users")
       .select("*")
       .eq("id", userId)
-      .single();
+      .maybeSingle();
 
-    if (userError) {
-      console.error("Error fetching user profile:", userError);
+    if (userError || !userData) {
+      if (userError) console.error("Error fetching user profile:", userError);
       return null;
     }
 
@@ -74,8 +74,8 @@ export const useAuth = () => {
         .from("branches")
         .select("*")
         .eq("id", userData.branch_id)
-        .single();
-      branch = branchData;
+        .maybeSingle();
+      branch = branchData ?? null;
     }
 
     // If user has a company_id, fetch company separately
@@ -85,8 +85,8 @@ export const useAuth = () => {
         .from("companies")
         .select("*")
         .eq("id", userData.company_id)
-        .single();
-      company = companyData;
+        .maybeSingle();
+      company = companyData ?? null;
     }
 
     return { ...userData, branch, company } as unknown as User;

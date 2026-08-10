@@ -13,7 +13,7 @@ export class TransactionService extends BaseService {
   private static async _getTransactionForBalanceSync(id: string) {
     const { data, error } = await apiClient
       .from("transactions")
-      .select("customer_id, bank_account_id, transaction_type, amount, transaction_date, company_id")
+      .select("customer_id, bank_account_id, transaction_type, amount, transaction_date, company_id, status")
       .eq("id", id)
       .single();
     if (error || !data) return null;
@@ -28,7 +28,12 @@ export class TransactionService extends BaseService {
       amount: tx.amount ?? 0,
       transaction_date: String(tx.transaction_date || getNowIso()),
       company_id: tx.company_id ? String(tx.company_id) : null,
+      status: String(tx.status || ""),
     };
+  }
+
+  private static _completedDelta(delta: number, status: string | null | undefined) {
+    return status === "completed" ? delta : 0;
   }
 
   private static _normalizeTransactionPayload(payload: Record<string, unknown>): Record<string, unknown> {
@@ -130,10 +135,10 @@ export class TransactionService extends BaseService {
       factorMap = await this._getLiveFactorMap(companyId || newTx?.company_id || oldTx?.company_id);
     }
 
-    const oldCustomerDelta = oldTx ? getCustomerBalanceDelta(oldTx.transaction_type, oldTx.amount, factorMap[oldTx.transaction_type]) : 0;
-    const newCustomerDelta = newTx ? getCustomerBalanceDelta(newTx.transaction_type, newTx.amount, factorMap[newTx.transaction_type]) : 0;
-    const oldBankDelta = oldTx ? getBankAccountBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0;
-    const newBankDelta = newTx ? getBankAccountBalanceDelta(newTx.transaction_type, newTx.amount) : 0;
+    const oldCustomerDelta = this._completedDelta(oldTx ? getCustomerBalanceDelta(oldTx.transaction_type, oldTx.amount, factorMap[oldTx.transaction_type]) : 0, oldTx?.status);
+    const newCustomerDelta = this._completedDelta(newTx ? getCustomerBalanceDelta(newTx.transaction_type, newTx.amount, factorMap[newTx.transaction_type]) : 0, newTx?.status);
+    const oldBankDelta = this._completedDelta(oldTx ? getBankAccountBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0, oldTx?.status);
+    const newBankDelta = this._completedDelta(newTx ? getBankAccountBalanceDelta(newTx.transaction_type, newTx.amount) : 0, newTx?.status);
 
     const oldCustomer = oldTx?.customer_id;
     const newCustomer = newTx?.customer_id;
@@ -202,10 +207,10 @@ export class TransactionService extends BaseService {
     const oldTx = previous ? this._balanceFields(previous) : null;
     const newTx = current ? this._balanceFields(current) : null;
 
-    const oldCustomerDelta = oldTx ? getCustomerBalanceDelta(oldTx.transaction_type, oldTx.amount, factorMap[oldTx.transaction_type]) : 0;
-    const newCustomerDelta = newTx ? getCustomerBalanceDelta(newTx.transaction_type, newTx.amount, factorMap[newTx.transaction_type]) : 0;
-    const oldBankDelta = oldTx ? getBankAccountBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0;
-    const newBankDelta = newTx ? getBankAccountBalanceDelta(newTx.transaction_type, newTx.amount) : 0;
+    const oldCustomerDelta = this._completedDelta(oldTx ? getCustomerBalanceDelta(oldTx.transaction_type, oldTx.amount, factorMap[oldTx.transaction_type]) : 0, oldTx?.status);
+    const newCustomerDelta = this._completedDelta(newTx ? getCustomerBalanceDelta(newTx.transaction_type, newTx.amount, factorMap[newTx.transaction_type]) : 0, newTx?.status);
+    const oldBankDelta = this._completedDelta(oldTx ? getBankAccountBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0, oldTx?.status);
+    const newBankDelta = this._completedDelta(newTx ? getBankAccountBalanceDelta(newTx.transaction_type, newTx.amount) : 0, newTx?.status);
 
     const oldCustomer = oldTx?.customer_id;
     const newCustomer = newTx?.customer_id;
@@ -232,23 +237,30 @@ export class TransactionService extends BaseService {
       async () => {
         let query = apiClient
           .from("transactions")
-          .select(`
-            *,
+          .select(
+            `*,
             customers(full_name),
             bank_accounts(account_name),
             branches(name),
-            users!transactions_created_by_fkey(full_name)
-          `);
+            users!transactions_created_by_fkey(full_name)`,
+            { count: "exact" }
+          );
 
         const companyFilter = typeof filters?.company_id === "string" ? filters.company_id : undefined;
         const branchFilter = typeof filters?.branch_id === "string" ? filters.branch_id : undefined;
         const typeFilter = typeof filters?.transaction_type === "string" ? filters.transaction_type : undefined;
         const customerFilter = typeof filters?.customer_id === "string" ? filters.customer_id : undefined;
+        const bankAccountFilter = typeof filters?.bank_account_id === "string" ? filters.bank_account_id : undefined;
+        const userFilter = typeof filters?.created_by === "string" ? filters.created_by : undefined;
+        const statusFilter = typeof filters?.status === "string" ? filters.status : undefined;
 
         if (companyFilter) query = query.eq("company_id", companyFilter);
         if (branchFilter) query = query.eq("branch_id", branchFilter);
         if (typeFilter) query = query.eq("transaction_type", typeFilter);
         if (customerFilter) query = query.eq("customer_id", customerFilter);
+        if (bankAccountFilter) query = query.eq("bank_account_id", bankAccountFilter);
+        if (userFilter) query = query.eq("created_by", userFilter);
+        if (statusFilter) query = query.eq("status", statusFilter);
 
         const search = typeof filters?.search === "string" ? filters.search.trim() : "";
         if (search) {
@@ -296,11 +308,17 @@ export class TransactionService extends BaseService {
         const branchFilter = typeof filters?.branch_id === "string" ? filters.branch_id : undefined;
         const typeFilter = typeof filters?.transaction_type === "string" ? filters.transaction_type : undefined;
         const customerFilter = typeof filters?.customer_id === "string" ? filters.customer_id : undefined;
+        const bankAccountFilter = typeof filters?.bank_account_id === "string" ? filters.bank_account_id : undefined;
+        const userFilter = typeof filters?.created_by === "string" ? filters.created_by : undefined;
+        const statusFilter = typeof filters?.status === "string" ? filters.status : undefined;
 
         if (companyFilter) transactions = transactions.filter((t) => t.company_id === companyFilter);
         if (branchFilter) transactions = transactions.filter((t) => t.branch_id === branchFilter);
         if (typeFilter) transactions = transactions.filter((t) => t.transaction_type === typeFilter);
         if (customerFilter) transactions = transactions.filter((t) => t.customer_id === customerFilter);
+        if (bankAccountFilter) transactions = transactions.filter((t) => t.bank_account_id === bankAccountFilter);
+        if (userFilter) transactions = transactions.filter((t) => t.created_by === userFilter);
+        if (statusFilter) transactions = transactions.filter((t) => t.status === statusFilter);
 
         const search = typeof filters?.search === "string" ? filters.search.toLowerCase().trim() : "";
         if (search) {
@@ -645,6 +663,7 @@ export class TransactionService extends BaseService {
             description: String(r.description ?? "").trim() || null,
             reference_number: String(r.reference_number ?? "").trim() || null,
             transaction_date: parsedDate,
+            status: String(r.status ?? "").trim() || "completed",
             created_at: now,
             updated_at: now,
           };
@@ -709,6 +728,7 @@ export class TransactionService extends BaseService {
             description: String(row.description ?? "").trim() || null,
             reference_number: String(row.reference_number ?? "").trim() || null,
             transaction_date: String(row.transaction_date ?? "").trim() || now,
+            status: String(row.status ?? "").trim() || "completed",
             created_at: now,
             updated_at: now,
           };

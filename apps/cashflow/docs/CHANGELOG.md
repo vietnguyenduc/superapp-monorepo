@@ -1,5 +1,32 @@
 # Changelog — Cashflow
 
+## 2026-08-15
+
+### Added
+
+- **Transaction status workflow** — transactions now have four statuses: `Nháp` (draft), `Chờ duyệt` (pending), `Hoàn thành` (completed), and `Từ chối` (rejected). `TransactionList` shows a tab for each status and a status badge per row. `admin-company`, `admin`, and `admin-master` accounts can create transactions as completed directly; `staff` accounts create transactions as pending unless `staff_permissions.transactions.bypass_approval` is enabled. Every new transaction can be saved as a draft from `TransactionImport` using the new "Lưu nháp" buttons.
+- **Staff `bypass_approval` permission** — `UsersTab` now has a toggle "Tạo giao dịch không cần duyệt" in the Giao dịch section, stored in `staff_permissions.transactions.bypass_approval` and honored by `getInitialTransactionStatus` and `canApproveTransactions` helpers.
+- **Status-aware balance sync** — `transactionService.ts` only applies balance deltas for transactions whose `status === "completed"`. Draft/pending/rejected rows do not affect `customers.total_balance` or `bank_accounts.balance`; status transitions (e.g. completed → rejected) reverse/adjust deltas correctly.
+
+### Migration
+
+- `supabase/migrations/045_transaction_status_draft_rejected.sql` — migrates the `transactions.status` CHECK constraint to allow `draft`, `pending`, `completed`, `rejected`; maps any existing `cancelled` rows to `rejected`; keeps default `completed` for backward-compatible inserts.
+
+## 2026-08-14
+
+### Fixed
+
+- **Transaction list columns and pagination** — `TransactionList` now uses `transactionService.getTransactions` with server-side `bank_account_id`, `created_by`, and `status` filters and exact `count`, so pagination and the `Hiển thị X - Y / Z` summary are correct. Added a page-size selector (10/20/50/100) and a `Cột hiển thị` dropdown so users can toggle optional columns. Date and customer columns are now the first two frozen columns (date leftmost) to match the requested layout.
+- **Transaction list branch/creator columns** — `Văn phòng` and `Người thực hiện` are now regular visible columns by default instead of hidden behind `lg`/`md` breakpoints.
+
+## 2026-08-13
+
+### Fixed
+
+- **Deposit transaction type label** — `TransactionTypeContext` now normalizes the canonical value to the English key (`deposit`) for all Vietnamese aliases, and `TransactionList` passes the global `typesForDropdown` (with canonical + resolved Vietnamese display names) to `TransactionEditModal`. The edit modal select now stores `transaction_type` as `payment`/`charge`/`deposit`/`refund`/`adjustment` while showing labels like `Phát sinh giảm`, `Phát sinh tăng`, `Đặt cọc`, `Hoàn tiền`, `Điều chỉnh`. This fixes the raw "deposit" option and the inability to change transaction types in the edit modal.
+- **Auth profile company fetch 406** — `@superapp/iam/src/hooks/useAuth.ts` now uses `.maybeSingle()` when fetching `branches` and `companies`, preventing a `406 Not Acceptable` console error for roles whose RLS policy does not allow viewing those rows directly.
+- **Deposit seed data** — `supabase/migrations/042_deposit_transaction_type.sql` seeds `name='Đặt cọc'` instead of `'deposit'`, and `044_fix_deposit_vietnamese_name.sql` backfills any existing rows.
+
 ## 2026-08-04
 
 ### Fixed
@@ -9,7 +36,8 @@
 - **Dashboard time-range selector overlay** — converted the `fixed` selector container on `Dashboard.tsx` to `sticky` so it no longer sits on top of the sticky navigation and blocks the top action buttons on mobile.
 - **Mobile floating action button overlap** — raised the `Layout.tsx` FAB to `bottom-20` on small screens (above the fixed bottom nav) and increased `main` padding-bottom to `pb-36` so the last page content is not hidden behind the FAB on scroll.
 - **Dashboard recent-transactions header translations** — added missing `dashboard.description`, `dashboard.customer`, `dashboard.account`, `dashboard.date`, `dashboard.amount`, `dashboard.type`, and `dashboard.currentBalance` keys to `vi.json` and `en.json` so the tablet table no longer shows raw i18n keys.
-- **Customer list readability** — widened `fullName` (`min-w-[14rem]` / `max-w-[24rem]`) and `lastTransaction` (`min-w-[9rem]`) columns and removed `line-clamp-2` from the customer-name cell so long company names wrap instead of being truncated.
+- **Customer list readability** — widened `fullName` (`w-[14rem]`) and `lastTransaction` (`w-[9rem]`) columns and removed `line-clamp-2` from the customer-name cell so long company names wrap instead of being truncated.
+- **Customer table freeze panes** — froze the first five columns (`GD`, `Mã`, `Tên khách hàng`, `Công nợ`, `Giao dịch cuối`) with fixed widths and `sticky` left offsets so the customer name and last-transaction date remain visible during horizontal scroll on narrow viewports.
 - **Settings tab layout** — converted the horizontal scrolling tab nav in `Settings.tsx` into a responsive vertical grid (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`) to avoid horizontal scroll and make the 10 settings tabs easier to reach on mobile.
 
 ## 2026-08-12

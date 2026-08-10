@@ -234,6 +234,17 @@ export const UsersTab: FC = () => {
                                           disabled={user?.role === 'admin_company'}
                                         />
                                       </div>
+                                      <div className="flex items-center justify-between">
+                                        <label className="text-xs text-gray-700 dark:text-gray-300">
+                                          Tạo giao dịch không cần duyệt
+                                        </label>
+                                        <ToggleSwitch
+                                          checked={Boolean(staff.staff_permissions?.transactions?.bypass_approval)}
+                                          onChange={(checked) => handleUpdateStaffPermission(staff.id, "transactions.bypass_approval", checked)}
+                                          size="sm"
+                                          disabled={user?.role === 'admin_company'}
+                                        />
+                                      </div>
                                     </div>
                                   )}
                                 </div>
