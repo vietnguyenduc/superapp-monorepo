@@ -232,23 +232,30 @@ export class TransactionService extends BaseService {
       async () => {
         let query = apiClient
           .from("transactions")
-          .select(`
-            *,
+          .select(
+            `*,
             customers(full_name),
             bank_accounts(account_name),
             branches(name),
-            users!transactions_created_by_fkey(full_name)
-          `);
+            users!transactions_created_by_fkey(full_name)`,
+            { count: "exact" }
+          );
 
         const companyFilter = typeof filters?.company_id === "string" ? filters.company_id : undefined;
         const branchFilter = typeof filters?.branch_id === "string" ? filters.branch_id : undefined;
         const typeFilter = typeof filters?.transaction_type === "string" ? filters.transaction_type : undefined;
         const customerFilter = typeof filters?.customer_id === "string" ? filters.customer_id : undefined;
+        const bankAccountFilter = typeof filters?.bank_account_id === "string" ? filters.bank_account_id : undefined;
+        const userFilter = typeof filters?.created_by === "string" ? filters.created_by : undefined;
+        const statusFilter = typeof filters?.status === "string" ? filters.status : undefined;
 
         if (companyFilter) query = query.eq("company_id", companyFilter);
         if (branchFilter) query = query.eq("branch_id", branchFilter);
         if (typeFilter) query = query.eq("transaction_type", typeFilter);
         if (customerFilter) query = query.eq("customer_id", customerFilter);
+        if (bankAccountFilter) query = query.eq("bank_account_id", bankAccountFilter);
+        if (userFilter) query = query.eq("created_by", userFilter);
+        if (statusFilter) query = query.eq("status", statusFilter);
 
         const search = typeof filters?.search === "string" ? filters.search.trim() : "";
         if (search) {
@@ -296,11 +303,17 @@ export class TransactionService extends BaseService {
         const branchFilter = typeof filters?.branch_id === "string" ? filters.branch_id : undefined;
         const typeFilter = typeof filters?.transaction_type === "string" ? filters.transaction_type : undefined;
         const customerFilter = typeof filters?.customer_id === "string" ? filters.customer_id : undefined;
+        const bankAccountFilter = typeof filters?.bank_account_id === "string" ? filters.bank_account_id : undefined;
+        const userFilter = typeof filters?.created_by === "string" ? filters.created_by : undefined;
+        const statusFilter = typeof filters?.status === "string" ? filters.status : undefined;
 
         if (companyFilter) transactions = transactions.filter((t) => t.company_id === companyFilter);
         if (branchFilter) transactions = transactions.filter((t) => t.branch_id === branchFilter);
         if (typeFilter) transactions = transactions.filter((t) => t.transaction_type === typeFilter);
         if (customerFilter) transactions = transactions.filter((t) => t.customer_id === customerFilter);
+        if (bankAccountFilter) transactions = transactions.filter((t) => t.bank_account_id === bankAccountFilter);
+        if (userFilter) transactions = transactions.filter((t) => t.created_by === userFilter);
+        if (statusFilter) transactions = transactions.filter((t) => t.status === statusFilter);
 
         const search = typeof filters?.search === "string" ? filters.search.toLowerCase().trim() : "";
         if (search) {
