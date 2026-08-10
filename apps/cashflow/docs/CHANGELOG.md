@@ -1,5 +1,21 @@
 # Changelog — Cashflow
 
+## 2026-08-17
+
+### Added
+
+- **Customer balance range filter** — `CustomerList` now has `Dư nợ từ` / `Dư nợ đến` inputs in the filter bar so users can filter customers by `total_balance`. The filter is applied server-side (`total_balance` gte/lte) and reflected in the total-debt summary and Excel export.
+- **Transaction customer filter** — `TransactionList` now exposes a `Tất cả khách hàng` dropdown in the filter grid, synced with the existing `customer_id` URL parameter. Clicking `Xem giao dịch` on a customer pre-selects that customer in the dropdown and filters the transaction list.
+
+### Changed
+
+- Renamed the customer-card `GD` button to `Xem giao dịch` for clarity, and made the mobile action row wrap gracefully when the label is longer.
+
+### Migration
+
+- `supabase/migrations/046_entity_pending_status.sql` — adds `status` columns to `customers`, `bank_accounts`, and `branches` with `active` default and backfills existing rows.
+- `supabase/migrations/047_company_approval_settings.sql` — adds `companies.approval_settings` JSONB with all categories enabled by default and backfills existing companies.
+
 ## 2026-08-16
 
 ### Added

@@ -39,6 +39,13 @@ export class CustomerService extends BaseService {
         if (startDate) query = query.gte("last_transaction_date", startDate);
         if (endDate) query = query.lte("last_transaction_date", endDate);
 
+        const balanceRange =
+          typeof filters?.balanceRange === "object" && filters?.balanceRange
+            ? (filters.balanceRange as { min?: number | null; max?: number | null })
+            : undefined;
+        if (balanceRange?.min != null) query = query.gte("total_balance", balanceRange.min);
+        if (balanceRange?.max != null) query = query.lte("total_balance", balanceRange.max);
+
         const limit = Number.isFinite(filters?.limit) ? Number(filters.limit) : undefined;
         const offset = Number(filters.offset ?? 0);
 
@@ -108,6 +115,18 @@ export class CustomerService extends BaseService {
             if (!c.last_transaction_date) return false;
             const datePart = new Date(c.last_transaction_date).toISOString().slice(0, 10);
             return (!startDate || datePart >= startDate) && (!endDate || datePart <= endDate);
+          });
+        }
+
+        const balanceRange =
+          typeof filters?.balanceRange === "object" && filters?.balanceRange
+            ? (filters.balanceRange as { min?: number | null; max?: number | null })
+            : undefined;
+        if (balanceRange?.min != null || balanceRange?.max != null) {
+          data = data.filter((c) => {
+            const balance = Number(c.total_balance) || 0;
+            return (balanceRange.min == null || balance >= balanceRange.min) &&
+                   (balanceRange.max == null || balance <= balanceRange.max);
           });
         }
 

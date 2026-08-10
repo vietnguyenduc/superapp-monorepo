@@ -396,6 +396,19 @@ const TransactionList: React.FC = () => {
     setState((prev) => ({ ...prev, userFilter: userId || null, currentPage: 1 }));
   };
 
+  const handleCustomerChange = (customerId: string) => {
+    if (!customerId) {
+      setState((prev) => ({ ...prev, customerFilter: null, currentPage: 1 }));
+      return;
+    }
+    const selected = customers.find((c) => c.id === customerId);
+    setState((prev) => ({
+      ...prev,
+      customerFilter: { id: customerId, name: selected?.name || prev.customerFilter?.name || null },
+      currentPage: 1,
+    }));
+  };
+
   const handleGroupByChange = (groupBy: TransactionListState["groupBy"]) => {
     setState((prev) => ({ ...prev, groupBy }));
   };
@@ -794,6 +807,20 @@ const TransactionList: React.FC = () => {
                 <option value="">Tất cả người thực hiện</option>
                 {userOptions.map(([userId, displayName]) => (
                   <option key={userId} value={userId}>{displayName}</option>
+                ))}
+              </select>
+
+              <select
+                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+                value={state.customerFilter?.id || ""}
+                onChange={(e) => handleCustomerChange(e.target.value)}
+              >
+                <option value="">Tất cả khách hàng</option>
+                {state.customerFilter?.id && !customers.some((c) => c.id === state.customerFilter?.id) && (
+                  <option value={state.customerFilter.id}>{state.customerFilter.name || state.customerFilter.id}</option>
+                )}
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
 
