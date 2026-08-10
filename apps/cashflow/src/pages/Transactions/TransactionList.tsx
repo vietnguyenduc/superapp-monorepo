@@ -60,13 +60,16 @@ const TransactionList: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const companyId = useCompanyId();
-  const { getNameById: getTransactionTypeName, getMathFactor } = useTransactionTypes();
+  const {
+    getNameById: getTransactionTypeName,
+    getMathFactor,
+    typesForDropdown,
+  } = useTransactionTypes();
   const [searchParams] = useSearchParams();
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [bankAccounts, setBankAccounts] = useState<{ id: string; name: string }[]>([]);
   const [customers, setCustomers] = useState<{ id: string; name: string; code?: string }[]>([]);
   const [users, setUsers] = useState<{ id: string; full_name: string; email?: string; company_id?: string | null }[]>([]);
-  const [transactionTypes, setTransactionTypes] = useState<{ id: string; name: string }[]>([]);
   const [showDateMenu, setShowDateMenu] = useState(false);
   const [customStart, setCustomStart] = useState<string>("");
   const [customEnd, setCustomEnd] = useState<string>("");
@@ -211,12 +214,11 @@ const TransactionList: React.FC = () => {
 
   useEffect(() => {
     const loadFilters = async () => {
-      const [branchResult, bankResult, customerResult, userResult, typeResult] = await Promise.all([
+      const [branchResult, bankResult, customerResult, userResult] = await Promise.all([
         databaseService.branches.getBranches(companyId),
         databaseService.bankAccounts.getBankAccounts(companyId),
         databaseService.customers.getCustomers({ limit: 500, company_id: companyId }),
         databaseService.users.getUsers(),
-        databaseService.transactionTypes.getTransactionTypes(companyId),
       ]);
 
       const getName = (record: Record<string, unknown>, ...keys: string[]) => {
@@ -267,24 +269,6 @@ const TransactionList: React.FC = () => {
         );
       }
 
-      if (typeResult?.data) {
-        const seen = new Set<string>();
-        const names = typeResult.data
-          .filter((t: Record<string, unknown>) =>
-            String(t.is_active ?? t.isActive ?? true) !== "false"
-          )
-          .filter((t: Record<string, unknown>) => {
-            const name = String(t.name || "").trim();
-            if (!name || seen.has(name.toLowerCase())) return false;
-            seen.add(name.toLowerCase());
-            return true;
-          })
-          .map((t: Record<string, unknown>) => ({
-            id: String(t.id ?? t.value ?? t.name ?? ""),
-            name: String(t.name ?? t.id ?? t.value ?? ""),
-          }));
-        if (names.length > 0) setTransactionTypes(names);
-      }
     };
     loadFilters();
   }, [companyId]);
@@ -1107,7 +1091,7 @@ const TransactionList: React.FC = () => {
         isOpen={Boolean(editingTx)}
         transaction={editingTx}
         customers={customers}
-        transactionTypes={transactionTypes}
+        transactionTypes={typesForDropdown}
         branches={branches}
         bankAccounts={bankAccounts}
         getTransactionTypeName={getTransactionTypeName}

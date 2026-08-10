@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from "react";
 import { databaseService } from "../services/database";
 import { useAuthContext } from "@superapp/iam";
+import { normalizeTransactionType } from "../services/businessLogic/parsers";
 // Canonical transaction type display labels.  Maps both canonical ids and the
 // legacy/old Vietnamese names to the business labels requested by the product
 // team (Phát sinh tăng/giảm, Điều chỉnh, Hoàn tiền).
@@ -96,8 +97,7 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
           const id = String(t.id ?? "");
           const rawName = String(t.name ?? "");
           const idKey = id.toLowerCase().trim();
-          const nameKey = rawName.toLowerCase().trim();
-          const canonical = CANONICAL_TYPE_LABELS[idKey] ? id : CANONICAL_TYPE_LABELS[nameKey] ? rawName : id;
+          const canonical = CANONICAL_TYPE_LABELS[idKey] ? id : normalizeTransactionType(rawName);
           return {
             id,
             canonical,

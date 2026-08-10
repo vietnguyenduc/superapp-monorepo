@@ -1,5 +1,13 @@
 # Changelog — Cashflow
 
+## 2026-08-13
+
+### Fixed
+
+- **Deposit transaction type label** — `TransactionTypeContext` now normalizes the canonical value to the English key (`deposit`) for all Vietnamese aliases, and `TransactionList` passes the global `typesForDropdown` (with canonical + resolved Vietnamese display names) to `TransactionEditModal`. The edit modal select now stores `transaction_type` as `payment`/`charge`/`deposit`/`refund`/`adjustment` while showing labels like `Phát sinh giảm`, `Phát sinh tăng`, `Đặt cọc`, `Hoàn tiền`, `Điều chỉnh`. This fixes the raw "deposit" option and the inability to change transaction types in the edit modal.
+- **Auth profile company fetch 406** — `@superapp/iam/src/hooks/useAuth.ts` now uses `.maybeSingle()` when fetching `branches` and `companies`, preventing a `406 Not Acceptable` console error for roles whose RLS policy does not allow viewing those rows directly.
+- **Deposit seed data** — `supabase/migrations/042_deposit_transaction_type.sql` seeds `name='Đặt cọc'` instead of `'deposit'`, and `044_fix_deposit_vietnamese_name.sql` backfills any existing rows.
+
 ## 2026-08-04
 
 ### Fixed

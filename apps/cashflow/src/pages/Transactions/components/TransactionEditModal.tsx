@@ -25,7 +25,7 @@ interface TransactionEditModalProps {
   isOpen: boolean;
   transaction: Transaction | null;
   customers: { id: string; name: string; code?: string }[];
-  transactionTypes: { id: string; name: string }[];
+  transactionTypes: { id: string; name: string; canonical?: string }[];
   branches: { id: string; name: string }[];
   bankAccounts: { id: string; name: string }[];
   getTransactionTypeName: (id: string) => string;
@@ -370,8 +370,8 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                     }`}
                   >
                     {transactionTypeOptions.map((t) => (
-                      <option key={t.id} value={(t as any).canonical || t.id}>
-                        {t.name || getTransactionTypeName((t as any).canonical || t.id)}
+                      <option key={t.id} value={t.canonical || t.id}>
+                        {t.name || getTransactionTypeName(t.canonical || t.id)}
                       </option>
                     ))}
                   </select>
