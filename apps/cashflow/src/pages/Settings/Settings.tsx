@@ -106,11 +106,11 @@ const SettingsContent: FC = () => {
                   onClick={() => s.setActiveTab(tab.id)}
                   className={`flex items-center gap-2 sm:gap-3 min-h-[52px] p-3 sm:p-4 rounded-xl border-2 text-left transition ${
                     active
-                      ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-400 shadow-sm"
-                      : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-500"
+                      ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200 dark:border-blue-400 shadow-sm"
+                      : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500"
                   }`}
                 >
-                  <TabIcon id={tab.id} className={`w-5 h-5 shrink-0 ${active ? "text-blue-600 dark:text-blue-300" : "text-gray-500 dark:text-gray-400"}`} />
+                  <TabIcon id={tab.id} className={`w-5 h-5 shrink-0 ${active ? "text-blue-600 dark:text-blue-200" : "text-gray-500 dark:text-gray-300"}`} />
                   <span className="text-xs sm:text-sm font-medium leading-tight">{tab.name}</span>
                 </button>
               );
