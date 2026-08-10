@@ -17,8 +17,15 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
   onBalanceRangeChange,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [minInput, setMinInput] = useState(balanceRange?.min ?? "");
+  const [maxInput, setMaxInput] = useState(balanceRange?.max ?? "");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
+
+  useEffect(() => {
+    setMinInput(balanceRange?.min ?? "");
+    setMaxInput(balanceRange?.max ?? "");
+  }, [balanceRange?.min, balanceRange?.max]);
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -114,17 +121,23 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
 
   const handleMinChange = (value: string) => {
     const num = value === "" ? null : Number(value);
+    const nextMin = Number.isFinite(num) && num !== null ? num : null;
+    const nextMax = maxInput === "" ? null : Number(maxInput);
+    setMinInput(value);
     onBalanceRangeChange({
-      min: Number.isFinite(num) && num !== null ? num : null,
-      max: balanceRange?.max ?? null,
+      min: nextMin,
+      max: Number.isFinite(nextMax) ? nextMax : null,
     });
   };
 
   const handleMaxChange = (value: string) => {
     const num = value === "" ? null : Number(value);
+    const nextMax = Number.isFinite(num) && num !== null ? num : null;
+    const nextMin = minInput === "" ? null : Number(minInput);
+    setMaxInput(value);
     onBalanceRangeChange({
-      min: balanceRange?.min ?? null,
-      max: Number.isFinite(num) && num !== null ? num : null,
+      min: Number.isFinite(nextMin) ? nextMin : null,
+      max: nextMax,
     });
   };
 
@@ -259,7 +272,7 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
           type="number"
           inputMode="numeric"
           placeholder="Dư nợ từ"
-          value={balanceRange?.min ?? ""}
+          value={minInput}
           onChange={(e) => handleMinChange(e.target.value)}
           className="w-28 sm:w-32 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
@@ -268,7 +281,7 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
           type="number"
           inputMode="numeric"
           placeholder="Dư nợ đến"
-          value={balanceRange?.max ?? ""}
+          value={maxInput}
           onChange={(e) => handleMaxChange(e.target.value)}
           className="w-28 sm:w-32 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
