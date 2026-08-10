@@ -1,5 +1,17 @@
 # Changelog — Cashflow
 
+## 2026-08-15
+
+### Added
+
+- **Transaction status workflow** — transactions now have four statuses: `Nháp` (draft), `Chờ duyệt` (pending), `Hoàn thành` (completed), and `Từ chối` (rejected). `TransactionList` shows a tab for each status and a status badge per row. `admin-company`, `admin`, and `admin-master` accounts can create transactions as completed directly; `staff` accounts create transactions as pending unless `staff_permissions.transactions.bypass_approval` is enabled. Every new transaction can be saved as a draft from `TransactionImport` using the new "Lưu nháp" buttons.
+- **Staff `bypass_approval` permission** — `UsersTab` now has a toggle "Tạo giao dịch không cần duyệt" in the Giao dịch section, stored in `staff_permissions.transactions.bypass_approval` and honored by `getInitialTransactionStatus` and `canApproveTransactions` helpers.
+- **Status-aware balance sync** — `transactionService.ts` only applies balance deltas for transactions whose `status === "completed"`. Draft/pending/rejected rows do not affect `customers.total_balance` or `bank_accounts.balance`; status transitions (e.g. completed → rejected) reverse/adjust deltas correctly.
+
+### Migration
+
+- `supabase/migrations/045_transaction_status_draft_rejected.sql` — migrates the `transactions.status` CHECK constraint to allow `draft`, `pending`, `completed`, `rejected`; maps any existing `cancelled` rows to `rejected`; keeps default `completed` for backward-compatible inserts.
+
 ## 2026-08-14
 
 ### Fixed

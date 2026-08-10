@@ -11,6 +11,7 @@ interface UserPermissions {
   transactions?: {
     import_own?: boolean;
     manage_all?: boolean;
+    bypass_approval?: boolean;
   };
   settings?: {
     edit_general?: boolean;
@@ -118,6 +119,28 @@ export function canDeleteTransaction(user: User): boolean {
   if (!user.can_delete) return false;
   if (user.role === 'admin_master' || user.role === 'admin' || user.role === 'admin_company') return true;
   return Boolean(user.staff_permissions?.transactions?.manage_all);
+}
+
+// Check if user can approve/reject transactions (admin or transaction manager)
+export function canApproveTransactions(user: User): boolean {
+  if (!user) return false;
+  if (user.role === 'admin_master' || user.role === 'admin' || user.role === 'admin_company') return true;
+  return Boolean(user.staff_permissions?.transactions?.manage_all);
+}
+
+// Check if user can bypass the pending-approval workflow and complete transactions immediately
+export function canBypassTransactionApproval(user: User): boolean {
+  if (!user) return false;
+  if (user.role === 'admin_master' || user.role === 'admin' || user.role === 'admin_company') return true;
+  return Boolean(user.staff_permissions?.transactions?.bypass_approval);
+}
+
+// Determine the initial status for a new transaction based on user role/permissions
+export function getInitialTransactionStatus(user: User | null | undefined, saveAsDraft = false): "draft" | "pending" | "completed" {
+  if (saveAsDraft) return "draft";
+  if (!user) return "pending";
+  if (canBypassTransactionApproval(user)) return "completed";
+  return "pending";
 }
 
 // Check if user can edit general settings

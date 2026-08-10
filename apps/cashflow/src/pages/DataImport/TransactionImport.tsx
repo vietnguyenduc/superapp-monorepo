@@ -12,7 +12,7 @@ import {
   validateTransactionData,
   parseTransactionData,
 } from "../../utils/importUtils";
-import { canImportTransactions } from "../../utils/permissions";
+import { canImportTransactions, getInitialTransactionStatus } from "../../utils/permissions";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import { databaseService } from "../../services/database";
 import Button from "../../components/UI/Button";
@@ -522,7 +522,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   );
 
   const handleImportData = useCallback(
-    async (payload?: any[]) => {
+    async (payload?: any[], saveAsDraft = false) => {
       const dataToImport = payload ?? importData.data;
       const isValid = payload ? true : importData.isValid;
       if (!isValid || dataToImport.length === 0) return;
@@ -533,12 +533,14 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
       }
 
       const branchId = user?.branch_id || null;
+      const initialStatus = getInitialTransactionStatus(user, saveAsDraft);
+      const dataWithStatus = dataToImport.map((row) => ({ ...row, status: initialStatus }));
       setImportSuccess(null);
       setImportError(null);
       setIsProcessing(true);
       try {
         const result = await databaseService.transactions.bulkImportTransactions(
-          dataToImport as any[],
+          dataWithStatus as any[],
           branchId ?? undefined,
           user?.id || "",
           companyId,
@@ -600,7 +602,13 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   const handleValidateAndImportInline = useCallback(async () => {
     const isValid = handleValidateData("single", tableData);
     if (!isValid) return;
-    await handleImportData(tableData);
+    await handleImportData(tableData, false);
+  }, [handleImportData, handleValidateData, tableData]);
+
+  const handleSaveDraftInline = useCallback(async () => {
+    const isValid = handleValidateData("single", tableData);
+    if (!isValid) return;
+    await handleImportData(tableData, true);
   }, [handleImportData, handleValidateData, tableData]);
 
   const handleValidateAndImportBulk = useCallback(async () => {
@@ -608,7 +616,15 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     setValidationMode("bulk");
     const isValid = handleValidateData("bulk", importData.data as any);
     if (!isValid) return;
-    await handleImportData(importData.data);
+    await handleImportData(importData.data, false);
+  }, [handleImportData, handleValidateData, importData.data]);
+
+  const handleSaveDraftBulk = useCallback(async () => {
+    setShowPreview(true);
+    setValidationMode("bulk");
+    const isValid = handleValidateData("bulk", importData.data as any);
+    if (!isValid) return;
+    await handleImportData(importData.data, true);
   }, [handleImportData, handleValidateData, importData.data]);
 
   const getErrorForRow = (rowIndex: number): ImportError[] => {
@@ -1152,6 +1168,9 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
                     <Button variant="secondary" size="sm" onClick={handleReset}>
                       {t("common.reset")}
                     </Button>
+                    <Button variant="secondary" size="sm" onClick={handleSaveDraftInline}>
+                      Lưu nháp
+                    </Button>
                     <Button variant="primary" size="sm" onClick={handleValidateAndImportInline}>
                       {t("import.importSingle")}
                     </Button>
@@ -1455,6 +1474,14 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
                         {renderUnmatchedCustomers()}
 
                         <div className="flex justify-end gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleSaveDraftBulk}
+                            disabled={importData.data.length === 0}
+                          >
+                            Lưu nháp
+                          </Button>
                           <Button
                             variant="success"
                             size="sm"

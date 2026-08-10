@@ -110,6 +110,13 @@ A dedicated `Công thức dư nợ` tab in Settings shows the current formula, l
 - **Customer list column widths / freeze panes** — in `CustomerTable.tsx`, keep `fullName` readable (`w-[14rem]` so long names wrap), `lastTransaction` (`w-[9rem]`), and remove `line-clamp-2` from the customer-name cell. Freeze the first columns (`GD`, `Mã`, `Tên khách hàng`, `Công nợ`, `Giao dịch cuối`) with fixed widths and `sticky` left offsets so customer name and last-transaction date stay visible during horizontal scroll.
 - **Settings navigation** — `Settings.tsx` renders the 10 settings tabs as a responsive vertical grid (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`) instead of a horizontal scrolling nav so all tabs are visible on mobile without horizontal swipe.
 
+## Transaction status workflow (2026-08-15)
+
+- `Transaction.status` values are `draft` / `pending` / `completed` / `rejected` (VN labels: Nháp / Chờ duyệt / Hoàn thành / Từ chối). `TransactionList` renders a tab for each status and a status badge per row. Approval actions (Duyệt / Từ chối / Gửi duyệt) are shown based on `canApproveTransactions(user)`.
+- `canBypassTransactionApproval(user)` returns `true` for `admin_master`, `admin`, `admin_company`, plus any `staff` with `staff_permissions.transactions.bypass_approval`. `getInitialTransactionStatus(user, saveAsDraft)` returns `draft` if `saveAsDraft` is `true`, `completed` if bypass applies, otherwise `pending`.
+- `TransactionImport` single/bulk flows call `databaseService.transactions.bulkImportTransactions(...)` with `status` set to `getInitialTransactionStatus(user, saveAsDraft)`. Two buttons are provided: "Lưu nháp" (save as draft) and the existing import button (completed/pending based on role).
+- `transactionService.ts` balance sync now ignores delta for any transaction whose `status` is not `completed`. This means draft/pending/rejected rows do not move `customers.total_balance` or `bank_accounts.balance`; status transitions reverse/adjust deltas correctly.
+
 ## Recent architectural decisions
 
 - `docs/adr/0001-transaction-type-single-source-of-truth.md`
