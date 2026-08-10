@@ -170,7 +170,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("fullName") ? "" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap min-w-[10rem] max-w-[18rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("fullName") ? "" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-normal min-w-[14rem] max-w-[24rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
               onClick={() => handleSort("full_name")}
             >
               <div className="flex items-center space-x-1">
@@ -190,7 +190,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-normal leading-tight min-w-[6rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap leading-tight min-w-[9rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
               onClick={() => handleSort("last_transaction_date")}
             >
               <div className="flex items-center space-x-1">
@@ -271,7 +271,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
               <td className={`${isVisible("customerCode") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 whitespace-nowrap w-16`}>
                 <div className="text-xs font-bold font-mono text-gray-900 dark:text-white">{customer.customer_code}</div>
               </td>
-              <td className={`${isVisible("fullName") ? "" : "hidden"} w-full sm:w-auto px-4 py-4 sm:px-3 sm:py-3 min-w-0 sm:min-w-[8rem] max-w-full sm:max-w-[16rem] lg:max-w-[20rem]`}>
+              <td className={`${isVisible("fullName") ? "" : "hidden"} w-full sm:w-auto px-4 py-4 sm:px-3 sm:py-3 min-w-0 sm:min-w-[14rem] max-w-full sm:max-w-[20rem] lg:max-w-[24rem]`}>
                 <div className={`flex items-center justify-between gap-2 sm:hidden mb-2 ${isVisible("customerCode") ? "" : "hidden"}`}>
                   <div className="flex items-center gap-2">
                     <button
@@ -318,7 +318,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                     </button>
                   </div>
                 </div>
-                <div className={`text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-snug line-clamp-2 whitespace-normal break-words ${isVisible("fullName") ? "" : "hidden"}`} title={customer.full_name}>
+                <div className={`text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-snug whitespace-normal break-words ${isVisible("fullName") ? "" : "hidden"}`} title={customer.full_name}>
                   {customer.full_name}
                 </div>
                 {customer.email && (
@@ -366,7 +366,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                   {formatCurrency(customer.total_balance || 0)}
                 </div>
               </td>
-              <td className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 whitespace-nowrap min-w-[6rem] text-sm text-gray-900 dark:text-white`}>
+              <td className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 whitespace-nowrap min-w-[9rem] text-sm text-gray-900 dark:text-white`}>
                 {customer.last_transaction_date
                   ? formatDate(customer.last_transaction_date)
                   : t("customers.noTransactions")}

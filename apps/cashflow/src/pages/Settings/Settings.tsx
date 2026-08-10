@@ -72,23 +72,26 @@ const SettingsContent: FC = () => {
           </div>
         )}
 
-        <div className="border-b border-gray-200 dark:border-gray-600 mb-2 sm:mb-4 overflow-x-auto">
-          <nav className="flex space-x-1 sm:space-x-8 min-w-max px-1">
-            {s.tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => s.setActiveTab(tab.id)}
-                className={`py-2 px-3 sm:px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
-                  s.activeTab === tab.id
-                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
-                }`}
-              >
-                <span className="mr-1 sm:mr-2">{tab.icon}</span>
-                <span className="text-[11px] sm:text-sm leading-tight">{tab.name}</span>
-              </button>
-            ))}
-          </nav>
+        <div className="mb-4 sm:mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+            {s.tabs.map((tab) => {
+              const active = s.activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => s.setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border-2 text-left transition ${
+                    active
+                      ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-400"
+                      : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-500"
+                  }`}
+                >
+                  <span className="text-lg sm:text-xl" aria-hidden>{tab.icon}</span>
+                  <span className="text-xs sm:text-sm font-medium leading-tight">{tab.name}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
