@@ -1,5 +1,17 @@
 # Changelog — Cashflow
 
+## 2026-08-18
+
+### Added
+
+- **Transaction group by Quý / Năm** — `TransactionList` now supports grouping by `quarter` and `year` alongside `day`, `week`, and `month`.
+- **Deposit column in group summary** — the group summary table (and new mobile summary cards) now shows `Tổng đặt cọc` separately from `Tổng phát sinh giảm`.
+- **Mobile group summary** — `TransactionList` renders a `sm:hidden` card list when a group-by option is selected so mobile users can see the summary too.
+
+### Fixed
+
+- `parseAmount` now returns numeric inputs unchanged and treats a trailing separator with 1–2 fractional digits as a decimal marker. This fixes a bug where values like `990366250.4` were parsed as `9,903,662,504` (10× too large), which inflated `Customer to Watch` balances on the dashboard.
+
 ## 2026-08-17
 
 ### Added
