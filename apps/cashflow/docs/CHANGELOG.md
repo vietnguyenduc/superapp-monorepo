@@ -15,7 +15,7 @@
 
 ### Added
 
-- **Group-by `Ngày` date range filter** — when grouping transactions by day, the summary header now exposes `Từ ngày` / `Đến ngày` inputs on both desktop and mobile so users can narrow the displayed day groups without changing the main transaction date filter.
+- **Group-by date range filter** — when grouping transactions by `Ngày/Tuần/Tháng/Quý/Năm`, the summary header exposes `Từ ngày` / `Đến ngày` inputs on both desktop and mobile so users can narrow the displayed groups. The group summary now aggregates over all matching transactions in the selected range (up to 1,000 rows) instead of only the current paginated page.
 
 ## 2026-08-17
 
