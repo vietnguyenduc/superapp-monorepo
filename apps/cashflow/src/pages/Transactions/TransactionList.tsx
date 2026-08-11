@@ -651,7 +651,14 @@ const TransactionList: React.FC = () => {
         return row;
       });
 
-      const ws = XLSX.utils.json_to_sheet(rows);
+      const headers: string[] = [];
+      COLUMN_OPTIONS.forEach((col) => {
+        if (col.key === "actions") return;
+        if (!col.always && !visibleColumns[col.key]) return;
+        headers.push(col.label);
+      });
+      const dataRows = rows.map((row) => headers.map((h) => (row[h] === undefined || row[h] === null ? "" : row[h])));
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Danh sách giao dịch");
       XLSX.writeFile(wb, "danh-sach-giao-dich.xlsx");
