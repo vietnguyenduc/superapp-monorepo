@@ -7,9 +7,11 @@
 ```
 GitHub repo (vietnguyenduc/superapp-monorepo)
   ├── Branch: viet (development)
-  │     └── Push → Vercel preview deployment per app
+  │     └── Push → GitHub Actions `Deploy changed Vercel apps` → Vercel preview per app
   └── Branch: main (production)
-        └── Merge viet → main → Vercel production deployment
+        └── Merge → GitHub Actions `Deploy changed Vercel apps` → Vercel production deployment
+
+> Vercel Git auto-deploy is disabled in each app's `vercel.json` (`git.deploymentEnabled: false`) to avoid exhausting the Hobby 100-deploy/day quota with cancelled preview attempts. GitHub Actions triggers deploys only for `main` and `viet`.
 ```
 
 ## Production URLs
@@ -34,7 +36,10 @@ Mỗi app có `vercel.json` trong `apps/<app>/`. Build từ root monorepo qua `n
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [{ "source": "/(.*)", "destination": "/" }],
-  "ignoreCommand": "bash ../../scripts/vercel-ignore.sh"
+  "ignoreCommand": "bash ../../scripts/vercel-ignore.sh",
+  "git": {
+    "deploymentEnabled": false
+  }
 }
 ```
 
@@ -148,9 +153,9 @@ Hoặc trigger qua Vercel Dashboard → project → Deployments → Redeploy.
 - `Deploy changed Vercel apps` (`workflow_dispatch`): deploy tay các app đã thay đổi từ `main` lên production.
 - `Auto-deploy production after Vercel quota reset` (schedule `*/10 * * * *` + `workflow_dispatch`): tự động kiểm tra production deployment của từng app so với commit `main` mới nhất; nếu lệch (do Vercel Hobby rate-limit chưa kịp deploy) thì deploy bù. Dùng Vercel API để lấy `githubCommitSha` của production deployment hiện tại và `git diff` để chỉ deploy app có thay đổi thực sự.
 
-### Vercel Auto-Deploy
+### Vercel Auto-Deploy (disabled)
 
-Vercel connected to GitHub repo. Mỗi push trigger build cho apps có thay đổi (Vercel detects `apps/<app>/` path changes). Nếu Vercel Hobby quota đầy tại thời điểm merge, auto-deploy có thể bị bỏ lỡ; workflow `auto-deploy-on-quota-reset` sẽ retry trong các lần chạy cron tiếp theo.
+Vercel Git auto-deploy is disabled in every `apps/<app>/vercel.json` (`git.deploymentEnabled: false`). Pushes no longer trigger Vercel builds directly; instead GitHub Actions `Deploy changed Vercel apps` deploys changed apps for `main` and `viet` only. This prevents the Hobby 100-deploy/day quota being consumed by cancelled preview attempts from PR/feature branches. If the workflow fails due to quota, the `Auto-deploy production after Vercel quota reset` cron (every 10 minutes) retries until a slot is available.
 
 ## Verification Checklist
 
