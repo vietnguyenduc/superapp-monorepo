@@ -17,7 +17,8 @@ on:
         required: false
         type: string
 
-  # Auto-deploy production on merge to main and preview on viet pushes.
+  # Auto-deploy production on merge to main.
+  # Auto-deploy preview on viet pushes and alias to a fixed subdomain.
   push:
     branches:
       - main
@@ -87,8 +88,18 @@ jobs:
           target="${{ github.event.inputs.target }}"
           [ -z "$target" ] && target="$([ '${{ github.ref_name }}' = 'main' ] && echo 'production' || echo 'preview')"
 
-          npx vercel@latest deploy \
+          deploy_url=$(npx vercel@latest deploy \
             --project ${{ matrix.app }} \
             --token ${{ secrets.VERCEL_TOKEN }} \
             --yes \
-            $([ "$target" = "production" ] && echo '--prod' || true)
+            $([ "$target" = "production" ] && echo '--prod' || true))
+
+          echo "Deployed ${{ matrix.app }} to $deploy_url"
+
+          if [ "$target" = "preview" ]; then
+            alias="${{ matrix.app }}-preview.appforyou.xyz"
+            echo "Aliasing preview to $alias"
+            npx vercel@latest alias set "$deploy_url" "$alias" \
+              --token ${{ secrets.VERCEL_TOKEN }} \
+              --yes || echo "Alias failed; the deployment is still available at $deploy_url"
+          fi
