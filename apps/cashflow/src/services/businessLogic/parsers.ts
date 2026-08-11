@@ -70,6 +70,10 @@ export function normalizeTransactionType(type: string): string {
  */
 export function parseAmount(value: unknown): number {
   if (value == null) return 0;
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
   let raw = String(value).trim();
   if (!raw) return 0;
 
@@ -78,19 +82,29 @@ export function parseAmount(value: unknown): number {
   raw = raw.replace(/[()]/g, "").replace(/^-/, "");
   // Remove currency symbols and whitespace
   let str = raw.replace(/[$€£¥₫\s]/g, "");
+  if (!str) return 0;
 
   // Detect decimal/thousand separator convention
   // 1,234.56 -> comma is thousand, dot is decimal
   // 1.234,56 -> dot is thousand, comma is decimal
   // 1.234 -> dot is thousand (no decimal comma)
   // 1,234 -> comma is thousand (no decimal dot)
-  const commaDecimal = /\d,\d{2}$/.test(str);
-  const dotDecimal = /\.\d{2}$/.test(str);
+  // A trailing separator with 1 or 2 digits is a decimal marker.
+  const lastDot = str.lastIndexOf(".");
+  const lastComma = str.lastIndexOf(",");
+  const decimalIndex = Math.max(lastDot, lastComma);
+  let decimalChar = "";
+  if (decimalIndex !== -1) {
+    const fraction = str.slice(decimalIndex + 1);
+    if (/^\d{1,2}$/.test(fraction)) {
+      decimalChar = str[decimalIndex];
+    }
+  }
 
-  if (commaDecimal) {
-    str = str.replace(/\./g, "").replace(/,/g, ".");
-  } else if (dotDecimal) {
-    str = str.replace(/,/g, "");
+  if (decimalChar === ".") {
+    str = str.replace(/,/g, "").replace(/\./, ".");
+  } else if (decimalChar === ",") {
+    str = str.replace(/\./g, "").replace(/,/, ".");
   } else {
     // No fractional part: treat both dot and comma as thousand separators
     str = str.replace(/[.,]/g, "");

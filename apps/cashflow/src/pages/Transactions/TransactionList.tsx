@@ -9,7 +9,7 @@ import type { Transaction, TransactionStatus } from "../../types";
 import { useAuthContext as useAuth } from "@superapp/iam";
 import { canApproveTransactions } from "../../utils/permissions";
 import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../utils/formatting";
-import { getCustomerBalanceDelta, parseAmount } from "../../services/businessLogic";
+import { getCustomerBalanceDelta, parseAmount, normalizeTransactionType } from "../../services/businessLogic";
 import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import Pagination from "../../components/UI/Pagination";
@@ -38,7 +38,7 @@ interface TransactionListState {
     name: string | null;
   } | null;
   statusFilter: "all" | TransactionStatus;
-  groupBy: "" | "day" | "week" | "month" | "branch" | "transaction_type" | "customer";
+  groupBy: "" | "day" | "week" | "month" | "quarter" | "year" | "branch" | "transaction_type" | "customer";
 }
 
 interface GroupSummary {
@@ -46,6 +46,7 @@ interface GroupSummary {
   count: number;
   increase: number;
   decrease: number;
+  deposit: number;
   adjustment: number;
   net: number;
 }
@@ -56,6 +57,10 @@ function getISOWeek(date: Date): number {
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
+function getQuarter(date: Date): number {
+  return Math.floor(date.getMonth() / 3) + 1;
 }
 
 const TransactionList: React.FC = () => {
@@ -547,6 +552,19 @@ const TransactionList: React.FC = () => {
           label = `Tháng ${month}/${year}`;
           break;
         }
+        case "quarter": {
+          const year = d.getFullYear();
+          const quarter = getQuarter(d);
+          key = `quarter:${year}-Q${quarter}`;
+          label = `Quý ${quarter}/${year}`;
+          break;
+        }
+        case "year": {
+          const year = d.getFullYear();
+          key = `year:${year}`;
+          label = `Năm ${year}`;
+          break;
+        }
         case "branch": {
           const branchName = tx.branch_id ? getBranchName(tx.branch_id) : "Không có văn phòng";
           key = `branch:${tx.branch_id || "none"}`;
@@ -571,12 +589,15 @@ const TransactionList: React.FC = () => {
       }
 
       if (!acc[key]) {
-        acc[key] = { label, count: 0, increase: 0, decrease: 0, adjustment: 0, net: 0 };
+        acc[key] = { label, count: 0, increase: 0, decrease: 0, deposit: 0, adjustment: 0, net: 0 };
       }
 
       const delta = getCustomerBalanceDelta(tx.transaction_type, tx.amount, getMathFactor(tx.transaction_type));
-      if (tx.transaction_type === "adjustment") {
+      const canonicalType = normalizeTransactionType(tx.transaction_type);
+      if (canonicalType === "adjustment") {
         acc[key].adjustment += delta;
+      } else if (canonicalType === "deposit") {
+        acc[key].deposit += Math.abs(delta);
       } else if (delta > 0) {
         acc[key].increase += Math.abs(delta);
       } else if (delta < 0) {
@@ -833,6 +854,8 @@ const TransactionList: React.FC = () => {
                 <option value="day">Ngày</option>
                 <option value="week">Tuần</option>
                 <option value="month">Tháng</option>
+                <option value="quarter">Quý</option>
+                <option value="year">Năm</option>
                 <option value="branch">Văn phòng</option>
                 <option value="transaction_type">Loại giao dịch</option>
                 <option value="customer">Khách hàng</option>
@@ -930,6 +953,7 @@ const TransactionList: React.FC = () => {
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Số giao dịch</th>
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng phát sinh tăng</th>
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng phát sinh giảm</th>
+                        <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng đặt cọc</th>
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng điều chỉnh</th>
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Net</th>
                       </tr>
@@ -937,7 +961,7 @@ const TransactionList: React.FC = () => {
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {Object.entries(groupedData)
                         .sort(([keyA, a], [keyB, b]) => {
-                          if (state.groupBy === "day" || state.groupBy === "week" || state.groupBy === "month") {
+                          if (state.groupBy === "day" || state.groupBy === "week" || state.groupBy === "month" || state.groupBy === "quarter" || state.groupBy === "year") {
                             return keyA.localeCompare(keyB);
                           }
                           return a.label.localeCompare(b.label);
@@ -948,6 +972,7 @@ const TransactionList: React.FC = () => {
                             <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm text-gray-700 dark:text-gray-200">{data.count}</td>
                             <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold text-red-600 dark:text-red-400">{formatCurrency(data.increase)}</td>
                             <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold text-green-600 dark:text-green-400">{formatCurrency(data.decrease)}</td>
+                            <td className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${data.deposit > 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.deposit)}</td>
                             <td className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${data.adjustment > 0 ? "text-red-600 dark:text-red-400" : data.adjustment < 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.adjustment)}</td>
                             <td className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${data.net > 0 ? "text-red-600 dark:text-red-400" : data.net < 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.net)}</td>
                           </tr>
@@ -955,6 +980,53 @@ const TransactionList: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            )}
+
+            {/* Mobile group summary */}
+            {groupedData && (
+              <div className="sm:hidden mb-4 space-y-3">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 rounded-t-lg border-t border-l border-r dark:border-gray-700">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Tổng hợp theo nhóm</h3>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{Object.keys(groupedData).length} nhóm</span>
+                </div>
+                {Object.entries(groupedData)
+                  .sort(([keyA, a], [keyB, b]) => {
+                    if (state.groupBy === "day" || state.groupBy === "week" || state.groupBy === "month" || state.groupBy === "quarter" || state.groupBy === "year") {
+                      return keyA.localeCompare(keyB);
+                    }
+                    return a.label.localeCompare(b.label);
+                  })
+                  .map(([key, data]) => (
+                    <div key={key} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{data.label}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{data.count} giao dịch</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500 dark:text-gray-400">Tăng</span>
+                          <span className="font-semibold text-red-600 dark:text-red-400">{formatCurrency(data.increase)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500 dark:text-gray-400">Giảm</span>
+                          <span className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(data.decrease)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500 dark:text-gray-400">Cọc</span>
+                          <span className={`font-semibold ${data.deposit > 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.deposit)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500 dark:text-gray-400">Điều chỉnh</span>
+                          <span className={`font-semibold ${data.adjustment > 0 ? "text-red-600 dark:text-red-400" : data.adjustment < 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.adjustment)}</span>
+                        </div>
+                        <div className="col-span-2 flex justify-between pt-1 border-t border-gray-100 dark:border-gray-700">
+                          <span className="text-gray-500 dark:text-gray-400">Net</span>
+                          <span className={`font-semibold ${data.net > 0 ? "text-red-600 dark:text-red-400" : data.net < 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.net)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
               </div>
             )}
 
