@@ -578,7 +578,7 @@ const TransactionList: React.FC = () => {
   const groupedData = useMemo(() => {
     if (!state.groupBy) return null;
 
-    return state.transactions.reduce<Record<string, GroupSummary>>((acc, tx) => {
+    return state.groupTransactions.reduce<Record<string, GroupSummary>>((acc, tx) => {
       const d = new Date(tx.transaction_date);
       let key = "";
       let label = "";
