@@ -20,6 +20,7 @@ GitHub repo (vietnguyenduc/superapp-monorepo)
 |-----|-----|----------------|
 | Admin Portal | https://admin.appforyou.xyz | admin-portal |
 | Cashflow | https://cashflow.appforyou.xyz | cashflow |
+| Framework Method | https://framework.appforyou.xyz | framework-method |
 | Inventory | https://inventory.appforyou.xyz | inventory-operation |
 | Sales & POS | https://sales.appforyou.xyz | sales-operation |
 | HR & Payroll | https://hr.appforyou.xyz | hr-operation |
