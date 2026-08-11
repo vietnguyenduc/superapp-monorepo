@@ -710,8 +710,8 @@ const TransactionList: React.FC = () => {
       setCustomEnd("");
       return;
     }
-    setCustomStart(state.dateRange.start.slice(0, 10));
-    setCustomEnd(state.dateRange.end.slice(0, 10));
+    setCustomStart(toLocalISODate(new Date(state.dateRange.start)));
+    setCustomEnd(toLocalISODate(new Date(state.dateRange.end)));
   }, [state.dateRange]);
 
   if (state.loading || !colorsReady) {
