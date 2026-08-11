@@ -983,53 +983,6 @@ const TransactionList: React.FC = () => {
               </div>
             )}
 
-            {/* Mobile group summary */}
-            {groupedData && (
-              <div className="sm:hidden mb-4 space-y-3">
-                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 rounded-t-lg border-t border-l border-r dark:border-gray-700">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Tổng hợp theo nhóm</h3>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{Object.keys(groupedData).length} nhóm</span>
-                </div>
-                {Object.entries(groupedData)
-                  .sort(([keyA, a], [keyB, b]) => {
-                    if (state.groupBy === "day" || state.groupBy === "week" || state.groupBy === "month" || state.groupBy === "quarter" || state.groupBy === "year") {
-                      return keyA.localeCompare(keyB);
-                    }
-                    return a.label.localeCompare(b.label);
-                  })
-                  .map(([key, data]) => (
-                    <div key={key} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">{data.label}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{data.count} giao dịch</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-gray-500 dark:text-gray-400">Tăng</span>
-                          <span className="font-semibold text-red-600 dark:text-red-400">{formatCurrency(data.increase)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500 dark:text-gray-400">Giảm</span>
-                          <span className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(data.decrease)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500 dark:text-gray-400">Cọc</span>
-                          <span className={`font-semibold ${data.deposit > 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.deposit)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500 dark:text-gray-400">Điều chỉnh</span>
-                          <span className={`font-semibold ${data.adjustment > 0 ? "text-red-600 dark:text-red-400" : data.adjustment < 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.adjustment)}</span>
-                        </div>
-                        <div className="col-span-2 flex justify-between pt-1 border-t border-gray-100 dark:border-gray-700">
-                          <span className="text-gray-500 dark:text-gray-400">Net</span>
-                          <span className={`font-semibold ${data.net > 0 ? "text-red-600 dark:text-red-400" : data.net < 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.net)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-
             <div className="h-4 overflow-x-auto overflow-y-hidden bg-gray-100 dark:bg-gray-800 rounded mb-2" ref={topScrollRef} onScroll={handleTopScroll}>
               <div ref={topInnerRef} className="h-1" />
             </div>
@@ -1202,6 +1155,53 @@ const TransactionList: React.FC = () => {
               </table>
             </div>
         </div>
+
+        {/* Mobile group summary */}
+        {groupedData && (
+          <div className="sm:hidden mb-4 space-y-3">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 rounded-t-lg border-t border-l border-r dark:border-gray-700">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Tổng hợp theo nhóm</h3>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{Object.keys(groupedData).length} nhóm</span>
+            </div>
+            {Object.entries(groupedData)
+              .sort(([keyA, a], [keyB, b]) => {
+                if (state.groupBy === "day" || state.groupBy === "week" || state.groupBy === "month" || state.groupBy === "quarter" || state.groupBy === "year") {
+                  return keyA.localeCompare(keyB);
+                }
+                return a.label.localeCompare(b.label);
+              })
+              .map(([key, data]) => (
+                <div key={key} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{data.label}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{data.count} giao dịch</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Tăng</span>
+                      <span className="font-semibold text-red-600 dark:text-red-400">{formatCurrency(data.increase)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Giảm</span>
+                      <span className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(data.decrease)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Cọc</span>
+                      <span className={`font-semibold ${data.deposit > 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.deposit)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Điều chỉnh</span>
+                      <span className={`font-semibold ${data.adjustment > 0 ? "text-red-600 dark:text-red-400" : data.adjustment < 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.adjustment)}</span>
+                    </div>
+                    <div className="col-span-2 flex justify-between pt-1 border-t border-gray-100 dark:border-gray-700">
+                      <span className="text-gray-500 dark:text-gray-400">Net</span>
+                      <span className={`font-semibold ${data.net > 0 ? "text-red-600 dark:text-red-400" : data.net < 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.net)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
 
         {/* Mobile card list */}
         <div className="sm:hidden space-y-3">

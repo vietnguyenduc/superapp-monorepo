@@ -11,6 +11,7 @@
 ### Fixed
 
 - `parseAmount` now returns numeric inputs unchanged and treats a trailing separator with 1–2 fractional digits as a decimal marker. This fixes a bug where values like `990366250.4` were parsed as `9,903,662,504` (10× too large), which inflated `Customer to Watch` balances on the dashboard.
+- Mobile group summary card is now placed outside the desktop-only `hidden sm:block` container so it actually appears on small screens.
 
 ## 2026-08-17
 
