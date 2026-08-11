@@ -39,6 +39,10 @@ interface TransactionListState {
   } | null;
   statusFilter: "all" | TransactionStatus;
   groupBy: "" | "day" | "week" | "month" | "quarter" | "year" | "branch" | "transaction_type" | "customer";
+  groupDateRange: {
+    start: string;
+    end: string;
+  } | null;
 }
 
 interface GroupSummary {
@@ -98,7 +102,10 @@ const TransactionList: React.FC = () => {
     customerFilter: null,
     statusFilter: "all",
     groupBy: "",
+    groupDateRange: null,
   });
+  const [groupDateStart, setGroupDateStart] = useState<string>("");
+  const [groupDateEnd, setGroupDateEnd] = useState<string>("");
 
   // Debounce search term so API isn't called on every keystroke (300ms delay)
   const debouncedSearchTerm = useDebounce(state.searchTerm, 300);
@@ -389,6 +396,23 @@ const TransactionList: React.FC = () => {
     setShowDateMenu(false);
   };
 
+  const applyGroupDateRange = () => {
+    if (!groupDateStart || !groupDateEnd) return;
+    const start = new Date(groupDateStart);
+    const end = new Date(groupDateEnd);
+    if (start > end) return;
+    setState((prev) => ({
+      ...prev,
+      groupDateRange: { start: start.toISOString(), end: end.toISOString() },
+    }));
+  };
+
+  const clearGroupDateRange = () => {
+    setGroupDateStart("");
+    setGroupDateEnd("");
+    setState((prev) => ({ ...prev, groupDateRange: null }));
+  };
+
   const handleBranchChange = (branchId: string) => {
     setState((prev) => ({ ...prev, branchFilter: branchId || null, currentPage: 1 }));
   };
@@ -609,6 +633,29 @@ const TransactionList: React.FC = () => {
       return acc;
     }, {});
   }, [state.groupBy, state.transactions, getBranchName, customers, getTransactionTypeName, getMathFactor]);
+
+  const filteredGroupedEntries = useMemo(() => {
+    if (!groupedData) return [];
+
+    const entries = Object.entries(groupedData);
+    if (state.groupBy === "day" && state.groupDateRange) {
+      const start = state.groupDateRange.start.slice(0, 10);
+      const end = state.groupDateRange.end.slice(0, 10);
+      return entries
+        .filter(([key]) => {
+          const iso = key.replace(/^day:/, "");
+          return iso >= start && iso <= end;
+        })
+        .sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
+    }
+
+    return entries.sort(([keyA, a], [keyB, b]) => {
+      if (state.groupBy === "day" || state.groupBy === "week" || state.groupBy === "month" || state.groupBy === "quarter" || state.groupBy === "year") {
+        return keyA.localeCompare(keyB);
+      }
+      return a.label.localeCompare(b.label);
+    });
+  }, [groupedData, state.groupBy, state.groupDateRange]);
 
   const timeLabel = useMemo(() => {
     if (!state.dateRange) return "Tất cả thời gian";
@@ -941,9 +988,44 @@ const TransactionList: React.FC = () => {
           <div className="hidden sm:block">
             {groupedData && (
               <div className="mb-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">Tổng hợp theo nhóm</h3>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{Object.keys(groupedData).length} nhóm</span>
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center justify-between sm:justify-start gap-3">
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">Tổng hợp theo nhóm</h3>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{filteredGroupedEntries.length} nhóm</span>
+                  </div>
+                  {state.groupBy === "day" && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="date"
+                        value={groupDateStart}
+                        onChange={(e) => setGroupDateStart(e.target.value)}
+                        className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1 text-xs"
+                      />
+                      <span className="text-xs text-gray-500">-</span>
+                      <input
+                        type="date"
+                        value={groupDateEnd}
+                        onChange={(e) => setGroupDateEnd(e.target.value)}
+                        className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1 text-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={applyGroupDateRange}
+                        className="px-2 py-1 rounded-md text-xs bg-blue-600 text-white"
+                      >
+                        Lọc
+                      </button>
+                      {state.groupDateRange && (
+                        <button
+                          type="button"
+                          onClick={clearGroupDateRange}
+                          className="px-2 py-1 rounded-md text-xs border border-gray-300 dark:border-gray-600"
+                        >
+                          Xóa
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -959,14 +1041,7 @@ const TransactionList: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {Object.entries(groupedData)
-                        .sort(([keyA, a], [keyB, b]) => {
-                          if (state.groupBy === "day" || state.groupBy === "week" || state.groupBy === "month" || state.groupBy === "quarter" || state.groupBy === "year") {
-                            return keyA.localeCompare(keyB);
-                          }
-                          return a.label.localeCompare(b.label);
-                        })
-                        .map(([key, data]) => (
+                      {filteredGroupedEntries.map(([key, data]) => (
                           <tr key={key} className="hover:bg-gray-50 dark:hover:bg-gray-700/60">
                             <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{data.label}</td>
                             <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm text-gray-700 dark:text-gray-200">{data.count}</td>
@@ -1159,18 +1234,46 @@ const TransactionList: React.FC = () => {
         {/* Mobile group summary */}
         {groupedData && (
           <div className="sm:hidden mb-4 space-y-3">
-            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 rounded-t-lg border-t border-l border-r dark:border-gray-700">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Tổng hợp theo nhóm</h3>
-              <span className="text-xs text-gray-500 dark:text-gray-400">{Object.keys(groupedData).length} nhóm</span>
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-lg border-t border-l border-r dark:border-gray-700 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Tổng hợp theo nhóm</h3>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{filteredGroupedEntries.length} nhóm</span>
+              </div>
+              {state.groupBy === "day" && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="date"
+                    value={groupDateStart}
+                    onChange={(e) => setGroupDateStart(e.target.value)}
+                    className="flex-1 min-w-[110px] rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1 text-xs"
+                  />
+                  <span className="text-xs text-gray-500">-</span>
+                  <input
+                    type="date"
+                    value={groupDateEnd}
+                    onChange={(e) => setGroupDateEnd(e.target.value)}
+                    className="flex-1 min-w-[110px] rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1 text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={applyGroupDateRange}
+                    className="px-2 py-1 rounded-md text-xs bg-blue-600 text-white"
+                  >
+                    Lọc
+                  </button>
+                  {state.groupDateRange && (
+                    <button
+                      type="button"
+                      onClick={clearGroupDateRange}
+                      className="px-2 py-1 rounded-md text-xs border border-gray-300 dark:border-gray-600"
+                    >
+                      Xóa
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
-            {Object.entries(groupedData)
-              .sort(([keyA, a], [keyB, b]) => {
-                if (state.groupBy === "day" || state.groupBy === "week" || state.groupBy === "month" || state.groupBy === "quarter" || state.groupBy === "year") {
-                  return keyA.localeCompare(keyB);
-                }
-                return a.label.localeCompare(b.label);
-              })
-              .map(([key, data]) => (
+            {filteredGroupedEntries.map(([key, data]) => (
                 <div key={key} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-900 dark:text-white">{data.label}</span>

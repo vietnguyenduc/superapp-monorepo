@@ -13,6 +13,10 @@
 - `parseAmount` now returns numeric inputs unchanged and treats a trailing separator with 1–2 fractional digits as a decimal marker. This fixes a bug where values like `990366250.4` were parsed as `9,903,662,504` (10× too large), which inflated `Customer to Watch` balances on the dashboard.
 - Mobile group summary card is now placed outside the desktop-only `hidden sm:block` container so it actually appears on small screens.
 
+### Added
+
+- **Group-by `Ngày` date range filter** — when grouping transactions by day, the summary header now exposes `Từ ngày` / `Đến ngày` inputs on both desktop and mobile so users can narrow the displayed day groups without changing the main transaction date filter.
+
 ## 2026-08-17
 
 ### Added
