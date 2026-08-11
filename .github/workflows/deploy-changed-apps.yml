@@ -17,11 +17,11 @@ on:
         required: false
         type: string
 
-  # Auto-deploy production on merge to main and preview on viet pushes.
+  # Auto-deploy production on merge to main.
+  # Preview deployments for viet/other branches must be triggered manually via workflow_dispatch.
   push:
     branches:
       - main
-      - viet
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

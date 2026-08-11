@@ -6,12 +6,12 @@
 
 ```
 GitHub repo (vietnguyenduc/superapp-monorepo)
-  ├── Branch: viet (development)
-  │     └── Push → GitHub Actions `Deploy changed Vercel apps` → Vercel preview per app
-  └── Branch: main (production)
-        └── Merge → GitHub Actions `Deploy changed Vercel apps` → Vercel production deployment
+  ├── Branch: main (production)
+  │     └── Merge → GitHub Actions `Deploy changed Vercel apps` → Vercel production deployment
+  └── Branch: viet (development)
+        └── Push → (no auto-deploy) preview only via `workflow_dispatch`
 
-> Vercel Git auto-deploy is disabled in each app's `vercel.json` (`git.deploymentEnabled: false`) to avoid exhausting the Hobby 100-deploy/day quota with cancelled preview attempts. GitHub Actions triggers deploys only for `main` and `viet`.
+> Vercel Git auto-deploy is disabled in each app's `vercel.json` (`git.deploymentEnabled: false`) to avoid exhausting the Hobby 100-deploy/day quota with cancelled preview attempts. GitHub Actions auto-deploys only `main` (production). Previews for `viet` or any other branch must be triggered manually through `Deploy changed Vercel apps`.
 ```
 
 ## Production URLs
@@ -97,7 +97,7 @@ dist
 
 ## Deployment Workflow
 
-### Scenario A: Push to `viet` (Preview)
+### Scenario A: Preview deploy for `viet` (manual)
 
 ```bash
 git add -A
@@ -105,7 +105,13 @@ git commit -m "fix(cashflow): resolve chart rendering bug"
 git push origin viet
 ```
 
-→ Vercel auto-builds **preview** deployment per app
+Then trigger `Deploy changed Vercel apps` manually:
+
+- Branch: `viet`
+- `target`: `preview`
+- `base_ref`: `origin/main`
+
+→ GitHub Actions deploys **preview** for changed apps only.
 → Get preview URL: `vercel ls --token "$VERCEL_TOKEN" cashflow`
 → Verify at preview URL (NOT production)
 
@@ -122,8 +128,8 @@ gh pr merge --squash --admin
 gh pr merge --admin --squash --match-head-commit
 ```
 
-→ Vercel deploys to **production** (`*.appforyou.xyz`)
-→ Wait for `READY` state
+→ GitHub Actions `Deploy changed Vercel apps` deploys to **production** (`*.appforyou.xyz`)
+→ Wait for workflow to complete and deployment to reach `READY`
 → Verify at production URL
 
 ### Scenario C: Manual Redeploy
