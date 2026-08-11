@@ -9,6 +9,7 @@ import type { Transaction, TransactionStatus } from "../../types";
 import { useAuthContext as useAuth } from "@superapp/iam";
 import { canApproveTransactions } from "../../utils/permissions";
 import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../utils/formatting";
+import { logger } from "../../utils/logger";
 import { getCustomerBalanceDelta, parseAmount, normalizeTransactionType } from "../../services/businessLogic";
 import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
@@ -16,6 +17,7 @@ import Pagination from "../../components/UI/Pagination";
 import PageHeader from "../../components/UI/PageHeader";
 import Button from "../../components/UI/Button";
 import TransactionEditModal, { type TransactionEditFormValues } from "./components/TransactionEditModal";
+import * as XLSX from "xlsx";
 
 interface TransactionListState {
   transactions: Transaction[];
@@ -571,6 +573,94 @@ const TransactionList: React.FC = () => {
     );
   };
 
+  const getStatusLabel = (status?: string) => {
+    switch (status) {
+      case "draft":
+        return "Nháp";
+      case "pending":
+        return "Chờ duyệt";
+      case "rejected":
+        return "Từ chối";
+      case "completed":
+        return "Hoàn thành";
+      default:
+        return status || "—";
+    }
+  };
+
+  const handleExportExcel = useCallback(async () => {
+    try {
+      const filters = {
+        search: debouncedSearchTerm || undefined,
+        dateRange: state.dateRange || undefined,
+        transaction_type: state.transactionType || undefined,
+        customer_id: state.customerFilter?.id || undefined,
+        branch_id: state.branchFilter || undefined,
+        bank_account_id: state.bankAccountFilter || undefined,
+        created_by: state.userFilter || undefined,
+        status: state.statusFilter === "all" ? undefined : state.statusFilter,
+        company_id: companyId,
+        page: 1,
+        pageSize: 1000,
+      };
+
+      const response = await databaseService.transactions.getTransactions(filters);
+      if (response.error) throw new Error(response.error);
+
+      const rows = (response.data || []).map((transaction) => {
+        const row: Record<string, unknown> = {};
+        COLUMN_OPTIONS.forEach((col) => {
+          if (col.key === "actions") return;
+          if (!col.always && !visibleColumns[col.key]) return;
+
+          switch (col.key) {
+            case "date":
+              row[col.label] = formatDate(transaction.transaction_date);
+              break;
+            case "customer": {
+              const name = getCustomerName(transaction);
+              const code = getCustomerCode(transaction.customer_id);
+              row[col.label] = code ? `${name} (${code})` : name;
+              break;
+            }
+            case "type":
+              row[col.label] = getTransactionTypeName(transaction.transaction_type);
+              break;
+            case "amount":
+              row[col.label] = parseAmount(transaction.amount) || 0;
+              break;
+            case "branch":
+              row[col.label] = transaction.branch_name || "—";
+              break;
+            case "bank":
+              row[col.label] = transaction.bank_account_name || (transaction.bank_account_id ? `#${transaction.bank_account_id}` : "Không có tài khoản");
+              break;
+            case "creator":
+              row[col.label] = userMap.get(transaction.created_by || "") || transaction.creator_name || transaction.created_by || "—";
+              break;
+            case "code":
+              row[col.label] = transaction.transaction_code;
+              break;
+            case "status":
+              row[col.label] = getStatusLabel(transaction.status);
+              break;
+            default:
+              row[col.label] = "";
+          }
+        });
+        return row;
+      });
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Danh sách giao dịch");
+      XLSX.writeFile(wb, "danh-sach-giao-dich.xlsx");
+    } catch (err) {
+      logger.error("Export transactions failed:", err);
+      toast.error("Xuất Excel thất bại: " + (err instanceof Error ? err.message : "Lỗi không xác định"));
+    }
+  }, [debouncedSearchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, companyId, visibleColumns, getTransactionTypeName, customers, userMap, t]);
+
   const hasCustomerFilter = Boolean(state.customerFilter?.id);
 
   const paginationInfo = useMemo(() => {
@@ -745,6 +835,13 @@ const TransactionList: React.FC = () => {
                   onClick={() => fetchTransactions()}
                 >
                   Làm mới
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={handleExportExcel}
+                >
+                  Xuất Excel
                 </Button>
                 <Button
                   variant="secondary"
