@@ -15,7 +15,7 @@
 
 ### Added
 
-- **Group-by date range filter** — when grouping transactions by `Ngày/Tuần/Tháng/Quý/Năm`, the summary header exposes `Từ ngày` / `Đến ngày` inputs on both desktop and mobile so users can narrow the displayed groups. The group summary now aggregates over all matching transactions in the selected range (up to 1,000 rows) instead of only the current paginated page.
+- **Group-by date range filter** — when grouping transactions by `Ngày/Tuần/Tháng/Quý/Năm`, the summary header exposes `Từ ngày` / `Đến ngày` inputs on both desktop and mobile so users can narrow the displayed groups. The group summary now aggregates over all matching transactions in the selected range (up to 1,000 rows) instead of only the current paginated page. Date presets and single-day custom ranges use local midnight boundaries, and group-by `Ngày` keys are rendered in local time.
 - **Selective data reset** — the `Backup & Khôi phục` settings tab now lets users pick which data to reset (`Giao dịch & Khách hàng`, `Tài khoản ngân hàng`, `Chi nhánh`) and choose between `Đưa về null` (clear selected tables) or `Reset all` (clear all three). Branch references are nulled in `transactions`, `bank_accounts`, `customers`, and `users` before deleting branches to avoid FK errors.
 
 ## 2026-08-17
