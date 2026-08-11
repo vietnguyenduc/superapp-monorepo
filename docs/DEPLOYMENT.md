@@ -7,11 +7,11 @@
 ```
 GitHub repo (vietnguyenduc/superapp-monorepo)
   ├── Branch: main (production)
-  │     └── Merge → GitHub Actions `Deploy changed Vercel apps` → Vercel production deployment
+  │     └── Merge → GitHub Actions `Deploy changed Vercel apps` → Vercel production deployment (`*.appforyou.xyz`)
   └── Branch: viet (development)
-        └── Push → (no auto-deploy) preview only via `workflow_dispatch`
+        └── Push → GitHub Actions `Deploy changed Vercel apps` → Vercel preview deployment (`<app>-preview.appforyou.xyz`)
 
-> Vercel Git auto-deploy is disabled in each app's `vercel.json` (`git.deploymentEnabled: false`) to avoid exhausting the Hobby 100-deploy/day quota with cancelled preview attempts. GitHub Actions auto-deploys only `main` (production). Previews for `viet` or any other branch must be triggered manually through `Deploy changed Vercel apps`.
+> Vercel Git auto-deploy is disabled in each app's `vercel.json` (`git.deploymentEnabled: false`) to avoid exhausting the Hobby 100-deploy/day quota with cancelled preview attempts. GitHub Actions auto-deploys `main` (production) and `viet` (preview with fixed alias). Other branches must trigger `Deploy changed Vercel apps` manually via `workflow_dispatch`.
 ```
 
 ## Production URLs
@@ -97,7 +97,7 @@ dist
 
 ## Deployment Workflow
 
-### Scenario A: Preview deploy for `viet` (manual)
+### Scenario A: Push to `viet` (Preview + fixed alias)
 
 ```bash
 git add -A
@@ -105,15 +105,18 @@ git commit -m "fix(cashflow): resolve chart rendering bug"
 git push origin viet
 ```
 
-Then trigger `Deploy changed Vercel apps` manually:
+→ GitHub Actions `Deploy changed Vercel apps` auto-deploys **preview** for changed apps and aliases them to fixed subdomains:
+  - `cashflow-preview.appforyou.xyz`
+  - `framework-method-preview.appforyou.xyz`
+  - `inventory-operation-preview.appforyou.xyz`
+  - `sales-operation-preview.appforyou.xyz`
+  - `hr-operation-preview.appforyou.xyz`
+  - `accounting-preview.appforyou.xyz`
+  - `admin-portal-preview.appforyou.xyz`
+  - `operations-portal-preview.appforyou.xyz`
 
-- Branch: `viet`
-- `target`: `preview`
-- `base_ref`: `origin/main`
-
-→ GitHub Actions deploys **preview** for changed apps only.
-→ Get preview URL: `vercel ls --token "$VERCEL_TOKEN" cashflow`
-→ Verify at preview URL (NOT production)
+→ Each preview URL follows the pattern `<app>-preview.appforyou.xyz`.
+→ Verify at the corresponding preview URL (NOT production).
 
 ### Scenario B: Merge to `main` (Production)
 
@@ -154,7 +157,7 @@ Hoặc trigger qua Vercel Dashboard → project → Deployments → Redeploy.
 
 ### GitHub Actions
 
-- On push to `viet`: lint + type-check + test
+- On push to `viet`: `Deploy changed Vercel apps` deploys preview for changed apps and aliases to `<app>-preview.appforyou.xyz`
 - On PR to `main`: full test suite + build verification
 - `Deploy changed Vercel apps` (`workflow_dispatch`): deploy tay các app đã thay đổi từ `main` lên production.
 - `Auto-deploy production after Vercel quota reset` (schedule `*/10 * * * *` + `workflow_dispatch`): tự động kiểm tra production deployment của từng app so với commit `main` mới nhất; nếu lệch (do Vercel Hobby rate-limit chưa kịp deploy) thì deploy bù. Dùng Vercel API để lấy `githubCommitSha` của production deployment hiện tại và `git diff` để chỉ deploy app có thay đổi thực sự.
