@@ -107,15 +107,15 @@ git push origin viet
 
 → GitHub Actions `Deploy changed Vercel apps` auto-deploys **preview** for changed apps and aliases them to fixed subdomains:
   - `cashflow-preview.appforyou.xyz`
-  - `framework-method-preview.appforyou.xyz`
-  - `inventory-operation-preview.appforyou.xyz`
-  - `sales-operation-preview.appforyou.xyz`
-  - `hr-operation-preview.appforyou.xyz`
+  - `framework-preview.appforyou.xyz`
+  - `inventory-preview.appforyou.xyz`
+  - `sales-preview.appforyou.xyz`
+  - `hr-preview.appforyou.xyz`
   - `accounting-preview.appforyou.xyz`
-  - `admin-portal-preview.appforyou.xyz`
-  - `operations-portal-preview.appforyou.xyz`
+  - `admin-preview.appforyou.xyz`
+  - `ops-preview.appforyou.xyz`
 
-→ Each preview URL follows the pattern `<app>-preview.appforyou.xyz`.
+→ Each preview URL follows the pattern `<short-name>-preview.appforyou.xyz`.
 → Verify at the corresponding preview URL (NOT production).
 
 ### Scenario B: Merge to `main` (Production)

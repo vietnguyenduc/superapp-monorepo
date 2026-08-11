@@ -97,7 +97,18 @@ jobs:
           echo "Deployed ${{ matrix.app }} to $deploy_url"
 
           if [ "$target" = "preview" ]; then
-            alias="${{ matrix.app }}-preview.appforyou.xyz"
+            case "${{ matrix.app }}" in
+              admin-portal) alias_base="admin" ;;
+              cashflow) alias_base="cashflow" ;;
+              framework-method) alias_base="framework" ;;
+              hr-operation) alias_base="hr" ;;
+              inventory-operation) alias_base="inventory" ;;
+              operations-portal) alias_base="ops" ;;
+              sales-operation) alias_base="sales" ;;
+              accounting) alias_base="accounting" ;;
+              *) alias_base="${{ matrix.app }}" ;;
+            esac
+            alias="${alias_base}-preview.appforyou.xyz"
             echo "Aliasing preview to $alias"
             npx vercel@latest alias set "$deploy_url" "$alias" \
               --token ${{ secrets.VERCEL_TOKEN }} \
