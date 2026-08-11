@@ -602,7 +602,7 @@ const TransactionList: React.FC = () => {
 
       switch (state.groupBy) {
         case "day": {
-          const iso = d.toISOString().slice(0, 10);
+          const iso = toLocalISODate(d);
           key = `day:${iso}`;
           label = formatDate(tx.transaction_date);
           break;
@@ -695,7 +695,10 @@ const TransactionList: React.FC = () => {
     const start = new Date(state.dateRange.start);
     const end = new Date(state.dateRange.end);
     const formatter = (d: Date) => d.toLocaleDateString("vi-VN");
-    const days = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    // Normalize to local midnight to compare whole calendar days.
+    const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+    const days = Math.round((endDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24));
     if (days === 0) return "Hôm nay";
     if (days === 6) return "Tuần này";
     return `${formatter(start)} - ${formatter(end)}`;
