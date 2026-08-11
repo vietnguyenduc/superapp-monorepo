@@ -14,6 +14,8 @@ export const BackupTab: FC = () => {
     restoreLoading,
     restoreFile,
     handleResetData,
+    resetTargets,
+    setResetTargets,
     loadingBackupHistory,
     backupHistory,
     handleRestoreFromDatabase,
@@ -102,15 +104,59 @@ export const BackupTab: FC = () => {
               Reset dữ liệu
             </h3>
             <p className="text-xs text-red-600 dark:text-red-300 mb-3">
-              Xóa toàn bộ dữ liệu khách hàng, giao dịch và tài khoản ngân hàng. Không thể hoàn tác.
+              Chọn loại dữ liệu cần reset. Không thể hoàn tác.
             </p>
-            <Button
-              variant="secondary"
-              className="w-full sm:w-auto border-red-300 text-red-700 hover:text-red-800 hover:border-red-400"
-              onClick={handleResetData}
-            >
-              Reset toàn bộ dữ liệu
-            </Button>
+            <div className="space-y-2 mb-3">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                <input
+                  type="checkbox"
+                  checked={resetTargets.transactionsAndCustomers}
+                  onChange={(e) =>
+                    setResetTargets((prev) => ({ ...prev, transactionsAndCustomers: e.target.checked }))
+                  }
+                  className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                />
+                Giao dịch và Khách hàng
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                <input
+                  type="checkbox"
+                  checked={resetTargets.bankAccounts}
+                  onChange={(e) =>
+                    setResetTargets((prev) => ({ ...prev, bankAccounts: e.target.checked }))
+                  }
+                  className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                />
+                Tài khoản ngân hàng
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                <input
+                  type="checkbox"
+                  checked={resetTargets.branches}
+                  onChange={(e) =>
+                    setResetTargets((prev) => ({ ...prev, branches: e.target.checked }))
+                  }
+                  className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                />
+                Chi nhánh
+              </label>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                className="w-full sm:w-auto border-red-300 text-red-700 hover:text-red-800 hover:border-red-400"
+                onClick={() => handleResetData("selected")}
+              >
+                Đưa về null
+              </Button>
+              <Button
+                variant="secondary"
+                className="w-full sm:w-auto border-red-300 text-red-700 hover:text-red-800 hover:border-red-400"
+                onClick={() => handleResetData("all")}
+              >
+                Reset all
+              </Button>
+            </div>
           </div>
 
           {/* Backup History Section */}

@@ -171,6 +171,12 @@ export function useSettingsState() {
     phone: "",
   });
 
+  const [resetTargets, setResetTargets] = useState({
+    transactionsAndCustomers: true,
+    bankAccounts: true,
+    branches: true,
+  });
+
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -781,9 +787,10 @@ export function useSettingsState() {
   };
 
 
-  const handleResetData = async () => {
+  const handleResetData = async (scope: "selected" | "all" = "all") => {
+    const actionLabel = scope === "all" ? "xóa toàn bộ dữ liệu" : "xóa dữ liệu đã chọn";
     const confirmation = window.prompt(
-      "Nhập CONFIRM để xóa toàn bộ dữ liệu và đặt lại hệ thống",
+      `Nhập CONFIRM để ${actionLabel} và đặt lại hệ thống`,
       "",
     );
     if (confirmation !== "CONFIRM") {
@@ -795,42 +802,88 @@ export function useSettingsState() {
       return;
     }
 
+    const targets = scope === "all" ? { transactionsAndCustomers: true, bankAccounts: true, branches: true } : resetTargets;
+    const anySelected = Object.values(targets).some(Boolean);
+    if (!anySelected) {
+      toast.warning("Vui lòng chọn ít nhất một loại dữ liệu để reset.");
+      return;
+    }
+
     try {
-      // Delete from Supabase database scoped to the active tenant.
-      // Order matters due to FK constraints: transactions first, then customers,
-      // then bank accounts.
+      // If branches are being reset, clear branch_id references first so the
+      // delete does not violate FK constraints. This affects transactions,
+      // bank_accounts and customers in the active tenant.
+      if (targets.branches) {
+        const { error: txBranchError } = await supabase
+          .from("transactions")
+          .update({ branch_id: null })
+          .eq("company_id", companyId)
+          .not("branch_id", "is", null);
+
+        const { error: bankBranchError } = await supabase
+          .from("bank_accounts")
+          .update({ branch_id: null })
+          .eq("company_id", companyId)
+          .not("branch_id", "is", null);
+
+        const { error: custBranchError } = await supabase
+          .from("customers")
+          .update({ branch_id: null })
+          .eq("company_id", companyId)
+          .not("branch_id", "is", null);
+
+        const { error: userBranchError } = await supabase
+          .from("users")
+          .update({ branch_id: null })
+          .eq("company_id", companyId)
+          .not("branch_id", "is", null);
+
+        if (txBranchError || bankBranchError || custBranchError || userBranchError) {
+          logger.error("Branch reference clear errors:", {
+            txBranchError,
+            bankBranchError,
+            custBranchError,
+            userBranchError,
+          });
+          toast.error("Có lỗi khi xóa liên kết chi nhánh trước khi reset.");
+          return;
+        }
+      }
 
       // Delete transactions first (references customers and bank_accounts)
-      const txResult = await supabase
-        .from("transactions")
-        .delete()
-        .eq("company_id", companyId);
+      const txResult = targets.transactionsAndCustomers
+        ? await supabase.from("transactions").delete().eq("company_id", companyId)
+        : { error: null };
 
       // Delete customers
-      const custResult = await supabase
-        .from("customers")
-        .delete()
-        .eq("company_id", companyId);
+      const custResult = targets.transactionsAndCustomers
+        ? await supabase.from("customers").delete().eq("company_id", companyId)
+        : { error: null };
 
       // Delete bank accounts
-      const bankResult = await supabase
-        .from("bank_accounts")
-        .delete()
-        .eq("company_id", companyId);
+      const bankResult = targets.bankAccounts
+        ? await supabase.from("bank_accounts").delete().eq("company_id", companyId)
+        : { error: null };
 
-      if (txResult.error || custResult.error || bankResult.error) {
+      // Delete branches last (after references cleared)
+      const branchResult = targets.branches
+        ? await supabase.from("branches").delete().eq("company_id", companyId)
+        : { error: null };
+
+      if (txResult.error || custResult.error || bankResult.error || branchResult.error) {
         logger.error("Database deletion errors:", {
           txError: txResult.error,
           custError: custResult.error,
           bankError: bankResult.error,
+          branchError: branchResult.error,
         });
-        toast.error(`Có lỗi khi xóa dữ liệu từ database:\n${txResult.error?.message || custResult.error?.message || bankResult.error?.message}`);
+        toast.error(`Có lỗi khi xóa dữ liệu từ database:\n${txResult.error?.message || custResult.error?.message || bankResult.error?.message || branchResult.error?.message}`);
         return;
       }
 
-      logger.log("✅ Database deletion successful");
+      logger.log("✅ Database reset successful", { scope, targets });
 
-      toast.success("Đã xóa toàn bộ dữ liệu thành công!");
+      toast.success(scope === "all" ? "Đã xóa toàn bộ dữ liệu thành công!" : "Đã xóa dữ liệu đã chọn thành công!");
 
       // Navigate to dashboard instead of reload to preserve session
       navigate('/dashboard', { replace: true });
@@ -1668,6 +1721,8 @@ export function useSettingsState() {
     loadCustomerBalances,
     loadStaffUsers,
     handleEditBankAccount,
+    resetTargets,
+    setResetTargets,
     handleResetData,
     handleBankAccountFormChange,
     handleSaveBankAccount,
