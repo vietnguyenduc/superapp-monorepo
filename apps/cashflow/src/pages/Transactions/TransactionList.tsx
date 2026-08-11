@@ -64,6 +64,23 @@ function getQuarter(date: Date): number {
   return Math.floor(date.getMonth() / 3) + 1;
 }
 
+// Helpers for local-date handling so date inputs and presets stay in the
+// user's timezone and a single-day range covers 00:00..23:59.
+function toLocalISODate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function startOfLocalDay(dateString: string): Date {
+  return new Date(`${dateString}T00:00:00`);
+}
+
+function endOfLocalDay(dateString: string): Date {
+  return new Date(`${dateString}T23:59:59.999`);
+}
+
 const TransactionList: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -417,15 +434,15 @@ const TransactionList: React.FC = () => {
       dateRange: { start: start.toISOString(), end: end.toISOString() },
       currentPage: 1,
     }));
-    setCustomStart(start.toISOString().slice(0, 10));
-    setCustomEnd(end.toISOString().slice(0, 10));
+    setCustomStart(toLocalISODate(start));
+    setCustomEnd(toLocalISODate(end));
     setShowDateMenu(false);
   };
 
   const applyCustomDateRange = () => {
     if (!customStart || !customEnd) return;
-    const start = new Date(customStart);
-    const end = new Date(customEnd);
+    const start = startOfLocalDay(customStart);
+    const end = endOfLocalDay(customEnd);
     if (start > end) return;
     setState((prev) => ({
       ...prev,
