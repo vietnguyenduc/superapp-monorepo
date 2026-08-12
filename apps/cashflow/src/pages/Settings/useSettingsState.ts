@@ -9,7 +9,8 @@ import { useAuthContext as useAuth } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useNavigate } from "react-router-dom";
 import { backupService, recoveryUtils, type BackupData } from "../../utils/backupRecovery";
-import { isAdmin, getInitialEntityStatus, canEditBankAccountSettings, canEditBranchSettings } from "../../utils/permissions";
+import { isAdmin, getInitialEntityStatus, canEditBankAccountSettings, canEditBranchSettings, canManageAllCustomers } from "../../utils/permissions";
+import { parseAmountOrNull } from "../../services/businessLogic";
 
 
 
@@ -172,7 +173,7 @@ export function useSettingsState() {
   });
 
   const [resetTargets, setResetTargets] = useState({
-    transactionsAndCustomers: true,
+    transactions: true,
     bankAccounts: true,
     branches: true,
   });
@@ -802,7 +803,7 @@ export function useSettingsState() {
       return;
     }
 
-    const targets = scope === "all" ? { transactionsAndCustomers: true, bankAccounts: true, branches: true } : resetTargets;
+    const targets = scope === "all" ? { transactions: true, bankAccounts: true, branches: true } : resetTargets;
     const anySelected = Object.values(targets).some(Boolean);
     if (!anySelected) {
       toast.warning("Vui lòng chọn ít nhất một loại dữ liệu để reset.");
@@ -851,13 +852,8 @@ export function useSettingsState() {
       }
 
       // Delete transactions first (references customers and bank_accounts)
-      const txResult = targets.transactionsAndCustomers
+      const txResult = targets.transactions
         ? await supabase.from("transactions").delete().eq("company_id", companyId)
-        : { error: null };
-
-      // Delete customers
-      const custResult = targets.transactionsAndCustomers
-        ? await supabase.from("customers").delete().eq("company_id", companyId)
         : { error: null };
 
       // Delete bank accounts
@@ -870,14 +866,13 @@ export function useSettingsState() {
         ? await supabase.from("branches").delete().eq("company_id", companyId)
         : { error: null };
 
-      if (txResult.error || custResult.error || bankResult.error || branchResult.error) {
+      if (txResult.error || bankResult.error || branchResult.error) {
         logger.error("Database deletion errors:", {
           txError: txResult.error,
-          custError: custResult.error,
           bankError: bankResult.error,
           branchError: branchResult.error,
         });
-        toast.error(`Có lỗi khi xóa dữ liệu từ database:\n${txResult.error?.message || custResult.error?.message || bankResult.error?.message || branchResult.error?.message}`);
+        toast.error(`Có lỗi khi xóa dữ liệu từ database:\n${txResult.error?.message || bankResult.error?.message || branchResult.error?.message}`);
         return;
       }
 
@@ -1323,6 +1318,16 @@ export function useSettingsState() {
     setOpeningSuccess(null);
     if (!file) return;
     setOpeningFile(file);
+
+    const codeHeaders = ["customer_code", "code", "Mã khách hàng", "Mã KH", "Mã"];
+    const balanceHeaders = ["opening_balance", "balance", "Số dư đầu kỳ", "Số dư", "Số dư đầu"];
+    const getCell = (row: any, headers: string[]) => {
+      for (const h of headers) {
+        if (row[h] !== undefined && row[h] !== null && row[h] !== "") return row[h];
+      }
+      return undefined;
+    };
+
     const reader = new FileReader();
     reader.onload = (evt) => {
       try {
@@ -1335,14 +1340,15 @@ export function useSettingsState() {
         const errors: string[] = [];
         const parsed: OpeningBalanceRow[] = [];
         json.forEach((row, idx) => {
-          const code = String(row.customer_code || row.code || "").trim();
-          const opening = Number(row.opening_balance ?? row.balance ?? "");
+          const code = String(getCell(row, codeHeaders) ?? "").trim();
+          const rawBalance = getCell(row, balanceHeaders);
+          const opening = parseAmountOrNull(rawBalance);
           if (!code) {
-            errors.push(`Dòng ${idx + 2}: Thiếu customer_code`);
+            errors.push(`Dòng ${idx + 2}: Thiếu mã khách hàng`);
             return;
           }
-          if (!Number.isFinite(opening)) {
-            errors.push(`Dòng ${idx + 2}: opening_balance không hợp lệ`);
+          if (opening === null) {
+            errors.push(`Dòng ${idx + 2}: Số dư đầu kỳ không hợp lệ (${rawBalance ?? ""})`);
             return;
           }
           parsed.push({ customer_code: code, opening_balance: opening });
@@ -1360,7 +1366,7 @@ export function useSettingsState() {
 
 
   const handleImportOpeningBalance = async () => {
-    if (!isAdmin(user)) {
+    if (!isAdmin(user) && !canManageAllCustomers(user)) {
       toast.warning("Bạn không có quyền thực hiện thao tác này.");
       return;
     }
@@ -1602,11 +1608,12 @@ export function useSettingsState() {
       { id: "integration", name: "Tích hợp", icon: "🔗" },
       { id: "users", name: "Tài khoản & phân quyền", icon: "👥" },
     ].filter(tab => {
-      // Show users/permissions and opening-balance tabs for admin, admin_master, and admin_company
-      if ((tab.id === "users" || tab.id === "opening-balance" || tab.id === "approval-settings") && !isAdmin(user)) return false;
+      // Users and approval settings are admin-only; opening-balance is also available to staff with customer manage permission
+      if ((tab.id === "users" || tab.id === "approval-settings") && !isAdmin(user)) return false;
+      if (tab.id === "opening-balance" && !isAdmin(user) && !canManageAllCustomers(user)) return false;
       return true;
     }),
-    [user?.role],
+    [user],
   );
 
   return {

@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import { useSettingsContext } from "../../SettingsContext";
 import Button from "../../../../components/UI/Button";
-import { isAdmin } from "../../../../utils/permissions";
+import { isAdmin, canManageAllCustomers } from "../../../../utils/permissions";
 import { formatNumber } from "../../../../utils/formatting";
 import { toast } from "../../../../utils/toast";
 import { databaseService } from "../../../../services/database";
@@ -88,7 +88,7 @@ export const OpeningBalanceTab: FC = () => {
                   size="sm"
                   disabled={isSavingCustomerBalances || customerBalances.filter(c => c.new_opening_balance !== c.opening_balance).length === 0}
                   onClick={async () => {
-                    if (!isAdmin(user)) {
+                    if (!isAdmin(user) && !canManageAllCustomers(user)) {
                       toast.warning("Bạn không có quyền thực hiện thao tác này.");
                       return;
                     }

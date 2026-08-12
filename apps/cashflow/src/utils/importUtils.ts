@@ -262,7 +262,7 @@ export function validateTransactionData(
         errors.push({
           row: index,
           column: "transaction_date",
-          message: "Invalid date format. Use YYYY-MM-DD or DD/MM/YYYY",
+          message: "Định dạng ngày không hợp lệ. Dùng DD/MM/YYYY",
           value: row.transaction_date,
         });
       } else if (date > new Date()) {
@@ -307,44 +307,44 @@ export function validateTransactionData(
  */
 function parseDate(dateStr: string): Date | null {
   const trimmed = dateStr.trim();
+  if (!trimmed) return null;
 
-  // Try ISO format (YYYY-MM-DD)
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    return new Date(trimmed);
+  const buildDate = (day: number, month: number, yearRaw: string): Date | null => {
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    const year = yearRaw.length === 2 ? 2000 + Number(yearRaw) : Number(yearRaw);
+    const date = new Date(year, month - 1, day);
+    if (
+      date.getFullYear() !== year ||
+      date.getMonth() !== month - 1 ||
+      date.getDate() !== day
+    ) {
+      return null;
+    }
+    return date;
+  };
+
+  // ISO format (YYYY-MM-DD) – kept for internal/back-end data
+  const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    return buildDate(Number(isoMatch[3]), Number(isoMatch[2]), isoMatch[1]);
   }
 
-  // Try DD/MM/YYYY or DD/MM/YY
-  if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(trimmed)) {
-    const [day, month, yearRaw] = trimmed.split("/");
-    const yearNum = yearRaw.length === 2 ? 2000 + parseInt(yearRaw, 10) : parseInt(yearRaw, 10);
-    return new Date(yearNum, parseInt(month, 10) - 1, parseInt(day, 10));
+  // DD/MM/YYYY or DD/MM/YY
+  const slashMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if (slashMatch) {
+    return buildDate(Number(slashMatch[1]), Number(slashMatch[2]), slashMatch[3]);
   }
 
-  // Try MM/DD/YYYY or MM/DD/YY
-  if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(trimmed)) {
-    const [month, day, yearRaw] = trimmed.split("/");
-    const yearNum = yearRaw.length === 2 ? 2000 + parseInt(yearRaw, 10) : parseInt(yearRaw, 10);
-    return new Date(yearNum, parseInt(month, 10) - 1, parseInt(day, 10));
+  // DD-MM-YYYY or DD-MM-YY
+  const dashMatch = trimmed.match(/^(\d{1,2})-(\d{1,2})-(\d{2}|\d{4})$/);
+  if (dashMatch) {
+    return buildDate(Number(dashMatch[1]), Number(dashMatch[2]), dashMatch[3]);
   }
 
-  // Try DD-MM-YYYY or DD-MM-YY format
-  if (/^\d{1,2}-\d{1,2}-\d{2,4}$/.test(trimmed)) {
-    const [day, month, yearRaw] = trimmed.split("-");
-    const yearNum = yearRaw.length === 2 ? 2000 + parseInt(yearRaw, 10) : parseInt(yearRaw, 10);
-    return new Date(yearNum, parseInt(month, 10) - 1, parseInt(day, 10));
-  }
-
-  // Try MM-DD-YYYY or MM-DD-YY format
-  if (/^\d{1,2}-\d{1,2}-\d{2,4}$/.test(trimmed)) {
-    const [month, day, yearRaw] = trimmed.split("-");
-    const yearNum = yearRaw.length === 2 ? 2000 + parseInt(yearRaw, 10) : parseInt(yearRaw, 10);
-    return new Date(yearNum, parseInt(month, 10) - 1, parseInt(day, 10));
-  }
-
-  // Try DD.MM.YYYY format
-  if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(trimmed)) {
-    const [day, month, year] = trimmed.split(".");
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  // DD.MM.YYYY
+  const dotMatch = trimmed.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (dotMatch) {
+    return buildDate(Number(dotMatch[1]), Number(dotMatch[2]), dotMatch[3]);
   }
 
   return null;
