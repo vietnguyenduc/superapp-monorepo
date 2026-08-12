@@ -1587,10 +1587,11 @@ export function useSettingsState() {
   };
 
 
-  // Load users when component mounts
+  // Refresh system data when the combined system tab is opened
   useEffect(() => {
-    if (activeTab === "users") {
+    if (activeTab === "system") {
       loadUsers();
+      loadStaffUsers();
     }
   }, [activeTab]);
 
@@ -1604,19 +1605,23 @@ export function useSettingsState() {
       { id: "bank-accounts", name: "Tài khoản ngân hàng", icon: "🏦" },
       { id: "branches", name: "Văn phòng", icon: "🏢" },
       { id: "customer-fields", name: "Trường khách hàng", icon: "🧾" },
-      { id: "transaction-types", name: "Loại giao dịch", icon: "💳" },
-      { id: "balance-formula", name: "Công thức dư nợ", icon: "🧮" },
-      { id: "approval-settings", name: "Phân quyền duyệt", icon: "✅" },
-      { id: "integration", name: "Tích hợp", icon: "🔗" },
-      { id: "users", name: "Tài khoản & phân quyền", icon: "👥" },
+      { id: "transaction-config", name: "Loại giao dịch & Công thức", icon: "💳" },
+      { id: "system", name: "Tài khoản & Phân quyền", icon: "👥" },
     ].filter(tab => {
-      // Users and approval settings are admin-only; opening-balance is also available to staff with customer manage permission
-      if ((tab.id === "users" || tab.id === "approval-settings") && !isAdmin(user)) return false;
+      // System tab (users, approval, integration) is admin-only; opening-balance is also available to staff with customer manage permission
+      if (tab.id === "system" && !isAdmin(user)) return false;
       if (tab.id === "opening-balance" && !isAdmin(user) && !canManageAllCustomers(user)) return false;
       return true;
     }),
     [user],
   );
+
+  // Reset to first available tab if the persisted active tab no longer exists (e.g. after a tab merge).
+  useEffect(() => {
+    if (tabs.length > 0 && !tabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab(tabs[0].id);
+    }
+  }, [tabs]);
 
   return {
     user,
