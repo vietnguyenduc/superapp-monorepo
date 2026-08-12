@@ -122,3 +122,44 @@ export function parseAmountOrNull(value: unknown): number | null {
 export function parseAmount(value: unknown): number {
   return parseAmountOrNull(value) ?? 0;
 }
+
+/**
+ * Parse a date string to a Date object, preferring Vietnamese DD/MM/YYYY.
+ * Also accepts ISO YYYY-MM-DD, DD-MM-YYYY, and DD.MM.YYYY.
+ */
+export function parseDate(value: unknown): Date | null {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+
+  const buildDate = (day: number, month: number, yearRaw: string): Date | null => {
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    const year = yearRaw.length === 2 ? 2000 + Number(yearRaw) : Number(yearRaw);
+    const date = new Date(year, month - 1, day);
+    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+      return null;
+    }
+    return date;
+  };
+
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    return buildDate(Number(isoMatch[3]), Number(isoMatch[2]), isoMatch[1]);
+  }
+
+  const slashMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if (slashMatch) {
+    return buildDate(Number(slashMatch[1]), Number(slashMatch[2]), slashMatch[3]);
+  }
+
+  const dashMatch = raw.match(/^(\d{1,2})-(\d{1,2})-(\d{2}|\d{4})$/);
+  if (dashMatch) {
+    return buildDate(Number(dashMatch[1]), Number(dashMatch[2]), dashMatch[3]);
+  }
+
+  const dotMatch = raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (dotMatch) {
+    return buildDate(Number(dotMatch[1]), Number(dotMatch[2]), dotMatch[3]);
+  }
+
+  return null;
+}

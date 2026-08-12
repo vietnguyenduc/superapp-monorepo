@@ -10,6 +10,7 @@
   - Returns row-level errors (in `result.errors`) when a provided `transaction_code` already exists or is duplicated within the import file, instead of letting Postgres throw an opaque `duplicate key` error.
 - `validateTransactionData` (importUtils) now checks duplicate `transaction_code` values inside the same file and reports the offending row numbers.
 - `cleanTransactionData` and `convertToTransactions` preserve an optional `transaction_code` field.
+- Bulk import `transaction_date` parsing now consistently uses the Vietnamese `DD/MM/YYYY` parser (shared `businessLogic/parsers.ts`). Both live and trial paths store an ISO timestamp, preventing imported dates from displaying as "Invalid Date".
 
 ## 2026-08-18
 

@@ -1,6 +1,6 @@
 import type { Transaction, ImportError, TransactionType } from "../types";
 import { parseFile } from "@superapp/shared-utils";
-import { parseAmount, normalizeTransactionType } from "../services/businessLogic";
+import { parseAmount, parseDate, normalizeTransactionType } from "../services/businessLogic";
 
 export interface RawTransactionData {
   transaction_code?: string;
@@ -325,54 +325,6 @@ export function validateTransactionData(
     isValid: errors.length === 0,
     errors,
   };
-}
-
-/**
- * Parse date string to Date object, handling various formats
- */
-function parseDate(dateStr: string): Date | null {
-  const trimmed = dateStr.trim();
-  if (!trimmed) return null;
-
-  const buildDate = (day: number, month: number, yearRaw: string): Date | null => {
-    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-    const year = yearRaw.length === 2 ? 2000 + Number(yearRaw) : Number(yearRaw);
-    const date = new Date(year, month - 1, day);
-    if (
-      date.getFullYear() !== year ||
-      date.getMonth() !== month - 1 ||
-      date.getDate() !== day
-    ) {
-      return null;
-    }
-    return date;
-  };
-
-  // ISO format (YYYY-MM-DD) – kept for internal/back-end data
-  const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (isoMatch) {
-    return buildDate(Number(isoMatch[3]), Number(isoMatch[2]), isoMatch[1]);
-  }
-
-  // DD/MM/YYYY or DD/MM/YY
-  const slashMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
-  if (slashMatch) {
-    return buildDate(Number(slashMatch[1]), Number(slashMatch[2]), slashMatch[3]);
-  }
-
-  // DD-MM-YYYY or DD-MM-YY
-  const dashMatch = trimmed.match(/^(\d{1,2})-(\d{1,2})-(\d{2}|\d{4})$/);
-  if (dashMatch) {
-    return buildDate(Number(dashMatch[1]), Number(dashMatch[2]), dashMatch[3]);
-  }
-
-  // DD.MM.YYYY
-  const dotMatch = trimmed.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
-  if (dotMatch) {
-    return buildDate(Number(dotMatch[1]), Number(dotMatch[2]), dotMatch[3]);
-  }
-
-  return null;
 }
 
 /**

@@ -1,7 +1,7 @@
 import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
 import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
-import { validateTransactionData, validateTransactionUpdateData, transformRawTransaction, parseAmount, normalizeTransactionType, getCustomerBalanceDelta, getBankAccountBalanceDelta } from "./businessLogic";
+import { validateTransactionData, validateTransactionUpdateData, transformRawTransaction, parseAmount, parseDate, normalizeTransactionType, getCustomerBalanceDelta, getBankAccountBalanceDelta } from "./businessLogic";
 import { updateWithFallback, insertWithFallback, bulkInsertWithFallback } from "./updateHelpers";
 import { transactionTypeService } from "./transactionTypeService";
 import { v4 as uuid } from "uuid";
@@ -662,8 +662,8 @@ export class TransactionService extends BaseService {
 
           let parsedDate = now;
           if (r.transaction_date) {
-            const date = new Date(typeof r.transaction_date === "string" ? r.transaction_date : String(r.transaction_date));
-            if (!isNaN(date.getTime())) parsedDate = date.toISOString();
+            const date = parseDate(typeof r.transaction_date === "string" ? r.transaction_date : String(r.transaction_date));
+            if (date) parsedDate = date.toISOString();
           }
 
           const rawType = typeof r.transaction_type === "string" ? r.transaction_type.trim() : "";
@@ -795,7 +795,7 @@ export class TransactionService extends BaseService {
             amount: parseAmount(row.amount),
             description: String(row.description ?? "").trim() || null,
             reference_number: String(row.reference_number ?? "").trim() || null,
-            transaction_date: String(row.transaction_date ?? "").trim() || now,
+            transaction_date: parseDate(String(row.transaction_date ?? ""))?.toISOString() ?? now,
             status: String(row.status ?? "").trim() || "completed",
             created_at: now,
             updated_at: now,
