@@ -2,6 +2,7 @@
 // Handles import/export data from Google Sheets
 
 import { Product, InventoryRecord, SalesRecord } from '../types';
+import { parseDateOrNow } from '@superapp/shared-utils';
 
 export interface GoogleSheetsConfig {
   apiKey: string;
@@ -172,7 +173,7 @@ class GoogleSheetsService {
       try {
         const record: Partial<InventoryRecord> = {
           id: `inv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          date: new Date(row[headerMap.date] || Date.now()),
+          date: parseDateOrNow(row[headerMap.date]),
           productCode: row[headerMap.productCode] || '',
           inputQuantity: parseFloat(row[headerMap.inputQuantity]) || 0,
           actualStock: parseFloat(row[headerMap.actualStock]) || 0,
@@ -213,7 +214,7 @@ class GoogleSheetsService {
         const record: Partial<SalesRecord> = {
           id: `sale-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           productCode: row[headerMap.productCode] || '',
-          outputDate: new Date(row[headerMap.outputDate] || Date.now()),
+          outputDate: parseDateOrNow(row[headerMap.outputDate]),
           quantitySold: parseFloat(row[headerMap.quantitySold]) || 0,
           notes: row[headerMap.notes] || '',
           createdAt: new Date(),

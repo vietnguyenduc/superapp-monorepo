@@ -1,10 +1,11 @@
 import { InventoryRecord } from '../../types';
+import { parseDateOrNow } from '@superapp/shared-utils';
 
 export class InventoryMapper {
   static mapDbToInventory(item: any): InventoryRecord {
     return {
       id: item.id,
-      date: new Date(item.date),
+      date: parseDateOrNow(item.date),
       productCode: item.product?.business_code || item.product_code,
       productName: item.product?.name || item.product_name,
       inputQuantity: Number(item.input_quantity || 0),
@@ -16,8 +17,8 @@ export class InventoryMapper {
       finishedProductStock: Number(item.finished_product_stock || 0),
       finishedProductUnit: item.finished_product_unit || '',
       branch: item.branch || item.branch_id,
-      createdAt: new Date(item.created_at),
-      updatedAt: new Date(item.updated_at),
+      createdAt: parseDateOrNow(item.created_at),
+      updatedAt: parseDateOrNow(item.updated_at),
       createdBy: item.created_by,
       updatedBy: item.updated_by,
       notes: item.notes
