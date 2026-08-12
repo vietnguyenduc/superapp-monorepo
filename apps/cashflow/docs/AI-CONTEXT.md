@@ -236,3 +236,12 @@ Recommended workflow to avoid the quota:
 - Reduce `any` casts and lint warnings in touched files.
 - Finish the 12 standard Cashflow docs (currently only `AI-CONTEXT.md`, `DATA-FLOW.md`, `CHANGELOG.md`, and ADRs exist).
 - Clean up the `supabase/migrations/` chain so `npx supabase start` can bootstrap from migrations alone. The repo has duplicate version prefixes and ordering bugs; a dump-based local stack now works (see RUNBOOK.md) as an interim solution.
+
+## Error message convention (2026-08-21)
+
+- All user-facing error strings in Cashflow must be in Vietnamese.
+- Service errors are returned as `{ data, error: { message } }` and consumed by UI `toast.error` / inline banners.
+- Import errors include row numbers (`Dòng X: ...`) and actionable guidance.
+- `formatDate` falls back to `Ngày không hợp lệ` instead of `Invalid Date`.
+- Tests that assert messages must match the Vietnamese strings (see `importUtils.test.ts`, `validation.test.ts`).
+- Internal logger/debug messages can stay English, but avoid `console.*`; use `logger`.

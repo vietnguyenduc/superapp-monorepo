@@ -415,7 +415,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
           {
             row: 0,
             column: "general",
-            message: error instanceof Error ? error.message : "Parse error",
+            message: error instanceof Error ? error.message : "Lỗi đọc dữ liệu. Vui lòng kiểm tra định dạng file.",
           },
         ],
         isValid: false,
@@ -548,7 +548,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         );
 
         if ((result as any).error) {
-          const errMsg = typeof (result as any).error === "string" ? (result as any).error : "Import failed";
+          const errMsg = typeof (result as any).error === "string" ? (result as any).error : "Nhập liệu thất bại. Vui lòng kiểm tra dữ liệu hoặc thử lại.";
           setImportError(errMsg);
           setImportErrors((result as any).errors || []);
           setImportSuccess(null);

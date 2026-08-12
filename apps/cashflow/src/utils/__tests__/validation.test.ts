@@ -17,10 +17,10 @@ describe("Validation Utils", () => {
     });
 
     it("should return error for invalid email", () => {
-      expect(validateEmail("")).toBe("Email is required");
-      expect(validateEmail("invalid-email")).toBe("Invalid email format");
-      expect(validateEmail("test@")).toBe("Invalid email format");
-      expect(validateEmail("@example.com")).toBe("Invalid email format");
+      expect(validateEmail("")).toBe("Email là bắt buộc");
+      expect(validateEmail("invalid-email")).toBe("Email không đúng định dạng");
+      expect(validateEmail("test@")).toBe("Email không đúng định dạng");
+      expect(validateEmail("@example.com")).toBe("Email không đúng định dạng");
     });
   });
 
@@ -32,7 +32,7 @@ describe("Validation Utils", () => {
     });
 
     it("should return error for invalid phone numbers", () => {
-      expect(validatePhone("abc")).toBe("Invalid phone number format");
+      expect(validatePhone("abc")).toBe("Số điện thoại không đúng định dạng");
       expect(validatePhone("123")).toBeNull();
     });
   });
@@ -46,9 +46,9 @@ describe("Validation Utils", () => {
     });
 
     it("should return error for invalid amounts", () => {
-      expect(validateAmount(-100)).toBe("Amount cannot be negative");
-      expect(validateAmount("invalid")).toBe("Amount must be a valid number");
-      expect(validateAmount(1000000000)).toBe("Amount is too large");
+      expect(validateAmount(-100)).toBe("Số tiền không được âm");
+      expect(validateAmount("invalid")).toBe("Số tiền không đúng định dạng");
+      expect(validateAmount(1000000000)).toBe("Số tiền quá lớn");
     });
   });
 
@@ -56,14 +56,14 @@ describe("Validation Utils", () => {
     it("should return null for non-empty values", () => {
       expect(validateRequired("test", "Field")).toBeNull();
       expect(validateRequired(123, "Field")).toBeNull();
-      expect(validateRequired(0, "Field")).toBe("Field is required");
+      expect(validateRequired(0, "Field")).toBe("Field là bắt buộc");
     });
 
     it("should return error for empty values", () => {
-      expect(validateRequired("", "Field")).toBe("Field is required");
-      expect(validateRequired("   ", "Field")).toBe("Field is required");
-      expect(validateRequired(null, "Field")).toBe("Field is required");
-      expect(validateRequired(undefined, "Field")).toBe("Field is required");
+      expect(validateRequired("", "Field")).toBe("Field là bắt buộc");
+      expect(validateRequired("   ", "Field")).toBe("Field là bắt buộc");
+      expect(validateRequired(null, "Field")).toBe("Field là bắt buộc");
+      expect(validateRequired(undefined, "Field")).toBe("Field là bắt buộc");
     });
   });
 
@@ -75,10 +75,10 @@ describe("Validation Utils", () => {
 
     it("should return error for invalid lengths", () => {
       expect(validateLength("a", 2, 10, "Field")).toBe(
-        "Field must be at least 2 characters",
+        "Field phải có ít nhất 2 ký tự",
       );
       expect(validateLength("very long string", 2, 10, "Field")).toBe(
-        "Field must be no more than 10 characters",
+        "Field không được vượt quá 10 ký tự",
       );
     });
   });
@@ -90,11 +90,11 @@ describe("Validation Utils", () => {
     });
 
     it("should return error for invalid dates", () => {
-      expect(validateDate("invalid-date")).toBe("Invalid date format");
+      expect(validateDate("invalid-date")).toBe("Ngày không đúng định dạng");
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 30);
       expect(validateDate(futureDate.toISOString().slice(0, 10))).toBe(
-        "Date cannot be in the future",
+        "Ngày không được trong tương lai",
       );
     });
   });
@@ -123,10 +123,10 @@ describe("Validation Utils", () => {
 
       const result = validateCustomer(customer);
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain("Full name is required");
-      expect(result.errors).toContain("Branch is required");
-      expect(result.errors).toContain("Invalid email format");
-      expect(result.errors).toContain("Invalid phone number format");
+      expect(result.errors).toContain("Full name là bắt buộc");
+      expect(result.errors).toContain("Branch là bắt buộc");
+      expect(result.errors).toContain("Email không đúng định dạng");
+      expect(result.errors).toContain("Số điện thoại không đúng định dạng");
     });
   });
 
@@ -158,11 +158,11 @@ describe("Validation Utils", () => {
 
       const result = validateTransaction(transaction);
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain("Customer is required");
-      expect(result.errors).toContain("Bank account is required");
-      expect(result.errors).toContain("Transaction type is required");
-      expect(result.errors).toContain("Amount cannot be negative");
-      expect(result.errors).toContain("Date cannot be in the future");
+      expect(result.errors).toContain("Customer là bắt buộc");
+      expect(result.errors).toContain("Bank account là bắt buộc");
+      expect(result.errors).toContain("Transaction type là bắt buộc");
+      expect(result.errors).toContain("Số tiền không được âm");
+      expect(result.errors).toContain("Ngày không được trong tương lai");
     });
   });
 });

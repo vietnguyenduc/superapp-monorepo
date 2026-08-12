@@ -33,15 +33,15 @@ export interface TransactionValidationData {
 // Email validation
 export const validateEmail = (email: string): string | null => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!email) return "Email is required";
-  if (!emailRegex.test(email)) return "Invalid email format";
+  if (!email) return "Email là bắt buộc";
+  if (!emailRegex.test(email)) return "Email không đúng định dạng";
   return null;
 };
 
 // Password validation
 export const validatePassword = (password: string): string | null => {
-  if (!password) return "Password is required";
-  if (password.length < 6) return "Password must be at least 6 characters";
+  if (!password) return "Mật khẩu là bắt buộc";
+  if (password.length < 6) return "Mật khẩu phải có ít nhất 6 ký tự";
   return null;
 };
 
@@ -49,7 +49,7 @@ export const validatePassword = (password: string): string | null => {
 export const validatePhone = (phone: string): string | null => {
   const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
   if (phone && !phoneRegex.test(phone.replace(/\s/g, ""))) {
-    return "Invalid phone number format";
+    return "Số điện thoại không đúng định dạng";
   }
   return null;
 };
@@ -57,9 +57,9 @@ export const validatePhone = (phone: string): string | null => {
 // Amount validation
 export const validateAmount = (amount: number | string): string | null => {
   const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
-  if (isNaN(numAmount)) return "Amount must be a valid number";
-  if (numAmount < 0) return "Amount cannot be negative";
-  if (numAmount > 999999999.99) return "Amount is too large";
+  if (isNaN(numAmount)) return "Số tiền không đúng định dạng";
+  if (numAmount < 0) return "Số tiền không được âm";
+  if (numAmount > 999999999.99) return "Số tiền quá lớn";
   return null;
 };
 
@@ -69,7 +69,7 @@ export const validateRequired = (
   fieldName: string,
 ): string | null => {
   if (!value || (typeof value === "string" && value.trim() === "")) {
-    return `${fieldName} is required`;
+    return `${fieldName} là bắt buộc`;
   }
   return null;
 };
@@ -82,17 +82,17 @@ export const validateLength = (
   fieldName: string,
 ): string | null => {
   if (value.length < min)
-    return `${fieldName} must be at least ${min} characters`;
+    return `${fieldName} phải có ít nhất ${min} ký tự`;
   if (value.length > max)
-    return `${fieldName} must be no more than ${max} characters`;
+    return `${fieldName} không được vượt quá ${max} ký tự`;
   return null;
 };
 
 // Date validation
 export const validateDate = (date: string): string | null => {
   const dateObj = new Date(date);
-  if (isNaN(dateObj.getTime())) return "Invalid date format";
-  if (dateObj > new Date()) return "Date cannot be in the future";
+  if (isNaN(dateObj.getTime())) return "Ngày không đúng định dạng";
+  if (dateObj > new Date()) return "Ngày không được trong tương lai";
   return null;
 };
 
@@ -135,7 +135,7 @@ export const validateTransaction = (transaction: TransactionValidationData): Val
   );
   if (bankAccountError) errors.push(bankAccountError);
 
-  const amountError = transaction.amount !== undefined ? validateAmount(transaction.amount) : "Amount is required";
+  const amountError = transaction.amount !== undefined ? validateAmount(transaction.amount) : "Số tiền là bắt buộc";
   if (amountError) errors.push(amountError);
 
   const typeError = validateRequired(
@@ -190,7 +190,7 @@ export const validateField = (
   // Pattern validation
   if (rules.pattern && typeof value === "string") {
     if (!rules.pattern.test(value)) {
-      return `${fieldName} format is invalid`;
+      return `${fieldName} không đúng định dạng`;
     }
   }
 

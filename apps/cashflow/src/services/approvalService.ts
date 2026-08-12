@@ -17,7 +17,7 @@ export class ApprovalService extends BaseService {
       async () => {
         const all = (trialGet(table as any) || []) as any[];
         const idx = all.findIndex((r) => r.id === id && (!companyId || r.company_id === companyId));
-        if (idx === -1) return { data: null, error: { message: "Not found" } };
+        if (idx === -1) return { data: null, error: { message: "Không tìm thấy dữ liệu cần duyệt" } };
         all[idx] = { ...all[idx], status, updated_at: new Date().toISOString() };
         return { data: all[idx], error: null };
       }

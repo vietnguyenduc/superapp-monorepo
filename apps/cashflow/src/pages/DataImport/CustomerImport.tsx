@@ -165,7 +165,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
             {
               row: 0,
               column: "general",
-              message: error instanceof Error ? error.message : "Parse error",
+              message: error instanceof Error ? error.message : "Lỗi đọc dữ liệu. Vui lòng kiểm tra định dạng file.",
             },
           ],
           isValid: false,
@@ -1353,7 +1353,7 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
       try {
         const data = e.target?.result;
         if (!data) {
-          reject(new Error("Failed to read file"));
+          reject(new Error("Không thể đọc file"));
           return;
         }
 
@@ -1476,7 +1476,7 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
       }
     };
 
-    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.onerror = () => reject(new Error("Không thể đọc file"));
     reader.readAsArrayBuffer(file);
   });
 }

@@ -216,7 +216,7 @@ const TransactionList: React.FC = () => {
     } catch (err) {
       setState((prev) => ({
         ...prev,
-        error: err instanceof Error ? err.message : "Failed to fetch transactions",
+        error: err instanceof Error ? err.message : "Không tải được danh sách giao dịch. Vui lòng thử lại.",
         loading: false,
       }));
     }

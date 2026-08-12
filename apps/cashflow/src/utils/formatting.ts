@@ -81,7 +81,7 @@ export const formatDate = (
     return format(dateObj, formatString, { locale: vi });
   } catch (error) {
     logger.error("Error formatting date:", error);
-    return "Invalid Date";
+    return "Ngày không hợp lệ";
   }
 };
 
@@ -199,7 +199,7 @@ export const formatRelativeTime = (date: string | Date): string => {
     }
   } catch (error) {
     logger.error("Error formatting relative time:", error);
-    return "Invalid Date";
+    return "Ngày không hợp lệ";
   }
 };
 

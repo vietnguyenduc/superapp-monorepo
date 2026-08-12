@@ -26,7 +26,7 @@ export function parseTransactionData(rawData: string): RawTransactionData[] {
   const lines = rawData.trim().split("\n");
 
   if (lines.length === 0) {
-    throw new Error("No data provided");
+    throw new Error("Không có dữ liệu để nhập. Vui lòng dán hoặc chọn file dữ liệu.");
   }
 
   // Remove empty lines and trim whitespace
@@ -35,7 +35,7 @@ export function parseTransactionData(rawData: string): RawTransactionData[] {
     .filter((line) => line.length > 0);
 
   if (nonEmptyLines.length === 0) {
-    throw new Error("No valid data found");
+    throw new Error("Không tìm thấy dòng dữ liệu hợp lệ trong file. Vui lòng kiểm tra định dạng.");
   }
 
   // Parse each line as tab or comma separated data
@@ -44,7 +44,7 @@ export function parseTransactionData(rawData: string): RawTransactionData[] {
 
     if (columns.length < 5) {
       throw new Error(
-        `Row ${index + 1}: Insufficient columns. Expected at least 5 columns.`,
+        `Dòng ${index + 1}: Thiếu cột dữ liệu. Cần ít nhất 5 cột (Mã khách hàng, Tài khoản ngân hàng, Loại giao dịch, Số tiền, Ngày giao dịch).`,
       );
     }
 
@@ -159,7 +159,7 @@ export function validateTransactionData(
       errors.push({
         row: index,
         column: "customer_code",
-        message: "Customer code is required",
+        message: "Mã khách hàng là bắt buộc. Vui lòng nhập mã khách hàng.",
         value: row.customer_code,
       });
     } else if (validCustomerCodes && validCustomerCodes.size > 0) {
@@ -178,7 +178,7 @@ export function validateTransactionData(
         errors.push({
           row: index,
           column: "customer_code",
-          message: `Customer code "${rawCustomerCode}" does not exist. Please check existing customers.`,
+          message: `Mã khách hàng "${rawCustomerCode}" không tồn tại. Vui lòng kiểm tra danh sách khách hàng.`,
           value: row.customer_code,
         });
       }
@@ -214,7 +214,7 @@ export function validateTransactionData(
       errors.push({
         row: index,
         column: "transaction_type",
-        message: "Transaction type is required",
+        message: "Loại giao dịch là bắt buộc. Vui lòng chọn loại giao dịch.",
         value: row.transaction_type,
       });
     } else {
@@ -242,7 +242,7 @@ export function validateTransactionData(
         errors.push({
           row: index,
           column: "transaction_type",
-          message: `Invalid transaction type. Must be one of: ${allowedList}`,
+          message: `Loại giao dịch "${row.transaction_type}" không hợp lệ. Các loại được hỗ trợ: ${allowedList}.`,
           value: row.transaction_type,
         });
       }
@@ -254,7 +254,7 @@ export function validateTransactionData(
       errors.push({
         row: index,
         column: "amount",
-        message: "Amount is required",
+        message: "Số tiền là bắt buộc. Vui lòng nhập số tiền.",
         value: row.amount,
       });
     } else {
@@ -266,8 +266,8 @@ export function validateTransactionData(
           row: index,
           column: "amount",
           message: isAdjustment
-            ? "Amount must be a non-zero number for adjustment"
-            : "Amount must be a non-zero number",
+            ? "Số tiền điều chỉnh phải khác 0"
+            : "Số tiền phải khác 0. Vui lòng nhập số tiền hợp lệ.",
           value: row.amount,
         });
       }
@@ -278,7 +278,7 @@ export function validateTransactionData(
       errors.push({
         row: index,
         column: "transaction_date",
-        message: "Transaction date is required",
+        message: "Ngày giao dịch là bắt buộc. Vui lòng nhập ngày theo định dạng DD/MM/YYYY.",
         value: row.transaction_date,
       });
     } else {
@@ -294,7 +294,7 @@ export function validateTransactionData(
         errors.push({
           row: index,
           column: "transaction_date",
-          message: "Transaction date cannot be in the future",
+          message: "Ngày giao dịch không được trong tương lai. Vui lòng chọn ngày hợp lệ.",
           value: row.transaction_date,
         });
       }
@@ -305,7 +305,7 @@ export function validateTransactionData(
       errors.push({
         row: index,
         column: "description",
-        message: "Description must be less than 500 characters",
+        message: "Nội dung giao dịch phải dưới 500 ký tự.",
         value: row.description,
       });
     }
@@ -315,7 +315,7 @@ export function validateTransactionData(
       errors.push({
         row: index,
         column: "reference_number",
-        message: "Reference number must be less than 100 characters",
+        message: "Số tham chiếu phải dưới 100 ký tự.",
         value: row.reference_number,
       });
     }

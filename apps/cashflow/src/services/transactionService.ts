@@ -381,14 +381,14 @@ export class TransactionService extends BaseService {
         if (companyId) query = query.eq("company_id", companyId);
 
         const { data: tx, error } = await query.single();
-        if (error || !tx) return { data: null, error: error || { message: "Transaction not found" } };
+        if (error || !tx) return { data: null, error: error || { message: "Không tìm thấy giao dịch" } };
 
         return { data: tx, error: null };
       },
       async () => {
         const transactions = (trialGet("transactions") || []) as Transaction[];
         const tx = transactions.find((t) => t.id === id && (!companyId || t.company_id === companyId));
-        if (!tx) return { data: null, error: { message: "Transaction not found" } };
+        if (!tx) return { data: null, error: { message: "Không tìm thấy giao dịch" } };
 
         const customers = (trialGet("customers") || []) as Customer[];
         const bankAccounts = (trialGet("bank_accounts") || []) as BankAccount[];
@@ -577,7 +577,7 @@ export class TransactionService extends BaseService {
     return this.execute(
       async () => {
         if (!companyId) {
-          return { data: null, error: { message: "companyId is required to import transactions" } };
+          return { data: null, error: { message: "Vui lòng chọn công ty trước khi nhập liệu." } };
         }
 
         const raw = Array.isArray(rawData) ? rawData : [];
@@ -588,7 +588,7 @@ export class TransactionService extends BaseService {
           .select("id, name")
           .eq("is_active", true)
           .or(`company_id.eq.${companyId},company_id.is.null`);
-        if (typeErr || !validTypes?.length) return { data: null, error: { message: "Failed to fetch transaction types" } };
+        if (typeErr || !validTypes?.length) return { data: null, error: { message: "Không tải được danh sách loại giao dịch. Vui lòng thử lại." } };
 
         const { data: customers } = await apiClient
           .from("customers")
