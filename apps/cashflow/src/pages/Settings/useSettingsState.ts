@@ -1385,6 +1385,8 @@ export function useSettingsState() {
         setOpeningErrors(errs);
       } else {
         setOpeningErrors([]);
+        await loadCustomerBalances();
+        setActiveOpeningSubTab("list");
       }
       setOpeningSuccess(`Đã cập nhật ${resData?.updatedCount || 0} khách hàng.`);
     } catch (err) {
