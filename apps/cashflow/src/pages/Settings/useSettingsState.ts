@@ -9,7 +9,8 @@ import { useAuthContext as useAuth } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useNavigate } from "react-router-dom";
 import { backupService, recoveryUtils, type BackupData } from "../../utils/backupRecovery";
-import { isAdmin, getInitialEntityStatus, canEditBankAccountSettings, canEditBranchSettings } from "../../utils/permissions";
+import { isAdmin, getInitialEntityStatus, canEditBankAccountSettings, canEditBranchSettings, canManageAllCustomers } from "../../utils/permissions";
+import { parseAmountOrNull } from "../../services/businessLogic";
 
 
 
@@ -169,6 +170,12 @@ export function useSettingsState() {
     name: "",
     address: "",
     phone: "",
+  });
+
+  const [resetTargets, setResetTargets] = useState({
+    transactions: true,
+    bankAccounts: true,
+    branches: true,
   });
 
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
@@ -781,9 +788,10 @@ export function useSettingsState() {
   };
 
 
-  const handleResetData = async () => {
+  const handleResetData = async (scope: "selected" | "all" = "all") => {
+    const actionLabel = scope === "all" ? "xóa toàn bộ dữ liệu" : "xóa dữ liệu đã chọn";
     const confirmation = window.prompt(
-      "Nhập CONFIRM để xóa toàn bộ dữ liệu và đặt lại hệ thống",
+      `Nhập CONFIRM để ${actionLabel} và đặt lại hệ thống`,
       "",
     );
     if (confirmation !== "CONFIRM") {
@@ -795,42 +803,82 @@ export function useSettingsState() {
       return;
     }
 
+    const targets = scope === "all" ? { transactions: true, bankAccounts: true, branches: true } : resetTargets;
+    const anySelected = Object.values(targets).some(Boolean);
+    if (!anySelected) {
+      toast.warning("Vui lòng chọn ít nhất một loại dữ liệu để reset.");
+      return;
+    }
+
     try {
-      // Delete from Supabase database scoped to the active tenant.
-      // Order matters due to FK constraints: transactions first, then customers,
-      // then bank accounts.
+      // If branches are being reset, clear branch_id references first so the
+      // delete does not violate FK constraints. This affects transactions,
+      // bank_accounts and customers in the active tenant.
+      if (targets.branches) {
+        const { error: txBranchError } = await supabase
+          .from("transactions")
+          .update({ branch_id: null })
+          .eq("company_id", companyId)
+          .not("branch_id", "is", null);
+
+        const { error: bankBranchError } = await supabase
+          .from("bank_accounts")
+          .update({ branch_id: null })
+          .eq("company_id", companyId)
+          .not("branch_id", "is", null);
+
+        const { error: custBranchError } = await supabase
+          .from("customers")
+          .update({ branch_id: null })
+          .eq("company_id", companyId)
+          .not("branch_id", "is", null);
+
+        const { error: userBranchError } = await supabase
+          .from("users")
+          .update({ branch_id: null })
+          .eq("company_id", companyId)
+          .not("branch_id", "is", null);
+
+        if (txBranchError || bankBranchError || custBranchError || userBranchError) {
+          logger.error("Branch reference clear errors:", {
+            txBranchError,
+            bankBranchError,
+            custBranchError,
+            userBranchError,
+          });
+          toast.error("Có lỗi khi xóa liên kết chi nhánh trước khi reset.");
+          return;
+        }
+      }
 
       // Delete transactions first (references customers and bank_accounts)
-      const txResult = await supabase
-        .from("transactions")
-        .delete()
-        .eq("company_id", companyId);
-
-      // Delete customers
-      const custResult = await supabase
-        .from("customers")
-        .delete()
-        .eq("company_id", companyId);
+      const txResult = targets.transactions
+        ? await supabase.from("transactions").delete().eq("company_id", companyId)
+        : { error: null };
 
       // Delete bank accounts
-      const bankResult = await supabase
-        .from("bank_accounts")
-        .delete()
-        .eq("company_id", companyId);
+      const bankResult = targets.bankAccounts
+        ? await supabase.from("bank_accounts").delete().eq("company_id", companyId)
+        : { error: null };
 
-      if (txResult.error || custResult.error || bankResult.error) {
+      // Delete branches last (after references cleared)
+      const branchResult = targets.branches
+        ? await supabase.from("branches").delete().eq("company_id", companyId)
+        : { error: null };
+
+      if (txResult.error || bankResult.error || branchResult.error) {
         logger.error("Database deletion errors:", {
           txError: txResult.error,
-          custError: custResult.error,
           bankError: bankResult.error,
+          branchError: branchResult.error,
         });
-        toast.error(`Có lỗi khi xóa dữ liệu từ database:\n${txResult.error?.message || custResult.error?.message || bankResult.error?.message}`);
+        toast.error(`Có lỗi khi xóa dữ liệu từ database:\n${txResult.error?.message || bankResult.error?.message || branchResult.error?.message}`);
         return;
       }
 
-      logger.log("✅ Database deletion successful");
+      logger.log("✅ Database reset successful", { scope, targets });
 
-      toast.success("Đã xóa toàn bộ dữ liệu thành công!");
+      toast.success(scope === "all" ? "Đã xóa toàn bộ dữ liệu thành công!" : "Đã xóa dữ liệu đã chọn thành công!");
 
       // Navigate to dashboard instead of reload to preserve session
       navigate('/dashboard', { replace: true });
@@ -1270,6 +1318,16 @@ export function useSettingsState() {
     setOpeningSuccess(null);
     if (!file) return;
     setOpeningFile(file);
+
+    const codeHeaders = ["customer_code", "code", "Mã khách hàng", "Mã KH", "Mã"];
+    const balanceHeaders = ["opening_balance", "balance", "Số dư đầu kỳ", "Số dư", "Số dư đầu"];
+    const getCell = (row: any, headers: string[]) => {
+      for (const h of headers) {
+        if (row[h] !== undefined && row[h] !== null && row[h] !== "") return row[h];
+      }
+      return undefined;
+    };
+
     const reader = new FileReader();
     reader.onload = (evt) => {
       try {
@@ -1282,14 +1340,15 @@ export function useSettingsState() {
         const errors: string[] = [];
         const parsed: OpeningBalanceRow[] = [];
         json.forEach((row, idx) => {
-          const code = String(row.customer_code || row.code || "").trim();
-          const opening = Number(row.opening_balance ?? row.balance ?? "");
+          const code = String(getCell(row, codeHeaders) ?? "").trim();
+          const rawBalance = getCell(row, balanceHeaders);
+          const opening = parseAmountOrNull(rawBalance);
           if (!code) {
-            errors.push(`Dòng ${idx + 2}: Thiếu customer_code`);
+            errors.push(`Dòng ${idx + 2}: Thiếu mã khách hàng`);
             return;
           }
-          if (!Number.isFinite(opening)) {
-            errors.push(`Dòng ${idx + 2}: opening_balance không hợp lệ`);
+          if (opening === null) {
+            errors.push(`Dòng ${idx + 2}: Số dư đầu kỳ không hợp lệ (${rawBalance ?? ""})`);
             return;
           }
           parsed.push({ customer_code: code, opening_balance: opening });
@@ -1307,7 +1366,7 @@ export function useSettingsState() {
 
 
   const handleImportOpeningBalance = async () => {
-    if (!isAdmin(user)) {
+    if (!isAdmin(user) && !canManageAllCustomers(user)) {
       toast.warning("Bạn không có quyền thực hiện thao tác này.");
       return;
     }
@@ -1326,6 +1385,8 @@ export function useSettingsState() {
         setOpeningErrors(errs);
       } else {
         setOpeningErrors([]);
+        await loadCustomerBalances();
+        setActiveOpeningSubTab("list");
       }
       setOpeningSuccess(`Đã cập nhật ${resData?.updatedCount || 0} khách hàng.`);
     } catch (err) {
@@ -1526,10 +1587,11 @@ export function useSettingsState() {
   };
 
 
-  // Load users when component mounts
+  // Refresh system data when the combined system tab is opened
   useEffect(() => {
-    if (activeTab === "users") {
+    if (activeTab === "system") {
       loadUsers();
+      loadStaffUsers();
     }
   }, [activeTab]);
 
@@ -1543,18 +1605,23 @@ export function useSettingsState() {
       { id: "bank-accounts", name: "Tài khoản ngân hàng", icon: "🏦" },
       { id: "branches", name: "Văn phòng", icon: "🏢" },
       { id: "customer-fields", name: "Trường khách hàng", icon: "🧾" },
-      { id: "transaction-types", name: "Loại giao dịch", icon: "💳" },
-      { id: "balance-formula", name: "Công thức dư nợ", icon: "🧮" },
-      { id: "approval-settings", name: "Phân quyền duyệt", icon: "✅" },
-      { id: "integration", name: "Tích hợp", icon: "🔗" },
-      { id: "users", name: "Tài khoản & phân quyền", icon: "👥" },
+      { id: "transaction-config", name: "Loại giao dịch & Công thức", icon: "💳" },
+      { id: "system", name: "Tài khoản & Phân quyền", icon: "👥" },
     ].filter(tab => {
-      // Show users/permissions and opening-balance tabs for admin, admin_master, and admin_company
-      if ((tab.id === "users" || tab.id === "opening-balance" || tab.id === "approval-settings") && !isAdmin(user)) return false;
+      // System tab (users, approval, integration) is admin-only; opening-balance is also available to staff with customer manage permission
+      if (tab.id === "system" && !isAdmin(user)) return false;
+      if (tab.id === "opening-balance" && !isAdmin(user) && !canManageAllCustomers(user)) return false;
       return true;
     }),
-    [user?.role],
+    [user],
   );
+
+  // Reset to first available tab if the persisted active tab no longer exists (e.g. after a tab merge).
+  useEffect(() => {
+    if (tabs.length > 0 && !tabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab(tabs[0].id);
+    }
+  }, [tabs]);
 
   return {
     user,
@@ -1668,6 +1735,8 @@ export function useSettingsState() {
     loadCustomerBalances,
     loadStaffUsers,
     handleEditBankAccount,
+    resetTargets,
+    setResetTargets,
     handleResetData,
     handleBankAccountFormChange,
     handleSaveBankAccount,

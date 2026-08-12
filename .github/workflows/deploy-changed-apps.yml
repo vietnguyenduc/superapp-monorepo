@@ -1,8 +1,7 @@
 name: Deploy changed Vercel apps
 
 on:
-  # Start manual-only. When the Vercel Git integration is disabled, uncomment
-  # push triggers so this workflow owns main/viet deployments.
+  # Manual dispatch kept for retries / one-off deploys.
   workflow_dispatch:
     inputs:
       target:
@@ -18,10 +17,12 @@ on:
         required: false
         type: string
 
-  # push:
-  #   branches:
-  #     - main
-  #     - viet
+  # Auto-deploy production on merge to main.
+  # Auto-deploy preview on viet pushes and alias to a fixed subdomain.
+  push:
+    branches:
+      - main
+      - viet
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -48,7 +49,15 @@ jobs:
             BASE="origin/main"
             git fetch origin main --depth=100 -q
           fi
-          [ -z "$BASE" ] && BASE="origin/main" && git fetch origin main --depth=100 -q
+
+          if [ -z "$BASE" ]; then
+            if [ "${{ github.ref_name }}" = "main" ] || [ "${{ github.event.inputs.target }}" = "production" ]; then
+              BASE="HEAD^1"
+            else
+              BASE="origin/main"
+              git fetch origin main --depth=100 -q
+            fi
+          fi
 
           BASE_SHA=$(git rev-parse "$BASE" 2>/dev/null || git merge-base "$BASE" HEAD)
           CHANGED=$(git diff --name-only "$BASE_SHA" HEAD)
@@ -76,8 +85,32 @@ jobs:
 
       - name: Deploy to Vercel
         run: |
-          npx vercel@latest deploy \
+          target="${{ github.event.inputs.target }}"
+          [ -z "$target" ] && target="$([ '${{ github.ref_name }}' = 'main' ] && echo 'production' || echo 'preview')"
+
+          deploy_url=$(npx vercel@latest deploy \
             --project ${{ matrix.app }} \
             --token ${{ secrets.VERCEL_TOKEN }} \
             --yes \
-            ${{ github.event.inputs.target == 'production' && '--prod' || '' }}
+            $([ "$target" = "production" ] && echo '--prod' || true))
+
+          echo "Deployed ${{ matrix.app }} to $deploy_url"
+
+          if [ "$target" = "preview" ]; then
+            case "${{ matrix.app }}" in
+              admin-portal) alias_base="admin" ;;
+              cashflow) alias_base="cashflow" ;;
+              framework-method) alias_base="framework" ;;
+              hr-operation) alias_base="hr" ;;
+              inventory-operation) alias_base="inventory" ;;
+              operations-portal) alias_base="ops" ;;
+              sales-operation) alias_base="sales" ;;
+              accounting) alias_base="accounting" ;;
+              *) alias_base="${{ matrix.app }}" ;;
+            esac
+            alias="${alias_base}-preview.appforyou.xyz"
+            echo "Aliasing preview to $alias"
+            npx vercel@latest alias set "$deploy_url" "$alias" \
+              --token ${{ secrets.VERCEL_TOKEN }} \
+              --yes || echo "Alias failed; the deployment is still available at $deploy_url"
+          fi

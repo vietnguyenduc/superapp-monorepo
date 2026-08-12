@@ -5,6 +5,30 @@ import { validateTransactionTypeData, transformRawTransactionType, normalizeTran
 import { insertWithFallback, updateWithFallback } from "./updateHelpers";
 
 export class TransactionTypeService extends BaseService {
+  private static deduplicateTypes(
+    types: Array<{
+      id: string;
+      name: string;
+      color: string;
+      isActive: boolean;
+      math_factor: number;
+      impact_type: string;
+      company_id: string | null;
+    }>
+  ) {
+    const map = new Map<string, typeof types[0]>();
+    for (const t of types) {
+      const key = String(t.name ?? "").toLowerCase().trim();
+      if (!key) continue;
+      const existing = map.get(key);
+      // Prefer tenant-specific rows over legacy global rows (company_id = null).
+      if (!existing || (!existing.company_id && t.company_id)) {
+        map.set(key, t);
+      }
+    }
+    return Array.from(map.values());
+  }
+
   static async getTransactionTypes(companyId?: string) {
     return this.execute(
       async () => {
@@ -12,7 +36,7 @@ export class TransactionTypeService extends BaseService {
         if (companyId) query = query.or(`company_id.eq.${companyId},company_id.is.null`);
         const { data, error } = await query;
         
-        if (error || !data) return { data: [], error: error || { message: "Not found" } };
+        if (error || !data) return { data: [], error: error || { message: "Không tìm thấy loại giao dịch" } };
         
         const allTypes = (data as Record<string, unknown>[]).map((t) => ({
           id: String(t.id ?? ""),
@@ -24,7 +48,7 @@ export class TransactionTypeService extends BaseService {
           company_id: typeof t.company_id === "string" ? t.company_id : null,
         }));
 
-        return { data: allTypes, error: null };
+        return { data: this.deduplicateTypes(allTypes), error: null };
       },
       async () => {
         let data = (trialGet("transaction_types") || []) as Record<string, unknown>[];
@@ -39,8 +63,8 @@ export class TransactionTypeService extends BaseService {
           impact_type: String(t.impact_type ?? "increase"),
           company_id: typeof t.company_id === "string" ? t.company_id : null,
         }));
-        
-        return { data: allTypes, error: null };
+
+        return { data: this.deduplicateTypes(allTypes), error: null };
       }
     );
   }

@@ -35,7 +35,7 @@ export class BankAccountService extends BaseService {
       async () => {
         const data = (trialGet("bank_accounts") || []) as BankAccount[];
         const account = data.find((b) => b.id === id && (!companyId || b.company_id === companyId));
-        return { data: account || null, error: account ? null : { message: "Bank account not found" } };
+        return { data: account || null, error: account ? null : { message: "Không tìm thấy tài khoản ngân hàng" } };
       }
     );
   }
@@ -99,7 +99,7 @@ export class BankAccountService extends BaseService {
         const accounts = (trialGet("bank_accounts") || []) as BankAccount[];
         const account = accounts.find((b) => b.id === id);
         if (!account || (companyId && account.company_id !== companyId)) {
-          return { data: null, error: { message: "Bank account not found" } };
+          return { data: null, error: { message: "Không tìm thấy tài khoản ngân hàng" } };
         }
         trialDelete("bank_accounts", id);
         return { data: null, error: null };

@@ -1,9 +1,11 @@
 import type { FC } from "react";
+import { useState } from "react";
 import { useSettingsContext } from "../../SettingsContext";
 import Button from "../../../../components/UI/Button";
 import { canRestoreFullBackup, canRevertTable } from "../../../../utils/permissions";
 
 export const BackupTab: FC = () => {
+  const [resetAll, setResetAll] = useState(false);
   const {
     handleCreateBackup,
     backupLoading,
@@ -14,6 +16,8 @@ export const BackupTab: FC = () => {
     restoreLoading,
     restoreFile,
     handleResetData,
+    resetTargets,
+    setResetTargets,
     loadingBackupHistory,
     backupHistory,
     handleRestoreFromDatabase,
@@ -102,14 +106,68 @@ export const BackupTab: FC = () => {
               Reset dữ liệu
             </h3>
             <p className="text-xs text-red-600 dark:text-red-300 mb-3">
-              Xóa toàn bộ dữ liệu khách hàng, giao dịch và tài khoản ngân hàng. Không thể hoàn tác.
+              Chọn loại dữ liệu cần reset. Không thể hoàn tác.
             </p>
+            <div className="space-y-2 mb-3">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                <input
+                  type="checkbox"
+                  checked={resetAll}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setResetAll(checked);
+                    if (checked) {
+                      setResetTargets({ transactions: false, bankAccounts: false, branches: false });
+                    }
+                  }}
+                  className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                />
+                Tất cả (giao dịch, tài khoản ngân hàng, chi nhánh)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                <input
+                  type="checkbox"
+                  checked={resetTargets.transactions}
+                  disabled={resetAll}
+                  onChange={(e) =>
+                    setResetTargets((prev) => ({ ...prev, transactions: e.target.checked }))
+                  }
+                  className="rounded border-gray-300 text-red-600 focus:ring-red-500 disabled:opacity-50"
+                />
+                Giao dịch
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                <input
+                  type="checkbox"
+                  checked={resetTargets.bankAccounts}
+                  disabled={resetAll}
+                  onChange={(e) =>
+                    setResetTargets((prev) => ({ ...prev, bankAccounts: e.target.checked }))
+                  }
+                  className="rounded border-gray-300 text-red-600 focus:ring-red-500 disabled:opacity-50"
+                />
+                Tài khoản ngân hàng
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                <input
+                  type="checkbox"
+                  checked={resetTargets.branches}
+                  disabled={resetAll}
+                  onChange={(e) =>
+                    setResetTargets((prev) => ({ ...prev, branches: e.target.checked }))
+                  }
+                  className="rounded border-gray-300 text-red-600 focus:ring-red-500 disabled:opacity-50"
+                />
+                Chi nhánh
+              </label>
+            </div>
             <Button
               variant="secondary"
               className="w-full sm:w-auto border-red-300 text-red-700 hover:text-red-800 hover:border-red-400"
-              onClick={handleResetData}
+              onClick={() => handleResetData(resetAll ? "all" : "selected")}
+              disabled={!resetAll && !Object.values(resetTargets).some(Boolean)}
             >
-              Reset toàn bộ dữ liệu
+              Reset
             </Button>
           </div>
 

@@ -111,7 +111,21 @@ A dedicated `Công thức dư nợ` tab in Settings shows the current formula, l
 - **Sticky/fixed z-ordering on mobile** — keep the main sticky header at `z-[200]`, time-range/selectors at `z-40`, fixed FAB above the `z-50` bottom nav (`bottom-20` on mobile so it does not overlap the nav), and add enough `pb-36` bottom padding to `main` so long lists scroll clear of the FAB.
 - **Dashboard recent-transactions table headers** — `RecentTransactions.tsx` tablet table uses `t("dashboard.description")`, `t("dashboard.customer")`, `t("dashboard.account")`, `t("dashboard.date")`, `t("dashboard.amount")`, `t("dashboard.type")`, and `BalanceByBankChart.tsx` uses `t("dashboard.currentBalance")`; these keys must exist in both `vi.json` and `en.json`.
 - **Customer list column widths / freeze panes** — in `CustomerTable.tsx`, keep `fullName` readable (`w-[14rem]` so long names wrap), `lastTransaction` (`w-[9rem]`), and remove `line-clamp-2` from the customer-name cell. Freeze the first columns (`GD`, `Mã`, `Tên khách hàng`, `Công nợ`, `Giao dịch cuối`) with fixed widths and `sticky` left offsets so customer name and last-transaction date stay visible during horizontal scroll.
-- **Settings navigation** — `Settings.tsx` renders the 10 settings tabs as a responsive vertical grid (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`) instead of a horizontal scrolling nav so all tabs are visible on mobile without horizontal swipe.
+- **Settings navigation** — `Settings.tsx` renders 8 compact tabs in a vertical grid (`grid-cols-3 sm:grid-cols-4 lg:grid-cols-5`, icon above label) and merges related settings: `transaction-config` (Loại giao dịch + Công thức dư nợ) and `system` (Tài khoản & phân quyền + Phân quyền duyệt + Tích hợp). `useSettingsState` resets `activeTab` to the first available tab if the persisted tab no longer exists.
+
+## Transaction status workflow (2026-08-15)
+
+- `Transaction.status` values are `draft` / `pending` / `completed` / `rejected` (VN labels: Nháp / Chờ duyệt / Hoàn thành / Từ chối). `TransactionList` renders a tab for each status and a status badge per row. Approval actions (Duyệt / Từ chối / Gửi duyệt) are shown based on `canApproveTransactions(user)`.
+- `canBypassTransactionApproval(user)` returns `true` for `admin_master`, `admin`, `admin_company`, plus any `staff` with `staff_permissions.transactions.bypass_approval`. `getInitialTransactionStatus(user, saveAsDraft)` returns `draft` if `saveAsDraft` is `true`, `completed` if bypass applies, otherwise `pending`.
+- `TransactionImport` single/bulk flows call `databaseService.transactions.bulkImportTransactions(...)` with `status` set to `getInitialTransactionStatus(user, saveAsDraft)`. Two buttons are provided: "Lưu nháp" (save as draft) and the existing import button (completed/pending based on role).
+- `transactionService.ts` balance sync now ignores delta for any transaction whose `status` is not `completed`. This means draft/pending/rejected rows do not move `customers.total_balance` or `bank_accounts.balance`; status transitions reverse/adjust deltas correctly.
+
+## Unified approvals & per-company approval settings (2026-08-16)
+
+- New `ApprovalsPage` at `/approvals` (sidebar item visible only to admin roles) lists all pending `transactions`, `customers`, `bank_accounts`, and `branches` in one place. Admin can approve or reject each item; approved transactions become `completed` (and trigger balance sync through `transactionService.updateTransaction`), while customers/bank accounts/branches become `active`; rejected items become `rejected`.
+- `Settings` has a new `Phân quyền duyệt` tab where admin toggles which entity types require approval on creation (`companies.approval_settings` JSONB: `transactions`, `customers`, `bank_accounts`, `branches`). All default to `true`.
+- `customers`, `bank_accounts`, and `branches` now have a `status` column (`active` / `pending` / `rejected`). New records compute initial status via `getInitialEntityStatus(user, entityType, company.approval_settings, saveAsDraft, hasPermission)`. Helpers `canBypassEntityApproval` and `getInitialTransactionStatusWithSettings` combine user role, the relevant staff permission, and the per-company approval setting.
+- `customerService.getCustomers` defaults to `status = 'active'`; pass `status: 'all'` to include pending/rejected. `bankAccountService.getBankAccounts` and `branchService.getBranches` accept an optional `status` parameter. Dropdowns in `TransactionList`, `TransactionImport`, and `Dashboard` request `active` records only so pending items are not selectable.
 
 ## Transaction status workflow (2026-08-15)
 
@@ -154,6 +168,7 @@ A dedicated `Công thức dư nợ` tab in Settings shows the current formula, l
 - **Supabase `.single()`** returns an error when a row is missing; guard with `if (error || !data)`.
 - **`updateWithFallback`** retries updates with unknown columns stripped; useful for production schemas that lag migrations.
 - **Bulk import payloads:** sanitize to the known `transactions` columns before calling `bulkInsertWithFallback` so Supabase does not log 400 errors for UI-only fields (`bank_account_name`, `branch_name`). Also do not select non-existent `branches.branch_name`; the `branches` table only has `name` and `code`.
+- **Bulk import validation (live path):** `transactionService.bulkImportTransactions` validates every row before insert. It accepts `customer_code`, customer `id`, or `full_name`; validates `transaction_type` against active `transaction_types`; and returns a Vietnamese summary plus per-row errors (`Dòng X: ...`). The UI renders the full list in a scrollable box instead of showing only the first message.
 - **Trial-mode bulk import:** the UI sends labels (`customer_id` may be `CUST0001 - ...`, `bank_account` may be `Vietcombank - TK Chính`) even in trial mode. The trial fallback must resolve these labels to IDs against `trialGet("customers")` / `trialGet("bank_accounts")` / `trialGet("branches")` before inserting, or transactions will be created with `customer_id: null` and balances will not update.
 - **Trial-mode update balance sync:** always snapshot `oldTx` (e.g. `{ ...oldTx }`) before calling `trialUpdate` when recomputing balance deltas; otherwise the old and new transaction objects can share references and the diff collapses to zero.
 - **Transaction type labels / canonicals:** dropdowns must use `useTransactionTypes().typesForDropdown`. Each item has a resolved `name` (Vietnamese business label) and an English `canonical` (`payment`, `charge`, `deposit`, `refund`, `adjustment`). The `<option>` value must be `canonical` so it matches `transactions.transaction_type`, while the displayed text comes from `name`. Do not build dropdowns directly from raw `transaction_types` rows.
@@ -235,3 +250,12 @@ Recommended workflow to avoid the quota:
 - Reduce `any` casts and lint warnings in touched files.
 - Finish the 12 standard Cashflow docs (currently only `AI-CONTEXT.md`, `DATA-FLOW.md`, `CHANGELOG.md`, and ADRs exist).
 - Clean up the `supabase/migrations/` chain so `npx supabase start` can bootstrap from migrations alone. The repo has duplicate version prefixes and ordering bugs; a dump-based local stack now works (see RUNBOOK.md) as an interim solution.
+
+## Error message convention (2026-08-21)
+
+- All user-facing error strings in Cashflow must be in Vietnamese.
+- Service errors are returned as `{ data, error: { message } }` and consumed by UI `toast.error` / inline banners.
+- Import errors include row numbers (`Dòng X: ...`) and actionable guidance.
+- `formatDate` falls back to `Ngày không hợp lệ` instead of `Invalid Date`.
+- Tests that assert messages must match the Vietnamese strings (see `importUtils.test.ts`, `validation.test.ts`).
+- Internal logger/debug messages can stay English, but avoid `console.*`; use `logger`.

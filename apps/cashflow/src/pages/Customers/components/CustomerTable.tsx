@@ -154,9 +154,9 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
           <tr>
             <th
               scope="col"
-              className="hidden sm:table-cell px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap w-14 sticky top-0 left-0 z-20 bg-gray-50 dark:bg-gray-700"
+              className="hidden sm:table-cell px-3 py-3 text-left text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide whitespace-normal w-14 sticky top-0 left-0 z-20 bg-gray-50 dark:bg-gray-700"
             >
-              <span>GD</span>
+              <span className="block leading-tight">Xem giao dịch</span>
             </th>
             <th
               scope="col"
@@ -272,20 +272,20 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                 <div className="text-xs font-bold font-mono text-gray-900 dark:text-white">{customer.customer_code}</div>
               </td>
               <td className={`${isVisible("fullName") ? "" : "hidden"} w-full sm:w-[14rem] px-4 py-4 sm:px-3 sm:py-3 sm:sticky sm:left-[7.5rem] z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-700`}>
-                <div className={`flex items-center justify-between gap-2 sm:hidden mb-2 ${isVisible("customerCode") ? "" : "hidden"}`}>
-                  <div className="flex items-center gap-2">
+                <div className={`flex flex-wrap items-center justify-between gap-2 sm:hidden mb-2 ${isVisible("customerCode") ? "" : "hidden"}`}>
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleViewTransactions(e, customer);
                       }}
-                      className="inline-flex items-center justify-center px-2 py-1 text-[10px] font-semibold rounded-full text-blue-700 dark:text-blue-200 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-900/70 transition-colors"
+                      className="inline-flex items-center justify-center px-2 py-1 text-[10px] font-semibold rounded-md text-blue-700 dark:text-blue-200 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-900/70 transition-colors"
                       title="Xem giao dịch"
                     >
                       <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <span>GD</span>
+                      <span>Xem giao dịch</span>
                     </button>
                     <span className="text-[10px] font-mono text-gray-500 dark:text-gray-300">
                       {customer.customer_code}

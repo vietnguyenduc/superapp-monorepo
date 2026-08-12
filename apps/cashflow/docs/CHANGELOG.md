@@ -1,5 +1,77 @@
 # Changelog — Cashflow
 
+## 2026-08-21
+
+### Fixed
+
+- **Vietnamese user-facing error messages across Cashflow services, import utils, and UI.**
+  - `importUtils.ts`, `validation.ts`, `validationSystem.ts` now return Vietnamese validation errors.
+  - `customerService.ts`, `transactionService.ts`, `branchService.ts`, `bankAccountService.ts`, `transactionTypeService.ts`, `approvalService.ts` translate `not found`, `already exists`, and import/backup error messages.
+  - `backupRecovery.ts` and `compression.ts` translate backup/export/import compression errors.
+  - `TransactionImport.tsx`, `CustomerImport.tsx`, `TransactionList.tsx`, `CustomerDetail.tsx` replace `Parse error`, `Failed to fetch...`, and generic `Import failed` messages with Vietnamese guidance.
+  - `formatting.ts` returns `Ngày không hợp lệ` instead of `Invalid Date`.
+  - Updated `importUtils.test.ts` and `validation.test.ts` to assert the new Vietnamese strings.
+
+## 2026-08-20
+
+### Fixed
+
+- **Bulk transaction import errors are now user-friendly and list every failing row.** `transactionService.bulkImportTransactions` validates each row before inserting and returns a Vietnamese summary plus per-row messages (`Dòng X: ...`).
+- **Customer lookup in bulk import now accepts `customer_code`, customer `id`, or `full_name`**, matching the trial-mode resolver. Previously the live path only matched `customer_code`, so imports using numeric IDs failed with a raw `Customer not found` error.
+- **Transaction type validation now checks against active `transaction_types`** (by id, name, or canonical label) instead of silently normalizing to `payment` for unknown inputs.
+- **`TransactionImport` UI now displays a scrollable list of errors** instead of only the first error message, and adds row numbers so users can fix the source file quickly.
+
+## 2026-08-19
+
+### Fixed
+
+- **Bulk transaction import no longer fails with `transactions_transaction_code_company_key` unique-constraint violations.** `transactionService.bulkImportTransactions` now:
+  - Fetches existing `transaction_code` values for the company before import.
+  - Auto-generates a unique `TXN<timestamp>-<index>-<random>` code when the row leaves `Số chứng từ` blank.
+  - Returns row-level errors (in `result.errors`) when a provided `transaction_code` already exists or is duplicated within the import file, instead of letting Postgres throw an opaque `duplicate key` error.
+- `validateTransactionData` (importUtils) now checks duplicate `transaction_code` values inside the same file and reports the offending row numbers.
+- `cleanTransactionData` and `convertToTransactions` preserve an optional `transaction_code` field.
+- Bulk import `transaction_date` parsing now consistently uses the Vietnamese `DD/MM/YYYY` parser (shared `businessLogic/parsers.ts`). Both live and trial paths store an ISO timestamp, preventing imported dates from displaying as "Invalid Date".
+
+## 2026-08-18
+
+### Added
+
+- **Transaction group by Quý / Năm** — `TransactionList` now supports grouping by `quarter` and `year` alongside `day`, `week`, and `month`.
+- **Deposit column in group summary** — the group summary table (and new mobile summary cards) now shows `Tổng đặt cọc` separately from `Tổng phát sinh giảm`.
+- **Mobile group summary** — `TransactionList` renders a `sm:hidden` card list when a group-by option is selected so mobile users can see the summary too.
+
+### Fixed
+
+- `parseAmount` now returns numeric inputs unchanged and treats a trailing separator with 1–2 fractional digits as a decimal marker. This fixes a bug where values like `990366250.4` were parsed as `9,903,662,504` (10× too large), which inflated `Customer to Watch` balances on the dashboard.
+- Mobile group summary card is now placed outside the desktop-only `hidden sm:block` container so it actually appears on small screens.
+
+### Added
+
+- **Group-by date range filter** — when grouping transactions by `Ngày/Tuần/Tháng/Quý/Năm`, the summary header exposes `Từ ngày` / `Đến ngày` inputs on both desktop and mobile so users can narrow the displayed groups. The group summary now aggregates over all matching transactions in the selected range (up to 1,000 rows) instead of only the current paginated page. Date presets and single-day custom ranges use local midnight boundaries, and group-by `Ngày` keys are rendered in local time.
+- **Selective data reset** — the `Backup & Khôi phục` settings tab now lets users pick which data to reset (`Giao dịch & Khách hàng`, `Tài khoản ngân hàng`, `Chi nhánh`) and choose between `Đưa về null` (clear selected tables) or `Reset all` (clear all three). Branch references are nulled in `transactions`, `bank_accounts`, `customers`, and `users` before deleting branches to avoid FK errors.
+
+## 2026-08-17
+
+### Added
+
+- **Customer balance range filter** — `CustomerList` now has `Dư nợ từ` / `Dư nợ đến` inputs in the filter bar so users can filter customers by `total_balance`. The filter is applied server-side (`total_balance` gte/lte) and reflected in the total-debt summary and Excel export.
+- **Transaction customer filter** — `TransactionList` now exposes a `Tất cả khách hàng` dropdown in the filter grid, synced with the existing `customer_id` URL parameter. Clicking `Xem giao dịch` on a customer pre-selects that customer in the dropdown and filters the transaction list.
+
+### Changed
+
+- Renamed the customer-card `GD` button to `Xem giao dịch` for clarity, and made the mobile action row wrap gracefully when the label is longer.
+
+### Fixed
+
+- `CustomerFilters` balance-range inputs now keep local min/max state so changing one bound no longer overwrites the other; the active filter pill formats values with `formatCompactCurrency`.
+- Trial seed data now includes `status: 'active'` for customers, so `CustomerList` filters work in trial mode.
+
+### Migration
+
+- `supabase/migrations/046_entity_pending_status.sql` — adds `status` columns to `customers`, `bank_accounts`, and `branches` with `active` default and backfills existing rows.
+- `supabase/migrations/047_company_approval_settings.sql` — adds `companies.approval_settings` JSONB with all categories enabled by default and backfills existing companies.
+
 ## 2026-08-16
 
 ### Added

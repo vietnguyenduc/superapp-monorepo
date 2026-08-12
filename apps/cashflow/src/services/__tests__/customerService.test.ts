@@ -79,7 +79,7 @@ describe("customerService.updateCustomer", () => {
       });
 
       expect(result.error).toBeTruthy();
-      expect(result.error).toMatch(/already exists/);
+      expect(result.error).toMatch(/đã tồn tại/);
     });
   });
 

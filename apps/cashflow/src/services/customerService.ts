@@ -1,7 +1,7 @@
 import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
 import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
-import { validateCustomerData, transformRawCustomer, parseAmount } from "./businessLogic";
+import { validateCustomerData, transformRawCustomer, parseAmount, parseAmountOrNull } from "./businessLogic";
 import {
   insertWithFallback,
   bulkInsertWithFallback,
@@ -38,6 +38,13 @@ export class CustomerService extends BaseService {
         const endDate = dateRange?.end || undefined;
         if (startDate) query = query.gte("last_transaction_date", startDate);
         if (endDate) query = query.lte("last_transaction_date", endDate);
+
+        const balanceRange =
+          typeof filters?.balanceRange === "object" && filters?.balanceRange
+            ? (filters.balanceRange as { min?: number | null; max?: number | null })
+            : undefined;
+        if (balanceRange?.min != null) query = query.gte("total_balance", balanceRange.min);
+        if (balanceRange?.max != null) query = query.lte("total_balance", balanceRange.max);
 
         const limit = Number.isFinite(filters?.limit) ? Number(filters.limit) : undefined;
         const offset = Number(filters.offset ?? 0);
@@ -111,6 +118,18 @@ export class CustomerService extends BaseService {
           });
         }
 
+        const balanceRange =
+          typeof filters?.balanceRange === "object" && filters?.balanceRange
+            ? (filters.balanceRange as { min?: number | null; max?: number | null })
+            : undefined;
+        if (balanceRange?.min != null || balanceRange?.max != null) {
+          data = data.filter((c) => {
+            const balance = Number(c.total_balance) || 0;
+            return (balanceRange.min == null || balance >= balanceRange.min) &&
+                   (balanceRange.max == null || balance <= balanceRange.max);
+          });
+        }
+
         const sortBy = typeof filters?.sortBy === "string" ? filters.sortBy : "created_at";
         const ascending = filters?.sortOrder === "asc";
         const direction = ascending ? 1 : -1;
@@ -161,7 +180,7 @@ export class CustomerService extends BaseService {
         if (companyId) query = query.eq("company_id", companyId);
 
         const { data: customer, error } = await query.single();
-        if (error || !customer) return { data: null, error: error || { message: "Customer not found" } };
+        if (error || !customer) return { data: null, error: error || { message: "Không tìm thấy khách hàng" } };
 
         let updatedByEmail = null;
         if (customer.updated_by) {
@@ -180,7 +199,7 @@ export class CustomerService extends BaseService {
       async () => {
         const customers = (trialGet("customers") || []) as Customer[];
         const customer = customers.find((c) => c.id === id && (!companyId || c.company_id === companyId));
-        if (!customer) return { data: null, error: { message: "Customer not found" } };
+        if (!customer) return { data: null, error: { message: "Không tìm thấy khách hàng" } };
 
         return {
           data: {
@@ -209,7 +228,7 @@ export class CustomerService extends BaseService {
           }
           const { data: existing } = await checkQ;
           if (existing && existing.length > 0) {
-            return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
+            return { data: null, error: { message: `Mã khách hàng "${proposedCode}" đã tồn tại. Vui lòng chọn mã khác.` } };
           }
         }
 
@@ -229,7 +248,7 @@ export class CustomerService extends BaseService {
             (c) => c.customer_code === proposedCode && (!companyIdCheck || c.company_id === companyIdCheck)
           );
           if (existing) {
-            return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
+            return { data: null, error: { message: `Mã khách hàng "${proposedCode}" đã tồn tại. Vui lòng chọn mã khác.` } };
           }
         }
 
@@ -291,7 +310,7 @@ export class CustomerService extends BaseService {
                 if (options?.skipExisting) {
                   skipped.push({ row: validRows[j].index, column: "customer_code", message: `Mã khách hàng "${code}" đã tồn tại`, value: code });
                 } else {
-                  errors.push({ row: validRows[j].index, column: "customer_code", message: `Customer with code "${code}" already exists`, value: code });
+                  errors.push({ row: validRows[j].index, column: "customer_code", message: `Mã khách hàng "${code}" đã tồn tại. Vui lòng chọn mã khác.`, value: code });
                 }
                 validRows.splice(j, 1);
               }
@@ -346,7 +365,7 @@ export class CustomerService extends BaseService {
             if (options?.skipExisting) {
               skipped.push({ row: i, column: "customer_code", message: `Mã khách hàng "${code}" đã tồn tại`, value: code });
             } else {
-              errors.push({ row: i, column: "customer_code", message: `Customer with code "${code}" already exists`, value: code });
+              errors.push({ row: i, column: "customer_code", message: `Mã khách hàng "${code}" đã tồn tại. Vui lòng chọn mã khác.`, value: code });
             }
             continue;
           }
@@ -435,7 +454,7 @@ export class CustomerService extends BaseService {
           if (companyIdCheck) checkQ = checkQ.eq("company_id", companyIdCheck);
           const { data: existing } = await checkQ;
           if (existing && existing.length > 0) {
-            return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
+            return { data: null, error: { message: `Mã khách hàng "${proposedCode}" đã tồn tại. Vui lòng chọn mã khác.` } };
           }
         }
 
@@ -476,7 +495,7 @@ export class CustomerService extends BaseService {
             (c) => c.id !== id && c.customer_code === proposedCode && (!companyIdCheck || c.company_id === companyIdCheck)
           );
           if (existing) {
-            return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
+            return { data: null, error: { message: `Mã khách hàng "${proposedCode}" đã tồn tại. Vui lòng chọn mã khác.` } };
           }
         }
 
@@ -505,7 +524,7 @@ export class CustomerService extends BaseService {
         let q = apiClient.from("customers").select("*").eq("id", customerId);
         if (companyId) q = q.eq("company_id", companyId);
         const { data: existing, error: fetchErr } = await q.single();
-        if (fetchErr || !existing) return { data: null, error: fetchErr || { message: "Customer not found" } };
+        if (fetchErr || !existing) return { data: null, error: fetchErr || { message: "Không tìm thấy khách hàng" } };
 
         const oldOpening = Number(existing.opening_balance || 0);
         const oldTotal = Number(existing.total_balance || 0);
@@ -516,6 +535,7 @@ export class CustomerService extends BaseService {
           opening_balance: newOpening,
           total_balance: newTotal,
           current_balance: newTotal,
+          company_id: (existing as any).company_id,
           updated_at: new Date().toISOString(),
         });
 
@@ -524,7 +544,7 @@ export class CustomerService extends BaseService {
       async () => {
         const customers = (trialGet("customers") || []) as Customer[];
         const existing = customers.find((c) => c.id === customerId && (!companyId || c.company_id === companyId));
-        if (!existing) return { data: null, error: { message: "Customer not found" } };
+        if (!existing) return { data: null, error: { message: "Không tìm thấy khách hàng" } };
 
         const oldOpening = Number(existing.opening_balance || 0);
         const oldTotal = Number(existing.total_balance || 0);
@@ -543,20 +563,20 @@ export class CustomerService extends BaseService {
     );
   }
 
-  static async bulkUpdateOpeningBalances(rows: { customer_code?: string; opening_balance?: number }[], companyId?: string) {
+  static async bulkUpdateOpeningBalances(rows: { customer_code?: string; opening_balance?: unknown }[], companyId?: string) {
     return this.execute(
       async () => {
         const errors: Record<string, unknown>[] = [];
         const codeToRow: Record<string, { row: number; opening: number }> = {};
         rows.forEach((row, i) => {
           const code = String(row.customer_code ?? "").trim();
-          const opening = Number(row.opening_balance);
+          const opening = parseAmountOrNull(row.opening_balance);
           if (!code) {
-            errors.push({ row: i, message: "Missing customer_code" });
+            errors.push({ row: i, message: "Thiếu mã khách hàng" });
             return;
           }
-          if (!Number.isFinite(opening)) {
-            errors.push({ row: i, message: "Invalid opening_balance", value: row.opening_balance });
+          if (opening === null) {
+            errors.push({ row: i, message: "Số dư đầu kỳ không hợp lệ", value: row.opening_balance });
             return;
           }
           codeToRow[code] = { row: i, opening };
@@ -565,7 +585,7 @@ export class CustomerService extends BaseService {
         const codes = Object.keys(codeToRow);
         if (codes.length === 0) return { data: { updatedCount: 0, errors }, error: null };
 
-        let query = apiClient.from("customers").select("id,customer_code,opening_balance,total_balance").in("customer_code", codes);
+        let query = apiClient.from("customers").select("id,customer_code,opening_balance,total_balance,company_id,status,full_name").in("customer_code", codes);
         if (companyId) query = query.eq("company_id", companyId);
         const { data: customers, error: fetchError } = await query;
         if (fetchError) return { data: { updatedCount: 0, errors: [...errors, { message: fetchError.message }] }, error: fetchError };
@@ -578,7 +598,7 @@ export class CustomerService extends BaseService {
         for (const [code, { row, opening }] of Object.entries(codeToRow)) {
           const customer = customerMap.get(code);
           if (!customer) {
-            errors.push({ row, message: "Customer not found", value: code });
+            errors.push({ row, message: "Không tìm thấy khách hàng", value: code });
             continue;
           }
           const oldOpening = Number(customer.opening_balance || 0);
@@ -586,6 +606,10 @@ export class CustomerService extends BaseService {
           const delta = oldTotal - oldOpening;
           payload.push({
             id: customer.id,
+            customer_code: customer.customer_code,
+            full_name: customer.full_name,
+            company_id: customer.company_id,
+            status: customer.status,
             opening_balance: opening,
             total_balance: opening + delta,
             current_balance: opening + delta,
@@ -595,7 +619,7 @@ export class CustomerService extends BaseService {
 
         if (payload.length === 0) return { data: { updatedCount: 0, errors }, error: null };
 
-        const { data, error } = await apiClient.from("customers").upsert(payload as Record<string, unknown>[]).select();
+        const { data, error } = await apiClient.from("customers").upsert(payload as Record<string, unknown>[], { onConflict: "id" }).select();
         if (error) return { data: { updatedCount: 0, errors: [...errors, { message: error.message }] }, error };
         return { data: { updatedCount: data?.length || 0, errors }, error: null };
       },
@@ -606,12 +630,12 @@ export class CustomerService extends BaseService {
         for (let i = 0; i < rows.length; i++) {
           const row = rows[i];
           const code = String(row.customer_code ?? "").trim();
-          const opening = Number(row.opening_balance);
-          if (!code) { errors.push({ row: i, message: "Missing customer_code" }); continue; }
-          if (!Number.isFinite(opening)) { errors.push({ row: i, message: "Invalid opening_balance", value: row.opening_balance }); continue; }
+          const opening = parseAmountOrNull(row.opening_balance);
+          if (!code) { errors.push({ row: i, message: "Thiếu mã khách hàng" }); continue; }
+          if (opening === null) { errors.push({ row: i, message: "Số dư đầu kỳ không hợp lệ", value: row.opening_balance }); continue; }
 
           const customer = customers.find((c) => c.customer_code === code && (!companyId || c.company_id === companyId));
-          if (!customer) { errors.push({ row: i, message: "Customer not found", value: code }); continue; }
+          if (!customer) { errors.push({ row: i, message: "Không tìm thấy khách hàng", value: code }); continue; }
 
           const oldOpening = Number(customer.opening_balance || 0);
           const oldTotal = Number(customer.total_balance || 0);

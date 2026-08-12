@@ -48,7 +48,8 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
   const axisLineColor = isDark ? "#4b5563" : "#9ca3af";
   const gridLineColor = isDark ? "#374151" : "#e5e7eb";
   const referenceLineColor = isDark ? "#9ca3af" : "#9ca3af";
-  const locale = i18n.language === "vi" ? "vi-VN" : undefined;
+  // Always use a day-first locale so chart labels never show MM/DD.
+  const locale = i18n.language === "vi" ? "vi-VN" : "en-GB";
 
   if (!data || data.length === 0) {
     return (
@@ -60,7 +61,7 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
 
   const chartData = data;
 
-  // Function to format date based on time range
+  // Function to format date based on time range (always day/month/year)
   const formatDateByTimeRange = (dateStr: string): string => {
     const date = new Date(dateStr);
     switch (timeRange) {
@@ -74,14 +75,14 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
           return weekStart.toLocaleDateString(locale, { day: "numeric", month: "short" });
         }
       case "month":
-        return date.toLocaleDateString(locale, { month: "short", year: "numeric" });
+        return date.toLocaleDateString(locale, { month: "2-digit", year: "numeric" });
       case "quarter":
         const quarter = Math.floor(date.getMonth() / 3) + 1;
-        return `Q${quarter} ${date.getFullYear()}`;
+        return `Q${quarter}/${date.getFullYear()}`;
       case "year":
         return date.getFullYear().toString();
       default:
-        return date.toLocaleDateString(locale);
+        return date.toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
     }
   };
 

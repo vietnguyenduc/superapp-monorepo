@@ -48,8 +48,8 @@ describe("Formatting Utils", () => {
 
   describe("formatDate", () => {
     it("formats dates correctly with default format", () => {
-      expect(formatDate("2024-01-15")).toBe("15 thg 1, 2024");
-      expect(formatDate("2023-12-31")).toBe("31 thg 12, 2023");
+      expect(formatDate("2024-01-15")).toBe("15/01/2024");
+      expect(formatDate("2023-12-31")).toBe("31/12/2023");
     });
 
     it("formats dates with custom format", () => {
@@ -62,19 +62,19 @@ describe("Formatting Utils", () => {
 
     it("handles Date objects", () => {
       const date = new Date("2024-01-15");
-      expect(formatDate(date)).toBe("15 thg 1, 2024");
+      expect(formatDate(date)).toBe("15/01/2024");
     });
 
     it("handles invalid dates", () => {
-      expect(formatDate("invalid-date")).toBe("Invalid Date");
-      expect(formatDate("")).toBe("Invalid Date");
+      expect(formatDate("invalid-date")).toBe("Ngày không hợp lệ");
+      expect(formatDate("")).toBe("Ngày không hợp lệ");
     });
   });
 
   describe("formatDateTime", () => {
     it("formats date and time correctly", () => {
-      expect(formatDateTime("2024-01-15T10:30:00")).toBe("15 thg 1, 2024 10:30");
-      expect(formatDateTime("2024-01-15T14:45:30")).toBe("15 thg 1, 2024 14:45");
+      expect(formatDateTime("2024-01-15T10:30:00")).toBe("15/01/2024 10:30");
+      expect(formatDateTime("2024-01-15T14:45:30")).toBe("15/01/2024 14:45");
     });
   });
 
@@ -222,7 +222,7 @@ describe("Formatting Utils", () => {
     });
 
     it("handles invalid dates", () => {
-      expect(formatRelativeTime("invalid-date")).toBe("Invalid Date");
+      expect(formatRelativeTime("invalid-date")).toBe("Ngày không hợp lệ");
     });
   });
 
@@ -271,7 +271,7 @@ describe("Formatting Utils", () => {
     it("formats different cell types correctly", () => {
       expect(formatTableCell(1234.56, "currency")).toMatch(/^1\.235\s*₫$/);
       expect(formatTableCell(1234, "number")).toBe("1.234");
-      expect(formatTableCell("2024-01-15", "date")).toBe("15 thg 1, 2024");
+      expect(formatTableCell("2024-01-15", "date")).toBe("15/01/2024");
       expect(formatTableCell("1234567890", "phone")).toBe("(123) 456-7890");
       expect(formatTableCell(true, "status")).toBe("Hoạt động");
       expect(formatTableCell("payment", "type")).toBe("Phát sinh giảm");
@@ -342,7 +342,7 @@ describe("Formatting Utils", () => {
         {
           Name: "John Doe",
           Amount: expect.stringMatching(/^1\.235\s*₫$/),
-          Date: "15 thg 1, 2024",
+          Date: "15/01/2024",
           Status: "Hoạt động",
         },
       ]);

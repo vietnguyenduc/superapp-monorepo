@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import { useSettingsContext } from "../../SettingsContext";
 import Button from "../../../../components/UI/Button";
-import { isAdmin } from "../../../../utils/permissions";
+import { isAdmin, canManageAllCustomers } from "../../../../utils/permissions";
 import { formatNumber } from "../../../../utils/formatting";
 import { toast } from "../../../../utils/toast";
 import { databaseService } from "../../../../services/database";
@@ -88,7 +88,7 @@ export const OpeningBalanceTab: FC = () => {
                   size="sm"
                   disabled={isSavingCustomerBalances || customerBalances.filter(c => c.new_opening_balance !== c.opening_balance).length === 0}
                   onClick={async () => {
-                    if (!isAdmin(user)) {
+                    if (!isAdmin(user) && !canManageAllCustomers(user)) {
                       toast.warning("Bạn không có quyền thực hiện thao tác này.");
                       return;
                     }
@@ -131,6 +131,31 @@ export const OpeningBalanceTab: FC = () => {
             )}
             {customerBalanceSuccess && (
               <p className="text-sm text-green-600">{customerBalanceSuccess}</p>
+            )}
+
+            {!isLoadingCustomerBalances && customerBalances.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {(() => {
+                  const visible = customerBalances.filter(c => {
+                    const s = customerBalanceSearch.toLowerCase();
+                    return !s || c.customer_code.toLowerCase().includes(s) || c.full_name.toLowerCase().includes(s);
+                  });
+                  const totalCurrent = visible.reduce((sum, c) => sum + c.current_balance, 0);
+                  const totalNew = visible.reduce((sum, c) => sum + (c.new_opening_balance + (c.current_balance - c.opening_balance)), 0);
+                  return (
+                    <>
+                      <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Tổng dư nợ hiện tại ({visible.length} khách hàng)</p>
+                        <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatNumber(totalCurrent)} đ</p>
+                      </div>
+                      <div className={`border rounded-lg p-3 ${totalNew !== totalCurrent ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700'}`}>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Tổng dư nợ sau cập nhật</p>
+                        <p className={`text-lg font-semibold ${totalNew !== totalCurrent ? 'text-blue-700 dark:text-blue-200' : 'text-gray-900 dark:text-white'}`}>{formatNumber(totalNew)} đ</p>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
             )}
 
             {isLoadingCustomerBalances ? (

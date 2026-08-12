@@ -33,6 +33,7 @@ interface CustomerListState {
   pageSize: number;
   searchTerm: string;
   dateRange: { start: string; end: string } | null;
+  balanceRange: { min: number | null; max: number | null } | null;
   sortBy: string;
   sortOrder: "asc" | "desc";
   selectedCustomer: Customer | null;
@@ -98,6 +99,7 @@ const CustomerList: React.FC = () => {
       pageSize: 20,
       searchTerm: "",
       dateRange: null,
+      balanceRange: null,
       sortBy: "created_at",
       sortOrder: "desc",
       selectedCustomer: null,
@@ -133,6 +135,7 @@ const CustomerList: React.FC = () => {
         sortBy: state.sortBy,
         sortOrder: state.sortOrder,
         dateRange: state.dateRange || undefined,
+        balanceRange: state.balanceRange || undefined,
       });
 
       if (result.error) {
@@ -152,7 +155,7 @@ const CustomerList: React.FC = () => {
         loading: false,
       }));
     }
-  }, [companyId, state.currentPage, state.pageSize, debouncedSearchTerm, state.sortBy, state.sortOrder, state.dateRange]);
+  }, [companyId, state.currentPage, state.pageSize, debouncedSearchTerm, state.sortBy, state.sortOrder, state.dateRange, state.balanceRange]);
 
   // Load customers on mount and when filters change
   useEffect(() => {
@@ -172,6 +175,7 @@ const CustomerList: React.FC = () => {
           sortBy: "created_at",
           sortOrder: "desc",
           dateRange: state.dateRange || undefined,
+          balanceRange: state.balanceRange || undefined,
         });
         const all = (result.data || []) as Customer[];
         const total = all.reduce((sum, c) => sum + (Number(c.total_balance) || 0), 0);
@@ -181,7 +185,7 @@ const CustomerList: React.FC = () => {
       }
     };
     fetchAll();
-  }, [companyId, debouncedSearchTerm, state.dateRange]);
+  }, [companyId, debouncedSearchTerm, state.dateRange, state.balanceRange]);
 
   // Handle search
   const handleSearch = useCallback((searchTerm: string) => {
@@ -192,6 +196,14 @@ const CustomerList: React.FC = () => {
   const handleDateRangeChange = useCallback(
     (dateRange: { start: string; end: string } | null) => {
       setState((prev) => ({ ...prev, dateRange, currentPage: 1 }));
+    },
+    [],
+  );
+
+  // Handle balance range filter
+  const handleBalanceRangeChange = useCallback(
+    (balanceRange: { min: number | null; max: number | null } | null) => {
+      setState((prev) => ({ ...prev, balanceRange, currentPage: 1 }));
     },
     [],
   );
@@ -607,6 +619,8 @@ const CustomerList: React.FC = () => {
               <CustomerFilters
                 dateRange={state.dateRange}
                 onDateRangeChange={handleDateRangeChange}
+                balanceRange={state.balanceRange}
+                onBalanceRangeChange={handleBalanceRangeChange}
               />
               <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 overflow-x-auto sm:overflow-visible no-scrollbar">
                 <select

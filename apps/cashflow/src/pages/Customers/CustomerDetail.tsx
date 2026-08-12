@@ -52,7 +52,7 @@ const CustomerDetail: React.FC = () => {
           });
         if (transactionsResult.error) {
           logger.error(
-            "Failed to fetch transactions:",
+            "Không tải được danh sách giao dịch:",
             transactionsResult.error,
           );
         } else {
@@ -60,7 +60,7 @@ const CustomerDetail: React.FC = () => {
         }
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to fetch customer data",
+          err instanceof Error ? err.message : "Không tải được thông tin khách hàng. Vui lòng thử lại.",
         );
       } finally {
         setLoading(false);

@@ -9,13 +9,15 @@ import type { Transaction, TransactionStatus } from "../../types";
 import { useAuthContext as useAuth } from "@superapp/iam";
 import { canApproveTransactions } from "../../utils/permissions";
 import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../utils/formatting";
-import { getCustomerBalanceDelta, parseAmount } from "../../services/businessLogic";
+import { logger } from "../../utils/logger";
+import { getCustomerBalanceDelta, parseAmount, normalizeTransactionType } from "../../services/businessLogic";
 import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import Pagination from "../../components/UI/Pagination";
 import PageHeader from "../../components/UI/PageHeader";
 import Button from "../../components/UI/Button";
 import TransactionEditModal, { type TransactionEditFormValues } from "./components/TransactionEditModal";
+import * as XLSX from "xlsx";
 
 interface TransactionListState {
   transactions: Transaction[];
@@ -38,7 +40,8 @@ interface TransactionListState {
     name: string | null;
   } | null;
   statusFilter: "all" | TransactionStatus;
-  groupBy: "" | "day" | "week" | "month" | "branch" | "transaction_type" | "customer";
+  groupBy: "" | "day" | "week" | "month" | "quarter" | "year" | "branch" | "transaction_type" | "customer";
+  groupTransactions: Transaction[];
 }
 
 interface GroupSummary {
@@ -46,6 +49,7 @@ interface GroupSummary {
   count: number;
   increase: number;
   decrease: number;
+  deposit: number;
   adjustment: number;
   net: number;
 }
@@ -56,6 +60,27 @@ function getISOWeek(date: Date): number {
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
+function getQuarter(date: Date): number {
+  return Math.floor(date.getMonth() / 3) + 1;
+}
+
+// Helpers for local-date handling so date inputs and presets stay in the
+// user's timezone and a single-day range covers 00:00..23:59.
+function toLocalISODate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function startOfLocalDay(dateString: string): Date {
+  return new Date(`${dateString}T00:00:00`);
+}
+
+function endOfLocalDay(dateString: string): Date {
+  return new Date(`${dateString}T23:59:59.999`);
 }
 
 const TransactionList: React.FC = () => {
@@ -93,6 +118,7 @@ const TransactionList: React.FC = () => {
     customerFilter: null,
     statusFilter: "all",
     groupBy: "",
+    groupTransactions: [],
   });
 
   // Debounce search term so API isn't called on every keystroke (300ms delay)
@@ -190,11 +216,55 @@ const TransactionList: React.FC = () => {
     } catch (err) {
       setState((prev) => ({
         ...prev,
-        error: err instanceof Error ? err.message : "Failed to fetch transactions",
+        error: err instanceof Error ? err.message : "Không tải được danh sách giao dịch. Vui lòng thử lại.",
         loading: false,
       }));
     }
   }, [debouncedSearchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, state.currentPage, state.pageSize, companyId]);
+
+  const fetchGroupTransactions = useCallback(async () => {
+    if (!state.groupBy) return;
+
+    try {
+      const filters = {
+        search: debouncedSearchTerm || undefined,
+        dateRange: state.dateRange || undefined,
+        transaction_type: state.transactionType || undefined,
+        customer_id: state.customerFilter?.id || undefined,
+        branch_id: state.branchFilter || undefined,
+        bank_account_id: state.bankAccountFilter || undefined,
+        created_by: state.userFilter || undefined,
+        status: state.statusFilter === "all" ? undefined : state.statusFilter,
+        company_id: companyId,
+        page: 1,
+        pageSize: 1000,
+      };
+
+      const response = await databaseService.transactions.getTransactions(filters);
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      setState((prev) => ({
+        ...prev,
+        groupTransactions: response.data || [],
+      }));
+    } catch (err) {
+      // Group summary is best-effort; don't block the main list on errors.
+      setState((prev) => ({
+        ...prev,
+        groupTransactions: [],
+      }));
+    }
+  }, [debouncedSearchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, state.groupBy, companyId]);
+
+  // Refetch unpaginated transactions for the group summary whenever the
+  // visible transaction list changes (filters, pagination, mutations) or the
+  // grouping mode changes.
+  useEffect(() => {
+    fetchGroupTransactions();
+  }, [fetchGroupTransactions, state.transactions, state.groupBy]);
 
   const userMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -366,15 +436,15 @@ const TransactionList: React.FC = () => {
       dateRange: { start: start.toISOString(), end: end.toISOString() },
       currentPage: 1,
     }));
-    setCustomStart(start.toISOString().slice(0, 10));
-    setCustomEnd(end.toISOString().slice(0, 10));
+    setCustomStart(toLocalISODate(start));
+    setCustomEnd(toLocalISODate(end));
     setShowDateMenu(false);
   };
 
   const applyCustomDateRange = () => {
     if (!customStart || !customEnd) return;
-    const start = new Date(customStart);
-    const end = new Date(customEnd);
+    const start = startOfLocalDay(customStart);
+    const end = endOfLocalDay(customEnd);
     if (start > end) return;
     setState((prev) => ({
       ...prev,
@@ -382,6 +452,12 @@ const TransactionList: React.FC = () => {
       currentPage: 1,
     }));
     setShowDateMenu(false);
+  };
+
+  const clearDateRange = () => {
+    setCustomStart("");
+    setCustomEnd("");
+    setState((prev) => ({ ...prev, dateRange: null, currentPage: 1 }));
   };
 
   const handleBranchChange = (branchId: string) => {
@@ -394,6 +470,19 @@ const TransactionList: React.FC = () => {
 
   const handleUserChange = (userId: string) => {
     setState((prev) => ({ ...prev, userFilter: userId || null, currentPage: 1 }));
+  };
+
+  const handleCustomerChange = (customerId: string) => {
+    if (!customerId) {
+      setState((prev) => ({ ...prev, customerFilter: null, currentPage: 1 }));
+      return;
+    }
+    const selected = customers.find((c) => c.id === customerId);
+    setState((prev) => ({
+      ...prev,
+      customerFilter: { id: customerId, name: selected?.name || prev.customerFilter?.name || null },
+      currentPage: 1,
+    }));
   };
 
   const handleGroupByChange = (groupBy: TransactionListState["groupBy"]) => {
@@ -484,6 +573,101 @@ const TransactionList: React.FC = () => {
     );
   };
 
+  const getStatusLabel = (status?: string) => {
+    switch (status) {
+      case "draft":
+        return "Nháp";
+      case "pending":
+        return "Chờ duyệt";
+      case "rejected":
+        return "Từ chối";
+      case "completed":
+        return "Hoàn thành";
+      default:
+        return status || "—";
+    }
+  };
+
+  const handleExportExcel = useCallback(async () => {
+    try {
+      const filters = {
+        search: debouncedSearchTerm || undefined,
+        dateRange: state.dateRange || undefined,
+        transaction_type: state.transactionType || undefined,
+        customer_id: state.customerFilter?.id || undefined,
+        branch_id: state.branchFilter || undefined,
+        bank_account_id: state.bankAccountFilter || undefined,
+        created_by: state.userFilter || undefined,
+        status: state.statusFilter === "all" ? undefined : state.statusFilter,
+        company_id: companyId,
+        page: 1,
+        pageSize: 1000,
+      };
+
+      const response = await databaseService.transactions.getTransactions(filters);
+      if (response.error) throw new Error(response.error);
+
+      const rows = (response.data || []).map((transaction) => {
+        const row: Record<string, unknown> = {};
+        COLUMN_OPTIONS.forEach((col) => {
+          if (col.key === "actions") return;
+          if (!col.always && !visibleColumns[col.key]) return;
+
+          switch (col.key) {
+            case "date":
+              row[col.label] = formatDate(transaction.transaction_date);
+              break;
+            case "customer": {
+              const name = getCustomerName(transaction);
+              const code = getCustomerCode(transaction.customer_id);
+              row[col.label] = code ? `${name} (${code})` : name;
+              break;
+            }
+            case "type":
+              row[col.label] = getTransactionTypeName(transaction.transaction_type);
+              break;
+            case "amount":
+              row[col.label] = parseAmount(transaction.amount) || 0;
+              break;
+            case "branch":
+              row[col.label] = transaction.branch_name || "—";
+              break;
+            case "bank":
+              row[col.label] = transaction.bank_account_name || (transaction.bank_account_id ? `#${transaction.bank_account_id}` : "Không có tài khoản");
+              break;
+            case "creator":
+              row[col.label] = userMap.get(transaction.created_by || "") || transaction.creator_name || transaction.created_by || "—";
+              break;
+            case "code":
+              row[col.label] = transaction.transaction_code;
+              break;
+            case "status":
+              row[col.label] = getStatusLabel(transaction.status);
+              break;
+            default:
+              row[col.label] = "";
+          }
+        });
+        return row;
+      });
+
+      const headers: string[] = [];
+      COLUMN_OPTIONS.forEach((col) => {
+        if (col.key === "actions") return;
+        if (!col.always && !visibleColumns[col.key]) return;
+        headers.push(col.label);
+      });
+      const dataRows = rows.map((row) => headers.map((h) => (row[h] === undefined || row[h] === null ? "" : row[h])));
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Danh sách giao dịch");
+      XLSX.writeFile(wb, "danh-sach-giao-dich.xlsx");
+    } catch (err) {
+      logger.error("Export transactions failed:", err);
+      toast.error("Xuất Excel thất bại: " + (err instanceof Error ? err.message : "Lỗi không xác định"));
+    }
+  }, [debouncedSearchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, companyId, visibleColumns, getTransactionTypeName, customers, userMap, t]);
+
   const hasCustomerFilter = Boolean(state.customerFilter?.id);
 
   const paginationInfo = useMemo(() => {
@@ -508,14 +692,14 @@ const TransactionList: React.FC = () => {
   const groupedData = useMemo(() => {
     if (!state.groupBy) return null;
 
-    return state.transactions.reduce<Record<string, GroupSummary>>((acc, tx) => {
+    return state.groupTransactions.reduce<Record<string, GroupSummary>>((acc, tx) => {
       const d = new Date(tx.transaction_date);
       let key = "";
       let label = "";
 
       switch (state.groupBy) {
         case "day": {
-          const iso = d.toISOString().slice(0, 10);
+          const iso = toLocalISODate(d);
           key = `day:${iso}`;
           label = formatDate(tx.transaction_date);
           break;
@@ -532,6 +716,19 @@ const TransactionList: React.FC = () => {
           const month = d.getMonth() + 1;
           key = `month:${year}-${String(month).padStart(2, "0")}`;
           label = `Tháng ${month}/${year}`;
+          break;
+        }
+        case "quarter": {
+          const year = d.getFullYear();
+          const quarter = getQuarter(d);
+          key = `quarter:${year}-Q${quarter}`;
+          label = `Quý ${quarter}/${year}`;
+          break;
+        }
+        case "year": {
+          const year = d.getFullYear();
+          key = `year:${year}`;
+          label = `Năm ${year}`;
           break;
         }
         case "branch": {
@@ -558,12 +755,15 @@ const TransactionList: React.FC = () => {
       }
 
       if (!acc[key]) {
-        acc[key] = { label, count: 0, increase: 0, decrease: 0, adjustment: 0, net: 0 };
+        acc[key] = { label, count: 0, increase: 0, decrease: 0, deposit: 0, adjustment: 0, net: 0 };
       }
 
       const delta = getCustomerBalanceDelta(tx.transaction_type, tx.amount, getMathFactor(tx.transaction_type));
-      if (tx.transaction_type === "adjustment") {
+      const canonicalType = normalizeTransactionType(tx.transaction_type);
+      if (canonicalType === "adjustment") {
         acc[key].adjustment += delta;
+      } else if (canonicalType === "deposit") {
+        acc[key].deposit += Math.abs(delta);
       } else if (delta > 0) {
         acc[key].increase += Math.abs(delta);
       } else if (delta < 0) {
@@ -574,14 +774,28 @@ const TransactionList: React.FC = () => {
 
       return acc;
     }, {});
-  }, [state.groupBy, state.transactions, getBranchName, customers, getTransactionTypeName, getMathFactor]);
+  }, [state.groupBy, state.groupTransactions, getBranchName, customers, getTransactionTypeName, getMathFactor]);
+
+  const filteredGroupedEntries = useMemo(() => {
+    if (!groupedData) return [];
+
+    return Object.entries(groupedData).sort(([keyA, a], [keyB, b]) => {
+      if (state.groupBy === "day" || state.groupBy === "week" || state.groupBy === "month" || state.groupBy === "quarter" || state.groupBy === "year") {
+        return keyA.localeCompare(keyB);
+      }
+      return a.label.localeCompare(b.label);
+    });
+  }, [groupedData, state.groupBy]);
 
   const timeLabel = useMemo(() => {
     if (!state.dateRange) return "Tất cả thời gian";
     const start = new Date(state.dateRange.start);
     const end = new Date(state.dateRange.end);
     const formatter = (d: Date) => d.toLocaleDateString("vi-VN");
-    const days = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    // Normalize to local midnight to compare whole calendar days.
+    const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+    const days = Math.round((endDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24));
     if (days === 0) return "Hôm nay";
     if (days === 6) return "Tuần này";
     return `${formatter(start)} - ${formatter(end)}`;
@@ -593,8 +807,8 @@ const TransactionList: React.FC = () => {
       setCustomEnd("");
       return;
     }
-    setCustomStart(state.dateRange.start.slice(0, 10));
-    setCustomEnd(state.dateRange.end.slice(0, 10));
+    setCustomStart(toLocalISODate(new Date(state.dateRange.start)));
+    setCustomEnd(toLocalISODate(new Date(state.dateRange.end)));
   }, [state.dateRange]);
 
   if (state.loading || !colorsReady) {
@@ -628,6 +842,13 @@ const TransactionList: React.FC = () => {
                   onClick={() => fetchTransactions()}
                 >
                   Làm mới
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={handleExportExcel}
+                >
+                  Xuất Excel
                 </Button>
                 <Button
                   variant="secondary"
@@ -799,6 +1020,20 @@ const TransactionList: React.FC = () => {
 
               <select
                 className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+                value={state.customerFilter?.id || ""}
+                onChange={(e) => handleCustomerChange(e.target.value)}
+              >
+                <option value="">Tất cả khách hàng</option>
+                {state.customerFilter?.id && !customers.some((c) => c.id === state.customerFilter?.id) && (
+                  <option value={state.customerFilter.id}>{state.customerFilter.name || state.customerFilter.id}</option>
+                )}
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+
+              <select
+                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
                 value={state.groupBy}
                 onChange={(e) => handleGroupByChange(e.target.value as TransactionListState["groupBy"])}
               >
@@ -806,6 +1041,8 @@ const TransactionList: React.FC = () => {
                 <option value="day">Ngày</option>
                 <option value="week">Tuần</option>
                 <option value="month">Tháng</option>
+                <option value="quarter">Quý</option>
+                <option value="year">Năm</option>
                 <option value="branch">Văn phòng</option>
                 <option value="transaction_type">Loại giao dịch</option>
                 <option value="customer">Khách hàng</option>
@@ -891,9 +1128,44 @@ const TransactionList: React.FC = () => {
           <div className="hidden sm:block">
             {groupedData && (
               <div className="mb-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">Tổng hợp theo nhóm</h3>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{Object.keys(groupedData).length} nhóm</span>
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center justify-between sm:justify-start gap-3">
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">Tổng hợp theo nhóm</h3>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{filteredGroupedEntries.length} nhóm</span>
+                  </div>
+                  {(state.groupBy === "day" || state.groupBy === "week" || state.groupBy === "month" || state.groupBy === "quarter" || state.groupBy === "year") && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="date"
+                        value={customStart}
+                        onChange={(e) => setCustomStart(e.target.value)}
+                        className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1 text-xs"
+                      />
+                      <span className="text-xs text-gray-500">-</span>
+                      <input
+                        type="date"
+                        value={customEnd}
+                        onChange={(e) => setCustomEnd(e.target.value)}
+                        className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1 text-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={applyCustomDateRange}
+                        className="px-2 py-1 rounded-md text-xs bg-blue-600 text-white"
+                      >
+                        Lọc
+                      </button>
+                      {state.dateRange && (
+                        <button
+                          type="button"
+                          onClick={clearDateRange}
+                          className="px-2 py-1 rounded-md text-xs border border-gray-300 dark:border-gray-600"
+                        >
+                          Xóa
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -903,24 +1175,19 @@ const TransactionList: React.FC = () => {
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Số giao dịch</th>
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng phát sinh tăng</th>
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng phát sinh giảm</th>
+                        <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng đặt cọc</th>
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng điều chỉnh</th>
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Net</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {Object.entries(groupedData)
-                        .sort(([keyA, a], [keyB, b]) => {
-                          if (state.groupBy === "day" || state.groupBy === "week" || state.groupBy === "month") {
-                            return keyA.localeCompare(keyB);
-                          }
-                          return a.label.localeCompare(b.label);
-                        })
-                        .map(([key, data]) => (
+                      {filteredGroupedEntries.map(([key, data]) => (
                           <tr key={key} className="hover:bg-gray-50 dark:hover:bg-gray-700/60">
                             <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">{data.label}</td>
                             <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm text-gray-700 dark:text-gray-200">{data.count}</td>
                             <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold text-red-600 dark:text-red-400">{formatCurrency(data.increase)}</td>
                             <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold text-green-600 dark:text-green-400">{formatCurrency(data.decrease)}</td>
+                            <td className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${data.deposit > 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.deposit)}</td>
                             <td className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${data.adjustment > 0 ? "text-red-600 dark:text-red-400" : data.adjustment < 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.adjustment)}</td>
                             <td className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${data.net > 0 ? "text-red-600 dark:text-red-400" : data.net < 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.net)}</td>
                           </tr>
@@ -1103,6 +1370,81 @@ const TransactionList: React.FC = () => {
               </table>
             </div>
         </div>
+
+        {/* Mobile group summary */}
+        {groupedData && (
+          <div className="sm:hidden mb-4 space-y-3">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-lg border-t border-l border-r dark:border-gray-700 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Tổng hợp theo nhóm</h3>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{filteredGroupedEntries.length} nhóm</span>
+              </div>
+              {(state.groupBy === "day" || state.groupBy === "week" || state.groupBy === "month" || state.groupBy === "quarter" || state.groupBy === "year") && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="date"
+                    value={customStart}
+                    onChange={(e) => setCustomStart(e.target.value)}
+                    className="flex-1 min-w-[110px] rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1 text-xs"
+                  />
+                  <span className="text-xs text-gray-500">-</span>
+                  <input
+                    type="date"
+                    value={customEnd}
+                    onChange={(e) => setCustomEnd(e.target.value)}
+                    className="flex-1 min-w-[110px] rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1 text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={applyCustomDateRange}
+                    className="px-2 py-1 rounded-md text-xs bg-blue-600 text-white"
+                  >
+                    Lọc
+                  </button>
+                  {state.dateRange && (
+                    <button
+                      type="button"
+                      onClick={clearDateRange}
+                      className="px-2 py-1 rounded-md text-xs border border-gray-300 dark:border-gray-600"
+                    >
+                      Xóa
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            {filteredGroupedEntries.map(([key, data]) => (
+                <div key={key} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{data.label}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{data.count} giao dịch</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Tăng</span>
+                      <span className="font-semibold text-red-600 dark:text-red-400">{formatCurrency(data.increase)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Giảm</span>
+                      <span className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(data.decrease)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Cọc</span>
+                      <span className={`font-semibold ${data.deposit > 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.deposit)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Điều chỉnh</span>
+                      <span className={`font-semibold ${data.adjustment > 0 ? "text-red-600 dark:text-red-400" : data.adjustment < 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.adjustment)}</span>
+                    </div>
+                    <div className="col-span-2 flex justify-between pt-1 border-t border-gray-100 dark:border-gray-700">
+                      <span className="text-gray-500 dark:text-gray-400">Net</span>
+                      <span className={`font-semibold ${data.net > 0 ? "text-red-600 dark:text-red-400" : data.net < 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.net)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
 
         {/* Mobile card list */}
         <div className="sm:hidden space-y-3">
