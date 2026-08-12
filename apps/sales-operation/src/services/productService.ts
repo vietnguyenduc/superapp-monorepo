@@ -1,4 +1,4 @@
-import { supabase, getCurrentUserId , apiClient} from "../lib/supabase";
+import { getCurrentCompanyId, getCurrentUserId, apiClient } from "../lib/supabase";
 import { Product } from '../types';
 import { fallbackService } from './fallbackService';
 import { BaseService, ServiceResponse } from './baseService';
@@ -12,11 +12,13 @@ export class ProductService extends BaseService {
   }): Promise<ServiceResponse<Product[]>> {
     return this.execute(
       async () => {
+        const companyId = await getCurrentCompanyId();
         let query = apiClient.from('products').select('*').order('name');
+        if (companyId) query = query.eq('company_id', companyId);
         if (filters?.category) query = query.eq('category', filters.category);
         if (filters?.status) query = query.eq('status', filters.status);
         if (filters?.search) query = query.or(`name.ilike.%${filters.search}%,business_code.ilike.%${filters.search}%`);
-        
+
         const res = await query;
         if (res.data) res.data = res.data.map(item => ProductMapper.mapDbToProduct(item));
         return res;
@@ -28,7 +30,10 @@ export class ProductService extends BaseService {
   static async getProduct(id: string): Promise<ServiceResponse<Product>> {
     return this.execute(
       async () => {
-        const res = await apiClient.from('products').select('*').eq('id', id).single();
+        const companyId = await getCurrentCompanyId();
+        let query = apiClient.from('products').select('*').eq('id', id);
+        if (companyId) query = query.eq('company_id', companyId);
+        const res = await query.single();
         if (res.data) res.data = ProductMapper.mapDbToProduct(res.data);
         return res;
       },
@@ -40,7 +45,9 @@ export class ProductService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
+        const companyId = await getCurrentCompanyId();
         const row = ProductMapper.mapProductToDb({ ...product, createdBy: userId, updatedBy: userId });
+        if (companyId) row.company_id = companyId;
         const res = await apiClient.from('products').insert([row]).select('*').single();
         if (res.data) res.data = ProductMapper.mapDbToProduct(res.data);
         return res;
@@ -53,8 +60,11 @@ export class ProductService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
+        const companyId = await getCurrentCompanyId();
         const row = ProductMapper.mapProductToDb({ ...updates, updatedBy: userId, updatedAt: new Date() });
-        const res = await apiClient.from('products').update(row).eq('id', id).select('*').single();
+        let query = apiClient.from('products').update(row).eq('id', id);
+        if (companyId) query = query.eq('company_id', companyId);
+        const res = await query.select('*').single();
         if (res.data) res.data = ProductMapper.mapDbToProduct(res.data);
         return res;
       },
@@ -65,7 +75,10 @@ export class ProductService extends BaseService {
   static async deleteProduct(id: string): Promise<ServiceResponse<boolean>> {
     return this.execute(
       async () => {
-        const { error } = await apiClient.from('products').delete().eq('id', id);
+        const companyId = await getCurrentCompanyId();
+        let query = apiClient.from('products').delete().eq('id', id);
+        if (companyId) query = query.eq('company_id', companyId);
+        const { error } = await query;
         return { data: !error, error };
       },
       () => fallbackService.deleteProduct(id)
@@ -80,7 +93,12 @@ export class ProductService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const rows = products.map(p => ProductMapper.mapProductToDb({ ...p, createdBy: userId, updatedBy: userId }));
+        const companyId = await getCurrentCompanyId();
+        const rows = products.map(p => {
+          const row = ProductMapper.mapProductToDb({ ...p, createdBy: userId, updatedBy: userId });
+          if (companyId) row.company_id = companyId;
+          return row;
+        });
         const res = await apiClient.from('products').insert(rows).select('*');
         if (res.data) res.data = res.data.map(item => ProductMapper.mapDbToProduct(item));
         return res;
@@ -100,7 +118,12 @@ export class ProductService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const rows = products.map(p => ProductMapper.mapProductToDb({ ...p, createdBy: userId, updatedBy: userId }));
+        const companyId = await getCurrentCompanyId();
+        const rows = products.map(p => {
+          const row = ProductMapper.mapProductToDb({ ...p, createdBy: userId, updatedBy: userId });
+          if (companyId) row.company_id = companyId;
+          return row;
+        });
         const res = await apiClient.from('products').insert(rows).select('*');
         if (res.data) res.data = res.data.map(item => ProductMapper.mapDbToProduct(item));
         return res;

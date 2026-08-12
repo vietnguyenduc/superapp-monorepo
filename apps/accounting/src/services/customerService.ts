@@ -75,11 +75,11 @@ export class CustomerService extends BaseService {
         if (companyId) query = query.eq("company_id", companyId);
         
         const { data: customer, error } = await query.single();
-        if (error || !customer) return { data: null, error: error || { message: "Customer not found" } };
+        if (error || !customer) return { data: null, error: error || { message: "Không tìm thấy khách hàng" } };
         
         let updatedByEmail = null;
         if (customer.updated_by) {
-          const { data: userData } = await apiClient.from("users").select("email").eq("id", customer.updated_by).single();
+          const { data: userData } = await apiClient.from("users").select("email").eq("id", customer.updated_by).maybeSingle();
           updatedByEmail = userData?.email || null;
         }
         
@@ -120,7 +120,7 @@ export class CustomerService extends BaseService {
       async () => {
         const customers = trialGet("customers") || [];
         const customer = customers.find((c: any) => c.id === id && (!companyId || c.company_id === companyId));
-        if (!customer) return { data: null, error: { message: "Customer not found" } };
+        if (!customer) return { data: null, error: { message: "Không tìm thấy khách hàng" } };
         
         const transactions = trialGet("transactions") || [];
         const txData = transactions.filter((t: any) => t.customer_id === id);
@@ -171,7 +171,7 @@ export class CustomerService extends BaseService {
           if (transformed.company_id) checkQ = checkQ.eq("company_id", transformed.company_id);
           const { data: existing } = await checkQ;
           if (existing && existing.length > 0) {
-            return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
+            return { data: null, error: { message: `Mã khách hàng "${proposedCode}" đã tồn tại. Vui lòng chọn mã khác.` } };
           }
         }
         
@@ -188,7 +188,7 @@ export class CustomerService extends BaseService {
         if (proposedCode) {
           const existing = (trialGet("customers") || []).find((c: any) => c.customer_code === proposedCode && c.company_id === transformed.company_id);
           if (existing) {
-            return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
+            return { data: null, error: { message: `Mã khách hàng "${proposedCode}" đã tồn tại. Vui lòng chọn mã khác.` } };
           }
         }
         
@@ -212,7 +212,7 @@ export class CustomerService extends BaseService {
           if (transformed.company_id) checkQ = checkQ.eq("company_id", transformed.company_id);
           const { data: existing } = await checkQ;
           if (existing && existing.length > 0) {
-            return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
+            return { data: null, error: { message: `Mã khách hàng "${proposedCode}" đã tồn tại. Vui lòng chọn mã khác.` } };
           }
         }
         
@@ -229,7 +229,7 @@ export class CustomerService extends BaseService {
         if (proposedCode) {
           const existing = (trialGet("customers") || []).find((c: any) => c.id !== id && c.customer_code === proposedCode && c.company_id === transformed.company_id);
           if (existing) {
-            return { data: null, error: { message: `Customer with code "${proposedCode}" already exists` } };
+            return { data: null, error: { message: `Mã khách hàng "${proposedCode}" đã tồn tại. Vui lòng chọn mã khác.` } };
           }
         }
         
@@ -258,7 +258,7 @@ export class CustomerService extends BaseService {
         let q = apiClient.from("customers").select("*").eq("id", customerId);
         if (companyId) q = q.eq("company_id", companyId);
         const { data: existing, error: fetchErr } = await q.single();
-        if (fetchErr || !existing) return { data: null, error: fetchErr || { message: "Customer not found" } };
+        if (fetchErr || !existing) return { data: null, error: fetchErr || { message: "Không tìm thấy khách hàng" } };
         
         const oldOpening = Number(existing.opening_balance || 0);
         const oldCurrent = Number(existing.current_balance || 0);
@@ -276,7 +276,7 @@ export class CustomerService extends BaseService {
       async () => {
         const customers = trialGet("customers") || [];
         const existing = customers.find((c: any) => c.id === customerId && (!companyId || c.company_id === companyId));
-        if (!existing) return { data: null, error: { message: "Customer not found" } };
+        if (!existing) return { data: null, error: { message: "Không tìm thấy khách hàng" } };
         
         const oldOpening = Number(existing.opening_balance || 0);
         const oldCurrent = Number(existing.current_balance || 0);
@@ -303,10 +303,10 @@ export class CustomerService extends BaseService {
           const row = rows[i];
           const code = String(row.customer_code || "").trim();
           const opening = Number(row.opening_balance);
-          if (!code) { errors.push({ row: i, message: "Missing customer_code" }); continue; }
+          if (!code) { errors.push({ row: i, message: "Thiếu mã khách hàng" }); continue; }
           
-          const { data: customer } = await apiClient.from("customers").select("*").eq("customer_code", code).single();
-          if (!customer) { errors.push({ row: i, message: "Customer not found" }); continue; }
+          const { data: customer } = await apiClient.from("customers").select("*").eq("customer_code", code).maybeSingle();
+          if (!customer) { errors.push({ row: i, message: "Không tìm thấy khách hàng" }); continue; }
           
           await apiClient.from("customers").update({
             opening_balance: opening,
@@ -326,10 +326,10 @@ export class CustomerService extends BaseService {
           const row = rows[i];
           const code = String(row.customer_code || "").trim();
           const opening = Number(row.opening_balance);
-          if (!code) { errors.push({ row: i, message: "Missing customer_code" }); continue; }
+          if (!code) { errors.push({ row: i, message: "Thiếu mã khách hàng" }); continue; }
           
           const customer = customers.find((c: any) => c.customer_code === code);
-          if (!customer) { errors.push({ row: i, message: "Customer not found" }); continue; }
+          if (!customer) { errors.push({ row: i, message: "Không tìm thấy khách hàng" }); continue; }
           
           trialUpdate("customers", customer.id, {
             opening_balance: opening,

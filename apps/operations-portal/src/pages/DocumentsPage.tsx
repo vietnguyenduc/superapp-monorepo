@@ -58,7 +58,7 @@ const DocumentsPage = () => {
         .from(TABLES.USERS)
         .select('company_id')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       
       const companyId = userRecord?.company_id;
       if (!companyId) throw new Error('Không tìm thấy công ty của bạn');

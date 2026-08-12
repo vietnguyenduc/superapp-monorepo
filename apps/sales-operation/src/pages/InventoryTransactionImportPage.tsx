@@ -8,6 +8,7 @@ import { useProducts } from '../hooks/useProducts';
 import appSettingsService from '../services/appSettingsService';
 import { UserRole } from '../types/UserRole';
 import { InventoryRecord } from '../types';
+import { parseDateOrNow } from '@superapp/shared-utils';
 
 type ImportTab = 'single' | 'multiple' | 'bulk';
 type ViewRole = 'warehouse_keeper' | 'warehouse_accountant';
@@ -390,7 +391,7 @@ const InventoryTransactionImportPage: React.FC = () => {
       
       const result = await createRecord({
         productCode: row.productCode, productName: row.productName || '',
-        date: new Date(row.date), inputQuantity: Number(row.inputQuantity) || 0,
+        date: parseDateOrNow(row.date), inputQuantity: Number(row.inputQuantity) || 0,
         unitPrice: Number(row.unitPrice) || 0,
         rawMaterialStock: Number(row.rawMaterialStock) || 0, rawMaterialUnit: '',
         processedStock: Number(row.processedStock) || 0, processedUnit: '',
@@ -434,7 +435,7 @@ const InventoryTransactionImportPage: React.FC = () => {
       
       const result = await createRecord({
         productCode: row.productCode, productName: row.productName || '',
-        date: new Date(row.date || Date.now()), inputQuantity: Number(row.inputQuantity) || 0,
+        date: parseDateOrNow(row.date), inputQuantity: Number(row.inputQuantity) || 0,
         unitPrice: Number(row.unitPrice) || 0,
         rawMaterialStock: Number(row.rawMaterialStock) || 0, rawMaterialUnit: '',
         processedStock: Number(row.processedStock) || 0, processedUnit: '',

@@ -8,11 +8,11 @@ export const APP_SUPABASE_SCHEMA = "public" as const;
 
 // Validate environment variables
 if (!supabaseUrl) {
-  throw new Error("Missing VITE_SUPABASE_URL environment variable");
+  throw new Error("Thiếu biến môi trường VITE_SUPABASE_URL. Vui lòng kiểm tra cấu hình.");
 }
 
 if (!supabaseAnonKey) {
-  throw new Error("Missing VITE_SUPABASE_ANON_KEY environment variable");
+  throw new Error("Thiếu biến môi trường VITE_SUPABASE_ANON_KEY. Vui lòng kiểm tra cấu hình.");
 }
 
 // Create Supabase client with enhanced JWT configuration and type safety

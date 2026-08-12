@@ -100,7 +100,7 @@ const ChatPage = () => {
             .from(TABLES.USERS)
             .select('full_name')
             .eq('id', payload.new.user_id)
-            .single();
+            .maybeSingle();
 
           const newMessage = {
             ...payload.new,
@@ -147,7 +147,8 @@ const ChatPage = () => {
         .from(TABLES.USERS)
         .select('company_id')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
+      if (!userRecord?.company_id) throw new Error('Không tìm thấy công ty của bạn');
       
       const companyId = userRecord?.company_id;
 
@@ -159,7 +160,7 @@ const ChatPage = () => {
           created_by: userId
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 

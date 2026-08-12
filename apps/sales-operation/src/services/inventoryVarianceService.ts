@@ -1,3 +1,4 @@
+import { getCurrentCompanyId } from '../lib/supabase';
 import { supabase } from '../config/supabase';
 import { mockInventoryVarianceService } from './mockService';
 import { 
@@ -23,10 +24,13 @@ export const inventoryVarianceService = {
     }
     
     try {
+      const companyId = await getCurrentCompanyId();
       let query = supabase
         .from('inventory_variance_reports')
         .select('*')
         .order('date', { ascending: false });
+
+      if (companyId) query = query.eq('company_id', companyId);
 
       if (filters?.search) {
         query = query.or(`notes.ilike.%${filters.search}%`);
@@ -78,11 +82,13 @@ export const inventoryVarianceService = {
         return mockInventoryVarianceService.getReportById(id);
       }
 
-      const { data, error } = await supabase
+      const companyId = await getCurrentCompanyId();
+      let query = supabase
         .from('inventory_variance_reports')
         .select('*')
-        .eq('id', id)
-        .single();
+        .eq('id', id);
+      if (companyId) query = query.eq('company_id', companyId);
+      const { data, error } = await query.maybeSingle();
 
       if (error) {
         console.error('Error fetching report:', error);
@@ -104,17 +110,21 @@ export const inventoryVarianceService = {
         return mockInventoryVarianceService.createReport(reportData);
       }
 
+      const companyId = await getCurrentCompanyId();
+      const payload: any = { ...reportData };
+      if (companyId) payload.company_id = companyId;
       const { data, error } = await supabase
         .from('inventory_variance_reports')
-        .insert([reportData])
+        .insert([payload])
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error creating report:', error);
         throw new Error(`Lỗi tạo báo cáo: ${error.message}`);
       }
 
+      if (!data) throw new Error('Không thể tạo báo cáo');
       return data;
     } catch (error) {
       console.error('Service error:', error);
@@ -130,21 +140,25 @@ export const inventoryVarianceService = {
         return mockInventoryVarianceService.updateReport(id, updates);
       }
 
-      const { data, error } = await supabase
+      const companyId = await getCurrentCompanyId();
+      let query = supabase
         .from('inventory_variance_reports')
         .update({
           ...updates,
           updated_at: new Date().toISOString()
         })
-        .eq('id', id)
+        .eq('id', id);
+      if (companyId) query = query.eq('company_id', companyId);
+      const { data, error } = await query
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error updating report:', error);
         throw new Error(`Lỗi cập nhật báo cáo: ${error.message}`);
       }
 
+      if (!data) throw new Error('Không tìm thấy báo cáo để cập nhật');
       return data;
     } catch (error) {
       console.error('Service error:', error);
@@ -160,10 +174,13 @@ export const inventoryVarianceService = {
         return mockInventoryVarianceService.deleteReport(id);
       }
 
-      const { error } = await supabase
+      const companyId = await getCurrentCompanyId();
+      let query = supabase
         .from('inventory_variance_reports')
         .delete()
         .eq('id', id);
+      if (companyId) query = query.eq('company_id', companyId);
+      const { error } = await query;
 
       if (error) {
         console.error('Error deleting report:', error);
@@ -187,9 +204,12 @@ export const inventoryVarianceService = {
         return mockInventoryVarianceService.getReportStats(filters);
       }
 
+      const companyId = await getCurrentCompanyId();
       let query = supabase
         .from('inventory_variance_reports')
         .select('*');
+
+      if (companyId) query = query.eq('company_id', companyId);
 
       if (filters?.date_from) {
         query = query.gte('date', filters.date_from);
@@ -241,11 +261,14 @@ export const inventoryVarianceService = {
         return mockInventoryVarianceService.getVarianceAlerts(threshold);
       }
 
-      const { data, error } = await supabase
+      const companyId = await getCurrentCompanyId();
+      let query = supabase
         .from('inventory_variance_reports')
         .select('*')
-        .or(`variance_percentage.gte.${threshold},variance_percentage.lte.-${threshold}`)
         .order('variance_percentage', { ascending: false });
+      if (companyId) query = query.eq('company_id', companyId);
+      const { data, error } = await query
+        .or(`variance_percentage.gte.${threshold},variance_percentage.lte.-${threshold}`);
 
       if (error) {
         console.error('Error fetching variance alerts:', error);

@@ -76,7 +76,7 @@ export const supabase = new Proxy(rawSupabase, {
             if (p === 'then') {
               return (onfulfilled: any) => Promise.resolve(onfulfilled({ 
                 data: null, 
-                error: { message: 'Supabase calls are disabled in Trial Mode', code: 'TRIAL_MODE_BLOCKED' },
+                error: { message: 'Không thể gọi Supabase trong chế độ thử nghiệm.', code: 'TRIAL_MODE_BLOCKED' },
                 count: 0
               }));
             }

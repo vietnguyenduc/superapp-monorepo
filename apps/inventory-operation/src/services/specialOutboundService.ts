@@ -1,4 +1,4 @@
-import { supabase, getCurrentUserId , apiClient} from "../lib/supabase";
+import { getCurrentCompanyId, getCurrentUserId, supabase, apiClient } from "../lib/supabase";
 import { SpecialOutboundRecord, ApprovalLog } from '../types';
 import { BaseService, ServiceResponse } from './baseService';
 
@@ -6,11 +6,14 @@ export class SpecialOutboundService extends BaseService {
   static async getAllRecords(): Promise<ServiceResponse<SpecialOutboundRecord[]>> {
     return this.execute(
       async () => {
-        const { data, error } = await supabase
+        const companyId = await getCurrentCompanyId();
+        let query = supabase
           .from('special_outbound_records')
           .select('*, product:products(id, name, business_code, category, input_unit, output_unit, business_status)')
           .order('date', { ascending: false })
           .order('created_at', { ascending: false });
+        if (companyId) query = query.eq('company_id', companyId);
+        const { data, error } = await query;
         return { data, error };
       },
       async () => ({ success: true, data: [], error: null })
@@ -20,11 +23,14 @@ export class SpecialOutboundService extends BaseService {
   static async getRecordsByStatus(status: string): Promise<ServiceResponse<SpecialOutboundRecord[]>> {
     return this.execute(
       async () => {
-        const { data, error } = await supabase
+        const companyId = await getCurrentCompanyId();
+        let query = supabase
           .from('special_outbound_records')
           .select('*, product:products(id, name, business_code, category, input_unit, output_unit, business_status)')
           .eq('approval_status', status)
           .order('date', { ascending: false });
+        if (companyId) query = query.eq('company_id', companyId);
+        const { data, error } = await query;
         return { data, error };
       },
       async () => ({ success: true, data: [], error: null })
@@ -35,12 +41,14 @@ export class SpecialOutboundService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const newRecord = { ...recordData, approval_status: 'pending', created_by: userId, updated_by: userId };
+        const companyId = await getCurrentCompanyId();
+        const newRecord: any = { ...recordData, approval_status: 'pending', created_by: userId, updated_by: userId };
+        if (companyId) newRecord.company_id = companyId;
         const { data, error } = await supabase
           .from('special_outbound_records')
           .insert([newRecord])
           .select('*, product:products(id, name, business_code, category, input_unit, output_unit, business_status)')
-          .single();
+          .maybeSingle();
 
         if (data) {
           await this.createApprovalLog({
@@ -64,12 +72,15 @@ export class SpecialOutboundService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const { data, error } = await supabase
+        const companyId = await getCurrentCompanyId();
+        let query = supabase
           .from('special_outbound_records')
           .update({ ...updates, updated_by: userId, updated_at: new Date().toISOString() })
-          .eq('id', id)
+          .eq('id', id);
+        if (companyId) query = query.eq('company_id', companyId);
+        const { data, error } = await query
           .select('*, product:products(id, name, business_code, category, input_unit, output_unit, business_status)')
-          .single();
+          .maybeSingle();
 
         if (data) {
           await this.createApprovalLog({
@@ -89,8 +100,11 @@ export class SpecialOutboundService extends BaseService {
   static async deleteRecord(id: string): Promise<ServiceResponse<boolean>> {
     return this.execute(
       async () => {
+        const companyId = await getCurrentCompanyId();
         await apiClient.from('approval_logs').delete().eq('record_id', id);
-        const { error } = await apiClient.from('special_outbound_records').delete().eq('id', id);
+        let query = apiClient.from('special_outbound_records').delete().eq('id', id);
+        if (companyId) query = query.eq('company_id', companyId);
+        const { error } = await query;
         return { data: !error, error };
       },
       async () => ({ success: true, data: true, error: null })
@@ -101,10 +115,13 @@ export class SpecialOutboundService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const { error } = await supabase
+        const companyId = await getCurrentCompanyId();
+        let query = supabase
           .from('special_outbound_records')
           .update({ approval_status: 'approved', updated_by: userId, updated_at: new Date().toISOString() })
           .eq('id', id);
+        if (companyId) query = query.eq('company_id', companyId);
+        const { error } = await query;
 
         if (error) return { error };
 
@@ -125,10 +142,13 @@ export class SpecialOutboundService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const { error } = await supabase
+        const companyId = await getCurrentCompanyId();
+        let query = supabase
           .from('special_outbound_records')
           .update({ approval_status: 'rejected', updated_by: userId, updated_at: new Date().toISOString() })
           .eq('id', id);
+        if (companyId) query = query.eq('company_id', companyId);
+        const { error } = await query;
 
         if (error) return { error };
 
@@ -168,10 +188,13 @@ export class SpecialOutboundService extends BaseService {
   static async getStatistics(): Promise<ServiceResponse<any>> {
     return this.execute(
       async () => {
-        const { data, error } = await supabase
+        const companyId = await getCurrentCompanyId();
+        let query = supabase
           .from('special_outbound_records')
           .select('approval_status, quantity, reason, product:products(category)');
-        
+        if (companyId) query = query.eq('company_id', companyId);
+        const { data, error } = await query;
+
         if (error) return { error };
 
         const stats = data?.reduce((acc: any, record: any) => {
