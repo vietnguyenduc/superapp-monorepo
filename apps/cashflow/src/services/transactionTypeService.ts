@@ -36,7 +36,7 @@ export class TransactionTypeService extends BaseService {
         if (companyId) query = query.or(`company_id.eq.${companyId},company_id.is.null`);
         const { data, error } = await query;
         
-        if (error || !data) return { data: [], error: error || { message: "Not found" } };
+        if (error || !data) return { data: [], error: error || { message: "Không tìm thấy loại giao dịch" } };
         
         const allTypes = (data as Record<string, unknown>[]).map((t) => ({
           id: String(t.id ?? ""),

@@ -1,5 +1,17 @@
 # Changelog — Cashflow
 
+## 2026-08-21
+
+### Fixed
+
+- **Vietnamese user-facing error messages across Cashflow services, import utils, and UI.**
+  - `importUtils.ts`, `validation.ts`, `validationSystem.ts` now return Vietnamese validation errors.
+  - `customerService.ts`, `transactionService.ts`, `branchService.ts`, `bankAccountService.ts`, `transactionTypeService.ts`, `approvalService.ts` translate `not found`, `already exists`, and import/backup error messages.
+  - `backupRecovery.ts` and `compression.ts` translate backup/export/import compression errors.
+  - `TransactionImport.tsx`, `CustomerImport.tsx`, `TransactionList.tsx`, `CustomerDetail.tsx` replace `Parse error`, `Failed to fetch...`, and generic `Import failed` messages with Vietnamese guidance.
+  - `formatting.ts` returns `Ngày không hợp lệ` instead of `Invalid Date`.
+  - Updated `importUtils.test.ts` and `validation.test.ts` to assert the new Vietnamese strings.
+
 ## 2026-08-20
 
 ### Fixed

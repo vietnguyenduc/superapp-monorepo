@@ -35,7 +35,7 @@ export class BranchService extends BaseService {
       async () => {
         const data = (trialGet("branches") || []) as Branch[];
         const branch = data.find((b) => b.id === id && (!companyId || b.company_id === companyId));
-        return { data: branch || null, error: branch ? null : { message: "Branch not found" } };
+        return { data: branch || null, error: branch ? null : { message: "Không tìm thấy văn phòng" } };
       }
     );
   }
@@ -99,7 +99,7 @@ export class BranchService extends BaseService {
         const branches = (trialGet("branches") || []) as Branch[];
         const branch = branches.find((b) => b.id === id);
         if (!branch || (companyId && branch.company_id !== companyId)) {
-          return { data: null, error: { message: "Branch not found" } };
+          return { data: null, error: { message: "Không tìm thấy văn phòng" } };
         }
         trialDelete("branches", id);
         return { data: null, error: null };

@@ -66,8 +66,8 @@ describe("Formatting Utils", () => {
     });
 
     it("handles invalid dates", () => {
-      expect(formatDate("invalid-date")).toBe("Invalid Date");
-      expect(formatDate("")).toBe("Invalid Date");
+      expect(formatDate("invalid-date")).toBe("Ngày không hợp lệ");
+      expect(formatDate("")).toBe("Ngày không hợp lệ");
     });
   });
 
@@ -222,7 +222,7 @@ describe("Formatting Utils", () => {
     });
 
     it("handles invalid dates", () => {
-      expect(formatRelativeTime("invalid-date")).toBe("Invalid Date");
+      expect(formatRelativeTime("invalid-date")).toBe("Ngày không hợp lệ");
     });
   });
 

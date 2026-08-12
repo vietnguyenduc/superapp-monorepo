@@ -261,3 +261,73 @@
 8. **Preview URL cũ / alias chưa cập nhật** → verify nhầm deployment.
 9. **Import/export không theo filter** → user xuất sai dữ liệu.
 10. **Trial mode không resolve label → ID** → import trial thành công nhưng balance không đổi.
+
+---
+
+## 14. Case study — Cashflow incidents qua 110+ PR (để rà soát các app khác)
+
+> Dưới đây là các lỗi thực tế đã xảy ra và cách fix. Khi audit app mới, kiểm tra từng điểm này.
+
+### 14.1. Balance & số dư
+- **Sai dấu amount**: `Math.abs(amount)` làm mất hướng giao dịch. Fix: `delta = amount × math_factor`.
+- **Positive balance = dư nợ (công nợ)**: màu xanh cho âm/credit, đỏ cho dương/debt.
+- **Balance tính sai 10x**: `parseAmount` nhầm dấu chấm thập phân `990366250.4` → `9,903,662,504`. Fix: dùng shared `parseAmount` duy nhất và test biên.
+- **Double-count sau restore**: restore tính lại `total_balance` từ transactions trên `opening_balance`, nếu `total_balance` cũ không reset sẽ cộng dồn. Fix: reset `total_balance` về `opening_balance` trước khi apply.
+- **CustomerDetail tự tính `currentBalance`** riêng, mismatch với `total_balance`. Fix: hiển thị `total_balance` làm single source of truth.
+- **Opening balance thay đổi không sync `total_balance`**. Fix: khi `opening_balance` update, `total_balance` += delta, `current_balance` cũng cập nhật.
+
+### 14.2. Transaction types & enum
+- **Deposit / `Đặt cọc`**: thêm type mới cần update union type, `balanceMath.ts`, validation, parser, UI labels/colors, i18n, dashboard, group summary, trial seed, migration.
+- **Canonical vs display label**: dropdown lưu canonical (`payment`/`charge`/`deposit`), hiển thị tên tiếng Việt. Fix: `TransactionTypeContext` expose `{ id, canonical, name }`.
+- **Transaction type guard by ID**: `deleteTransactionType` cần check `transactions.transaction_type` theo canonical, không phải UUID.
+
+### 14.3. Import / Export
+- **Bulk import trùng `transaction_code`**: Postgres unique constraint khó hiểu. Fix: pre-check DB + duplicate trong file, auto-generate mã khi để trống.
+- **Import không tìm thấy customer**: live path chỉ match `customer_code`, trial path match `id`/`name`. Fix: dùng chung resolver.
+- **Template có mã cứng `GC-001`**: user import 2 lần bị trùng. Fix: template để `Số chứng từ` trống và hướng dẫn.
+- **Date parser `MM/DD` âm thầm nhầm**: khi cả ngày/tháng ≤ 12. Fix: từ chối hoặc ưu tiên `DD/MM/YYYY`.
+- **Export Excel không theo filter**: xuất toàn bộ DB. Fix: gửi filter đang active.
+- **Export 0 dòng ra file trống**: file nên có tiêu đề cột.
+
+### 14.4. Auth / RBAC
+- **Sign-in overwrite role/company**: `upsert` `public.users` mỗi lần login ghi đè `admin` thành `staff`. Fix: `insert` + ignore 23505.
+- **`admin_master`/`admin` default company**: `CompanyBadge` ưu tiên `user.company_id` trước `companies[0]`.
+- **Staff permission `customers.manage_all`**: mở tab Số dư đầu kỳ cho staff có quyền.
+- **Approval workflow**: 4 status (`draft`/`pending`/`completed`/`rejected`), balance chỉ sync khi `completed`. Backfill + migration.
+
+### 14.5. UI/UX
+- **Secondary button nhạt nhòa**: dùng viền rõ, nền trắng/dark, chữ đậm.
+- **Sticky table column bị tràn**: freeze cột `GD`, `Mã`, `Tên`, `Công nợ` với width cố định.
+- **Mobile empty page**: `TransactionList` nằm trong `hidden sm:block`. Fix: thêm `sm:hidden` card view.
+- **FAB che nội dung cuối**: `bottom-20` + `pb-36`.
+- **Header mobile quá đông**: chuyển company/app switcher/language/profile vào sidebar drawer.
+- **Tabs Cài đặt dài**: gộp tab liên quan, dùng grid 2-3-4 cột.
+- **Reset UI gây hiểu nhầm**: chỉ 1 nút `Reset`, option `Tất cả` auto-disable các option con.
+
+### 14.6. Database / RLS
+- **RLS error "new row violates..."**: thiếu `company_id` trong `upsert` payload. Fix: include `company_id`, `status`, `full_name`, `updated_at`.
+- **RLS policy 406**: `.single()` trả `406` khi role không xem được. Fix: `.maybeSingle()`.
+- **PostgREST `ilike` special chars**: `,`, `(`, `)`, `.`, `=` gây `PGRST100`. Fix: quote `ilike` value.
+- **Migration filename collision**: `034_...` trùng với accounting. Fix: đặt số duy nhất theo thứ tự thực tế (`042_...`).
+
+### 14.7. Deployment / CI
+- **Vercel Git auto-deploy spam 7 apps**: quota 100/ngày cạn vì canceled/error. Fix: `git.deploymentEnabled: false` + GitHub Actions `Deploy changed Vercel apps`.
+- **Preview branch alias lag**: alias `*-git-viet-...` chưa cập nhật ngay khi READY. Fix: verify direct deployment URL.
+- **Domain gọn cho app**: `sales-operation` → `sales`, `hr-operation` → `hr`, `operations-portal` → `ops`.
+- **`ignoreCommand` > 256 char**: chuyển logic sang `scripts/vercel-ignore.sh`.
+
+### 14.8. Testing / Dev environment
+- **Thiếu test case duplicate `transaction_code`**: lỗi lọt sản phẩm. Fix: thêm unit test.
+- **Trial seed không sync balance**: data mẫu `total_balance` phải khớp tổng transactions.
+- **Local RLS test**: dùng `supabase-local-from-dump.sh` + `packages/api` mirror trước khi đẩy production.
+
+### 14.9. Search / Filter / Pagination
+- **Filter balance `Dư nợ từ/đến`**: server-side `gte/lte` trên `total_balance`, tóm tắt tổng dư nợ.
+- **Filter customer trong transaction list**: dropdown chọn khách hàng và sync với URL param.
+- **Group-by summary chỉ tính page hiện tại**: phải aggregate trên toàn bộ kết quả filter (max 1,000).
+- **Date range theo local time**: dùng local midnight boundaries, không `new Date()`.
+
+### 14.10. Backup / Restore
+- **Browser-safe compression**: `pako` có thể không chạy trong browser. Fix: `TextEncoder` + `btoa` hoặc package browser-compatible.
+- **Restore không whitelist column**: insert/update toàn bộ cột backup, có thể ghi đè `created_at`/`company_id`. Fix: whitelist + sanitize tenant fields.
+- **Restore báo lỗi không rõ**: dùng per-record error + `getErrorMessage`.

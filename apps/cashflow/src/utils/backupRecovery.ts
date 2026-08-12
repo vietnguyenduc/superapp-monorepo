@@ -11,7 +11,7 @@ function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
   if (error && typeof error === "object" && "message" in error) return String((error as { message?: unknown }).message);
-  return "Unknown error";
+  return "Lỗi không xác định";
 }
 
 function deriveCustomerOpeningBalance(
@@ -265,7 +265,7 @@ export const backupService = {
     } catch {
       throw createError(
         ERROR_CODES.IMPORT_FAILED,
-        "Failed to create backup data",
+        "Không thể tạo dữ liệu sao lưu",
         null,
         false,
       );
@@ -337,7 +337,7 @@ export const backupService = {
     } catch (error) {
       throw createError(
         ERROR_CODES.IMPORT_FAILED,
-        "Failed to export backup file",
+        "Không thể xuất file sao lưu",
         error,
         false,
       );
@@ -354,7 +354,7 @@ export const backupService = {
       } else {
         throw createError(
           ERROR_CODES.FILE_READ_ERROR,
-          "Unsupported file format. Please use .xlsx or .json files.",
+          "Định dạng file không hỗ trợ. Vui lòng dùng file .xlsx hoặc .json.",
           null,
           false,
         );
@@ -362,7 +362,7 @@ export const backupService = {
     } catch (error) {
       throw createError(
         ERROR_CODES.IMPORT_FAILED,
-        "Failed to import backup file",
+        "Không thể nhập file sao lưu",
         error,
         false,
       );
@@ -378,7 +378,7 @@ export const backupService = {
         try {
           const data = e.target?.result;
           if (!data) {
-            reject(new Error("Failed to read file"));
+            reject(new Error("Không thể đọc file"));
             return;
           }
 
@@ -393,7 +393,7 @@ export const backupService = {
         }
       };
 
-      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.onerror = () => reject(new Error("Không thể đọc file"));
       reader.readAsText(file);
     });
   },
@@ -407,7 +407,7 @@ export const backupService = {
         try {
           const data = e.target?.result;
           if (!data) {
-            reject(new Error("Failed to read file"));
+            reject(new Error("Không thể đọc file"));
             return;
           }
 
@@ -482,7 +482,7 @@ export const backupService = {
         }
       };
 
-      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.onerror = () => reject(new Error("Không thể đọc file"));
       reader.readAsBinaryString(file);
     });
   },
@@ -592,34 +592,34 @@ export const backupService = {
   // Validate backup data structure
   validateBackupData(backupData: any): void {
     if (!backupData || typeof backupData !== "object") {
-      throw new Error("Invalid backup data structure");
+      throw new Error("Cấu trúc dữ liệu sao lưu không hợp lệ");
     }
 
     if (!backupData.version || !backupData.timestamp) {
       throw new Error(
-        "Backup data missing required fields (version, timestamp)",
+        "Dữ liệu sao lưu thiếu các trường bắt buộc (version, timestamp)",
       );
     }
 
     if (!backupData.metadata) {
-      throw new Error("Backup data missing metadata");
+      throw new Error("Dữ liệu sao lưu thiếu metadata");
     }
 
     // Validate arrays exist
     if (!Array.isArray(backupData.customers)) {
-      throw new Error("Backup data missing customers array");
+      throw new Error("Dữ liệu sao lưu thiếu danh sách khách hàng");
     }
 
     if (!Array.isArray(backupData.transactions)) {
-      throw new Error("Backup data missing transactions array");
+      throw new Error("Dữ liệu sao lưu thiếu danh sách giao dịch");
     }
 
     if (!Array.isArray(backupData.bank_accounts)) {
-      throw new Error("Backup data missing bank_accounts array");
+      throw new Error("Dữ liệu sao lưu thiếu danh sách tài khoản ngân hàng");
     }
 
     if (!Array.isArray(backupData.branches)) {
-      throw new Error("Backup data missing branches array");
+      throw new Error("Dữ liệu sao lưu thiếu danh sách chi nhánh");
     }
   },
 
@@ -681,7 +681,7 @@ export const backupService = {
           if (!shouldProceed) {
             return {
               restored: result.restored,
-              errors: [...result.errors, { type: "conflict", message: "Restore cancelled by user due to conflicts" }],
+              errors: [...result.errors, { type: "conflict", message: "Khôi phục bị hủy do xung đột dữ liệu" }],
             };
           }
         }
@@ -750,7 +750,7 @@ export const backupService = {
     } catch (error) {
       throw createError(
         ERROR_CODES.IMPORT_FAILED,
-        "Failed to restore backup data",
+        "Khôi phục dữ liệu sao lưu thất bại",
         error,
         false,
       );
@@ -980,7 +980,7 @@ export const backupService = {
         }
         oldId = String(normalized.id ?? "");
         if (!oldId) {
-          errors.push({ type: "customer", message: "Missing id", data: customer });
+          errors.push({ type: "customer", message: "Thiếu mã định danh", data: customer });
           continue;
         }
 
@@ -999,7 +999,7 @@ export const backupService = {
           restored++;
         }
       } catch (error) {
-        logger.error("Failed to restore customer:", error);
+        logger.error("Khôi phục khách hàng thất bại:", error);
         errors.push({ type: "customer", message: getErrorMessage(error), data: { oldId, customer } });
       }
     }
@@ -1050,7 +1050,7 @@ export const backupService = {
           restored++;
         }
       } catch (error) {
-        logger.error("Failed to restore transaction:", error);
+        logger.error("Khôi phục giao dịch thất bại:", error);
         errors.push({ type: "transaction", message: getErrorMessage(error), data: { id, transaction } });
       }
     }
@@ -1078,7 +1078,7 @@ export const backupService = {
         }
         oldId = String(normalized.id ?? "");
         if (!oldId) {
-          errors.push({ type: "bank_account", message: "Missing id", data: account });
+          errors.push({ type: "bank_account", message: "Thiếu mã định danh", data: account });
           continue;
         }
 
@@ -1097,7 +1097,7 @@ export const backupService = {
           restored++;
         }
       } catch (error) {
-        logger.error("Failed to restore bank account:", error);
+        logger.error("Khôi phục tài khoản ngân hàng thất bại:", error);
         errors.push({ type: "bank_account", message: getErrorMessage(error), data: { oldId, account } });
       }
     }
@@ -1119,7 +1119,7 @@ export const backupService = {
         const normalized = this.normalizeRestoreRecord(branch, companyId, undefined, BRANCH_KEYS);
         oldId = String(normalized.id ?? "");
         if (!oldId) {
-          errors.push({ type: "branch", message: "Missing id", data: branch });
+          errors.push({ type: "branch", message: "Thiếu mã định danh", data: branch });
           continue;
         }
 
@@ -1138,7 +1138,7 @@ export const backupService = {
           restored++;
         }
       } catch (error) {
-        logger.error("Failed to restore branch:", error);
+        logger.error("Khôi phục chi nhánh thất bại:", error);
         errors.push({ type: "branch", message: getErrorMessage(error), data: { oldId, branch } });
       }
     }
@@ -1208,7 +1208,7 @@ export const recoveryUtils = {
       backupData.branch_id !== targetBranchId
     ) {
       warnings.push(
-        "Backup is from a different branch. Data may need to be mapped to current branch.",
+        "File sao lưu từ chi nhánh khác. Có thể cần ánh xạ lại dữ liệu về chi nhánh hiện tại.",
       );
     }
 
@@ -1217,7 +1217,7 @@ export const recoveryUtils = {
       backupData.customers.length === 0 &&
       backupData.transactions.length === 0
     ) {
-      errors.push("Backup contains no data to restore");
+      errors.push("File sao lưu không có dữ liệu để khôi phục");
     }
 
     // Check for required relationships

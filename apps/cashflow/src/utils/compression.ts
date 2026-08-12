@@ -42,7 +42,7 @@ export async function compressJSON(data: unknown): Promise<string> {
     return encoded;
   } catch (error) {
     logger.error("Compression error:", error);
-    throw new Error("Failed to compress data");
+    throw new Error("Không thể nén dữ liệu");
   }
 }
 
@@ -58,7 +58,7 @@ export async function decompressJSON(compressed: string): Promise<unknown> {
     return data;
   } catch (error) {
     logger.error("Decompression error:", error);
-    throw new Error("Failed to decompress data");
+    throw new Error("Không thể giải nén dữ liệu");
   }
 }
 

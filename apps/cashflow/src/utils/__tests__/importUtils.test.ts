@@ -60,9 +60,9 @@ describe("Import Utils", () => {
     });
 
     it("handles empty data", () => {
-      expect(() => parseTransactionData("")).toThrow("No valid data found");
+      expect(() => parseTransactionData("")).toThrow("Không tìm thấy dòng dữ liệu hợp lệ trong file. Vui lòng kiểm tra định dạng.");
       expect(() => parseTransactionData("   \n  \n  ")).toThrow(
-        "No valid data found",
+        "Không tìm thấy dòng dữ liệu hợp lệ trong file. Vui lòng kiểm tra định dạng.",
       );
     });
 
@@ -70,7 +70,7 @@ describe("Import Utils", () => {
       const rawData = "John Doe\tBank1\tpayment";
 
       expect(() => parseTransactionData(rawData)).toThrow(
-        "Row 1: Insufficient columns. Expected at least 5 columns.",
+        "Dòng 1: Thiếu cột dữ liệu. Cần ít nhất 5 cột (Mã khách hàng, Tài khoản ngân hàng, Loại giao dịch, Số tiền, Ngày giao dịch).",
       );
     });
 
@@ -124,7 +124,7 @@ describe("Import Utils", () => {
 
       expect(result.isValid).toBe(false);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].message).toBe("Customer code is required");
+      expect(result.errors[0].message).toBe("Mã khách hàng là bắt buộc. Vui lòng nhập mã khách hàng.");
     });
 
     it("validates transaction type", () => {
@@ -137,8 +137,9 @@ describe("Import Utils", () => {
 
       expect(result.isValid).toBe(false);
       expect(result.errors).toHaveLength(2);
-      expect(result.errors[0].message).toBe("Transaction type is required");
-      expect(result.errors[1].message).toContain("Invalid transaction type");
+      expect(result.errors[0].message).toBe("Loại giao dịch là bắt buộc. Vui lòng chọn loại giao dịch.");
+      expect(result.errors[1].message).toContain("Loại giao dịch");
+      expect(result.errors[1].message).toContain("không hợp lệ");
     });
 
     it("validates amount", () => {
@@ -152,9 +153,9 @@ describe("Import Utils", () => {
 
       expect(result.isValid).toBe(false);
       expect(result.errors).toHaveLength(3);
-      expect(result.errors[0].message).toBe("Amount is required");
-      expect(result.errors[1].message).toBe("Amount must be a non-zero number");
-      expect(result.errors[2].message).toBe("Amount must be a non-zero number");
+      expect(result.errors[0].message).toBe("Số tiền là bắt buộc. Vui lòng nhập số tiền.");
+      expect(result.errors[1].message).toBe("Số tiền phải khác 0. Vui lòng nhập số tiền hợp lệ.");
+      expect(result.errors[2].message).toBe("Số tiền phải khác 0. Vui lòng nhập số tiền hợp lệ.");
     });
 
     it("allows negative amounts for payment/charge/refund/deposit", () => {
@@ -184,12 +185,12 @@ describe("Import Utils", () => {
 
       expect(result.isValid).toBe(false);
       expect(result.errors).toHaveLength(3);
-      expect(result.errors[0].message).toBe("Transaction date is required");
+      expect(result.errors[0].message).toBe("Ngày giao dịch là bắt buộc. Vui lòng nhập ngày theo định dạng DD/MM/YYYY.");
       expect(result.errors[1].message).toBe(
         "Định dạng ngày không hợp lệ. Dùng DD/MM/YYYY",
       );
       expect(result.errors[2].message).toBe(
-        "Transaction date cannot be in the future",
+        "Ngày giao dịch không được trong tương lai. Vui lòng chọn ngày hợp lệ.",
       );
     });
 
@@ -363,7 +364,7 @@ describe("Import Utils", () => {
       const rawData = "Single Value";
 
       expect(() => parseTransactionData(rawData)).toThrow(
-        "Row 1: Insufficient columns. Expected at least 5 columns.",
+        "Dòng 1: Thiếu cột dữ liệu. Cần ít nhất 5 cột (Mã khách hàng, Tài khoản ngân hàng, Loại giao dịch, Số tiền, Ngày giao dịch).",
       );
     });
 
