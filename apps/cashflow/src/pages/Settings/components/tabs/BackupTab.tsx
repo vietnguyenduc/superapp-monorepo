@@ -110,13 +110,13 @@ export const BackupTab: FC = () => {
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                 <input
                   type="checkbox"
-                  checked={resetTargets.transactionsAndCustomers}
+                  checked={resetTargets.transactions}
                   onChange={(e) =>
-                    setResetTargets((prev) => ({ ...prev, transactionsAndCustomers: e.target.checked }))
+                    setResetTargets((prev) => ({ ...prev, transactions: e.target.checked }))
                   }
                   className="rounded border-gray-300 text-red-600 focus:ring-red-500"
                 />
-                Giao dịch và Khách hàng
+                Giao dịch
               </label>
               <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                 <input

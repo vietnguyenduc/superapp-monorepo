@@ -186,7 +186,7 @@ describe("Import Utils", () => {
       expect(result.errors).toHaveLength(3);
       expect(result.errors[0].message).toBe("Transaction date is required");
       expect(result.errors[1].message).toBe(
-        "Invalid date format. Use YYYY-MM-DD or DD/MM/YYYY",
+        "Định dạng ngày không hợp lệ. Dùng DD/MM/YYYY",
       );
       expect(result.errors[2].message).toBe(
         "Transaction date cannot be in the future",

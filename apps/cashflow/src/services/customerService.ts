@@ -1,7 +1,7 @@
 import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
 import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
-import { validateCustomerData, transformRawCustomer, parseAmount } from "./businessLogic";
+import { validateCustomerData, transformRawCustomer, parseAmount, parseAmountOrNull } from "./businessLogic";
 import {
   insertWithFallback,
   bulkInsertWithFallback,
@@ -535,6 +535,7 @@ export class CustomerService extends BaseService {
           opening_balance: newOpening,
           total_balance: newTotal,
           current_balance: newTotal,
+          company_id: (existing as any).company_id,
           updated_at: new Date().toISOString(),
         });
 
@@ -562,19 +563,19 @@ export class CustomerService extends BaseService {
     );
   }
 
-  static async bulkUpdateOpeningBalances(rows: { customer_code?: string; opening_balance?: number }[], companyId?: string) {
+  static async bulkUpdateOpeningBalances(rows: { customer_code?: string; opening_balance?: unknown }[], companyId?: string) {
     return this.execute(
       async () => {
         const errors: Record<string, unknown>[] = [];
         const codeToRow: Record<string, { row: number; opening: number }> = {};
         rows.forEach((row, i) => {
           const code = String(row.customer_code ?? "").trim();
-          const opening = Number(row.opening_balance);
+          const opening = parseAmountOrNull(row.opening_balance);
           if (!code) {
             errors.push({ row: i, message: "Missing customer_code" });
             return;
           }
-          if (!Number.isFinite(opening)) {
+          if (opening === null) {
             errors.push({ row: i, message: "Invalid opening_balance", value: row.opening_balance });
             return;
           }
@@ -584,7 +585,7 @@ export class CustomerService extends BaseService {
         const codes = Object.keys(codeToRow);
         if (codes.length === 0) return { data: { updatedCount: 0, errors }, error: null };
 
-        let query = apiClient.from("customers").select("id,customer_code,opening_balance,total_balance").in("customer_code", codes);
+        let query = apiClient.from("customers").select("id,customer_code,opening_balance,total_balance,company_id,status,full_name").in("customer_code", codes);
         if (companyId) query = query.eq("company_id", companyId);
         const { data: customers, error: fetchError } = await query;
         if (fetchError) return { data: { updatedCount: 0, errors: [...errors, { message: fetchError.message }] }, error: fetchError };
@@ -605,6 +606,10 @@ export class CustomerService extends BaseService {
           const delta = oldTotal - oldOpening;
           payload.push({
             id: customer.id,
+            customer_code: customer.customer_code,
+            full_name: customer.full_name,
+            company_id: customer.company_id,
+            status: customer.status,
             opening_balance: opening,
             total_balance: opening + delta,
             current_balance: opening + delta,
@@ -614,7 +619,7 @@ export class CustomerService extends BaseService {
 
         if (payload.length === 0) return { data: { updatedCount: 0, errors }, error: null };
 
-        const { data, error } = await apiClient.from("customers").upsert(payload as Record<string, unknown>[]).select();
+        const { data, error } = await apiClient.from("customers").upsert(payload as Record<string, unknown>[], { onConflict: "id" }).select();
         if (error) return { data: { updatedCount: 0, errors: [...errors, { message: error.message }] }, error };
         return { data: { updatedCount: data?.length || 0, errors }, error: null };
       },
@@ -625,9 +630,9 @@ export class CustomerService extends BaseService {
         for (let i = 0; i < rows.length; i++) {
           const row = rows[i];
           const code = String(row.customer_code ?? "").trim();
-          const opening = Number(row.opening_balance);
+          const opening = parseAmountOrNull(row.opening_balance);
           if (!code) { errors.push({ row: i, message: "Missing customer_code" }); continue; }
-          if (!Number.isFinite(opening)) { errors.push({ row: i, message: "Invalid opening_balance", value: row.opening_balance }); continue; }
+          if (opening === null) { errors.push({ row: i, message: "Invalid opening_balance", value: row.opening_balance }); continue; }
 
           const customer = customers.find((c) => c.customer_code === code && (!companyId || c.company_id === companyId));
           if (!customer) { errors.push({ row: i, message: "Customer not found", value: code }); continue; }

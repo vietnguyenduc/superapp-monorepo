@@ -67,16 +67,18 @@ const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
 
     const startDate = new Date(value.start);
     const endDate = new Date(value.end);
-
-    if (value.start === value.end) {
-      return startDate.toLocaleDateString("vi-VN", {
-        day: "numeric",
-        month: "short",
+    const fmt = (d: Date) =>
+      d.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
         year: "numeric",
       });
+
+    if (value.start === value.end) {
+      return fmt(startDate);
     }
 
-    return `${startDate.toLocaleDateString("vi-VN", { day: "numeric", month: "short" })} - ${endDate.toLocaleDateString("vi-VN", { day: "numeric", month: "short", year: "numeric" })}`;
+    return `${fmt(startDate)} - ${fmt(endDate)}`;
   };
 
   return (

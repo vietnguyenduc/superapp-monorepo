@@ -66,12 +66,13 @@ export function normalizeTransactionType(type: string): string {
 
 /**
  * Parse an amount from a string/number, handling Vietnamese number formats.
+ * Returns `null` for unparseable input so callers can surface validation errors.
  * e.g. 1.000.000 / 1,000,000 / 1 000 000 / (1000) / -1000 / ₫1.000.000
  */
-export function parseAmount(value: unknown): number {
+export function parseAmountOrNull(value: unknown): number | null {
   if (value == null) return 0;
   if (typeof value === "number") {
-    return Number.isFinite(value) ? value : 0;
+    return Number.isFinite(value) ? value : null;
   }
 
   let raw = String(value).trim();
@@ -111,6 +112,13 @@ export function parseAmount(value: unknown): number {
   }
 
   const num = Number(str);
-  if (!Number.isFinite(num)) return 0;
+  if (!Number.isFinite(num)) return null;
   return isNegative ? -num : num;
+}
+
+/**
+ * Convenience wrapper that returns 0 for unparseable input.
+ */
+export function parseAmount(value: unknown): number {
+  return parseAmountOrNull(value) ?? 0;
 }

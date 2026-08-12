@@ -42,20 +42,20 @@ const Navigation: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
     i18n.changeLanguage(i18n.language === "en" ? "vi" : "en");
   };
 
-  // Format today's date based on current language
+  // Format today's date based on current language (always day/month/year)
   const formatToday = () => {
     const today = new Date();
     const options: Intl.DateTimeFormatOptions = {
       weekday: "long",
       year: "numeric",
-      month: "long",
-      day: "numeric",
+      month: "2-digit",
+      day: "2-digit",
     };
 
     if (i18n.language === "vi") {
       return today.toLocaleDateString("vi-VN", options);
     } else {
-      return today.toLocaleDateString("en-US", options);
+      return today.toLocaleDateString("en-GB", options);
     }
   };
 

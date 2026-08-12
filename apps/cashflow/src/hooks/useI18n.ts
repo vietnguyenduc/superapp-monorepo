@@ -29,39 +29,23 @@ export const useI18n = () => {
 
   const formatDate = (date: string | Date) => {
     const dateObj = typeof date === "string" ? new Date(date) : date;
+    const locale = isVietnamese() ? "vi-VN" : "en-GB";
 
-    if (isVietnamese()) {
-      return dateObj.toLocaleDateString("vi-VN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-    }
-
-    return dateObj.toLocaleDateString("en-US", {
+    return dateObj.toLocaleDateString(locale, {
       year: "numeric",
-      month: "long",
-      day: "numeric",
+      month: "2-digit",
+      day: "2-digit",
     });
   };
 
   const formatDateTime = (date: string | Date) => {
     const dateObj = typeof date === "string" ? new Date(date) : date;
+    const locale = isVietnamese() ? "vi-VN" : "en-GB";
 
-    if (isVietnamese()) {
-      return dateObj.toLocaleString("vi-VN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    }
-
-    return dateObj.toLocaleString("en-US", {
+    return dateObj.toLocaleString(locale, {
       year: "numeric",
-      month: "long",
-      day: "numeric",
+      month: "2-digit",
+      day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
     });
