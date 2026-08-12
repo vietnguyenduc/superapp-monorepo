@@ -1,5 +1,16 @@
 # Changelog — Cashflow
 
+## 2026-08-19
+
+### Fixed
+
+- **Bulk transaction import no longer fails with `transactions_transaction_code_company_key` unique-constraint violations.** `transactionService.bulkImportTransactions` now:
+  - Fetches existing `transaction_code` values for the company before import.
+  - Auto-generates a unique `TXN<timestamp>-<index>-<random>` code when the row leaves `Số chứng từ` blank.
+  - Returns row-level errors (in `result.errors`) when a provided `transaction_code` already exists or is duplicated within the import file, instead of letting Postgres throw an opaque `duplicate key` error.
+- `validateTransactionData` (importUtils) now checks duplicate `transaction_code` values inside the same file and reports the offending row numbers.
+- `cleanTransactionData` and `convertToTransactions` preserve an optional `transaction_code` field.
+
 ## 2026-08-18
 
 ### Added

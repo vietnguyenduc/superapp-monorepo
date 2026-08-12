@@ -613,6 +613,27 @@ export class TransactionService extends BaseService {
         const bankAccounts = bankData as Record<string, unknown>[] || [];
         const branches = branchData as Record<string, unknown>[] || [];
 
+        const { data: existingTxnCodes } = await apiClient
+          .from("transactions")
+          .select("transaction_code")
+          .eq("company_id", companyId);
+        const existingCodes = new Set(
+          ((existingTxnCodes || []) as { transaction_code: string }[])
+            .map((t) => t.transaction_code?.trim())
+            .filter(Boolean)
+        );
+
+        const seenInBatch = new Set<string>();
+        const duplicateErrors: { row: number; message: string }[] = [];
+
+        const generateTxnCode = (idx: number) => {
+          let code: string;
+          do {
+            code = `TXN${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`;
+          } while (existingCodes.has(code) || seenInBatch.has(code));
+          return code;
+        };
+
         const body = raw.map((r, idx) => {
           let cId: string | null = String(r.customer_id ?? "").trim() || null;
 
@@ -648,9 +669,23 @@ export class TransactionService extends BaseService {
           const rawType = typeof r.transaction_type === "string" ? r.transaction_type.trim() : "";
           const transaction_type = normalizeTransactionType(rawType || "payment");
 
+          const providedCode = String(r.transaction_code ?? "").trim();
+          let transaction_code: string;
+          if (!providedCode) {
+            transaction_code = generateTxnCode(idx);
+          } else {
+            if (existingCodes.has(providedCode)) {
+              duplicateErrors.push({ row: idx, message: `Số chứng từ "${providedCode}" đã tồn tại` });
+            } else if (seenInBatch.has(providedCode)) {
+              duplicateErrors.push({ row: idx, message: `Số chứng từ "${providedCode}" bị trùng trong file` });
+            }
+            seenInBatch.add(providedCode);
+            transaction_code = providedCode;
+          }
+
           return {
             id: String(r.id ?? "").trim() || uuid(),
-            transaction_code: String(r.transaction_code ?? "").trim() || `TXN${Date.now()}${idx}`,
+            transaction_code,
             customer_id: cId,
             bank_account_id: resolvedBank.id || String(r.bank_account_id ?? "").trim() || null,
             bank_account_name: resolvedBank.name || String(r.bank_account_name ?? "").trim() || null,
@@ -668,6 +703,10 @@ export class TransactionService extends BaseService {
             updated_at: now,
           };
         });
+
+        if (duplicateErrors.length > 0) {
+          return { data: null, error: { message: duplicateErrors[0].message }, errors: duplicateErrors };
+        }
 
         const { data, error } = await bulkInsertWithFallback(
           "transactions",
@@ -687,8 +726,23 @@ export class TransactionService extends BaseService {
         const mockCustomers = (trialGet("customers") || []) as Record<string, unknown>[];
         const mockBankAccounts = (trialGet("bank_accounts") || []) as Record<string, unknown>[];
         const mockBranches = (trialGet("branches") || []) as Record<string, unknown>[];
+        const existingTrialTxns = (trialGet("transactions") || []) as Record<string, unknown>[];
+        const existingCodes = new Set(
+          existingTrialTxns.map((t) => String(t.transaction_code ?? "").trim()).filter(Boolean)
+        );
 
-        const body = raw.map((row) => {
+        const seenInBatch = new Set<string>();
+        const duplicateErrors: { row: number; message: string }[] = [];
+
+        const generateTxnCode = (idx: number) => {
+          let code: string;
+          do {
+            code = `TXN${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`;
+          } while (existingCodes.has(code) || seenInBatch.has(code));
+          return code;
+        };
+
+        const body = raw.map((row, idx) => {
           const customerInput = typeof row.customer_id === "string" && row.customer_id.trim()
             ? row.customer_id
             : typeof row.customer_code === "string"
@@ -712,9 +766,23 @@ export class TransactionService extends BaseService {
           const rawType = typeof row.transaction_type === "string" ? row.transaction_type.trim() : "";
           const transaction_type = normalizeTransactionType(rawType || "payment");
 
+          const providedCode = String(row.transaction_code ?? "").trim();
+          let transaction_code: string;
+          if (!providedCode) {
+            transaction_code = generateTxnCode(idx);
+          } else {
+            if (existingCodes.has(providedCode)) {
+              duplicateErrors.push({ row: idx, message: `Số chứng từ "${providedCode}" đã tồn tại` });
+            } else if (seenInBatch.has(providedCode)) {
+              duplicateErrors.push({ row: idx, message: `Số chứng từ "${providedCode}" bị trùng trong file` });
+            }
+            seenInBatch.add(providedCode);
+            transaction_code = providedCode;
+          }
+
           return {
             id: `txn-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
-            transaction_code: String(row.transaction_code ?? "").trim() || `TXN${Date.now()}`,
+            transaction_code,
             customer_id: resolvedCustomer.id || String(row.customer_id ?? "").trim() || null,
             customer_name: resolvedCustomer.name || String(row.customer_name ?? "").trim() || null,
             bank_account_id: resolvedBank.id || String(row.bank_account_id ?? "").trim() || null,
@@ -733,6 +801,10 @@ export class TransactionService extends BaseService {
             updated_at: now,
           };
         });
+
+        if (duplicateErrors.length > 0) {
+          return { data: null, error: { message: duplicateErrors[0].message }, errors: duplicateErrors };
+        }
 
         const inserted = body.map((tx) => trialInsert("transactions", tx as Record<string, unknown>));
         const factorMap = this._getTrialFactorMap();
