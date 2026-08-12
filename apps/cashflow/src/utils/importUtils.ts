@@ -3,6 +3,7 @@ import { parseFile } from "@superapp/shared-utils";
 import { parseAmount, normalizeTransactionType } from "../services/businessLogic";
 
 export interface RawTransactionData {
+  transaction_code?: string;
   customer_code: string;
   bank_account: string;
   branch?: string;
@@ -142,6 +143,7 @@ export function validateTransactionData(
   validCustomerCodes?: Set<string>,
 ): ValidationResult {
   const errors: ImportError[] = [];
+  const seenCodes = new Map<string, number>();
 
   // Build lookup sets from DB-provided types (fallback to legacy hardcoded if none provided)
   const validTypeIds = validTransactionTypes ? new Set(validTransactionTypes.map((t) => t.id.toLowerCase().trim())) : null;
@@ -179,6 +181,29 @@ export function validateTransactionData(
           message: `Customer code "${rawCustomerCode}" does not exist. Please check existing customers.`,
           value: row.customer_code,
         });
+      }
+    }
+
+    // Validate transaction code (optional, but must be unique within the import if provided)
+    const txnCode = (row.transaction_code || "").trim();
+    if (txnCode) {
+      if (txnCode.length > 50) {
+        errors.push({
+          row: index,
+          column: "transaction_code",
+          message: "Số chứng từ quá dài (tối đa 50 ký tự)",
+          value: row.transaction_code,
+        });
+      } else if (seenCodes.has(txnCode)) {
+        const firstRow = seenCodes.get(txnCode)!;
+        errors.push({
+          row: index,
+          column: "transaction_code",
+          message: `Số chứng từ "${txnCode}" bị trùng với dòng ${firstRow + 1}`,
+          value: row.transaction_code,
+        });
+      } else {
+        seenCodes.set(txnCode, index);
       }
     }
 
@@ -359,6 +384,8 @@ export function convertToTransactions(
   createdBy: string,
 ): Partial<Transaction>[] {
   return rawData.map((row) => ({
+    id: "", // Will be generated during import
+    transaction_code: row.transaction_code?.trim() || "",
     customer_id: "", // Will be resolved during import
     bank_account_id: "", // Will be resolved during import
     branch_id: branchId,
@@ -388,5 +415,6 @@ export function cleanTransactionData(
     transaction_date: row.transaction_date.trim(),
     description: row.description?.trim() || "",
     reference_number: row.reference_number?.trim() || "",
+    ...(row.transaction_code !== undefined ? { transaction_code: row.transaction_code.trim() } : {}),
   }));
 }
