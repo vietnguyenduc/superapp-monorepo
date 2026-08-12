@@ -133,20 +133,40 @@ export const handleSupabaseError = (error: any): string => {
 
 // Helper function to check if user is authenticated
 export const isAuthenticated = async (): Promise<boolean> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  return !!user;
+  const auth = (supabase as any).auth;
+  if (!auth || typeof auth.getUser !== 'function') return false;
+  const { data, error } = await auth.getUser();
+  if (error) {
+    console.error('Error getting current user:', error.message || error);
+    return false;
+  }
+  return !!data?.user;
 };
 
 // Helper function to get current user
 export const getCurrentUser = async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
+  const auth = (supabase as any).auth;
+  if (!auth || typeof auth.getUser !== 'function') return null;
+  const { data, error } = await auth.getUser();
+  if (error) {
+    console.error('Error getting current user:', error.message || error);
+    return null;
+  }
+  return data?.user || null;
 };
 
 // Helper function to get user ID (for created_by, updated_by fields)
 export const getCurrentUserId = async (): Promise<string | null> => {
   const user = await getCurrentUser();
   return user?.id || null;
+};
+
+// Helper function to get current company ID (for tenant-scoped queries)
+export const getCurrentCompanyId = async (): Promise<string | null> => {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  const { data } = await supabase.from(TABLES.USERS).select('company_id').eq('id', user.id).maybeSingle();
+  return data?.company_id || null;
 };
 
 // Helper function to test database connection

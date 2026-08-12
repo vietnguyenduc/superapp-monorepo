@@ -1,4 +1,4 @@
-import { supabase, TABLES } from '../lib/supabase';
+import { supabase, TABLES, getCurrentCompanyId } from '../lib/supabase';
 
 // Types
 export interface Department {
@@ -37,80 +37,71 @@ export interface Shift {
 export const hrService = {
   // Departments
   async getDepartments() {
+    const companyId = await getCurrentCompanyId();
     const { data, error } = await supabase
       .from(TABLES.DEPARTMENTS)
       .select('*')
+      .eq('company_id', companyId)
       .order('name');
-    
+
     if (error) throw error;
-    return data as Department[];
+    return (data || []) as Department[];
   },
 
   async createDepartment(department: Omit<Department, 'id' | 'created_at' | 'company_id'>) {
-    const { data: userData } = await supabase.auth.getUser();
-    // Assuming company_id is available in user metadata or we get it via RPC
-    // For now, let's assume we can insert and RLS or trigger will handle company_id,
-    // or we fetch it first. Since RLS requires company_id, let's fetch current user's company_id.
-    const { data: userDetails } = await supabase
-      .from(TABLES.USERS)
-      .select('company_id')
-      .eq('id', userData.user?.id)
-      .single();
-
-    if (!userDetails?.company_id) throw new Error('Company ID not found for user');
+    const companyId = await getCurrentCompanyId();
+    if (!companyId) throw new Error('Không tìm thấy công ty của người dùng');
 
     const { data, error } = await supabase
       .from(TABLES.DEPARTMENTS)
-      .insert({ ...department, company_id: userDetails.company_id })
+      .insert({ ...department, company_id: companyId })
       .select()
       .single();
-      
+
     if (error) throw error;
     return data as Department;
   },
 
   // Employees
   async getEmployees() {
+    const companyId = await getCurrentCompanyId();
     const { data, error } = await supabase
       .from(TABLES.EMPLOYEES)
       .select(`
         *,
         department:departments(*)
       `)
+      .eq('company_id', companyId)
       .order('full_name');
-    
+
     if (error) throw error;
-    return data as Employee[];
+    return (data || []) as Employee[];
   },
 
   async createEmployee(employee: Omit<Employee, 'id' | 'created_at' | 'company_id'>) {
-    const { data: userData } = await supabase.auth.getUser();
-    const { data: userDetails } = await supabase
-      .from(TABLES.USERS)
-      .select('company_id')
-      .eq('id', userData.user?.id)
-      .single();
-
-    if (!userDetails?.company_id) throw new Error('Company ID not found for user');
+    const companyId = await getCurrentCompanyId();
+    if (!companyId) throw new Error('Không tìm thấy công ty của người dùng');
 
     const { data, error } = await supabase
       .from(TABLES.EMPLOYEES)
-      .insert({ ...employee, company_id: userDetails.company_id })
+      .insert({ ...employee, company_id: companyId })
       .select()
       .single();
-      
+
     if (error) throw error;
     return data as Employee;
   },
 
   // Shifts
   async getShifts() {
+    const companyId = await getCurrentCompanyId();
     const { data, error } = await supabase
       .from(TABLES.SHIFTS)
       .select('*')
+      .eq('company_id', companyId)
       .order('name');
-    
+
     if (error) throw error;
-    return data as Shift[];
+    return (data || []) as Shift[];
   }
 };

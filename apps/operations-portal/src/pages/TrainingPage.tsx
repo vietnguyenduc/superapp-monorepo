@@ -73,7 +73,7 @@ const TrainingPage = () => {
     try {
       // First try to select
       const { data: existing } = await (supabase as any).from(TABLES.OPERATION_TRAINING_PROGRESS)
-        .select('*').eq('course_id', courseId).eq('user_id', userId).single();
+        .select('*').eq('course_id', courseId).eq('user_id', userId).maybeSingle();
       
       if (existing) {
         await (supabase as any).from(TABLES.OPERATION_TRAINING_PROGRESS)

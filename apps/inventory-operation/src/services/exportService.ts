@@ -1,4 +1,4 @@
-import { supabase, getCurrentUserId } from '../lib/supabase';
+import { supabase, getCurrentUserId, getCurrentCompanyId } from '../lib/supabase';
 import { InventoryVarianceReport, Product } from '../types';
 
 export interface ExportData {
@@ -163,10 +163,15 @@ export const exportService = {
         return [];
       }
 
+      const companyId = await getCurrentCompanyId();
       let query = supabase
         .from('inventory_variance_reports')
         .select('*')
         .order('date', { ascending: false });
+
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
 
       if (filters.date_from) {
         query = query.gte('date', filters.date_from);
@@ -205,10 +210,15 @@ export const exportService = {
         return [];
       }
 
+      const companyId = await getCurrentCompanyId();
       let query = supabase
         .from('products')
         .select('*')
         .order('name');
+
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
 
       if (productIds && productIds.length > 0) {
         query = query.in('id', productIds);
@@ -244,7 +254,7 @@ export const exportService = {
           .from('users')
           .select('company_id, branch_id')
           .eq('id', currentUserId)
-          .single();
+          .maybeSingle();
 
         if (!profileError && currentUserProfile) {
           companyId = companyId || currentUserProfile.company_id;
@@ -285,11 +295,14 @@ export const exportService = {
         return [];
       }
 
-      const { data, error } = await supabase
+      const companyId = await getCurrentCompanyId();
+      let query = supabase
         .from('export_logs')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(limit);
+      if (companyId) query = query.eq('company_id', companyId);
+      const { data, error } = await query;
 
       if (error) {
         throw new Error(`Lỗi tải lịch sử xuất file: ${error.message}`);
