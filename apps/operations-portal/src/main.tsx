@@ -6,6 +6,8 @@ import App from './App';
 import './index.css';
 import { initErrorTracking } from "@superapp/shared-utils";
 
+initErrorTracking({ appName: 'operations-portal' });
+
 const rootElement = document.getElementById('root');
 
 if (!rootElement) {

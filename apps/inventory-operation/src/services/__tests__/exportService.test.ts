@@ -5,7 +5,7 @@ import { mockSupabaseChain, MOCK_USER_ID } from './testUtils';
 
 vi.mock('../../lib/supabase', async (importOriginal) => {
   const mod = await importOriginal();
-  return { ...mod, getCurrentUserId: () => Promise.resolve(MOCK_USER_ID) };
+  return { ...mod, getCurrentUserId: () => Promise.resolve(MOCK_USER_ID), getCurrentCompanyId: () => Promise.resolve(null) };
 });
 
 // Helper to read blob text in jsdom (blob.text() not available)

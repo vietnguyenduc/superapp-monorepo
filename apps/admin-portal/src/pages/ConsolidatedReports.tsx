@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { BarChart3, TrendingUp, DollarSign, Package, AlertCircle, Download } from 'lucide-react';
-import { supabase , apiClient} from "../lib/supabase";
+import { apiClient } from "../lib/supabase";
 import { useAdminContext } from '../contexts/AdminContext';
 
 const MOCK_METRICS = [
@@ -11,20 +11,18 @@ const MOCK_METRICS = [
 ];
 
 export default function ConsolidatedReports() {
-  const [loading, setLoading] = useState(true);
   const { selectedCompanyId } = useAdminContext();
+
+  const fetchMetrics = React.useCallback(async () => {
+    const { error } = await apiClient.rpc('admin_get_consolidated_metrics', {
+      p_company_id: selectedCompanyId
+    });
+    if (error) console.error(error);
+  }, [selectedCompanyId]);
 
   useEffect(() => {
     fetchMetrics();
-  }, [selectedCompanyId]);
-
-  const fetchMetrics = async () => {
-    setLoading(true);
-    const { data, error } = await apiClient.rpc('admin_get_consolidated_metrics', {
-      p_company_id: selectedCompanyId
-    });
-    setLoading(false);
-  };
+  }, [fetchMetrics]);
 
   return (
     <div className="space-y-6">

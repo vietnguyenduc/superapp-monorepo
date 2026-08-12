@@ -3,18 +3,21 @@ import { exportService, ExportData } from '../exportService';
 import { supabase } from '../../lib/supabase';
 import { mockSupabaseChain } from './testUtils';
 
-vi.mock('../../lib/supabase', () => ({
-  supabase: {
-    from: vi.fn(),
-  },
-  getCurrentUserId: vi.fn().mockResolvedValue('mock-user-id'),
-  TABLES: {
-    PRODUCTS: 'products',
-    INVENTORY_RECORDS: 'inventory_records',
-    SALES_RECORDS: 'sales_records',
-    EXPORT_LOGS: 'export_logs',
-  },
-}));
+vi.mock('../../lib/supabase', () => {
+  const mockSupabase = { from: vi.fn() };
+  return {
+    supabase: mockSupabase,
+    apiClient: { get from() { return mockSupabase.from; } },
+    getCurrentUserId: vi.fn().mockResolvedValue('mock-user-id'),
+    getCurrentCompanyId: vi.fn().mockResolvedValue(null),
+    TABLES: {
+      PRODUCTS: 'products',
+      INVENTORY_RECORDS: 'inventory_records',
+      SALES_RECORDS: 'sales_records',
+      EXPORT_LOGS: 'export_logs',
+    },
+  };
+});
 
 // Helper to read Blob text in jsdom (which lacks blob.text())
 async function readBlobText(blob: Blob): Promise<string> {

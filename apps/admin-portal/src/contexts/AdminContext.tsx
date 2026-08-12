@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase , apiClient} from "../lib/supabase";
+import { apiClient } from "../lib/supabase";
 import { useAuthContext } from '@superapp/iam';
 
 type Company = {
@@ -23,20 +23,20 @@ export const AdminProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (session) {
-      fetchCompanies();
-    }
-  }, [session]);
-
-  const fetchCompanies = async () => {
+  const fetchCompanies = React.useCallback(async () => {
     setLoading(true);
     const { data, error } = await apiClient.rpc('admin_get_companies');
     if (!error && data) {
       setCompanies(data);
     }
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (session) {
+      fetchCompanies();
+    }
+  }, [session, fetchCompanies]);
 
   return (
     <AdminContext.Provider value={{ companies, selectedCompanyId, setSelectedCompanyId, loading }}>
@@ -45,6 +45,7 @@ export const AdminProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAdminContext = () => {
   const context = useContext(AdminContext);
   if (context === undefined) {

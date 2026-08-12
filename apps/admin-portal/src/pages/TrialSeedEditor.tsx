@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FlaskConical, Save, Eye, Plus, Trash2, Undo2, Check, AlertCircle, X, Search, ExternalLink, Columns, Upload } from 'lucide-react';
 import { useAuthContext } from '@superapp/iam';
@@ -10,7 +11,7 @@ interface FieldDef { name: string; label: string; type: string; required?: boole
 // Build schema using compact helper to keep file size manageable
 const SCHEMA: Record<string, FieldDef[]> = {};
 
-function def(table: string, fields: any[]) { SCHEMA[table] = fields; }
+function def(table: string, fields: FieldDef[]) { SCHEMA[table] = fields; }
 
 // ── Cashflow ──────────────────────────────────────────────────────
 def('companies', [
@@ -277,13 +278,13 @@ export default function TrialSeedEditor() {
   }, [apps]);
   useEffect(() => { if (avail.length > 0 && !avail.find((t) => t.name === table)) setTable(avail[0].name); }, [avail]);
 
-  const fetch = useCallback(async () => {
+  const loadData = useCallback(async () => {
     setLoading(true); setMsg(null);
-    try { const r = await fetch(API_URL() + '/api/trial/' + table); const j = await r.json(); const d = j.data || []; setRows(d); setOrig(JSON.parse(JSON.stringify(d))); }
+    try { const r = await globalThis.fetch(API_URL() + '/api/trial/' + table); const j = await r.json(); const d = j.data || []; setRows(d); setOrig(JSON.parse(JSON.stringify(d))); }
     catch { setMsg({ ok: false, text: 'Lỗi kết nối API. Chạy API server?' }); setRows([]); setOrig([]); }
     setLoading(false);
   }, [table]);
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   const cols = useMemo(() => {
     const sc = ['id', ...(SCHEMA[table] || []).map((f) => f.name).filter((n) => n !== 'id')];
@@ -431,7 +432,7 @@ export default function TrialSeedEditor() {
       {/* App pills */}
       <div className="flex flex-wrap gap-2">
         {Object.entries(APP_MAP).map(([app, info]) => (
-          <button key={app} onClick={() => setApps((p) => { const n = new Set(p); n.has(app) ? n.delete(app) : n.add(app); return n; })}
+          <button key={app} onClick={() => setApps((p) => { const n = new Set(p); if (n.has(app)) n.delete(app); else n.add(app); return n; })}
             className={'flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ' + (apps.has(app) ? 'bg-indigo-100 text-indigo-700 ring-1 ring-indigo-300' : 'bg-gray-50 text-gray-500 hover:bg-gray-100')}>
             <span>{info.icon}</span>{app}
           </button>

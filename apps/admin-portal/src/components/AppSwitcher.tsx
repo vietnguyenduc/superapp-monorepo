@@ -10,7 +10,7 @@ import { useAuthContext } from '@superapp/iam';
 
 const AppSwitcher: React.FC = () => {
   const { user } = useAuthContext();
-  const role = (user as any)?.role || user?.app_metadata?.role || null;
+  const role = (user as { role?: string } | null)?.role ?? user?.app_metadata?.role ?? null;
 
   return (
     <SharedAppSwitcher

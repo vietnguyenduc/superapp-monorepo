@@ -57,42 +57,42 @@ export function mockSupabaseChain(config: {
   // Pre-create all chain objects to avoid infinite recursion
   // Each chain method returns a pre-created chain object, not a new one
   const selectChainObj = {
-    order: null as any, eq: null as any, or: null as any, single: null as any,
+    order: null as any, eq: null as any, or: null as any, single: null as any, maybeSingle: null as any,
     limit: null as any, gte: null as any, lte: null as any, neq: null as any, in: null as any,
     then: selectThenable.then, catch: selectThenable.catch, finally: selectThenable.finally,
   };
   const orderChainObj = {
-    order: null as any, eq: null as any, or: null as any, single: null as any,
+    order: null as any, eq: null as any, or: null as any, single: null as any, maybeSingle: null as any,
     limit: null as any, gte: null as any, lte: null as any, neq: null as any, in: null as any,
     then: orderThenable.then, catch: orderThenable.catch, finally: orderThenable.finally,
   };
   const eqChainObj = {
-    order: null as any, eq: null as any, or: null as any, single: null as any,
+    order: null as any, eq: null as any, or: null as any, single: null as any, maybeSingle: null as any,
     limit: null as any, gte: null as any, lte: null as any, neq: null as any, in: null as any,
     then: eqThenable.then, catch: eqThenable.catch, finally: eqThenable.finally,
   };
   const gteChainObj = {
-    order: null as any, eq: null as any, or: null as any, single: null as any,
+    order: null as any, eq: null as any, or: null as any, single: null as any, maybeSingle: null as any,
     limit: null as any, gte: null as any, lte: null as any, neq: null as any, in: null as any,
     then: gteThenable.then, catch: gteThenable.catch, finally: gteThenable.finally,
   };
   const lteChainObj = {
-    order: null as any, eq: null as any, or: null as any, single: null as any,
+    order: null as any, eq: null as any, or: null as any, single: null as any, maybeSingle: null as any,
     limit: null as any, gte: null as any, lte: null as any, neq: null as any, in: null as any,
     then: lteThenable.then, catch: lteThenable.catch, finally: lteThenable.finally,
   };
   const neqChainObj = {
-    order: null as any, eq: null as any, or: null as any, single: null as any,
+    order: null as any, eq: null as any, or: null as any, single: null as any, maybeSingle: null as any,
     limit: null as any, gte: null as any, lte: null as any, neq: null as any, in: null as any,
     then: neqThenable.then, catch: neqThenable.catch, finally: neqThenable.finally,
   };
   const inChainObj = {
-    order: null as any, eq: null as any, or: null as any, single: null as any,
+    order: null as any, eq: null as any, or: null as any, single: null as any, maybeSingle: null as any,
     limit: null as any, gte: null as any, lte: null as any, neq: null as any, in: null as any,
     then: inThenable.then, catch: inThenable.catch, finally: inThenable.finally,
   };
   const orChainObj = {
-    order: null as any, eq: null as any, or: null as any, single: null as any,
+    order: null as any, eq: null as any, or: null as any, single: null as any, maybeSingle: null as any,
     limit: null as any, gte: null as any, lte: null as any, neq: null as any, in: null as any,
     then: orThenable.then, catch: orThenable.catch, finally: orThenable.finally,
   };
@@ -102,6 +102,7 @@ export function mockSupabaseChain(config: {
   selectChainObj.eq = vi.fn().mockReturnValue(eqChainObj);
   selectChainObj.or = vi.fn().mockReturnValue(orChainObj);
   selectChainObj.single = vi.fn().mockReturnValue(singleThenable);
+  selectChainObj.maybeSingle = vi.fn().mockReturnValue(singleThenable);
   selectChainObj.limit = vi.fn().mockReturnValue(limitThenable);
   selectChainObj.gte = vi.fn().mockReturnValue(gteChainObj);
   selectChainObj.lte = vi.fn().mockReturnValue(lteChainObj);
@@ -112,6 +113,7 @@ export function mockSupabaseChain(config: {
   orderChainObj.eq = vi.fn().mockReturnValue(eqChainObj);
   orderChainObj.or = vi.fn().mockReturnValue(orChainObj);
   orderChainObj.single = vi.fn().mockReturnValue(singleThenable);
+  orderChainObj.maybeSingle = vi.fn().mockReturnValue(singleThenable);
   orderChainObj.limit = vi.fn().mockReturnValue(limitThenable);
   orderChainObj.gte = vi.fn().mockReturnValue(gteChainObj);
   orderChainObj.lte = vi.fn().mockReturnValue(lteChainObj);
@@ -122,6 +124,7 @@ export function mockSupabaseChain(config: {
   eqChainObj.eq = vi.fn().mockReturnValue(eqChainObj);
   eqChainObj.or = vi.fn().mockReturnValue(orChainObj);
   eqChainObj.single = vi.fn().mockReturnValue(singleThenable);
+  eqChainObj.maybeSingle = vi.fn().mockReturnValue(singleThenable);
   eqChainObj.limit = vi.fn().mockReturnValue(limitThenable);
   eqChainObj.gte = vi.fn().mockReturnValue(gteChainObj);
   eqChainObj.lte = vi.fn().mockReturnValue(lteChainObj);
@@ -132,6 +135,7 @@ export function mockSupabaseChain(config: {
   gteChainObj.eq = vi.fn().mockReturnValue(eqChainObj);
   gteChainObj.or = vi.fn().mockReturnValue(orChainObj);
   gteChainObj.single = vi.fn().mockReturnValue(singleThenable);
+  gteChainObj.maybeSingle = vi.fn().mockReturnValue(singleThenable);
   gteChainObj.limit = vi.fn().mockReturnValue(limitThenable);
   gteChainObj.gte = vi.fn().mockReturnValue(gteChainObj);
   gteChainObj.lte = vi.fn().mockReturnValue(lteChainObj);
@@ -142,6 +146,7 @@ export function mockSupabaseChain(config: {
   lteChainObj.eq = vi.fn().mockReturnValue(eqChainObj);
   lteChainObj.or = vi.fn().mockReturnValue(orChainObj);
   lteChainObj.single = vi.fn().mockReturnValue(singleThenable);
+  lteChainObj.maybeSingle = vi.fn().mockReturnValue(singleThenable);
   lteChainObj.limit = vi.fn().mockReturnValue(limitThenable);
   lteChainObj.gte = vi.fn().mockReturnValue(gteChainObj);
   lteChainObj.lte = vi.fn().mockReturnValue(lteChainObj);
@@ -152,6 +157,7 @@ export function mockSupabaseChain(config: {
   neqChainObj.eq = vi.fn().mockReturnValue(eqChainObj);
   neqChainObj.or = vi.fn().mockReturnValue(orChainObj);
   neqChainObj.single = vi.fn().mockReturnValue(singleThenable);
+  neqChainObj.maybeSingle = vi.fn().mockReturnValue(singleThenable);
   neqChainObj.limit = vi.fn().mockReturnValue(limitThenable);
   neqChainObj.gte = vi.fn().mockReturnValue(gteChainObj);
   neqChainObj.lte = vi.fn().mockReturnValue(lteChainObj);
@@ -162,6 +168,7 @@ export function mockSupabaseChain(config: {
   inChainObj.eq = vi.fn().mockReturnValue(eqChainObj);
   inChainObj.or = vi.fn().mockReturnValue(orChainObj);
   inChainObj.single = vi.fn().mockReturnValue(singleThenable);
+  inChainObj.maybeSingle = vi.fn().mockReturnValue(singleThenable);
   inChainObj.limit = vi.fn().mockReturnValue(limitThenable);
   inChainObj.gte = vi.fn().mockReturnValue(gteChainObj);
   inChainObj.lte = vi.fn().mockReturnValue(lteChainObj);
@@ -172,6 +179,7 @@ export function mockSupabaseChain(config: {
   orChainObj.eq = vi.fn().mockReturnValue(eqChainObj);
   orChainObj.or = vi.fn().mockReturnValue(orChainObj);
   orChainObj.single = vi.fn().mockReturnValue(singleThenable);
+  orChainObj.maybeSingle = vi.fn().mockReturnValue(singleThenable);
   orChainObj.limit = vi.fn().mockReturnValue(limitThenable);
   orChainObj.gte = vi.fn().mockReturnValue(gteChainObj);
   orChainObj.lte = vi.fn().mockReturnValue(lteChainObj);
@@ -184,7 +192,7 @@ export function mockSupabaseChain(config: {
 
   // Single chain: used by insert().select().single() and update().eq().select().single()
   const singleChainObj = {
-    order: null as any, eq: null as any, or: null as any, single: null as any,
+    order: null as any, eq: null as any, or: null as any, single: null as any, maybeSingle: null as any,
     limit: null as any, gte: null as any, lte: null as any, neq: null as any, in: null as any,
     then: singleThenable.then, catch: singleThenable.catch, finally: singleThenable.finally,
   };
@@ -192,6 +200,7 @@ export function mockSupabaseChain(config: {
   singleChainObj.eq = vi.fn().mockReturnValue(eqChainObj);
   singleChainObj.or = vi.fn().mockReturnValue(orChainObj);
   singleChainObj.single = vi.fn().mockReturnValue(singleThenable);
+  singleChainObj.maybeSingle = vi.fn().mockReturnValue(singleThenable);
   singleChainObj.limit = vi.fn().mockReturnValue(limitThenable);
   singleChainObj.gte = vi.fn().mockReturnValue(gteChainObj);
   singleChainObj.lte = vi.fn().mockReturnValue(lteChainObj);
@@ -200,7 +209,7 @@ export function mockSupabaseChain(config: {
 
   // Select chain (no .single()): used by insert().select() and update().eq().select()
   const selectOnlyChainObj = {
-    order: null as any, eq: null as any, or: null as any, single: null as any,
+    order: null as any, eq: null as any, or: null as any, single: null as any, maybeSingle: null as any,
     limit: null as any, gte: null as any, lte: null as any, neq: null as any, in: null as any,
     then: selectThenable.then, catch: selectThenable.catch, finally: selectThenable.finally,
   };
@@ -208,6 +217,7 @@ export function mockSupabaseChain(config: {
   selectOnlyChainObj.eq = vi.fn().mockReturnValue(eqChainObj);
   selectOnlyChainObj.or = vi.fn().mockReturnValue(orChainObj);
   selectOnlyChainObj.single = vi.fn().mockReturnValue(singleThenable);
+  selectOnlyChainObj.maybeSingle = vi.fn().mockReturnValue(singleThenable);
   selectOnlyChainObj.limit = vi.fn().mockReturnValue(limitThenable);
   selectOnlyChainObj.gte = vi.fn().mockReturnValue(gteChainObj);
   selectOnlyChainObj.lte = vi.fn().mockReturnValue(lteChainObj);

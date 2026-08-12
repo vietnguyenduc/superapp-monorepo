@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, Plus, Power, Users, Activity } from 'lucide-react';
-import { supabase , apiClient} from "../lib/supabase";
-import { useAdminContext } from '../contexts/AdminContext';
-import { useAuthContext } from '@superapp/iam';
+import { apiClient } from "../lib/supabase";
 
 interface CompanyStat {
   company_id: string;
@@ -15,19 +13,13 @@ interface CompanyStat {
 }
 
 export default function CompanyManagement() {
-  const { user } = useAuthContext();
-  const { setSelectedCompanyId } = useAdminContext();
   const [stats, setStats] = useState<CompanyStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newCompany, setNewCompany] = useState({ name: '', code: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
+  const fetchStats = React.useCallback(async () => {
     setLoading(true);
     const { data, error } = await apiClient.rpc('admin_get_company_stats');
     if (!error && data) {
@@ -36,14 +28,18 @@ export default function CompanyManagement() {
       console.error(error);
     }
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   const handleCreateCompany = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCompany.name || !newCompany.code) return;
 
     setIsSubmitting(true);
-    const { data, error } = await apiClient.rpc('admin_create_company', {
+    const { error } = await apiClient.rpc('admin_create_company', {
       p_name: newCompany.name,
       p_code: newCompany.code
     });

@@ -71,20 +71,20 @@ export const supabase = new Proxy(rawSupabase, {
         console.warn(`⚠️ Blocked Supabase ${String(prop)}('${name}') call during Trial Mode`);
         
         // Return a proxy that handles common chainable methods
-        const dummy: any = new Proxy({}, {
+        const dummy: unknown = new Proxy({}, {
           get(_, p) {
             if (p === 'then') {
-              return (onfulfilled: any) => Promise.resolve(onfulfilled({ 
-                data: null, 
+              return (onfulfilled: (value: { data: null; error: { message: string; code: string }; count: number }) => Promise<unknown>) => Promise.resolve(onfulfilled({
+                data: null,
                 error: { message: 'Không thể gọi Supabase trong chế độ thử nghiệm.', code: 'TRIAL_MODE_BLOCKED' },
                 count: 0
               }));
             }
             if (p === 'catch') {
-              return (onrejected: any) => dummy;
+              return (_onrejected: unknown) => dummy;
             }
             if (p === 'finally') {
-              return (onfinally: any) => { onfinally(); return dummy; };
+              return (onfinally: () => void) => { onfinally(); return dummy; };
             }
             // Chainable methods for PostgrestQueryBuilder
             if (['select', 'insert', 'update', 'delete', 'eq', 'neq', 'gt', 'lt', 'gte', 'lte', 'like', 'ilike', 'or', 'order', 'limit', 'range', 'single', 'maybeSingle', 'upsert', 'csv'].includes(String(p))) {
