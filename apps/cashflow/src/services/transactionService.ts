@@ -590,16 +590,11 @@ export class TransactionService extends BaseService {
           .or(`company_id.eq.${companyId},company_id.is.null`);
         if (typeErr || !validTypes?.length) return { data: null, error: { message: "Failed to fetch transaction types" } };
 
-        let customerMap: Record<string, string> = {};
-        const { data: customers } = await apiClient.from('customers').select('id, customer_code').eq('company_id', companyId);
-        if (customers) {
-          const rows = customers as { id: string; customer_code?: string }[];
-          customerMap = rows.reduce((acc, c) => {
-            const code = c.customer_code?.toLowerCase().trim();
-            if (code) acc[code] = c.id;
-            return acc;
-          }, {} as Record<string, string>);
-        }
+        const { data: customers } = await apiClient
+          .from("customers")
+          .select("id, customer_code, full_name")
+          .eq("company_id", companyId);
+        const customerList = (customers || []) as Record<string, unknown>[];
 
         const bankQuery = apiClient
           .from("bank_accounts")
@@ -620,11 +615,10 @@ export class TransactionService extends BaseService {
         const existingCodes = new Set(
           ((existingTxnCodes || []) as { transaction_code: string }[])
             .map((t) => t.transaction_code?.trim())
-            .filter(Boolean)
+            .filter(Boolean) as string[]
         );
 
         const seenInBatch = new Set<string>();
-        const duplicateErrors: { row: number; message: string }[] = [];
 
         const generateTxnCode = (idx: number) => {
           let code: string;
@@ -634,59 +628,113 @@ export class TransactionService extends BaseService {
           return code;
         };
 
-        const body = raw.map((r, idx) => {
-          let cId: string | null = String(r.customer_id ?? "").trim() || null;
+        const typeLookup = new Map<string, string>();
+        const validCanonicals = new Set<string>();
+        (validTypes || []).forEach((t: any) => {
+          const id = String(t.id || "").toLowerCase().trim();
+          const name = String(t.name || "").toLowerCase().trim();
+          const canonical = normalizeTransactionType(name);
+          if (id) typeLookup.set(id, canonical);
+          if (name) typeLookup.set(name, canonical);
+          typeLookup.set(canonical, canonical);
+          validCanonicals.add(canonical);
+        });
 
-          if (!cId && r.customer_code) {
-            const rawCode = r.customer_code;
-            let parsed = typeof rawCode === "string" ? rawCode.toLowerCase().trim() : String(rawCode).toLowerCase().trim();
-            const dashIdx = parsed.indexOf(" - ");
-            if (dashIdx > 0) parsed = parsed.substring(0, dashIdx).trim();
-            cId = customerMap[parsed] || null;
-            if (!cId) throw new Error(`Row ${idx + 1}: Customer not found for code "${rawCode}"`);
-          }
+        const resolveTransactionType = (input: string): { type: string; valid: boolean } => {
+          const key = input.toLowerCase().trim();
+          if (typeLookup.has(key)) return { type: typeLookup.get(key)!, valid: true };
+          if (validCanonicals.has(key)) return { type: key, valid: true };
+          return { type: normalizeTransactionType(input), valid: false };
+        };
 
-          const bankLabel = typeof r.bank_account === "string" && r.bank_account.trim()
-            ? r.bank_account
-            : typeof r.bank_account_name === "string"
-            ? r.bank_account_name
-            : "";
-          const branchLabel = typeof r.branch === "string" && r.branch.trim()
-            ? r.branch
-            : typeof r.branch_name === "string"
-            ? r.branch_name
-            : "";
+        const errors: { row: number; message: string }[] = [];
+        const body: Record<string, unknown>[] = [];
 
-          const resolvedBank = resolveBankAccount(bankLabel, bankAccounts);
-          const resolvedBranch = resolveBranch(branchLabel, branches);
-
-          let parsedDate = now;
-          if (r.transaction_date) {
-            const date = parseDate(typeof r.transaction_date === "string" ? r.transaction_date : String(r.transaction_date));
-            if (date) parsedDate = date.toISOString();
-          }
-
-          const rawType = typeof r.transaction_type === "string" ? r.transaction_type.trim() : "";
-          const transaction_type = normalizeTransactionType(rawType || "payment");
+        for (let idx = 0; idx < raw.length; idx++) {
+          const r = raw[idx];
+          const rowNum = idx + 1;
+          const rowErrors: string[] = [];
 
           const providedCode = String(r.transaction_code ?? "").trim();
           let transaction_code: string;
           if (!providedCode) {
             transaction_code = generateTxnCode(idx);
+          } else if (existingCodes.has(providedCode)) {
+            rowErrors.push(`Số chứng từ "${providedCode}" đã tồn tại`);
+          } else if (seenInBatch.has(providedCode)) {
+            rowErrors.push(`Số chứng từ "${providedCode}" bị trùng trong file`);
           } else {
-            if (existingCodes.has(providedCode)) {
-              duplicateErrors.push({ row: idx, message: `Số chứng từ "${providedCode}" đã tồn tại` });
-            } else if (seenInBatch.has(providedCode)) {
-              duplicateErrors.push({ row: idx, message: `Số chứng từ "${providedCode}" bị trùng trong file` });
-            }
             seenInBatch.add(providedCode);
             transaction_code = providedCode;
           }
 
-          return {
+          const customerInput =
+            typeof r.customer_id === "string" && r.customer_id.trim()
+              ? r.customer_id
+              : typeof r.customer_code === "string"
+              ? r.customer_code
+              : "";
+          const resolvedCustomer = resolveCustomer(customerInput, customerList);
+          if (!resolvedCustomer.id) {
+            rowErrors.push(`Không tìm thấy khách hàng với mã "${customerInput}"`);
+          }
+
+          const rawType = typeof r.transaction_type === "string" ? r.transaction_type.trim() : "";
+          let transaction_type = "payment";
+          if (!rawType) {
+            rowErrors.push("Thiếu loại giao dịch");
+          } else {
+            const typeResult = resolveTransactionType(rawType);
+            if (!typeResult.valid) {
+              rowErrors.push(`Loại giao dịch "${rawType}" không hợp lệ`);
+            } else {
+              transaction_type = typeResult.type;
+            }
+          }
+
+          const amount = parseAmountOrNull(r.amount);
+          if (amount === null) {
+            rowErrors.push(`Số tiền "${r.amount}" không đúng định dạng`);
+          } else if (amount === 0) {
+            rowErrors.push("Số tiền phải khác 0");
+          }
+
+          let parsedDate = now;
+          if (r.transaction_date) {
+            const date = parseDate(typeof r.transaction_date === "string" ? r.transaction_date : String(r.transaction_date));
+            if (date) {
+              parsedDate = date.toISOString();
+            } else {
+              rowErrors.push(`Ngày "${r.transaction_date}" không đúng định dạng DD/MM/YYYY`);
+            }
+          }
+
+          if (rowErrors.length > 0) {
+            rowErrors.forEach((msg) => errors.push({ row: idx, message: msg }));
+            continue;
+          }
+
+          const bankLabel =
+            typeof r.bank_account === "string" && r.bank_account.trim()
+              ? r.bank_account
+              : typeof r.bank_account_name === "string"
+              ? r.bank_account_name
+              : "";
+          const branchLabel =
+            typeof r.branch === "string" && r.branch.trim()
+              ? r.branch
+              : typeof r.branch_name === "string"
+              ? r.branch_name
+              : "";
+
+          const resolvedBank = resolveBankAccount(bankLabel, bankAccounts);
+          const resolvedBranch = resolveBranch(branchLabel, branches);
+
+          body.push({
             id: String(r.id ?? "").trim() || uuid(),
             transaction_code,
-            customer_id: cId,
+            customer_id: resolvedCustomer.id,
+            customer_name: resolvedCustomer.name,
             bank_account_id: resolvedBank.id || String(r.bank_account_id ?? "").trim() || null,
             bank_account_name: resolvedBank.name || String(r.bank_account_name ?? "").trim() || null,
             branch_id: resolvedBranch.id || String(r.branch_id ?? "").trim() || branchId || null,
@@ -694,18 +742,33 @@ export class TransactionService extends BaseService {
             company_id: companyId || null,
             created_by: createdBy || null,
             transaction_type,
-            amount: parseAmount(r.amount),
+            amount,
             description: String(r.description ?? "").trim() || null,
             reference_number: String(r.reference_number ?? "").trim() || null,
             transaction_date: parsedDate,
             status: String(r.status ?? "").trim() || "completed",
             created_at: now,
             updated_at: now,
-          };
-        });
+          });
+        }
 
-        if (duplicateErrors.length > 0) {
-          return { data: null, error: { message: duplicateErrors[0].message }, errors: duplicateErrors };
+        if (errors.length > 0) {
+          const total = errors.length;
+          const duplicateCount = errors.filter((e) => e.message.includes("đã tồn tại")).length;
+          const customerCount = errors.filter((e) => e.message.includes("Không tìm thấy khách hàng")).length;
+          let summary = `Phát hiện ${total} lỗi ở các dòng trong file. Vui lòng sửa lại và thử lại.`;
+          if (duplicateCount === total) {
+            summary = `Tất cả ${total} dòng đều bị trùng Số chứng từ với hệ thống. Hãy để trống cột Số chứng từ để tự động tạo mã mới, hoặc xóa các giao dịch cũ trước khi nhập lại.`;
+          } else if (customerCount === total) {
+            summary = `Không tìm thấy khách hàng ở ${total} dòng. Vui lòng kiểm tra lại mã khách hàng (có thể dùng ID, mã khách hàng hoặc tên).`;
+          } else if (duplicateCount > 0 && customerCount > 0) {
+            summary = `Có ${duplicateCount} dòng trùng Số chứng từ và ${customerCount} dòng sai mã khách hàng. Vui lòng kiểm tra lại.`;
+          } else if (duplicateCount > 0) {
+            summary = `Có ${duplicateCount} dòng trùng Số chứng từ. Hãy để trống cột Số chứng từ để tự động tạo mã mới.`;
+          } else if (customerCount > 0) {
+            summary = `Có ${customerCount} dòng sai mã khách hàng. Vui lòng kiểm tra lại.`;
+          }
+          return { data: null, error: { message: summary }, errors };
         }
 
         const { data, error } = await bulkInsertWithFallback(

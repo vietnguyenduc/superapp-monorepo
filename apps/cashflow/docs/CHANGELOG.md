@@ -1,5 +1,14 @@
 # Changelog — Cashflow
 
+## 2026-08-20
+
+### Fixed
+
+- **Bulk transaction import errors are now user-friendly and list every failing row.** `transactionService.bulkImportTransactions` validates each row before inserting and returns a Vietnamese summary plus per-row messages (`Dòng X: ...`).
+- **Customer lookup in bulk import now accepts `customer_code`, customer `id`, or `full_name`**, matching the trial-mode resolver. Previously the live path only matched `customer_code`, so imports using numeric IDs failed with a raw `Customer not found` error.
+- **Transaction type validation now checks against active `transaction_types`** (by id, name, or canonical label) instead of silently normalizing to `payment` for unknown inputs.
+- **`TransactionImport` UI now displays a scrollable list of errors** instead of only the first error message, and adds row numbers so users can fix the source file quickly.
+
 ## 2026-08-19
 
 ### Fixed

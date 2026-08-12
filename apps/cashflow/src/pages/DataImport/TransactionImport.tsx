@@ -198,6 +198,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [importErrors, setImportErrors] = useState<{ row: number; message: string }[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [dropInfo, setDropInfo] = useState<string>("");
   const [validationMode, setValidationMode] = useState<"single" | "bulk" | null>(null);
@@ -548,15 +549,17 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
 
         if ((result as any).error) {
           const errMsg = typeof (result as any).error === "string" ? (result as any).error : "Import failed";
-          setImportError(`Lỗi nhập liệu: ${errMsg}`);
+          setImportError(errMsg);
+          setImportErrors((result as any).errors || []);
           setImportSuccess(null);
           setCurrentStep(2);
           return;
         }
 
         if ((result as any).errors?.length > 0) {
-          const firstErr = (result as any).errors[0]?.message || "Import completed with errors";
-          setImportError(`Lỗi nhập liệu: ${firstErr}`);
+          const allErrors = (result as any).errors as { row: number; message: string }[];
+          setImportError("Có lỗi trong dữ liệu nhập. Vui lòng xem chi tiết bên dưới.");
+          setImportErrors(allErrors);
           setImportSuccess(null);
           setCurrentStep(2);
           return;
@@ -579,6 +582,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         onImportComplete?.(result.data as any);
         setImportSuccess("Nhập giao dịch thành công");
         setImportError(null);
+        setImportErrors([]);
 
         // Reset form
         setRawData("");
@@ -589,7 +593,8 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         setDropInfo("");
       } catch (error) {
         logger.error("Import failed:", error);
-        setImportError(`Lỗi nhập liệu: ${error instanceof Error ? error.message : "Không xác định"}`);
+        setImportError(error instanceof Error ? error.message : "Đã xảy ra lỗi không xác định");
+        setImportErrors([]);
         setImportSuccess(null);
         setCurrentStep(2);
       } finally {
@@ -1102,7 +1107,19 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
           {importError && (
             <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700">
               <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {importError}
+                <p className="font-medium">{importError}</p>
+                {importErrors.length > 0 && (
+                  <ul className="mt-2 max-h-40 overflow-auto pl-4 list-disc text-red-600">
+                    {importErrors.slice(0, 50).map((err, i) => (
+                      <li key={i}>
+                        Dòng {err.row + 1}: {err.message}
+                      </li>
+                    ))}
+                    {importErrors.length > 50 && (
+                      <li>...và {importErrors.length - 50} lỗi khác</li>
+                    )}
+                  </ul>
+                )}
               </div>
             </div>
           )}
