@@ -142,6 +142,11 @@ const columns = [
   { name: 'Phone', required: false }
 ];
 const templateResult = generateTemplate(columns, { fileName: 'template.xlsx' });
+
+// Parse Vietnamese locale dates (DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD)
+import { parseDate, parseDateOrNow } from '@superapp/shared-utils';
+const date = parseDate('31/12/2024');
+const safeDate = parseDateOrNow('invalid');
 if (templateResult.success) {
   console.log(`Template generated: ${templateResult.filename}`);
 }
