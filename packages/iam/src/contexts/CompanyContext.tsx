@@ -137,16 +137,29 @@ export const CompanyProvider: React.FC<CompanyProviderProps> = ({ children }) =>
     }
   }, [session, isTrial]);
 
-  // Load selected company from localStorage when companies are loaded
+  // Load selected company from localStorage or default to user's assigned company
   useEffect(() => {
+    if (companies.length === 0) return;
+
     const savedCompanyId = localStorage.getItem("selectedCompanyId");
-    if (savedCompanyId && companies.length > 0) {
+    if (savedCompanyId) {
       const company = companies.find((c) => c.id === savedCompanyId);
       if (company) {
         setSelectedCompanyState(company);
+        return;
       }
     }
-  }, [companies]);
+
+    // Fallback to the user's assigned company if no saved selection
+    const userCompany = resolveCompanyFromUser();
+    if (userCompany && companies.find((c) => c.id === userCompany.id)) {
+      setSelectedCompanyState(userCompany);
+      localStorage.setItem("selectedCompanyId", userCompany.id);
+    } else if (companies.length > 0) {
+      setSelectedCompanyState(companies[0]);
+      localStorage.setItem("selectedCompanyId", companies[0].id);
+    }
+  }, [companies, user]);
 
   const setSelectedCompany = (company: Company | null) => {
     setSelectedCompanyState(company);
