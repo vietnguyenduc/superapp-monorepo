@@ -72,20 +72,20 @@ export const formatCompactChange = (amount: number): string => {
 // Date formatting
 export const formatDate = (
   date: string | Date,
-  formatString = "dd MMM, yyyy",
+  formatString = "dd/MM/yyyy",
 ): string => {
   try {
     const dateObj = typeof date === "string" ? parseISO(date) : date;
     return format(dateObj, formatString, { locale: vi });
   } catch (error) {
     console.error("Error formatting date:", error);
-    return "Invalid Date";
+    return "Ngày không hợp lệ";
   }
 };
 
 // Date and time formatting
 export const formatDateTime = (date: string | Date): string => {
-  return formatDate(date, "dd MMM, yyyy HH:mm");
+  return formatDate(date, "dd/MM/yyyy HH:mm");
 };
 
 // Time formatting
@@ -197,7 +197,7 @@ export const formatRelativeTime = (date: string | Date): string => {
     }
   } catch (error) {
     console.error("Error formatting relative time:", error);
-    return "Invalid Date";
+    return "Ngày không hợp lệ";
   }
 };
 

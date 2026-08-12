@@ -123,7 +123,7 @@ const Assets: React.FC = () => {
   };
 
   const handleRunDepreciation = async () => {
-    if (!window.confirm('Bạn có chắc chắn muốn chạy khấu hao cho tất cả tài sản Active trong tháng này? Hành động này sẽ cộng thêm một mức khấu hao vào Khấu hao lũy kế của mỗi tài sản.')) return;
+    if (!window.confirm('Bạn có chắc chắn muốn chạy khấu hao cho tất cả tài sản đang hoạt động trong tháng này? Hành động này sẽ cộng thêm một mức khấu hao vào Khấu hao lũy kế của mỗi tài sản.')) return;
     
     try {
       setRunningDepr(true);

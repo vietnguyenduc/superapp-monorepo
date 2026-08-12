@@ -1,5 +1,14 @@
 # Audit các app còn lại — rà soát lỗi lặp lại từ Cashflow
 
+## Đã khắc phục (2026-08-04)
+
+- **accounting**: dịch toàn bộ message lỗi user-facing sang tiếng Việt; định dạng ngày mặc định `dd/MM/yyyy`; sửa `.single()` → `.maybeSingle()` cho truy vấn đọc để tránh lỗi RLS 406; cập nhật test.
+- **admin-portal**: dịch fallback `ErrorBoundary` và các `alert`/`confirm` trong `IdentityManagement`, `CompanyManagement`, `DataLifecycle`.
+- **sales-operation**, **inventory-operation**, **hr-operation**, **operations-portal**: dịch thông báo lỗi Trial Mode trong `lib/supabase.ts` và nhãn UI "Trial Mode" sang tiếng Việt.
+- **framework-method**: được miễn khỏi audit theo yêu cầu.
+
+## Còn lại cần theo dõi
+
 ## accounting
 ### English user-facing error strings (throw/toast/message) (42 matches)
 - `apps/accounting/src/services/customerService.ts:78` — `message: "Customer not found"`

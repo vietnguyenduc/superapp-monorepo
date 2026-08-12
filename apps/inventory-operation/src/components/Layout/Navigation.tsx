@@ -118,7 +118,7 @@ const Navigation: React.FC<NavigationProps> = ({ onMenuClick }) => {
                     {displayName}
                   </div>
                   <div className="text-[10px] text-gray-500 dark:text-gray-400">
-                    {user.role}{isTrial ? " (Trial Mode)" : ""}
+                    {user.role}{isTrial ? " (Chế độ thử nghiệm)" : ""}
                   </div>
                 </div>
               </div>

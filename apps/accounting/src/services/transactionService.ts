@@ -125,15 +125,15 @@ export class TransactionService extends BaseService {
         
         if (companyId) query = query.eq("company_id", companyId);
         
-        const { data: tx, error } = await query.single();
-        if (error || !tx) return { data: null, error: error || { message: "Transaction not found" } };
+        const { data: tx, error } = await query.maybeSingle();
+        if (error || !tx) return { data: null, error: error || { message: "Không tìm thấy giao dịch" } };
         
         return { data: tx, error: null };
       },
       async () => {
         const transactions = trialGet("transactions") || [];
         const tx = transactions.find((t: any) => t.id === id && (!companyId || t.company_id === companyId));
-        if (!tx) return { data: null, error: { message: "Transaction not found" } };
+        if (!tx) return { data: null, error: { message: "Không tìm thấy giao dịch" } };
 
         const customers = trialGet("customers") || [];
         const bankAccounts = trialGet("bank_accounts") || [];
@@ -215,7 +215,7 @@ export class TransactionService extends BaseService {
         const now = getNowIso();
 
         const { data: validTypes, error: typeErr } = await apiClient.from("transaction_types").select("id, name").eq("is_active", true);
-        if (typeErr || !validTypes?.length) return { data: null, error: { message: "Failed to fetch transaction types" } };
+        if (typeErr || !validTypes?.length) return { data: null, error: { message: "Không tải được danh sách loại giao dịch. Vui lòng thử lại." } };
 
         const validTypeNames = new Set(validTypes.map((t: any) => t.name.toLowerCase()));
         

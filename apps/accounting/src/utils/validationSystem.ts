@@ -92,7 +92,7 @@ function validateValue(
     required &&
     (!value || (typeof value === "string" && value.trim() === ""))
   ) {
-    return `${field} is required`;
+    return `${field} là bắt buộc`;
   }
 
   // Skip further validation if value is empty and not required
@@ -109,10 +109,10 @@ function validateValue(
   // Length validation
   if (typeof value === "string") {
     if (minLength && value.length < minLength) {
-      return `${field} must be at least ${minLength} characters`;
+      return `${field} phải có ít nhất ${minLength} ký tự`;
     }
     if (maxLength && value.length > maxLength) {
-      return `${field} must be no more than ${maxLength} characters`;
+      return `${field} không được vượt quá ${maxLength} ký tự`;
     }
   }
 
@@ -120,21 +120,21 @@ function validateValue(
   if (typeof value === "number" || !isNaN(Number(value))) {
     const numValue = typeof value === "number" ? value : Number(value);
     if (minValue !== undefined && numValue < minValue) {
-      return `${field} must be at least ${minValue}`;
+      return `${field} phải từ ${minValue} trở lên`;
     }
     if (maxValue !== undefined && numValue > maxValue) {
-      return `${field} must be no more than ${maxValue}`;
+      return `${field} không được vượt quá ${maxValue}`;
     }
   }
 
   // Pattern validation
   if (pattern && typeof value === "string" && !pattern.test(value)) {
-    return `${field} format is invalid`;
+    return `${field} không đúng định dạng`;
   }
 
   // Allowed values validation
   if (allowedValues && !allowedValues.includes(value)) {
-    return `${field} must be one of: ${allowedValues.join(", ")}`;
+    return `${field} phải là một trong: ${allowedValues.join(", ")}`;
   }
 
   // Custom validator
@@ -156,7 +156,7 @@ function validateValue(
         existingIndex !== rowIndex && existingRow[field] === value,
     );
     if (isDuplicate) {
-      return `${field} must be unique`;
+      return `${field} đã tồn tại`;
     }
   }
 
@@ -170,23 +170,23 @@ function validateType(value: any, type: string, field: string): string | null {
   switch (type) {
     case "string":
       if (typeof value !== "string") {
-        return `${field} must be a string`;
+        return `${field} phải là chuỗi`;
       }
       break;
 
     case "number":
       if (isNaN(Number(value))) {
-        return `${field} must be a number`;
+        return `${field} phải là số`;
       }
       break;
 
     case "date":
       const date = new Date(value);
       if (isNaN(date.getTime())) {
-        return `${field} must be a valid date`;
+        return `${field} không đúng định dạng ngày`;
       }
       if (date > new Date()) {
-        return `${field} cannot be in the future`;
+        return `${field} không được trong tương lai`;
       }
       break;
 
@@ -195,7 +195,7 @@ function validateType(value: any, type: string, field: string): string | null {
         const email = cleanEmail(value);
         const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailPattern.test(email)) {
-          return `${field} must be a valid email address`;
+          return `${field} không đúng định dạng email`;
         }
       }
       break;
@@ -204,7 +204,7 @@ function validateType(value: any, type: string, field: string): string | null {
       if (typeof value === "string") {
         const phone = cleanPhoneNumber(value);
         if (phone.length < 10 || phone.length > 15) {
-          return `${field} must be a valid phone number`;
+          return `${field} không đúng định dạng số điện thoại`;
         }
       }
       break;
@@ -213,7 +213,7 @@ function validateType(value: any, type: string, field: string): string | null {
       if (typeof value === "string") {
         const cleanedType = cleanTransactionType(value);
         if (!cleanedType) {
-          return `${field} must be a valid transaction type (payment, charge, adjustment, refund)`;
+          return `${field} phải là loại giao dịch hợp lệ (thu, chi, hoàn tiền, điều chỉnh)`;
         }
       }
       break;
@@ -222,10 +222,10 @@ function validateType(value: any, type: string, field: string): string | null {
       if (typeof value === "string") {
         const cleanedAmount = cleanAmount(value);
         if (cleanedAmount === null) {
-          return `${field} must be a valid amount`;
+          return `${field} không đúng định dạng số tiền`;
         }
         if (cleanedAmount <= 0) {
-          return `${field} must be greater than 0`;
+          return `${field} phải lớn hơn 0`;
         }
       }
       break;
@@ -439,9 +439,9 @@ export function getCellValidationStatus(
   // Check if any are actual errors (not warnings)
   const hasErrors = cellErrors.some(
     (error) =>
-      error.message.includes("required") ||
-      error.message.includes("must be") ||
-      error.message.includes("invalid"),
+      error.message.includes("là bắt buộc") ||
+      error.message.includes("phải có") ||
+      error.message.includes("không đúng"),
   );
 
   return hasErrors ? "error" : "warning";
@@ -460,7 +460,7 @@ export function generateValidationSummary(result: ValidationResult): {
   if (errors.length === 0 && warnings.length === 0) {
     return {
       status: "valid",
-      message: "All data is valid",
+      message: "Dữ liệu hợp lệ",
       details: [],
     };
   }
@@ -468,7 +468,7 @@ export function generateValidationSummary(result: ValidationResult): {
   if (errors.length === 0 && warnings.length > 0) {
     return {
       status: "warning",
-      message: `Data has ${warnings.length} warnings but is valid for import`,
+      message: `Dữ liệu có ${warnings.length} cảnh báo nhưng vẫn có thể nhập`,
       details: [
         `Total warnings: ${warnings.length}`,
         `Most common issue: ${getMostCommonError(warnings)}`,
@@ -478,7 +478,7 @@ export function generateValidationSummary(result: ValidationResult): {
 
   return {
     status: "error",
-    message: `Data has ${errors.length} errors that must be fixed`,
+    message: `Dữ liệu có ${errors.length} lỗi cần sửa trước khi nhập`,
     details: [
       `Total errors: ${errors.length}`,
       `Total warnings: ${warnings.length}`,
@@ -505,5 +505,5 @@ function getMostCommonError(errors: ImportError[]): string {
 
   return mostCommon
     ? `${mostCommon[0]} (${mostCommon[1]} times)`
-    : "Unknown error";
+    : "Lỗi không xác định";
 }

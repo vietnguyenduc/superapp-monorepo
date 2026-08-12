@@ -1,4 +1,4 @@
-import { supabase, getCurrentUserId , apiClient} from "../lib/supabase";
+import { getCurrentCompanyId, getCurrentUserId, apiClient } from "../lib/supabase";
 import { InventoryRecord } from '../types';
 import { fallbackService } from './fallbackService';
 import { BaseService, ServiceResponse } from './baseService';
@@ -12,11 +12,13 @@ export class InventoryService extends BaseService {
   }): Promise<ServiceResponse<InventoryRecord[]>> {
     return this.execute(
       async () => {
+        const companyId = await getCurrentCompanyId();
         let query = apiClient.from('inventory_records').select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
         `).order('date', { ascending: false });
 
+        if (companyId) query = query.eq('company_id', companyId);
         if (filters?.date) query = query.eq('date', filters.date);
         if (filters?.productId) query = query.eq('product_id', filters.productId);
         if (filters?.limit) query = query.limit(filters.limit);
@@ -35,10 +37,13 @@ export class InventoryService extends BaseService {
   static async getInventoryRecord(id: string): Promise<ServiceResponse<InventoryRecord>> {
     return this.execute(
       async () => {
-        const res = await apiClient.from('inventory_records').select(`
+        const companyId = await getCurrentCompanyId();
+        let query = apiClient.from('inventory_records').select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
-        `).eq('id', id).single();
+        `).eq('id', id);
+        if (companyId) query = query.eq('company_id', companyId);
+        const res = await query.single();
         if (res.data) res.data = InventoryMapper.mapDbToInventory(res.data);
         return res;
       },
@@ -50,10 +55,14 @@ export class InventoryService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const productRow = await apiClient.from('products').select('id').eq('business_code', record.productCode).single();
-        if (productRow.error) throw new Error('Không tìm thấy sản phẩm: ' + record.productCode);
+        const companyId = await getCurrentCompanyId();
+        let productQuery = apiClient.from('products').select('id').eq('business_code', record.productCode);
+        if (companyId) productQuery = productQuery.eq('company_id', companyId);
+        const productRow = await productQuery.single();
+        if (!productRow.data) throw new Error('Không tìm thấy sản phẩm: ' + record.productCode);
 
         const row = InventoryMapper.mapInventoryToDb({ ...record, productId: productRow.data.id, createdBy: userId, updatedBy: userId });
+        if (companyId) row.company_id = companyId;
         const res = await apiClient.from('inventory_records').insert([row]).select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
@@ -69,8 +78,11 @@ export class InventoryService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
+        const companyId = await getCurrentCompanyId();
         const row = InventoryMapper.mapInventoryToDb({ ...updates, updatedBy: userId, updatedAt: new Date() });
-        const res = await apiClient.from('inventory_records').update(row).eq('id', id).select(`
+        let query = apiClient.from('inventory_records').update(row).eq('id', id);
+        if (companyId) query = query.eq('company_id', companyId);
+        const res = await query.select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
         `).single();
@@ -84,7 +96,10 @@ export class InventoryService extends BaseService {
   static async deleteInventoryRecord(id: string): Promise<ServiceResponse<boolean>> {
     return this.execute(
       async () => {
-        const { error } = await apiClient.from('inventory_records').delete().eq('id', id);
+        const companyId = await getCurrentCompanyId();
+        let query = apiClient.from('inventory_records').delete().eq('id', id);
+        if (companyId) query = query.eq('company_id', companyId);
+        const { error } = await query;
         return { data: !error, error };
       },
       () => fallbackService.deleteProduct(id) // Note: using deleteProduct as placeholder if needed
@@ -93,11 +108,14 @@ export class InventoryService extends BaseService {
 
   static async getInventorySummary(dateFrom: Date, dateTo: Date): Promise<ServiceResponse<any[]>> {
     return this.execute(async () => {
-      const { data, error } = await apiClient.from('inventory_records')
-        .select('product_code, product_name, input_quantity, raw_material_stock, processed_stock, finished_product_stock')
+      const companyId = await getCurrentCompanyId();
+      let query = apiClient.from('inventory_records')
+        .select('product_code, product_name, input_quantity, raw_material_stock, processed_stock, finished_product_stock, company_id')
         .gte('date', dateFrom.toISOString())
         .lte('date', dateTo.toISOString());
-      
+      if (companyId) query = query.eq('company_id', companyId);
+      const { data, error } = await query;
+
       if (error) return { error };
 
       const summary = (data || []).reduce((acc: any, record: any) => {
@@ -120,7 +138,12 @@ export class InventoryService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const rows = records.map(r => InventoryMapper.mapInventoryToDb({ ...r, createdBy: userId, updatedBy: userId }));
+        const companyId = await getCurrentCompanyId();
+        const rows = records.map(r => {
+          const row = InventoryMapper.mapInventoryToDb({ ...r, createdBy: userId, updatedBy: userId });
+          if (companyId) row.company_id = companyId;
+          return row;
+        });
         const res = await apiClient.from('inventory_records').insert(rows).select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)

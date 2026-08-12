@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { databaseService } from '../services/databaseService';
 import { InventoryRecord } from '../types';
+import { parseDateOrNow } from '@superapp/shared-utils';
 
 const MAX_BULK_ROWS = 200;
 
@@ -216,7 +217,7 @@ const InventoryImport: React.FC = () => {
     setIsLoading(true);
     try {
       const record: Omit<InventoryRecord, 'id' | 'createdAt' | 'updatedAt'> = {
-        date: new Date(singleForm.date),
+        date: parseDateOrNow(singleForm.date),
         productCode: singleForm.productCode,
         productName: singleForm.productName,
         inputQuantity: singleForm.inputQuantity ? parseFloat(singleForm.inputQuantity as string) : 0,
@@ -265,7 +266,7 @@ const InventoryImport: React.FC = () => {
     setIsLoading(true);
     try {
       const recordsToInsert = validRows.map(row => ({
-        date: new Date(row.date),
+        date: parseDateOrNow(row.date),
         productCode: row.productCode,
         productName: row.productName,
         inputQuantity: row.inputQuantity ? parseFloat(row.inputQuantity as string) : 0,

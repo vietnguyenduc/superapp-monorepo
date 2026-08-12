@@ -49,7 +49,7 @@ const ProfilePage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-gray-900">{displayName}</h1>
-            <p className="text-sm text-gray-500">{user?.email || "Trial Mode"}</p>
+            <p className="text-sm text-gray-500">{user?.email || "Chế độ thử nghiệm"}</p>
             {isTrial && (
               <span className="inline-block mt-1 px-2 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800 border border-yellow-200">
                 Dùng thử

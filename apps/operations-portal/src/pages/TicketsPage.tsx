@@ -44,7 +44,8 @@ const TicketsPage = () => {
       const userId = await getCurrentUserId();
       if (!userId) return;
 
-      const { data: userRecord } = await apiClient.from(TABLES.USERS).select('company_id').eq('id', userId).single();
+      const { data: userRecord } = await apiClient.from(TABLES.USERS).select('company_id').eq('id', userId).maybeSingle();
+      if (!userRecord?.company_id) throw new Error('Không tìm thấy công ty của bạn');
       
       const { error } = await apiClient.from(TABLES.OPERATION_TICKETS).insert({
         company_id: userRecord?.company_id,

@@ -1,4 +1,5 @@
 import { Product, ProductCategory, ProductStatus, InventoryForm } from '../types';
+import { parseDateOrNow } from '@superapp/shared-utils';
 
 export interface GoogleSheetProductRow {
   'Tên': string;
@@ -58,7 +59,7 @@ export class GoogleSheetImportMapper {
       businessStatus: 'active',
       
       createdAt: new Date(),
-      updatedAt: row['Ngày cập nhật'] ? new Date(row['Ngày cập nhật']) : new Date(),
+      updatedAt: row['Ngày cập nhật'] ? parseDateOrNow(row["Ngày cập nhật"]) : new Date(),
       createdBy: 'google-sheet-import',
       updatedBy: 'google-sheet-import',
       
