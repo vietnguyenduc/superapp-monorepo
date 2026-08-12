@@ -88,15 +88,15 @@ export default function IdentityManagement() {
         legacyArgs.new_company_id = editingUser.company_id;
         const { error: legacyError } = await apiClient.rpc('admin_update_user_claims', legacyArgs);
         if (legacyError) {
-          console.error('Failed to update claims (legacy):', legacyError);
-          alert('Error updating claims: ' + (legacyError.message || String(legacyError)));
+          console.error('Cập nhật quyền thất bại (legacy):', legacyError);
+          alert('Lỗi cập nhật quyền: ' + (legacyError.message || String(legacyError)));
         } else {
           setUsers(users.map(u => u.id === editingUser.id ? editingUser : u));
-          alert('Role, app access and company saved. Granular staff permissions were NOT saved because migration 039 (admin_staff_permissions) has not been applied to the database. Please apply docs/migration 039.');
+          alert('Đã lưu vai trò, quyền truy cập app và công ty. Quyền chi tiết của nhân viên CHƯA được lưu do migration 039 (admin_staff_permissions) chưa áp dụng. Vui lòng áp dụng migration 039.');
         }
       } else {
-        console.error('Failed to update claims:', error);
-        alert('Error updating claims: ' + msg);
+        console.error('Cập nhật quyền thất bại:', error);
+        alert('Lỗi cập nhật quyền: ' + msg);
       }
     } else {
       setUsers(users.map(u => u.id === editingUser.id ? editingUser : u));
@@ -105,7 +105,7 @@ export default function IdentityManagement() {
   };
 
   const handleRevoke = async (userId: string) => {
-    if (!confirm('Are you sure you want to force logout this user from all devices?')) return;
+    if (!confirm('Bạn có chắc muốn đăng xuất người dùng này khỏi tất cả thiết bị?')) return;
     setUpdatingId(userId);
 
     const { error } = await apiClient.functions.invoke('admin-revoke-user', {
@@ -113,10 +113,10 @@ export default function IdentityManagement() {
     });
 
     if (error) {
-      console.error('Revoke failed:', error);
-      alert('Failed to revoke sessions: ' + error.message);
+      console.error('Thu hồi phiên thất bại:', error);
+      alert('Thu hồi phiên thất bại: ' + error.message);
     } else {
-      alert('User sessions revoked successfully.');
+      alert('Đã thu hồi phiên người dùng thành công.');
     }
     setUpdatingId(null);
   };

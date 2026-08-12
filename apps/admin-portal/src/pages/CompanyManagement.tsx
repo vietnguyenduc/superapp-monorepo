@@ -49,9 +49,9 @@ export default function CompanyManagement() {
     });
 
     if (error) {
-      alert('Error creating company: ' + error.message);
+      alert('Lỗi tạo công ty: ' + error.message);
     } else {
-      alert('Company created successfully!');
+      alert('Tạo công ty thành công!');
       setShowModal(false);
       setNewCompany({ name: '', code: '' });
       fetchStats();
@@ -61,7 +61,7 @@ export default function CompanyManagement() {
   };
 
   const handleToggleStatus = async (companyId: string, currentStatus: boolean) => {
-    const action = currentStatus ? 'disable' : 'enable';
+    const action = currentStatus ? 'vô hiệu hóa' : 'kích hoạt';
     if (!confirm(`Are you sure you want to ${action} this company?`)) return;
 
     const { error } = await apiClient.rpc('admin_toggle_company_status', {

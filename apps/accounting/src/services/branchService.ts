@@ -25,13 +25,14 @@ export class BranchService extends BaseService {
       async () => {
         let query = apiClient.from("branches").select("*").eq("id", id);
         if (companyId) query = query.eq("company_id", companyId);
-        const { data, error } = await query.single();
+        const { data, error } = await query.maybeSingle();
+        if (!data) return { data: null, error: error || { message: "Không tìm thấy văn phòng" } };
         return { data, error };
       },
       async () => {
         let data = trialGet("branches") || [];
         const branch = data.find((b: any) => b.id === id && (!companyId || b.company_id === companyId));
-        return { data: branch || null, error: branch ? null : { message: "Branch not found" } };
+        return { data: branch || null, error: branch ? null : { message: "Không tìm thấy văn phòng" } };
       }
     );
   }
@@ -79,7 +80,7 @@ export class BranchService extends BaseService {
         const branches = trialGet("branches") || [];
         const branch = branches.find((b: any) => b.id === id);
         if (!branch || (companyId && branch.company_id !== companyId)) {
-          return { data: null, error: { message: "Branch not found" } };
+          return { data: null, error: { message: "Không tìm thấy văn phòng" } };
         }
         trialDelete("branches", id);
         return { data: null, error: null };

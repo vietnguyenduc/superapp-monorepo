@@ -8,15 +8,15 @@ export default function DataLifecycle() {
   const [isWiping, setIsWiping] = useState(false);
 
   const handleWipeData = async () => {
-    if (confirm('WARNING: This will permanently delete ALL trial data. Are you absolutely sure?')) {
+    if (confirm('CẢNH BÁO: Thao tác này sẽ xóa vĩnh viễn toàn bộ dữ liệu thử nghiệm. Bạn có chắc chắn?')) {
       setIsWiping(true);
       const { error } = await apiClient.rpc('admin_wipe_operational_data', {
         p_company_id: selectedCompanyId
       });
       if (error) {
-        alert('Error wiping data: ' + error.message);
+        alert('Lỗi xóa dữ liệu: ' + error.message);
       } else {
-        alert('Data has been successfully wiped.');
+        alert('Đã xóa dữ liệu thành công.');
       }
       setIsWiping(false);
     }
