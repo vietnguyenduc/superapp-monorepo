@@ -10,6 +10,7 @@
   - Summary cards show customer count, total opening balance, and total debt.
   - One-click Excel export with Vietnamese column headers (`Mã khách hàng`, `Tên khách hàng`, `Số dư đầu kỳ`, `Công nợ hiện tại`) compatible with the existing import parser.
   - Accessible from `CustomerList` via the new `Xuất tồn đầu kỳ` secondary button.
+- **Settings → Số dư đầu kỳ** list now supports searching by code/name, sorting by any column, and toggling between ascending (`Bé → Lớn`) and descending (`Lớn → Bé`).
 
 ## 2026-08-21
 
