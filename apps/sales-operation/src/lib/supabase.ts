@@ -158,6 +158,16 @@ export const getCurrentUserId = async (): Promise<string | null> => {
   return user?.id || null;
 };
 
+// Helper function to get current user role (for RLS payload fields)
+export const getCurrentUserRole = async (): Promise<string | null> => {
+  const isTrial = typeof window !== 'undefined' && localStorage.getItem('isTrial') === 'true';
+  if (isTrial) return 'admin';
+  const user = await getCurrentUser();
+  if (!user) return null;
+  const { data } = await supabase.from(TABLES.USERS).select('role').eq('id', user.id).maybeSingle();
+  return data?.role || null;
+};
+
 // Helper function to get current company ID (for tenant-scoped queries)
 export const getCurrentCompanyId = async (): Promise<string | null> => {
   const isTrial = typeof window !== 'undefined' && localStorage.getItem('isTrial') === 'true';

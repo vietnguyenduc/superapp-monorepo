@@ -1,4 +1,4 @@
-import { getCurrentCompanyId, getCurrentUserId, supabase, apiClient } from "../lib/supabase";
+import { getCurrentCompanyId, getCurrentUserId, getCurrentUserRole, supabase, apiClient } from "../lib/supabase";
 import { SpecialOutboundRecord, ApprovalLog } from '../types';
 import { BaseService, ServiceResponse } from './baseService';
 
@@ -176,10 +176,25 @@ export class SpecialOutboundService extends BaseService {
     );
   }
 
-  static async createApprovalLog(logData: Omit<ApprovalLog, 'id' | 'created_at'>): Promise<ServiceResponse<ApprovalLog>> {
+  static async createApprovalLog(logData: { record_id: string; action: string; comment?: string; user_id: string | null; user_name: string }): Promise<ServiceResponse<ApprovalLog>> {
     return this.execute(
       async () => {
-        return await apiClient.from('approval_logs').insert([logData]).select().single();
+        if (!logData.user_id) {
+          return { data: null, error: { message: 'Thiếu user_id cho approval log' }, status: 400 };
+        }
+        const userRole = await getCurrentUserRole();
+        const status = (logData.action === 'approved' || logData.action === 'rejected') ? logData.action : 'pending';
+        const payload = {
+          record_type: 'special_outbound',
+          record_id: logData.record_id,
+          action: logData.action,
+          status,
+          comment: logData.comment || null,
+          user_id: logData.user_id,
+          user_name: logData.user_name,
+          user_role: userRole || 'staff',
+        };
+        return await apiClient.from('approval_logs').insert([payload]).select().single();
       },
       async () => ({ success: true, data: null as any, error: null })
     );

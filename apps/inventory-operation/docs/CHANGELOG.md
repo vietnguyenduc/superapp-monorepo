@@ -1,5 +1,10 @@
 # inventory-operation — Changelog
 
+## 2026-08-13 — Fix approval_logs payload and tenant scoping
+
+- `src/lib/supabase.ts`: thêm `getCurrentUserRole()` để lấy `role` từ bảng `users`.
+- `src/services/specialOutboundService.ts`: khi tạo `approval_logs` giờ gửi đầy đủ các cột bắt buộc (`record_type`, `status`, `user_role`) cùng `record_id`, `action`, `comment`, `user_id`, `user_name`, tránh lỗi RLS/column-not-null khi ghi log duyệt xuất đặc biệt.
+
 ## 2026-08-04 — Dịch nhãn Trial Mode
 
 - `src/pages/ProfilePage.tsx`: fallback email "Trial Mode" → "Chế độ thử nghiệm".
