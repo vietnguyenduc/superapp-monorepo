@@ -178,6 +178,16 @@ export const getCurrentCompanyId = async (): Promise<string | null> => {
   return data?.company_id || null;
 };
 
+// Helper function to get current branch ID (for branch-scoped queries)
+export const getCurrentBranchId = async (): Promise<string | null> => {
+  const isTrial = typeof window !== 'undefined' && localStorage.getItem('isTrial') === 'true';
+  if (isTrial) return 'trial-branch';
+  const user = await getCurrentUser();
+  if (!user) return null;
+  const { data } = await supabase.from(TABLES.USERS).select('branch_id').eq('id', user.id).maybeSingle();
+  return data?.branch_id || null;
+};
+
 // Helper function to test database connection
 export const testConnection = async (): Promise<boolean> => {
   try {
