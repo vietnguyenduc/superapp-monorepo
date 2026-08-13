@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, Settings, Image as ImageIcon, Save } from 'lucide-react';
+import { Building2, Image as ImageIcon, Save } from 'lucide-react';
 
 export default function GlobalSettings() {
   return (

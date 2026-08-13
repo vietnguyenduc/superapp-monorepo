@@ -6,6 +6,8 @@ import './lib/supabase.ts'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { initErrorTracking } from "@superapp/shared-utils";
 
+initErrorTracking({ appName: 'admin-portal' });
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>

@@ -13,10 +13,10 @@ export default function IdentityManagement() {
   const [editingUser, setEditingUser] = useState<UserClaim | null>(null);
   const { selectedCompanyId, companies } = useAdminContext();
 
-  const fetchUsers = async () => {
+  const fetchUsers = React.useCallback(async () => {
     setLoading(true);
-    let usersData: any[] | null = null;
-    let fetchError: any = null;
+    let usersData: Record<string, unknown>[] | null = null;
+    let fetchError: { message?: string } | null = null;
 
     // Prefer the admin RPC, but fall back to a direct table query when the
     // production RPC is still an older version that does not return
@@ -49,20 +49,18 @@ export default function IdentityManagement() {
       console.error('Failed to fetch users:', fetchError);
       alert('Error fetching users. Are you sure you are a Master Admin?');
     } else {
-      setUsers((usersData || []).map((u: any) => ({
+      setUsers((usersData || []).map((u: Record<string, unknown>) => ({
         ...u,
-        app_permissions: u.app_permissions || {},
-        staff_permissions: u.staff_permissions || {},
+        app_permissions: (u.app_permissions as Record<string, unknown>) || {},
+        staff_permissions: (u.staff_permissions as Record<string, unknown>) || {},
       })));
     }
     setLoading(false);
-  };
+  }, [selectedCompanyId]);
 
-  /* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
   useEffect(() => {
     fetchUsers();
-  }, [selectedCompanyId]);
-  /* eslint-enable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
+  }, [fetchUsers]);
 
   const handleSave = async (editingUser: UserClaim) => {
     setUpdatingId(editingUser.id);

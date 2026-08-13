@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Database, AlertTriangle, RefreshCw, Trash2, HardDrive, ShieldAlert } from 'lucide-react';
-import { supabase , apiClient} from "../lib/supabase";
+import { AlertTriangle, RefreshCw, Trash2, HardDrive } from 'lucide-react';
+import { apiClient } from "../lib/supabase";
 import { useAdminContext } from '../contexts/AdminContext';
 
 export default function DataLifecycle() {

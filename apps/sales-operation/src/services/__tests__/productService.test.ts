@@ -5,17 +5,20 @@ import { fallbackService } from '../fallbackService';
 import { mockSupabaseChain } from './testUtils';
 
 // Mock supabase module with getCurrentUserId
-vi.mock('../../lib/supabase', () => ({
-  supabase: {
-    from: vi.fn(),
-  },
-  getCurrentUserId: vi.fn().mockResolvedValue('mock-user-id'),
-  TABLES: {
-    PRODUCTS: 'products',
-    INVENTORY_RECORDS: 'inventory_records',
-    SALES_RECORDS: 'sales_records',
-  },
-}));
+vi.mock('../../lib/supabase', () => {
+  const mockSupabase = { from: vi.fn() };
+  return {
+    supabase: mockSupabase,
+    apiClient: { get from() { return mockSupabase.from; } },
+    getCurrentUserId: vi.fn().mockResolvedValue('mock-user-id'),
+    getCurrentCompanyId: vi.fn().mockResolvedValue(null),
+    TABLES: {
+      PRODUCTS: 'products',
+      INVENTORY_RECORDS: 'inventory_records',
+      SALES_RECORDS: 'sales_records',
+    },
+  };
+});
 
 vi.mock('../fallbackService', () => ({
   fallbackService: {

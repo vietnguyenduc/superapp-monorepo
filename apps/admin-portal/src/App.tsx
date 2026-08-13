@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
-import { Shield, Users, Settings, Database, Activity, LogOut, BookOpen, Menu, X } from 'lucide-react';
+import { Shield, Users, Settings, Database, LogOut, BookOpen, Menu, X } from 'lucide-react';
 import { AuthProvider, CompanyProvider, CompanyBadge, useAuthContext } from '@superapp/iam';
 import IdentityManagement from './pages/IdentityManagement';
 import ConsolidatedReports from './pages/ConsolidatedReports';
@@ -467,7 +467,7 @@ const AppSwitcher = () => {
           .catch(() => setStatuses(prev => ({ ...prev, [app.id]: false })));
       });
     }
-  }, [isOpen]);
+  }, [isOpen, apps]);
 
   return (
     <div className="relative">

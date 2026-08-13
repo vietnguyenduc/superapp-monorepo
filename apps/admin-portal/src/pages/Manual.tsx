@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { BookOpen, Shield, ShieldAlert, Key, Database, LayoutDashboard } from "lucide-react";
+import { BookOpen, Shield, Database } from "lucide-react";
 
 const Manual: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>("getting-started");
