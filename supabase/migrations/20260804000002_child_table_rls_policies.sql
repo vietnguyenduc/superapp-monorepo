@@ -16,7 +16,8 @@ ALTER TABLE "public"."operation_training_progress" ADD COLUMN IF NOT EXISTS "com
 UPDATE "public"."operation_chat_groups" g
 SET "company_id" = u."company_id"
 FROM "public"."users" u
-WHERE g."created_by" = u."id";
+WHERE g."created_by" = u."id"
+  AND g."company_id" IS NULL;
 
 UPDATE "public"."operation_chat_groups" g
 SET "company_id" = (
@@ -31,7 +32,8 @@ WHERE g."company_id" IS NULL;
 UPDATE "public"."operation_training_courses" c
 SET "company_id" = u."company_id"
 FROM "public"."users" u
-WHERE c."created_by" = u."id";
+WHERE c."created_by" = u."id"
+  AND c."company_id" IS NULL;
 
 UPDATE "public"."operation_training_materials" m
 SET "company_id" = c."company_id"

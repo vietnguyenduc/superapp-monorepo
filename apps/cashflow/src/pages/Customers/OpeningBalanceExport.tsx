@@ -42,7 +42,7 @@ const OpeningBalanceExport: React.FC = () => {
     setError(null);
     try {
       const result = await databaseService.customers.getCustomers({
-        limit: 1000,
+        limit: 10000,
         company_id: companyId,
         status: "active",
       });

@@ -1,4 +1,5 @@
 import { type FC, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSettingsContext } from "../../SettingsContext";
 import Button from "../../../../components/UI/Button";
 import { isAdmin, canManageAllCustomers } from "../../../../utils/permissions";
@@ -7,6 +8,7 @@ import { toast } from "../../../../utils/toast";
 import { databaseService } from "../../../../services/database";
 
 export const OpeningBalanceTab: FC = () => {
+  const { t } = useTranslation();
   const {
     activeOpeningSubTab,
     setActiveOpeningSubTab,
@@ -128,22 +130,22 @@ export const OpeningBalanceTab: FC = () => {
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as SortColumn)}
                     className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-2 py-2"
-                    aria-label="Sắp xếp theo"
+                    aria-label={t("openingBalance.sortBy", "Sắp xếp theo")}
                   >
-                    <option value="customer_code">Mã KH</option>
-                    <option value="full_name">Tên KH</option>
-                    <option value="opening_balance">Số dư đầu kỳ hiện tại</option>
-                    <option value="current_balance">Số dư hiện tại</option>
-                    <option value="new_opening_balance">Số dư đầu kỳ mới</option>
-                    <option value="new_total">Số dư mới sau cập nhật</option>
+                    <option value="customer_code">{t("openingBalance.customerCode", "Mã KH")}</option>
+                    <option value="full_name">{t("openingBalance.fullName", "Tên KH")}</option>
+                    <option value="opening_balance">{t("openingBalance.currentOpeningBalance", "Số dư đầu kỳ hiện tại")}</option>
+                    <option value="current_balance">{t("openingBalance.currentBalance", "Số dư hiện tại")}</option>
+                    <option value="new_opening_balance">{t("openingBalance.newOpeningBalance", "Số dư đầu kỳ mới")}</option>
+                    <option value="new_total">{t("openingBalance.newTotal", "Số dư mới sau cập nhật")}</option>
                   </select>
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={() => setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))}
-                    title={sortOrder === "asc" ? "Tăng dần" : "Giảm dần"}
+                    title={sortOrder === "asc" ? t("openingBalance.ascending", "Tăng dần") : t("openingBalance.descending", "Giảm dần")}
                   >
-                    {sortOrder === "asc" ? "Bé → Lớn" : "Lớn → Bé"}
+                    {sortOrder === "asc" ? t("openingBalance.ascShort", "Bé → Lớn") : t("openingBalance.descShort", "Lớn → Bé")}
                   </Button>
                 </div>
               </div>
