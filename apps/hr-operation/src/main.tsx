@@ -17,9 +17,9 @@ if (!rootElement) {
 }
 
 try {
-  const root = initErrorTracking({ appName: "hr-operation" });
+  initErrorTracking({ appName: "hr-operation" });
 
-ReactDOM.createRoot(rootElement || document.getElementById('root')!);
+  const root = ReactDOM.createRoot(rootElement || document.getElementById('root')!);
 
   root.render(
     <React.StrictMode>

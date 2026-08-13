@@ -17,10 +17,10 @@ if (!rootElement) {
 }
 
 try {
-  const root = initErrorTracking({ appName: "sales-operation" });
+  initErrorTracking({ appName: "sales-operation" });
 
-ReactDOM.createRoot(rootElement || document.getElementById('root')!);
-  
+  const root = ReactDOM.createRoot(rootElement || document.getElementById('root')!);
+
   root.render(
     <React.StrictMode>
       <App />
