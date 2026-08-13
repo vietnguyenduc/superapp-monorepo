@@ -1,5 +1,16 @@
 # Changelog — Cashflow
 
+## 2026-08-22
+
+### Added
+
+- **New opening-balance export screen on Customer page** at `/customers/opening-balance`.
+  - Lists all active customers with `Số dư đầu kỳ` and `Công nợ hiện tại`.
+  - Searchable by customer code or name; sortable by code, name, opening balance, and current debt.
+  - Summary cards show customer count, total opening balance, and total debt.
+  - One-click Excel export with Vietnamese column headers (`Mã khách hàng`, `Tên khách hàng`, `Số dư đầu kỳ`, `Công nợ hiện tại`) compatible with the existing import parser.
+  - Accessible from `CustomerList` via the new `Xuất tồn đầu kỳ` secondary button.
+
 ## 2026-08-21
 
 ### Fixed
