@@ -17,6 +17,7 @@ import { ToastContainer } from "./components/UI/ToastContainer";
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard/Dashboard"));
 const CustomerList = lazyWithRetry(() => import("./pages/Customers/CustomerList"));
 const CustomerDetail = lazyWithRetry(() => import("./pages/Customers/CustomerDetail"));
+const OpeningBalanceExport = lazyWithRetry(() => import("./pages/Customers/OpeningBalanceExport"));
 const Reports = lazyWithRetry(() => import("./pages/Reports/Reports"));
 const TransactionList = lazyWithRetry(() => import("./pages/Transactions/TransactionList"));
 const TransactionImport = lazyWithRetry(() => import("./pages/DataImport/TransactionImport"));
@@ -73,6 +74,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="customers" element={<CustomerList />} />
             <Route path="customers/:customerId" element={<CustomerDetail />} />
+            <Route path="customers/opening-balance" element={<OpeningBalanceExport />} />
             <Route path="transactions" element={<TransactionList />} />
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<Settings />} />

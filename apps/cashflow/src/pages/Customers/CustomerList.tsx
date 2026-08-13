@@ -654,6 +654,14 @@ const CustomerList: React.FC = () => {
                 >
                   Xuất Excel
                 </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => navigate("/customers/opening-balance")}
+                  className="flex-shrink-0"
+                >
+                  {t("customers.exportOpeningBalance", "Xuất tồn đầu kỳ")}
+                </Button>
               </div>
             </div>
           </div>

@@ -245,7 +245,8 @@ export class SpecialOutboundService extends BaseService {
 
         const stats = data?.reduce((acc: any, record: any) => {
           acc.total += 1;
-          acc[record.approval_status]++;
+          const status = record.approval_status ?? 'unknown';
+          acc[status] = (acc[status] || 0) + 1;
           acc.totalQuantity += record.quantity;
           if (!acc.byReason[record.reason]) acc.byReason[record.reason] = 0;
           acc.byReason[record.reason] += 1;
