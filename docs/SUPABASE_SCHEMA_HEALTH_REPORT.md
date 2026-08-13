@@ -35,10 +35,17 @@ Tables missing `company_id` column: 27
 - **stock_check_items** (2 policies)
 - **user_preferences** (3 policies)
 
-## Recommendations
+## Actions taken (2026-08-13)
 
-1. Migration history is out of sync with remote. Run `supabase migration repair` or reconcile local file names.
-2. Child tables without `company_id` should either add `company_id` denormalized column for performance/RLS simplicity or verify parent-join policies cover all CRUD.
-3. `approval_logs` currently does not scope by company_id in RLS; review for multi-tenant leakage.
-4. `goods_receipt_items` only has a SELECT policy; INSERT/UPDATE/DELETE will be denied for non-owner roles.
-5. `fm_*` tables (framework-method) are excluded from audit per user request.
+- **`approval_logs`**: added `company_id` column with trigger backfill from `special_outbound_records`/`users`, added FK to `companies`, and replaced unscoped policies with tenant-scoped SELECT/INSERT/UPDATE/DELETE policies. App code in `sales-operation` and `inventory-operation` now provides required fields (`record_type`, `status`, `user_role`) when inserting logs.
+  - Migration: `supabase/migrations/20260804000001_approval_logs_company_id_and_rls.sql`
+- **Child tables missing `company_id`**: created CRUD parent-join RLS policies for 15 high-risk child tables so mutations are now scoped to the parent record's `company_id`.
+  - Migration: `supabase/migrations/20260804000002_child_table_rls_policies.sql`
+  - Covered tables: `accounting_transaction_lines`, `employee_kpis`, `employee_shifts`, `goods_receipt_items`, `key_results`, `operation_chat_members`, `operation_chat_messages`, `operation_training_materials`, `operation_training_progress`, `operation_training_questions`, `payroll_items`, `po_items`, `product_conversions`, `sales_order_items`, `stock_check_items`.
+- Excluded from this pass (per project scope): `companies`, `color_settings`, `product_column_presets`, `user_preferences`, and all `fm_*` (framework-method) tables.
+
+## Remaining recommendations
+
+1. Migration history is still out of sync with remote. Run `supabase migration repair` or reconcile local file names before applying new migrations.
+2. `fm_*` tables (framework-method) are excluded from audit per user request.
+3. `color_settings`, `product_column_presets`, `companies`, and `user_preferences` remain global/user-scoped by design.
