@@ -6,6 +6,7 @@
 // data flows through to the app automatically.
 
 import { dashboardMockData } from "./mockData";
+import { getCustomerBalanceDelta } from "./businessLogic";
 
 const TRIAL_STORE_KEY = "cashflow_trial_store";
 const TRIAL_MODE_KEY = "cashflow_trial_mode_enabled";
@@ -181,6 +182,18 @@ const seedData = {
     },
   ],
 };
+
+// Normalize seed customer balances so they stay consistent when recalculated
+// from opening_balance + completed transactions.
+for (const c of seedData.customers) {
+  const customer = c as Record<string, unknown>;
+  const txSum = seedData.transactions
+    .filter((tx) => (tx as Record<string, unknown>).customer_id === customer.id && (tx as Record<string, unknown>).status === "completed")
+    .reduce((sum, tx) => sum + getCustomerBalanceDelta(String((tx as Record<string, unknown>).transaction_type), Number((tx as Record<string, unknown>).amount)), 0);
+  const total = Number(customer.total_balance ?? 0);
+  customer.opening_balance = total - txSum;
+  customer.current_balance = total;
+}
 
 type TrialRecord = Record<string, unknown>;
 

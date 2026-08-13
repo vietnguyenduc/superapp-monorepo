@@ -54,9 +54,9 @@ All form/entity validators in `src/services/businessLogic/validation.ts` return 
 2. Normalizes with `transformRawTransaction()`.
 3. Inserts into `transactions`.
 4. Calls `_syncTransactionBalance(null, newTx)`:
-   - `getCustomerBalanceDelta(type, amount)` applied to the customer.
-   - `getBankAccountBalanceDelta(type, amount)` applied to the bank account.
-   - `customers.last_transaction_date` updated if the transaction date is newer.
+   - Recalculates the affected customer's `total_balance`/`current_balance` from `opening_balance + Σ(amount × math_factor)`.
+   - Adjusts the bank account `balance` by the old/new cash delta (`getBankAccountBalanceDelta`).
+   - Updates `customers.last_transaction_date` to the latest completed transaction.
 
 ### Update transaction
 
@@ -65,17 +65,17 @@ All form/entity validators in `src/services/businessLogic/validation.ts` return 
 2. Validates and builds the update payload (strips `id`, `created_at`, `company_id`).
 3. Updates `transactions`.
 4. Calls `_syncTransactionBalance(oldTx, mergedNewTx)`:
-   - If `customer_id` changed: reverse old delta on old customer, apply new delta on new customer.
-   - If `bank_account_id` changed: reverse old bank delta on old account, apply new delta on new account.
-   - Otherwise adjust by `newDelta - oldDelta` on the same entity.
-   - Bumps `last_transaction_date` on the new customer if needed.
+   - Recalculates the affected customer(s) from the ledger so prior drift is repaired.
+   - If `customer_id` changed, both old and new customers are recalculated.
+   - Bank account `balance` is adjusted by `newBankDelta - oldBankDelta`; if `bank_account_id` changed, both old and new accounts are adjusted.
+   - Bumps `last_transaction_date` to the latest completed transaction.
 
 ### Delete transaction
 
 `transactionService.deleteTransaction()`:
 1. Fetches the old transaction row.
 2. Deletes from `transactions`.
-3. Calls `_syncTransactionBalance(oldTx, null)` to reverse both deltas.
+3. Calls `_syncTransactionBalance(oldTx, null)` to recalculate the affected customer and adjust the bank account balance.
 
 ### Bulk import
 
@@ -85,7 +85,7 @@ All form/entity validators in `src/services/businessLogic/validation.ts` return 
 3. Resolves customers by `customer_code`, bank accounts and branches by label.
 4. Normalizes each row.
 5. Bulk inserts into `transactions`.
-6. Iterates the inserted rows and calls `_syncTransactionBalance(null, row)` for each.
+6. Collects the unique `customer_id`s and `bank_account_id`s from the inserted rows and recalculates each customer/bank balance once, instead of calling `_syncTransactionBalance` per row.
 
 ### Transaction edit UI (`TransactionList.tsx`)
 

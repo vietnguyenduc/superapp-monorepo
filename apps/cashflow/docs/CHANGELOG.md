@@ -1,5 +1,21 @@
 # Changelog — Cashflow
 
+## 2026-08-22
+
+### Fixed
+
+- **Customer balance not updating after transactions** (`critical issue: balance not update`). `transactionService._syncTransactionBalance` now recalculates `customers.total_balance` and `customers.current_balance` from `opening_balance + Σ(amount × math_factor)` instead of applying a single incremental delta. This repairs prior drift and ensures all `completed` transactions (charge, payment, refund, deposit, adjustment) are reflected.
+  - `transactionService._recalcCustomerBalance` fetches `opening_balance`, sums all completed transactions for that customer using `transactionTypeService.getTransactionTypeFactorMap` (falling back to canonical factors), and updates both `total_balance` and `current_balance`.
+  - `transactionService._syncTransactionBalance` recalculates the affected customer(s) on create/update/delete; bank account `balance` is still adjusted incrementally by `getBankAccountBalanceDelta`.
+  - Bulk import collects unique `customer_id`s and `bank_account_id`s and recalculates each once.
+  - Trial-mode seed customers now receive a derived `opening_balance` so the hardcoded `total_balance` stays consistent when recalculated.
+  - `transactionTypeService.getTransactionTypes` now falls back to the canonical `math_factor` when a `transaction_types` row has `math_factor` NULL, so the factor map is never missing for known types.
+- **Fixed `initErrorTracking` void-return crash** in `apps/inventory-operation/src/main.tsx`, `apps/sales-operation/src/main.tsx`, and `apps/hr-operation/src/main.tsx`. These files were discarding the `ReactDOM.createRoot(...)` result and calling `.render()` on the `initErrorTracking` return value, causing `Cannot read properties of undefined (reading 'render')` in production. They now initialize error tracking and create the React root separately.
+
+### Added
+
+- **Supabase migration `supabase/migrations/20260804000004_balance_recalc_trigger.sql`** creates `update_customer_balance()` and `update_bank_account_balance()` trigger functions that recalculate balances from the ledger on every `INSERT`/`UPDATE`/`DELETE` of `public.transactions`, then backfills all existing customers and bank accounts.
+
 ## 2026-08-21
 
 ### Fixed
