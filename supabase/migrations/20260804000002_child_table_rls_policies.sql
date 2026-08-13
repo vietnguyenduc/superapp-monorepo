@@ -5,6 +5,50 @@
 -- Framework-method (fm_*) tables, global lookup tables (color_settings, product_column_presets),
 -- companies, and user_preferences are intentionally excluded per project audit scope.
 
+-- Some parent/child tables in the operations portal were created without a company_id column.
+-- Add the column and backfill from the course/group creator before the new RLS policies run.
+ALTER TABLE "public"."operation_chat_groups" ADD COLUMN IF NOT EXISTS "company_id" UUID;
+ALTER TABLE "public"."operation_training_courses" ADD COLUMN IF NOT EXISTS "company_id" UUID;
+ALTER TABLE "public"."operation_training_materials" ADD COLUMN IF NOT EXISTS "company_id" UUID;
+ALTER TABLE "public"."operation_training_questions" ADD COLUMN IF NOT EXISTS "company_id" UUID;
+ALTER TABLE "public"."operation_training_progress" ADD COLUMN IF NOT EXISTS "company_id" UUID;
+
+UPDATE "public"."operation_chat_groups" g
+SET "company_id" = u."company_id"
+FROM "public"."users" u
+WHERE g."created_by" = u."id";
+
+UPDATE "public"."operation_chat_groups" g
+SET "company_id" = (
+  SELECT u."company_id"
+  FROM "public"."operation_chat_members" m
+  JOIN "public"."users" u ON u."id" = m."user_id"
+  WHERE m."group_id" = g."id"
+  LIMIT 1
+)
+WHERE g."company_id" IS NULL;
+
+UPDATE "public"."operation_training_courses" c
+SET "company_id" = u."company_id"
+FROM "public"."users" u
+WHERE c."created_by" = u."id";
+
+UPDATE "public"."operation_training_materials" m
+SET "company_id" = c."company_id"
+FROM "public"."operation_training_courses" c
+WHERE m."course_id" = c."id";
+
+UPDATE "public"."operation_training_questions" q
+SET "company_id" = c."company_id"
+FROM "public"."operation_training_materials" m
+JOIN "public"."operation_training_courses" c ON c."id" = m."course_id"
+WHERE q."material_id" = m."id";
+
+UPDATE "public"."operation_training_progress" p
+SET "company_id" = c."company_id"
+FROM "public"."operation_training_courses" c
+WHERE p."course_id" = c."id";
+
 DROP POLICY IF EXISTS "Users can modify accounting_transaction_lines" ON "public"."accounting_transaction_lines";
 DROP POLICY IF EXISTS "Users can view accounting_transaction_lines" ON "public"."accounting_transaction_lines";
 
