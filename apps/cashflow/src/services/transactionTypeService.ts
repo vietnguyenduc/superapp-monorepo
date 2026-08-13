@@ -1,7 +1,7 @@
 import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
 import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
-import { validateTransactionTypeData, transformRawTransactionType, normalizeTransactionType } from "./businessLogic";
+import { validateTransactionTypeData, transformRawTransactionType, normalizeTransactionType, getCustomerBalanceDelta } from "./businessLogic";
 import { insertWithFallback, updateWithFallback } from "./updateHelpers";
 
 export class TransactionTypeService extends BaseService {
@@ -43,7 +43,9 @@ export class TransactionTypeService extends BaseService {
           name: String(t.name ?? ""),
           color: String(t.color || "blue"),
           isActive: t.is_active !== false,
-          math_factor: Number(t.math_factor ?? 1),
+          math_factor: t.math_factor === null || t.math_factor === undefined
+            ? getCustomerBalanceDelta(String(t.name || t.id || ""), 1)
+            : Number(t.math_factor),
           impact_type: String(t.impact_type ?? "increase"),
           company_id: typeof t.company_id === "string" ? t.company_id : null,
         }));
@@ -59,7 +61,9 @@ export class TransactionTypeService extends BaseService {
           name: String(t.name ?? ""),
           color: String(t.color || "blue"),
           isActive: t.is_active !== false,
-          math_factor: Number(t.math_factor ?? 1),
+          math_factor: t.math_factor === null || t.math_factor === undefined
+            ? getCustomerBalanceDelta(String(t.name || t.id || ""), 1)
+            : Number(t.math_factor),
           impact_type: String(t.impact_type ?? "increase"),
           company_id: typeof t.company_id === "string" ? t.company_id : null,
         }));
