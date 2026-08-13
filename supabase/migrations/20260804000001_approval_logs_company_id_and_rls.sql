@@ -22,6 +22,8 @@ WHERE al."user_id" = u."id"
 
 -- 4. Add foreign key constraint to companies
 ALTER TABLE "public"."approval_logs"
+  DROP CONSTRAINT IF EXISTS "approval_logs_company_id_fkey";
+ALTER TABLE "public"."approval_logs"
   ADD CONSTRAINT "approval_logs_company_id_fkey"
   FOREIGN KEY ("company_id") REFERENCES "public"."companies"("id")
   ON DELETE SET NULL;
