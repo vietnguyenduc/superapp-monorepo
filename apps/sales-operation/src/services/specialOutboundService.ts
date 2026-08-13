@@ -1,4 +1,4 @@
-import { getCurrentCompanyId, getCurrentUserId, supabase, apiClient } from "../lib/supabase";
+import { getCurrentCompanyId, getCurrentUserId, getCurrentUserRole, getCurrentBranchId, supabase } from "../lib/supabase";
 import { SpecialOutboundRecord, ApprovalLog } from '../types';
 import { BaseService, ServiceResponse } from './baseService';
 
@@ -42,8 +42,20 @@ export class SpecialOutboundService extends BaseService {
       async () => {
         const userId = await getCurrentUserId();
         const companyId = await getCurrentCompanyId();
-        const newRecord: any = { ...recordData, approval_status: 'pending', created_by: userId, updated_by: userId };
-        if (companyId) newRecord.company_id = companyId;
+        const branchId = await getCurrentBranchId();
+        if (!userId) {
+          return { data: null, error: { message: 'Không xác định người dùng' } };
+        }
+        // Strip UI-only / non-DB fields and map to the actual table columns
+        const { created_by, updated_by, requestedBy, requested_by, approval_status, ...rest } = recordData as any;
+        const newRecord: any = {
+          ...rest,
+          approval_status: 'pending',
+          requested_by: userId,
+          company_id: companyId,
+          branch_id: branchId,
+          updated_at: new Date().toISOString(),
+        };
         const { data, error } = await supabase
           .from('special_outbound_records')
           .insert([newRecord])
@@ -62,7 +74,8 @@ export class SpecialOutboundService extends BaseService {
         return { data, error };
       },
       async () => {
-        const mock = { ...recordData, id: 'mock-' + Date.now(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), approval_status: 'pending' as const };
+        const { created_by, updated_by, requestedBy, requested_by, approval_status, ...rest } = recordData as any;
+        const mock = { ...rest, id: 'mock-' + Date.now(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), approval_status: 'pending' as const, requested_by: 'mock-user' };
         return { success: true, data: mock, error: null };
       }
     );
@@ -73,9 +86,15 @@ export class SpecialOutboundService extends BaseService {
       async () => {
         const userId = await getCurrentUserId();
         const companyId = await getCurrentCompanyId();
+        // Do not allow changing ownership/tenant fields via this path
+        const { created_by, updated_by, requestedBy, requested_by, company_id, branch_id, ...rest } = updates as any;
+        const updatePayload: any = {
+          ...rest,
+          updated_at: new Date().toISOString(),
+        };
         let query = supabase
           .from('special_outbound_records')
-          .update({ ...updates, updated_by: userId, updated_at: new Date().toISOString() })
+          .update(updatePayload)
           .eq('id', id);
         if (companyId) query = query.eq('company_id', companyId);
         const { data, error } = await query
@@ -101,8 +120,8 @@ export class SpecialOutboundService extends BaseService {
     return this.execute(
       async () => {
         const companyId = await getCurrentCompanyId();
-        await apiClient.from('approval_logs').delete().eq('record_id', id);
-        let query = apiClient.from('special_outbound_records').delete().eq('id', id);
+        await supabase.from('approval_logs').delete().eq('record_id', id);
+        let query = supabase.from('special_outbound_records').delete().eq('id', id);
         if (companyId) query = query.eq('company_id', companyId);
         const { error } = await query;
         return { data: !error, error };
@@ -118,7 +137,12 @@ export class SpecialOutboundService extends BaseService {
         const companyId = await getCurrentCompanyId();
         let query = supabase
           .from('special_outbound_records')
-          .update({ approval_status: 'approved', updated_by: userId, updated_at: new Date().toISOString() })
+          .update({
+            approval_status: 'approved',
+            approved_by: userId,
+            approved_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
           .eq('id', id);
         if (companyId) query = query.eq('company_id', companyId);
         const { error } = await query;
@@ -145,7 +169,13 @@ export class SpecialOutboundService extends BaseService {
         const companyId = await getCurrentCompanyId();
         let query = supabase
           .from('special_outbound_records')
-          .update({ approval_status: 'rejected', updated_by: userId, updated_at: new Date().toISOString() })
+          .update({
+            approval_status: 'rejected',
+            approved_by: userId,
+            approved_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            rejection_reason: comment,
+          })
           .eq('id', id);
         if (companyId) query = query.eq('company_id', companyId);
         const { error } = await query;
@@ -168,18 +198,34 @@ export class SpecialOutboundService extends BaseService {
   static async getApprovalLogs(recordId?: string): Promise<ServiceResponse<ApprovalLog[]>> {
     return this.execute(
       async () => {
-        let query = apiClient.from('approval_logs').select('*').order('created_at', { ascending: false });
+        let query = supabase.from('approval_logs').select('*').order('created_at', { ascending: false });
         if (recordId) query = query.eq('record_id', recordId);
-        return await query;
+        const { data, error } = await query;
+        return { data, error };
       },
       async () => ({ success: true, data: [], error: null })
     );
   }
 
-  static async createApprovalLog(logData: Omit<ApprovalLog, 'id' | 'created_at'>): Promise<ServiceResponse<ApprovalLog>> {
+  static async createApprovalLog(logData: { record_id: string; action: string; comment?: string; user_id: string | null; user_name: string }): Promise<ServiceResponse<ApprovalLog>> {
     return this.execute(
       async () => {
-        return await apiClient.from('approval_logs').insert([logData]).select().single();
+        if (!logData.user_id) {
+          return { data: null, error: { message: 'Thiếu user_id cho approval log' }, status: 400 };
+        }
+        const userRole = await getCurrentUserRole();
+        const status = (logData.action === 'approved' || logData.action === 'rejected') ? logData.action : 'pending';
+        const payload = {
+          record_type: 'special_outbound',
+          record_id: logData.record_id,
+          action: logData.action,
+          status,
+          comment: logData.comment || null,
+          user_id: logData.user_id,
+          user_name: logData.user_name,
+          user_role: userRole || 'staff',
+        };
+        return await supabase.from('approval_logs').insert([payload]).select().maybeSingle();
       },
       async () => ({ success: true, data: null as any, error: null })
     );
@@ -199,7 +245,7 @@ export class SpecialOutboundService extends BaseService {
 
         const stats = data?.reduce((acc: any, record: any) => {
           acc.total += 1;
-          acc[record.approval_status] = (acc[record.approval_status] || 0) + 1;
+          acc[record.approval_status]++;
           acc.totalQuantity += record.quantity;
           if (!acc.byReason[record.reason]) acc.byReason[record.reason] = 0;
           acc.byReason[record.reason] += 1;

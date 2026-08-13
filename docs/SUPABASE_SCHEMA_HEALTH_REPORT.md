@@ -35,10 +35,20 @@ Tables missing `company_id` column: 27
 - **stock_check_items** (2 policies)
 - **user_preferences** (3 policies)
 
-## Recommendations
+## Actions taken (2026-08-13)
 
-1. Migration history is out of sync with remote. Run `supabase migration repair` or reconcile local file names.
-2. Child tables without `company_id` should either add `company_id` denormalized column for performance/RLS simplicity or verify parent-join policies cover all CRUD.
-3. `approval_logs` currently does not scope by company_id in RLS; review for multi-tenant leakage.
-4. `goods_receipt_items` only has a SELECT policy; INSERT/UPDATE/DELETE will be denied for non-owner roles.
-5. `fm_*` tables (framework-method) are excluded from audit per user request.
+- **`approval_logs`**: added `company_id` column with trigger backfill from `special_outbound_records`/`users`, added FK to `companies`, and replaced unscoped policies with tenant-scoped SELECT/INSERT/UPDATE/DELETE policies. App code in `sales-operation` and `inventory-operation` now provides required fields (`record_type`, `status`, `user_role`) when inserting logs.
+  - Migration: `supabase/migrations/20260804000001_approval_logs_company_id_and_rls.sql`
+- **Child tables missing `company_id`**: created CRUD parent-join RLS policies for 15 high-risk child tables so mutations are now scoped to the parent record's `company_id`. Also added `company_id` to operation portal parent/child tables that were missing it (`operation_chat_groups`, `operation_training_courses`, `operation_training_materials`, `operation_training_questions`, `operation_training_progress`) and backfilled from the creator/parent record.
+  - Migration: `supabase/migrations/20260804000002_child_table_rls_policies.sql`
+  - Covered tables: `accounting_transaction_lines`, `employee_kpis`, `employee_shifts`, `goods_receipt_items`, `key_results`, `operation_chat_members`, `operation_chat_messages`, `operation_training_materials`, `operation_training_progress`, `operation_training_questions`, `payroll_items`, `po_items`, `product_conversions`, `sales_order_items`, `stock_check_items`.
+- **`special_outbound_records`**: added `notes` and `reason_detail` columns the UI already collects, and aligned the `createRecord`/`updateRecord`/`approveRecord`/`rejectRecord` payloads with the actual table columns (`requested_by`, `approved_by`, `approved_at`, `rejection_reason`, `company_id`, `branch_id`).
+  - Migration: `supabase/migrations/20260804000003_special_outbound_records_notes_and_reason_detail.sql`
+  - Code changes: `apps/sales-operation/src/services/specialOutboundService.ts`, `apps/inventory-operation/src/services/specialOutboundService.ts`, `apps/sales-operation/src/lib/supabase.ts`, `apps/inventory-operation/src/lib/supabase.ts`.
+- Excluded from this pass (per project scope): `companies`, `color_settings`, `product_column_presets`, `user_preferences`, and all `fm_*` (framework-method) tables.
+
+## Remaining recommendations
+
+1. `fm_*` tables (framework-method) are excluded from audit per user request.
+2. `color_settings`, `product_column_presets`, `companies`, and `user_preferences` remain global/user-scoped by design.
+3. The 2026-08-13 migrations (`20260804000001`, `20260804000002`, `20260804000003`) were applied to the production Supabase project after temporary migration-history repair; local migration file names still do not fully match remote for historical versions `007`, `008`, `034`–`036`, `045`–`047`.
