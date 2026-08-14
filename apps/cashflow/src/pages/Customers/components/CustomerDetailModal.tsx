@@ -4,7 +4,7 @@ import type { Customer, Transaction } from "../../../types";
 import { databaseService } from "../../../services/database";
 import { useCompanyId } from "../../../hooks/useCompanyId";
 import { formatCurrency, formatDate, formatPhoneNumber, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../../utils/formatting";
-import { parseAmount } from "../../../services/businessLogic";
+import { parseAmount, getCustomerBalanceDelta } from "../../../services/businessLogic";
 import { useTransactionTypes } from "../../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../../components/UI/FallbackUI";
 
@@ -75,10 +75,17 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     .filter((transaction) => transaction.transaction_type === "charge")
     .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
 
-  // Tính tổng số tiền đã trả từ các giao dịch loại 'payment'
-  const totalPaidAmount = transactions
-    .filter((transaction) => transaction.transaction_type === "payment")
-    .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+  // Tính tổng số tiền đã trả: chỉ cộng phần làm GIẢM công nợ của mỗi giao dịch.
+  // getCustomerBalanceDelta trả về số âm khi giao dịch làm giảm công nợ (payment,
+  // deposit, refund), nên -delta là số tiền đã trả. adjustment dùng số có dấu nên
+  // chỉ phần điều chỉnh làm giảm công nợ mới được tính (bỏ qua phần làm tăng).
+  const totalPaidAmount = transactions.reduce((sum, transaction) => {
+    const delta = getCustomerBalanceDelta(
+      transaction.transaction_type,
+      transaction.amount,
+    );
+    return delta < 0 ? sum + -delta : sum;
+  }, 0);
 
   // Tìm giao dịch cuối từ transactions array
   const lastTransactionDate = transactions.length > 0
