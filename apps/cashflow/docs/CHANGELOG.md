@@ -4,6 +4,13 @@
 
 ### Fixed
 
+- **UI/UX fixes on mobile Customer list and edit modal.**
+  - Added missing `common.apply`, `common.clear`, `common.noResults`, `common.exporting`, and `common.addNew` i18n keys so buttons like the date-range "Áp dụng" no longer show the raw translation key.
+  - Hardened `ColumnVisibilityDropdown` against clipping on narrow screens: larger `z-50` panel with `w-64 sm:w-72`, `max-w-[calc(100vw-1rem)]`, and `whitespace-nowrap` labels so column names like "Mã khách hàng" / "Tên khách hàng" no longer wrap or get cut off.
+  - Removed `overflow-x-auto` from the `CustomerList` action-bar container so the column-visibility dropdown is no longer clipped by its scroll parent.
+
+### Fixed
+
 - **Customer balance not updating after transactions** (`critical issue: balance not update`). `transactionService._syncTransactionBalance` now recalculates `customers.total_balance` and `customers.current_balance` from `opening_balance + Σ(amount × math_factor)` instead of applying a single incremental delta. This repairs prior drift and ensures all `completed` transactions (charge, payment, refund, deposit, adjustment) are reflected.
   - `transactionService._recalcCustomerBalance` fetches `opening_balance`, sums all completed transactions for that customer using `transactionTypeService.getTransactionTypeFactorMap` (falling back to canonical factors), and updates both `total_balance` and `current_balance`.
   - `transactionService._syncTransactionBalance` recalculates the affected customer(s) on create/update/delete; bank account `balance` is still adjusted incrementally by `getBankAccountBalanceDelta`.

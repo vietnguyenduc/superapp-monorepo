@@ -46,11 +46,11 @@ const ColumnVisibilityDropdown: React.FC<ColumnVisibilityDropdownProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-10 mt-2 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 p-2">
+        <div className="absolute right-0 z-50 mt-2 w-64 sm:w-72 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 p-2">
           {columns.map((col) => (
             <label
               key={col.key}
-              className="flex items-center px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer"
+              className="flex items-center px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer whitespace-nowrap"
             >
               <input
                 type="checkbox"
