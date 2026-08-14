@@ -14,7 +14,7 @@
 
 ### Added
 
-- **Customer detail modal now shows `Tổng số tiền đã trả` (total paid amount)** immediately below `Tổng số tiền mua hàng`. `CustomerDetailModal` sums `Math.abs(amount)` of transactions with `transaction_type` in `payment`, `deposit`, or `adjustment` and uses the new `customers.detail.totalPaid` i18n key.
+- **Customer detail modal now shows `Tổng số tiền đã trả` (total paid amount)** immediately below `Tổng số tiền mua hàng`. `CustomerDetailModal` sums only the debt-reducing contribution of each transaction via `getCustomerBalanceDelta` (negative deltas from `payment`, `deposit`, `refund`, and debt-reducing `adjustment` amounts), so debt-increasing adjustments no longer inflate the total, and uses the new `customers.detail.totalPaid` i18n key.
 - **New opening-balance export screen on Customer page** at `/customers/opening-balance`.
   - Lists all active customers with `Số dư đầu kỳ` and `Công nợ hiện tại`.
   - Searchable by customer code or name; sortable by code, name, opening balance, and current debt.
