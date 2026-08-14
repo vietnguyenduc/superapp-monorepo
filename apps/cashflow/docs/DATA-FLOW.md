@@ -37,6 +37,16 @@ Other supporting tables: `transaction_types`, `branches`, `companies`, `users`, 
 3. Recomputes `total_balance = opening_balance + Σ(getCustomerBalanceDelta(type, amount))`.
 4. Returns the computed value, so the detail view is always consistent even if stored balance drifted.
 
+### Customer detail financial summary
+
+`CustomerDetailModal` also renders two derived totals from the fetched transactions:
+
+- `Tổng số tiền mua hàng` = `Σ(Math.abs(amount))` for `transaction_type === "charge"`.
+- `Tổng số tiền đã trả` = `Σ(-min(getCustomerBalanceDelta(type, amount), 0))` — i.e. only the debt-reducing portion of every transaction.
+  - `payment`, `deposit`, and `refund` (canonical `math_factor = -1`) contribute their full amount.
+  - `adjustment` (canonical `math_factor = +1`) contributes only when the signed amount is negative; a positive adjustment increases debt and is excluded.
+  - The result is always shown as a positive number.
+
 ### Bank account list
 
 `bankAccountService.getBankAccounts()`:
@@ -170,6 +180,6 @@ All deletions are filtered by `company_id` and governed by RLS.
 
 ## Data consistency notes
 
-- `customers.total_balance` and `bank_accounts.balance` are updated at write time by `transactionService` and by the PostgreSQL triggers in `supabase/migrations/003_functions_triggers.sql` and `030_balance_trigger_sign_convention.sql`. Production uses **positive `total_balance` = debt**. Migration `042_deposit_transaction_type.sql` adds/seeds the `deposit` row in `transaction_types` for existing companies; the app computes customer deltas using `transaction_types.math_factor`.
+- `customers.total_balance` and `bank_accounts.balance` are updated at write time by `transactionService` and by the PostgreSQL triggers in `supabase/migrations/003_functions_triggers.sql`, `030_balance_trigger_sign_convention.sql`, and `20260804000004_balance_recalc_trigger.sql`. The newest trigger recalculates the full ledger on every `INSERT`/`UPDATE`/`DELETE` of `transactions` and backfills all existing balances, using the per-company `math_factor` map. Production uses **positive `total_balance` = debt**. Migration `042_deposit_transaction_type.sql` adds/seeds the `deposit` row in `transaction_types` for existing companies; the app computes customer deltas using `transaction_types.math_factor`.
 - `getCustomerById()` recomputes the balance from transactions as a safety net.
 - `getDashboardMetrics()` recomputes all totals from scratch using the per-company `math_factor` map, so dashboards are never stale.

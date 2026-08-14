@@ -254,7 +254,7 @@
 1. **Hai bộ validation song song không đồng nhất** → import lọt lỗi.
 2. **Upsert thiếu `company_id`** → RLS error khó hiểu.
 3. **Template import có mã cứng (`GC-001`)** → user import 2 lần là trùng.
-4. **`Math.abs(amount)` lung tung** → số dư sai.
+4. **`Math.abs(amount)` lung tung** → số dư sai. Ví dụ gần đây: tính `Tổng số tiền đã trả` bằng `Math.abs(amount)` cho cả `adjustment` làm số "đã trả" bị phình vì `adjustment` dương thực ra tăng nợ. Fix: dùng signed `getCustomerBalanceDelta` và chỉ cộng phần làm giảm công nợ (`-delta` khi `delta < 0`).
 5. **Lỗi tiếng Anh kỹ thuật hiển thị cho user** → user không hiểu.
 6. **Deploy 7 app cùng lúc vì Vercel Git auto-deploy** → quota hết, preview fail.
 7. **Không update docs sau code** → agent sau làm lại từ đầu.
@@ -275,6 +275,7 @@
 - **Double-count sau restore**: restore tính lại `total_balance` từ transactions trên `opening_balance`, nếu `total_balance` cũ không reset sẽ cộng dồn. Fix: reset `total_balance` về `opening_balance` trước khi apply.
 - **CustomerDetail tự tính `currentBalance`** riêng, mismatch với `total_balance`. Fix: hiển thị `total_balance` làm single source of truth.
 - **Opening balance thay đổi không sync `total_balance`**. Fix: khi `opening_balance` update, `total_balance` += delta, `current_balance` cũng cập nhật.
+- **Tổng số tiền đã trả bị phình do `Math.abs`**: lấy `Math.abs(amount)` cho cả `adjustment` làm số "đã trả" cao hơn thực tế. Fix: tính `delta = amount × math_factor` qua `getCustomerBalanceDelta` và chỉ cộng phần làm giảm công nợ (`-delta` khi `delta < 0`). `refund` và `deposit` vẫn được tính vì chúng giảm công nợ, `adjustment` dương thì không.
 
 ### 14.2. Transaction types & enum
 - **Deposit / `Đặt cọc`**: thêm type mới cần update union type, `balanceMath.ts`, validation, parser, UI labels/colors, i18n, dashboard, group summary, trial seed, migration.
