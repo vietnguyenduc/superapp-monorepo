@@ -379,7 +379,39 @@
       "item3": "Each row is one customer. Review before clicking 'Validate data'."
     },
     "downloadTemplate": "Download Excel template",
-    "downloadTemplateHint": "Download a sample file to fill in the correct columns before bulk import."
+    "downloadTemplateHint": "Download a sample file to fill in the correct columns before bulk import.",
+    "detail": {
+      "title": "Customer Details",
+      "subtitle": "View detailed information and transaction history",
+      "information": "Customer Information",
+      "financialSummary": "Financial Summary",
+      "customerCode": "Customer Code",
+      "fullName": "Full Name",
+      "phone": "Phone",
+      "email": "Email",
+      "address": "Address",
+      "status": "Status",
+      "createdAt": "Created At",
+      "totalBalance": "Total Balance",
+      "totalPurchase": "Total Purchase Amount",
+      "totalPaid": "Total Paid Amount",
+      "lastTransaction": "Last Transaction",
+      "totalTransactions": "Total Transactions",
+      "transactionHistory": "Transaction History",
+      "noTransactions": "No transactions found",
+      "loadingTransactions": "Loading transactions...",
+      "loadingTransactionsMessage": "Loading transaction history...",
+      "edit": "Edit",
+      "transactions": {
+        "date": "Date",
+        "type": "Type",
+        "amount": "Amount",
+        "description": "Description",
+        "reference": "Reference",
+        "transactionHistory": "Transaction History",
+        "noTransactions": "No transactions found"
+      }
+    }
   },
   "export": {
     "title": "Export Data",

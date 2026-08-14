@@ -70,9 +70,14 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     );
   };
 
-  // Tính tổng số tiền mua hàng từ các giao dịch loại 'charge' (tiền ra)
+  // Tính tổng số tiền mua hàng từ các giao dịch loại 'charge'
   const totalPurchaseAmount = transactions
     .filter((transaction) => transaction.transaction_type === "charge")
+    .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
+
+  // Tính tổng số tiền đã trả từ các giao dịch loại 'payment'
+  const totalPaidAmount = transactions
+    .filter((transaction) => transaction.transaction_type === "payment")
     .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
 
   // Tìm giao dịch cuối từ transactions array
@@ -279,10 +284,19 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
 
                   <div>
                     <dt className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">
-                      Tổng số tiền mua hàng
+                      {t("customers.detail.totalPurchase", "Tổng số tiền mua hàng")}
                     </dt>
                     <dd className="mt-0.5 text-base sm:text-lg font-semibold text-blue-600 dark:text-blue-400">
                       {formatCurrency(totalPurchaseAmount)}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">
+                      {t("customers.detail.totalPaid", "Tổng số tiền đã trả")}
+                    </dt>
+                    <dd className="mt-0.5 text-base sm:text-lg font-semibold text-green-600 dark:text-green-400">
+                      {formatCurrency(totalPaidAmount)}
                     </dd>
                   </div>
 
