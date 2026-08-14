@@ -622,7 +622,7 @@ const CustomerList: React.FC = () => {
                 balanceRange={state.balanceRange}
                 onBalanceRangeChange={handleBalanceRangeChange}
               />
-              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 overflow-x-auto sm:overflow-visible no-scrollbar">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
                 <select
                   value={state.pageSize}
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
