@@ -293,6 +293,8 @@
       "status": "Trạng thái",
       "createdAt": "Ngày tạo",
       "totalBalance": "Tổng số dư",
+      "totalPurchase": "Tổng số tiền mua hàng",
+      "totalPaid": "Tổng số tiền đã trả",
       "lastTransaction": "Giao dịch cuối",
       "totalTransactions": "Tổng giao dịch",
       "transactionHistory": "Lịch sử giao dịch",
