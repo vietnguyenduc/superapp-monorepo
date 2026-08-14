@@ -16,7 +16,8 @@ ALTER TABLE "public"."operation_training_progress" ADD COLUMN IF NOT EXISTS "com
 UPDATE "public"."operation_chat_groups" g
 SET "company_id" = u."company_id"
 FROM "public"."users" u
-WHERE g."created_by" = u."id";
+WHERE g."created_by" = u."id"
+  AND g."company_id" IS NULL;
 
 UPDATE "public"."operation_chat_groups" g
 SET "company_id" = (
@@ -31,23 +32,27 @@ WHERE g."company_id" IS NULL;
 UPDATE "public"."operation_training_courses" c
 SET "company_id" = u."company_id"
 FROM "public"."users" u
-WHERE c."created_by" = u."id";
+WHERE c."created_by" = u."id"
+  AND c."company_id" IS NULL;
 
 UPDATE "public"."operation_training_materials" m
 SET "company_id" = c."company_id"
 FROM "public"."operation_training_courses" c
-WHERE m."course_id" = c."id";
+WHERE m."course_id" = c."id"
+  AND m."company_id" IS NULL;
 
 UPDATE "public"."operation_training_questions" q
 SET "company_id" = c."company_id"
 FROM "public"."operation_training_materials" m
 JOIN "public"."operation_training_courses" c ON c."id" = m."course_id"
-WHERE q."material_id" = m."id";
+WHERE q."material_id" = m."id"
+  AND q."company_id" IS NULL;
 
 UPDATE "public"."operation_training_progress" p
 SET "company_id" = c."company_id"
 FROM "public"."operation_training_courses" c
-WHERE p."course_id" = c."id";
+WHERE p."course_id" = c."id"
+  AND p."company_id" IS NULL;
 
 DROP POLICY IF EXISTS "Users can modify accounting_transaction_lines" ON "public"."accounting_transaction_lines";
 DROP POLICY IF EXISTS "Users can view accounting_transaction_lines" ON "public"."accounting_transaction_lines";
@@ -171,15 +176,20 @@ CREATE POLICY "Users can view operation_chat_messages" ON "public"."operation_ch
 
 CREATE POLICY "Users can insert operation_chat_messages" ON "public"."operation_chat_messages"
   FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM "public"."operation_chat_groups" p WHERE p."id" = "public"."operation_chat_messages"."group_id" AND p."company_id" = "public"."get_user_company_id"("auth"."uid"())) OR "public"."check_user_role"("auth"."uid"(), 'admin_master'));
+  WITH CHECK (
+    (EXISTS (SELECT 1 FROM "public"."operation_chat_groups" p WHERE p."id" = "public"."operation_chat_messages"."group_id" AND p."company_id" = "public"."get_user_company_id"("auth"."uid"())))
+    AND
+    ((EXISTS (SELECT 1 FROM "public"."operation_chat_members" m WHERE m."group_id" = "public"."operation_chat_messages"."group_id" AND m."user_id" = "auth"."uid"()))
+     OR "public"."check_user_role"("auth"."uid"(), 'admin_master'))
+  );
 
 CREATE POLICY "Users can update operation_chat_messages" ON "public"."operation_chat_messages"
   FOR UPDATE
-  USING (EXISTS (SELECT 1 FROM "public"."operation_chat_groups" p WHERE p."id" = "public"."operation_chat_messages"."group_id" AND p."company_id" = "public"."get_user_company_id"("auth"."uid"())) OR "public"."check_user_role"("auth"."uid"(), 'admin_master'));
+  USING (("public"."operation_chat_messages"."user_id" = "auth"."uid"()) OR "public"."check_user_role"("auth"."uid"(), 'admin_master'));
 
 CREATE POLICY "Users can delete operation_chat_messages" ON "public"."operation_chat_messages"
   FOR DELETE
-  USING (EXISTS (SELECT 1 FROM "public"."operation_chat_groups" p WHERE p."id" = "public"."operation_chat_messages"."group_id" AND p."company_id" = "public"."get_user_company_id"("auth"."uid"())) OR "public"."check_user_role"("auth"."uid"(), 'admin_master'));
+  USING (("public"."operation_chat_messages"."user_id" = "auth"."uid"()) OR "public"."check_user_role"("auth"."uid"(), 'admin_master'));
 
 DROP POLICY IF EXISTS "Admin/Manager can manage materials" ON "public"."operation_training_materials";
 DROP POLICY IF EXISTS "Users can view materials for their courses" ON "public"."operation_training_materials";
@@ -210,15 +220,15 @@ CREATE POLICY "Users can view operation_training_progress" ON "public"."operatio
 
 CREATE POLICY "Users can insert operation_training_progress" ON "public"."operation_training_progress"
   FOR INSERT
-  WITH CHECK (EXISTS (SELECT 1 FROM "public"."operation_training_courses" p WHERE p."id" = "public"."operation_training_progress"."course_id" AND p."company_id" = "public"."get_user_company_id"("auth"."uid"())) OR "public"."check_user_role"("auth"."uid"(), 'admin_master'));
+  WITH CHECK (("public"."operation_training_progress"."user_id" = "auth"."uid"()) OR "public"."check_user_role"("auth"."uid"(), 'admin_master'));
 
 CREATE POLICY "Users can update operation_training_progress" ON "public"."operation_training_progress"
   FOR UPDATE
-  USING (EXISTS (SELECT 1 FROM "public"."operation_training_courses" p WHERE p."id" = "public"."operation_training_progress"."course_id" AND p."company_id" = "public"."get_user_company_id"("auth"."uid"())) OR "public"."check_user_role"("auth"."uid"(), 'admin_master'));
+  USING (("public"."operation_training_progress"."user_id" = "auth"."uid"()) OR "public"."check_user_role"("auth"."uid"(), 'admin_master'));
 
 CREATE POLICY "Users can delete operation_training_progress" ON "public"."operation_training_progress"
   FOR DELETE
-  USING (EXISTS (SELECT 1 FROM "public"."operation_training_courses" p WHERE p."id" = "public"."operation_training_progress"."course_id" AND p."company_id" = "public"."get_user_company_id"("auth"."uid"())) OR "public"."check_user_role"("auth"."uid"(), 'admin_master'));
+  USING (("public"."operation_training_progress"."user_id" = "auth"."uid"()) OR "public"."check_user_role"("auth"."uid"(), 'admin_master'));
 
 DROP POLICY IF EXISTS "Admin/Manager can manage questions" ON "public"."operation_training_questions";
 DROP POLICY IF EXISTS "Users can view questions for their materials" ON "public"."operation_training_questions";

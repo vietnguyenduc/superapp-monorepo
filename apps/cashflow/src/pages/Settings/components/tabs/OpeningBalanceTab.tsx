@@ -1,4 +1,5 @@
-import type { FC } from "react";
+import { type FC, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSettingsContext } from "../../SettingsContext";
 import Button from "../../../../components/UI/Button";
 import { isAdmin, canManageAllCustomers } from "../../../../utils/permissions";
@@ -7,6 +8,7 @@ import { toast } from "../../../../utils/toast";
 import { databaseService } from "../../../../services/database";
 
 export const OpeningBalanceTab: FC = () => {
+  const { t } = useTranslation();
   const {
     activeOpeningSubTab,
     setActiveOpeningSubTab,
@@ -34,6 +36,49 @@ export const OpeningBalanceTab: FC = () => {
     handleImportOpeningBalance,
     openingSuccess
   } = useSettingsContext();
+
+  type SortColumn = "customer_code" | "full_name" | "opening_balance" | "current_balance" | "new_opening_balance" | "new_total";
+  const [sortBy, setSortBy] = useState<SortColumn>("customer_code");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  const filteredRows = useMemo(() => {
+    const s = customerBalanceSearch.toLowerCase().trim();
+    return customerBalances.filter((c) =>
+      !s || c.customer_code.toLowerCase().includes(s) || c.full_name.toLowerCase().includes(s)
+    );
+  }, [customerBalances, customerBalanceSearch]);
+
+  const sortedRows = useMemo(() => {
+    const dir = sortOrder === "asc" ? 1 : -1;
+    return [...filteredRows].sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case "customer_code":
+          comparison = a.customer_code.localeCompare(b.customer_code, "vi-VN", { numeric: true });
+          break;
+        case "full_name":
+          comparison = a.full_name.localeCompare(b.full_name, "vi-VN", { numeric: true });
+          break;
+        case "opening_balance":
+          comparison = a.opening_balance - b.opening_balance;
+          break;
+        case "current_balance":
+          comparison = a.current_balance - b.current_balance;
+          break;
+        case "new_opening_balance":
+          comparison = a.new_opening_balance - b.new_opening_balance;
+          break;
+        case "new_total": {
+          const aTotal = a.new_opening_balance + (a.current_balance - a.opening_balance);
+          const bTotal = b.new_opening_balance + (b.current_balance - b.opening_balance);
+          comparison = aTotal - bTotal;
+          break;
+        }
+      }
+      return comparison * dir;
+    });
+  }, [filteredRows, sortBy, sortOrder]);
+
   return (
     <>
       {<div className="p-4 sm:p-6 space-y-4">
@@ -72,13 +117,38 @@ export const OpeningBalanceTab: FC = () => {
         {activeOpeningSubTab === "list" && (
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-              <input
-                type="text"
-                placeholder="Tìm theo mã hoặc tên khách hàng..."
-                value={customerBalanceSearch}
-                onChange={(e) => setCustomerBalanceSearch(e.target.value)}
-                className="w-full sm:w-72 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2"
-              />
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <input
+                  type="text"
+                  placeholder="Tìm theo mã hoặc tên khách hàng..."
+                  value={customerBalanceSearch}
+                  onChange={(e) => setCustomerBalanceSearch(e.target.value)}
+                  className="w-full sm:w-64 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-3 py-2"
+                />
+                <div className="flex items-center gap-2">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortColumn)}
+                    className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white px-2 py-2"
+                    aria-label={t("openingBalance.sortBy", "Sắp xếp theo")}
+                  >
+                    <option value="customer_code">{t("openingBalance.customerCode", "Mã KH")}</option>
+                    <option value="full_name">{t("openingBalance.fullName", "Tên KH")}</option>
+                    <option value="opening_balance">{t("openingBalance.currentOpeningBalance", "Số dư đầu kỳ hiện tại")}</option>
+                    <option value="current_balance">{t("openingBalance.currentBalance", "Số dư hiện tại")}</option>
+                    <option value="new_opening_balance">{t("openingBalance.newOpeningBalance", "Số dư đầu kỳ mới")}</option>
+                    <option value="new_total">{t("openingBalance.newTotal", "Số dư mới sau cập nhật")}</option>
+                  </select>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))}
+                    title={sortOrder === "asc" ? t("openingBalance.ascending", "Tăng dần") : t("openingBalance.descending", "Giảm dần")}
+                  >
+                    {sortOrder === "asc" ? t("openingBalance.ascShort", "Bé → Lớn") : t("openingBalance.descShort", "Lớn → Bé")}
+                  </Button>
+                </div>
+              </div>
               <div className="flex gap-2">
                 <Button variant="secondary" size="sm" onClick={() => loadCustomerBalances()}>
                   Tải lại danh sách
@@ -133,28 +203,26 @@ export const OpeningBalanceTab: FC = () => {
               <p className="text-sm text-green-600">{customerBalanceSuccess}</p>
             )}
 
-            {!isLoadingCustomerBalances && customerBalances.length > 0 && (
+            {!isLoadingCustomerBalances && sortedRows.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(() => {
-                  const visible = customerBalances.filter(c => {
-                    const s = customerBalanceSearch.toLowerCase();
-                    return !s || c.customer_code.toLowerCase().includes(s) || c.full_name.toLowerCase().includes(s);
-                  });
-                  const totalCurrent = visible.reduce((sum, c) => sum + c.current_balance, 0);
-                  const totalNew = visible.reduce((sum, c) => sum + (c.new_opening_balance + (c.current_balance - c.opening_balance)), 0);
-                  return (
-                    <>
-                      <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Tổng dư nợ hiện tại ({visible.length} khách hàng)</p>
-                        <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatNumber(totalCurrent)} đ</p>
-                      </div>
-                      <div className={`border rounded-lg p-3 ${totalNew !== totalCurrent ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700'}`}>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Tổng dư nợ sau cập nhật</p>
-                        <p className={`text-lg font-semibold ${totalNew !== totalCurrent ? 'text-blue-700 dark:text-blue-200' : 'text-gray-900 dark:text-white'}`}>{formatNumber(totalNew)} đ</p>
-                      </div>
-                    </>
-                  );
-                })()}
+                {
+                  (() => {
+                    const totalCurrent = sortedRows.reduce((sum, c) => sum + c.current_balance, 0);
+                    const totalNew = sortedRows.reduce((sum, c) => sum + (c.new_opening_balance + (c.current_balance - c.opening_balance)), 0);
+                    return (
+                      <>
+                        <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Tổng dư nợ hiện tại ({sortedRows.length} khách hàng)</p>
+                          <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatNumber(totalCurrent)} đ</p>
+                        </div>
+                        <div className={`border rounded-lg p-3 ${totalNew !== totalCurrent ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700'}`}>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Tổng dư nợ sau cập nhật</p>
+                          <p className={`text-lg font-semibold ${totalNew !== totalCurrent ? 'text-blue-700 dark:text-blue-200' : 'text-gray-900 dark:text-white'}`}>{formatNumber(totalNew)} đ</p>
+                        </div>
+                      </>
+                    );
+                  })()
+                }
               </div>
             )}
 
@@ -175,12 +243,7 @@ export const OpeningBalanceTab: FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {customerBalances
-                        .filter(c => {
-                          const s = customerBalanceSearch.toLowerCase();
-                          return !s || c.customer_code.toLowerCase().includes(s) || c.full_name.toLowerCase().includes(s);
-                        })
-                        .map((row) => {
+                      {sortedRows.map((row) => {
                           const isModified = row.new_opening_balance !== row.opening_balance;
                           const newTotal = row.new_opening_balance + (row.current_balance - row.opening_balance);
                           return (
