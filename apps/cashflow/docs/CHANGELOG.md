@@ -24,6 +24,10 @@
 - **Settings → Số dư đầu kỳ** list now supports searching by code/name, sorting by any column, and toggling between ascending (`Bé → Lớn`) and descending (`Lớn → Bé`).
 - **Supabase migration `supabase/migrations/20260804000004_balance_recalc_trigger.sql`** creates `update_customer_balance()` and `update_bank_account_balance()` trigger functions that recalculate balances from the ledger on every `INSERT`/`UPDATE`/`DELETE` of `public.transactions`, then backfills all existing customers and bank accounts.
 
+### Docs
+
+- Updated `AI-CONTEXT.md` and `DATA-FLOW.md` to document the `CustomerDetailModal` financial summary (`Tổng số tiền mua hàng` / `Tổng số tiền đã trả`) and the rule that `Tổng số tiền đã trả` must be computed from the signed balance delta, counting only the debt-reducing portion of each transaction.
+
 ## 2026-08-21
 
 ### Fixed

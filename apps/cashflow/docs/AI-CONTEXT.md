@@ -75,6 +75,17 @@ Transaction amount color = **red** for debt-increasing types (`charge`), **green
 
 The **displayed transaction amount** is the raw user-entered value (`parseAmount(amount)`), so `TransactionList`, `CustomerDetail`, `CustomerDetailModal`, and `RecentTransactions` show positive amounts while type-based color (charge = red, payment/refund/deposit = green, adjustment = blue) indicates the transaction direction.
 
+### Customer detail financial summary (2026-08-22)
+
+`CustomerDetailModal` shows two totals below the running balance:
+
+- **`Tổng số tiền mua hàng`** — `Math.abs(amount)` of `charge` transactions only.
+- **`Tổng số tiền đã trả`** — sum of the **debt-reducing contribution** of every transaction, computed via `getCustomerBalanceDelta`:
+  - `delta = amount * math_factor`
+  - if `delta < 0` (transaction reduced the customer's debt), add `-delta` to the total.
+  - This naturally includes `payment`, `deposit`, and `refund` (canonical factor `-1`), and only the debt-reducing part of a signed `adjustment` (positive `adjustment` amounts are ignored because they increase debt).
+  - The amount shown is always positive.
+
 ### Sign-aware amounts (2026-08-05)
 
 The amount **sign** now reverses the transaction direction instead of being silently taken as an absolute value. This applies to bulk import, manual edits, and dashboard calculations.
@@ -163,6 +174,7 @@ A dedicated `Công thức dư nợ` tab in Settings shows the current formula, l
 - **Backup/restore FK mapping:** `restoreBackup` must create branches → bank accounts → customers → transactions in order, and build `oldId -> newId` maps for `branch_id`, `bank_account_id`, and `customer_id` so restored transactions point to the newly created rows.
 - **Settings backup buttons:** `Settings.tsx` calls `databaseService.backupHistory.saveBackupToDatabase` / `loadBackupData` / `revertTableFromBackup`; these must be exported from `backupHistoryService.ts` and delegate to `backupService` / `recoveryUtils`.
 - **Trial logout:** `Navigation.tsx` `handleLogout` must call `clearTrialStore()` (removes `cashflow_trial_user`, `cashflow_trial_mode_enabled`, `cashflow_trial_api_fetched`, `superapp_trial_mode`, `isTrial`) before `supabase.auth.signOut()` and `navigate('/login')`, otherwise the AuthContext re-initializes trial mode and the dashboard stays visible.
+- **Customer detail `Tổng số tiền đã trả`:** do not use `Math.abs(amount)` by transaction type. Use `getCustomerBalanceDelta` and add only the negative portion (`-delta` when `delta < 0`). A positive `adjustment` increases debt and must **not** be counted as paid; `refund` reduces debt and is therefore counted, even though it is not money received from the customer.
 
 ## How to test
 
