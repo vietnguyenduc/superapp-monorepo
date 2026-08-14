@@ -189,6 +189,7 @@ A dedicated `Công thức dư nợ` tab in Settings shows the current formula, l
 - **Settings backup buttons:** `Settings.tsx` calls `databaseService.backupHistory.saveBackupToDatabase` / `loadBackupData` / `revertTableFromBackup`; these must be exported from `backupHistoryService.ts` and delegate to `backupService` / `recoveryUtils`.
 - **Trial logout:** `Navigation.tsx` `handleLogout` must call `clearTrialStore()` (removes `cashflow_trial_user`, `cashflow_trial_mode_enabled`, `cashflow_trial_api_fetched`, `superapp_trial_mode`, `isTrial`) before `supabase.auth.signOut()` and `navigate('/login')`, otherwise the AuthContext re-initializes trial mode and the dashboard stays visible.
 - **Customer detail `Tổng số tiền đã trả`:** do not use `Math.abs(amount)` by transaction type. Use `getCustomerBalanceDelta` and add only the negative portion (`-delta` when `delta < 0`). A positive `adjustment` increases debt and must **not** be counted as paid; `refund` reduces debt and is therefore counted, even though it is not money received from the customer.
+- **Mobile modals z-index:** `Navigation` uses `z-[200]`. Any full-screen modal (`CustomerFormModal`, `CustomerBulkEditModal`, `CustomerDetailModal`, etc.) must use `z-[200]` or higher so the sticky top nav does not overlay the modal header on phones. Also use explicit `{" "}` text nodes in JSX for spaces between dynamic values to prevent minifiers from collapsing them.
 
 ## How to test
 
