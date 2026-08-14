@@ -14,6 +14,7 @@
 
 ### Added
 
+- **Customer detail modal now shows `Tổng số tiền đã trả` (total paid amount)** immediately below `Tổng số tiền mua hàng`. `CustomerDetailModal` sums `Math.abs(amount)` of transactions with `transaction_type === "payment"` and uses the new `customers.detail.totalPaid` i18n key.
 - **Supabase migration `supabase/migrations/20260804000004_balance_recalc_trigger.sql`** creates `update_customer_balance()` and `update_bank_account_balance()` trigger functions that recalculate balances from the ledger on every `INSERT`/`UPDATE`/`DELETE` of `public.transactions`, then backfills all existing customers and bank accounts.
 
 ## 2026-08-21
