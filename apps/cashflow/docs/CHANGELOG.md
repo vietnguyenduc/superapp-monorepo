@@ -8,6 +8,8 @@
   - Added missing `common.apply`, `common.clear`, `common.noResults`, `common.exporting`, and `common.addNew` i18n keys so buttons like the date-range "Áp dụng" no longer show the raw translation key.
   - Hardened `ColumnVisibilityDropdown` against clipping on narrow screens: larger `z-50` panel with `w-64 sm:w-72`, `max-w-[calc(100vw-1rem)]`, and `whitespace-nowrap` labels so column names like "Mã khách hàng" / "Tên khách hàng" no longer wrap or get cut off.
   - Removed `overflow-x-auto` from the `CustomerList` action-bar container so the column-visibility dropdown is no longer clipped by its scroll parent.
+  - Raised `CustomerFormModal` and `CustomerBulkEditModal` root z-index from `z-50` to `z-[200]` so they render above the sticky mobile top navigation (`Navigation` uses `z-[200]`).
+  - Added an explicit `{" "}` between the customer count and `khách hàng` in `CustomerList` summary so it renders as `Tổng công nợ (10 khách hàng)` on production builds.
 
 ### Fixed
 

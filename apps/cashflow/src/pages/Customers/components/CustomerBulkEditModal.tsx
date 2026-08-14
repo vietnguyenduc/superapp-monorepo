@@ -57,7 +57,7 @@ const CustomerBulkEditModal: React.FC<CustomerBulkEditModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto pointer-events-none">
+    <div className="fixed inset-0 z-[200] overflow-y-auto pointer-events-none">
       <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0 pointer-events-none">
         <div
           className="fixed inset-0 bg-gray-700/70 dark:bg-gray-900/80 transition-opacity pointer-events-auto"
