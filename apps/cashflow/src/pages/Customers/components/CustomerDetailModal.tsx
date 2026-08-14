@@ -75,9 +75,11 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
     .filter((transaction) => transaction.transaction_type === "charge")
     .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
 
-  // Tính tổng số tiền đã trả từ các giao dịch loại 'payment'
+  // Tính tổng số tiền đã trả từ các giao dịch payment, deposit và adjustment
   const totalPaidAmount = transactions
-    .filter((transaction) => transaction.transaction_type === "payment")
+    .filter((transaction) =>
+      ["payment", "deposit", "adjustment"].includes(transaction.transaction_type)
+    )
     .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
 
   // Tìm giao dịch cuối từ transactions array
