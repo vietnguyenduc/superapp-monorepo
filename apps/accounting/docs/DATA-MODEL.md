@@ -1,0 +1,42 @@
+---
+app: accounting
+doc_type: DATA-MODEL
+generated: true
+---
+
+# accounting — Data Model
+
+> **Auto-generated skeleton.** Edit this file when the app changes; run `python3 tools/doc-audit/generate_app_docs.py` to regenerate missing files.
+
+
+## Tenant scoping
+
+- `company_id` is required on most tables (FK to `companies.id`).
+- `branch_id` is used when data belongs to a specific branch.
+- `id` columns for `customers`, `transactions`, `bank_accounts`, `branches` are `text` type containing a v4 UUID string (`crypto.randomUUID()`). Do not use `uuid` type in docs or code comments.
+
+## Core tables for this app
+
+- `accounting_accounts`
+- `accounting_assets`
+- `accounting_invoices`
+- `accounting_settings`
+- `accounting_transaction_lines`
+- `accounting_transactions`
+- `branches`
+- `cash_books`
+- `companies`
+- `users`
+
+## Notes for AI agents
+
+- Use `crypto.randomUUID()` for new `text` `id` values.
+- Always include `company_id` (and `branch_id` when relevant) in `.insert()` / `.update()`.
+- Use `.maybeSingle()` for read-one queries to avoid RLS `406` errors when no row matches.
+- Bulk imports should validate `customer_code` / `product_code` uniqueness within `company_id`.
+
+## See also
+
+- `docs/SUPABASE_SCHEMA_HEALTH_REPORT.md`
+- `supabase/migrations/`
+

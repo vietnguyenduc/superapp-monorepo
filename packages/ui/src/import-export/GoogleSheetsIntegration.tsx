@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
 "use client";
 
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useCallback } from 'react';
 
 declare global {
@@ -99,7 +101,7 @@ const GoogleSheetsIntegration: React.FC<GoogleSheetsIntegrationProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [onError]);
+  }, [onError, loadSpreadsheets]);
 
   // Sign out from Google
   const handleSignOut = useCallback(async () => {
@@ -203,57 +205,6 @@ const GoogleSheetsIntegration: React.FC<GoogleSheetsIntegrationProps> = ({
       setIsLoading(false);
     }
   }, [selectedSpreadsheet, selectedSheet, onDataImport, onError]);
-
-  // Export data to new spreadsheet
-  const handleExportData = useCallback(async (data: any[], title: string = 'Exported Data') => {
-    if (!isAuthenticated) {
-      onError('Vui lòng đăng nhập Google trước');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-
-      // Create new spreadsheet
-      const createResponse = await window.gapi.client.sheets.spreadsheets.create({
-        properties: {
-          title: `${title} - ${new Date().toLocaleDateString('vi-VN')}`
-        }
-      });
-
-      const spreadsheetId = createResponse.result.spreadsheetId;
-      
-      if (!spreadsheetId) {
-        throw new Error('Không thể tạo spreadsheet mới');
-      }
-
-      // Prepare data for export
-      const headers = Object.keys(data[0] || {});
-      const values = [
-        headers,
-        ...data.map((row: any) => headers.map((header: string) => row[header] || ''))
-      ];
-
-      // Write data to spreadsheet
-      await window.gapi.client.sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: 'A1',
-        valueInputOption: 'RAW',
-        values
-      });
-
-      // Open the new spreadsheet
-      window.open(`https://docs.google.com/spreadsheets/d/${spreadsheetId}`, '_blank');
-      
-      alert('Đã xuất dữ liệu thành công!');
-      
-    } catch (error) {
-      console.error('Error exporting data:', error);
-      onError('Không thể xuất dữ liệu lên Google Sheets');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isAuthenticated, onError]);
 
   // Initialize on mount
   React.useEffect(() => {

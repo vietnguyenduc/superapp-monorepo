@@ -14,13 +14,15 @@ export interface ColumnDefinition {
   required?: boolean;
   type?: 'text' | 'number' | 'date' | 'select';
   options?: string[];
-  validation?: (value: any) => string | null;
+  validation?: (value: string) => string | null;
 }
 
+type RowData = Record<string, string | undefined>;
+
 interface EditableDataGridProps {
-  data: any[];
+  data: RowData[];
   errors: ImportError[];
-  onDataChange: (data: any[]) => void;
+  onDataChange: (data: RowData[]) => void;
   columns: ColumnDefinition[];
   maxRows?: number;
   allowAddRows?: boolean;
@@ -155,7 +157,7 @@ const EditableDataGrid: React.FC<EditableDataGridProps> = ({
             acc[columns[index].key] = cell.trim();
           }
           return acc;
-        }, {} as any)
+        }, {} as RowData)
       );
 
       // Merge with existing data
@@ -172,7 +174,7 @@ const EditableDataGrid: React.FC<EditableDataGridProps> = ({
     const newRow = columns.reduce((acc, col) => {
       acc[col.key] = '';
       return acc;
-    }, {} as any);
+    }, {} as RowData);
     
     onDataChange([...data, newRow]);
   }, [data, columns, maxRows, onDataChange]);
@@ -329,7 +331,7 @@ const EditableDataGrid: React.FC<EditableDataGridProps> = ({
                     <div className="text-lg">📋</div>
                     <div>Chưa có dữ liệu</div>
                     <div className="text-sm">
-                      Nhấn "Thêm dòng" hoặc paste dữ liệu (Ctrl+V) để bắt đầu
+                      Nhấn &quot;Thêm dòng&quot; hoặc paste dữ liệu (Ctrl+V) để bắt đầu
                     </div>
                   </div>
                 </td>

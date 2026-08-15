@@ -19,8 +19,8 @@ export function parseDate(input: string | Date | number | undefined | null): Dat
   }
 
   // DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
-  const m = str.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
-  if (m) {
+  const m = str.match(/^(\d{1,2})[-./](\d{1,2})[-./](\d{4})$/);
+  if (m && m[1] && m[2] && m[3]) {
     const day = parseInt(m[1], 10);
     const month = parseInt(m[2], 10) - 1;
     const year = parseInt(m[3], 10);

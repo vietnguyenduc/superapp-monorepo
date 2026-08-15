@@ -29,7 +29,7 @@ export function DataTable<T>({ data, columns, onRowClick }: DataTableProps<T>) {
                   {col.header}
                 </span>
                 <span className="text-sm text-gray-900 dark:text-gray-100 text-right break-words max-w-[60vw]">
-                  {col.render ? col.render(row) : String((row as any)[col.key] ?? '')}
+                  {col.render ? col.render(row) : String((row as Record<string, unknown>)[String(col.key)] ?? '')}
                 </span>
               </div>
             ))}
@@ -69,7 +69,7 @@ export function DataTable<T>({ data, columns, onRowClick }: DataTableProps<T>) {
                   key={String(col.key) + colIndex}
                   className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100"
                 >
-                  {col.render ? col.render(row) : String((row as any)[col.key] ?? '')}
+                  {col.render ? col.render(row) : String((row as Record<string, unknown>)[String(col.key)] ?? '')}
                 </td>
               ))}
             </tr>
