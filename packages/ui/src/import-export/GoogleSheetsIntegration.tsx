@@ -87,37 +87,6 @@ const GoogleSheetsIntegration: React.FC<GoogleSheetsIntegrationProps> = ({
     }
   }, [config, onError]);
 
-  // Sign in to Google
-  const handleSignIn = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const authInstance = window.gapi.auth2.getAuthInstance();
-      await authInstance.signIn();
-      setIsAuthenticated(true);
-      await loadSpreadsheets();
-    } catch (error) {
-      console.error('Error signing in:', error);
-      onError('Không thể đăng nhập Google');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [onError, loadSpreadsheets]);
-
-  // Sign out from Google
-  const handleSignOut = useCallback(async () => {
-    try {
-      const authInstance = window.gapi.auth2.getAuthInstance();
-      await authInstance.signOut();
-      setIsAuthenticated(false);
-      setSpreadsheets([]);
-      setSelectedSpreadsheet('');
-      setSelectedSheet('');
-    } catch (error) {
-      console.error('Error signing out:', error);
-      onError('Không thể đăng xuất');
-    }
-  }, [onError]);
-
   // Load user's spreadsheets
   const loadSpreadsheets = useCallback(async () => {
     try {
@@ -161,6 +130,37 @@ const GoogleSheetsIntegration: React.FC<GoogleSheetsIntegrationProps> = ({
       onError('Không thể tải danh sách spreadsheet');
     } finally {
       setIsLoading(false);
+    }
+  }, [onError]);
+
+  // Sign in to Google
+  const handleSignIn = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const authInstance = window.gapi.auth2.getAuthInstance();
+      await authInstance.signIn();
+      setIsAuthenticated(true);
+      await loadSpreadsheets();
+    } catch (error) {
+      console.error('Error signing in:', error);
+      onError('Không thể đăng nhập Google');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [onError, loadSpreadsheets]);
+
+  // Sign out from Google
+  const handleSignOut = useCallback(async () => {
+    try {
+      const authInstance = window.gapi.auth2.getAuthInstance();
+      await authInstance.signOut();
+      setIsAuthenticated(false);
+      setSpreadsheets([]);
+      setSelectedSpreadsheet('');
+      setSelectedSheet('');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      onError('Không thể đăng xuất');
     }
   }, [onError]);
 
