@@ -409,13 +409,18 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         isValid: validation.isValid,
       };
     } catch (error) {
+      logger.error("Parse transaction data failed:", error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Lỗi đọc dữ liệu. Vui lòng kiểm tra định dạng file và thử lại.";
       return {
         data: [],
         errors: [
           {
             row: 0,
             column: "general",
-            message: "Lỗi đọc dữ liệu. Vui lòng kiểm tra định dạng file và thử lại.",
+            message,
           },
         ],
         isValid: false,
@@ -593,8 +598,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         setDropInfo("");
       } catch (error) {
         logger.error("Import failed:", error);
-        const original = error instanceof Error ? error.message : String(error || "");
-        setImportError("Đã xảy ra lỗi khi nhập giao dịch. Vui lòng kiểm tra dữ liệu và thử lại." + (original ? ` (Chi tiết: ${original})` : ""));
+        setImportError("Đã xảy ra lỗi khi nhập giao dịch. Vui lòng kiểm tra dữ liệu và thử lại.");
         setImportErrors([]);
         setImportSuccess(null);
         setCurrentStep(2);
