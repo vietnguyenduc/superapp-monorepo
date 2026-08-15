@@ -45,7 +45,7 @@ Local/AI development (optional):
 
 ```
 superapp-monorepo/
-├── apps/                          # 7 production apps + insforge-infra
+├── apps/                          # 7 Vite Superapp apps + framework-method (separate project) + insforge-infra + deprecated superapp-business-bot
 │   ├── admin-portal/              # 5173 — Company/staff/permission management
 │   ├── cashflow/                  # 5174 — Cash flow management
 │   ├── inventory-operation/       # 5175 — Inventory management (F&B)
@@ -53,7 +53,9 @@ superapp-monorepo/
 │   ├── hr-operation/              # 5177 — HR, payroll, attendance
 │   ├── accounting/                # 5178 — Accounting, invoices, assets
 │   ├── operations-portal/         # 3006 — Operations portal
-│   └── insforge-infra/            # InsForge infrastructure (gateway, deepwiki, mcp)
+│   ├── framework-method/          # 5179 — Separate personal project (not part of Superapp core docs)
+│   ├── insforge-infra/            # InsForge infrastructure (gateway, deepwiki, mcp)
+│   └── superapp-business-bot/     # deprecated leftover (no package.json)
 ├── packages/                      # 12 shared packages
 │   ├── shared-utils/              # @superapp/shared-utils — Supabase client, API, types
 │   ├── ui/                        # @repo/ui — React component library
@@ -68,7 +70,7 @@ superapp-monorepo/
 │   ├── einvoice/                  # @superapp/einvoice — E-invoice integration
 │   └── insforge-mcp/              # @superapp/insforge-mcp — MCP server for OpenHands
 ├── supabase/
-│   └── migrations/                # 50+ SQL migration files
+│   └── migrations/                # 69+ SQL migration files
 ├── docs/                          # ← You are here
 ├── AGENTS.md                      # AI agent rules
 ├── turbo.json                     # Turborepo task config
@@ -80,7 +82,7 @@ superapp-monorepo/
 | Layer | Technology |
 |-------|-----------|
 | Monorepo | Turborepo + npm workspaces |
-| Frontend | React 18 + TypeScript 5.8 + Vite 8 |
+| Frontend | React 18 (target) + TypeScript 5.8 + Vite 8. `@repo/ui` and `operations-portal` currently on React 19 / TS 6.0.2 while transitioning. |
 | Styling | Tailwind CSS + Apple-inspired design system |
 | Backend | Supabase (PostgreSQL + Auth + Realtime + RLS) — primary |
 | Local AI/test gateway | `packages/api` (InsForge) + local Postgres mirror — optional |

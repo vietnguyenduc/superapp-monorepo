@@ -1,7 +1,7 @@
 import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
 import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
-import { validateTransactionData, validateTransactionUpdateData, transformRawTransaction, parseAmount, parseDate, normalizeTransactionType, getBankAccountBalanceDelta, applyTransactionsToCustomerBalance } from "./businessLogic";
+import { validateTransactionData, validateTransactionUpdateData, transformRawTransaction, parseAmount, parseAmountOrNull, parseDate, normalizeTransactionType, getBankAccountBalanceDelta, applyTransactionsToCustomerBalance } from "./businessLogic";
 import { updateWithFallback, insertWithFallback, bulkInsertWithFallback } from "./updateHelpers";
 import { transactionTypeService } from "./transactionTypeService";
 import { v4 as uuid } from "uuid";

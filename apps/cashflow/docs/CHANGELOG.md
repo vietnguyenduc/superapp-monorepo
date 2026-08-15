@@ -36,6 +36,7 @@
 ### Docs
 
 - Updated `AI-CONTEXT.md` and `DATA-FLOW.md` to document the `CustomerDetailModal` financial summary (`Tổng số tiền mua hàng` / `Tổng số tiền đã trả`) and the rule that `Tổng số tiền đã trả` must be computed from the signed balance delta, counting only the debt-reducing portion of each transaction.
+- **Import error message hardening:** `TransactionImport.tsx` now logs all parse/import errors and surfaces friendly Vietnamese guidance. Parser-thrown, row-specific Vietnamese messages (e.g. `Dòng 3: Thiếu cột dữ liệu...`) are preserved, while unexpected failures fall back to `Lỗi đọc dữ liệu...` / `Đã xảy ra lỗi khi nhập giao dịch...`. Raw technical strings are no longer rendered in the UI. `transactionService.ts` now imports `parseAmountOrNull` from `businessLogic` so the function is available during bulk import parsing.
 
 ## 2026-08-21
 

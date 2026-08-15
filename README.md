@@ -1,6 +1,6 @@
 # Superapp Monorepo
 
-> Hệ sinh thái 7 ứng dụng quản trị doanh nghiệp F&B, xây dựng bằng Turborepo + React + Supabase.
+> Hệ sinh thái 7 ứng dụng quản trị doanh nghiệp F&B, xây dựng bằng Turborepo + React + Vite + Supabase.
 
 ## Kiến trúc tổng thể
 
@@ -16,25 +16,33 @@ graph TD
         OPS[Operations :3006]
     end
 
+    subgraph Other["Other Projects"]
+        FM[Framework Method :5179]
+    end
+
     subgraph Packages["Shared Packages"]
         UI[@repo/ui]
         IAM[@superapp/iam]
         HOOKS[@repo/hooks]
-        UTILS[@repo/shared-utils]
-        THEME[@repo/theme]
+        UTILS[@superapp/shared-utils]
+        THEME[@superapp/theme]
         TYPES[@repo/types]
         TRIAL[@superapp/trial-client]
+        EINV[@superapp/einvoice]
+        MCP[@superapp/insforge-mcp]
     end
 
     subgraph Backend["Backend"]
         SB[(Supabase PostgreSQL)]
-        API[API Server :3001]
+        API_SRV[API Server :3001]
     end
 
     Frontend --> Packages
     Packages --> SB
-    Frontend --> API
-    API --> SB
+    Frontend --> API_SRV
+    API_SRV --> SB
+    IAM --> SB
+    FM --> SB
 ```
 
 ## Applications
@@ -49,17 +57,24 @@ graph TD
 | Accounting | 5178 | https://accounting.appforyou.xyz | [docs/](./apps/accounting/docs/) |
 | Operations Portal | 3006 | https://ops.appforyou.xyz | [docs/](./apps/operations-portal/docs/) |
 
+> `apps/framework-method/` is a separate personal project (port 5179, `https://framework.appforyou.xyz`) and is not part of the core 7-app Superapp documentation set.
+
 ## Shared Packages
 
 | Package | Purpose | Docs |
 |---------|---------|------|
-| `@repo/ui` | Component library (DataTable, AuthProvider, Layout) | [docs/](./packages/ui/docs/) |
-| `@superapp/iam` | Auth, RBAC, CompanyContext, Trial manager | [docs/](./packages/iam/docs/) |
-| `@repo/hooks` | Shared React hooks | [docs/](./packages/hooks/docs/) |
-| `@repo/shared-utils` | Supabase client, API client, import/export | [docs/](./packages/shared-utils/docs/) |
-| `@repo/theme` | Tailwind preset, design tokens, Apple CSS | [docs/](./packages/theme/docs/) |
-| `@repo/types` | TypeScript types (Database, Product, Customer) | [docs/](./packages/types/docs/) |
-| `@superapp/trial-client` | Trial mode (use apps without login) | [docs/](./packages/trial-client/docs/) |
+| `@repo/ui` | Component library (DataTable, AuthProvider, Layout) | [src/](./packages/ui/src/) |
+| `@superapp/iam` | Auth, RBAC, CompanyContext, Trial manager | [src/](./packages/iam/src/) |
+| `@repo/hooks` | Shared React hooks | [src/](./packages/hooks/src/) |
+| `@superapp/shared-utils` | Supabase client, API client, import/export | [src/](./packages/shared-utils/src/) |
+| `@superapp/theme` | Tailwind preset, design tokens, Apple CSS | [src/](./packages/theme/src/) |
+| `@repo/types` | TypeScript types (Database, Product, Customer) | [src/](./packages/types/src/) |
+| `@superapp/trial-client` | Trial mode (use apps without login) | [src/](./packages/trial-client/src/) |
+| `@superapp/einvoice` | E-invoice integration (Accounting) | [src/](./packages/einvoice/src/) |
+| `@superapp/insforge-mcp` | InsForge MCP server (DB tools for agents) | [src/](./packages/insforge-mcp/src/) |
+| `superapp-api` | Fastify API server (port 3001) | [src/](./packages/api/src/) |
+| `@repo/eslint-config` | Shared ESLint config | [package/](./packages/eslint-config/) |
+| `@repo/typescript-config` | Shared tsconfig presets | [package/](./packages/typescript-config/)
 
 ## Root Documentation
 
@@ -67,13 +82,14 @@ graph TD
 |----------|---------|
 | [docs/README.md](./docs/README.md) | Documentation index |
 | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | System architecture |
-| [docs/CODING-STANDARDS.md](./docs/CODING-STANDARDS.md) | Code guidelines |
-| [docs/DATABASE-SCHEMA.md](./docs/DATABASE-SCHEMA.md) | Database schema |
-| [docs/AUTH-AND-RBAC.md](./docs/AUTH-AND-RBAC.md) | Auth & RBAC system |
-| [docs/TRIAL-SYSTEM.md](./docs/TRIAL-SYSTEM.md) | Trial mode system |
+| [docs/PROJECT_CONTEXT.md](./docs/PROJECT_CONTEXT.md) | Current state, recent fixes, known issues |
 | [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | Deployment guide |
-| [docs/DATA-MIGRATION.md](./docs/DATA-MIGRATION.md) | Data migration |
-| [docs/DEV-ENVIRONMENT.md](./docs/DEV-ENVIRONMENT.md) | Dev environment setup |
+| [docs/DATA-ROUTING.md](./docs/DATA-ROUTING.md) | Supabase + InsForge local mirror |
+| [docs/LESSONS_LEARNED_AND_NEW_APP_PLAYBOOK.md](./docs/LESSONS_LEARNED_AND_NEW_APP_PLAYBOOK.md) | Lessons & new-app playbook |
+| [docs/SUPABASE_SCHEMA_HEALTH_REPORT.md](./docs/SUPABASE_SCHEMA_HEALTH_REPORT.md) | Schema health report |
+| [AGENTS.md](./AGENTS.md) | AI agent rules & workflow |
+
+> Missing root docs (`CODING-STANDARDS.md`, `DATABASE-SCHEMA.md`, `AUTH-AND-RBAC.md`, `TRIAL-SYSTEM.md`, `DATA-MIGRATION.md`, `DEV-ENVIRONMENT.md`) will be created or merged into existing docs as part of the documentation alignment effort.
 
 ## Quick Start
 
@@ -119,10 +135,10 @@ Read apps/[app-name]/docs/AI-CONTEXT.md for project context.
 | Layer | Technology |
 |-------|-----------|
 | Monorepo | Turborepo + npm workspaces |
-| Frontend | React 18 + TypeScript + Vite |
+| Frontend | React 18 + TypeScript 5.8 + Vite 8 (standardized across the repo) |
 | Styling | Tailwind CSS (Apple-inspired) |
 | Backend | Supabase (PostgreSQL + Auth + Realtime + Storage) |
-| API | Express.js (packages/api) |
+| API | Fastify (`packages/api`, port 3001) |
 | Deploy | Vercel (frontend) + Supabase (backend) |
 | Auth | Supabase Auth + JWT + RLS |
 | Multi-tenancy | company_id + Row Level Security |

@@ -6,9 +6,9 @@
 
 ### 0.1 What is this project?
 
-A **multi-tenant SaaS superapp** for Vietnamese SMBs (small-medium businesses) in F&B / retail. 7 frontend apps + shared backend on Supabase. One codebase, deployed to 7 Vercel production domains (`*.appforyou.xyz`). Multi-tenant via RLS + `company_id` (NOT schema-per-tenant).
+A **multi-tenant SaaS superapp** for Vietnamese SMBs (small-medium businesses) in F&B / retail. 7 frontend Vite Superapp apps + `apps/framework-method/` (separate personal project) + `apps/insforge-infra/` (Docker infra, not deployed to Vercel). The 7 Superapp apps are deployed to 7 Vercel production domains (`*.appforyou.xyz`). Multi-tenant via RLS + `company_id` (NOT schema-per-tenant).
 
-### 0.2 The 7 apps (what each does)
+### 0.2 The 7 Superapp apps (what each does)
 
 | App | Port | Domain | Purpose |
 |-----|------|--------|---------|
@@ -20,13 +20,15 @@ A **multi-tenant SaaS superapp** for Vietnamese SMBs (small-medium businesses) i
 | **Accounting** | 5178 | `accounting.appforyou.xyz` | Accounting: journal entries, invoices, fixed assets, taxes, chart of accounts, **e-invoice** |
 | **Operations Portal** | 3006 | `ops.appforyou.xyz` | Operations portal: shift management, training & quizzes, branch-level ops dashboards |
 
-> **`apps/` directory contains 8 entries**: the 7 Vite apps above + `apps/insforge-infra/` (Docker infrastructure for the agent — see §9 + §10, NOT a Vite app, NOT deployed to Vercel, NEVER related to telegram bot despite old name `superapp-unified-bot`). Old `apps/archive/`, `apps/docs/`, `apps/web/`, `apps/superapp-business-bot/` were deleted 2026-07-24 (stale boilerplate / paused telegram bot — separate from InsForge).
+> `apps/framework-method/` is a separate personal project (`https://framework.appforyou.xyz`), not part of the core Superapp docs. Its docs live in `apps/framework-method/docs/` only.
+
+> **`apps/` directory contains 10 entries**: the 7 Vite Superapp apps above + `apps/framework-method/` (separate personal project) + `apps/insforge-infra/` (Docker infrastructure for the agent — see §9 + §10, NOT a Vite app, NOT deployed to Vercel) + `apps/superapp-business-bot/` (deprecated leftover, only `config/settings.json`, no `package.json`). Old `apps/archive/`, `apps/docs/`, `apps/web/` were deleted 2026-07-24. `superapp-business-bot` is kept for historical reference but should not be treated as a deployable app.
 
 ### 0.3 The 12 packages (shared code)
 
 | Package | Purpose |
 |---------|---------|
-| `@superapp/iam` | **Auth + multi-tenant context** — `AuthProvider`, `CompanyProvider`, `useAuth`, `useCompany`. Used by all 7 apps. |
+| `@superapp/iam` | **Auth + multi-tenant context** — `AuthProvider`, `CompanyProvider`, `useAuth`, `useCompany`. Used by all 7 Superapp apps. |
 | `@repo/ui` | Shared component library (buttons, modals, DataGrid, etc.) |
 | `@repo/hooks` | Shared React hooks |
 | `@superapp/trial-client` | Trial mode client — `trialClient.ts` reads from `trial_seed.data` table |
@@ -41,13 +43,13 @@ A **multi-tenant SaaS superapp** for Vietnamese SMBs (small-medium businesses) i
 
 ### 0.4 Stack
 
-- **Frontend**: React 18 + Vite 8 + TypeScript (strict) + Tailwind CSS (Apple-inspired)
+- **Frontend**: React 18 + TypeScript 5.8 + Vite 8 + Tailwind CSS (Apple-inspired). The entire monorepo is standardized on React 18 / TS 5.8.
 - **Backend**: Supabase cloud (`peslmsctejkwzyohke`) — PostgreSQL + RLS + Auth + Storage + Realtime
 - **API**: Fastify (`packages/api`, port 3001) — thin layer for trial seeds + utilities
-- **Local DB** (OpenHands only): PostgreSQL `localhost:5432/insforge` via `insforge-mcp`
+- **Local DB** (OpenHands only): PostgreSQL `localhost:5432/superapp` via `packages/api` (configurable by `DATABASE_URL`)
 - **Deploy**: Vercel (preview on `viet` push, production on `main` merge)
-- **Monitoring**: Sentry (wired across all 7 apps)
-- **Docs**: 12 files per app in `apps/<app>/docs/` (OVERVIEW, ARCHITECTURE, API, FLOWS, DATA-MODEL, DATA-FLOW, UI-UX, PRD, ROLES-PERMISSIONS, RUNBOOK, AI-CONTEXT, CHANGELOG) + 9 root docs in `docs/`
+- **Monitoring**: Sentry (wired across all 7 Superapp apps)
+- **Docs**: 12 files per app in `apps/<app>/docs/` (OVERVIEW, ARCHITECTURE, API, FLOWS, DATA-MODEL, DATA-FLOW, UI-UX, PRD, ROLES-PERMISSIONS, RUNBOOK, AI-CONTEXT, CHANGELOG) + root docs in `docs/`
 
 ### 0.5 Read order for a new task
 
@@ -55,8 +57,8 @@ A **multi-tenant SaaS superapp** for Vietnamese SMBs (small-medium businesses) i
 flowchart TD
   START[New session] --> READ0[Read AGENTS.md §0<br/>this section — 60s]
   READ0 --> READ_TASK{Task involves<br/>specific app?}
-  READ_TASK -->|Yes| APPDOC[Read apps/<app>/docs/OVERVIEW.md<br/>+ AI-CONTEXT.md — 2 min]
-  READ_TASK -->|No, cross-app| ROOTDOC[Read docs/ARCHITECTURE.md<br/>+ docs/AUTH-AND-RBAC.md — 3 min]
+  READ_TASK -->|Yes| APPDOC[Read apps/<app>/docs/AI-CONTEXT.md<br/>(or CHANGELOG.md if AI-CONTEXT.md missing) — 2 min]
+  READ_TASK -->|No, cross-app| ROOTDOC[Read docs/ARCHITECTURE.md<br/>+ docs/PROJECT_CONTEXT.md — 3 min]
   APPDOC --> MEMORY[Call read_memory via insforge-mcp<br/>load previous session context — §13.1]
   ROOTDOC --> MEMORY
   MEMORY --> GREP[Grep docs for task keywords<br/>§13.2 — what's already documented?]
@@ -608,7 +610,7 @@ git ls-remote origin viet      # Should return SHA
 
 > **DeepWiki is part of InsForge** (§0.9) — the agent's native grasp toolkit. It lets you query the codebase in natural language (Vietnamese or English) and get ranked results, instead of grep-reading 100 files.
 
-The repo is large (7 apps + 13 packages + 38+ migrations). For fast semantic queries, use **DeepWiki vector search** instead of grep when you need to find code by concept (not by exact string).
+The repo is large (7 Superapp apps + 1 separate project + 12 packages + 69+ migrations). For fast semantic queries, use **DeepWiki vector search** instead of grep when you need to find code by concept (not by exact string).
 
 ### 9.1 DeepWiki container
 
@@ -935,11 +937,11 @@ Then run `node scripts/import-trial-seeds.mjs` to populate seed data.
 | When | What | Commit |
 |------|------|--------|
 | 2026-07-24 | Rules consolidation: AGENTS.md §8-§10, `.openhands_instructions` dedup | `9207c025` |
-| 2026-07-24 | Full documentation set: 84/84 app docs (12 files × 7 apps) + 9 root docs | `991a3d82` |
-| 2026-07-23 | Sentry error tracking wired across all 7 apps | `4ecb5830` |
+| 2026-07-24 | Full documentation set attempted (12 files × 7 apps) + 9 root docs; status partially stale as of 2026-08 | `991a3d82` |
+| 2026-07-23 | Sentry error tracking wired across all 7 Superapp apps | `4ecb5830` |
 | 2026-07-22 | Vite 4 → 8 + plugin-react 4 → 6 + @types/react 18 → 19 (5 apps) | `978d0fda` |
 | 2026-07-22 | `nguoi_dai_dien` field added to customers (migration + type + forms + bulk import) | `9ba47de0`–`ac1b68b6` |
-| 2026-07-21 | CompanyBadge component showing company context across all 7 apps + RLS fix | `05330cd8`, `95334d65` |
+| 2026-07-21 | CompanyBadge component showing company context across all 7 Superapp apps + RLS fix | `05330cd8`, `95334d65` |
 | 2026-07-20 | Bulk import: 200 → 2000 rows, Vietnamese column headers, phone optional, mobile AddButton | `f0ad459b`–`ab24c577` |
 | 2026-07-19 | AppSwitcher env-aware URL routing (production vs dev) | `7606affd` |
 | 2026-07-18 | Phase 1-6 architecture enhancements: RLS, cross-app auth, monorepo standardization | `41ed5982` |
@@ -970,9 +972,9 @@ Then run `node scripts/import-trial-seeds.mjs` to populate seed data.
 
 ### 11.4 Documentation status
 
-- ✅ 84/84 app docs complete (12 files × 7 apps) — committed `991a3d82`.
-- ✅ 9 root docs in `docs/` (README, ARCHITECTURE, CODING-STANDARDS, DATABASE-SCHEMA, AUTH-AND-RBAC, TRIAL-SYSTEM, DEPLOYMENT, DATA-MIGRATION, DEV-ENVIRONMENT).
-- ✅ Rules consolidated (AGENTS.md §0-§12 + `.openhands_instructions`).
+- App docs: every Superapp app now has the standard 12-file doc set (`OVERVIEW`, `PRD`, `ARCHITECTURE`, `DATA-MODEL`, `DATA-FLOW`, `FLOWS`, `API`, `UI-UX`, `ROLES-PERMISSIONS`, `RUNBOOK`, `AI-CONTEXT`, `CHANGELOG`). `framework-method` docs remain in `apps/framework-method/docs/`.
+- Root docs cover the 7-app Superapp scope. Remaining root doc gaps (`CODING-STANDARDS.md`, `DATABASE-SCHEMA.md`, `AUTH-AND-RBAC.md`, `TRIAL-SYSTEM.md`, `DATA-MIGRATION.md`, `DEV-ENVIRONMENT.md`) can be created from the `docs/NEW-APP-TEMPLATE/` skeleton or root `docs/README.md`.
+- ✅ Rules consolidated (AGENTS.md §0-§13 + `.openhands_instructions`).
 - ⚠️ CHANGELOG `[Unreleased]` sections only mention "Full documentation set" — should be updated with actual feature changes when next version is cut.
 
 ## 12. Improvement history (don't reinvent)
@@ -984,13 +986,13 @@ Then run `node scripts/import-trial-seeds.mjs` to populate seed data.
 | Improvement | What it did | Don't undo |
 |-------------|-------------|------------|
 | **RLS + `company_id` multi-tenancy** (`002_rls_policies.sql`, `006_multi_tenancy_company_id.sql`) | All tenant-scoped tables have `company_id` + RLS policy `USING (company_id = jwt.company_id)`. Single schema, not schema-per-tenant. | Don't create `tenant_<id>.` schemas. Don't add tables without `company_id` + RLS. |
-| **`@superapp/iam` shared auth** | `AuthProvider` + `CompanyProvider` in `packages/iam` — used by all 7 apps. Replaces per-app auth. | Don't create new auth context in apps. Use `useAuth()`, `useCompany()` from `@superapp/iam`. |
+| **`@superapp/iam` shared auth** | `AuthProvider` + `CompanyProvider` in `packages/iam` — used by all 7 Superapp apps. Replaces per-app auth. | Don't create new auth context in apps. Use `useAuth()`, `useCompany()` from `@superapp/iam`. |
 | **`@superapp/shared-utils` BaseService pattern** | Transaction, customer, bank account, branch, transaction type services extend `BaseService` from `@superapp/shared-utils`. | Don't re-implement business logic in apps. Check `@superapp/shared-utils` first. |
 | **Trial mode data adapter** | Trial mode services use data adapter pattern — same UI works with both real Supabase and trial seed data. | Don't bypass the adapter. See `AGENTS.md` Trial Seed System. |
 | **AppSwitcher env-aware routing** (`7606affd`) | App switcher detects production vs dev and routes to `appforyou.xyz` vs `localhost:PORT`. | Don't hardcode URLs in app switcher. |
-| **CompanyBadge across all 7 apps** (`05330cd8`) | Shows current company context in header of every app. RLS-fixed (`95334d65`). | Don't remove CompanyBadge. Don't query `companies` table without RLS context. |
-| **Sentry error tracking** (`4ecb5830`) | Wired across all 7 apps. Errors flow to Sentry org `viet-duc`. | Don't remove Sentry. Don't add try/catch that swallows errors silently. |
-| **Vite 8 + React 19 types** (`978d0fda`) | Upgraded from Vite 4 + React 18 types. | Don't downgrade. Use Vite 8 plugin-react 6 APIs. |
+| **CompanyBadge across all 7 Superapp apps** (`05330cd8`) | Shows current company context in header of every app. RLS-fixed (`95334d65`). | Don't remove CompanyBadge. Don't query `companies` table without RLS context. |
+| **Sentry error tracking** (`4ecb5830`) | Wired across all 7 Superapp apps. Errors flow to Sentry org `viet-duc`. | Don't remove Sentry. Don't add try/catch that swallows errors silently. |
+| **Vite 8 + React 18 + TypeScript 5.8** (`978d0fda`, `docs-alignment`) | Standardized across all packages. | Don't add React 19 / TS 6 dependencies. Use React 18 patterns. |
 | **Bulk import 2000 rows + Vietnamese headers** (`f0ad459b`, `df035cdf`) | Increased limit 200→2000, added Vietnamese column header mapping. | Don't reduce limit. Don't assume English-only headers. |
 
 ### 12.2 Dev environment improvements
@@ -1045,10 +1047,10 @@ Then run `node scripts/import-trial-seeds.mjs` to populate seed data.
 
 Before writing any code, every session MUST:
 
-1. **Read AGENTS.md §0** (this file, first 108 lines) — 60s. Gives you project overview, 7 apps, 12 packages, stack, read order.
+1. **Read AGENTS.md §0** (this file, first 108 lines) — 60s. Gives you project overview, 7 Superapp apps, 12 packages, stack, read order.
 2. **Read the relevant app docs** — 2 min:
-   - If task involves a specific app → `apps/<app>/docs/OVERVIEW.md` + `apps/<app>/docs/AI-CONTEXT.md`
-   - If cross-app → `docs/ARCHITECTURE.md` + `docs/AUTH-AND-RBAC.md`
+   - If task involves a specific app → `apps/<app>/docs/AI-CONTEXT.md` (fallback to `CHANGELOG.md` if missing)
+   - If cross-app → `docs/ARCHITECTURE.md` + `docs/PROJECT_CONTEXT.md`
 3. **Call `read_memory` via insforge-mcp** (§10.6) — loads context from previous sessions. If no memory exists yet, this is your first session — proceed but start writing memory.
 4. **Grep docs for keywords related to your task** — see §13.2 below.
 
@@ -1084,10 +1086,10 @@ After making code changes, you MUST update the relevant docs **in the same commi
 
 | What you changed | Which docs to update |
 |-------------------|---------------------|
-| New feature / page / component | `apps/<app>/docs/OVERVIEW.md` (add to feature list) + `apps/<app>/docs/CHANGELOG.md` (add entry) |
+| New feature / page / component | `apps/<app>/docs/OVERVIEW.md` (or `AI-CONTEXT.md` if `OVERVIEW.md` missing) + `apps/<app>/docs/CHANGELOG.md` (add entry) |
 | API endpoint added/changed | `apps/<app>/docs/API.md` + `docs/DATABASE-SCHEMA.md` if DB changed |
-| Database schema (migration) | `docs/DATABASE-SCHEMA.md` + `apps/<app>/docs/DATA-MODEL.md` + `supabase/migrations/` (the migration itself) |
-| Auth/RLS/permissions | `docs/AUTH-AND-RBAC.md` + `apps/<app>/docs/ROLES-PERMISSIONS.md` |
+| Database schema (migration) | `docs/DATABASE-SCHEMA.md` (create if missing) + `apps/<app>/docs/DATA-MODEL.md` + `supabase/migrations/` (the migration itself) |
+| Auth/RLS/permissions | `docs/PROJECT_CONTEXT.md` / `docs/ARCHITECTURE.md` + `apps/<app>/docs/ROLES-PERMISSIONS.md` |
 | UI/UX change (layout, flow) | `apps/<app>/docs/UI-UX.md` + `apps/<app>/docs/FLOWS.md` if user flow changed |
 | Shared package (`packages/*`) | `docs/ARCHITECTURE.md` § "Shared packages" + the package's own `README.md` |
 | Architecture decision (tech choice, pattern) | `docs/ARCHITECTURE.md` + call `log_decision` via insforge-mcp (§10.6) |
@@ -1169,7 +1171,7 @@ If any answer is "no" — go back and do it. A commit with stale docs is incompl
 
 | Need to know... | Read this |
 |------------------|-----------|
-| What an app does | `apps/<app>/docs/OVERVIEW.md` |
+| What an app does | `apps/<app>/docs/OVERVIEW.md` (or `AI-CONTEXT.md` if missing) |
 | How an app is structured | `apps/<app>/docs/ARCHITECTURE.md` |
 | What API endpoints exist | `apps/<app>/docs/API.md` |
 | How data flows through the app | `apps/<app>/docs/DATA-FLOW.md` |
@@ -1182,8 +1184,8 @@ If any answer is "no" — go back and do it. A commit with stale docs is incompl
 | What changed recently | `apps/<app>/docs/CHANGELOG.md` |
 | How to operate/debug the app | `apps/<app>/docs/RUNBOOK.md` |
 | Overall architecture | `docs/ARCHITECTURE.md` |
-| Auth and RLS | `docs/AUTH-AND-RBAC.md` |
-| Database schema (all apps) | `docs/DATABASE-SCHEMA.md` |
+| Auth and RLS | `docs/PROJECT_CONTEXT.md` / `docs/ARCHITECTURE.md` |
+| Database schema (all apps) | `docs/DATABASE-SCHEMA.md` (to be created) / `supabase/migrations/` |
 | Coding standards | `docs/CODING-STANDARDS.md` |
 | Data migration procedures | `docs/DATA-MIGRATION.md` |
 | Dev environment setup | `docs/DEV-ENVIRONMENT.md` |

@@ -55,7 +55,7 @@ export function initErrorTracking(opts: InitErrorTrackingOptions): void {
     beforeSend(event) {
       // Ignore expected auth noise (stale refresh tokens, wrong passwords).
       const message =
-        (event.exception?.values?.[0].value ?? "") ||
+        (event.exception?.values?.[0]?.value ?? "") ||
         (event.message ?? "");
       const ignored = [
         "Invalid Refresh Token",

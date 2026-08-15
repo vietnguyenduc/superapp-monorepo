@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Superapp New App Generator</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 720px; margin: 0 auto; padding: 24px; line-height: 1.5; }
+    h1 { font-size: 1.5rem; }
+    label { display: block; margin: 16px 0 6px; font-weight: 600; }
+    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font: inherit; }
+    button { padding: 12px 20px; border: none; border-radius: 8px; background: #007aff; color: white; font-weight: 600; cursor: pointer; margin-top: 20px; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .note { color: #666; font-size: .9rem; margin-top: 4px; }
+    pre { background: #f5f5f5; padding: 12px; border-radius: 8px; overflow-x: auto; }
+    @media (prefers-color-scheme: dark) { body { background: #111; color: #eee; } input, select, textarea { background: #222; color: #eee; border-color: #444; } pre { background: #222; } }
+  </style>
+</head>
+<body>
+  <h1>Superapp New App Generator</h1>
+  <p>Generates a Vite app skeleton matching the Superapp monorepo conventions (React 18 + TypeScript 5.8, Supabase, shared IAM, docs set).</p>
+
+  <form id="form">
+    <label for="appName">App folder / npm name</label>
+    <input id="appName" value="my-new-app" placeholder="my-new-app" required />
+
+    <div class="row">
+      <div>
+        <label for="port">Local port</label>
+        <input id="port" type="number" value="5180" required />
+      </div>
+      <div>
+        <label for="domain">Production domain</label>
+        <input id="domain" value="my-new-app.appforyou.xyz" required />
+      </div>
+    </div>
+
+    <label for="purpose">One-line purpose</label>
+    <textarea id="purpose" rows="2" placeholder="What does this app do?"></textarea>
+
+    <label for="title">Doc / page title</label>
+    <input id="title" value="My New App" />
+
+    <button type="submit" id="btn">Download <code>apps/&lt;name&gt;.zip</code></button>
+  </form>
+
+  <h2>After generating</h2>
+  <ol>
+    <li>Unzip into the monorepo root so the <code>apps/&lt;app&gt;</code> folder is created.</li>
+    <li>Run <code>npx turbo run check-types lint test build --filter=&lt;app&gt;</code>.</li>
+    <li>Add the app to root <code>README.md</code>, <code>AGENTS.md</code>, <code>turbo.json</code>, and <code>.github/workflows/deploy-changed-apps.yml</code>.</li>
+    <li>Link a Vercel project and push <code>origin/viet</code> for preview.</li>
+  </ol>
+
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="templates.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const tpl = window.NEW_APP_TEMPLATES || {};
+
+    function pascal(str) {
+      return str.replace(/(^|-)([a-z])/g, (_, __, l) => l.toUpperCase()).replace(/-/g, '');
+    }
+
+    function fillTemplate(content, vars) {
+      return content.replace(/<APP_NAME>/g, vars.appName)
+                    .replace(/<APP_NAME_PASCAL>/g, vars.appNamePascal)
+                    .replace(/PORT/g, vars.port)
+                    .replace(/<DOMAIN>/g, vars.domain)
+                    .replace(/https:\/\/<APP_NAME>\.appforyou\.xyz/g, 'https://' + vars.domain);
+    }
+
+    function coreFiles(vars) {
+      const sharedDeps = {
+        name: vars.appName,
+        version: '0.0.0',
+        type: 'module',
+        scripts: {
+          dev: 'vite',
+          build: 'tsc && vite build',
+          preview: 'vite preview',
+          'verify-deps': "echo 'Dependencies verified'",
+          test: 'vitest run'
+        },
+        dependencies: {
+          react: '^18.3.1',
+          'react-dom': '^18.3.1',
+          'react-router-dom': '^6.26.0',
+          'react-i18next': '^15.0.0',
+          i18next: '^23.12.0',
+          '@supabase/supabase-js': '^2.45.0',
+          '@repo/ui': '*',
+          '@repo/types': '*',
+          '@superapp/iam': '*',
+          '@superapp/shared-utils': '*',
+          '@superapp/theme': '*',
+          '@heroicons/react': '^2.1.0',
+          'xlsx': '^0.18.5'
+        },
+        devDependencies: {
+          '@types/react': '^18.3.3',
+          '@types/react-dom': '^18.3.0',
+          '@vitejs/plugin-react': '^4.3.0',
+          typescript: '~5.8.0',
+          vite: '^5.3.0',
+          vitest: '^2.0.0',
+          tailwindcss: '^3.4.0',
+          postcss: '^8.4.0',
+          autoprefixer: '^10.4.0'
+        }
+      };
+
+      return {
+        'package.json': JSON.stringify(sharedDeps, null, 2) + '\n',
+        'tsconfig.json': JSON.stringify({
+          extends: '@repo/typescript-config/react-app.json',
+          compilerOptions: { outDir: 'dist' },
+          include: ['src']
+        }, null, 2) + '\n',
+        'tsconfig.node.json': JSON.stringify({ compilerOptions: { composite: true, skipLibCheck: true, module: 'ESNext', moduleResolution: 'bundler', allowSyntheticDefaultImports: true }, include: ['vite.config.ts'] }, null, 2) + '\n',
+        'vite.config.ts': `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\nimport { resolve } from 'path';\n\nexport default defineConfig({\n  plugins: [react()],\n  resolve: {\n    alias: {\n      '@': resolve(__dirname, 'src'),\n    },\n  },\n  server: { port: ${vars.port} },\n  build: { outDir: 'dist' },\n});\n`,
+        'vercel.json': JSON.stringify({ framework: 'vite', buildCommand: 'npm run build', outputDirectory: 'dist', installCommand: 'npm install --workspaces=false' }, null, 2) + '\n',
+        '.env.example': `VITE_SUPABASE_URL=https://peslmsctejmvkwzyohke.supabase.co\nVITE_SUPABASE_ANON_KEY=your-anon-key\nVITE_APP_NAME=${vars.appName}\n`,
+        'README.md': `# ${vars.appNamePascal}\n\n${vars.purpose}\n\n- Local: http://localhost:${vars.port}\n- Production: https://${vars.domain}\n`,
+        'src/main.tsx': `import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport { BrowserRouter } from 'react-router-dom';\nimport { AuthProvider, CompanyProvider } from '@superapp/iam';\nimport App from './App';\nimport './index.css';\n\nReactDOM.createRoot(document.getElementById('root')!).render(\n  <React.StrictMode>\n    <BrowserRouter>\n      <AuthProvider>\n        <CompanyProvider>\n          <App />\n        </CompanyProvider>\n      </AuthProvider>\n    </BrowserRouter>\n  </React.StrictMode>,\n);\n`,
+        'src/App.tsx': `import { Routes, Route } from 'react-router-dom';\nimport Dashboard from './pages/Dashboard';\nimport Settings from './pages/Settings';\n\nfunction App() {\n  return (\n    <Routes>\n      <Route path="/" element={<Dashboard />} />\n      <Route path="/settings" element={<Settings />} />\n    </Routes>\n  );\n}\n\nexport default App;\n`,
+        'src/index.css': `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n`,
+        'tailwind.config.js': `/** @type {import('tailwindcss').Config} */\nmodule.exports = {\n  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],\n  theme: { extend: {} },\n  plugins: [],\n};\n`,
+        'postcss.config.js': `module.exports = { plugins: { tailwindcss: {}, autoprefixer: {} } };\n`,
+        'index.html': `<!doctype html>\n<html lang="vi">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>${vars.title}</title>\n  </head>\n  <body>\n    <div id="root"></div>\n    <script type="module" src="/src/main.tsx"><\/script>\n  </body>\n</html>\n`,
+        'src/pages/Dashboard.tsx': `import { useCompany } from '@superapp/iam';\n\nexport default function Dashboard() {\n  const { company } = useCompany();\n  return (\n    <div className="p-6">\n      <h1 className="text-2xl font-bold">${vars.title}</h1>\n      <p className="mt-2 text-gray-600">Company: {company?.name ?? '-'}</p>\n    </div>\n  );\n}\n`,
+        'src/pages/Settings.tsx': `export default function Settings() {\n  return <div className="p-6"><h1 className="text-xl font-bold">Settings</h1></div>;\n}\n`,
+        'src/types/UserRole.ts': `export type UserRole = 'admin_master' | 'admin_company' | 'staff';\n\nexport enum Permission {\n  DASHBOARD_VIEW = 'dashboard_view',\n  SETTINGS_VIEW = 'settings_view',\n  SETTINGS_EDIT = 'settings_edit',\n}\n\nexport const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {\n  admin_master: Object.values(Permission),\n  admin_company: [Permission.DASHBOARD_VIEW, Permission.SETTINGS_VIEW, Permission.SETTINGS_EDIT],\n  staff: [Permission.DASHBOARD_VIEW],\n};\n`,
+        'src/services/sampleService.ts': `import { createApiClient } from '@superapp/shared-utils';\n\nconst supabase = createApiClient();\n\nexport async function getSamples(companyId: string) {\n  return supabase\n    .from('samples')\n    .select('*')\n    .eq('company_id', companyId)\n    .order('created_at', { ascending: false });\n}\n`,
+        'src/services/sampleService.test.ts': `import { describe, it, expect } from 'vitest';\n\ndescribe('sampleService', () => {\n  it('has tests', () => {\n    expect(true).toBe(true);\n  });\n});\n`
+      };
+    }
+
+    $('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = $('btn');
+      btn.disabled = true;
+      btn.textContent = 'Generating…';
+
+      const appName = $('appName').value.trim().toLowerCase().replace(/\s+/g, '-');
+      const port = $('port').value;
+      const domain = $('domain').value.trim();
+      const purpose = $('purpose').value.trim() || `${appName} app`;
+      const title = $('title').value.trim() || appName;
+      const vars = { appName, appNamePascal: pascal(appName), port, domain, purpose, title };
+
+      const zip = new JSZip();
+      const root = zip.folder(`apps/${appName}`);
+      const files = coreFiles(vars);
+      for (const [rel, content] of Object.entries(files)) {
+        root.file(rel, content);
+      }
+      const docs = root.folder('docs');
+      for (const [key, content] of Object.entries(tpl)) {
+        docs.file(`${key}.md`, fillTemplate(content, vars));
+      }
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${appName}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      btn.disabled = false;
+      btn.textContent = `Download apps/${appName}.zip`;
+    });
+  </script>
+</body>
+</html>
