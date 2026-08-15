@@ -1,5 +1,10 @@
 # Framework Method — Changelog
 
+## 2026-08-15 (Knowledge Vault overview content enrichment)
+
+- Replaced placeholder `summary_vi`/`content_vi`/`cot_y_vi`/`cot_cua_cot_vi`/`loi_vi` in `src/data/knowledgeSeed.ts` for `nlcd-overview` and `yphap-overview` with structured summaries derived from their detail entries.
+- Bumped `KNOWLEDGE_SEED_VERSION` to 3 in `frameworkMethodService.ts` so returning users' cached `localStorage` entries are re-merged with the enriched overviews on next load.
+
 ## 2026-08-15 (Knowledge Vault seed propagation fix)
 
 - Added `is_user_edited` and `seed_version` to `KnowledgeEntry` type.
