@@ -1,6 +1,6 @@
 # Supabase Schema Health Report
 
-Generated: 2026-08-04
+Generated: 2026-08-15
 Total public tables: 90
 All 90 tables have RLS enabled.
 Tables missing `company_id` column: 27
@@ -45,10 +45,13 @@ Tables missing `company_id` column: 27
 - **`special_outbound_records`**: added `notes` and `reason_detail` columns the UI already collects, and aligned the `createRecord`/`updateRecord`/`approveRecord`/`rejectRecord` payloads with the actual table columns (`requested_by`, `approved_by`, `approved_at`, `rejection_reason`, `company_id`, `branch_id`).
   - Migration: `supabase/migrations/20260804000003_special_outbound_records_notes_and_reason_detail.sql`
   - Code changes: `apps/sales-operation/src/services/specialOutboundService.ts`, `apps/inventory-operation/src/services/specialOutboundService.ts`, `apps/sales-operation/src/lib/supabase.ts`, `apps/inventory-operation/src/lib/supabase.ts`.
+- **Balance recalculation trigger**: added `recalculate_customer_balance()` / `recalculate_bank_balance()` functions and triggers on `transactions` so that `customers.total_balance` / `bank_accounts.current_balance` are recomputed from `opening_balance + Σ(amount × math_factor)` on insert/update/delete/backfill. Applied to production and backfilled all existing balances.
+  - Migration: `supabase/migrations/20260804000004_balance_recalc_trigger.sql`
+  - Code changes: `apps/cashflow/src/services/transactionService.ts`, `apps/cashflow/src/services/businessLogic/balanceMath.ts`.
 - Excluded from this pass (per project scope): `companies`, `color_settings`, `product_column_presets`, `user_preferences`, and all `fm_*` (framework-method) tables.
 
 ## Remaining recommendations
 
 1. `fm_*` tables (framework-method) are excluded from audit per user request.
 2. `color_settings`, `product_column_presets`, `companies`, and `user_preferences` remain global/user-scoped by design.
-3. The 2026-08-13 migrations (`20260804000001`, `20260804000002`, `20260804000003`) were applied to the production Supabase project after temporary migration-history repair; local migration file names still do not fully match remote for historical versions `007`, `008`, `034`–`036`, `045`–`047`.
+3. The 2026-08-13/15 migrations (`20260804000001`–`20260804000004`) were applied to the production Supabase project after temporary migration-history repair; local migration file names still do not fully match remote for historical versions `007`, `008`, `034`–`036`, `045`–`047`.

@@ -234,11 +234,12 @@ class QueryBuilder<T = any> {
     for (const part of parts) {
       // Match: column.op.value  (op is one of eq,neq,gt,gte,lt,lte,like,ilike,in,is,cs,cd)
       const m = part.match(/^([a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_]+\.)(.+)$/);
-      if (!m) continue;
-      const rest = part.slice(m[1].length);
-      const [column, op] = m[1].slice(0, -1).split('.'); // remove trailing dot
+      if (!m || !m[1]) continue;
+      const prefix = m[1];
+      const rest = part.slice(prefix.length);
+      const [column, op] = prefix.slice(0, -1).split('.'); // remove trailing dot
       const validOps: FilterOp[] = ['eq','neq','gt','gte','lt','lte','like','ilike','in','is','cs','cd'];
-      if (!validOps.includes(op as FilterOp)) continue;
+      if (column === undefined || op === undefined || !validOps.includes(op as FilterOp)) continue;
       filters.push({ column, op: op as FilterOp, value: rest });
     }
     if (filters.length > 0) {

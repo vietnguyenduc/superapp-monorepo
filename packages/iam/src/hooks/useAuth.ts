@@ -505,7 +505,7 @@ export const useAuth = () => {
   };
 
   const updateProfile = async (
-    updates: Partial<User>
+    updates: Partial<Omit<User, 'branch' | 'company' | 'staff_permissions'>>
   ): Promise<{ data?: User; error: string | null }> => {
     if (!state.user?.id) {
       return { error: "No user logged in" };

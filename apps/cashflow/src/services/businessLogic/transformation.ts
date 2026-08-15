@@ -3,7 +3,7 @@
 
 import { parseAmount } from "./parsers";
 
-// Generates a v4 UUID. Used for `id` columns which are typed as uuid in Supabase.
+// Generates a v4 UUID string. Used for `id` columns which are `text` type in Supabase but expected to hold a v4 UUID string.
 const genId = () => {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID();
