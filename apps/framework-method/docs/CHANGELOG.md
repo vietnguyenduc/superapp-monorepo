@@ -1,5 +1,15 @@
 # Framework Method — Changelog
 
+## 2026-08-15 (Seeded Knowledge Vault & session flow defaults)
+
+- Added `src/data/knowledgeSeed.ts` with 43 `KnowledgeEntry` records (5 Nguyên lý Trí tuệ, 3 Nguyên lý Sống, 8 Nguyên lý Cuộc đời, 7 Đạo, 15 Ý pháp, Công thức đối cảnh/giải cảnh, and 4 overview entries) in Vietnamese.
+- Added `src/data/templateSeed.ts` exporting `defaultRecognizeSections`, `defaultApplySection(blockId)`, and `defaultTrackSection` with stable IDs and linked `knowledge_entry_id`/`concept_knowledge_entry_id`/`reference_knowledge_entry_id` values.
+- Updated `src/services/frameworkMethodService.ts` to fall back to `defaultKnowledgeEntries` and default templates when localStorage/Supabase is empty, so `/knowledge` and `/session` Step 2/3/4 are pre-populated on first use.
+- Linked Step 2 "Nhận ra" Nguyên lý / Đạo / Pháp sections to overview and detail Knowledge entries; linked Step 3 "Đưa khuôn" block-specific plan items and Step 4 "Bám" tracking items to relevant concepts.
+- Data remains editable via the `/knowledge` Vault and `/builder` pages after seed.
+- Validation: `npm run lint -w framework-method` ✅, `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+- Verified locally in browser: `/knowledge` lists all 43 seed entries and `/session` Step 2 renders the seeded Nguyên lý, Đạo, and Pháp sections with "Đọc lại dữ liệu" links.
+
 ## 2026-08-04 (Calendar + Session + Dashboard refinement)
 
 - Fixed typo `Trổ canh` → `Trổ cảnh` across `Calendar.tsx`, `Dashboard.tsx`, `KarmaActionModal.tsx`, and `frameworkMethodService.ts`.

@@ -92,3 +92,4 @@ RLS is enabled on all tables. Users see rows where `user_id = auth.uid()`. Publi
 - A global sticky `+` FAB (`GlobalTaskFab`) is rendered in `Layout` on every protected page, opening a quick task-creation modal.
 - The `Lễ giỗ, tế họ` calendar preset opens an input modal for custom title, date, warning lead time, and note before creating a `RecurringTask`.
 - `Dashboard` hero card title is "Nghiệp - Phúc của bạn trong kiếp này" and the framework-usage card shows real statistics: top completed block, top practiced step (Đưa khuôn / Bám theo dõi), day with most merit earned, and day with most merit spent / Ân oán.
+- Default data is seeded from `src/data/knowledgeSeed.ts` and `src/data/templateSeed.ts`. `frameworkMethodService.ts` falls back to these seeds when localStorage and Supabase are empty, so the Knowledge Vault and `/session` Step 2/3/4 templates are pre-populated and remain editable through `/knowledge` and `/builder`.
