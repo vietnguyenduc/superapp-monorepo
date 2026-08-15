@@ -602,7 +602,7 @@ const CustomerList: React.FC = () => {
             </h3>
             <div className="flex flex-wrap items-center gap-2 text-sm" title={formatCurrency(state.totalBalance)}>
               <span className="text-gray-500 dark:text-gray-400">
-                {t("customers.totalDebt", "Tổng công nợ")} ({state.allCustomers.length.toLocaleString("vi-VN")} {t("customers.customersCount", "khách hàng")}):
+                {t("customers.totalDebt", "Tổng công nợ")} ({state.allCustomers.length.toLocaleString("vi-VN")}{" "}{t("customers.customersCount", "khách hàng")}):
               </span>
               <span className="font-semibold text-gray-900 dark:text-white">
                 {formatCurrency(state.totalBalance)}
@@ -622,7 +622,7 @@ const CustomerList: React.FC = () => {
                 balanceRange={state.balanceRange}
                 onBalanceRangeChange={handleBalanceRangeChange}
               />
-              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 overflow-x-auto sm:overflow-visible no-scrollbar">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
                 <select
                   value={state.pageSize}
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
