@@ -13,8 +13,6 @@ import type {
   TaskSuggestion,
   Template,
   TemplateSection,
-  TemplateSectionGroup,
-  TemplateSectionItem,
   ReferenceInput,
   ApplyPlan,
   Track,
@@ -34,6 +32,12 @@ import type {
   KarmaTemplateRow,
 } from "../types";
 import { MERIT_SIZE_POINTS } from "../types";
+import { defaultKnowledgeEntries } from "../data/knowledgeSeed";
+import {
+  defaultRecognizeSections,
+  defaultApplySection,
+  defaultTrackSection,
+} from "../data/templateSeed";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = (sb as unknown) as { from: (table: string) => any };
@@ -88,185 +92,11 @@ const DEFAULT_SUGGESTIONS: Record<BlockId, string[]> = {
 
 const SUGGESTIONS_STORAGE_KEY = "fm_task_suggestions_v1";
 
-const makeItems = (titles: string[], group: TemplateSectionGroup): TemplateSectionItem[] =>
-  titles.map((title, idx) => ({
-    id: `${group}-${idx}`,
-    title_vi: title,
-    title_en: title,
-    default_enabled: true,
-    order_index: idx,
-  }));
+const makeRecognizeSections = (): TemplateSection[] => defaultRecognizeSections();
 
-const makeRecognizeSections = (): TemplateSection[] => [
-  {
-    id: genId(),
-    template_id: "",
-    group: "nguyen_ly",
-    title_vi: "Nguyên lý cuộc đời",
-    title_en: "Life Principles",
-    is_toggle: true,
-    is_enabled: true,
-    order_index: 0,
-    items: makeItems(
-      [
-        "Sống có mục đích",
-        "Cân bằng công việc và cuộc sống",
-        "Kiên nhẫn và bền bỉ",
-        "Tự nhận thức",
-        "Học hỏi liên tục",
-        "Yêu thương và trân trọng",
-        "Trung thực với bản thân",
-        "Biết ơn mỗi ngày",
-      ],
-      "nguyen_ly"
-    ),
-  },
-  {
-    id: genId(),
-    template_id: "",
-    group: "dao",
-    title_vi: "Đạo",
-    title_en: "Path",
-    is_toggle: true,
-    is_enabled: true,
-    order_index: 1,
-    items: makeItems(
-      [
-        "Đạo của bản thân",
-        "Đạo của quan hệ",
-        "Đạo của công việc",
-        "Đạo của tài chính",
-        "Đạo của gia đình",
-        "Đạo của sức khỏe",
-        "Đạo của tinh thần",
-      ],
-      "dao"
-    ),
-  },
-  {
-    id: genId(),
-    template_id: "",
-    group: "phap",
-    title_vi: "Pháp",
-    title_en: "Methods",
-    is_toggle: true,
-    is_enabled: true,
-    order_index: 2,
-    items: makeItems(
-      [
-        "Pomodoro",
-        "Time-blocking",
-        "Eisenhower Matrix",
-        "OKR",
-        "Kaizen",
-        "5 Whys",
-        "Mind mapping",
-        "Journaling",
-        "Meditation",
-        "Exercise",
-        "Reading",
-        "Networking",
-        "Budgeting",
-        "Automation",
-        "Delegation",
-        "Review & Reflect",
-        "Goal Setting",
-        "Habit Tracking",
-      ],
-      "phap"
-    ),
-  },
-];
+const makeApplySection = (blockId: BlockId): TemplateSection[] => defaultApplySection(blockId);
 
-const makeApplySection = (blockId: BlockId): TemplateSection[] => {
-  const familyItems = [
-    "Thấu triệt",
-    "Tròn chức năng, vai trò, bổn phận, trách nhiệm với gia đình",
-    "Tạo nếp nhà",
-    "Tròn Hiếu Lễ Nghĩa",
-    "Kế thừa trí tuệ cho con cháu",
-  ];
-  const workItems = [
-    "Thấu triệt công việc",
-    "Làm công việc đúng mệnh",
-    "Hành xử và đối nhân xử thế",
-    "Trân trọng và biết ơn",
-    "Tạo phúc, trả nợ ở cơ quan",
-    "Tròn chức năng, vai trò, bổn phận, trách nhiệm trong công việc",
-    "Kiểm soát",
-  ];
-  const relationshipItems = [
-    "Thấu triệt con người",
-    "Phân ra từng mối quan hệ rõ ràng",
-    "Cần trọng các mối quan hệ để không bị lỗi đạo",
-    "Rà soát thường xuyên các mối quan hệ: cứ 3-6 tháng rà soát 1 lần (liên kết với phần rà soát phân loại mối quan hệ trong Luyện thấu triệt)",
-  ];
-  const financeItems = [
-    "Thấu triệt",
-  ];
-  const selfItems = [
-    "Bước cụ thể",
-    "Thời gian",
-    "Người hỗ trợ",
-    "Tài nguyên cần",
-    "Kết quả mong đợi",
-  ];
-
-  const map: Record<BlockId, string[]> = {
-    self: selfItems,
-    family: familyItems,
-    work: workItems,
-    finance: financeItems,
-    relationship: relationshipItems,
-  };
-
-  const titles = map[blockId] ?? selfItems;
-  const sectionTitle: Record<BlockId, string> = {
-    self: "Kế hoạch thực hiện",
-    family: "Khuôn dùng cho Khối Gia đình",
-    work: "Khuôn dùng cho Khối Công việc",
-    finance: "Khuôn dùng cho Khối Tài chính",
-    relationship: "Khuôn đưa trí tuệ vào quan hệ",
-  };
-
-  return [
-    {
-      id: genId(),
-      template_id: "",
-      group: "dua_khuon",
-      title_vi: sectionTitle[blockId] ?? "Kế hoạch thực hiện",
-      title_en: sectionTitle[blockId] ?? "Execution Plan",
-      is_toggle: false,
-      is_enabled: true,
-      order_index: 0,
-      items: titles.map((title, idx) => ({
-        id: `dua-khuon-${blockId}-${idx}`,
-        title_vi: title,
-        title_en: title,
-        default_enabled: true,
-        order_index: idx,
-      })),
-    },
-  ];
-};
-
-const makeTrackSection = (): TemplateSection[] => [
-  {
-    id: genId(),
-    template_id: "",
-    group: "bam",
-    title_vi: "Theo dõi tiến độ",
-    title_en: "Progress Tracking",
-    is_toggle: false,
-    is_enabled: true,
-    order_index: 0,
-    items: [
-      { id: "dich", title_vi: "Đích", title_en: "Goal", default_enabled: true, order_index: 0 },
-      { id: "thuc_te", title_vi: "Thực tế", title_en: "Reality", default_enabled: true, order_index: 1 },
-      { id: "phuong_phap", title_vi: "Phương pháp", title_en: "Method", default_enabled: true, order_index: 2 },
-    ],
-  },
-];
+const makeTrackSection = (): TemplateSection[] => defaultTrackSection();
 
 export const DEFAULT_STEP_CONFIG: { step_type: StepType; name_vi: string; name_en: string; order_index: number; sections: TemplateSection[] }[] = [
   { step_type: "recognize", name_vi: "Bước 2: Nhận ra", name_en: "Step 2: Recognize", order_index: 0, sections: makeRecognizeSections() },
@@ -384,6 +214,15 @@ export const getKnowledgeEntries = async (): Promise<KnowledgeEntry[]> => {
     }
   } catch (err) {
     fallbackLog("getKnowledgeEntries", err);
+  }
+
+  if (defaultKnowledgeEntries.length > 0) {
+    try {
+      localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(defaultKnowledgeEntries));
+    } catch {
+      // ignore storage errors
+    }
+    return defaultKnowledgeEntries;
   }
 
   return [];
