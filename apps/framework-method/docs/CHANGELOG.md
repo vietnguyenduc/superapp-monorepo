@@ -1,5 +1,13 @@
 # Framework Method — Changelog
 
+## 2026-08-15 (Knowledge Vault seed propagation fix)
+
+- Added `is_user_edited` and `seed_version` to `KnowledgeEntry` type.
+- `frameworkMethodService.getKnowledgeEntries` now stores a `KNOWLEDGE_SEED_VERSION` in `localStorage` and merges cached entries with `defaultKnowledgeEntries` whenever the seed version changes.
+- Un-edited default entries are replaced by the latest seed; user-added or edited entries are preserved.
+- `SessionContext` marks new/updated Knowledge entries as `is_user_edited: true`; `saveKnowledgeEntries` strips `is_user_edited`/`seed_version` before Supabase upsert to avoid schema mismatch.
+- Validation: `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+
 ## 2026-08-15 (Enriched Knowledge Vault seed content)
 
 - Re-enriched `src/data/knowledgeSeed.ts` from the 180-page scanned PDF OCR (`/home/ubuntu/ocr_pages/pdf_full.txt`) so that `cot_cua_cot_vi` (list subtitle), `summary_vi` (Cốt ý), `loi_vi`/`content_vi` (Lõi / chi tiết) no longer repeat titles.

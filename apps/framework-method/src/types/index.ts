@@ -141,6 +141,8 @@ export interface KnowledgeEntry {
   image_url?: string;
   category: "concept" | "framework";
   order_index: number;
+  is_user_edited?: boolean;
+  seed_version?: number;
   created_at?: string;
   updated_at?: string;
 }

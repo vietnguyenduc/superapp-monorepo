@@ -196,11 +196,49 @@ export const saveTaskSuggestions = async (suggestions: Record<BlockId, TaskSugge
 };
 
 const KNOWLEDGE_STORAGE_KEY = "fm_knowledge_v1";
+const KNOWLEDGE_VERSION_KEY = "fm_knowledge_version_v1";
+const KNOWLEDGE_SEED_VERSION = 2;
+
+const mergeKnowledgeWithDefaults = (stored: KnowledgeEntry[]): KnowledgeEntry[] => {
+  const storedById = new Map(stored.map((e) => [e.id, e]));
+  const merged: KnowledgeEntry[] = [];
+  const seen = new Set<string>();
+
+  for (const d of defaultKnowledgeEntries) {
+    const existing = storedById.get(d.id);
+    if (existing && existing.is_user_edited) {
+      merged.push(existing);
+    } else if (existing) {
+      merged.push({ ...d, image_url: existing.image_url || d.image_url, is_user_edited: false });
+    } else {
+      merged.push({ ...d, is_user_edited: false });
+    }
+    seen.add(d.id);
+  }
+
+  for (const e of stored) {
+    if (!seen.has(e.id)) {
+      merged.push(e);
+    }
+  }
+
+  return merged;
+};
 
 export const getKnowledgeEntries = async (): Promise<KnowledgeEntry[]> => {
   try {
     const raw = localStorage.getItem(KNOWLEDGE_STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as KnowledgeEntry[];
+    if (raw) {
+      const stored = JSON.parse(raw) as KnowledgeEntry[];
+      const storedVersion = Number(localStorage.getItem(KNOWLEDGE_VERSION_KEY) || "0");
+      if (storedVersion === KNOWLEDGE_SEED_VERSION) {
+        return stored;
+      }
+      const merged = mergeKnowledgeWithDefaults(stored);
+      localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(merged));
+      localStorage.setItem(KNOWLEDGE_VERSION_KEY, String(KNOWLEDGE_SEED_VERSION));
+      return merged;
+    }
   } catch {
     // ignore parse errors
   }
@@ -210,6 +248,7 @@ export const getKnowledgeEntries = async (): Promise<KnowledgeEntry[]> => {
     if (error) throw error;
     if (data && data.length > 0) {
       localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(KNOWLEDGE_VERSION_KEY, String(KNOWLEDGE_SEED_VERSION));
       return data as KnowledgeEntry[];
     }
   } catch (err) {
@@ -217,12 +256,14 @@ export const getKnowledgeEntries = async (): Promise<KnowledgeEntry[]> => {
   }
 
   if (defaultKnowledgeEntries.length > 0) {
+    const seeded = defaultKnowledgeEntries.map((e) => ({ ...e, is_user_edited: false }));
     try {
-      localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(defaultKnowledgeEntries));
+      localStorage.setItem(KNOWLEDGE_STORAGE_KEY, JSON.stringify(seeded));
+      localStorage.setItem(KNOWLEDGE_VERSION_KEY, String(KNOWLEDGE_SEED_VERSION));
     } catch {
       // ignore storage errors
     }
-    return defaultKnowledgeEntries;
+    return seeded;
   }
 
   return [];
@@ -236,7 +277,8 @@ export const saveKnowledgeEntries = async (entries: KnowledgeEntry[]): Promise<v
   }
 
   try {
-    const { error } = await db.from("fm_knowledge").upsert(entries, { onConflict: "id" });
+    const dbEntries = entries.map(({ is_user_edited, seed_version, ...rest }) => rest);
+    const { error } = await db.from("fm_knowledge").upsert(dbEntries, { onConflict: "id" });
     if (error) throw error;
   } catch (err) {
     fallbackLog("saveKnowledgeEntries", err);

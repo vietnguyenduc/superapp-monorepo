@@ -411,6 +411,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     async (entry: Omit<KnowledgeEntry, "id" | "order_index" | "created_at" | "updated_at">) => {
       const newEntry: KnowledgeEntry = {
         ...entry,
+        is_user_edited: true,
         id: service.genId(),
         order_index: knowledgeEntries.length,
         created_at: new Date().toISOString(),
@@ -425,7 +426,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
 
   const updateKnowledgeEntry = useCallback(
     async (id: string, updates: Partial<KnowledgeEntry>) => {
-      const next = knowledgeEntries.map((e) => (e.id === id ? { ...e, ...updates, updated_at: new Date().toISOString() } : e));
+      const next = knowledgeEntries.map((e) => (e.id === id ? { ...e, ...updates, is_user_edited: true, updated_at: new Date().toISOString() } : e));
       setKnowledgeEntries(next);
       await service.saveKnowledgeEntries(next);
     },
