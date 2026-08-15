@@ -1,5 +1,12 @@
 # Framework Method — Changelog
 
+## 2026-08-15 (Enriched Knowledge Vault seed content)
+
+- Re-enriched `src/data/knowledgeSeed.ts` from the 180-page scanned PDF OCR (`/home/ubuntu/ocr_pages/pdf_full.txt`) so that `cot_cua_cot_vi` (list subtitle), `summary_vi` (Cốt ý), `loi_vi`/`content_vi` (Lõi / chi tiết) no longer repeat titles.
+- All 43 `KnowledgeEntry` seeds now have document-derived `content_vi` with structured bullets and cleaned OCR noise.
+- Added `scripts/enrich_knowledge.py` helper to regenerate/refresh seed content from the OCR dump using the DeepSeek API.
+- Validation: `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+
 ## 2026-08-15 (Seeded Knowledge Vault & session flow defaults)
 
 - Added `src/data/knowledgeSeed.ts` with 43 `KnowledgeEntry` records (5 Nguyên lý Trí tuệ, 3 Nguyên lý Sống, 8 Nguyên lý Cuộc đời, 7 Đạo, 15 Ý pháp, Công thức đối cảnh/giải cảnh, and 4 overview entries) in Vietnamese.
