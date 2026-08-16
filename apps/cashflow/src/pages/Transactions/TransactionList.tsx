@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "../../utils/toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -273,28 +273,27 @@ const TransactionList: React.FC = () => {
     return map;
   }, [users]);
 
-  const filterRef = useRef<HTMLDivElement>(null);
+  const [stickyFilterEl, setStickyFilterEl] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const el = filterRef.current;
-    if (!el) return;
+    if (!stickyFilterEl) return;
     const setVar = () => {
       document.documentElement.style.setProperty(
         "--transaction-sticky-top",
-        `${el.offsetHeight}px`,
+        `${stickyFilterEl.offsetHeight}px`,
       );
     };
     setVar();
     const ro =
       typeof ResizeObserver !== "undefined" ? new ResizeObserver(setVar) : null;
-    if (ro) ro.observe(el);
+    if (ro) ro.observe(stickyFilterEl);
     window.addEventListener("resize", setVar);
     return () => {
       if (ro) ro.disconnect();
       window.removeEventListener("resize", setVar);
       document.documentElement.style.removeProperty("--transaction-sticky-top");
     };
-  }, []);
+  }, [stickyFilterEl]);
 
   useEffect(() => {
     const loadFilters = async () => {
@@ -845,7 +844,7 @@ const TransactionList: React.FC = () => {
 
           {/* Sticky search bar */}
           <div
-            ref={filterRef}
+            ref={setStickyFilterEl}
             className="sticky top-0 z-30 bg-white/95 dark:bg-gray-800/95 backdrop-blur rounded-lg shadow mb-4 p-3 flex flex-wrap items-center gap-2"
           >
             <input

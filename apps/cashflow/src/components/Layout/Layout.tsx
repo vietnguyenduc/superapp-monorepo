@@ -47,7 +47,7 @@ const Layout: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="h-screen flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
       <TrialBanner />
       <Navigation onMenuClick={() => setSidebarOpen(true)} />
       {/* Mobile sidebar overlay */}
@@ -59,9 +59,9 @@ const Layout: React.FC = () => {
           <div className="fixed inset-0 bg-gray-600 dark:bg-gray-800 bg-opacity-75" />
         </div>
       )}
-      <div className="flex w-full">
-        {/* Desktop sidebar - sticky */}
-        <div className="hidden lg:block w-80 flex-shrink-0 sticky top-16 h-screen overflow-y-auto no-scrollbar">
+      <div className="flex flex-1 min-h-0 w-full overflow-hidden">
+        {/* Desktop sidebar */}
+        <div className="hidden lg:block w-80 flex-shrink-0 h-full overflow-y-auto no-scrollbar">
           <Sidebar />
         </div>
         {/* Mobile sidebar */}
@@ -72,8 +72,8 @@ const Layout: React.FC = () => {
         >
           <Sidebar onClose={() => setSidebarOpen(false)} />
         </div>
-        {/* Main content - full width, flush left */}
-        <main className="flex-1 min-w-0 w-full overflow-x-hidden">
+        {/* Main content - the page scroll container */}
+        <main className="flex-1 min-w-0 w-full overflow-y-auto overflow-x-clip min-h-0">
           <div className="p-4 sm:p-6 lg:p-8 w-full pb-36 lg:pb-8">
             {/* Page transition: fade-in + slight slide-up on route change.
                 Key on pathname so React remounts the wrapper, retriggering the CSS animation. */}

@@ -51,9 +51,9 @@ const defaultVisibleColumns: Record<string, boolean> = {
   fullName: true,
   balance: true,
   lastTransaction: true,
-  phone: true,
-  address: true,
-  workingMethod: true,
+  phone: false,
+  address: false,
+  workingMethod: false,
 };
 
 const allColumnOptions = [
@@ -84,7 +84,7 @@ const CustomerList: React.FC = () => {
 
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
-  const filterRef = useRef<HTMLDivElement>(null);
+  const [stickyFilterEl, setStickyFilterEl] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -100,25 +100,24 @@ const CustomerList: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const el = filterRef.current;
-    if (!el) return;
+    if (!stickyFilterEl) return;
     const setVar = () => {
       document.documentElement.style.setProperty(
         "--customer-sticky-top",
-        `${el.offsetHeight}px`,
+        `${stickyFilterEl.offsetHeight}px`,
       );
     };
     setVar();
     const ro =
       typeof ResizeObserver !== "undefined" ? new ResizeObserver(setVar) : null;
-    if (ro) ro.observe(el);
+    if (ro) ro.observe(stickyFilterEl);
     window.addEventListener("resize", setVar);
     return () => {
       if (ro) ro.disconnect();
       window.removeEventListener("resize", setVar);
       document.documentElement.style.removeProperty("--customer-sticky-top");
     };
-  }, []);
+  }, [stickyFilterEl]);
 
   const [state, setState] = useState<CustomerListState>(() => {
     let savedColumns: Record<string, boolean> | null = null;
@@ -633,7 +632,7 @@ const CustomerList: React.FC = () => {
         />
 
         {/* Filters and Search */}
-        <div ref={filterRef} className="bg-white/95 dark:bg-gray-800/95 backdrop-blur rounded-lg shadow mb-3 sticky top-0 z-20">
+        <div ref={setStickyFilterEl} className="bg-white/95 dark:bg-gray-800/95 backdrop-blur rounded-lg shadow mb-3 sticky top-0 z-20">
           <div className="px-3 py-2 sm:px-4 sm:py-3 border-b border-gray-200 dark:border-gray-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
               Bộ lọc khách hàng
