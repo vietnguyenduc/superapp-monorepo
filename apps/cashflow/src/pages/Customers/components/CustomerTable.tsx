@@ -148,19 +148,21 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   }
 
   return (
-    <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0 max-h-[calc(100vh_-_18rem)] sm:max-h-[calc(100vh_-_240px)] [&::-webkit-scrollbar:horizontal]:h-2 [&::-webkit-scrollbar-thumb:horizontal]:rounded [&::-webkit-scrollbar-thumb:horizontal]:bg-gray-300/70 hover:[&::-webkit-scrollbar-thumb:horizontal]:bg-gray-400/80">
-      <table className="w-full min-w-0 sm:min-w-max divide-y divide-gray-300 dark:divide-gray-600">
+    <div className="-mx-3 px-3 sm:mx-0 sm:px-0">
+      <table className="w-full min-w-0 divide-y divide-gray-300 dark:divide-gray-600">
         <thead className="hidden sm:table-header-group bg-gray-50 dark:bg-gray-700">
           <tr>
             <th
               scope="col"
-              className="hidden sm:table-cell px-3 py-3 text-left text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide whitespace-normal w-14 sticky top-0 left-0 z-20 bg-gray-50 dark:bg-gray-700"
+              className="hidden sm:table-cell px-3 py-3 text-left text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide whitespace-normal w-14 sticky left-0 z-20 bg-gray-50 dark:bg-gray-700"
+              style={{ top: "var(--customer-sticky-top, 0px)" }}
             >
               <span className="block leading-tight">Xem giao dịch</span>
             </th>
             <th
               scope="col"
-              className={`${isVisible("customerCode") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap w-16 sticky top-0 sm:sticky sm:left-[3.5rem] z-20 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("customerCode") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap w-16 sticky sm:left-[3.5rem] z-20 bg-gray-50 dark:bg-gray-700`}
+              style={{ top: "var(--customer-sticky-top, 0px)" }}
               onClick={() => handleSort("customer_code")}
             >
               <div className="flex items-center space-x-1">
@@ -170,7 +172,8 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("fullName") ? "" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-normal w-full sm:w-[14rem] sticky top-0 sm:sticky sm:left-[7.5rem] z-20 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("fullName") ? "" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap w-full sm:w-[14rem] sticky sm:left-[7.5rem] z-20 bg-gray-50 dark:bg-gray-700`}
+              style={{ top: "var(--customer-sticky-top, 0px)" }}
               onClick={() => handleSort("full_name")}
             >
               <div className="flex items-center space-x-1">
@@ -180,7 +183,8 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("balance") ? "hidden md:table-cell text-right" : "hidden"} px-3 py-3 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap w-[6rem] sticky top-0 md:sticky md:left-[21.5rem] z-20 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("balance") ? "hidden md:table-cell text-right" : "hidden"} px-3 py-3 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap w-[6rem] sticky md:left-[21.5rem] z-20 bg-gray-50 dark:bg-gray-700`}
+              style={{ top: "var(--customer-sticky-top, 0px)" }}
               onClick={() => handleSort("total_balance")}
             >
               <div className="flex items-center justify-end space-x-1">
@@ -190,7 +194,8 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap leading-tight w-[9rem] sticky top-0 lg:sticky lg:left-[27.5rem] z-20 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap leading-tight w-[9rem] sticky lg:left-[27.5rem] z-20 bg-gray-50 dark:bg-gray-700`}
+              style={{ top: "var(--customer-sticky-top, 0px)" }}
               onClick={() => handleSort("last_transaction_date")}
             >
               <div className="flex items-center space-x-1">
@@ -200,7 +205,8 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("phone") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap min-w-[6rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("phone") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap min-w-[6rem] sticky z-10 bg-gray-50 dark:bg-gray-700`}
+              style={{ top: "var(--customer-sticky-top, 0px)" }}
               onClick={() => handleSort("phone")}
             >
               <div className="flex items-center space-x-1">
@@ -210,7 +216,8 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("address") ? "hidden xl:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-normal leading-tight min-w-[8rem] max-w-[14rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("address") ? "hidden xl:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap leading-tight min-w-[8rem] max-w-[14rem] sticky z-10 bg-gray-50 dark:bg-gray-700`}
+              style={{ top: "var(--customer-sticky-top, 0px)" }}
               onClick={() => handleSort("address")}
             >
               <div className="flex items-center space-x-1">
@@ -220,7 +227,8 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("workingMethod") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-normal leading-tight min-w-[8rem] max-w-[12rem] sticky top-0 z-10 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("workingMethod") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-normal leading-tight min-w-[8rem] max-w-[12rem] sticky z-10 bg-gray-50 dark:bg-gray-700`}
+              style={{ top: "var(--customer-sticky-top, 0px)" }}
               onClick={() => handleSort("working_method")}
             >
               <div className="flex items-center space-x-1">
@@ -228,7 +236,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                 {getSortIcon("working_method")}
               </div>
             </th>
-            <th scope="col" className="hidden sm:table-cell relative px-3 py-3 w-16 sticky top-0 z-10 bg-gray-50 dark:bg-gray-700">
+            <th scope="col" className="hidden sm:table-cell relative px-3 py-3 w-16 sticky z-10 bg-gray-50 dark:bg-gray-700" style={{ top: "var(--customer-sticky-top, 0px)" }}>
               <span className="sr-only">Thao tác</span>
             </th>
           </tr>

@@ -141,7 +141,8 @@ const TransactionList: React.FC = () => {
 
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() =>
     COLUMN_OPTIONS.reduce((acc, col) => {
-      acc[col.key] = true;
+      acc[col.key] =
+        col.always || ["type", "amount", "status", "code"].includes(col.key);
       return acc;
     }, {} as Record<string, boolean>)
   );
@@ -272,41 +273,27 @@ const TransactionList: React.FC = () => {
     return map;
   }, [users]);
 
-  const topScrollRef = useRef<HTMLDivElement>(null);
-  const topInnerRef = useRef<HTMLDivElement>(null);
-  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const updateTopScrollWidth = () => {
-      if (tableContainerRef.current && topInnerRef.current) {
-        topInnerRef.current.style.width = `${tableContainerRef.current.scrollWidth}px`;
-      }
+    const el = filterRef.current;
+    if (!el) return;
+    const setVar = () => {
+      document.documentElement.style.setProperty(
+        "--transaction-sticky-top",
+        `${el.offsetHeight}px`,
+      );
     };
-    updateTopScrollWidth();
-    window.addEventListener("resize", updateTopScrollWidth);
-    let resizeObserver: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== "undefined" && tableContainerRef.current) {
-      resizeObserver = new ResizeObserver(updateTopScrollWidth);
-      resizeObserver.observe(tableContainerRef.current);
-    }
+    setVar();
+    const ro =
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(setVar) : null;
+    if (ro) ro.observe(el);
+    window.addEventListener("resize", setVar);
     return () => {
-      window.removeEventListener("resize", updateTopScrollWidth);
-      if (resizeObserver && tableContainerRef.current) {
-        resizeObserver.unobserve(tableContainerRef.current);
-      }
+      if (ro) ro.disconnect();
+      window.removeEventListener("resize", setVar);
+      document.documentElement.style.removeProperty("--transaction-sticky-top");
     };
-  }, [state.transactions, state.groupBy, visibleColumnKeys]);
-
-  const handleTopScroll = useCallback(() => {
-    if (topScrollRef.current && tableContainerRef.current) {
-      tableContainerRef.current.scrollLeft = topScrollRef.current.scrollLeft;
-    }
-  }, []);
-
-  const handleTableScroll = useCallback(() => {
-    if (tableContainerRef.current && topScrollRef.current) {
-      topScrollRef.current.scrollLeft = tableContainerRef.current.scrollLeft;
-    }
   }, []);
 
   useEffect(() => {
@@ -470,19 +457,6 @@ const TransactionList: React.FC = () => {
 
   const handleUserChange = (userId: string) => {
     setState((prev) => ({ ...prev, userFilter: userId || null, currentPage: 1 }));
-  };
-
-  const handleCustomerChange = (customerId: string) => {
-    if (!customerId) {
-      setState((prev) => ({ ...prev, customerFilter: null, currentPage: 1 }));
-      return;
-    }
-    const selected = customers.find((c) => c.id === customerId);
-    setState((prev) => ({
-      ...prev,
-      customerFilter: { id: customerId, name: selected?.name || prev.customerFilter?.name || null },
-      currentPage: 1,
-    }));
   };
 
   const handleGroupByChange = (groupBy: TransactionListState["groupBy"]) => {
@@ -833,17 +807,11 @@ const TransactionList: React.FC = () => {
             subtitle="Xem và quản lý tất cả các giao dịch"
             actions={
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                <input
-                  type="search"
-                  value={state.searchTerm}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  placeholder="Tìm kiếm giao dịch, khách hàng..."
-                  className="flex-1 sm:w-72 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
-                />
                 <Button
                   variant="secondary"
                   size="md"
                   onClick={() => fetchTransactions()}
+                  className="h-10"
                 >
                   Làm mới
                 </Button>
@@ -851,6 +819,7 @@ const TransactionList: React.FC = () => {
                   variant="secondary"
                   size="md"
                   onClick={handleExportExcel}
+                  className="h-10"
                 >
                   Xuất Excel
                 </Button>
@@ -858,7 +827,7 @@ const TransactionList: React.FC = () => {
                   variant="secondary"
                   size="md"
                   onClick={() => navigate("/import/transactions")}
-                  className="hidden sm:inline-flex"
+                  className="h-10 hidden sm:inline-flex"
                 >
                   Nhập giao dịch
                 </Button>
@@ -866,13 +835,27 @@ const TransactionList: React.FC = () => {
                   variant="secondary"
                   size="md"
                   onClick={() => navigate("/import/transactions?tab=bulk")}
-                  className="hidden sm:inline-flex"
+                  className="h-10 hidden sm:inline-flex"
                 >
                   Nhập hàng loạt
                 </Button>
               </div>
             }
           />
+
+          {/* Sticky search bar */}
+          <div
+            ref={filterRef}
+            className="sticky top-0 z-30 bg-white/95 dark:bg-gray-800/95 backdrop-blur rounded-lg shadow mb-4 p-3 flex flex-wrap items-center gap-2"
+          >
+            <input
+              type="search"
+              value={state.searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Tìm kiếm giao dịch, khách hàng..."
+              className="flex-1 min-w-0 h-10 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
 
           {/* Status Tabs */}
           <div className="flex flex-wrap gap-2 mb-4" role="tablist" aria-label="Trạng thái giao dịch">
@@ -1010,94 +993,81 @@ const TransactionList: React.FC = () => {
                 ))}
               </select>
 
-              <select
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-                value={state.customerFilter?.id || ""}
-                onChange={(e) => handleCustomerChange(e.target.value)}
-              >
-                <option value="">Tất cả khách hàng</option>
-                {state.customerFilter?.id && !customers.some((c) => c.id === state.customerFilter?.id) && (
-                  <option value={state.customerFilter.id}>{state.customerFilter.name || state.customerFilter.id}</option>
-                )}
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-
-              <select
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-                value={state.groupBy}
-                onChange={(e) => handleGroupByChange(e.target.value as TransactionListState["groupBy"])}
-              >
-                <option value="">Không nhóm</option>
-                <option value="day">Ngày</option>
-                <option value="week">Tuần</option>
-                <option value="month">Tháng</option>
-                <option value="quarter">Quý</option>
-                <option value="year">Năm</option>
-                <option value="branch">Văn phòng</option>
-                <option value="transaction_type">Loại giao dịch</option>
-                <option value="customer">Khách hàng</option>
-              </select>
-
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowColumnMenu((v) => !v)}
-                  className={`w-full inline-flex items-center justify-between rounded-md border ${showColumnMenu ? "border-blue-500 ring-2 ring-blue-100" : "border-gray-300 dark:border-gray-700"} bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-white`}
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    Cột hiển thị
-                  </span>
-                  <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {showColumnMenu && (
-                  <>
-                    <div className="fixed inset-0 z-30" onClick={() => setShowColumnMenu(false)} />
-                    <div className="absolute z-40 right-0 mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-1">
-                      {COLUMN_OPTIONS.map((col) => (
-                        <label
-                          key={col.key}
-                          className={`flex items-center gap-2 px-2 py-1.5 rounded text-sm ${col.always ? "text-gray-400 dark:text-gray-500 cursor-not-allowed" : "hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"}`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={col.always || visibleColumns[col.key]}
-                            disabled={col.always}
-                            onChange={() => toggleColumn(col.key)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          <span className="text-gray-900 dark:text-white">{col.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="text-sm text-gray-600 dark:text-gray-300">
                 Hiển thị {paginationInfo.start} - {paginationInfo.end} / {paginationInfo.total} giao dịch
               </div>
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600 dark:text-gray-300">Số dòng/trang:</label>
+              <div className="flex flex-wrap items-center gap-2">
                 <select
-                  className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1 text-sm"
-                  value={state.pageSize}
-                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                  className="h-10 text-sm rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-2"
+                  value={state.groupBy}
+                  onChange={(e) => handleGroupByChange(e.target.value as TransactionListState["groupBy"])}
                 >
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
+                  <option value="">Không nhóm</option>
+                  <option value="day">Ngày</option>
+                  <option value="week">Tuần</option>
+                  <option value="month">Tháng</option>
+                  <option value="quarter">Quý</option>
+                  <option value="year">Năm</option>
+                  <option value="branch">Văn phòng</option>
+                  <option value="transaction_type">Loại giao dịch</option>
+                  <option value="customer">Khách hàng</option>
                 </select>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-600 dark:text-gray-300">Số dòng/trang:</label>
+                  <select
+                    className="h-10 text-sm rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-2"
+                    value={state.pageSize}
+                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowColumnMenu((v) => !v)}
+                    className={`h-10 inline-flex items-center justify-between rounded-md border ${showColumnMenu ? "border-blue-500 ring-2 ring-blue-100" : "border-gray-300 dark:border-gray-700"} bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-white`}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Cột hiển thị
+                    </span>
+                    <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {showColumnMenu && (
+                    <>
+                      <div className="fixed inset-0 z-30" onClick={() => setShowColumnMenu(false)} />
+                      <div className="absolute z-40 right-0 mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 space-y-1">
+                        {COLUMN_OPTIONS.map((col) => (
+                          <label
+                            key={col.key}
+                            className={`flex items-center gap-2 px-2 py-1.5 rounded text-sm ${col.always ? "text-gray-400 dark:text-gray-500 cursor-not-allowed" : "hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={col.always || visibleColumns[col.key]}
+                              disabled={col.always}
+                              onChange={() => toggleColumn(col.key)}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-gray-900 dark:text-white">{col.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -1190,37 +1160,34 @@ const TransactionList: React.FC = () => {
               </div>
             )}
 
-            <div className="h-4 overflow-x-auto overflow-y-hidden bg-gray-100 dark:bg-gray-800 rounded mb-2" ref={topScrollRef} onScroll={handleTopScroll}>
-              <div ref={topInnerRef} className="h-1" />
-            </div>
-            <div ref={tableContainerRef} className="overflow-auto max-h-[calc(100vh-260px)] sm:max-h-[calc(100vh-280px)] relative" onScroll={handleTableScroll}>
+            <div className="overflow-x-visible">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="sticky top-0 left-0 z-30 w-32 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">Ngày giao dịch</th>
-                    <th className="sticky top-0 left-32 z-20 w-48 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">Khách hàng</th>
+                    <th className="sticky left-0 z-30 w-32 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Ngày giao dịch</th>
+                    <th className="sticky left-32 z-20 w-48 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Khách hàng</th>
                     {visibleColumnKeys.includes("type") && (
-                      <th className="sticky top-0 z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Loại giao dịch</th>
+                      <th className="sticky z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Loại giao dịch</th>
                     )}
                     {visibleColumnKeys.includes("amount") && (
-                      <th className="sticky top-0 z-10 px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Số tiền</th>
+                      <th className="sticky z-10 px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Số tiền</th>
                     )}
                     {visibleColumnKeys.includes("branch") && (
-                      <th className="sticky top-0 z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Văn phòng</th>
+                      <th className="sticky z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Văn phòng</th>
                     )}
                     {visibleColumnKeys.includes("bank") && (
-                      <th className="sticky top-0 z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tài khoản</th>
+                      <th className="sticky z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Tài khoản</th>
                     )}
                     {visibleColumnKeys.includes("creator") && (
-                      <th className="sticky top-0 z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Người thực hiện</th>
+                      <th className="sticky z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Người thực hiện</th>
                     )}
                     {visibleColumnKeys.includes("code") && (
-                      <th className="sticky top-0 z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mã GD</th>
+                      <th className="sticky z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Mã GD</th>
                     )}
                     {visibleColumnKeys.includes("status") && (
-                      <th className="sticky top-0 z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trạng thái</th>
+                      <th className="sticky z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Trạng thái</th>
                     )}
-                    <th className="sticky top-0 z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hành động</th>
+                    <th className="sticky z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Hành động</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">

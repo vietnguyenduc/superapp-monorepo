@@ -84,6 +84,7 @@ const CustomerList: React.FC = () => {
 
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -96,6 +97,27 @@ const CustomerList: React.FC = () => {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const el = filterRef.current;
+    if (!el) return;
+    const setVar = () => {
+      document.documentElement.style.setProperty(
+        "--customer-sticky-top",
+        `${el.offsetHeight}px`,
+      );
+    };
+    setVar();
+    const ro =
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(setVar) : null;
+    if (ro) ro.observe(el);
+    window.addEventListener("resize", setVar);
+    return () => {
+      if (ro) ro.disconnect();
+      window.removeEventListener("resize", setVar);
+      document.documentElement.style.removeProperty("--customer-sticky-top");
+    };
   }, []);
 
   const [state, setState] = useState<CustomerListState>(() => {
@@ -611,9 +633,9 @@ const CustomerList: React.FC = () => {
         />
 
         {/* Filters and Search */}
-        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur rounded-lg shadow mb-3 sticky top-0 z-20">
+        <div ref={filterRef} className="bg-white/95 dark:bg-gray-800/95 backdrop-blur rounded-lg shadow mb-3 sticky top-0 z-20">
           <div className="px-3 py-2 sm:px-4 sm:py-3 border-b border-gray-200 dark:border-gray-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3">
-            <h3 className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
               Bộ lọc khách hàng
             </h3>
             <div className="flex flex-wrap items-center gap-1 text-xs sm:text-sm" title={formatCurrency(state.totalBalance)}>
@@ -625,7 +647,7 @@ const CustomerList: React.FC = () => {
               </span>
             </div>
           </div>
-          <div className="p-3 space-y-2">
+          <div className="p-3 space-y-3">
             <CustomerSearch
               value={state.searchTerm}
               onChange={handleSearch}
@@ -644,7 +666,7 @@ const CustomerList: React.FC = () => {
                 <select
                   value={state.pageSize}
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                  className="block rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 py-1.5 pl-2 pr-7 flex-shrink-0"
+                  className="h-10 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 pl-2 pr-7 flex-shrink-0"
                   aria-label="Số dòng hiển thị"
                 >
                   {[10, 20, 50, 100].map((size) => (
@@ -658,18 +680,18 @@ const CustomerList: React.FC = () => {
                 />
                 <Button
                   variant="secondary"
-                  size="sm"
+                  size="md"
                   onClick={() => setState((prev) => ({ ...prev, showBulkEditModal: true }))}
-                  className="flex-shrink-0 whitespace-nowrap"
+                  className="h-10 flex-shrink-0 whitespace-nowrap"
                 >
                   Chỉnh tên hàng loạt
                 </Button>
                 <div className="relative flex-shrink-0" ref={exportMenuRef}>
                   <Button
                     variant="secondary"
-                    size="sm"
+                    size="md"
                     onClick={() => setExportMenuOpen((prev) => !prev)}
-                    className="inline-flex items-center whitespace-nowrap"
+                    className="h-10 inline-flex items-center whitespace-nowrap"
                   >
                     <svg
                       className="w-4 h-4 mr-1.5"
