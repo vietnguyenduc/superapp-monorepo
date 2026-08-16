@@ -14,7 +14,13 @@
 - Reordered `src/pages/Knowledge/Knowledge.tsx` to make the library list primary and the add form collapsible, and added the `"example"` filter chip and category option.
 - Added i18n keys in `src/i18n/locales/vi.json` and `en.json` for `dailyNudge`, `nudgeLabel`, `nudgeDefault`, `nudgeCta`, `viewExample`, `hideExample`, `applySuggestion`, and `noStep2Input`.
 - Updated `frameworkMethodService.ts` so `saveTrack` returns the track object even if the Supabase `fm_track` insert fails, avoiding UI breakage while the DB schema may lack the new columns.
-- Bumped `KNOWLEDGE_SEED_VERSION` to 5 and `TEMPLATES_SEED_VERSION` to 3 in `frameworkMethodService.ts` so cached `localStorage` data refreshes with the new `Nghiệp đời` entry, examples, and 5-field templates.
+- Bumped `KNOWLEDGE_SEED_VERSION` to 6 and `TEMPLATES_SEED_VERSION` to 3 in `frameworkMethodService.ts` so cached `localStorage` data refreshes with the new `Nghiệp đời` entry, examples, and 5-field templates.
+- Validation: `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+
+## 2026-08-15 (Duplicate examples cleanup)
+
+- Removed duplicate `vi-du-*` example entries from `src/data/knowledgeSeed.ts`; the array now contains a single set of example entries (`vi-du-nau-com`, `vi-du-quet-nha`, `vi-du-xu-ly-email`, `vi-du-hop`, `vi-du-mua-sam`) aligned with the Công thức đối cảnh 5-field template.
+- Bumped `KNOWLEDGE_SEED_VERSION` to 6 in `frameworkMethodService.ts` so returning users with cached `fm_knowledge_v1` refresh to the deduplicated seed.
 - Validation: `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
 
 ## 2026-08-15 (Knowledge button label)

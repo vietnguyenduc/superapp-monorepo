@@ -103,4 +103,4 @@ RLS is enabled on all tables. Users see rows where `user_id = auth.uid()`. Publi
 - `Track` type and `SessionContext.saveTrack` support all 5 Công thức fields via a `Record<string, string>` payload.
 - `Dashboard` shows a daily nudge card (`dashboard.dailyNudge` / `nudgeLabel` / `nudgeDefault` / `nudgeCta`) that picks a focus block and principle based on the day of the week.
 - `/knowledge` filter chips include the `"example"` category; the add form is collapsible and the list is the primary view.
-- Seed versions: `KNOWLEDGE_SEED_VERSION` was bumped to 5 and `TEMPLATES_SEED_VERSION` to 3 so existing cached `localStorage` data refreshes with the new `Nghiệp đời`, example entries, and Công thức 5-field templates.
+- Seed versions: `KNOWLEDGE_SEED_VERSION` was bumped to 6 and `TEMPLATES_SEED_VERSION` to 3 so existing cached `localStorage` data refreshes with the new `Nghiệp đời`, example entries, and Công thức 5-field templates. The duplicate `vi-du-*` entries in `knowledgeSeed.ts` were removed so the example list renders once per entry.
