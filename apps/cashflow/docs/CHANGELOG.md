@@ -1,5 +1,16 @@
 # Changelog — Cashflow
 
+## 2026-08-25
+
+### Fixed
+
+- **Transaction creator display and filter now resolve to human-readable names, not raw UUIDs.**
+  - `transactionService.getTransactions` now joins `users!transactions_created_by_fkey(full_name, email)` and falls back to `email` when `full_name` is missing.
+  - `TransactionList` builds a user lookup that includes the signed-in auth user and labels unknown creators as `Người dùng <shortId>` instead of showing the full UUID.
+  - The `Người tạo` column, mobile card, Excel export, and filter dropdown all use the same `resolveCreatorName` helper so the value is consistent everywhere.
+- **Bank account list highlights the bank name instead of the (often identical) account holder name.**
+  - `BankAccountsTab` card title is now `account.bankName`; the subtitle shows `accountName • accountNumber` so accounts with the same company name remain distinguishable.
+
 ## 2026-08-24
 
 ### Fixed

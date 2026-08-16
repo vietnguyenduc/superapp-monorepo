@@ -294,7 +294,7 @@ export class TransactionService extends BaseService {
             customers(full_name),
             bank_accounts(account_name),
             branches(name),
-            users!transactions_created_by_fkey(full_name)`,
+            users!transactions_created_by_fkey(full_name, email)`,
             { count: "exact" }
           );
 
@@ -348,7 +348,7 @@ export class TransactionService extends BaseService {
           customer_name: tx.customers?.full_name || tx.customer_name,
           bank_account_name: tx.bank_accounts?.account_name || tx.bank_account_name,
           branch_name: tx.branches?.name,
-          creator_name: tx.users?.full_name,
+          creator_name: tx.users?.full_name || tx.users?.email || undefined,
         }));
 
         return { data: mappedData, error, count: count || mappedData.length };
@@ -414,7 +414,7 @@ export class TransactionService extends BaseService {
           customer_name: cMap.get(tx.customer_id || "")?.full_name || tx.customer_name,
           bank_account_name: bMap.get(tx.bank_account_id || "")?.account_name || tx.bank_account_name,
           branch_name: brMap.get(tx.branch_id || "")?.name || tx.branch_name,
-          creator_name: uMap.get(tx.created_by || "")?.full_name,
+          creator_name: uMap.get(tx.created_by || "")?.full_name || uMap.get(tx.created_by || "")?.email || undefined,
         }));
 
         return { data: mappedData, error: null, count: totalCount };
