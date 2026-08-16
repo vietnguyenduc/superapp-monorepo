@@ -863,7 +863,115 @@ export const defaultKnowledgeEntries: KnowledgeEntry[] = [
     "loi_en": "- Quy luật Tạo Hóa: Tạo hóa tạo ra các hành tinh, trong đó địa cầu là hành tinh thứ 3000. Mỗi hành tinh có vị trí, định dạng, quỹ đạo riêng. Khi hình thành cõi Ta Bà, các Ngài tách Trời Đất, định vị âm dương và cho 4 loài sinh sống. Con người không có trí tuệ nên không biết trân trọng, biết ơn, hủy diệt những gì Tạo hóa ban tặng, làm ngược quy luật tự nhiên.\n- Quy luật Trời Phật: Trời có 3 cung Thiên, 33 cung Trời, cai quản lục đạo luân hồi. Có các vòng thiên cổ 3000-5000-7000 năm chuyển đổi Thành-Trụ-Hoại-Không. Có Thiên Thần ghi chép tội phúc, hộ mệnh, trông coi nhà cửa, đất đai, độ trì người đi lại, xét tội và xá tội vong nhân. Phật có 7 vị cô Phật cầm giữ bản mệnh, khai đạo, hộ trì người hành thiện, ban Phật lực, giới luật. Con người không biết quy luật Trời Phật, không bám vào Trí tuệ nên rơi vào cám dỗ, cạm bẫy trần gian.\n- Quy luật Thời thế: Thời thế tuân theo quy luật tự nhiên Thành-Trụ-Hoại-Không, có thịnh có suy. Để biến nguy thành an, cần tạo phúc rốt ráo, trả nghiệp rốt ráo, tu rốt ráo, chuẩn bị phúc đức, bền chí, xác định tư tưởng để ung dung tự tại. Khi không có trí tuệ, người thời thịnh ăn chơi hưởng thụ tiêu hết phúc, người thời suy bị che mờ không nhận ra cần tu.\n- Quy luật Con người: Gồm âm dương, ngũ hành, đất-nước-gió-lửa, sinh lão bệnh tử và luân hồi chuyển kiếp. Các Ngài ban giọt máu đào kết hợp tinh cha huyết mẹ và âm dương ngũ hành tạo thành Ta. Các loài đều có âm dương, cần ăn uống cân bằng. Trong người có đất-nước-gió-lửa, lửa là tính hỏa, nếu không tu thuần tâm thuần tính thì mắc tâm khẩu ý.",
     "image_url": "",
     "category": "concept",
+    "order_index": 47
+  },
+  {
+    "id": "quy-luat-tao-hoa",
+    "title_vi": "Quy luật của Tạo Hóa",
+    "title_en": "Quy luật của Tạo Hóa",
+    "summary_vi": "Tạo hóa ban tặng các hành tinh, trong đó quả địa cầu là hành tinh thứ 3000. Con người khi không có trí tuệ thường làm ngược quy luật tự nhiên, hủy diệt những gì Tạo hóa ban tặng.",
+    "summary_en": "Tạo hóa ban tặng các hành tinh, trong đó quả địa cầu là hành tinh thứ 3000. Con người khi không có trí tuệ thường làm ngược quy luật tự nhiên, hủy diệt những gì Tạo hóa ban tặng.",
+    "content_vi": "- Tạo hóa ban tặng các hành tinh, trong đó quả địa cầu là hành tinh thứ 3000.\n- Mỗi hành tinh có vị trí khác nhau, định dạng khác nhau, quỹ đạo riêng.\n- Sự hình thành quả địa cầu: Khi hình thành cõi Ta Bà, các Ngài tách Trời - Đất, định vị âm dương và cho 4 loài vào sinh sống.\n- Khi không có trí tuệ, con người không biết trân trọng và biết ơn những gì Tạo hóa ban tặng, mà còn hủy diệt chúng.\n- Đó chính là làm ngược quy luật tự nhiên.",
+    "content_en": "- Tạo hóa ban tặng các hành tinh, trong đó quả địa cầu là hành tinh thứ 3000.\n- Mỗi hành tinh có vị trí khác nhau, định dạng khác nhau, quỹ đạo riêng.\n- Sự hình thành quả địa cầu: Khi hình thành cõi Ta Bà, các Ngài tách Trời - Đất, định vị âm dương và cho 4 loài vào sinh sống.\n- Khi không có trí tuệ, con người không biết trân trọng và biết ơn những gì Tạo hóa ban tặng, mà còn hủy diệt chúng.\n- Đó chính là làm ngược quy luật tự nhiên.",
+    "cot_y_vi": "Tạo hóa ban tặng các hành tinh, quả địa cầu là hành tinh thứ 3000, và con người thiếu trí tuệ làm ngược quy luật tự nhiên.",
+    "cot_y_en": "Tạo hóa ban tặng các hành tinh, quả địa cầu là hành tinh thứ 3000, và con người thiếu trí tuệ làm ngược quy luật tự nhiên.",
+    "cot_cua_cot_vi": "Con người thiếu trí tuệ làm ngược quy luật tự nhiên.",
+    "cot_cua_cot_en": "Con người thiếu trí tuệ làm ngược quy luật tự nhiên.",
+    "loi_vi": "- Tạo hóa ban tặng các hành tinh, trong đó quả địa cầu là hành tinh thứ 3000.\n- Mỗi hành tinh có vị trí khác nhau, định dạng khác nhau, quỹ đạo riêng.\n- Sự hình thành quả địa cầu: Khi hình thành cõi Ta Bà, các Ngài tách Trời - Đất, định vị âm dương và cho 4 loài vào sinh sống.\n- Khi không có trí tuệ, con người không biết trân trọng và biết ơn những gì Tạo hóa ban tặng, mà còn hủy diệt chúng.\n- Đó chính là làm ngược quy luật tự nhiên.",
+    "loi_en": "- Tạo hóa ban tặng các hành tinh, trong đó quả địa cầu là hành tinh thứ 3000.\n- Mỗi hành tinh có vị trí khác nhau, định dạng khác nhau, quỹ đạo riêng.\n- Sự hình thành quả địa cầu: Khi hình thành cõi Ta Bà, các Ngài tách Trời - Đất, định vị âm dương và cho 4 loài vào sinh sống.\n- Khi không có trí tuệ, con người không biết trân trọng và biết ơn những gì Tạo hóa ban tặng, mà còn hủy diệt chúng.\n- Đó chính là làm ngược quy luật tự nhiên.",
+    "image_url": "",
+    "category": "concept",
+    "order_index": 48
+  },
+  {
+    "id": "quy-luat-troi-phat",
+    "title_vi": "Quy luật Trời Phật",
+    "title_en": "Quy luật Trời Phật",
+    "summary_vi": "Bài viết trình bày quy luật của Trời và Phật, cùng với việc con người khi chưa có trí tuệ thường làm ngược lại các quy luật này.",
+    "summary_en": "Bài viết trình bày quy luật của Trời và Phật, cùng với việc con người khi chưa có trí tuệ thường làm ngược lại các quy luật này.",
+    "content_vi": "- Quy luật của Trời - Nhà Thiên:\n  + Có 3 cung Thiên, 33 cung Trời.\n  + Nhà Thiên cai quản lục đạo luân hồi.\n  + Có các vòng thiên cổ 3000 - 5000 - 7000 năm chuyển đổi một vòng Thành - Trụ - Hoại - Không.\n  + Có các Thiên Thần ghi chép tội phúc hai vai.\n  + Có các Thiên Thần hộ mệnh cho ta khi ta làm đúng Trí tuệ.\n  + Có các Thần trông coi nhà cửa, đất đai.\n  + Có các Thần độ trì cho người đi lại.\n  + Có các Ngài đi hành sai và lục tội trần gian vào 10 ngày lục tội trần gian (ngày 1, 8, 14, 15, 18, 23, 24, 28, 29, 30 âm lịch hàng tháng).\n  + Có các Ngài xét tội và xá tội vong nhân hàng năm vào ngày 17 tháng 7 âm lịch.\n- Quy luật của Phật:\n  + Có 7 vị cô Phật cầm giữ bản mệnh và độ mệnh cho tất cả chúng sinh.\n  + Khai đạo, hóa độ cho chúng sinh.\n  + Hộ trì cho người hành thiện, hành đạo, đọc kinh, hành sứ mệnh.\n  + Ban Phật lực, Pháp luật, Hiền Thánh lực.\n  + Ban giới luật cho chúng sinh bám vào để không phạm nhân quả.\n- Khi chưa có trí tuệ, con người làm ngược quy luật thế nào?\n  + Con người xuống trần không biết quy luật của Trời Phật, không bám vào Trí tuệ nên bị rơi vào cám đỗ và cạm bẫy của trần gian.",
+    "content_en": "- Quy luật của Trời - Nhà Thiên:\n  + Có 3 cung Thiên, 33 cung Trời.\n  + Nhà Thiên cai quản lục đạo luân hồi.\n  + Có các vòng thiên cổ 3000 - 5000 - 7000 năm chuyển đổi một vòng Thành - Trụ - Hoại - Không.\n  + Có các Thiên Thần ghi chép tội phúc hai vai.\n  + Có các Thiên Thần hộ mệnh cho ta khi ta làm đúng Trí tuệ.\n  + Có các Thần trông coi nhà cửa, đất đai.\n  + Có các Thần độ trì cho người đi lại.\n  + Có các Ngài đi hành sai và lục tội trần gian vào 10 ngày lục tội trần gian (ngày 1, 8, 14, 15, 18, 23, 24, 28, 29, 30 âm lịch hàng tháng).\n  + Có các Ngài xét tội và xá tội vong nhân hàng năm vào ngày 17 tháng 7 âm lịch.\n- Quy luật của Phật:\n  + Có 7 vị cô Phật cầm giữ bản mệnh và độ mệnh cho tất cả chúng sinh.\n  + Khai đạo, hóa độ cho chúng sinh.\n  + Hộ trì cho người hành thiện, hành đạo, đọc kinh, hành sứ mệnh.\n  + Ban Phật lực, Pháp luật, Hiền Thánh lực.\n  + Ban giới luật cho chúng sinh bám vào để không phạm nhân quả.\n- Khi chưa có trí tuệ, con người làm ngược quy luật thế nào?\n  + Con người xuống trần không biết quy luật của Trời Phật, không bám vào Trí tuệ nên bị rơi vào cám đỗ và cạm bẫy của trần gian.",
+    "cot_y_vi": "Có ba ý chính: quy luật của Trời, quy luật của Phật, và hậu quả khi con người không có trí tuệ.",
+    "cot_y_en": "Có ba ý chính: quy luật của Trời, quy luật của Phật, và hậu quả khi con người không có trí tuệ.",
+    "cot_cua_cot_vi": "Trời Phật có quy luật, người không trí tuệ sẽ làm ngược.",
+    "cot_cua_cot_en": "Trời Phật có quy luật, người không trí tuệ sẽ làm ngược.",
+    "loi_vi": "- Quy luật của Trời - Nhà Thiên:\n  + Có 3 cung Thiên, 33 cung Trời.\n  + Nhà Thiên cai quản lục đạo luân hồi.\n  + Có các vòng thiên cổ 3000 - 5000 - 7000 năm chuyển đổi một vòng Thành - Trụ - Hoại - Không.\n  + Có các Thiên Thần ghi chép tội phúc hai vai.\n  + Có các Thiên Thần hộ mệnh cho ta khi ta làm đúng Trí tuệ.\n  + Có các Thần trông coi nhà cửa, đất đai.\n  + Có các Thần độ trì cho người đi lại.\n  + Có các Ngài đi hành sai và lục tội trần gian vào 10 ngày lục tội trần gian (ngày 1, 8, 14, 15, 18, 23, 24, 28, 29, 30 âm lịch hàng tháng).\n  + Có các Ngài xét tội và xá tội vong nhân hàng năm vào ngày 17 tháng 7 âm lịch.\n- Quy luật của Phật:\n  + Có 7 vị cô Phật cầm giữ bản mệnh và độ mệnh cho tất cả chúng sinh.\n  + Khai đạo, hóa độ cho chúng sinh.\n  + Hộ trì cho người hành thiện, hành đạo, đọc kinh, hành sứ mệnh.\n  + Ban Phật lực, Pháp luật, Hiền Thánh lực.\n  + Ban giới luật cho chúng sinh bám vào để không phạm nhân quả.\n- Khi chưa có trí tuệ, con người làm ngược quy luật thế nào?\n  + Con người xuống trần không biết quy luật của Trời Phật, không bám vào Trí tuệ nên bị rơi vào cám đỗ và cạm bẫy của trần gian.",
+    "loi_en": "- Quy luật của Trời - Nhà Thiên:\n  + Có 3 cung Thiên, 33 cung Trời.\n  + Nhà Thiên cai quản lục đạo luân hồi.\n  + Có các vòng thiên cổ 3000 - 5000 - 7000 năm chuyển đổi một vòng Thành - Trụ - Hoại - Không.\n  + Có các Thiên Thần ghi chép tội phúc hai vai.\n  + Có các Thiên Thần hộ mệnh cho ta khi ta làm đúng Trí tuệ.\n  + Có các Thần trông coi nhà cửa, đất đai.\n  + Có các Thần độ trì cho người đi lại.\n  + Có các Ngài đi hành sai và lục tội trần gian vào 10 ngày lục tội trần gian (ngày 1, 8, 14, 15, 18, 23, 24, 28, 29, 30 âm lịch hàng tháng).\n  + Có các Ngài xét tội và xá tội vong nhân hàng năm vào ngày 17 tháng 7 âm lịch.\n- Quy luật của Phật:\n  + Có 7 vị cô Phật cầm giữ bản mệnh và độ mệnh cho tất cả chúng sinh.\n  + Khai đạo, hóa độ cho chúng sinh.\n  + Hộ trì cho người hành thiện, hành đạo, đọc kinh, hành sứ mệnh.\n  + Ban Phật lực, Pháp luật, Hiền Thánh lực.\n  + Ban giới luật cho chúng sinh bám vào để không phạm nhân quả.\n- Khi chưa có trí tuệ, con người làm ngược quy luật thế nào?\n  + Con người xuống trần không biết quy luật của Trời Phật, không bám vào Trí tuệ nên bị rơi vào cám đỗ và cạm bẫy của trần gian.",
+    "image_url": "",
+    "category": "concept",
+    "order_index": 49
+  },
+  {
+    "id": "quy-luat-thoi-the",
+    "title_vi": "Quy luật của Thời thế",
+    "title_en": "Quy luật của Thời thế",
+    "summary_vi": "Thời thế tuân theo quy luật tự nhiên Thành - Trụ - Hoại - Không, nên có thịnh có suy. Để biến nguy thành an, biến họa thành phúc, cần tạo phúc, trả nghiệp, tu rốt ráo, chuẩn bị phúc đức, bền chí, xác định tư tưởng.",
+    "summary_en": "Thời thế tuân theo quy luật tự nhiên Thành - Trụ - Hoại - Không, nên có thịnh có suy. Để biến nguy thành an, biến họa thành phúc, cần tạo phúc, trả nghiệp, tu rốt ráo, chuẩn bị phúc đức, bền chí, xác định tư tưởng.",
+    "content_vi": "- Thời thế tuân theo quy luật tự nhiên: Thành - Trụ - Hoại - Không, nên có Thịnh có Suy.\n- Thời này cần làm gì để biến nguy thành an, biến họa thành phúc:\n  + Tạo Phúc tốt ráo\n  + Trả nghiệp rốt ráo\n  + Tu rốt ráo\n  + Để dù thời thế suy nhưng con người không suy\n- Nên ta cần chuẩn bị trước về:\n  + Phúc đức\n  + Bền chí của con người\n  + Xác định tư tưởng trước để ung dung tự tại, không bị quy tâm\n- Biết quy luật của thời thế để hành động để xoay chuyển vận mệnh, để cho dù thời thế có suy nhưng con người không suy.\n- Khi không có Trí tuệ thì con người làm ngược quy luật thế nào?\n  + Con người thời thịnh: ăn chơi, hưởng thụ, tiêu hết phúc\n  + Con người thời suy: không còn phúc nên bị che mà không nhận diện ra được cần phải tu rốt ráo, tạo phúc rốt ráo, trả nghiệp rốt ráo.",
+    "content_en": "- Thời thế tuân theo quy luật tự nhiên: Thành - Trụ - Hoại - Không, nên có Thịnh có Suy.\n- Thời này cần làm gì để biến nguy thành an, biến họa thành phúc:\n  + Tạo Phúc tốt ráo\n  + Trả nghiệp rốt ráo\n  + Tu rốt ráo\n  + Để dù thời thế suy nhưng con người không suy\n- Nên ta cần chuẩn bị trước về:\n  + Phúc đức\n  + Bền chí của con người\n  + Xác định tư tưởng trước để ung dung tự tại, không bị quy tâm\n- Biết quy luật của thời thế để hành động để xoay chuyển vận mệnh, để cho dù thời thế có suy nhưng con người không suy.\n- Khi không có Trí tuệ thì con người làm ngược quy luật thế nào?\n  + Con người thời thịnh: ăn chơi, hưởng thụ, tiêu hết phúc\n  + Con người thời suy: không còn phúc nên bị che mà không nhận diện ra được cần phải tu rốt ráo, tạo phúc rốt ráo, trả nghiệp rốt ráo.",
+    "cot_y_vi": "Thời thế có thịnh suy theo quy luật tự nhiên, con người cần tu tạo phúc để không suy.",
+    "cot_y_en": "Thời thế có thịnh suy theo quy luật tự nhiên, con người cần tu tạo phúc để không suy.",
+    "cot_cua_cot_vi": "Biết quy luật thời thế để hành động, xoay chuyển vận mệnh.",
+    "cot_cua_cot_en": "Biết quy luật thời thế để hành động, xoay chuyển vận mệnh.",
+    "loi_vi": "- Thời thế tuân theo quy luật tự nhiên: Thành - Trụ - Hoại - Không, nên có Thịnh có Suy.\n- Thời này cần làm gì để biến nguy thành an, biến họa thành phúc:\n  + Tạo Phúc tốt ráo\n  + Trả nghiệp rốt ráo\n  + Tu rốt ráo\n  + Để dù thời thế suy nhưng con người không suy\n- Nên ta cần chuẩn bị trước về:\n  + Phúc đức\n  + Bền chí của con người\n  + Xác định tư tưởng trước để ung dung tự tại, không bị quy tâm\n- Biết quy luật của thời thế để hành động để xoay chuyển vận mệnh, để cho dù thời thế có suy nhưng con người không suy.\n- Khi không có Trí tuệ thì con người làm ngược quy luật thế nào?\n  + Con người thời thịnh: ăn chơi, hưởng thụ, tiêu hết phúc\n  + Con người thời suy: không còn phúc nên bị che mà không nhận diện ra được cần phải tu rốt ráo, tạo phúc rốt ráo, trả nghiệp rốt ráo.",
+    "loi_en": "- Thời thế tuân theo quy luật tự nhiên: Thành - Trụ - Hoại - Không, nên có Thịnh có Suy.\n- Thời này cần làm gì để biến nguy thành an, biến họa thành phúc:\n  + Tạo Phúc tốt ráo\n  + Trả nghiệp rốt ráo\n  + Tu rốt ráo\n  + Để dù thời thế suy nhưng con người không suy\n- Nên ta cần chuẩn bị trước về:\n  + Phúc đức\n  + Bền chí của con người\n  + Xác định tư tưởng trước để ung dung tự tại, không bị quy tâm\n- Biết quy luật của thời thế để hành động để xoay chuyển vận mệnh, để cho dù thời thế có suy nhưng con người không suy.\n- Khi không có Trí tuệ thì con người làm ngược quy luật thế nào?\n  + Con người thời thịnh: ăn chơi, hưởng thụ, tiêu hết phúc\n  + Con người thời suy: không còn phúc nên bị che mà không nhận diện ra được cần phải tu rốt ráo, tạo phúc rốt ráo, trả nghiệp rốt ráo.",
+    "image_url": "",
+    "category": "concept",
+    "order_index": 50
+  },
+  {
+    "id": "quy-luat-con-nguoi",
+    "title_vi": "Quy luật của Con người",
+    "title_en": "Quy luật của Con người",
+    "summary_vi": "Bài viết trình bày các quy luật tự nhiên chi phối con người như âm dương, ngũ hành, đất-nước-gió-lửa, sinh lão bệnh tử và luân hồi, cùng với việc ứng dụng trí tuệ để sống thuận theo quy luật, tránh làm ngược lại gây hậu quả.",
+    "summary_en": "Bài viết trình bày các quy luật tự nhiên chi phối con người như âm dương, ngũ hành, đất-nước-gió-lửa, sinh lão bệnh tử và luân hồi, cùng với việc ứng dụng trí tuệ để sống thuận theo quy luật, tránh làm ngược lại gây hậu quả.",
+    "content_vi": "- Âm dương: Các Ngài ban giọt máu đào của Trời Phật kết hợp với tinh cha, huyết mẹ và âm dương ngũ hành hợp nhất tạo thành Ta. Vạn vật đều có âm dương, cần ăn uống cân bằng âm dương. Trong người có đất, nước, gió, lửa; lửa là tính hỏa. Nếu không tu tâm, tu tính thì hay sân hận, bất hòa, mưu mô, thù hằn, làm hỏa bốc lên đốt năng lượng, cơ thể suy yếu.\n- Ngũ hành: Ngũ hành tương ứng với mệnh mỗi người. Năm ứng với mệnh là năm tuổi, có sao chiếu mệnh. Nếu không biết quy luật, vô tình gặp hoạn nạn. Việc nhờ thầy dâng sao giải hạn là sai quy luật. Khi có trí tuệ, cần làm đầy đủ khóa lễ giữ chân mệnh, cốt mệnh; hàng năm xin đồng tiền bản mệnh để 7 vị cô Phật độ mệnh, che chở; nếu tu tập thì hàng ngày cầu nguyện, sám hối sáng tối; đọc sám hối 7 ngày theo mùa Xuân-Hạ-Thu-Đông để giải nghiệp, nối mệnh.\n- Đất - Nước - Gió - Lửa: Ngài Tứ Đại hóa duyên âm dương ngũ hành hợp nhất tạo thành tứ đại trong ta, giúp thích nghi với điều kiện sống ở cõi Ta Bà, hòa hợp với khí tiết 4 mùa.\n- Sinh lão bệnh tử và Luân hồi chuyển kiếp: Con người tuân theo quy luật Thành-Trụ-Hoại-Không nên có Sinh-Lão-Bệnh-Tử. Hiểu quy luật, cần tu rốt ráo một kiếp để đắc đạo, trở về với các Ngài hoặc ít nhất giải thoát khỏi lục đạo luân hồi.\n- Khi không có trí tuệ, con người làm ngược quy luật: ăn uống mất cân bằng âm dương, không giữ thân, không tu thân, thân lao tâm khổ tứ, sát sinh hại vật, gây nhân quả, dẫn đến bệnh tật, chết yểu, mất mệnh, phải luân hồi trả nợ thân.",
+    "content_en": "- Âm dương: Các Ngài ban giọt máu đào của Trời Phật kết hợp với tinh cha, huyết mẹ và âm dương ngũ hành hợp nhất tạo thành Ta. Vạn vật đều có âm dương, cần ăn uống cân bằng âm dương. Trong người có đất, nước, gió, lửa; lửa là tính hỏa. Nếu không tu tâm, tu tính thì hay sân hận, bất hòa, mưu mô, thù hằn, làm hỏa bốc lên đốt năng lượng, cơ thể suy yếu.\n- Ngũ hành: Ngũ hành tương ứng với mệnh mỗi người. Năm ứng với mệnh là năm tuổi, có sao chiếu mệnh. Nếu không biết quy luật, vô tình gặp hoạn nạn. Việc nhờ thầy dâng sao giải hạn là sai quy luật. Khi có trí tuệ, cần làm đầy đủ khóa lễ giữ chân mệnh, cốt mệnh; hàng năm xin đồng tiền bản mệnh để 7 vị cô Phật độ mệnh, che chở; nếu tu tập thì hàng ngày cầu nguyện, sám hối sáng tối; đọc sám hối 7 ngày theo mùa Xuân-Hạ-Thu-Đông để giải nghiệp, nối mệnh.\n- Đất - Nước - Gió - Lửa: Ngài Tứ Đại hóa duyên âm dương ngũ hành hợp nhất tạo thành tứ đại trong ta, giúp thích nghi với điều kiện sống ở cõi Ta Bà, hòa hợp với khí tiết 4 mùa.\n- Sinh lão bệnh tử và Luân hồi chuyển kiếp: Con người tuân theo quy luật Thành-Trụ-Hoại-Không nên có Sinh-Lão-Bệnh-Tử. Hiểu quy luật, cần tu rốt ráo một kiếp để đắc đạo, trở về với các Ngài hoặc ít nhất giải thoát khỏi lục đạo luân hồi.\n- Khi không có trí tuệ, con người làm ngược quy luật: ăn uống mất cân bằng âm dương, không giữ thân, không tu thân, thân lao tâm khổ tứ, sát sinh hại vật, gây nhân quả, dẫn đến bệnh tật, chết yểu, mất mệnh, phải luân hồi trả nợ thân.",
+    "cot_y_vi": "Con người cần hiểu và sống thuận theo các quy luật tự nhiên (âm dương, ngũ hành, tứ đại, sinh lão bệnh tử) để có sức khỏe, tránh tai họa và tiến tới giải thoát.",
+    "cot_y_en": "Con người cần hiểu và sống thuận theo các quy luật tự nhiên (âm dương, ngũ hành, tứ đại, sinh lão bệnh tử) để có sức khỏe, tránh tai họa và tiến tới giải thoát.",
+    "cot_cua_cot_vi": "Sống thuận quy luật tự nhiên để khỏe mạnh và giải thoát.",
+    "cot_cua_cot_en": "Sống thuận quy luật tự nhiên để khỏe mạnh và giải thoát.",
+    "loi_vi": "- Âm dương: Các Ngài ban giọt máu đào của Trời Phật kết hợp với tinh cha, huyết mẹ và âm dương ngũ hành hợp nhất tạo thành Ta. Vạn vật đều có âm dương, cần ăn uống cân bằng âm dương. Trong người có đất, nước, gió, lửa; lửa là tính hỏa. Nếu không tu tâm, tu tính thì hay sân hận, bất hòa, mưu mô, thù hằn, làm hỏa bốc lên đốt năng lượng, cơ thể suy yếu.\n- Ngũ hành: Ngũ hành tương ứng với mệnh mỗi người. Năm ứng với mệnh là năm tuổi, có sao chiếu mệnh. Nếu không biết quy luật, vô tình gặp hoạn nạn. Việc nhờ thầy dâng sao giải hạn là sai quy luật. Khi có trí tuệ, cần làm đầy đủ khóa lễ giữ chân mệnh, cốt mệnh; hàng năm xin đồng tiền bản mệnh để 7 vị cô Phật độ mệnh, che chở; nếu tu tập thì hàng ngày cầu nguyện, sám hối sáng tối; đọc sám hối 7 ngày theo mùa Xuân-Hạ-Thu-Đông để giải nghiệp, nối mệnh.\n- Đất - Nước - Gió - Lửa: Ngài Tứ Đại hóa duyên âm dương ngũ hành hợp nhất tạo thành tứ đại trong ta, giúp thích nghi với điều kiện sống ở cõi Ta Bà, hòa hợp với khí tiết 4 mùa.\n- Sinh lão bệnh tử và Luân hồi chuyển kiếp: Con người tuân theo quy luật Thành-Trụ-Hoại-Không nên có Sinh-Lão-Bệnh-Tử. Hiểu quy luật, cần tu rốt ráo một kiếp để đắc đạo, trở về với các Ngài hoặc ít nhất giải thoát khỏi lục đạo luân hồi.\n- Khi không có trí tuệ, con người làm ngược quy luật: ăn uống mất cân bằng âm dương, không giữ thân, không tu thân, thân lao tâm khổ tứ, sát sinh hại vật, gây nhân quả, dẫn đến bệnh tật, chết yểu, mất mệnh, phải luân hồi trả nợ thân.",
+    "loi_en": "- Âm dương: Các Ngài ban giọt máu đào của Trời Phật kết hợp với tinh cha, huyết mẹ và âm dương ngũ hành hợp nhất tạo thành Ta. Vạn vật đều có âm dương, cần ăn uống cân bằng âm dương. Trong người có đất, nước, gió, lửa; lửa là tính hỏa. Nếu không tu tâm, tu tính thì hay sân hận, bất hòa, mưu mô, thù hằn, làm hỏa bốc lên đốt năng lượng, cơ thể suy yếu.\n- Ngũ hành: Ngũ hành tương ứng với mệnh mỗi người. Năm ứng với mệnh là năm tuổi, có sao chiếu mệnh. Nếu không biết quy luật, vô tình gặp hoạn nạn. Việc nhờ thầy dâng sao giải hạn là sai quy luật. Khi có trí tuệ, cần làm đầy đủ khóa lễ giữ chân mệnh, cốt mệnh; hàng năm xin đồng tiền bản mệnh để 7 vị cô Phật độ mệnh, che chở; nếu tu tập thì hàng ngày cầu nguyện, sám hối sáng tối; đọc sám hối 7 ngày theo mùa Xuân-Hạ-Thu-Đông để giải nghiệp, nối mệnh.\n- Đất - Nước - Gió - Lửa: Ngài Tứ Đại hóa duyên âm dương ngũ hành hợp nhất tạo thành tứ đại trong ta, giúp thích nghi với điều kiện sống ở cõi Ta Bà, hòa hợp với khí tiết 4 mùa.\n- Sinh lão bệnh tử và Luân hồi chuyển kiếp: Con người tuân theo quy luật Thành-Trụ-Hoại-Không nên có Sinh-Lão-Bệnh-Tử. Hiểu quy luật, cần tu rốt ráo một kiếp để đắc đạo, trở về với các Ngài hoặc ít nhất giải thoát khỏi lục đạo luân hồi.\n- Khi không có trí tuệ, con người làm ngược quy luật: ăn uống mất cân bằng âm dương, không giữ thân, không tu thân, thân lao tâm khổ tứ, sát sinh hại vật, gây nhân quả, dẫn đến bệnh tật, chết yểu, mất mệnh, phải luân hồi trả nợ thân.",
+    "image_url": "",
+    "category": "concept",
+    "order_index": 51
+  },
+  {
+    "id": "quy-luat-van-vat",
+    "title_vi": "Quy luật vạn vật",
+    "title_en": "Quy luật vạn vật",
+    "summary_vi": "Vạn vật sinh ra đều có nguyên lý và tuân theo luật tự nhiên, không chết mà chỉ chuyển hóa. Con người cần hiểu và tôn trọng quy luật này để tránh tạo nợ và ân oán với vạn vật.",
+    "summary_en": "Vạn vật sinh ra đều có nguyên lý và tuân theo luật tự nhiên, không chết mà chỉ chuyển hóa. Con người cần hiểu và tôn trọng quy luật này để tránh tạo nợ và ân oán với vạn vật.",
+    "content_vi": "- Vạn vật gồm: động vật, thực vật, tài nguyên thiên nhiên, đồ vật.\n- Mỗi vật có chu kỳ sống khác nhau, sinh ra có nhiệm vụ khác nhau.\n- Vạn vật sinh ra đều có nguyên lý và tuân theo luật tự nhiên.\n- Vạn vật không chết mà chỉ chuyển hóa, chuyển thể từ dạng này sang dạng khác.\n- Vạn vật đều có linh, đều cần tu để tiến hóa, cần sống đủ chu kỳ sống.\n- Trân trọng và biết ơn vạn vật đã phục vụ con người.\n- Không vì thỏa mãn sở thích, lòng tham mà đối xử vô tâm, ác tâm với vạn vật.\n- Nếu buộc phải sử dụng sớm hơn chu kỳ sống, cần dùng nhân tâm để vạn vật tiến hóa lên.\n- Tiền không mua được hạnh nguyện của vạn vật, nên cần ăn ít, ngủ ít, nói ít, sử dụng ít vừa đủ nhu cầu thiết yếu.\n- Rốt ráo hành sứ mệnh để có phúc đức, công đức hồi hướng cho vạn vật.\n- Khi không có Trí tuệ, con người làm ngược quy luật: ăn thịt lẫn nhau, giết chóc, mạnh hiếp yếu, lớn nuốt bé, gây ân oán tràn khắp lục đạo.",
+    "content_en": "- Vạn vật gồm: động vật, thực vật, tài nguyên thiên nhiên, đồ vật.\n- Mỗi vật có chu kỳ sống khác nhau, sinh ra có nhiệm vụ khác nhau.\n- Vạn vật sinh ra đều có nguyên lý và tuân theo luật tự nhiên.\n- Vạn vật không chết mà chỉ chuyển hóa, chuyển thể từ dạng này sang dạng khác.\n- Vạn vật đều có linh, đều cần tu để tiến hóa, cần sống đủ chu kỳ sống.\n- Trân trọng và biết ơn vạn vật đã phục vụ con người.\n- Không vì thỏa mãn sở thích, lòng tham mà đối xử vô tâm, ác tâm với vạn vật.\n- Nếu buộc phải sử dụng sớm hơn chu kỳ sống, cần dùng nhân tâm để vạn vật tiến hóa lên.\n- Tiền không mua được hạnh nguyện của vạn vật, nên cần ăn ít, ngủ ít, nói ít, sử dụng ít vừa đủ nhu cầu thiết yếu.\n- Rốt ráo hành sứ mệnh để có phúc đức, công đức hồi hướng cho vạn vật.\n- Khi không có Trí tuệ, con người làm ngược quy luật: ăn thịt lẫn nhau, giết chóc, mạnh hiếp yếu, lớn nuốt bé, gây ân oán tràn khắp lục đạo.",
+    "cot_y_vi": "Hiểu quy luật vạn vật để sống hài hòa, không tạo nợ và ân oán.",
+    "cot_y_en": "Hiểu quy luật vạn vật để sống hài hòa, không tạo nợ và ân oán.",
+    "cot_cua_cot_vi": "Tôn trọng vạn vật, sống đúng quy luật tự nhiên.",
+    "cot_cua_cot_en": "Tôn trọng vạn vật, sống đúng quy luật tự nhiên.",
+    "loi_vi": "- Vạn vật gồm: động vật, thực vật, tài nguyên thiên nhiên, đồ vật.\n- Mỗi vật có chu kỳ sống khác nhau, sinh ra có nhiệm vụ khác nhau.\n- Vạn vật sinh ra đều có nguyên lý và tuân theo luật tự nhiên.\n- Vạn vật không chết mà chỉ chuyển hóa, chuyển thể từ dạng này sang dạng khác.\n- Vạn vật đều có linh, đều cần tu để tiến hóa, cần sống đủ chu kỳ sống.\n- Trân trọng và biết ơn vạn vật đã phục vụ con người.\n- Không vì thỏa mãn sở thích, lòng tham mà đối xử vô tâm, ác tâm với vạn vật.\n- Nếu buộc phải sử dụng sớm hơn chu kỳ sống, cần dùng nhân tâm để vạn vật tiến hóa lên.\n- Tiền không mua được hạnh nguyện của vạn vật, nên cần ăn ít, ngủ ít, nói ít, sử dụng ít vừa đủ nhu cầu thiết yếu.\n- Rốt ráo hành sứ mệnh để có phúc đức, công đức hồi hướng cho vạn vật.\n- Khi không có Trí tuệ, con người làm ngược quy luật: ăn thịt lẫn nhau, giết chóc, mạnh hiếp yếu, lớn nuốt bé, gây ân oán tràn khắp lục đạo.",
+    "loi_en": "- Vạn vật gồm: động vật, thực vật, tài nguyên thiên nhiên, đồ vật.\n- Mỗi vật có chu kỳ sống khác nhau, sinh ra có nhiệm vụ khác nhau.\n- Vạn vật sinh ra đều có nguyên lý và tuân theo luật tự nhiên.\n- Vạn vật không chết mà chỉ chuyển hóa, chuyển thể từ dạng này sang dạng khác.\n- Vạn vật đều có linh, đều cần tu để tiến hóa, cần sống đủ chu kỳ sống.\n- Trân trọng và biết ơn vạn vật đã phục vụ con người.\n- Không vì thỏa mãn sở thích, lòng tham mà đối xử vô tâm, ác tâm với vạn vật.\n- Nếu buộc phải sử dụng sớm hơn chu kỳ sống, cần dùng nhân tâm để vạn vật tiến hóa lên.\n- Tiền không mua được hạnh nguyện của vạn vật, nên cần ăn ít, ngủ ít, nói ít, sử dụng ít vừa đủ nhu cầu thiết yếu.\n- Rốt ráo hành sứ mệnh để có phúc đức, công đức hồi hướng cho vạn vật.\n- Khi không có Trí tuệ, con người làm ngược quy luật: ăn thịt lẫn nhau, giết chóc, mạnh hiếp yếu, lớn nuốt bé, gây ân oán tràn khắp lục đạo.",
+    "image_url": "",
+    "category": "concept",
     "order_index": 52
+  },
+  {
+    "id": "quy-luat-thoi-gian",
+    "title_vi": "Quy luật của Thời gian",
+    "title_en": "Quy luật của Thời gian",
+    "summary_vi": "Mỗi người có 24 giờ mỗi ngày; hiểu và kiểm soát thời gian để làm việc đáng nhất, tránh nhân quả, sống thuận tự nhiên.",
+    "summary_en": "Mỗi người có 24 giờ mỗi ngày; hiểu và kiểm soát thời gian để làm việc đáng nhất, tránh nhân quả, sống thuận tự nhiên.",
+    "content_vi": "- Mỗi ngày có 24 tiếng, thường dùng: 8 tiếng ngủ, 8 tiếng đi lại, ăn uống, vui chơi, việc cá nhân, gia đình, quan hệ; 8 tiếng làm việc.\n- Nếu theo cách đó, con người không làm được việc lớn lao, không tu luyện giải thoát.\n- Khi hiểu quy luật thời gian, cần tránh việc tạo nhân quả, chọn việc đích đáng, đúng nguyên lý, đúng đạo, đúng nguyên tắc.\n- Bớt ngủ, ăn chơi, thu gom vun vén cho công việc, tập trung cho Đời và Đạo.\n- Lên kế hoạch thời gian Đời – Đạo – Lợi ích rõ ràng: trong tuần, trong ngày bao nhiêu giờ cho Đời và Đạo.\n- Không có Trí tuệ, con người chỉ tập trung lợi ích riêng, không tròn chức năng, vai trò, bổn phận, trách nhiệm, vẫn bất ổn, mất thời gian giải quyết hệ quả.\n- Sống không đích, ăn chơi hưởng thụ, làm việc không đáng, gặp người không đáng, đi nơi không đáng -> tiêu phúc tạo nghiệp, mất thời gian giải quyết.\n- Nếu chưa hoàn thành hạnh nguyện xuống trần, phải quay xuống tiếp.\n- Tất cả quy luật thuận theo tự nhiên; cõi Ta Bà định vị bởi Nhân quả – Phúc đức – Nhân duyên.\n- Trong luật tự nhiên có luật vận hành trong không gian và thời gian.\n- Con người cần sống thuận theo quy luật tự nhiên để không phạm nhân quả, tránh họa, sống ung dung, tự tại, tùy duyên.",
+    "content_en": "- Mỗi ngày có 24 tiếng, thường dùng: 8 tiếng ngủ, 8 tiếng đi lại, ăn uống, vui chơi, việc cá nhân, gia đình, quan hệ; 8 tiếng làm việc.\n- Nếu theo cách đó, con người không làm được việc lớn lao, không tu luyện giải thoát.\n- Khi hiểu quy luật thời gian, cần tránh việc tạo nhân quả, chọn việc đích đáng, đúng nguyên lý, đúng đạo, đúng nguyên tắc.\n- Bớt ngủ, ăn chơi, thu gom vun vén cho công việc, tập trung cho Đời và Đạo.\n- Lên kế hoạch thời gian Đời – Đạo – Lợi ích rõ ràng: trong tuần, trong ngày bao nhiêu giờ cho Đời và Đạo.\n- Không có Trí tuệ, con người chỉ tập trung lợi ích riêng, không tròn chức năng, vai trò, bổn phận, trách nhiệm, vẫn bất ổn, mất thời gian giải quyết hệ quả.\n- Sống không đích, ăn chơi hưởng thụ, làm việc không đáng, gặp người không đáng, đi nơi không đáng -> tiêu phúc tạo nghiệp, mất thời gian giải quyết.\n- Nếu chưa hoàn thành hạnh nguyện xuống trần, phải quay xuống tiếp.\n- Tất cả quy luật thuận theo tự nhiên; cõi Ta Bà định vị bởi Nhân quả – Phúc đức – Nhân duyên.\n- Trong luật tự nhiên có luật vận hành trong không gian và thời gian.\n- Con người cần sống thuận theo quy luật tự nhiên để không phạm nhân quả, tránh họa, sống ung dung, tự tại, tùy duyên.",
+    "cot_y_vi": "Hiểu quy luật thời gian để trân trọng, kiểm soát và sử dụng thời gian cho những việc đáng nhất, tránh tạo nhân quả.",
+    "cot_y_en": "Hiểu quy luật thời gian để trân trọng, kiểm soát và sử dụng thời gian cho những việc đáng nhất, tránh tạo nhân quả.",
+    "cot_cua_cot_vi": "Sống thuận theo quy luật tự nhiên, tránh nhân quả, để ung dung tự tại.",
+    "cot_cua_cot_en": "Sống thuận theo quy luật tự nhiên, tránh nhân quả, để ung dung tự tại.",
+    "loi_vi": "- Mỗi ngày có 24 tiếng, thường dùng: 8 tiếng ngủ, 8 tiếng đi lại, ăn uống, vui chơi, việc cá nhân, gia đình, quan hệ; 8 tiếng làm việc.\n- Nếu theo cách đó, con người không làm được việc lớn lao, không tu luyện giải thoát.\n- Khi hiểu quy luật thời gian, cần tránh việc tạo nhân quả, chọn việc đích đáng, đúng nguyên lý, đúng đạo, đúng nguyên tắc.\n- Bớt ngủ, ăn chơi, thu gom vun vén cho công việc, tập trung cho Đời và Đạo.\n- Lên kế hoạch thời gian Đời – Đạo – Lợi ích rõ ràng: trong tuần, trong ngày bao nhiêu giờ cho Đời và Đạo.\n- Không có Trí tuệ, con người chỉ tập trung lợi ích riêng, không tròn chức năng, vai trò, bổn phận, trách nhiệm, vẫn bất ổn, mất thời gian giải quyết hệ quả.\n- Sống không đích, ăn chơi hưởng thụ, làm việc không đáng, gặp người không đáng, đi nơi không đáng -> tiêu phúc tạo nghiệp, mất thời gian giải quyết.\n- Nếu chưa hoàn thành hạnh nguyện xuống trần, phải quay xuống tiếp.\n- Tất cả quy luật thuận theo tự nhiên; cõi Ta Bà định vị bởi Nhân quả – Phúc đức – Nhân duyên.\n- Trong luật tự nhiên có luật vận hành trong không gian và thời gian.\n- Con người cần sống thuận theo quy luật tự nhiên để không phạm nhân quả, tránh họa, sống ung dung, tự tại, tùy duyên.",
+    "loi_en": "- Mỗi ngày có 24 tiếng, thường dùng: 8 tiếng ngủ, 8 tiếng đi lại, ăn uống, vui chơi, việc cá nhân, gia đình, quan hệ; 8 tiếng làm việc.\n- Nếu theo cách đó, con người không làm được việc lớn lao, không tu luyện giải thoát.\n- Khi hiểu quy luật thời gian, cần tránh việc tạo nhân quả, chọn việc đích đáng, đúng nguyên lý, đúng đạo, đúng nguyên tắc.\n- Bớt ngủ, ăn chơi, thu gom vun vén cho công việc, tập trung cho Đời và Đạo.\n- Lên kế hoạch thời gian Đời – Đạo – Lợi ích rõ ràng: trong tuần, trong ngày bao nhiêu giờ cho Đời và Đạo.\n- Không có Trí tuệ, con người chỉ tập trung lợi ích riêng, không tròn chức năng, vai trò, bổn phận, trách nhiệm, vẫn bất ổn, mất thời gian giải quyết hệ quả.\n- Sống không đích, ăn chơi hưởng thụ, làm việc không đáng, gặp người không đáng, đi nơi không đáng -> tiêu phúc tạo nghiệp, mất thời gian giải quyết.\n- Nếu chưa hoàn thành hạnh nguyện xuống trần, phải quay xuống tiếp.\n- Tất cả quy luật thuận theo tự nhiên; cõi Ta Bà định vị bởi Nhân quả – Phúc đức – Nhân duyên.\n- Trong luật tự nhiên có luật vận hành trong không gian và thời gian.\n- Con người cần sống thuận theo quy luật tự nhiên để không phạm nhân quả, tránh họa, sống ung dung, tự tại, tùy duyên.",
+    "image_url": "",
+    "category": "concept",
+    "order_index": 53
   },
   {
     "id": "biet-goc-bam-goc",
@@ -881,7 +989,7 @@ export const defaultKnowledgeEntries: KnowledgeEntry[] = [
     "loi_en": "- Gốc trí tuệ: quy chiếu mọi việc vào 11 phần của trí tuệ.\n- Gốc môi trường: môi trường mở (nhà ga, bến xe, quán ăn) và cố định (gia đình, cơ quan). Cần bám đích đến, tôn trọng môi trường và mọi người, thấu triệt môi trường.\n- Gốc thời điểm: khi làm việc với cá nhân cần thấu triệt, tôn trọng, phối hợp, trao đổi thường xuyên, tự đối diện để thay đổi. Khi làm việc với tổ chức cần thấu triệt văn hóa, quy định, nguyên tắc, quy trình.\n- Gốc tấm gương: noi theo Đức Phật, Bồ Tát, Đức Chúa, Bác Hồ; học đức hạnh, dấu ấn, cách sống thực tế, báo hiếu, xả thân. Khi hành động bám vào trí tuệ, dùng tấm gương để tránh cám dỗ.\n- Gốc vấn đề: 11 gốc như con người (Phật, Tiên), bản thân (phúc đức, căn cơ), gia đình (điểm tựa), công việc (phương tiện), xã hội (nợ đồng lần), đất nước (điểm tựa, báo ơn), tài chính (phúc đức), bất ổn (không biết điểm tựa, gốc, thời thế, làm ngược nguyên lý), khổ đau (tham sở hữu), giải thoát (con Trời con Phật), bệnh tật (thân, tâm, nghiệp).\n- Trí tuệ chỉ ra 5 thứ xã hội mắc phải: bất ổn gia đình, sức khỏe, danh lợi, nghiệp, giải thoát.",
     "image_url": "",
     "category": "concept",
-    "order_index": 53
+    "order_index": 54
   },
   {
     "id": "nguyen-tac",
@@ -899,7 +1007,7 @@ export const defaultKnowledgeEntries: KnowledgeEntry[] = [
     "loi_en": "- Đúng luật: làm việc gì cũng phải đúng luật Nhà Thiên, luật tự nhiên, luật lương tâm, giới luật, luật pháp. Đã đúng luật thì không mặc cả.\n- Chuẩn mực: phải chuẩn mực 100%, từ lời nói đến hành động. Người chuẩn mực mới được tin tưởng.\n- Rõ ràng: không mập mờ. Khi nhận việc phải hỏi rõ ràng, chắc chắn, hiểu tư tưởng. Khi nhận làm phải nói rõ làm được bao nhiêu %. Làm việc cần kiểm tra, xác nhận, sửa tính đại khái, chủ quan, ỷ lại.\n- Có trước có sau: quay lại gốc ban đầu để biết trân trọng, biết ơn. Trong công việc phải báo cáo trước sau. Sống có trước có sau sẽ được ghi nhận.\n- Tinh tế uyển chuyển: nhận diện thực tế, uyển chuyển theo thời điểm, căn cơ, hoàn cảnh nhưng vẫn bám đích, dùng trí tuệ, không dùng thói thường. Chỉ uyển chuyển khi bất khả kháng.",
     "image_url": "",
     "category": "concept",
-    "order_index": 54
+    "order_index": 55
   },
   {
     "id": "xoay-chuyen",
@@ -917,7 +1025,7 @@ export const defaultKnowledgeEntries: KnowledgeEntry[] = [
     "loi_en": "- Rà soát quá khứ: nhận biết nghiệp quá khứ, định vị, giải nghiệp, dừng nghiệp tương lai; đối diện thực tế, xoay chuyển từng thứ, biết trước hệ quả.\n- Xoay chuyển tâm: từ tâm hướng đến công đức/phúc đức sang phát tâm bồ đề vì chúng sinh, tránh so đo tính toán, giữ tâm vô trụ và chân tâm.\n- Xoay chuyển đích và công việc: để có thời gian cho cả Đời - Đạo - Lợi tư.\n- Lập kế hoạch thời gian Đời - Đạo - Lợi tư: vì ta sinh ra để làm 3 việc, cần thời gian để tròn Đạo Sinh, tu rốt ráo, tạo phúc rốt ráo, trả nghiệp rốt ráo; tránh lãng phí thời gian.\n- Đưa khuôn trí tuệ vào cuộc sống: khuôn bên trong (bản thân, gia đình, công việc, tài chính, quan hệ, xã hội, đất nước) và khuôn bên ngoài (nói, làm, hành xử, đối nhân xử thế) để tránh thân nghiệp, ý nghiệp, khẩu nghiệp, hệ quả, ân oán.",
     "image_url": "",
     "category": "concept",
-    "order_index": 55
+    "order_index": 56
   },
   {
     "id": "hanh",
@@ -935,7 +1043,7 @@ export const defaultKnowledgeEntries: KnowledgeEntry[] = [
     "loi_en": "- Hành thiện: phát tâm bồ đề theo thực tế, không kế hoạch, không cần tấu trình, làm cho người thân được.\n- Tạo phúc, trả nợ: bổn phận, có kế hoạch 6 tháng/lần, cần tấu trình, làm ngoài cộng đồng.\n- Để hành thiện chuẩn mực: xét năng lực, sức khỏe, thời gian, tài chính, hiểu biết pháp luật; quy chiếu vào Trí tuệ.\n- Hành đạo: mọi lúc mọi nơi, chia sẻ khi thấy người khác sai, tránh họa, cần tu đức.\n- Khai tuệ: lắng nghe, quan sát, chia sẻ Trí tuệ cho người có duyên, dùng 7 ý thực tế.\n- Hành Bồ tát đạo: giúp chúng sinh biết Trí tuệ, không bất chấp thực tế, cần tu đức.\n- Hành sứ mệnh: lan tỏa trí tuệ để có phúc đức, công đức, lập công; bám vào khuôn hành.\n- Khuôn hành gồm: đích, ý thức, thấu triệt; biết hành gặp gì, vấp gì, bám gì.",
     "image_url": "",
     "category": "concept",
-    "order_index": 56
+    "order_index": 57
   },
   {
     "id": "luyen-sua",
@@ -953,7 +1061,7 @@ export const defaultKnowledgeEntries: KnowledgeEntry[] = [
     "loi_en": "- Luyện 5 thứ: Luyện viết, luyện trí tuệ, luyện thế pháp, luyện ý thức hàng ngày, luyện thành cao nhân.\n- Luyện viết: viết ý chính (cốt), viết chi tiết (lõi), cần mẫn, chắt chiu từng câu chữ, kết nối.\n- Luyện trí tuệ: luyện tâm (kiểm soát nội tâm), luyện tầm (quan sát nhận diện thực tế), luyện tài (đưa ra pháp đa chiều xử lý tình huống), luyện chí (vượt qua chính mình, dám đối diện), luyện tuệ (khai thác trí tuệ, văn hóa con người trí tuệ).\n- Luyện thế pháp: 10 thế pháp (tâm, nguyên lý, đạo, nguyên tắc, công thức, tinh tế, giới, hạnh, chiêm tĩnh, linh khôn). Luyện cùng một thế pháp để hiểu và hành động giống nhau.\n- Luyện ý thức hàng ngày: luyện mỗi ngày.\n- Luyện thành cao nhân: thể hiện bằng hành động để đạt được cao nhân, cao đạo.\n- Luyện tâm đạo - tâm chí - tâm pháp.\n- Luyện tâm không: không chấp, không sân, không nản.\n- Luyện trở thành bậc cao đạo.\n- Luyện trong học - sống - hành - tu - luyện.\n- Sửa: tại sao cần sửa? (giữ cốt mệnh, giữ gốc đạo, báo ơn cha mẹ và các ngài, loại bỏ tập khí sâu dày).\n- Sửa gì? (sửa tư duy, sửa thói thường, sửa tham sân si).",
     "image_url": "",
     "category": "concept",
-    "order_index": 57
+    "order_index": 58
   },
   {
     "id": "tu",
@@ -971,7 +1079,7 @@ export const defaultKnowledgeEntries: KnowledgeEntry[] = [
     "loi_en": "- Tại sao cần tu? Vì ta là con Trời, con Phật, cần báo Tứ đại trọng ơn. Ta sinh ra để làm 3 việc, trong đó có tu tiếp, nên không thể thiếu tu trong kế hoạch cuộc đời.\n- Tu để đạt gì? Tu để cốt sáng -> Linh sáng -> Linh khôn -> Linh cảm -> Linh ứng -> Linh thông -> Lục thông -> Thông toàn năng toàn giác. Tu thoát tập khí để xoay chuyển vận mệnh. Tu để đón năng lượng sạch, mạnh của Cha Mẹ và các Ngài, khi chuyển cõi, linh hồn chọn được luồng ánh sáng mạnh để trở về chính đẳng, chính giác.\n- Tu đức gồm những gì?\n  1) Đúng đạo: Hành xử chuẩn mực (đúng quan hệ, đúng vai về, đúng tuổi tác, đúng phép tắc, giữ giới, giữ hạnh). Bám vào Đạo, Nguyên lý, Gốc, Nguyên tắc.\n  2) Tròn đạo: Tròn 7 Đạo.\n  3) Hành đạo: Hành 7 Đạo ở mọi lúc mọi nơi. Khai tuệ: chia sẻ các ý trong 7 ý thực tế, dùng mở rộng hiểu biết để định hướng tư tưởng người khác tiếp cận dần với Trí tuệ. Hành Bồ tát đạo.\n  4) Cầu đạo: Không chỉ cầu được học, được hành. Mọi cảnh đến cần ý thức chuẩn tất cả các Đạo để lập Đức.\n  5) Tu đạo: Tu tiên, tu thoát 7 thứ, tu thoát nghiệp của mình, tu hình thành nếp tu, tu là thu mình lại.",
     "image_url": "",
     "category": "concept",
-    "order_index": 58
+    "order_index": 59
   },
   {
     "id": "ke-thua",
@@ -989,9 +1097,8 @@ export const defaultKnowledgeEntries: KnowledgeEntry[] = [
     "loi_en": "- Lý do chia sẻ trí tuệ: trí tuệ khác kinh nghiệm, kiến thức; giúp hóa giải mầm ân oán trong gia đình (con đến báo ơn hoặc đòi nợ).\n- Định hướng cho con: biết gốc sinh ra từ đâu; trang bị 5 vốn: kiến thức, sinh tồn, sống trí tuệ, hiểu biết đa chiều, vốn từ; chia theo độ tuổi: 0-3, 4-6, 6-10, 11-16, 17-25.\n- Phương pháp chia sẻ: cần qua 4 nấc: chia sẻ vốn sống trí tuệ theo độ tuổi; chia sẻ ứng dụng vào bản thân, gia đình, công việc, quan hệ, tài chính, cộng đồng, đất nước; hàng tuần luyện tập cùng con; kết nối thành nét văn hóa.\n- Khi chia sẻ cần dồn công phu: nghiên cứu con (tính cách, hành động, mệnh, nhân duyên) để đưa ra pháp phù hợp; sau đó kèm cặp sát sao để con luyện tập.\n- Hàng ngày chia sẻ trí tuệ với mọi người trong nhà: sáng và tối chia sẻ về Đích và Thực tế; chia sẻ về giữ giới, giữ hạnh; chia sẻ về tình yêu thương với con người và vạn vật.",
     "image_url": "",
     "category": "concept",
-    "order_index": 59
+    "order_index": 60
   },
-
   {
     "id": "nghiep-doi",
     "title_vi": "Nghiệp đời",
@@ -1008,7 +1115,7 @@ export const defaultKnowledgeEntries: KnowledgeEntry[] = [
     "loi_en": "- Đời là nơi ta đến để trả nghiệp cũ, tạo phúc mới và tu tập.\n- Nghiệp đời là phần nghiệp mà ta phải thực hiện bằng lao động, phục vụ, tròn vai trò trong từng ngày.\n- Mỗi ngày đi làm việc là mỗi ngày trả nghiệp đời; làm đến nơi đến chốn thì nghiệp đời được thanh toát.\n- Khi nghiệp đời chưa hết, ta không thể dừng làm; càng trốn tránh, nghiệp càng chồng chất.\n- Khi nghiệp đời đã trả xong, ta tự do khỏi cảnh phải đi làm việc; lúc đó công việc là lựa chọn, không còn là nợ.\n- Trong khi còn đang trả nghiệp đời, hãy làm việc với tâm trí tuệ: tròn đạo, triệt để, tạo phúc, không tạo thêm nghiệp mới.",
     "image_url": "",
     "category": "concept",
-    "order_index": 60
+    "order_index": 61
   },
   {
     "id": "vi-du-nau-com",
@@ -1026,7 +1133,7 @@ export const defaultKnowledgeEntries: KnowledgeEntry[] = [
     "loi_en": "- Đích: Nấu cơm để nuôi dưỡng thân tâm cả nhà, tròn đạo hiếu và tạo phúc gia đình.\n- Thực tế: Có bao nhiêu người ăn? Khẩu vị? Nguyên liệu sẵn có? Thời gian nấu? Ai ăn kéo/cơm?\n- Phương pháp: Nấu đủ ăn, không thừa; nấu đúng giờ; chọn nguyên liệu sạch, phù hợp sức khỏe; giữ vệ sinh bếp.\n- Phối hợp: Người mua đồ, người rửa rau, người dọn bếp, người đi làm về muộn; cùng nhau tạo bữa cơm.\n- Kế hoạch: Sáng lên thực đơn, trưa chuẩn bị nguyên liệu, tối nấu đúng giờ; cuối tuần cả nhà cùng nấu.",
     "image_url": "",
     "category": "example",
-    "order_index": 61
+    "order_index": 62
   },
   {
     "id": "vi-du-quet-nha",
@@ -1044,7 +1151,7 @@ export const defaultKnowledgeEntries: KnowledgeEntry[] = [
     "loi_en": "- Đích: Nhà sạch sẽ, trật tự để tâm an, tạo phúc cho gia đình, tròn đạo lễ.\n- Thực tế: Bao nhiêu phòng? Có đồ cần vứt/sắp xếp? Mấy giờ có người về? Ai dọn trước đó?\n- Phương pháp: Dọn từ trên xuống, từ trong ra ngoài; phân loại rác, đồ tái sử dụng; không dọn qua loa.\n- Phối hợp: Cả nhà chia việc: người quét, người lau, người sắp đồ, người đổ rác.\n- Kế hoạch: Sáng dọn bếp + phòng khách 15 phút, tối dọn phòng ngủ trước khi ngủ; cuối tuần dọn sâu.",
     "image_url": "",
     "category": "example",
-    "order_index": 62
+    "order_index": 63
   },
   {
     "id": "vi-du-xu-ly-email",
@@ -1062,7 +1169,7 @@ export const defaultKnowledgeEntries: KnowledgeEntry[] = [
     "loi_en": "- Đích: Trả lời email đúng người, đúng việc, đúng thời hạn; không để người khác chờ, không làm hỏng quan hệ.\n- Thực tế: Bao nhiêu email? Cái nào cần trả lời ngay? Cái nào cần xin ý kiến? Có tài liệu đính kèm không?\n- Phương pháp: Đọc kỹ, trả lời từng vấn đề, không bỏ sót; nếu chưa rõ thì hỏi lại; ghi chú việc cần làm tiếp.\n- Phối hợp: Cần ai duyệt? Cần ai cung cấp thông tin? Báo lại cho ai sau khi xong?\n- Kế hoạch: Sáng 30 phút, chiều 30 phút; cuối ngày rà soát lại; đánh dấu email đã xử lý.",
     "image_url": "",
     "category": "example",
-    "order_index": 63
+    "order_index": 64
   },
   {
     "id": "vi-du-hop",
@@ -1080,7 +1187,7 @@ export const defaultKnowledgeEntries: KnowledgeEntry[] = [
     "loi_en": "- Đích: Cuộc họp cần đạt kết quả gì? Ai làm gì sau họp? Tránh họp để đối phó.\n- Thực tế: Ai tham dự? Mỗi người mang thông tin gì? Tiến độ đến đâu? Có vướng mắc không?\n- Phương pháp: Chuẩn bị chương trình trước; nói ngắn gọn, đúng chủ đề; nghe đủ ý; ghi lại nội dung và người phụ trách.\n- Phối hợp: Người chủ trì, người ghi biên bản, người theo dõi hành động; mỗi người rõ vai.\n- Kế hoạch: Gửi chương trình trước họp 1 ngày; họp đúng giờ; sau họp 24h gửi biên bản và danh sách việc cần làm.",
     "image_url": "",
     "category": "example",
-    "order_index": 64
+    "order_index": 65
   },
   {
     "id": "vi-du-mua-sam",
@@ -1098,7 +1205,1802 @@ export const defaultKnowledgeEntries: KnowledgeEntry[] = [
     "loi_en": "- Đích: Mua đúng nhu cầu thiết yếu, không lãng phí, không tham mua; giữ ngân sách gia đình.\n- Thực tế: Ngân sách bao nhiêu? Cần gấp món gì? Kho còn gì? Giá cả thị trường? Nên mua ở đâu?\n- Phương pháp: Lập danh sách trước khi đi; mua đủ dùng, không tích trữ; so sánh giá; ưu tiên đồ sạch, bền.\n- Phối hợp: Hỏi người nấu ăn cần gì, người quản lý tài chính đồng ý chi, người đi chợ phụ trách.\n- Kế hoạch: Mỗi tuần lên danh sách 1 lần; mua theo ngày cố định; cuối tháng rà soát chi tiêu.",
     "image_url": "",
     "category": "example",
-    "order_index": 65
+    "order_index": 66
+  },
+  {
+    "id": "goc-do-cua-tri-tue",
+    "title_vi": "Góc độ của Trí tuệ",
+    "summary_vi": "Trí tuệ được nhìn từ ba góc độ: Nguyên lý, Quy luật và Thực tế, mỗi góc độ đều có vai trò riêng trong việc nhận thức và giải quyết vấn đề.",
+    "cot_y_vi": "Ba góc độ của Trí tuệ là Nguyên lý, Quy luật và Thực tế.",
+    "cot_cua_cot_vi": "Nguyên lý cho gốc, quy luật bất biến, thực tế phản ánh hiện tượng.",
+    "loi_vi": "Trí tuệ được xem xét từ ba góc độ chính, mỗi góc độ đóng góp một khía cạnh quan trọng trong việc hiểu và áp dụng Trí tuệ.",
+    "content_vi": "- Nguyên lý: chỉ cho ta biết gốc của mọi vấn đề, từ đó kết nối logic và bao trùm để giải quyết.\n- Quy luật: là các quy luật tự nhiên bất biến, không ai thay đổi được.\n- Thực tế: phản ánh các hiện tượng thực tế, giúp nhận diện và đưa ra pháp chuẩn.",
+    "summary_en": "Trí tuệ được nhìn từ ba góc độ: Nguyên lý, Quy luật và Thực tế, mỗi góc độ đều có vai trò riêng trong việc nhận thức và giải quyết vấn đề.",
+    "cot_y_en": "Ba góc độ của Trí tuệ là Nguyên lý, Quy luật và Thực tế.",
+    "cot_cua_cot_en": "Nguyên lý cho gốc, quy luật bất biến, thực tế phản ánh hiện tượng.",
+    "loi_en": "Trí tuệ được xem xét từ ba góc độ chính, mỗi góc độ đóng góp một khía cạnh quan trọng trong việc hiểu và áp dụng Trí tuệ.",
+    "content_en": "- Nguyên lý: chỉ cho ta biết gốc của mọi vấn đề, từ đó kết nối logic và bao trùm để giải quyết.\n- Quy luật: là các quy luật tự nhiên bất biến, không ai thay đổi được.\n- Thực tế: phản ánh các hiện tượng thực tế, giúp nhận diện và đưa ra pháp chuẩn.",
+    "image_url": "",
+    "category": "",
+    "order_index": 67
+  },
+  {
+    "id": "quy-chuan-cua-tri-tue",
+    "title_vi": "Quy chuẩn của Trí tuệ",
+    "summary_vi": "Quy chuẩn của Trí tuệ bao gồm 11 phần và được thể hiện qua lối sống, hành xử, và văn hóa Trí tuệ.",
+    "cot_y_vi": "Quy chuẩn của Trí tuệ gồm 11 phần và thể hiện qua nếp sống Trí tuệ.",
+    "cot_cua_cot_vi": "Sống đúng quy chuẩn Trí tuệ trong Học - Sống - Hành - Tu - Luyện.",
+    "loi_vi": "Quy chuẩn của Trí tuệ là nền tảng để sống và hành xử đúng đắn, bao gồm nhiều phần và được thể hiện qua các hành vi cụ thể.",
+    "content_vi": "- 11 phần của Trí tuệ: 5 mảng nền tảng, quy luật, hiểu - lễ - nghĩa, biết gốc và bám gốc, nguyên tắc, ý pháp mở rộng và tâm từ bi, xoay chuyển cuộc sống trí tuệ, hành, luyện và sửa, tu, kế thừa cho tương lai.\n- Thể hiện qua: sống đúng quy chuẩn, hành xử theo Trí tuệ, đối nhân xử thế, nếp sống Trí tuệ trong Học - Sống - Hành - Tu - Luyện, và các nét văn hóa Trí tuệ.",
+    "summary_en": "Quy chuẩn của Trí tuệ bao gồm 11 phần và được thể hiện qua lối sống, hành xử, và văn hóa Trí tuệ.",
+    "cot_y_en": "Quy chuẩn của Trí tuệ gồm 11 phần và thể hiện qua nếp sống Trí tuệ.",
+    "cot_cua_cot_en": "Sống đúng quy chuẩn Trí tuệ trong Học - Sống - Hành - Tu - Luyện.",
+    "loi_en": "Quy chuẩn của Trí tuệ là nền tảng để sống và hành xử đúng đắn, bao gồm nhiều phần và được thể hiện qua các hành vi cụ thể.",
+    "content_en": "- 11 phần của Trí tuệ: 5 mảng nền tảng, quy luật, hiểu - lễ - nghĩa, biết gốc và bám gốc, nguyên tắc, ý pháp mở rộng và tâm từ bi, xoay chuyển cuộc sống trí tuệ, hành, luyện và sửa, tu, kế thừa cho tương lai.\n- Thể hiện qua: sống đúng quy chuẩn, hành xử theo Trí tuệ, đối nhân xử thế, nếp sống Trí tuệ trong Học - Sống - Hành - Tu - Luyện, và các nét văn hóa Trí tuệ.",
+    "image_url": "",
+    "category": "",
+    "order_index": 68
+  },
+  {
+    "id": "dinh-nghia-cua-tri-tue",
+    "title_vi": "Định nghĩa của Trí tuệ",
+    "summary_vi": "Trí tuệ là khả năng nhận thức, hiểu biết và xử lý thông tin, bao gồm các đặc tính cơ bản như tư duy logic, giải quyết vấn đề, học hỏi, sáng tạo và thích ứng. Vai trò của trí tuệ trong cuộc sống rất quan trọng, giúp con người đưa ra quyết định đúng đắn, giải quyết các tình huống phức tạp, phát triển bản thân và đóng góp cho xã hội. Trí tuệ không chỉ là kiến thức mà còn là khả năng áp dụng kiến thức vào thực tế một cách hiệu quả.",
+    "cot_y_vi": [
+      "Trí tuệ là khả năng nhận thức và hiểu biết.",
+      "Bao gồm tư duy logic và giải quyết vấn đề.",
+      "Khả năng học hỏi và thích ứng với môi trường.",
+      "Sáng tạo và đổi mới trong tư duy.",
+      "Vai trò quan trọng trong việc ra quyết định.",
+      "Giúp giải quyết các tình huống phức tạp.",
+      "Phát triển bản thân và đóng góp cho xã hội.",
+      "Áp dụng kiến thức vào thực tế hiệu quả."
+    ],
+    "cot_cua_cot_vi": [
+      "Nhận thức và hiểu biết là nền tảng của trí tuệ.",
+      "Tư duy logic giúp phân tích và suy luận chính xác.",
+      "Giải quyết vấn đề là khả năng tìm ra giải pháp cho các tình huống khó khăn.",
+      "Học hỏi giúp tích lũy kiến thức và kỹ năng mới.",
+      "Thích ứng giúp điều chỉnh hành vi phù hợp với môi trường.",
+      "Sáng tạo tạo ra ý tưởng mới và cách tiếp cận độc đáo.",
+      "Ra quyết định đúng đắn dựa trên phân tích và đánh giá.",
+      "Giải quyết tình huống phức tạp đòi hỏi sự linh hoạt và sáng suốt.",
+      "Phát triển bản thân thông qua học tập và rèn luyện.",
+      "Đóng góp cho xã hội bằng cách sử dụng trí tuệ để giải quyết vấn đề chung.",
+      "Áp dụng kiến thức vào thực tế là mục tiêu cuối cùng của trí tuệ."
+    ],
+    "loi_vi": "Trí tuệ là một khái niệm rộng, bao gồm nhiều khía cạnh khác nhau. Nó không chỉ đơn thuần là sự thông minh hay kiến thức, mà còn là khả năng vận dụng những hiểu biết đó vào cuộc sống một cách hiệu quả. Trí tuệ giúp con người vượt qua khó khăn, đạt được mục tiêu và sống một cuộc đời ý nghĩa.",
+    "content_vi": "Định nghĩa Trí tuệ bao gồm các đặc tính cơ bản và vai trò của nó trong cuộc sống. Trí tuệ là khả năng nhận thức, hiểu biết và xử lý thông tin, bao gồm tư duy logic, giải quyết vấn đề, học hỏi, sáng tạo và thích ứng. Vai trò của trí tuệ rất quan trọng, giúp con người đưa ra quyết định đúng đắn, giải quyết các tình huống phức tạp, phát triển bản thân và đóng góp cho xã hội. Trí tuệ không chỉ là kiến thức mà còn là khả năng áp dụng kiến thức vào thực tế một cách hiệu quả.",
+    "summary_en": "Trí tuệ là khả năng nhận thức, hiểu biết và xử lý thông tin, bao gồm các đặc tính cơ bản như tư duy logic, giải quyết vấn đề, học hỏi, sáng tạo và thích ứng. Vai trò của trí tuệ trong cuộc sống rất quan trọng, giúp con người đưa ra quyết định đúng đắn, giải quyết các tình huống phức tạp, phát triển bản thân và đóng góp cho xã hội. Trí tuệ không chỉ là kiến thức mà còn là khả năng áp dụng kiến thức vào thực tế một cách hiệu quả.",
+    "cot_y_en": [
+      "Trí tuệ là khả năng nhận thức và hiểu biết.",
+      "Bao gồm tư duy logic và giải quyết vấn đề.",
+      "Khả năng học hỏi và thích ứng với môi trường.",
+      "Sáng tạo và đổi mới trong tư duy.",
+      "Vai trò quan trọng trong việc ra quyết định.",
+      "Giúp giải quyết các tình huống phức tạp.",
+      "Phát triển bản thân và đóng góp cho xã hội.",
+      "Áp dụng kiến thức vào thực tế hiệu quả."
+    ],
+    "cot_cua_cot_en": [
+      "Nhận thức và hiểu biết là nền tảng của trí tuệ.",
+      "Tư duy logic giúp phân tích và suy luận chính xác.",
+      "Giải quyết vấn đề là khả năng tìm ra giải pháp cho các tình huống khó khăn.",
+      "Học hỏi giúp tích lũy kiến thức và kỹ năng mới.",
+      "Thích ứng giúp điều chỉnh hành vi phù hợp với môi trường.",
+      "Sáng tạo tạo ra ý tưởng mới và cách tiếp cận độc đáo.",
+      "Ra quyết định đúng đắn dựa trên phân tích và đánh giá.",
+      "Giải quyết tình huống phức tạp đòi hỏi sự linh hoạt và sáng suốt.",
+      "Phát triển bản thân thông qua học tập và rèn luyện.",
+      "Đóng góp cho xã hội bằng cách sử dụng trí tuệ để giải quyết vấn đề chung.",
+      "Áp dụng kiến thức vào thực tế là mục tiêu cuối cùng của trí tuệ."
+    ],
+    "loi_en": "Trí tuệ là một khái niệm rộng, bao gồm nhiều khía cạnh khác nhau. Nó không chỉ đơn thuần là sự thông minh hay kiến thức, mà còn là khả năng vận dụng những hiểu biết đó vào cuộc sống một cách hiệu quả. Trí tuệ giúp con người vượt qua khó khăn, đạt được mục tiêu và sống một cuộc đời ý nghĩa.",
+    "content_en": "Định nghĩa Trí tuệ bao gồm các đặc tính cơ bản và vai trò của nó trong cuộc sống. Trí tuệ là khả năng nhận thức, hiểu biết và xử lý thông tin, bao gồm tư duy logic, giải quyết vấn đề, học hỏi, sáng tạo và thích ứng. Vai trò của trí tuệ rất quan trọng, giúp con người đưa ra quyết định đúng đắn, giải quyết các tình huống phức tạp, phát triển bản thân và đóng góp cho xã hội. Trí tuệ không chỉ là kiến thức mà còn là khả năng áp dụng kiến thức vào thực tế một cách hiệu quả.",
+    "image_url": "",
+    "category": "",
+    "order_index": 69
+  },
+  {
+    "id": "gia-tri-cua-tri-tue",
+    "title_vi": "Giá trị của Trí tuệ",
+    "summary_vi": "Giá trị của Trí tuệ được thể hiện qua nhiều khía cạnh, giúp con người giải quyết mọi vấn đề từ nhỏ đến lớn.",
+    "cot_y_vi": [
+      "Giá trị của Trí tuệ được thể hiện qua nhiều khía cạnh.",
+      "Trí tuệ giúp con người giải quyết mọi vấn đề.",
+      "Các vấn đề có thể từ nhỏ đến lớn."
+    ],
+    "cot_cua_cot_vi": [
+      "Khía cạnh thể hiện của trí tuệ rất đa dạng.",
+      "Khả năng giải quyết vấn đề là một biểu hiện quan trọng của trí tuệ.",
+      "Phạm vi vấn đề mà trí tuệ có thể xử lý bao gồm cả những việc nhỏ nhặt và những thách thức lớn lao."
+    ],
+    "loi_vi": "Trí tuệ là một phẩm chất quý giá, được biểu hiện qua nhiều mặt khác nhau trong cuộc sống. Nhờ có trí tuệ, con người có thể phân tích, đánh giá và tìm ra giải pháp cho các vấn đề gặp phải. Dù vấn đề đó là đơn giản hay phức tạp, trí tuệ đều có thể giúp chúng ta vượt qua một cách hiệu quả. Chính vì vậy, trí tuệ đóng vai trò then chốt trong sự phát triển và thành công của mỗi cá nhân và xã hội.",
+    "content_vi": "Giá trị của Trí tuệ được thể hiện qua nhiều khía cạnh, giúp con người giải quyết mọi vấn đề từ nhỏ đến lớn. Trí tuệ không chỉ là khả năng tư duy logic mà còn là sự nhạy bén trong việc nhận biết và xử lý tình huống. Nhờ có trí tuệ, con người có thể đưa ra những quyết định đúng đắn, sáng suốt trong công việc và cuộc sống. Từ những việc đơn giản như sắp xếp thời gian, quản lý tài chính cá nhân, đến những vấn đề phức tạp như giải quyết xung đột, hoạch định chiến lược, trí tuệ đều đóng vai trò quan trọng. Hơn nữa, trí tuệ còn giúp con người học hỏi, thích nghi với môi trường thay đổi và phát triển bản thân không ngừng. Vì vậy, việc rèn luyện và nâng cao trí tuệ là điều cần thiết để đạt được thành công và hạnh phúc.",
+    "summary_en": "Giá trị của Trí tuệ được thể hiện qua nhiều khía cạnh, giúp con người giải quyết mọi vấn đề từ nhỏ đến lớn.",
+    "cot_y_en": [
+      "Giá trị của Trí tuệ được thể hiện qua nhiều khía cạnh.",
+      "Trí tuệ giúp con người giải quyết mọi vấn đề.",
+      "Các vấn đề có thể từ nhỏ đến lớn."
+    ],
+    "cot_cua_cot_en": [
+      "Khía cạnh thể hiện của trí tuệ rất đa dạng.",
+      "Khả năng giải quyết vấn đề là một biểu hiện quan trọng của trí tuệ.",
+      "Phạm vi vấn đề mà trí tuệ có thể xử lý bao gồm cả những việc nhỏ nhặt và những thách thức lớn lao."
+    ],
+    "loi_en": "Trí tuệ là một phẩm chất quý giá, được biểu hiện qua nhiều mặt khác nhau trong cuộc sống. Nhờ có trí tuệ, con người có thể phân tích, đánh giá và tìm ra giải pháp cho các vấn đề gặp phải. Dù vấn đề đó là đơn giản hay phức tạp, trí tuệ đều có thể giúp chúng ta vượt qua một cách hiệu quả. Chính vì vậy, trí tuệ đóng vai trò then chốt trong sự phát triển và thành công của mỗi cá nhân và xã hội.",
+    "content_en": "Giá trị của Trí tuệ được thể hiện qua nhiều khía cạnh, giúp con người giải quyết mọi vấn đề từ nhỏ đến lớn. Trí tuệ không chỉ là khả năng tư duy logic mà còn là sự nhạy bén trong việc nhận biết và xử lý tình huống. Nhờ có trí tuệ, con người có thể đưa ra những quyết định đúng đắn, sáng suốt trong công việc và cuộc sống. Từ những việc đơn giản như sắp xếp thời gian, quản lý tài chính cá nhân, đến những vấn đề phức tạp như giải quyết xung đột, hoạch định chiến lược, trí tuệ đều đóng vai trò quan trọng. Hơn nữa, trí tuệ còn giúp con người học hỏi, thích nghi với môi trường thay đổi và phát triển bản thân không ngừng. Vì vậy, việc rèn luyện và nâng cao trí tuệ là điều cần thiết để đạt được thành công và hạnh phúc.",
+    "image_url": "",
+    "category": "",
+    "order_index": 70
+  },
+  {
+    "id": "tri-tue-la-khuon-vang-thuoc-ngoc",
+    "title_vi": "Trí tuệ là khuôn vàng thước ngọc",
+    "summary_vi": "Trí tuệ là thước đo chuẩn mực, giúp con người định hướng và hành động đúng đắn.",
+    "cot_y_vi": [
+      "Trí tuệ là thước đo chuẩn mực.",
+      "Trí tuệ giúp con người định hướng.",
+      "Trí tuệ giúp con người hành động đúng đắn."
+    ],
+    "cot_cua_cot_vi": [
+      "Thước đo chuẩn mực: Trí tuệ được xem như tiêu chuẩn để đánh giá và đo lường sự đúng đắn trong suy nghĩ và hành vi.",
+      "Định hướng: Trí tuệ giúp con người xác định mục tiêu và phương hướng trong cuộc sống.",
+      "Hành động đúng đắn: Trí tuệ dẫn dắt con người đưa ra những quyết định và hành động phù hợp với chuẩn mực đạo đức và xã hội."
+    ],
+    "loi_vi": "Trí tuệ là khuôn vàng thước ngọc, là nền tảng để con người sống tốt đẹp và có ích.",
+    "content_vi": "Trí tuệ là thước đo chuẩn mực, giúp con người định hướng và hành động đúng đắn. Nó được ví như khuôn vàng thước ngọc, là tiêu chuẩn để đánh giá sự đúng đắn trong suy nghĩ và hành vi. Nhờ có trí tuệ, con người biết xác định mục tiêu và phương hướng trong cuộc sống. Trí tuệ cũng dẫn dắt con người đưa ra những quyết định và hành động phù hợp với chuẩn mực đạo đức và xã hội. Vì vậy, trí tuệ là nền tảng để con người sống tốt đẹp và có ích.",
+    "summary_en": "Trí tuệ là thước đo chuẩn mực, giúp con người định hướng và hành động đúng đắn.",
+    "cot_y_en": [
+      "Trí tuệ là thước đo chuẩn mực.",
+      "Trí tuệ giúp con người định hướng.",
+      "Trí tuệ giúp con người hành động đúng đắn."
+    ],
+    "cot_cua_cot_en": [
+      "Thước đo chuẩn mực: Trí tuệ được xem như tiêu chuẩn để đánh giá và đo lường sự đúng đắn trong suy nghĩ và hành vi.",
+      "Định hướng: Trí tuệ giúp con người xác định mục tiêu và phương hướng trong cuộc sống.",
+      "Hành động đúng đắn: Trí tuệ dẫn dắt con người đưa ra những quyết định và hành động phù hợp với chuẩn mực đạo đức và xã hội."
+    ],
+    "loi_en": "Trí tuệ là khuôn vàng thước ngọc, là nền tảng để con người sống tốt đẹp và có ích.",
+    "content_en": "Trí tuệ là thước đo chuẩn mực, giúp con người định hướng và hành động đúng đắn. Nó được ví như khuôn vàng thước ngọc, là tiêu chuẩn để đánh giá sự đúng đắn trong suy nghĩ và hành vi. Nhờ có trí tuệ, con người biết xác định mục tiêu và phương hướng trong cuộc sống. Trí tuệ cũng dẫn dắt con người đưa ra những quyết định và hành động phù hợp với chuẩn mực đạo đức và xã hội. Vì vậy, trí tuệ là nền tảng để con người sống tốt đẹp và có ích.",
+    "image_url": "",
+    "category": "",
+    "order_index": 71
+  },
+  {
+    "id": "tri-tue-la-thuc-te-khoa-hoc-tam-linh",
+    "title_vi": "Trí tuệ là thực tế - khoa học - tâm linh",
+    "summary_vi": "Trí tuệ không chỉ dựa vào khoa học hay tâm linh đơn thuần mà kết hợp cả ba để giải quyết vấn đề.",
+    "cot_y_vi": [
+      "Trí tuệ không chỉ dựa vào khoa học hay tâm linh đơn thuần.",
+      "Trí tuệ kết hợp cả ba yếu tố: thực tế, khoa học, tâm linh.",
+      "Sự kết hợp này giúp giải quyết vấn đề một cách toàn diện."
+    ],
+    "cot_cua_cot_vi": [
+      {
+        "cot": "Trí tuệ không chỉ dựa vào khoa học hay tâm linh đơn thuần.",
+        "cot_cua_cot": [
+          "Khoa học cung cấp kiến thức và phương pháp logic.",
+          "Tâm linh mang lại sự thấu hiểu sâu sắc và ý nghĩa."
+        ]
+      },
+      {
+        "cot": "Trí tuệ kết hợp cả ba yếu tố: thực tế, khoa học, tâm linh.",
+        "cot_cua_cot": [
+          "Thực tế giúp nhìn nhận vấn đề một cách khách quan.",
+          "Khoa học đưa ra giải pháp dựa trên bằng chứng.",
+          "Tâm linh giúp cân bằng và hướng đến giá trị nhân văn."
+        ]
+      },
+      {
+        "cot": "Sự kết hợp này giúp giải quyết vấn đề một cách toàn diện.",
+        "cot_cua_cot": [
+          "Giải quyết vấn đề không chỉ dựa trên lý thuyết mà còn thực tiễn.",
+          "Đáp ứng cả nhu cầu vật chất lẫn tinh thần."
+        ]
+      }
+    ],
+    "loi_vi": "Trí tuệ là sự kết hợp hài hòa giữa thực tế, khoa học và tâm linh, giúp con người giải quyết vấn đề một cách toàn diện và sâu sắc.",
+    "content_vi": "Trí tuệ không chỉ dựa vào khoa học hay tâm linh đơn thuần mà kết hợp cả ba để giải quyết vấn đề.",
+    "summary_en": "Trí tuệ không chỉ dựa vào khoa học hay tâm linh đơn thuần mà kết hợp cả ba để giải quyết vấn đề.",
+    "cot_y_en": [
+      "Trí tuệ không chỉ dựa vào khoa học hay tâm linh đơn thuần.",
+      "Trí tuệ kết hợp cả ba yếu tố: thực tế, khoa học, tâm linh.",
+      "Sự kết hợp này giúp giải quyết vấn đề một cách toàn diện."
+    ],
+    "cot_cua_cot_en": [
+      {
+        "cot": "Trí tuệ không chỉ dựa vào khoa học hay tâm linh đơn thuần.",
+        "cot_cua_cot": [
+          "Khoa học cung cấp kiến thức và phương pháp logic.",
+          "Tâm linh mang lại sự thấu hiểu sâu sắc và ý nghĩa."
+        ]
+      },
+      {
+        "cot": "Trí tuệ kết hợp cả ba yếu tố: thực tế, khoa học, tâm linh.",
+        "cot_cua_cot": [
+          "Thực tế giúp nhìn nhận vấn đề một cách khách quan.",
+          "Khoa học đưa ra giải pháp dựa trên bằng chứng.",
+          "Tâm linh giúp cân bằng và hướng đến giá trị nhân văn."
+        ]
+      },
+      {
+        "cot": "Sự kết hợp này giúp giải quyết vấn đề một cách toàn diện.",
+        "cot_cua_cot": [
+          "Giải quyết vấn đề không chỉ dựa trên lý thuyết mà còn thực tiễn.",
+          "Đáp ứng cả nhu cầu vật chất lẫn tinh thần."
+        ]
+      }
+    ],
+    "loi_en": "Trí tuệ là sự kết hợp hài hòa giữa thực tế, khoa học và tâm linh, giúp con người giải quyết vấn đề một cách toàn diện và sâu sắc.",
+    "content_en": "Trí tuệ không chỉ dựa vào khoa học hay tâm linh đơn thuần mà kết hợp cả ba để giải quyết vấn đề.",
+    "image_url": "",
+    "category": "",
+    "order_index": 72
+  },
+  {
+    "id": "tri-tue-dinh-huong-10-dieu",
+    "title_vi": "Trí tuệ định hướng cho ta 10 điều",
+    "summary_vi": "Trí tuệ định hướng cho ta 10 điều, bao gồm các mục tiêu từ tìm ra con đường đến giải thoát.",
+    "cot_y_vi": [
+      "Tìm ra con đường đúng đắn trong cuộc sống.",
+      "Hiểu rõ bản chất của khổ đau và nguyên nhân của nó.",
+      "Phát triển trí tuệ để nhận thức đúng đắn về thực tại.",
+      "Tu tập để chuyển hóa tâm thức, hướng đến sự an lạc.",
+      "Đạt được sự giải thoát khỏi vòng luân hồi sinh tử."
+    ],
+    "cot_cua_cot_vi": [
+      "Định hướng giúp ta xác định mục tiêu sống rõ ràng.",
+      "Hiểu được nguồn gốc của khổ đau để có cách đối trị.",
+      "Trí tuệ giúp ta nhìn thấu sự thật, không bị mê lầm.",
+      "Sự tu tập mang lại sự bình an nội tại và hạnh phúc bền vững.",
+      "Giải thoát là mục tiêu tối thượng, chấm dứt mọi khổ đau."
+    ],
+    "loi_vi": "Trí tuệ định hướng cho ta 10 điều, bao gồm các mục tiêu từ tìm ra con đường đến giải thoát. Những định hướng này giúp ta hiểu rõ bản chất của cuộc sống, nhận diện khổ đau và nguyên nhân của nó, từ đó phát triển trí tuệ và tu tập để đạt được sự an lạc và giải thoát. Mỗi định hướng là một bước tiến trên con đường tâm linh, dẫn dắt ta từ những hiểu biết cơ bản đến sự giác ngộ hoàn toàn.",
+    "content_vi": "Trí tuệ định hướng cho ta 10 điều, bao gồm các mục tiêu từ tìm ra con đường đến giải thoát. Những định hướng này giúp ta hiểu rõ bản chất của cuộc sống, nhận diện khổ đau và nguyên nhân của nó, từ đó phát triển trí tuệ và tu tập để đạt được sự an lạc và giải thoát. Mỗi định hướng là một bước tiến trên con đường tâm linh, dẫn dắt ta từ những hiểu biết cơ bản đến sự giác ngộ hoàn toàn.",
+    "summary_en": "Trí tuệ định hướng cho ta 10 điều, bao gồm các mục tiêu từ tìm ra con đường đến giải thoát.",
+    "cot_y_en": [
+      "Tìm ra con đường đúng đắn trong cuộc sống.",
+      "Hiểu rõ bản chất của khổ đau và nguyên nhân của nó.",
+      "Phát triển trí tuệ để nhận thức đúng đắn về thực tại.",
+      "Tu tập để chuyển hóa tâm thức, hướng đến sự an lạc.",
+      "Đạt được sự giải thoát khỏi vòng luân hồi sinh tử."
+    ],
+    "cot_cua_cot_en": [
+      "Định hướng giúp ta xác định mục tiêu sống rõ ràng.",
+      "Hiểu được nguồn gốc của khổ đau để có cách đối trị.",
+      "Trí tuệ giúp ta nhìn thấu sự thật, không bị mê lầm.",
+      "Sự tu tập mang lại sự bình an nội tại và hạnh phúc bền vững.",
+      "Giải thoát là mục tiêu tối thượng, chấm dứt mọi khổ đau."
+    ],
+    "loi_en": "Trí tuệ định hướng cho ta 10 điều, bao gồm các mục tiêu từ tìm ra con đường đến giải thoát. Những định hướng này giúp ta hiểu rõ bản chất của cuộc sống, nhận diện khổ đau và nguyên nhân của nó, từ đó phát triển trí tuệ và tu tập để đạt được sự an lạc và giải thoát. Mỗi định hướng là một bước tiến trên con đường tâm linh, dẫn dắt ta từ những hiểu biết cơ bản đến sự giác ngộ hoàn toàn.",
+    "content_en": "Trí tuệ định hướng cho ta 10 điều, bao gồm các mục tiêu từ tìm ra con đường đến giải thoát. Những định hướng này giúp ta hiểu rõ bản chất của cuộc sống, nhận diện khổ đau và nguyên nhân của nó, từ đó phát triển trí tuệ và tu tập để đạt được sự an lạc và giải thoát. Mỗi định hướng là một bước tiến trên con đường tâm linh, dẫn dắt ta từ những hiểu biết cơ bản đến sự giác ngộ hoàn toàn.",
+    "image_url": "",
+    "category": "",
+    "order_index": 73
+  },
+  {
+    "id": "tri-tue-khac-kien-thuc-tri-thuc-tri-thuc",
+    "title_vi": "Trí tuệ khác kiến thức - tri thức - trí thức",
+    "summary_vi": "Bài viết nhấn mạnh sự khác biệt giữa trí tuệ và các khái niệm liên quan như kiến thức, tri thức và trí thức, nhằm giúp người đọc hiểu rõ giá trị đích thực của trí tuệ.",
+    "cot_y_vi": [
+      "Trí tuệ khác với kiến thức, tri thức và trí thức.",
+      "Cần phân biệt rõ các khái niệm này để hiểu đúng giá trị của trí tuệ."
+    ],
+    "cot_cua_cot_vi": [
+      "Kiến thức là thông tin và sự hiểu biết thu được qua học tập hoặc trải nghiệm.",
+      "Tri thức là hệ thống kiến thức được tổ chức và tích lũy.",
+      "Trí thức là người có học vấn, am hiểu tri thức.",
+      "Trí tuệ là khả năng suy nghĩ, phân tích, đánh giá và áp dụng kiến thức một cách sáng tạo và hiệu quả."
+    ],
+    "loi_vi": "Trí tuệ không chỉ là sự tích lũy kiến thức hay tri thức, mà còn là khả năng vận dụng chúng một cách thông minh, linh hoạt trong thực tiễn. Việc phân biệt rõ các khái niệm giúp chúng ta nhận ra rằng trí tuệ có giá trị vượt trội, là yếu tố quyết định sự thành công và ý nghĩa trong cuộc sống.",
+    "content_vi": "Trí tuệ khác với kiến thức, tri thức và trí thức. Kiến thức là những thông tin, dữ liệu mà con người thu nhận được qua học tập, trải nghiệm. Tri thức là hệ thống kiến thức được tổ chức, tích lũy và truyền bá. Trí thức là người có học vấn, am hiểu tri thức. Trong khi đó, trí tuệ là khả năng suy nghĩ, phân tích, đánh giá và áp dụng kiến thức một cách sáng tạo, hiệu quả. Trí tuệ không chỉ đơn thuần là sở hữu kiến thức mà còn là cách sử dụng chúng để giải quyết vấn đề, ra quyết định đúng đắn. Phân biệt rõ các khái niệm này giúp chúng ta hiểu đúng giá trị của trí tuệ, từ đó phát huy và rèn luyện trí tuệ trong cuộc sống.",
+    "summary_en": "Bài viết nhấn mạnh sự khác biệt giữa trí tuệ và các khái niệm liên quan như kiến thức, tri thức và trí thức, nhằm giúp người đọc hiểu rõ giá trị đích thực của trí tuệ.",
+    "cot_y_en": [
+      "Trí tuệ khác với kiến thức, tri thức và trí thức.",
+      "Cần phân biệt rõ các khái niệm này để hiểu đúng giá trị của trí tuệ."
+    ],
+    "cot_cua_cot_en": [
+      "Kiến thức là thông tin và sự hiểu biết thu được qua học tập hoặc trải nghiệm.",
+      "Tri thức là hệ thống kiến thức được tổ chức và tích lũy.",
+      "Trí thức là người có học vấn, am hiểu tri thức.",
+      "Trí tuệ là khả năng suy nghĩ, phân tích, đánh giá và áp dụng kiến thức một cách sáng tạo và hiệu quả."
+    ],
+    "loi_en": "Trí tuệ không chỉ là sự tích lũy kiến thức hay tri thức, mà còn là khả năng vận dụng chúng một cách thông minh, linh hoạt trong thực tiễn. Việc phân biệt rõ các khái niệm giúp chúng ta nhận ra rằng trí tuệ có giá trị vượt trội, là yếu tố quyết định sự thành công và ý nghĩa trong cuộc sống.",
+    "content_en": "Trí tuệ khác với kiến thức, tri thức và trí thức. Kiến thức là những thông tin, dữ liệu mà con người thu nhận được qua học tập, trải nghiệm. Tri thức là hệ thống kiến thức được tổ chức, tích lũy và truyền bá. Trí thức là người có học vấn, am hiểu tri thức. Trong khi đó, trí tuệ là khả năng suy nghĩ, phân tích, đánh giá và áp dụng kiến thức một cách sáng tạo, hiệu quả. Trí tuệ không chỉ đơn thuần là sở hữu kiến thức mà còn là cách sử dụng chúng để giải quyết vấn đề, ra quyết định đúng đắn. Phân biệt rõ các khái niệm này giúp chúng ta hiểu đúng giá trị của trí tuệ, từ đó phát huy và rèn luyện trí tuệ trong cuộc sống.",
+    "image_url": "",
+    "category": "",
+    "order_index": 74
+  },
+  {
+    "id": "tri-tue-mang-lai-6-gia-tri",
+    "title_vi": "Trí tuệ mang lại 6 giá trị",
+    "summary_vi": "Trí tuệ mang lại nhiều giá trị to lớn, không chỉ cho cá nhân mà còn cho gia đình, xã hội và đất nước.",
+    "cot_y_vi": [
+      "Trí tuệ mang lại lợi ích cho cá nhân.",
+      "Trí tuệ mang lại lợi ích cho gia đình.",
+      "Trí tuệ mang lại lợi ích cho xã hội.",
+      "Trí tuệ mang lại lợi ích cho đất nước."
+    ],
+    "cot_cua_cot_vi": [
+      "Giúp cá nhân phát triển, đạt được thành công và hạnh phúc.",
+      "Giúp gia đình ấm no, hạnh phúc, con cái được giáo dục tốt.",
+      "Góp phần xây dựng xã hội văn minh, tiến bộ, công bằng.",
+      "Đóng góp vào sự phát triển bền vững và thịnh vượng của đất nước."
+    ],
+    "loi_vi": "Trí tuệ là nền tảng cho sự phát triển của mỗi người, mỗi gia đình và toàn xã hội. Nhờ có trí tuệ, con người có thể đưa ra những quyết định đúng đắn, giải quyết vấn đề hiệu quả, và tạo ra những giá trị vật chất, tinh thần cho bản thân và cộng đồng. Vì vậy, việc rèn luyện và phát huy trí tuệ là vô cùng quan trọng.",
+    "content_vi": "Trí tuệ không chỉ có lợi cho cá nhân mà còn cho gia đình, xã hội và đất nước. Đối với cá nhân, trí tuệ giúp con người học tập tốt, làm việc hiệu quả, vượt qua khó khăn và đạt được mục tiêu trong cuộc sống. Đối với gia đình, trí tuệ giúp các thành viên hiểu biết, yêu thương và hỗ trợ lẫn nhau, từ đó xây dựng một gia đình hạnh phúc, bền vững. Đối với xã hội, trí tuệ góp phần tạo ra những ý tưởng sáng tạo, giải pháp hữu ích cho các vấn đề chung, thúc đẩy sự phát triển văn hóa, kinh tế và khoa học kỹ thuật. Đối với đất nước, trí tuệ là nguồn lực quý giá để xây dựng và bảo vệ Tổ quốc, nâng cao vị thế quốc gia trên trường quốc tế. Tóm lại, trí tuệ là chìa khóa mở ra mọi cánh cửa thành công và hạnh phúc cho mỗi người, mỗi gia đình và toàn xã hội.",
+    "summary_en": "Trí tuệ mang lại nhiều giá trị to lớn, không chỉ cho cá nhân mà còn cho gia đình, xã hội và đất nước.",
+    "cot_y_en": [
+      "Trí tuệ mang lại lợi ích cho cá nhân.",
+      "Trí tuệ mang lại lợi ích cho gia đình.",
+      "Trí tuệ mang lại lợi ích cho xã hội.",
+      "Trí tuệ mang lại lợi ích cho đất nước."
+    ],
+    "cot_cua_cot_en": [
+      "Giúp cá nhân phát triển, đạt được thành công và hạnh phúc.",
+      "Giúp gia đình ấm no, hạnh phúc, con cái được giáo dục tốt.",
+      "Góp phần xây dựng xã hội văn minh, tiến bộ, công bằng.",
+      "Đóng góp vào sự phát triển bền vững và thịnh vượng của đất nước."
+    ],
+    "loi_en": "Trí tuệ là nền tảng cho sự phát triển của mỗi người, mỗi gia đình và toàn xã hội. Nhờ có trí tuệ, con người có thể đưa ra những quyết định đúng đắn, giải quyết vấn đề hiệu quả, và tạo ra những giá trị vật chất, tinh thần cho bản thân và cộng đồng. Vì vậy, việc rèn luyện và phát huy trí tuệ là vô cùng quan trọng.",
+    "content_en": "Trí tuệ không chỉ có lợi cho cá nhân mà còn cho gia đình, xã hội và đất nước. Đối với cá nhân, trí tuệ giúp con người học tập tốt, làm việc hiệu quả, vượt qua khó khăn và đạt được mục tiêu trong cuộc sống. Đối với gia đình, trí tuệ giúp các thành viên hiểu biết, yêu thương và hỗ trợ lẫn nhau, từ đó xây dựng một gia đình hạnh phúc, bền vững. Đối với xã hội, trí tuệ góp phần tạo ra những ý tưởng sáng tạo, giải pháp hữu ích cho các vấn đề chung, thúc đẩy sự phát triển văn hóa, kinh tế và khoa học kỹ thuật. Đối với đất nước, trí tuệ là nguồn lực quý giá để xây dựng và bảo vệ Tổ quốc, nâng cao vị thế quốc gia trên trường quốc tế. Tóm lại, trí tuệ là chìa khóa mở ra mọi cánh cửa thành công và hạnh phúc cho mỗi người, mỗi gia đình và toàn xã hội.",
+    "image_url": "",
+    "category": "",
+    "order_index": 75
+  },
+  {
+    "id": "hieu",
+    "title_vi": "Hiếu",
+    "summary_vi": "Hiếu là một trong ba phạm trù đạo đức quan trọng, bao gồm hiếu với ai, các cấp độ hiếu và cách thực hành.",
+    "cot_y_vi": [
+      "Hiếu là một phạm trù đạo đức quan trọng.",
+      "Hiếu bao gồm hiếu với ai.",
+      "Hiếu có các cấp độ.",
+      "Hiếu có cách thực hành."
+    ],
+    "cot_cua_cot_vi": [
+      "Hiếu là một trong ba phạm trù đạo đức quan trọng.",
+      "Hiếu bao gồm hiếu với ai, các cấp độ hiếu và cách thực hành."
+    ],
+    "loi_vi": "Hiếu là một trong ba phạm trù đạo đức quan trọng. Hiếu bao gồm hiếu với ai, các cấp độ hiếu và cách thực hành.",
+    "content_vi": "Hiếu là một trong ba phạm trù đạo đức quan trọng. Hiếu bao gồm hiếu với ai, các cấp độ hiếu và cách thực hành.",
+    "summary_en": "Hiếu là một trong ba phạm trù đạo đức quan trọng, bao gồm hiếu với ai, các cấp độ hiếu và cách thực hành.",
+    "cot_y_en": [
+      "Hiếu là một phạm trù đạo đức quan trọng.",
+      "Hiếu bao gồm hiếu với ai.",
+      "Hiếu có các cấp độ.",
+      "Hiếu có cách thực hành."
+    ],
+    "cot_cua_cot_en": [
+      "Hiếu là một trong ba phạm trù đạo đức quan trọng.",
+      "Hiếu bao gồm hiếu với ai, các cấp độ hiếu và cách thực hành."
+    ],
+    "loi_en": "Hiếu là một trong ba phạm trù đạo đức quan trọng. Hiếu bao gồm hiếu với ai, các cấp độ hiếu và cách thực hành.",
+    "content_en": "Hiếu là một trong ba phạm trù đạo đức quan trọng. Hiếu bao gồm hiếu với ai, các cấp độ hiếu và cách thực hành.",
+    "image_url": "",
+    "category": "",
+    "order_index": 76
+  },
+  {
+    "id": "le",
+    "title_vi": "Lễ",
+    "summary_vi": "Lễ là một khái niệm bao gồm hai khía cạnh chính: lễ phép trong giao tiếp hàng ngày và lễ nghỉ trong các nghi thức tôn giáo, tín ngưỡng. Lễ phép thể hiện qua cách cư xử, lời nói, hành động tôn trọng người khác trong các mối quan hệ xã hội. Lễ nghỉ là các nghi thức, nghi lễ được thực hiện trong các dịp lễ tết, cúng bái, thờ phụng theo tín ngưỡng, tôn giáo. Cả hai khía cạnh này đều quan trọng trong đời sống tinh thần và văn hóa của con người.",
+    "cot_y_vi": [
+      "Lễ bao gồm hai khía cạnh chính: lễ phép và lễ nghỉ.",
+      "Lễ phép là cách cư xử, lời nói, hành động tôn trọng người khác trong giao tiếp hàng ngày.",
+      "Lễ nghỉ là các nghi thức, nghi lễ trong tôn giáo, tín ngưỡng.",
+      "Lễ phép giúp duy trì mối quan hệ xã hội hài hòa, thể hiện sự văn minh, lịch sự.",
+      "Lễ nghỉ thể hiện sự tôn kính đối với thần linh, tổ tiên và các giá trị tâm linh.",
+      "Cả lễ phép và lễ nghỉ đều góp phần làm phong phú đời sống tinh thần và văn hóa của con người."
+    ],
+    "cot_cua_cot_vi": [
+      "Lễ phép: là phép tắc, cách ứng xử lịch sự, tôn trọng trong giao tiếp hàng ngày.",
+      "Lễ nghỉ: là các nghi thức, nghi lễ trong tôn giáo, tín ngưỡng, thường gắn với các dịp lễ, tết, cúng bái."
+    ],
+    "loi_vi": "Lễ là một khái niệm quan trọng trong văn hóa và xã hội, bao gồm hai khía cạnh chính: lễ phép và lễ nghỉ. Lễ phép là cách cư xử, lời nói, hành động tôn trọng người khác trong giao tiếp hàng ngày, giúp duy trì mối quan hệ xã hội hài hòa và thể hiện sự văn minh, lịch sự. Lễ nghỉ là các nghi thức, nghi lễ trong tôn giáo, tín ngưỡng, thường gắn với các dịp lễ, tết, cúng bái, thể hiện sự tôn kính đối với thần linh, tổ tiên và các giá trị tâm linh. Cả hai khía cạnh này đều góp phần làm phong phú đời sống tinh thần và văn hóa của con người.",
+    "content_vi": "Lễ bao gồm lễ phép trong giao tiếp hàng ngày và lễ nghỉ trong các nghi thức tôn giáo, tín ngưỡng.",
+    "summary_en": "Lễ là một khái niệm bao gồm hai khía cạnh chính: lễ phép trong giao tiếp hàng ngày và lễ nghỉ trong các nghi thức tôn giáo, tín ngưỡng. Lễ phép thể hiện qua cách cư xử, lời nói, hành động tôn trọng người khác trong các mối quan hệ xã hội. Lễ nghỉ là các nghi thức, nghi lễ được thực hiện trong các dịp lễ tết, cúng bái, thờ phụng theo tín ngưỡng, tôn giáo. Cả hai khía cạnh này đều quan trọng trong đời sống tinh thần và văn hóa của con người.",
+    "cot_y_en": [
+      "Lễ bao gồm hai khía cạnh chính: lễ phép và lễ nghỉ.",
+      "Lễ phép là cách cư xử, lời nói, hành động tôn trọng người khác trong giao tiếp hàng ngày.",
+      "Lễ nghỉ là các nghi thức, nghi lễ trong tôn giáo, tín ngưỡng.",
+      "Lễ phép giúp duy trì mối quan hệ xã hội hài hòa, thể hiện sự văn minh, lịch sự.",
+      "Lễ nghỉ thể hiện sự tôn kính đối với thần linh, tổ tiên và các giá trị tâm linh.",
+      "Cả lễ phép và lễ nghỉ đều góp phần làm phong phú đời sống tinh thần và văn hóa của con người."
+    ],
+    "cot_cua_cot_en": [
+      "Lễ phép: là phép tắc, cách ứng xử lịch sự, tôn trọng trong giao tiếp hàng ngày.",
+      "Lễ nghỉ: là các nghi thức, nghi lễ trong tôn giáo, tín ngưỡng, thường gắn với các dịp lễ, tết, cúng bái."
+    ],
+    "loi_en": "Lễ là một khái niệm quan trọng trong văn hóa và xã hội, bao gồm hai khía cạnh chính: lễ phép và lễ nghỉ. Lễ phép là cách cư xử, lời nói, hành động tôn trọng người khác trong giao tiếp hàng ngày, giúp duy trì mối quan hệ xã hội hài hòa và thể hiện sự văn minh, lịch sự. Lễ nghỉ là các nghi thức, nghi lễ trong tôn giáo, tín ngưỡng, thường gắn với các dịp lễ, tết, cúng bái, thể hiện sự tôn kính đối với thần linh, tổ tiên và các giá trị tâm linh. Cả hai khía cạnh này đều góp phần làm phong phú đời sống tinh thần và văn hóa của con người.",
+    "content_en": "Lễ bao gồm lễ phép trong giao tiếp hàng ngày và lễ nghỉ trong các nghi thức tôn giáo, tín ngưỡng.",
+    "image_url": "",
+    "category": "",
+    "order_index": 77
+  },
+  {
+    "id": "nghia",
+    "title_vi": "Nghĩa",
+    "summary_vi": "Nghĩa là sự trân trọng và biết ơn con người và vạn vật, thể hiện qua hành động cụ thể.",
+    "cot_y_vi": [
+      "Nghĩa là sự trân trọng và biết ơn con người và vạn vật.",
+      "Nghĩa được thể hiện qua hành động cụ thể."
+    ],
+    "cot_cua_cot_vi": [
+      [
+        "Trân trọng con người và vạn vật",
+        "Biết ơn con người và vạn vật"
+      ],
+      [
+        "Hành động cụ thể"
+      ]
+    ],
+    "loi_vi": "Nghĩa là sự trân trọng và biết ơn con người và vạn vật. Điều này có nghĩa là chúng ta cần nhận thức được giá trị của những người xung quanh và mọi vật trong cuộc sống. Sự trân trọng thể hiện qua việc đối xử tốt, lắng nghe và tôn trọng ý kiến của người khác. Biết ơn là khi chúng ta cảm kích những gì người khác đã làm cho mình, dù là nhỏ nhất. Nghĩa không chỉ dừng lại ở cảm xúc mà còn phải được thể hiện qua hành động cụ thể. Ví dụ, giúp đỡ người gặp khó khăn, chăm sóc cha mẹ, bảo vệ môi trường. Những hành động này làm cho tình cảm trở nên thiết thực và có ý nghĩa. Khi mỗi người sống có nghĩa, xã hội sẽ trở nên tốt đẹp hơn.",
+    "content_vi": "Nghĩa là sự trân trọng và biết ơn con người và vạn vật, thể hiện qua hành động cụ thể.",
+    "summary_en": "Nghĩa là sự trân trọng và biết ơn con người và vạn vật, thể hiện qua hành động cụ thể.",
+    "cot_y_en": [
+      "Nghĩa là sự trân trọng và biết ơn con người và vạn vật.",
+      "Nghĩa được thể hiện qua hành động cụ thể."
+    ],
+    "cot_cua_cot_en": [
+      [
+        "Trân trọng con người và vạn vật",
+        "Biết ơn con người và vạn vật"
+      ],
+      [
+        "Hành động cụ thể"
+      ]
+    ],
+    "loi_en": "Nghĩa là sự trân trọng và biết ơn con người và vạn vật. Điều này có nghĩa là chúng ta cần nhận thức được giá trị của những người xung quanh và mọi vật trong cuộc sống. Sự trân trọng thể hiện qua việc đối xử tốt, lắng nghe và tôn trọng ý kiến của người khác. Biết ơn là khi chúng ta cảm kích những gì người khác đã làm cho mình, dù là nhỏ nhất. Nghĩa không chỉ dừng lại ở cảm xúc mà còn phải được thể hiện qua hành động cụ thể. Ví dụ, giúp đỡ người gặp khó khăn, chăm sóc cha mẹ, bảo vệ môi trường. Những hành động này làm cho tình cảm trở nên thiết thực và có ý nghĩa. Khi mỗi người sống có nghĩa, xã hội sẽ trở nên tốt đẹp hơn.",
+    "content_en": "Nghĩa là sự trân trọng và biết ơn con người và vạn vật, thể hiện qua hành động cụ thể.",
+    "image_url": "",
+    "category": "",
+    "order_index": 78
+  },
+  {
+    "id": "biet-goc-va-bam-goc",
+    "title_vi": "Biết góc và bám góc",
+    "summary_vi": "Có 4 ý chính về việc biết góc và bám góc, tất cả đều là ý quy chuẩn.",
+    "cot_y_vi": "Có 4 ý chính: Gốc trí tuệ, Gốc môi trường, Gốc thời điểm, Gốc các tấm gương, Gốc các vấn đề.",
+    "cot_cua_cot_vi": "Mọi việc đều quy chiếu vào gốc để hành động đúng quy chuẩn.",
+    "loi_vi": "Nội dung chính của phần này là giới thiệu 4 ý chính về việc biết góc và bám góc, bao gồm: gốc trí tuệ, gốc môi trường, gốc thời điểm, gốc các tấm gương và gốc các vấn đề. Mỗi gốc đều có cách bám cụ thể để đạt hiệu quả.",
+    "content_vi": "- Có 4 ý chính: Tất cả các ý đều là ý Quy chuẩn\n- Gốc trí tuệ\n- Gốc môi trường\n- Gốc thời điểm ta đang làm việc với ai hay tổ chức nào?\n- Gốc các tấm gương\n- Gốc các vấn đề\n- Mỗi gốc đều có cách bám cụ thể để đạt hiệu quả.",
+    "summary_en": "Có 4 ý chính về việc biết góc và bám góc, tất cả đều là ý quy chuẩn.",
+    "cot_y_en": "Có 4 ý chính: Gốc trí tuệ, Gốc môi trường, Gốc thời điểm, Gốc các tấm gương, Gốc các vấn đề.",
+    "cot_cua_cot_en": "Mọi việc đều quy chiếu vào gốc để hành động đúng quy chuẩn.",
+    "loi_en": "Nội dung chính của phần này là giới thiệu 4 ý chính về việc biết góc và bám góc, bao gồm: gốc trí tuệ, gốc môi trường, gốc thời điểm, gốc các tấm gương và gốc các vấn đề. Mỗi gốc đều có cách bám cụ thể để đạt hiệu quả.",
+    "content_en": "- Có 4 ý chính: Tất cả các ý đều là ý Quy chuẩn\n- Gốc trí tuệ\n- Gốc môi trường\n- Gốc thời điểm ta đang làm việc với ai hay tổ chức nào?\n- Gốc các tấm gương\n- Gốc các vấn đề\n- Mỗi gốc đều có cách bám cụ thể để đạt hiệu quả.",
+    "image_url": "",
+    "category": "",
+    "order_index": 79
+  },
+  {
+    "id": "goc-tri-tue",
+    "title_vi": "Gốc Trí tuệ",
+    "summary_vi": "Gốc trí tuệ là nền tảng cho mọi việc, cần quy chiếu vào 11 phần của Trí tuệ để đảm bảo đúng đắn.",
+    "cot_y_vi": [
+      "Gốc trí tuệ là nền tảng cho mọi việc.",
+      "Cần quy chiếu vào 11 phần của Trí tuệ.",
+      "Việc quy chiếu này đảm bảo tính đúng đắn."
+    ],
+    "cot_cua_cot_vi": [
+      "Gốc trí tuệ đóng vai trò nền tảng, là cơ sở cho mọi hành động và quyết định.",
+      "Để đảm bảo sự đúng đắn, cần phải đối chiếu với 11 phần của Trí tuệ.",
+      "Việc quy chiếu này giúp kiểm tra và xác nhận tính chính xác của nhận thức và hành vi."
+    ],
+    "loi_vi": "Gốc trí tuệ là nền tảng cho mọi việc, cần quy chiếu vào 11 phần của Trí tuệ để đảm bảo đúng đắn.",
+    "content_vi": "Gốc trí tuệ là nền tảng cho mọi việc, cần quy chiếu vào 11 phần của Trí tuệ để đảm bảo đúng đắn.",
+    "summary_en": "Gốc trí tuệ là nền tảng cho mọi việc, cần quy chiếu vào 11 phần của Trí tuệ để đảm bảo đúng đắn.",
+    "cot_y_en": [
+      "Gốc trí tuệ là nền tảng cho mọi việc.",
+      "Cần quy chiếu vào 11 phần của Trí tuệ.",
+      "Việc quy chiếu này đảm bảo tính đúng đắn."
+    ],
+    "cot_cua_cot_en": [
+      "Gốc trí tuệ đóng vai trò nền tảng, là cơ sở cho mọi hành động và quyết định.",
+      "Để đảm bảo sự đúng đắn, cần phải đối chiếu với 11 phần của Trí tuệ.",
+      "Việc quy chiếu này giúp kiểm tra và xác nhận tính chính xác của nhận thức và hành vi."
+    ],
+    "loi_en": "Gốc trí tuệ là nền tảng cho mọi việc, cần quy chiếu vào 11 phần của Trí tuệ để đảm bảo đúng đắn.",
+    "content_en": "Gốc trí tuệ là nền tảng cho mọi việc, cần quy chiếu vào 11 phần của Trí tuệ để đảm bảo đúng đắn.",
+    "image_url": "",
+    "category": "",
+    "order_index": 80
+  },
+  {
+    "id": "goc-moi-truong",
+    "title_vi": "Gốc môi trường",
+    "summary_vi": "Môi trường mở và môi trường cố định, cần bám gốc bằng cách hiểu rõ mục đích, tôn trọng và thấu triệt môi trường.",
+    "cot_y_vi": "Bám gốc môi trường bằng cách hiểu rõ mục đích, tôn trọng và thấu triệt môi trường.",
+    "cot_cua_cot_vi": "Tôn trọng và thấu triệt môi trường là cách bám gốc.",
+    "loi_vi": "Môi trường có hai loại: mở và cố định. Cần bám gốc bằng cách hiểu rõ mục đích đến, tôn trọng môi trường và mọi người, và thấu triệt môi trường đó.",
+    "content_vi": "- Môi trường mở: Nhà ga, bến xe, quán ăn, nhà hàng,...\n- Môi trường cố định: gia đình, cơ quan làm việc,...\n- Bám gốc môi trường thì cần làm gì?\n- Bám đích ta đến môi trường đó để làm gì?\n- Tôn trọng môi trường và tất cả mọi người trong môi trường đó\n- Bất kỳ môi trường nào cũng cần Thấu triệt",
+    "summary_en": "Môi trường mở và môi trường cố định, cần bám gốc bằng cách hiểu rõ mục đích, tôn trọng và thấu triệt môi trường.",
+    "cot_y_en": "Bám gốc môi trường bằng cách hiểu rõ mục đích, tôn trọng và thấu triệt môi trường.",
+    "cot_cua_cot_en": "Tôn trọng và thấu triệt môi trường là cách bám gốc.",
+    "loi_en": "Môi trường có hai loại: mở và cố định. Cần bám gốc bằng cách hiểu rõ mục đích đến, tôn trọng môi trường và mọi người, và thấu triệt môi trường đó.",
+    "content_en": "- Môi trường mở: Nhà ga, bến xe, quán ăn, nhà hàng,...\n- Môi trường cố định: gia đình, cơ quan làm việc,...\n- Bám gốc môi trường thì cần làm gì?\n- Bám đích ta đến môi trường đó để làm gì?\n- Tôn trọng môi trường và tất cả mọi người trong môi trường đó\n- Bất kỳ môi trường nào cũng cần Thấu triệt",
+    "image_url": "",
+    "category": "",
+    "order_index": 81
+  },
+  {
+    "id": "goc-thoi-diem",
+    "title_vi": "Gốc thời điểm ta đang làm việc với ai hay tổ chức nào?",
+    "summary_vi": "Khi làm việc với cá nhân cần thấu triệt, tôn trọng, phối hợp và trao đổi; khi làm việc với tổ chức cần thấu triệt văn hóa, quy định, nguyên tắc, quy trình.",
+    "cot_y_vi": "Bám gốc thời điểm bằng cách thấu triệt người hoặc tổ chức mình đang làm việc.",
+    "cot_cua_cot_vi": "Thấu triệt và tôn trọng người/tổ chức là cách bám gốc.",
+    "loi_vi": "Khi làm việc với cá nhân, cần thấu triệt họ, tôn trọng, phối hợp và thường xuyên trao đổi. Khi làm việc với tổ chức, cần thấu triệt văn hóa, quy định, nguyên tắc, quy trình công việc. Người thường làm việc với mình là gốc của thời điểm đó.",
+    "content_vi": "- Khi làm việc với cá nhân con người thì bám gốc thế nào?\n- Thấu triệt họ\n- Tôn trọng họ\n- Phối hợp với họ\n- Thường xuyên trao đổi với họ\n- Bản thân cần đối diện với chính mình để thay đổi nếu thấy mình vẫn còn nhiều tính cách xấu, thói thường để không làm ảnh hưởng hay gây khó chịu cho người mình phối hợp\n- Khi làm việc với tổ chức thì bám gốc thế nào?\n- Thấu triệt Văn hóa, Quy định, Nguyên tắc, Quy trình công việc\n- Người nào mà ta thường hay làm việc với mình thì người đó là Gốc của thời điểm đó.",
+    "summary_en": "Khi làm việc với cá nhân cần thấu triệt, tôn trọng, phối hợp và trao đổi; khi làm việc với tổ chức cần thấu triệt văn hóa, quy định, nguyên tắc, quy trình.",
+    "cot_y_en": "Bám gốc thời điểm bằng cách thấu triệt người hoặc tổ chức mình đang làm việc.",
+    "cot_cua_cot_en": "Thấu triệt và tôn trọng người/tổ chức là cách bám gốc.",
+    "loi_en": "Khi làm việc với cá nhân, cần thấu triệt họ, tôn trọng, phối hợp và thường xuyên trao đổi. Khi làm việc với tổ chức, cần thấu triệt văn hóa, quy định, nguyên tắc, quy trình công việc. Người thường làm việc với mình là gốc của thời điểm đó.",
+    "content_en": "- Khi làm việc với cá nhân con người thì bám gốc thế nào?\n- Thấu triệt họ\n- Tôn trọng họ\n- Phối hợp với họ\n- Thường xuyên trao đổi với họ\n- Bản thân cần đối diện với chính mình để thay đổi nếu thấy mình vẫn còn nhiều tính cách xấu, thói thường để không làm ảnh hưởng hay gây khó chịu cho người mình phối hợp\n- Khi làm việc với tổ chức thì bám gốc thế nào?\n- Thấu triệt Văn hóa, Quy định, Nguyên tắc, Quy trình công việc\n- Người nào mà ta thường hay làm việc với mình thì người đó là Gốc của thời điểm đó.",
+    "image_url": "",
+    "category": "",
+    "order_index": 82
+  },
+  {
+    "id": "goc-cac-tam-guong",
+    "title_vi": "Gốc các tấm gương",
+    "summary_vi": "Noi theo tấm gương của Đức Phật, Bồ Tát, Đức Chúa, Bác Hồ,... học theo các dấu ấn, đức hạnh, cách sống, báo hiếu và xả thân của các Ngài.",
+    "cot_y_vi": "Noi theo tấm gương của các bậc vĩ nhân để học hỏi và bám vào khi gặp cảnh.",
+    "cot_cua_cot_vi": "Học theo tấm gương các Ngài để không rơi vào cám dỗ.",
+    "loi_vi": "Chúng ta noi theo tấm gương của Đức Phật, Bồ Tát, Đức Chúa, Bác Hồ,... Học theo các dấu ấn, đức hạnh, cách sống thực tế, báo hiếu và xả thân cho sứ mệnh. Tấm gương là để soi vào học theo, khi hành thì bám vào Trí tuệ.",
+    "content_vi": "- Noi theo tấm gương của ai? Ta noi theo tấm gương Đức Phật, Bồ Tát, Đức Chúa, Bác Hồ,...\n- Chúng ta học được điều gì ở tấm gương của các Ngài:\n- Học theo tấm gương các Ngài:\n- Các dấu ấn các Ngài để lại\n- Đức hạnh của các Ngài\n- Các Ngài sống tất thực tế\n- Các Ngài báo hiếu như thế nào?\n- Các Ngài xả thân cho sứ mệnh như thế nào?\n- Tấm gương của các Ngài là để ta soi vào học theo, còn khi hành thì bám vào Trí tuệ. Khi gặp cảnh ta cũng cần bám vào các tấm gương để không rơi vào cám dỗ và cạm bẫy.",
+    "summary_en": "Noi theo tấm gương của Đức Phật, Bồ Tát, Đức Chúa, Bác Hồ,... học theo các dấu ấn, đức hạnh, cách sống, báo hiếu và xả thân của các Ngài.",
+    "cot_y_en": "Noi theo tấm gương của các bậc vĩ nhân để học hỏi và bám vào khi gặp cảnh.",
+    "cot_cua_cot_en": "Học theo tấm gương các Ngài để không rơi vào cám dỗ.",
+    "loi_en": "Chúng ta noi theo tấm gương của Đức Phật, Bồ Tát, Đức Chúa, Bác Hồ,... Học theo các dấu ấn, đức hạnh, cách sống thực tế, báo hiếu và xả thân cho sứ mệnh. Tấm gương là để soi vào học theo, khi hành thì bám vào Trí tuệ.",
+    "content_en": "- Noi theo tấm gương của ai? Ta noi theo tấm gương Đức Phật, Bồ Tát, Đức Chúa, Bác Hồ,...\n- Chúng ta học được điều gì ở tấm gương của các Ngài:\n- Học theo tấm gương các Ngài:\n- Các dấu ấn các Ngài để lại\n- Đức hạnh của các Ngài\n- Các Ngài sống tất thực tế\n- Các Ngài báo hiếu như thế nào?\n- Các Ngài xả thân cho sứ mệnh như thế nào?\n- Tấm gương của các Ngài là để ta soi vào học theo, còn khi hành thì bám vào Trí tuệ. Khi gặp cảnh ta cũng cần bám vào các tấm gương để không rơi vào cám dỗ và cạm bẫy.",
+    "image_url": "",
+    "category": "",
+    "order_index": 83
+  },
+  {
+    "id": "goc-cac-van-de",
+    "title_vi": "Gốc các vấn đề",
+    "summary_vi": "Có 11 gốc vấn đề: con người, bản thân, gia đình, công việc, xã hội, đất nước, tài chính, bất ôn, khổ đau, giải thoát, bệnh tật.",
+    "cot_y_vi": "Có 11 gốc vấn đề cần biết và bám vào.",
+    "cot_cua_cot_vi": "Biết gốc của mọi vấn đề để giải quyết tận gốc.",
+    "loi_vi": "Có 11 gốc vấn đề: gốc con người là Cốt Phật, cốt Tiên; gốc bản thân là tư lương, phúc đức, căn cơ cốt mệnh; gốc gia đình là điểm tựa; gốc công việc là phương tiện; gốc xã hội là nợ đồng lần; gốc đất nước là điểm tựa; gốc tài chính là phúc đức; gốc bất ôn là không biết điểm tựa, không biết gốc, không biết thời thế, làm ngược nguyên lý; gốc khổ đau là tham sở hữu; gốc giải thoát là ta là Con Trời con Phật; gốc bệnh tật là thân bệnh, tâm bệnh, nghiệp bệnh.",
+    "content_vi": "- 11 gốc vấn đề:\n1) Gốc của con người: Cốt Phật, cốt Tiên\n2) Gốc của bản thân: Tư lương, Phúc đức, Căn cơ cốt mệnh\n3) Gốc của gia đình: điểm tựa (còn những người trong gia đình là nợ đồng lần với nhau)\n4) Gốc của công việc: phương tiện\n5) Gốc của xã hội: là nợ đồng lần\n6) Gốc của đất nước: là điểm tựa (nên ta cần báo ơn)\n7) Gốc của tài chính: phúc đức\n8) Gốc của bất ôn: Không biết điểm tựa, Không biết gốc của các vấn đề, Không biết thời thế, Làm ngược nguyên lý\n9) Gốc của khổ đau: tham sở hữu\n10) Gốc của giải thoát: gốc là ta là Con Trời con Phật\n11) Gốc của bệnh tật: Thân bệnh, Tâm bệnh, Nghiệp bệnh\n- Trí tuệ chỉ cho ta xã hội hiện nay thường bị mắc vào 5 thứ và đưa ra pháp giải:\n- Bất ôn gia đình, con cái\n- Bất ôn về sức khỏe\n- Danh lợi\n- Nghiệp\n- Giải thoát",
+    "summary_en": "Có 11 gốc vấn đề: con người, bản thân, gia đình, công việc, xã hội, đất nước, tài chính, bất ôn, khổ đau, giải thoát, bệnh tật.",
+    "cot_y_en": "Có 11 gốc vấn đề cần biết và bám vào.",
+    "cot_cua_cot_en": "Biết gốc của mọi vấn đề để giải quyết tận gốc.",
+    "loi_en": "Có 11 gốc vấn đề: gốc con người là Cốt Phật, cốt Tiên; gốc bản thân là tư lương, phúc đức, căn cơ cốt mệnh; gốc gia đình là điểm tựa; gốc công việc là phương tiện; gốc xã hội là nợ đồng lần; gốc đất nước là điểm tựa; gốc tài chính là phúc đức; gốc bất ôn là không biết điểm tựa, không biết gốc, không biết thời thế, làm ngược nguyên lý; gốc khổ đau là tham sở hữu; gốc giải thoát là ta là Con Trời con Phật; gốc bệnh tật là thân bệnh, tâm bệnh, nghiệp bệnh.",
+    "content_en": "- 11 gốc vấn đề:\n1) Gốc của con người: Cốt Phật, cốt Tiên\n2) Gốc của bản thân: Tư lương, Phúc đức, Căn cơ cốt mệnh\n3) Gốc của gia đình: điểm tựa (còn những người trong gia đình là nợ đồng lần với nhau)\n4) Gốc của công việc: phương tiện\n5) Gốc của xã hội: là nợ đồng lần\n6) Gốc của đất nước: là điểm tựa (nên ta cần báo ơn)\n7) Gốc của tài chính: phúc đức\n8) Gốc của bất ôn: Không biết điểm tựa, Không biết gốc của các vấn đề, Không biết thời thế, Làm ngược nguyên lý\n9) Gốc của khổ đau: tham sở hữu\n10) Gốc của giải thoát: gốc là ta là Con Trời con Phật\n11) Gốc của bệnh tật: Thân bệnh, Tâm bệnh, Nghiệp bệnh\n- Trí tuệ chỉ cho ta xã hội hiện nay thường bị mắc vào 5 thứ và đưa ra pháp giải:\n- Bất ôn gia đình, con cái\n- Bất ôn về sức khỏe\n- Danh lợi\n- Nghiệp\n- Giải thoát",
+    "image_url": "",
+    "category": "",
+    "order_index": 84
+  },
+  {
+    "id": "nguyen-tac-dung-luat",
+    "title_vi": "1. Đúng luật",
+    "summary_vi": "Làm bất cứ việc gì cũng phải tuân thủ tất cả các luật, không mặc cả hay thỏa hiệp.",
+    "cot_y_vi": "Mọi hành động đều phải đúng luật.",
+    "cot_cua_cot_vi": "Đúng luật là nền tảng tuyệt đối.",
+    "loi_vi": "Nguyên tắc đầu tiên là đúng luật. Khi làm bất cứ việc gì, phải tuân thủ tất cả các luật: Luật Nhà Thiên, luật tự nhiên, luật lương tâm, giới luật, luật pháp. Đã đúng luật thì không được mặc cả, thỏa hiệp hay biện minh.",
+    "content_vi": "- Đúng luật là nguyên tắc đầu tiên và quan trọng nhất.\n- Phải tuân thủ tất cả các luật: Luật Nhà Thiên, luật tự nhiên, luật lương tâm, giới luật, luật pháp.\n- Không được mặc cả, thỏa hiệp hay biện minh khi đã đúng luật.\n- Đúng luật đảm bảo sự an toàn và đúng đắn trong mọi hành động.\n- Việc tuân thủ luật giúp con người sống hài hòa với trời đất và xã hội.",
+    "summary_en": "Làm bất cứ việc gì cũng phải tuân thủ tất cả các luật, không mặc cả hay thỏa hiệp.",
+    "cot_y_en": "Mọi hành động đều phải đúng luật.",
+    "cot_cua_cot_en": "Đúng luật là nền tảng tuyệt đối.",
+    "loi_en": "Nguyên tắc đầu tiên là đúng luật. Khi làm bất cứ việc gì, phải tuân thủ tất cả các luật: Luật Nhà Thiên, luật tự nhiên, luật lương tâm, giới luật, luật pháp. Đã đúng luật thì không được mặc cả, thỏa hiệp hay biện minh.",
+    "content_en": "- Đúng luật là nguyên tắc đầu tiên và quan trọng nhất.\n- Phải tuân thủ tất cả các luật: Luật Nhà Thiên, luật tự nhiên, luật lương tâm, giới luật, luật pháp.\n- Không được mặc cả, thỏa hiệp hay biện minh khi đã đúng luật.\n- Đúng luật đảm bảo sự an toàn và đúng đắn trong mọi hành động.\n- Việc tuân thủ luật giúp con người sống hài hòa với trời đất và xã hội.",
+    "image_url": "",
+    "category": "",
+    "order_index": 85
+  },
+  {
+    "id": "nguyen-tac-chuan-muc",
+    "title_vi": "2. Chuẩn mực",
+    "summary_vi": "Chuẩn mực 100% từ lời nói đến hành động, tạo niềm tin với người khác.",
+    "cot_y_vi": "Chuẩn mực là sự hoàn hảo trong lời nói và hành động.",
+    "cot_cua_cot_vi": "Chuẩn mực tuyệt đối tạo niềm tin.",
+    "loi_vi": "Nguyên tắc thứ hai là chuẩn mực. Phải đạt chuẩn mực 100% từ lời nói đến hành động. Người chuẩn mực mới nhận được sự tin tưởng từ người khác.",
+    "content_vi": "- Chuẩn mực phải đạt 100%, không có ngoại lệ.\n- Áp dụng từ lời nói đến hành động.\n- Người chuẩn mực sẽ được người khác tin tưởng.\n- Chuẩn mực giúp xây dựng uy tín và danh dự.\n- Thiếu chuẩn mực dẫn đến mất lòng tin và khó thành công.",
+    "summary_en": "Chuẩn mực 100% từ lời nói đến hành động, tạo niềm tin với người khác.",
+    "cot_y_en": "Chuẩn mực là sự hoàn hảo trong lời nói và hành động.",
+    "cot_cua_cot_en": "Chuẩn mực tuyệt đối tạo niềm tin.",
+    "loi_en": "Nguyên tắc thứ hai là chuẩn mực. Phải đạt chuẩn mực 100% từ lời nói đến hành động. Người chuẩn mực mới nhận được sự tin tưởng từ người khác.",
+    "content_en": "- Chuẩn mực phải đạt 100%, không có ngoại lệ.\n- Áp dụng từ lời nói đến hành động.\n- Người chuẩn mực sẽ được người khác tin tưởng.\n- Chuẩn mực giúp xây dựng uy tín và danh dự.\n- Thiếu chuẩn mực dẫn đến mất lòng tin và khó thành công.",
+    "image_url": "",
+    "category": "",
+    "order_index": 86
+  },
+  {
+    "id": "nguyen-tac-ro-rang",
+    "title_vi": "3. Rõ ràng",
+    "summary_vi": "Rõ ràng trong nguyên tắc, nhận việc và kiểm tra, tránh mập mờ và chủ quan.",
+    "cot_y_vi": "Mọi việc phải rõ ràng, không mập mờ.",
+    "cot_cua_cot_vi": "Rõ ràng tạo ấn tượng và tránh oán hận.",
+    "loi_vi": "Nguyên tắc thứ ba là rõ ràng. Trong nguyên tắc, phải rõ ràng, không mập mờ. Khi nhận việc, phải hỏi rõ ràng và xác nhận khả năng thực hiện. Làm việc cần kiểm tra, xác nhận, tránh đại khái và chủ quan.",
+    "content_vi": "- Nguyên tắc phải rõ ràng, không mập mờ.\n- Khi nhận việc, phải hỏi rõ ràng: có chắc chắn không, đã hiểu tư tưởng và ý nghĩa chưa.\n- Khi nhận làm việc, phải nói rõ làm được hay không, làm được bao nhiêu phần trăm.\n- Làm việc cần kiểm tra, xác nhận, sửa tính đại khái, chủ quan, ỷ lại vào người khác.\n- Rõ ràng tạo ấn tượng tốt với người khác.",
+    "summary_en": "Rõ ràng trong nguyên tắc, nhận việc và kiểm tra, tránh mập mờ và chủ quan.",
+    "cot_y_en": "Mọi việc phải rõ ràng, không mập mờ.",
+    "cot_cua_cot_en": "Rõ ràng tạo ấn tượng và tránh oán hận.",
+    "loi_en": "Nguyên tắc thứ ba là rõ ràng. Trong nguyên tắc, phải rõ ràng, không mập mờ. Khi nhận việc, phải hỏi rõ ràng và xác nhận khả năng thực hiện. Làm việc cần kiểm tra, xác nhận, tránh đại khái và chủ quan.",
+    "content_en": "- Nguyên tắc phải rõ ràng, không mập mờ.\n- Khi nhận việc, phải hỏi rõ ràng: có chắc chắn không, đã hiểu tư tưởng và ý nghĩa chưa.\n- Khi nhận làm việc, phải nói rõ làm được hay không, làm được bao nhiêu phần trăm.\n- Làm việc cần kiểm tra, xác nhận, sửa tính đại khái, chủ quan, ỷ lại vào người khác.\n- Rõ ràng tạo ấn tượng tốt với người khác.",
+    "image_url": "",
+    "category": "",
+    "order_index": 87
+  },
+  {
+    "id": "nguyen-tac-co-truoc-co-sau",
+    "title_vi": "4. Có trước có sau",
+    "summary_vi": "Sống và làm việc có trước có sau, biết ơn nguồn gốc và báo cáo đầy đủ.",
+    "cot_y_vi": "Cần quay lại gốc ban đầu và báo cáo trước sau.",
+    "cot_cua_cot_vi": "Có trước có sau được ghi nhận.",
+    "loi_vi": "Nguyên tắc thứ tư là có trước có sau. Trong cuộc sống, cần quay lại gốc ban đầu để biết trân trọng và biết ơn. Trong công việc, phải báo cáo trước sau rõ ràng.",
+    "content_vi": "- Trong cuộc sống, cần quay lại gốc ban đầu: khát vọng của mình là gì, ai đã giúp đỡ từ đầu.\n- Quay lại để biết trân trọng và biết ơn.\n- Trong công việc, phải báo cáo trước sau.\n- Sống và làm việc có trước có sau sẽ được ghi nhận.\n- Điều này tạo nên sự nhất quán và trách nhiệm.",
+    "summary_en": "Sống và làm việc có trước có sau, biết ơn nguồn gốc và báo cáo đầy đủ.",
+    "cot_y_en": "Cần quay lại gốc ban đầu và báo cáo trước sau.",
+    "cot_cua_cot_en": "Có trước có sau được ghi nhận.",
+    "loi_en": "Nguyên tắc thứ tư là có trước có sau. Trong cuộc sống, cần quay lại gốc ban đầu để biết trân trọng và biết ơn. Trong công việc, phải báo cáo trước sau rõ ràng.",
+    "content_en": "- Trong cuộc sống, cần quay lại gốc ban đầu: khát vọng của mình là gì, ai đã giúp đỡ từ đầu.\n- Quay lại để biết trân trọng và biết ơn.\n- Trong công việc, phải báo cáo trước sau.\n- Sống và làm việc có trước có sau sẽ được ghi nhận.\n- Điều này tạo nên sự nhất quán và trách nhiệm.",
+    "image_url": "",
+    "category": "",
+    "order_index": 88
+  },
+  {
+    "id": "nguyen-tac-tinh-te-uyen-chuyen",
+    "title_vi": "5. Tinh tế uyển chuyển",
+    "summary_vi": "Tinh tế nhận diện thực tế, uyển chuyển theo hoàn cảnh nhưng vẫn bám đích và dùng trí tuệ.",
+    "cot_y_vi": "Uyển chuyển dựa trên thực tế nhưng không đổi đích.",
+    "cot_cua_cot_vi": "Tinh tế uyển chuyển là trí tuệ.",
+    "loi_vi": "Nguyên tắc thứ năm là tinh tế uyển chuyển. Tinh tế nhận diện thực tế để uyển chuyển theo thời điểm, căn cơ, hoàn cảnh, không cứng nhắc. Tuy nhiên, vẫn bám đích không thay đổi và phải dùng trí tuệ, không dùng thói thường. Chỉ uyển chuyển khi gặp tình huống bất khả kháng.",
+    "content_vi": "- Tinh tế nhận diện thực tế để uyển chuyển theo thời điểm, căn cơ, hoàn cảnh.\n- Không cứng nhắc, nhưng vẫn bám đích không thay đổi.\n- Phải sử dụng trí tuệ, không chuyển sang thói thường.\n- Chỉ uyển chuyển khi gặp tình huống bất khả kháng.\n- Tinh tế uyển chuyển giúp xử lý linh hoạt mà vẫn giữ nguyên tắc.",
+    "summary_en": "Tinh tế nhận diện thực tế, uyển chuyển theo hoàn cảnh nhưng vẫn bám đích và dùng trí tuệ.",
+    "cot_y_en": "Uyển chuyển dựa trên thực tế nhưng không đổi đích.",
+    "cot_cua_cot_en": "Tinh tế uyển chuyển là trí tuệ.",
+    "loi_en": "Nguyên tắc thứ năm là tinh tế uyển chuyển. Tinh tế nhận diện thực tế để uyển chuyển theo thời điểm, căn cơ, hoàn cảnh, không cứng nhắc. Tuy nhiên, vẫn bám đích không thay đổi và phải dùng trí tuệ, không dùng thói thường. Chỉ uyển chuyển khi gặp tình huống bất khả kháng.",
+    "content_en": "- Tinh tế nhận diện thực tế để uyển chuyển theo thời điểm, căn cơ, hoàn cảnh.\n- Không cứng nhắc, nhưng vẫn bám đích không thay đổi.\n- Phải sử dụng trí tuệ, không chuyển sang thói thường.\n- Chỉ uyển chuyển khi gặp tình huống bất khả kháng.\n- Tinh tế uyển chuyển giúp xử lý linh hoạt mà vẫn giữ nguyên tắc.",
+    "image_url": "",
+    "category": "",
+    "order_index": 89
+  },
+  {
+    "id": "y-phap-mo-rong",
+    "title_vi": "Ý PHÁP MỞ RỘNG",
+    "summary_vi": "Ý pháp mở rộng là một phương pháp tư duy giúp nhận diện nhanh vấn đề, từ đó đưa ra các phương án ứng dụng trực chỉ và đa chiều để giải quyết vấn đề một cách hiệu quả.",
+    "cot_y_vi": [
+      "Ý pháp mở rộng giúp nhận diện nhanh vấn đề.",
+      "Từ đó đưa ra phương án ứng dụng trực chỉ.",
+      "Và phương án ứng dụng đa chiều.",
+      "Mục đích là giải quyết vấn đề."
+    ],
+    "cot_cua_cot_vi": [
+      "Nhận diện nhanh vấn đề: giúp xác định vấn đề một cách nhanh chóng và chính xác.",
+      "Phương án ứng dụng trực chỉ: đưa ra giải pháp trực tiếp, tập trung vào gốc rễ vấn đề.",
+      "Phương án ứng dụng đa chiều: xem xét vấn đề từ nhiều góc độ khác nhau để tìm giải pháp toàn diện.",
+      "Giải quyết vấn đề: mục tiêu cuối cùng là giải quyết vấn đề một cách hiệu quả."
+    ],
+    "loi_vi": "Ý pháp mở rộng là một công cụ tư duy hữu ích, giúp chúng ta nhìn nhận vấn đề một cách toàn diện và đưa ra các giải pháp linh hoạt, phù hợp với nhiều tình huống khác nhau.",
+    "content_vi": "Ý pháp mở rộng giúp ta nhận diện nhanh vấn đề, từ đó đưa ra phương án ứng dụng trực chỉ và đa chiều để giải quyết vấn đề. Phương án trực chỉ tập trung vào nguyên nhân cốt lõi, trong khi phương án đa chiều xem xét vấn đề từ nhiều khía cạnh, giúp tìm ra giải pháp tối ưu. Nhờ đó, chúng ta có thể xử lý vấn đề một cách nhanh chóng và hiệu quả, đồng thời mở rộng khả năng tư duy sáng tạo.",
+    "summary_en": "Ý pháp mở rộng là một phương pháp tư duy giúp nhận diện nhanh vấn đề, từ đó đưa ra các phương án ứng dụng trực chỉ và đa chiều để giải quyết vấn đề một cách hiệu quả.",
+    "cot_y_en": [
+      "Ý pháp mở rộng giúp nhận diện nhanh vấn đề.",
+      "Từ đó đưa ra phương án ứng dụng trực chỉ.",
+      "Và phương án ứng dụng đa chiều.",
+      "Mục đích là giải quyết vấn đề."
+    ],
+    "cot_cua_cot_en": [
+      "Nhận diện nhanh vấn đề: giúp xác định vấn đề một cách nhanh chóng và chính xác.",
+      "Phương án ứng dụng trực chỉ: đưa ra giải pháp trực tiếp, tập trung vào gốc rễ vấn đề.",
+      "Phương án ứng dụng đa chiều: xem xét vấn đề từ nhiều góc độ khác nhau để tìm giải pháp toàn diện.",
+      "Giải quyết vấn đề: mục tiêu cuối cùng là giải quyết vấn đề một cách hiệu quả."
+    ],
+    "loi_en": "Ý pháp mở rộng là một công cụ tư duy hữu ích, giúp chúng ta nhìn nhận vấn đề một cách toàn diện và đưa ra các giải pháp linh hoạt, phù hợp với nhiều tình huống khác nhau.",
+    "content_en": "Ý pháp mở rộng giúp ta nhận diện nhanh vấn đề, từ đó đưa ra phương án ứng dụng trực chỉ và đa chiều để giải quyết vấn đề. Phương án trực chỉ tập trung vào nguyên nhân cốt lõi, trong khi phương án đa chiều xem xét vấn đề từ nhiều khía cạnh, giúp tìm ra giải pháp tối ưu. Nhờ đó, chúng ta có thể xử lý vấn đề một cách nhanh chóng và hiệu quả, đồng thời mở rộng khả năng tư duy sáng tạo.",
+    "image_url": "",
+    "category": "",
+    "order_index": 90
+  },
+  {
+    "id": "nguyen-nhan-bat-on",
+    "title_vi": "NGUYÊN NHÂN BẤT ỔN",
+    "summary_vi": "Có 6 nguyên nhân gây bất ổn: nhầm lẫn, không biết điểm tựa, không biết gốc, không biết thời thế, làm ngược nguyên lý, bất ổn về hiếu-lễ-nghĩa.",
+    "cot_y_vi": "Sáu nguyên nhân chính gây ra bất ổn trong cuộc sống.",
+    "cot_cua_cot_vi": "Nhận diện sáu nguyên nhân gốc rễ gây bất ổn.",
+    "loi_vi": "Có 6 nguyên nhân gây bất ổn: nhầm lẫn, không biết điểm tựa, không biết gốc, không biết thời thế, làm ngược nguyên lý, bất ổn về hiếu-lễ-nghĩa.",
+    "content_vi": "- Nhầm: tưởng kiến thức, trí thức là trí tuệ; nhầm khả năng; nhầm đích cuộc đời.\n- Không biết điểm tựa: chưa tròn đạo, chưa tròn chữ hiếu.\n- Không biết gốc: không biết báo ơn, không làm đúng mệnh.\n- Không biết thời thế: không biết họa phúc.\n- Làm ngược nguyên lý do thiếu trí tuệ: không nguyên tắc, không kiểm soát, sống thiếu trách nhiệm.\n- Bất ổn về hiếu-lễ-nghĩa: vi phạm trong gia đình, thờ cúng, phần mộ.",
+    "summary_en": "Có 6 nguyên nhân gây bất ổn: nhầm lẫn, không biết điểm tựa, không biết gốc, không biết thời thế, làm ngược nguyên lý, bất ổn về hiếu-lễ-nghĩa.",
+    "cot_y_en": "Sáu nguyên nhân chính gây ra bất ổn trong cuộc sống.",
+    "cot_cua_cot_en": "Nhận diện sáu nguyên nhân gốc rễ gây bất ổn.",
+    "loi_en": "Có 6 nguyên nhân gây bất ổn: nhầm lẫn, không biết điểm tựa, không biết gốc, không biết thời thế, làm ngược nguyên lý, bất ổn về hiếu-lễ-nghĩa.",
+    "content_en": "- Nhầm: tưởng kiến thức, trí thức là trí tuệ; nhầm khả năng; nhầm đích cuộc đời.\n- Không biết điểm tựa: chưa tròn đạo, chưa tròn chữ hiếu.\n- Không biết gốc: không biết báo ơn, không làm đúng mệnh.\n- Không biết thời thế: không biết họa phúc.\n- Làm ngược nguyên lý do thiếu trí tuệ: không nguyên tắc, không kiểm soát, sống thiếu trách nhiệm.\n- Bất ổn về hiếu-lễ-nghĩa: vi phạm trong gia đình, thờ cúng, phần mộ.",
+    "image_url": "",
+    "category": "",
+    "order_index": 91
+  },
+  {
+    "id": "7-phuong-phap-hoa-giai-bat-on",
+    "title_vi": "7 PHƯƠNG PHÁP HÓA GIẢI BẤT ỔN",
+    "summary_vi": "Có 7 phương pháp hóa giải bất ổn: không đối đầu, sử dụng trí tuệ, tạo phúc trả nợ, thờ cúng chuẩn, kính lễ tu sửa tại gia, giải nghiệp, sửa thân tâm khẩu ý.",
+    "cot_y_vi": "Bảy phương pháp hóa giải bất ổn trong cuộc sống.",
+    "cot_cua_cot_vi": "Bảy phương pháp thực hành để hóa giải bất ổn.",
+    "loi_vi": "Có 7 phương pháp hóa giải bất ổn: không đối đầu, sử dụng trí tuệ, tạo phúc trả nợ, thờ cúng chuẩn, kính lễ tu sửa tại gia, giải nghiệp, sửa thân tâm khẩu ý.",
+    "content_vi": "- Không đối đầu, đối nghịch, đối kháng.\n- Sử dụng trí tuệ: bám vào nguyên lý, đạo, nguyên tắc.\n- Tạo phúc, trả nợ chuẩn: tạo phúc cho ai, trả nợ cho ai, bằng công, bằng của.\n- Thờ cúng chuẩn: bát hương, gia tiên, thờ Phật, bao sái, sắp lễ, kính lễ 4 bước.\n- Kính lễ, tu sửa tại gia: ý nghĩa và phương pháp.\n- Giải nghiệp: tự mình giải, dừng nghiệp, hóa nghiệp, đón nghiệp, chuyển nghiệp.\n- Sửa thân, tâm, khẩu, ý: tu sửa thân, tâm, khẩu, ý.",
+    "summary_en": "Có 7 phương pháp hóa giải bất ổn: không đối đầu, sử dụng trí tuệ, tạo phúc trả nợ, thờ cúng chuẩn, kính lễ tu sửa tại gia, giải nghiệp, sửa thân tâm khẩu ý.",
+    "cot_y_en": "Bảy phương pháp hóa giải bất ổn trong cuộc sống.",
+    "cot_cua_cot_en": "Bảy phương pháp thực hành để hóa giải bất ổn.",
+    "loi_en": "Có 7 phương pháp hóa giải bất ổn: không đối đầu, sử dụng trí tuệ, tạo phúc trả nợ, thờ cúng chuẩn, kính lễ tu sửa tại gia, giải nghiệp, sửa thân tâm khẩu ý.",
+    "content_en": "- Không đối đầu, đối nghịch, đối kháng.\n- Sử dụng trí tuệ: bám vào nguyên lý, đạo, nguyên tắc.\n- Tạo phúc, trả nợ chuẩn: tạo phúc cho ai, trả nợ cho ai, bằng công, bằng của.\n- Thờ cúng chuẩn: bát hương, gia tiên, thờ Phật, bao sái, sắp lễ, kính lễ 4 bước.\n- Kính lễ, tu sửa tại gia: ý nghĩa và phương pháp.\n- Giải nghiệp: tự mình giải, dừng nghiệp, hóa nghiệp, đón nghiệp, chuyển nghiệp.\n- Sửa thân, tâm, khẩu, ý: tu sửa thân, tâm, khẩu, ý.",
+    "image_url": "",
+    "category": "",
+    "order_index": 92
+  },
+  {
+    "id": "doi-dao-loi-tu",
+    "title_vi": "ĐỜI - ĐẠO - LỢI TƯ",
+    "summary_vi": "Đời - Đạo - Lợi tư là kiềng 3 chân chuẩn cho cuộc đời mỗi con người, giúp tránh lãng phí thời gian và hoàn thành sứ mệnh.",
+    "cot_y_vi": "Đời - Đạo - Lợi tư là ba trụ cột của cuộc đời.",
+    "cot_cua_cot_vi": "Ba trụ cột để có cuộc đời thành công viên mãn.",
+    "loi_vi": "Đời - Đạo - Lợi tư là kiềng 3 chân chuẩn cho cuộc đời mỗi con người, giúp tránh lãng phí thời gian và hoàn thành sứ mệnh.",
+    "content_vi": "- Tại sao cần biết: tránh lãng phí thời gian, có phúc đức.\n- Đời là gì: thực hiện sứ mệnh, cống hiến vô danh vô lợi.\n- Đạo là gì: con đường, gốc, báo ơn, giữ gốc, lập đức.\n- Lợi tư là gì: bản thân, gia đình, quan hệ, công việc, tài chính.\n- Lập kế hoạch thời gian: bám vào nguyên tắc chuẩn mực.\n- Tròn 3 công trình: trả nghiệp, thực hiện sứ mệnh, tu tiếp.",
+    "summary_en": "Đời - Đạo - Lợi tư là kiềng 3 chân chuẩn cho cuộc đời mỗi con người, giúp tránh lãng phí thời gian và hoàn thành sứ mệnh.",
+    "cot_y_en": "Đời - Đạo - Lợi tư là ba trụ cột của cuộc đời.",
+    "cot_cua_cot_en": "Ba trụ cột để có cuộc đời thành công viên mãn.",
+    "loi_en": "Đời - Đạo - Lợi tư là kiềng 3 chân chuẩn cho cuộc đời mỗi con người, giúp tránh lãng phí thời gian và hoàn thành sứ mệnh.",
+    "content_en": "- Tại sao cần biết: tránh lãng phí thời gian, có phúc đức.\n- Đời là gì: thực hiện sứ mệnh, cống hiến vô danh vô lợi.\n- Đạo là gì: con đường, gốc, báo ơn, giữ gốc, lập đức.\n- Lợi tư là gì: bản thân, gia đình, quan hệ, công việc, tài chính.\n- Lập kế hoạch thời gian: bám vào nguyên tắc chuẩn mực.\n- Tròn 3 công trình: trả nghiệp, thực hiện sứ mệnh, tu tiếp.",
+    "image_url": "",
+    "category": "",
+    "order_index": 93
+  },
+  {
+    "id": "coi-ta-ba",
+    "title_vi": "CÕI TA BÀ",
+    "summary_vi": "Cõi Ta Bà do Tạo hóa ban tặng, trải qua 5 giai đoạn tiến hóa và 5 nền văn minh, có 5 dạng tái sinh và 2 nhóm xuống trần hành đạo.",
+    "cot_y_vi": "Cõi Ta Bà là hành tinh thứ 3000, có lịch sử tiến hóa và văn minh.",
+    "cot_cua_cot_vi": "Cõi Ta Bà - hành tinh thứ 3000 với 5 giai đoạn tiến hóa.",
+    "loi_vi": "Cõi Ta Bà do Tạo hóa ban tặng, trải qua 5 giai đoạn tiến hóa và 5 nền văn minh, có 5 dạng tái sinh và 2 nhóm xuống trần hành đạo.",
+    "content_vi": "- Tạo hóa tạo ra quả địa cầu là hành tinh thứ 3000.\n- 3 lần Mẹ Phật Mẫu Địa hạ thế cứu độ chúng sinh.\n- 5 giai đoạn tiến hóa: 4 loài, người cao 2m không xương, người có xương còng lưng, người đứng thẳng, chu kỳ 7000 năm.\n- 5 nền văn minh: săn bắn hái lượm, lúa nước, cộng nghiệp, công nghệ thông tin, khoa học vũ trụ tâm linh.\n- 5 dạng tái sinh: quỷ, súc sinh, người, atula, cõi trời.\n- 2 nhóm xuống trần hành đạo: mệnh Bồ Tát, mệnh cửa Thiên.",
+    "summary_en": "Cõi Ta Bà do Tạo hóa ban tặng, trải qua 5 giai đoạn tiến hóa và 5 nền văn minh, có 5 dạng tái sinh và 2 nhóm xuống trần hành đạo.",
+    "cot_y_en": "Cõi Ta Bà là hành tinh thứ 3000, có lịch sử tiến hóa và văn minh.",
+    "cot_cua_cot_en": "Cõi Ta Bà - hành tinh thứ 3000 với 5 giai đoạn tiến hóa.",
+    "loi_en": "Cõi Ta Bà do Tạo hóa ban tặng, trải qua 5 giai đoạn tiến hóa và 5 nền văn minh, có 5 dạng tái sinh và 2 nhóm xuống trần hành đạo.",
+    "content_en": "- Tạo hóa tạo ra quả địa cầu là hành tinh thứ 3000.\n- 3 lần Mẹ Phật Mẫu Địa hạ thế cứu độ chúng sinh.\n- 5 giai đoạn tiến hóa: 4 loài, người cao 2m không xương, người có xương còng lưng, người đứng thẳng, chu kỳ 7000 năm.\n- 5 nền văn minh: săn bắn hái lượm, lúa nước, cộng nghiệp, công nghệ thông tin, khoa học vũ trụ tâm linh.\n- 5 dạng tái sinh: quỷ, súc sinh, người, atula, cõi trời.\n- 2 nhóm xuống trần hành đạo: mệnh Bồ Tát, mệnh cửa Thiên.",
+    "image_url": "",
+    "category": "",
+    "order_index": 94
+  },
+  {
+    "id": "menh-va-su-menh",
+    "title_vi": "MỆNH VÀ SỨ MỆNH",
+    "summary_vi": "Mệnh là căn cơ cốt mệnh, sứ mệnh là cống hiến vô danh vô lợi để có phúc đức, công đức, lập công.",
+    "cot_y_vi": [
+      "Mệnh là căn cơ cốt mệnh.",
+      "Sứ mệnh là cống hiến vô danh vô lợi.",
+      "Mục đích của sứ mệnh là để có phúc đức, công đức, lập công."
+    ],
+    "cot_cua_cot_vi": [
+      "Mệnh là nền tảng, là bản chất cốt lõi của mỗi người.",
+      "Sứ mệnh là sự cống hiến mà không màng danh lợi.",
+      "Việc thực hiện sứ mệnh giúp tích lũy phúc đức và công đức.",
+      "Lập công là kết quả của việc hoàn thành sứ mệnh."
+    ],
+    "loi_vi": "Mệnh là căn cơ cốt mệnh, là nền tảng và bản chất cốt lõi của mỗi người. Sứ mệnh là sự cống hiến vô danh vô lợi, không màng đến danh lợi cá nhân. Thực hiện sứ mệnh giúp chúng ta tích lũy phúc đức và công đức. Khi hoàn thành sứ mệnh, chúng ta lập được công, tạo nên giá trị cho bản thân và xã hội.",
+    "content_vi": "Mệnh là căn cơ cốt mệnh, là nền tảng và bản chất cốt lõi của mỗi người. Sứ mệnh là sự cống hiến vô danh vô lợi, không màng đến danh lợi cá nhân. Thực hiện sứ mệnh giúp chúng ta tích lũy phúc đức và công đức. Khi hoàn thành sứ mệnh, chúng ta lập được công, tạo nên giá trị cho bản thân và xã hội.",
+    "summary_en": "Mệnh là căn cơ cốt mệnh, sứ mệnh là cống hiến vô danh vô lợi để có phúc đức, công đức, lập công.",
+    "cot_y_en": [
+      "Mệnh là căn cơ cốt mệnh.",
+      "Sứ mệnh là cống hiến vô danh vô lợi.",
+      "Mục đích của sứ mệnh là để có phúc đức, công đức, lập công."
+    ],
+    "cot_cua_cot_en": [
+      "Mệnh là nền tảng, là bản chất cốt lõi của mỗi người.",
+      "Sứ mệnh là sự cống hiến mà không màng danh lợi.",
+      "Việc thực hiện sứ mệnh giúp tích lũy phúc đức và công đức.",
+      "Lập công là kết quả của việc hoàn thành sứ mệnh."
+    ],
+    "loi_en": "Mệnh là căn cơ cốt mệnh, là nền tảng và bản chất cốt lõi của mỗi người. Sứ mệnh là sự cống hiến vô danh vô lợi, không màng đến danh lợi cá nhân. Thực hiện sứ mệnh giúp chúng ta tích lũy phúc đức và công đức. Khi hoàn thành sứ mệnh, chúng ta lập được công, tạo nên giá trị cho bản thân và xã hội.",
+    "content_en": "Mệnh là căn cơ cốt mệnh, là nền tảng và bản chất cốt lõi của mỗi người. Sứ mệnh là sự cống hiến vô danh vô lợi, không màng đến danh lợi cá nhân. Thực hiện sứ mệnh giúp chúng ta tích lũy phúc đức và công đức. Khi hoàn thành sứ mệnh, chúng ta lập được công, tạo nên giá trị cho bản thân và xã hội.",
+    "image_url": "",
+    "category": "",
+    "order_index": 95
+  },
+  {
+    "id": "bon-dang-tam",
+    "title_vi": "BỐN DẠNG TÂM",
+    "summary_vi": "Con người có bốn dạng tâm: tâm thú, tâm người, tâm ma, tâm Phật. Cần luyện tâm Phật để chế ngự ba tâm kia.",
+    "cot_y_vi": [
+      "Con người có bốn dạng tâm.",
+      "Bốn dạng tâm đó là: tâm thú, tâm người, tâm ma, tâm Phật.",
+      "Cần luyện tâm Phật.",
+      "Mục đích của việc luyện tâm Phật là để chế ngự ba tâm kia."
+    ],
+    "cot_cua_cot_vi": [
+      "Tâm thú: bản năng, ham muốn thấp hèn.",
+      "Tâm người: suy nghĩ, tình cảm bình thường.",
+      "Tâm ma: tham lam, sân hận, si mê.",
+      "Tâm Phật: từ bi, trí tuệ, giác ngộ."
+    ],
+    "loi_vi": "Hãy luôn rèn luyện tâm Phật để vượt qua những bản năng xấu, hướng đến sự an lạc và giác ngộ.",
+    "content_vi": "Con người có bốn dạng tâm: tâm thú, tâm người, tâm ma, tâm Phật. Tâm thú là những bản năng, ham muốn thấp hèn. Tâm người là những suy nghĩ, tình cảm bình thường. Tâm ma là tham lam, sân hận, si mê. Tâm Phật là từ bi, trí tuệ, giác ngộ. Chúng ta cần luyện tâm Phật để chế ngự ba tâm kia, hướng đến cuộc sống an lạc và tốt đẹp hơn.",
+    "summary_en": "Con người có bốn dạng tâm: tâm thú, tâm người, tâm ma, tâm Phật. Cần luyện tâm Phật để chế ngự ba tâm kia.",
+    "cot_y_en": [
+      "Con người có bốn dạng tâm.",
+      "Bốn dạng tâm đó là: tâm thú, tâm người, tâm ma, tâm Phật.",
+      "Cần luyện tâm Phật.",
+      "Mục đích của việc luyện tâm Phật là để chế ngự ba tâm kia."
+    ],
+    "cot_cua_cot_en": [
+      "Tâm thú: bản năng, ham muốn thấp hèn.",
+      "Tâm người: suy nghĩ, tình cảm bình thường.",
+      "Tâm ma: tham lam, sân hận, si mê.",
+      "Tâm Phật: từ bi, trí tuệ, giác ngộ."
+    ],
+    "loi_en": "Hãy luôn rèn luyện tâm Phật để vượt qua những bản năng xấu, hướng đến sự an lạc và giác ngộ.",
+    "content_en": "Con người có bốn dạng tâm: tâm thú, tâm người, tâm ma, tâm Phật. Tâm thú là những bản năng, ham muốn thấp hèn. Tâm người là những suy nghĩ, tình cảm bình thường. Tâm ma là tham lam, sân hận, si mê. Tâm Phật là từ bi, trí tuệ, giác ngộ. Chúng ta cần luyện tâm Phật để chế ngự ba tâm kia, hướng đến cuộc sống an lạc và tốt đẹp hơn.",
+    "image_url": "",
+    "category": "",
+    "order_index": 96
+  },
+  {
+    "id": "goc-phat",
+    "title_vi": "GỐC PHẬT",
+    "summary_vi": "Gốc Phật tại Việt Nam có dấu ấn cây đèn dầu, Ngài Thích Ca hạ thế xuống Ấn Độ, thời Ngài để lại Pháp nhưng bị tán pháp, không dùng vàng mã, hình nhân thế mạng.",
+    "cot_y_vi": "Gốc Phật tại Việt Nam và những bài học về thờ cúng đúng đắn.",
+    "cot_cua_cot_vi": "Gốc Phật tại Việt Nam - cây đèn dầu và tránh sai lầm trong thờ cúng.",
+    "loi_vi": "Gốc Phật tại Việt Nam có dấu ấn cây đèn dầu, Ngài Thích Ca hạ thế xuống Ấn Độ, thời Ngài để lại Pháp nhưng bị tán pháp, không dùng vàng mã, hình nhân thế mạng.",
+    "content_vi": "- Đức tin Gốc Phật tại Việt Nam: lịch sử lâu đời, thờ tự lâu đời.\n- Dấu ấn cây đèn dầu: Nhiên Đăng Cổ Phật, ngọn đăng, thờ ánh sáng quang minh.\n- Ngài Thích Ca hạ thế xuống Ấn Độ: gặp 10 đại đệ tử, chỉ có trí tuệ giải thoát.\n- Thời Ngài để lại Pháp nhưng bị tán pháp: bị phá pháp 3 lần, giấu 2 bộ kinh.\n- Không dùng vàng mã, hình nhân thế mạng: sai lầm trong thờ cúng, không sát sinh, không đốt vàng mã, không cúng hình nhân thế mạng.",
+    "summary_en": "Gốc Phật tại Việt Nam có dấu ấn cây đèn dầu, Ngài Thích Ca hạ thế xuống Ấn Độ, thời Ngài để lại Pháp nhưng bị tán pháp, không dùng vàng mã, hình nhân thế mạng.",
+    "cot_y_en": "Gốc Phật tại Việt Nam và những bài học về thờ cúng đúng đắn.",
+    "cot_cua_cot_en": "Gốc Phật tại Việt Nam - cây đèn dầu và tránh sai lầm trong thờ cúng.",
+    "loi_en": "Gốc Phật tại Việt Nam có dấu ấn cây đèn dầu, Ngài Thích Ca hạ thế xuống Ấn Độ, thời Ngài để lại Pháp nhưng bị tán pháp, không dùng vàng mã, hình nhân thế mạng.",
+    "content_en": "- Đức tin Gốc Phật tại Việt Nam: lịch sử lâu đời, thờ tự lâu đời.\n- Dấu ấn cây đèn dầu: Nhiên Đăng Cổ Phật, ngọn đăng, thờ ánh sáng quang minh.\n- Ngài Thích Ca hạ thế xuống Ấn Độ: gặp 10 đại đệ tử, chỉ có trí tuệ giải thoát.\n- Thời Ngài để lại Pháp nhưng bị tán pháp: bị phá pháp 3 lần, giấu 2 bộ kinh.\n- Không dùng vàng mã, hình nhân thế mạng: sai lầm trong thờ cúng, không sát sinh, không đốt vàng mã, không cúng hình nhân thế mạng.",
+    "image_url": "",
+    "category": "",
+    "order_index": 97
+  },
+  {
+    "id": "ra-soat-qua-khu",
+    "title_vi": "Rà soát quá khứ",
+    "summary_vi": "Rà soát quá khứ để nhận biết nghiệp, định vị, giải nghiệp và dừng nghiệp tương lai, từ đó xoay chuyển cuộc sống.",
+    "cot_y_vi": "Rà soát quá khứ giúp khoanh lại quá khứ, đối diện thực tế và xoay chuyển từng thứ một.",
+    "cot_cua_cot_vi": "Nhận biết nghiệp quá khứ để dừng nghiệp tương lai.",
+    "loi_vi": "Rà soát quá khứ là bước đầu tiên để xoay chuyển cuộc sống. Cần nhận ra đầu mối cần rà soát, định vị và khoanh lại quá khứ, giải nghiệp cũ và ngăn chặn nghiệp mới. Đích đến là đối diện với thực tế, biết trước hệ quả để không bị sốc. Khi rà soát, phải quy chiếu vào Trí tuệ để có cái nhìn đúng đắn.",
+    "content_vi": "- Nhận ra đầu mối cần rà soát:\n  + Rà soát để biết nghiệp của quá khứ\n  + Định vị để khoanh lại quá khứ\n  + Giải nghiệp của quá khứ\n  + Dừng nghiệp của tương lai\n- Đích của rà soát quá khứ:\n  + Để khoanh lại quá khứ\n  + Đối diện với thực tế\n  + Để xoay chuyển từng thứ một\n  + Biết trước hệ quả sẽ xảy ra để không bị sốc\n- Bài rà soát quá khứ\n- Khi rà soát quy chiếu vào Trí tuệ để rà soát",
+    "summary_en": "Rà soát quá khứ để nhận biết nghiệp, định vị, giải nghiệp và dừng nghiệp tương lai, từ đó xoay chuyển cuộc sống.",
+    "cot_y_en": "Rà soát quá khứ giúp khoanh lại quá khứ, đối diện thực tế và xoay chuyển từng thứ một.",
+    "cot_cua_cot_en": "Nhận biết nghiệp quá khứ để dừng nghiệp tương lai.",
+    "loi_en": "Rà soát quá khứ là bước đầu tiên để xoay chuyển cuộc sống. Cần nhận ra đầu mối cần rà soát, định vị và khoanh lại quá khứ, giải nghiệp cũ và ngăn chặn nghiệp mới. Đích đến là đối diện với thực tế, biết trước hệ quả để không bị sốc. Khi rà soát, phải quy chiếu vào Trí tuệ để có cái nhìn đúng đắn.",
+    "content_en": "- Nhận ra đầu mối cần rà soát:\n  + Rà soát để biết nghiệp của quá khứ\n  + Định vị để khoanh lại quá khứ\n  + Giải nghiệp của quá khứ\n  + Dừng nghiệp của tương lai\n- Đích của rà soát quá khứ:\n  + Để khoanh lại quá khứ\n  + Đối diện với thực tế\n  + Để xoay chuyển từng thứ một\n  + Biết trước hệ quả sẽ xảy ra để không bị sốc\n- Bài rà soát quá khứ\n- Khi rà soát quy chiếu vào Trí tuệ để rà soát",
+    "image_url": "",
+    "category": "",
+    "order_index": 98
+  },
+  {
+    "id": "xoay-chuyen-tam-xoay-chuyen-dich-xoay-chuyen-cong-viec",
+    "title_vi": "Xoay chuyển tâm, xoay chuyển đích, xoay chuyển công việc",
+    "summary_vi": "Xoay chuyển tâm từ hướng đến công đức, phúc đức sang phát tâm bồ đề vì chúng sinh; xoay chuyển đích và công việc để có thời gian cho Đời - Đạo - Lợi tư.",
+    "cot_y_vi": "Xoay chuyển tâm, đích và công việc để đạt được sự cân bằng và trí tuệ.",
+    "cot_cua_cot_vi": "Phát tâm bồ đề để có tâm vô trụ và chân tâm.",
+    "loi_vi": "Xoay chuyển tâm là thay đổi động cơ từ chỉ quan tâm lợi ích cá nhân sang phát tâm bồ đề vì chúng sinh. Nếu chỉ nghĩ đến mình, tâm sẽ lệch, rơi vào so đo, tính toán, mất duyên. Tâm khởi đến đâu, Luật vận hành hút vào quỹ đạo đó. Xoay chuyển đích và công việc giúp có thời gian cho cả Đời - Đạo - Lợi tư.",
+    "content_vi": "- Xoay chuyển tâm:\n  + Trước đây tâm chỉ hướng đến tạo công đức, phúc đức\n  + Bây giờ cần phát tâm bồ đề nhiều hơn cho chúng sinh\n  + Nếu chỉ quan tâm lợi ích mình, tâm sẽ bị lệch, rơi vào so đo, tính toán -> mất duyên\n  + Tâm khởi đến đâu thì Luật vận hành hút vào quỹ đạo đến đó, đến ngày đến giờ chiết xuất thành nhân quả\n- Xoay chuyển đích\n- Xoay chuyển công việc:\n  + Thì mới xoay chuyển được thời gian để có thời gian cho cả Đời - Đạo - Lợi tư",
+    "summary_en": "Xoay chuyển tâm từ hướng đến công đức, phúc đức sang phát tâm bồ đề vì chúng sinh; xoay chuyển đích và công việc để có thời gian cho Đời - Đạo - Lợi tư.",
+    "cot_y_en": "Xoay chuyển tâm, đích và công việc để đạt được sự cân bằng và trí tuệ.",
+    "cot_cua_cot_en": "Phát tâm bồ đề để có tâm vô trụ và chân tâm.",
+    "loi_en": "Xoay chuyển tâm là thay đổi động cơ từ chỉ quan tâm lợi ích cá nhân sang phát tâm bồ đề vì chúng sinh. Nếu chỉ nghĩ đến mình, tâm sẽ lệch, rơi vào so đo, tính toán, mất duyên. Tâm khởi đến đâu, Luật vận hành hút vào quỹ đạo đó. Xoay chuyển đích và công việc giúp có thời gian cho cả Đời - Đạo - Lợi tư.",
+    "content_en": "- Xoay chuyển tâm:\n  + Trước đây tâm chỉ hướng đến tạo công đức, phúc đức\n  + Bây giờ cần phát tâm bồ đề nhiều hơn cho chúng sinh\n  + Nếu chỉ quan tâm lợi ích mình, tâm sẽ bị lệch, rơi vào so đo, tính toán -> mất duyên\n  + Tâm khởi đến đâu thì Luật vận hành hút vào quỹ đạo đến đó, đến ngày đến giờ chiết xuất thành nhân quả\n- Xoay chuyển đích\n- Xoay chuyển công việc:\n  + Thì mới xoay chuyển được thời gian để có thời gian cho cả Đời - Đạo - Lợi tư",
+    "image_url": "",
+    "category": "",
+    "order_index": 99
+  },
+  {
+    "id": "lap-ke-hoach-thoi-gian-doi-dao-loi-tu",
+    "title_vi": "Lập kế hoạch thời gian Đời - Đạo - Lợi tư",
+    "summary_vi": "Lập kế hoạch thời gian cho Đời - Đạo - Lợi tư để thực hiện rốt ráo ba việc, không lãng phí thời gian, và đạt được sự cân bằng trong cuộc sống.",
+    "cot_y_vi": "Cần có kế hoạch thời gian Đời - Đạo - Lợi tư để thực hiện rốt ráo ba việc và không lãng phí thời gian.",
+    "cot_cua_cot_vi": "Thời gian là hữu hạn, cần sắp xếp để thực hiện trọn vẹn Đời - Đạo - Lợi tư.",
+    "loi_vi": "Lập kế hoạch thời gian Đời - Đạo - Lợi tư là cần thiết vì ta sinh ra để làm ba việc, cần thời gian để tròn Đạo Sinh, tu rốt ráo, tạo phúc rốt ráo, trả nghiệp rốt ráo. Một ngày chỉ có 24 tiếng nên phải lập kế hoạch để không lãng phí. Không có kế hoạch thì khó bứt phá, không xoay chuyển được tâm, đích, và không thể trở về chính mình.",
+    "content_vi": "- Nhận ra gì mà lập kế hoạch thời gian Đời - Đạo - Lợi tư:\n  + NLCP 2: ta sinh ra để làm 3 việc => Cần có kế hoạch thời gian để triển khai\n  + Đạo Sinh: Trời sinh ra Đạo Đời bỏ phí, Xuống cõi Trần chỉ để ý đến Lợi tư, Chẳng hiểu gì bổn Đạo nhân từ, Chẳng hiểu gì Thiên thư Trời Phật\n  + Để tròn được Đạo Sinh cần có thời gian - Đời - Đạo - Lợi tư\n  + Nguyên tắc: chuẩn mực và rõ ràng nên cần phải có thời gian Đời - Đạo - Lợi tư để chuẩn mực thời gian trong Trí tuệ\n  + Thực tế Thời thế: Thời này là Đáy của Đại mạt nên phải Tu rốt ráo; Tạo phúc rốt ráo; Trả nghiệp rốt ráo -> Cần phải có thời gian Đời - Đạo - Lợi tư để thực hiện rốt ráo 3 việc đó\n  + Quy luật của Thời gian: một ngày chỉ có 24 tiếng nên cần phải lập kế hoạch Đời - Đạo - Lợi tư để không lãng phí thời gian\n- Tại sao cần có thời gian Đời - Đạo - Lợi tư?\n  + Để xoay chuyển cuộc sống có Trí tuệ cần phải sắp xếp được kế hoạch thời gian Đời - Đạo - Lợi tư\n  + Không có thời gian Đời - Đạo - Lợi tư thì sẽ rất khó bứt phá vì làm việc không đúng nguyên tắc rõ ràng, chuẩn mực\n  + Không có kế hoạch thời gian thì không xoay chuyển tâm, đích\n  + Không có thời gian Đời - Đạo - Lợi tư thì ta không thể trở về chính mình\n- Đời - Đạo - Lợi tư là gì?\n- Căn cứ vào thực tế của bản thân để lên kế hoạch thời gian theo ngày",
+    "summary_en": "Lập kế hoạch thời gian cho Đời - Đạo - Lợi tư để thực hiện rốt ráo ba việc, không lãng phí thời gian, và đạt được sự cân bằng trong cuộc sống.",
+    "cot_y_en": "Cần có kế hoạch thời gian Đời - Đạo - Lợi tư để thực hiện rốt ráo ba việc và không lãng phí thời gian.",
+    "cot_cua_cot_en": "Thời gian là hữu hạn, cần sắp xếp để thực hiện trọn vẹn Đời - Đạo - Lợi tư.",
+    "loi_en": "Lập kế hoạch thời gian Đời - Đạo - Lợi tư là cần thiết vì ta sinh ra để làm ba việc, cần thời gian để tròn Đạo Sinh, tu rốt ráo, tạo phúc rốt ráo, trả nghiệp rốt ráo. Một ngày chỉ có 24 tiếng nên phải lập kế hoạch để không lãng phí. Không có kế hoạch thì khó bứt phá, không xoay chuyển được tâm, đích, và không thể trở về chính mình.",
+    "content_en": "- Nhận ra gì mà lập kế hoạch thời gian Đời - Đạo - Lợi tư:\n  + NLCP 2: ta sinh ra để làm 3 việc => Cần có kế hoạch thời gian để triển khai\n  + Đạo Sinh: Trời sinh ra Đạo Đời bỏ phí, Xuống cõi Trần chỉ để ý đến Lợi tư, Chẳng hiểu gì bổn Đạo nhân từ, Chẳng hiểu gì Thiên thư Trời Phật\n  + Để tròn được Đạo Sinh cần có thời gian - Đời - Đạo - Lợi tư\n  + Nguyên tắc: chuẩn mực và rõ ràng nên cần phải có thời gian Đời - Đạo - Lợi tư để chuẩn mực thời gian trong Trí tuệ\n  + Thực tế Thời thế: Thời này là Đáy của Đại mạt nên phải Tu rốt ráo; Tạo phúc rốt ráo; Trả nghiệp rốt ráo -> Cần phải có thời gian Đời - Đạo - Lợi tư để thực hiện rốt ráo 3 việc đó\n  + Quy luật của Thời gian: một ngày chỉ có 24 tiếng nên cần phải lập kế hoạch Đời - Đạo - Lợi tư để không lãng phí thời gian\n- Tại sao cần có thời gian Đời - Đạo - Lợi tư?\n  + Để xoay chuyển cuộc sống có Trí tuệ cần phải sắp xếp được kế hoạch thời gian Đời - Đạo - Lợi tư\n  + Không có thời gian Đời - Đạo - Lợi tư thì sẽ rất khó bứt phá vì làm việc không đúng nguyên tắc rõ ràng, chuẩn mực\n  + Không có kế hoạch thời gian thì không xoay chuyển tâm, đích\n  + Không có thời gian Đời - Đạo - Lợi tư thì ta không thể trở về chính mình\n- Đời - Đạo - Lợi tư là gì?\n- Căn cứ vào thực tế của bản thân để lên kế hoạch thời gian theo ngày",
+    "image_url": "",
+    "category": "",
+    "order_index": 100
+  },
+  {
+    "id": "dua-khuon-tri-tue-vao-cuoc-song",
+    "title_vi": "Đưa khuôn Trí tuệ vào cuộc sống",
+    "summary_vi": "Đưa khuôn Trí tuệ vào cuộc sống thông qua khuôn sống bên trong (bản thân, gia đình, công việc, tài chính, quan hệ, xã hội, đất nước) và khuôn sống bên ngoài (nói, làm, hành xử, đối nhân xử thế) để tránh nghiệp và hệ quả.",
+    "cot_y_vi": "Áp dụng khuôn Trí tuệ vào mọi mặt cuộc sống để dừng nghiệp và tránh ân oán.",
+    "cot_cua_cot_vi": "Sống theo khuôn Trí tuệ để tránh thân, khẩu, ý nghiệp.",
+    "loi_vi": "Khuôn sống bên trong là đưa trí tuệ vào bản thân, gia đình, công việc, tài chính, quan hệ, xã hội, đất nước để dừng nghiệp. Khuôn sống bên ngoài thể hiện qua nói, làm, hành xử, đối nhân xử thế. Đích là tránh thân nghiệp, ý nghiệp, khẩu nghiệp, tránh hệ quả và ân oán.",
+    "content_vi": "- KHUÔN SỐNG BÊN TRONG:\n  + Là đưa trí tuệ vào: Bản thân, Gia đình, Công việc, Tài chính, Quan hệ, Xã hội, Đất nước\n  + Để dừng nghiệp\n- KHUÔN SỐNG BÊN NGOÀI:\n  + Là thể hiện ra bên ngoài cần sử dụng khuôn:\n    - Nói\n    - Làm\n    - Hành xử\n    - Đối nhân xử thế\n  + Đích của đưa vốn sống Trí tuệ ra bên ngoài để:\n    - Tránh thân nghiệp\n    - Tránh ý nghiệp\n    - Tránh khẩu nghiệp\n    - Tránh hệ quả\n    - Tránh ân oán",
+    "summary_en": "Đưa khuôn Trí tuệ vào cuộc sống thông qua khuôn sống bên trong (bản thân, gia đình, công việc, tài chính, quan hệ, xã hội, đất nước) và khuôn sống bên ngoài (nói, làm, hành xử, đối nhân xử thế) để tránh nghiệp và hệ quả.",
+    "cot_y_en": "Áp dụng khuôn Trí tuệ vào mọi mặt cuộc sống để dừng nghiệp và tránh ân oán.",
+    "cot_cua_cot_en": "Sống theo khuôn Trí tuệ để tránh thân, khẩu, ý nghiệp.",
+    "loi_en": "Khuôn sống bên trong là đưa trí tuệ vào bản thân, gia đình, công việc, tài chính, quan hệ, xã hội, đất nước để dừng nghiệp. Khuôn sống bên ngoài thể hiện qua nói, làm, hành xử, đối nhân xử thế. Đích là tránh thân nghiệp, ý nghiệp, khẩu nghiệp, tránh hệ quả và ân oán.",
+    "content_en": "- KHUÔN SỐNG BÊN TRONG:\n  + Là đưa trí tuệ vào: Bản thân, Gia đình, Công việc, Tài chính, Quan hệ, Xã hội, Đất nước\n  + Để dừng nghiệp\n- KHUÔN SỐNG BÊN NGOÀI:\n  + Là thể hiện ra bên ngoài cần sử dụng khuôn:\n    - Nói\n    - Làm\n    - Hành xử\n    - Đối nhân xử thế\n  + Đích của đưa vốn sống Trí tuệ ra bên ngoài để:\n    - Tránh thân nghiệp\n    - Tránh ý nghiệp\n    - Tránh khẩu nghiệp\n    - Tránh hệ quả\n    - Tránh ân oán",
+    "image_url": "",
+    "category": "",
+    "order_index": 101
+  },
+  {
+    "id": "hanh-thien",
+    "title_vi": "1. Hành thiện",
+    "summary_vi": "Hành thiện là việc phát tâm bồ đề theo thực tế thời điểm, khác với tạo phúc, trả nợ. Cần xét thực tế bản thân và quy chiếu vào Trí tuệ để hành thiện chuẩn mực.",
+    "cot_y_vi": "Hành thiện khác tạo phúc, trả nợ và cần chuẩn mực theo Trí tuệ.",
+    "cot_cua_cot_vi": "Phát tâm bồ đề theo thực tế, không kế hoạch trước, không cần tấu trình.",
+    "loi_vi": "- Hành thiện là việc phát tâm bồ đề theo thực tế thời điểm.\n- Hưởng ứng lời kêu gọi của Nhà nước: hiến máu, bảo vệ môi trường, lá lành đùm lá rách.\n- Cá nhân chủ động phát tâm khi gặp người khó khăn, nơi cần xây trường học.\n- Không có kế hoạch trước, làm luôn khi phát tâm.\n- Không cần tấu trình, Trời Phật chứng tâm và ban Phúc.\n- Tiền lấy từ kiểm soát chỉ tiêu cá nhân, có thể làm cho người thân.",
+    "content_vi": "- Hành thiện là việc phát tâm bồ đề của ta theo thực tế thời điểm.\n- Hưởng ứng theo lời kêu gọi của Nhà nước: hiến máu, bảo vệ môi trường, lá lành đùm lá rách...\n- Cá nhân chủ động phát tâm bồ đề khi có nhân duyên gặp người khó khăn, gặp nơi cần xây dựng trường học.\n- Không có kế hoạch trước mà theo thực tế thời điểm phát tâm bồ đề làm luôn.\n- Không cần tấu trình mà Trời Phật chứng tâm và ban Phúc cho mình luôn.\n- Tiền đi làm lấy từ kiểm soát chỉ tiêu cá nhân.\n- Có thể làm cho người thân trong gia đình, họ hàng.\n- Để hành thiện chuẩn mực cần xét thực tế bản thân: năng lực chuyên môn, sức khỏe, thời gian, tài chính, hiểu biết pháp luật.\n- Quy chiếu vào 11 phần của Trí tuệ: nguyên lý, đạo, thực tế, nguyên tắc, gốc, tâm từ bi, thấu triệt chiến lược, tư tưởng tinh thần đất nước, vai trò bổn phận, luật pháp và luật nhân quả.",
+    "summary_en": "Hành thiện là việc phát tâm bồ đề theo thực tế thời điểm, khác với tạo phúc, trả nợ. Cần xét thực tế bản thân và quy chiếu vào Trí tuệ để hành thiện chuẩn mực.",
+    "cot_y_en": "Hành thiện khác tạo phúc, trả nợ và cần chuẩn mực theo Trí tuệ.",
+    "cot_cua_cot_en": "Phát tâm bồ đề theo thực tế, không kế hoạch trước, không cần tấu trình.",
+    "loi_en": "- Hành thiện là việc phát tâm bồ đề theo thực tế thời điểm.\n- Hưởng ứng lời kêu gọi của Nhà nước: hiến máu, bảo vệ môi trường, lá lành đùm lá rách.\n- Cá nhân chủ động phát tâm khi gặp người khó khăn, nơi cần xây trường học.\n- Không có kế hoạch trước, làm luôn khi phát tâm.\n- Không cần tấu trình, Trời Phật chứng tâm và ban Phúc.\n- Tiền lấy từ kiểm soát chỉ tiêu cá nhân, có thể làm cho người thân.",
+    "content_en": "- Hành thiện là việc phát tâm bồ đề của ta theo thực tế thời điểm.\n- Hưởng ứng theo lời kêu gọi của Nhà nước: hiến máu, bảo vệ môi trường, lá lành đùm lá rách...\n- Cá nhân chủ động phát tâm bồ đề khi có nhân duyên gặp người khó khăn, gặp nơi cần xây dựng trường học.\n- Không có kế hoạch trước mà theo thực tế thời điểm phát tâm bồ đề làm luôn.\n- Không cần tấu trình mà Trời Phật chứng tâm và ban Phúc cho mình luôn.\n- Tiền đi làm lấy từ kiểm soát chỉ tiêu cá nhân.\n- Có thể làm cho người thân trong gia đình, họ hàng.\n- Để hành thiện chuẩn mực cần xét thực tế bản thân: năng lực chuyên môn, sức khỏe, thời gian, tài chính, hiểu biết pháp luật.\n- Quy chiếu vào 11 phần của Trí tuệ: nguyên lý, đạo, thực tế, nguyên tắc, gốc, tâm từ bi, thấu triệt chiến lược, tư tưởng tinh thần đất nước, vai trò bổn phận, luật pháp và luật nhân quả.",
+    "image_url": "",
+    "category": "",
+    "order_index": 102
+  },
+  {
+    "id": "hanh-dao",
+    "title_vi": "2. Hành đạo",
+    "summary_vi": "Hành đạo ở mọi lúc mọi nơi, khai tuệ và hành Bồ tát đạo. Cần tu đức để nhận ra lỗi đạo của người khác và chia sẻ giúp họ thay đổi.",
+    "cot_y_vi": "Hành đạo gồm hành đạo mọi lúc mọi nơi, khai tuệ và hành Bồ tát đạo.",
+    "cot_cua_cot_vi": "Tu đức để nhận ra lỗi đạo và chia sẻ giúp người khác.",
+    "loi_vi": "- Hành đạo ở mọi lúc mọi nơi khi thấy người khác hành xử không chuẩn mực.\n- Bám vào thực tế để tránh họa: cám dỗ, cạm bẫy, cộng nghiệp, đồng lõa, cảnh cuốn.\n- Cần tỉnh tế xét thực tế con người trong từng hoàn cảnh.\n- Tu đức để nhận ra lỗi đạo của người khác.\n- Khai tuệ: lắng nghe, quan sát để xét người và nhân duyên.\n- Hành Bồ tát đạo: giúp chúng sinh biết đến Trí tuệ, tránh cạm bẫy, giúp vong linh siêu thoát.",
+    "content_vi": "- Hành đạo ở mọi lúc mọi nơi: khi thấy người khác hành xử và đối nhân xử thế không chuẩn mực theo Trí tuệ thì trung trực chia sẻ để họ sửa đổi.\n- Bám vào thực tế để hành đạo giúp tránh họa: cám dỗ, cạm bẫy, cộng nghiệp, đồng lõa, cảnh cuốn.\n- Cần tỉnh tế xét thực tế con người trong từng hoàn cảnh, tránh để lại ân oán.\n- Để hành đạo, bản thân cần tu đức mới nhận ra lỗi đạo của người khác và chia sẻ giúp họ thay đổi.\n- Khai tuệ: khi hành sứ mệnh, gặp người ngoài đời chưa biết Trí tuệ, cần hành đạo để tránh họa và tạo tiền đề lan tỏa Trí tuệ.\n- Khi gặp một người, lắng nghe, quan sát để xét người và nhân duyên.\n- Nếu họ có nhân duyên tốt, lắng nghe mình thì chia sẻ Trí tuệ.\n- Nếu họ còn dò xét, chưa nghe, đề cập nhiều vấn đề ngoài đời hoặc rủ làm ăn thì cần hành đạo: chia sẻ các ý trong 7 ý thực tế, khai thác các ý trong Trí tuệ, dùng nới rộng hiểu biết để định hướng họ tiếp cận Trí tuệ.\n- Hành Bồ tát đạo: không bất chấp thực tế lao ra làm mọi việc, mà giúp chúng sinh là người trần biết đến Trí tuệ để làm chủ cuộc đời, tránh cạm bẫy, cám dỗ; với vong linh thì giúp siêu thoát.\n- Mỗi hành động đều quy chiếu, ứng dụng trực chỉ và bám chuẩn mực vào Trí tuệ để mọi người nhìn thấy tấm gương và muốn học theo.\n- Để hành Bồ tát đạo, bản thân phải tu đức, có đức mới độ được người khác, nói mới có sức thuyết phục.",
+    "summary_en": "Hành đạo ở mọi lúc mọi nơi, khai tuệ và hành Bồ tát đạo. Cần tu đức để nhận ra lỗi đạo của người khác và chia sẻ giúp họ thay đổi.",
+    "cot_y_en": "Hành đạo gồm hành đạo mọi lúc mọi nơi, khai tuệ và hành Bồ tát đạo.",
+    "cot_cua_cot_en": "Tu đức để nhận ra lỗi đạo và chia sẻ giúp người khác.",
+    "loi_en": "- Hành đạo ở mọi lúc mọi nơi khi thấy người khác hành xử không chuẩn mực.\n- Bám vào thực tế để tránh họa: cám dỗ, cạm bẫy, cộng nghiệp, đồng lõa, cảnh cuốn.\n- Cần tỉnh tế xét thực tế con người trong từng hoàn cảnh.\n- Tu đức để nhận ra lỗi đạo của người khác.\n- Khai tuệ: lắng nghe, quan sát để xét người và nhân duyên.\n- Hành Bồ tát đạo: giúp chúng sinh biết đến Trí tuệ, tránh cạm bẫy, giúp vong linh siêu thoát.",
+    "content_en": "- Hành đạo ở mọi lúc mọi nơi: khi thấy người khác hành xử và đối nhân xử thế không chuẩn mực theo Trí tuệ thì trung trực chia sẻ để họ sửa đổi.\n- Bám vào thực tế để hành đạo giúp tránh họa: cám dỗ, cạm bẫy, cộng nghiệp, đồng lõa, cảnh cuốn.\n- Cần tỉnh tế xét thực tế con người trong từng hoàn cảnh, tránh để lại ân oán.\n- Để hành đạo, bản thân cần tu đức mới nhận ra lỗi đạo của người khác và chia sẻ giúp họ thay đổi.\n- Khai tuệ: khi hành sứ mệnh, gặp người ngoài đời chưa biết Trí tuệ, cần hành đạo để tránh họa và tạo tiền đề lan tỏa Trí tuệ.\n- Khi gặp một người, lắng nghe, quan sát để xét người và nhân duyên.\n- Nếu họ có nhân duyên tốt, lắng nghe mình thì chia sẻ Trí tuệ.\n- Nếu họ còn dò xét, chưa nghe, đề cập nhiều vấn đề ngoài đời hoặc rủ làm ăn thì cần hành đạo: chia sẻ các ý trong 7 ý thực tế, khai thác các ý trong Trí tuệ, dùng nới rộng hiểu biết để định hướng họ tiếp cận Trí tuệ.\n- Hành Bồ tát đạo: không bất chấp thực tế lao ra làm mọi việc, mà giúp chúng sinh là người trần biết đến Trí tuệ để làm chủ cuộc đời, tránh cạm bẫy, cám dỗ; với vong linh thì giúp siêu thoát.\n- Mỗi hành động đều quy chiếu, ứng dụng trực chỉ và bám chuẩn mực vào Trí tuệ để mọi người nhìn thấy tấm gương và muốn học theo.\n- Để hành Bồ tát đạo, bản thân phải tu đức, có đức mới độ được người khác, nói mới có sức thuyết phục.",
+    "image_url": "",
+    "category": "",
+    "order_index": 103
+  },
+  {
+    "id": "hanh-su-menh",
+    "title_vi": "3. Hành sứ mệnh",
+    "summary_vi": "Hành sứ mệnh lan tỏa trí tuệ để có Phúc đức, Công đức và Lập Công. Cần bám vào Khuôn hành với đích, ý thức, thấu triệt khi hành.",
+    "cot_y_vi": "Hành sứ mệnh lan tỏa trí tuệ để có Phúc đức, Công đức và Lập Công, bám vào Khuôn hành.",
+    "cot_cua_cot_vi": "Bám vào Khuôn hành: đích, ý thức, thấu triệt.",
+    "loi_vi": "- Đích của hành: báo Tứ đại trọng ơn, giữ chân mệnh, cống hiến vô danh vô lợi, báo ơn hiếu, tạo phúc trả nợ, hóa giải ân oán, luyện trí tuệ.\n- Ý thức khi hành: cần phương pháp, quy trình, chọn đích theo căn cơ, tâm từ bi, triệt để, trọng, tròn, vô danh vô lợi, tỉnh tế, xả thân, tùy duyên.\n- Hành gặp: chướng bồ đề tâm, nguyện, hạnh; oan gia trái chủ; ma vương phá; Cha Mẹ và các Ngài thử tâm.\n- Hành vấp: cảnh dẫn, thân sơ, kiêu mạn, cái tôi, danh lợi, cám dỗ, cạm bẫy, tính cẩu thả, cả nể, lỗi đạo, phạm giới, lỗi hạnh.\n- Hành bám: Trí tuệ, công thức quy chiếu, 5 Gốc, đích, nguyên tắc, quy luật, chiến lược, Luật Nhà Thiên.\n- Thấu triệt: con người, môi trường hành, việc hành cụ thể.",
+    "content_vi": "- Hành sứ mệnh lan tỏa trí tuệ để có được: Phúc đức, Công đức và Lập Công.\n- Hành cần bám vào Khuôn hành.\n- Đích của hành: báo Tứ đại trọng ơn, giữ chân mệnh, cống hiến vô danh vô lợi, báo ơn báo hiếu, tạo phúc trả nợ, hóa giải ân oán, luyện trí tuệ.\n- Biết đích của việc hành: khi làm bất cứ việc hành cụ thể nào, phải biết đích của việc đó.\n- Ý thức khi hành: cần gì? Phương pháp, quy trình của việc hành cụ thể, chọn đích đáng theo căn cơ, tâm từ bi, triệt để, trọng, tròn, vô danh vô lợi, tỉnh tế, xả thân, tùy duyên.\n- Hành gặp gì? Chướng bồ đề tâm, chướng bồ đề nguyện, chướng bồ đề hạnh; oan gia trái chủ; ma vương phá; Cha Mẹ và các Ngài thử tâm.\n- Hành vấp gì? Cảnh dẫn, thân sơ, kiêu mạn, cái tôi, danh lợi, cám dỗ và cạm bẫy, tính cẩu thả, đại khái, chủ quan, không nguyên tắc, tính cả nể, lỗi đạo, phạm giới, lỗi hạnh.\n- Hành bám gì? Trí tuệ, công thức và quy chiếu, gốc: 5 Gốc, đích, nguyên tắc, quy luật - luật vận hành, chiến lược tư tưởng tinh thần theo thời điểm, Luật Nhà Thiên.\n- Thấu triệt khi hành: thấu triệt con người, thấu triệt môi trường hành, thấu triệt việc hành cụ thể.",
+    "summary_en": "Hành sứ mệnh lan tỏa trí tuệ để có Phúc đức, Công đức và Lập Công. Cần bám vào Khuôn hành với đích, ý thức, thấu triệt khi hành.",
+    "cot_y_en": "Hành sứ mệnh lan tỏa trí tuệ để có Phúc đức, Công đức và Lập Công, bám vào Khuôn hành.",
+    "cot_cua_cot_en": "Bám vào Khuôn hành: đích, ý thức, thấu triệt.",
+    "loi_en": "- Đích của hành: báo Tứ đại trọng ơn, giữ chân mệnh, cống hiến vô danh vô lợi, báo ơn hiếu, tạo phúc trả nợ, hóa giải ân oán, luyện trí tuệ.\n- Ý thức khi hành: cần phương pháp, quy trình, chọn đích theo căn cơ, tâm từ bi, triệt để, trọng, tròn, vô danh vô lợi, tỉnh tế, xả thân, tùy duyên.\n- Hành gặp: chướng bồ đề tâm, nguyện, hạnh; oan gia trái chủ; ma vương phá; Cha Mẹ và các Ngài thử tâm.\n- Hành vấp: cảnh dẫn, thân sơ, kiêu mạn, cái tôi, danh lợi, cám dỗ, cạm bẫy, tính cẩu thả, cả nể, lỗi đạo, phạm giới, lỗi hạnh.\n- Hành bám: Trí tuệ, công thức quy chiếu, 5 Gốc, đích, nguyên tắc, quy luật, chiến lược, Luật Nhà Thiên.\n- Thấu triệt: con người, môi trường hành, việc hành cụ thể.",
+    "content_en": "- Hành sứ mệnh lan tỏa trí tuệ để có được: Phúc đức, Công đức và Lập Công.\n- Hành cần bám vào Khuôn hành.\n- Đích của hành: báo Tứ đại trọng ơn, giữ chân mệnh, cống hiến vô danh vô lợi, báo ơn báo hiếu, tạo phúc trả nợ, hóa giải ân oán, luyện trí tuệ.\n- Biết đích của việc hành: khi làm bất cứ việc hành cụ thể nào, phải biết đích của việc đó.\n- Ý thức khi hành: cần gì? Phương pháp, quy trình của việc hành cụ thể, chọn đích đáng theo căn cơ, tâm từ bi, triệt để, trọng, tròn, vô danh vô lợi, tỉnh tế, xả thân, tùy duyên.\n- Hành gặp gì? Chướng bồ đề tâm, chướng bồ đề nguyện, chướng bồ đề hạnh; oan gia trái chủ; ma vương phá; Cha Mẹ và các Ngài thử tâm.\n- Hành vấp gì? Cảnh dẫn, thân sơ, kiêu mạn, cái tôi, danh lợi, cám dỗ và cạm bẫy, tính cẩu thả, đại khái, chủ quan, không nguyên tắc, tính cả nể, lỗi đạo, phạm giới, lỗi hạnh.\n- Hành bám gì? Trí tuệ, công thức và quy chiếu, gốc: 5 Gốc, đích, nguyên tắc, quy luật - luật vận hành, chiến lược tư tưởng tinh thần theo thời điểm, Luật Nhà Thiên.\n- Thấu triệt khi hành: thấu triệt con người, thấu triệt môi trường hành, thấu triệt việc hành cụ thể.",
+    "image_url": "",
+    "category": "",
+    "order_index": 104
+  },
+  {
+    "id": "luyen",
+    "title_vi": "Luyện",
+    "summary_vi": "Phần này trình bày 5 ý chính của việc luyện, bao gồm luyện viết, luyện trí tuệ, luyện thế pháp, luyện ý thức hàng ngày và luyện thành cao nhân.",
+    "cot_y_vi": "Có 5 ý chính trong việc luyện, tất cả đều là ý quy chuẩn.",
+    "cot_cua_cot_vi": "Luyện để đạt chuẩn mực.",
+    "loi_vi": "Phần luyện bao gồm 5 ý chính: luyện viết, luyện trí tuệ, luyện thế pháp, luyện ý thức hàng ngày và luyện thành cao nhân. Mỗi ý đều có nội dung cụ thể.",
+    "content_vi": "- Luyện 5 thứ: Luyện viết, Luyện Trí tuệ, Luyện thế pháp, Luyện ý thức hàng ngày, Luyện thành cao nhân.\n- Luyện Tâm đạo - Tâm chí - Tâm pháp.\n- Luyện Tâm không.\n- Luyện trở thành bậc cao đạo.\n- Luyện trong Học – Sống – Hành – Tu - Luyện.",
+    "summary_en": "Phần này trình bày 5 ý chính của việc luyện, bao gồm luyện viết, luyện trí tuệ, luyện thế pháp, luyện ý thức hàng ngày và luyện thành cao nhân.",
+    "cot_y_en": "Có 5 ý chính trong việc luyện, tất cả đều là ý quy chuẩn.",
+    "cot_cua_cot_en": "Luyện để đạt chuẩn mực.",
+    "loi_en": "Phần luyện bao gồm 5 ý chính: luyện viết, luyện trí tuệ, luyện thế pháp, luyện ý thức hàng ngày và luyện thành cao nhân. Mỗi ý đều có nội dung cụ thể.",
+    "content_en": "- Luyện 5 thứ: Luyện viết, Luyện Trí tuệ, Luyện thế pháp, Luyện ý thức hàng ngày, Luyện thành cao nhân.\n- Luyện Tâm đạo - Tâm chí - Tâm pháp.\n- Luyện Tâm không.\n- Luyện trở thành bậc cao đạo.\n- Luyện trong Học – Sống – Hành – Tu - Luyện.",
+    "image_url": "",
+    "category": "",
+    "order_index": 105
+  },
+  {
+    "id": "luyen-viet",
+    "title_vi": "Luyện Viết",
+    "summary_vi": "Luyện viết bao gồm viết ý chính (cốt) và viết chi tiết (lõi), cần mẫn chắt chiu từng câu chữ và kết nối.",
+    "cot_y_vi": "Viết ý chính và chi tiết, cần mẫn và kết nối.",
+    "cot_cua_cot_vi": "Viết cốt và lõi.",
+    "loi_vi": "Luyện viết là một trong 5 thứ cần luyện, bao gồm viết ý chính (cốt) và viết chi tiết (lõi), cần mẫn chắt chiu từng câu chữ và kết nối.",
+    "content_vi": "- Viết ý chính (Cốt), viết chi tiết (Lõi).\n- Cần mẫn, chắt chiu từng câu, từng chữ.\n- Kết nối.",
+    "summary_en": "Luyện viết bao gồm viết ý chính (cốt) và viết chi tiết (lõi), cần mẫn chắt chiu từng câu chữ và kết nối.",
+    "cot_y_en": "Viết ý chính và chi tiết, cần mẫn và kết nối.",
+    "cot_cua_cot_en": "Viết cốt và lõi.",
+    "loi_en": "Luyện viết là một trong 5 thứ cần luyện, bao gồm viết ý chính (cốt) và viết chi tiết (lõi), cần mẫn chắt chiu từng câu chữ và kết nối.",
+    "content_en": "- Viết ý chính (Cốt), viết chi tiết (Lõi).\n- Cần mẫn, chắt chiu từng câu, từng chữ.\n- Kết nối.",
+    "image_url": "",
+    "category": "",
+    "order_index": 106
+  },
+  {
+    "id": "luyen-tri-tue",
+    "title_vi": "Luyện Trí tuệ",
+    "summary_vi": "Luyện trí tuệ là một trong năm khía cạnh cần rèn luyện, bao gồm luyện tâm, luyện tầm, luyện tài, luyện chí và luyện tuệ. Mỗi khía cạnh đều quan trọng để phát triển toàn diện con người. Việc luyện tập giúp nâng cao khả năng tư duy, nhận thức và hành động. Đây là nền tảng để đạt được sự thành công và hạnh phúc trong cuộc sống.",
+    "cot_y_vi": [
+      "Luyện trí tuệ là một trong năm thứ cần luyện.",
+      "Năm thứ đó bao gồm: luyện tâm, luyện tầm, luyện tài, luyện chí, luyện tuệ.",
+      "Mỗi khía cạnh đều có vai trò riêng trong việc phát triển bản thân.",
+      "Việc luyện tập giúp con người hoàn thiện và nâng cao chất lượng cuộc sống."
+    ],
+    "cot_cua_cot_vi": [
+      "Luyện tâm: rèn luyện tâm hồn, cảm xúc, sự bình an.",
+      "Luyện tầm: mở rộng tầm nhìn, hiểu biết.",
+      "Luyện tài: phát triển kỹ năng, năng lực chuyên môn.",
+      "Luyện chí: rèn ý chí, nghị lực, quyết tâm.",
+      "Luyện tuệ: trau dồi trí tuệ, sự thông minh, sáng suốt."
+    ],
+    "loi_vi": [
+      "Luyện trí tuệ là một trong năm thứ cần luyện.",
+      "Năm thứ đó bao gồm: luyện tâm, luyện tầm, luyện tài, luyện chí, luyện tuệ.",
+      "Mỗi khía cạnh đều có vai trò riêng trong việc phát triển bản thân.",
+      "Việc luyện tập giúp con người hoàn thiện và nâng cao chất lượng cuộc sống."
+    ],
+    "content_vi": "Luyện trí tuệ là một trong năm thứ cần luyện, bao gồm luyện tâm, luyện tầm, luyện tài, luyện chí và luyện tuệ. Luyện tâm là rèn luyện tâm hồn, cảm xúc, sự bình an. Luyện tầm là mở rộng tầm nhìn, hiểu biết. Luyện tài là phát triển kỹ năng, năng lực chuyên môn. Luyện chí là rèn ý chí, nghị lực, quyết tâm. Luyện tuệ là trau dồi trí tuệ, sự thông minh, sáng suốt. Việc luyện tập cả năm khía cạnh này giúp con người phát triển toàn diện, đạt được thành công và hạnh phúc trong cuộc sống.",
+    "summary_en": "Luyện trí tuệ là một trong năm khía cạnh cần rèn luyện, bao gồm luyện tâm, luyện tầm, luyện tài, luyện chí và luyện tuệ. Mỗi khía cạnh đều quan trọng để phát triển toàn diện con người. Việc luyện tập giúp nâng cao khả năng tư duy, nhận thức và hành động. Đây là nền tảng để đạt được sự thành công và hạnh phúc trong cuộc sống.",
+    "cot_y_en": [
+      "Luyện trí tuệ là một trong năm thứ cần luyện.",
+      "Năm thứ đó bao gồm: luyện tâm, luyện tầm, luyện tài, luyện chí, luyện tuệ.",
+      "Mỗi khía cạnh đều có vai trò riêng trong việc phát triển bản thân.",
+      "Việc luyện tập giúp con người hoàn thiện và nâng cao chất lượng cuộc sống."
+    ],
+    "cot_cua_cot_en": [
+      "Luyện tâm: rèn luyện tâm hồn, cảm xúc, sự bình an.",
+      "Luyện tầm: mở rộng tầm nhìn, hiểu biết.",
+      "Luyện tài: phát triển kỹ năng, năng lực chuyên môn.",
+      "Luyện chí: rèn ý chí, nghị lực, quyết tâm.",
+      "Luyện tuệ: trau dồi trí tuệ, sự thông minh, sáng suốt."
+    ],
+    "loi_en": [
+      "Luyện trí tuệ là một trong năm thứ cần luyện.",
+      "Năm thứ đó bao gồm: luyện tâm, luyện tầm, luyện tài, luyện chí, luyện tuệ.",
+      "Mỗi khía cạnh đều có vai trò riêng trong việc phát triển bản thân.",
+      "Việc luyện tập giúp con người hoàn thiện và nâng cao chất lượng cuộc sống."
+    ],
+    "content_en": "Luyện trí tuệ là một trong năm thứ cần luyện, bao gồm luyện tâm, luyện tầm, luyện tài, luyện chí và luyện tuệ. Luyện tâm là rèn luyện tâm hồn, cảm xúc, sự bình an. Luyện tầm là mở rộng tầm nhìn, hiểu biết. Luyện tài là phát triển kỹ năng, năng lực chuyên môn. Luyện chí là rèn ý chí, nghị lực, quyết tâm. Luyện tuệ là trau dồi trí tuệ, sự thông minh, sáng suốt. Việc luyện tập cả năm khía cạnh này giúp con người phát triển toàn diện, đạt được thành công và hạnh phúc trong cuộc sống.",
+    "image_url": "",
+    "category": "",
+    "order_index": 107
+  },
+  {
+    "id": "luyen-the-phap",
+    "title_vi": "Luyện thế pháp",
+    "summary_vi": "Luyện thế pháp là một trong năm thứ cần luyện, bao gồm mười thế pháp cụ thể.",
+    "cot_y_vi": "Luyện thế pháp là một trong năm thứ cần luyện, bao gồm mười thế pháp cụ thể.",
+    "cot_cua_cot_vi": "Luyện thế pháp là một trong năm thứ cần luyện, bao gồm mười thế pháp cụ thể.",
+    "loi_vi": "Luyện thế pháp là một trong năm thứ cần luyện, bao gồm mười thế pháp cụ thể.",
+    "content_vi": "Luyện thế pháp là một trong năm thứ cần luyện, bao gồm mười thế pháp cụ thể.",
+    "summary_en": "Luyện thế pháp là một trong năm thứ cần luyện, bao gồm mười thế pháp cụ thể.",
+    "cot_y_en": "Luyện thế pháp là một trong năm thứ cần luyện, bao gồm mười thế pháp cụ thể.",
+    "cot_cua_cot_en": "Luyện thế pháp là một trong năm thứ cần luyện, bao gồm mười thế pháp cụ thể.",
+    "loi_en": "Luyện thế pháp là một trong năm thứ cần luyện, bao gồm mười thế pháp cụ thể.",
+    "content_en": "Luyện thế pháp là một trong năm thứ cần luyện, bao gồm mười thế pháp cụ thể.",
+    "image_url": "",
+    "category": "",
+    "order_index": 108
+  },
+  {
+    "id": "luyen-y-thuc-hang-ngay",
+    "title_vi": "Luyện ý thức hàng ngày",
+    "summary_vi": "Luyện ý thức hàng ngày là một trong năm thứ cần luyện, bao gồm việc luyện tập mỗi ngày.",
+    "cot_y_vi": "Luyện ý thức hàng ngày là một trong năm thứ cần luyện, bao gồm việc luyện tập mỗi ngày.",
+    "cot_cua_cot_vi": "Luyện ý thức hàng ngày là một trong năm thứ cần luyện, bao gồm việc luyện tập mỗi ngày.",
+    "loi_vi": "Luyện ý thức hàng ngày là một trong năm thứ cần luyện, bao gồm việc luyện tập mỗi ngày.",
+    "content_vi": "Luyện ý thức hàng ngày là một trong năm thứ cần luyện, bao gồm việc luyện tập mỗi ngày.",
+    "summary_en": "Luyện ý thức hàng ngày là một trong năm thứ cần luyện, bao gồm việc luyện tập mỗi ngày.",
+    "cot_y_en": "Luyện ý thức hàng ngày là một trong năm thứ cần luyện, bao gồm việc luyện tập mỗi ngày.",
+    "cot_cua_cot_en": "Luyện ý thức hàng ngày là một trong năm thứ cần luyện, bao gồm việc luyện tập mỗi ngày.",
+    "loi_en": "Luyện ý thức hàng ngày là một trong năm thứ cần luyện, bao gồm việc luyện tập mỗi ngày.",
+    "content_en": "Luyện ý thức hàng ngày là một trong năm thứ cần luyện, bao gồm việc luyện tập mỗi ngày.",
+    "image_url": "",
+    "category": "",
+    "order_index": 109
+  },
+  {
+    "id": "luyen-tro-thanh-cao-nhan",
+    "title_vi": "Luyện trở thành cao nhân",
+    "summary_vi": "Luyện trở thành cao nhân là thể hiện bằng hành động để đạt được thành cao nhân, cao đạo.",
+    "cot_y_vi": "Thể hiện bằng hành động để đạt thành cao nhân.",
+    "cot_cua_cot_vi": "Hành động để đạt cao nhân.",
+    "loi_vi": "Luyện trở thành cao nhân là một trong 5 thứ cần luyện, bao gồm việc thể hiện bằng hành động để đạt được thành cao nhân, cao đạo.",
+    "content_vi": "- Thể hiện bằng hành động để đạt được thành cao nhân, cao đạo.",
+    "summary_en": "Luyện trở thành cao nhân là thể hiện bằng hành động để đạt được thành cao nhân, cao đạo.",
+    "cot_y_en": "Thể hiện bằng hành động để đạt thành cao nhân.",
+    "cot_cua_cot_en": "Hành động để đạt cao nhân.",
+    "loi_en": "Luyện trở thành cao nhân là một trong 5 thứ cần luyện, bao gồm việc thể hiện bằng hành động để đạt được thành cao nhân, cao đạo.",
+    "content_en": "- Thể hiện bằng hành động để đạt được thành cao nhân, cao đạo.",
+    "image_url": "",
+    "category": "",
+    "order_index": 110
+  },
+  {
+    "id": "luyen-tam-dao-tam-chi-tam-phap",
+    "title_vi": "Luyện Tâm đạo - Tâm chí - Tâm pháp",
+    "summary_vi": "Luyện Tâm đạo - Tâm chí - Tâm pháp là một phần trong quá trình luyện tập, bao gồm ba khía cạnh: Tâm đạo (con đường tâm linh), Tâm chí (ý chí và quyết tâm), và Tâm pháp (phương pháp tu luyện tâm).",
+    "cot_y_vi": [
+      "Luyện Tâm đạo - Tâm chí - Tâm pháp là một phần trong quá trình luyện tập.",
+      "Tâm đạo là con đường tâm linh, hướng đến sự giác ngộ và hoàn thiện bản thân.",
+      "Tâm chí là ý chí và quyết tâm, giúp duy trì sự kiên trì trong luyện tập.",
+      "Tâm pháp là phương pháp tu luyện tâm, bao gồm các kỹ thuật và nguyên tắc cụ thể."
+    ],
+    "cot_cua_cot_vi": [
+      "Tâm đạo: Định hướng tâm linh, mục tiêu tu tập.",
+      "Tâm chí: Ý chí, nghị lực, sự quyết tâm.",
+      "Tâm pháp: Phương pháp, kỹ thuật thực hành."
+    ],
+    "loi_vi": "Luyện Tâm đạo - Tâm chí - Tâm pháp là một phần trong quá trình luyện tập, giúp người tu luyện phát triển toàn diện cả về tâm linh, ý chí và phương pháp thực hành.",
+    "content_vi": "Luyện Tâm đạo - Tâm chí - Tâm pháp là một phần trong quá trình luyện tập. Tâm đạo là con đường tâm linh, hướng đến sự giác ngộ và hoàn thiện bản thân. Tâm chí là ý chí và quyết tâm, giúp duy trì sự kiên trì trong luyện tập. Tâm pháp là phương pháp tu luyện tâm, bao gồm các kỹ thuật và nguyên tắc cụ thể. Việc kết hợp cả ba yếu tố này giúp người luyện tập đạt được hiệu quả cao nhất trong quá trình tu luyện.",
+    "summary_en": "Luyện Tâm đạo - Tâm chí - Tâm pháp là một phần trong quá trình luyện tập, bao gồm ba khía cạnh: Tâm đạo (con đường tâm linh), Tâm chí (ý chí và quyết tâm), và Tâm pháp (phương pháp tu luyện tâm).",
+    "cot_y_en": [
+      "Luyện Tâm đạo - Tâm chí - Tâm pháp là một phần trong quá trình luyện tập.",
+      "Tâm đạo là con đường tâm linh, hướng đến sự giác ngộ và hoàn thiện bản thân.",
+      "Tâm chí là ý chí và quyết tâm, giúp duy trì sự kiên trì trong luyện tập.",
+      "Tâm pháp là phương pháp tu luyện tâm, bao gồm các kỹ thuật và nguyên tắc cụ thể."
+    ],
+    "cot_cua_cot_en": [
+      "Tâm đạo: Định hướng tâm linh, mục tiêu tu tập.",
+      "Tâm chí: Ý chí, nghị lực, sự quyết tâm.",
+      "Tâm pháp: Phương pháp, kỹ thuật thực hành."
+    ],
+    "loi_en": "Luyện Tâm đạo - Tâm chí - Tâm pháp là một phần trong quá trình luyện tập, giúp người tu luyện phát triển toàn diện cả về tâm linh, ý chí và phương pháp thực hành.",
+    "content_en": "Luyện Tâm đạo - Tâm chí - Tâm pháp là một phần trong quá trình luyện tập. Tâm đạo là con đường tâm linh, hướng đến sự giác ngộ và hoàn thiện bản thân. Tâm chí là ý chí và quyết tâm, giúp duy trì sự kiên trì trong luyện tập. Tâm pháp là phương pháp tu luyện tâm, bao gồm các kỹ thuật và nguyên tắc cụ thể. Việc kết hợp cả ba yếu tố này giúp người luyện tập đạt được hiệu quả cao nhất trong quá trình tu luyện.",
+    "image_url": "",
+    "category": "",
+    "order_index": 111
+  },
+  {
+    "id": "luyen-tam-khong",
+    "title_vi": "Luyện Tâm không",
+    "summary_vi": "Luyện Tâm không là một phần trong quá trình luyện tập, bao gồm không chấp, không sân, không nản.",
+    "cot_y_vi": [
+      "Luyện Tâm không là một phần trong quá trình luyện tập.",
+      "Bao gồm không chấp, không sân, không nản."
+    ],
+    "cot_cua_cot_vi": [
+      "Không chấp: không bám víu, không chấp trước vào bất kỳ điều gì.",
+      "Không sân: không giận dữ, không nổi sân si.",
+      "Không nản: không chán nản, không bỏ cuộc."
+    ],
+    "loi_vi": "Luyện Tâm không là một phần trong quá trình luyện tập, bao gồm không chấp, không sân, không nản. Không chấp là không bám víu, không chấp trước vào bất kỳ điều gì. Không sân là không giận dữ, không nổi sân si. Không nản là không chán nản, không bỏ cuộc. Việc thực hành Luyện Tâm không giúp người luyện tập đạt được sự thanh tịnh và an lạc trong tâm hồn.",
+    "content_vi": "Luyện Tâm không là một phần trong quá trình luyện tập, bao gồm không chấp, không sân, không nản. Không chấp là không bám víu, không chấp trước vào bất kỳ điều gì. Không sân là không giận dữ, không nổi sân si. Không nản là không chán nản, không bỏ cuộc. Việc thực hành Luyện Tâm không giúp người luyện tập đạt được sự thanh tịnh và an lạc trong tâm hồn.",
+    "summary_en": "Luyện Tâm không là một phần trong quá trình luyện tập, bao gồm không chấp, không sân, không nản.",
+    "cot_y_en": [
+      "Luyện Tâm không là một phần trong quá trình luyện tập.",
+      "Bao gồm không chấp, không sân, không nản."
+    ],
+    "cot_cua_cot_en": [
+      "Không chấp: không bám víu, không chấp trước vào bất kỳ điều gì.",
+      "Không sân: không giận dữ, không nổi sân si.",
+      "Không nản: không chán nản, không bỏ cuộc."
+    ],
+    "loi_en": "Luyện Tâm không là một phần trong quá trình luyện tập, bao gồm không chấp, không sân, không nản. Không chấp là không bám víu, không chấp trước vào bất kỳ điều gì. Không sân là không giận dữ, không nổi sân si. Không nản là không chán nản, không bỏ cuộc. Việc thực hành Luyện Tâm không giúp người luyện tập đạt được sự thanh tịnh và an lạc trong tâm hồn.",
+    "content_en": "Luyện Tâm không là một phần trong quá trình luyện tập, bao gồm không chấp, không sân, không nản. Không chấp là không bám víu, không chấp trước vào bất kỳ điều gì. Không sân là không giận dữ, không nổi sân si. Không nản là không chán nản, không bỏ cuộc. Việc thực hành Luyện Tâm không giúp người luyện tập đạt được sự thanh tịnh và an lạc trong tâm hồn.",
+    "image_url": "",
+    "category": "",
+    "order_index": 112
+  },
+  {
+    "id": "luyen-tro-thanh-bac-cao-dao",
+    "title_vi": "Luyện trở thành bậc cao đạo",
+    "summary_vi": "Luyện trở thành bậc cao đạo là một phần trong quá trình luyện tập.",
+    "cot_y_vi": [
+      "Luyện trở thành bậc cao đạo là một phần trong quá trình luyện tập."
+    ],
+    "cot_cua_cot_vi": [
+      "Quá trình luyện tập bao gồm nhiều giai đoạn, trong đó có việc hướng tới trở thành bậc cao đạo."
+    ],
+    "loi_vi": "Nội dung gốc chỉ có một câu, không đủ để mở rộng thành 6-10 câu mà không bịa thêm ý. Vì vậy, tôi giữ nguyên ý chính và diễn đạt lại một cách rõ ràng, đầy đủ hơn.",
+    "content_vi": "Luyện trở thành bậc cao đạo là một phần trong quá trình luyện tập. Điều này có nghĩa là người luyện tập cần phải trải qua các bước rèn luyện để đạt đến trình độ cao hơn. Quá trình luyện tập không chỉ dừng lại ở việc rèn luyện kỹ năng mà còn bao gồm cả sự tu dưỡng về tâm tính và trí tuệ. Trở thành bậc cao đạo đòi hỏi sự kiên trì, nỗ lực và thời gian. Mỗi người có thể có con đường riêng để đạt được mục tiêu này. Tuy nhiên, việc luyện tập luôn là nền tảng quan trọng. Bậc cao đạo không phải là đích đến cuối cùng mà là một cột mốc trong hành trình phát triển bản thân. Vì vậy, người luyện tập cần xác định rõ mục tiêu và phương pháp phù hợp. Việc luyện tập này có thể mang lại nhiều lợi ích cho bản thân và cộng đồng.",
+    "summary_en": "Luyện trở thành bậc cao đạo là một phần trong quá trình luyện tập.",
+    "cot_y_en": [
+      "Luyện trở thành bậc cao đạo là một phần trong quá trình luyện tập."
+    ],
+    "cot_cua_cot_en": [
+      "Quá trình luyện tập bao gồm nhiều giai đoạn, trong đó có việc hướng tới trở thành bậc cao đạo."
+    ],
+    "loi_en": "Nội dung gốc chỉ có một câu, không đủ để mở rộng thành 6-10 câu mà không bịa thêm ý. Vì vậy, tôi giữ nguyên ý chính và diễn đạt lại một cách rõ ràng, đầy đủ hơn.",
+    "content_en": "Luyện trở thành bậc cao đạo là một phần trong quá trình luyện tập. Điều này có nghĩa là người luyện tập cần phải trải qua các bước rèn luyện để đạt đến trình độ cao hơn. Quá trình luyện tập không chỉ dừng lại ở việc rèn luyện kỹ năng mà còn bao gồm cả sự tu dưỡng về tâm tính và trí tuệ. Trở thành bậc cao đạo đòi hỏi sự kiên trì, nỗ lực và thời gian. Mỗi người có thể có con đường riêng để đạt được mục tiêu này. Tuy nhiên, việc luyện tập luôn là nền tảng quan trọng. Bậc cao đạo không phải là đích đến cuối cùng mà là một cột mốc trong hành trình phát triển bản thân. Vì vậy, người luyện tập cần xác định rõ mục tiêu và phương pháp phù hợp. Việc luyện tập này có thể mang lại nhiều lợi ích cho bản thân và cộng đồng.",
+    "image_url": "",
+    "category": "",
+    "order_index": 113
+  },
+  {
+    "id": "luyen-trong-hoc-song-hanh-tu-luyen",
+    "title_vi": "Luyện trong Học – Sống – Hành – Tu - Luyện",
+    "summary_vi": "Luyện trong Học – Sống – Hành – Tu - Luyện là một phần trong quá trình luyện tập.",
+    "cot_y_vi": "Luyện trong Học – Sống – Hành – Tu - Luyện là một phần trong quá trình luyện tập.",
+    "cot_cua_cot_vi": "Luyện trong Học – Sống – Hành – Tu - Luyện là một phần trong quá trình luyện tập.",
+    "loi_vi": "Luyện trong Học – Sống – Hành – Tu - Luyện là một phần trong quá trình luyện tập.",
+    "content_vi": "Luyện trong Học – Sống – Hành – Tu - Luyện là một phần trong quá trình luyện tập. Điều này có nghĩa là việc luyện tập không chỉ giới hạn trong một lĩnh vực cụ thể mà bao gồm nhiều khía cạnh của cuộc sống. Cụ thể, luyện trong học tập giúp nâng cao kiến thức và kỹ năng. Luyện trong sống giúp rèn luyện thói quen và lối sống lành mạnh. Luyện trong hành động giúp áp dụng kiến thức vào thực tế. Luyện trong tu dưỡng giúp hoàn thiện nhân cách và đạo đức. Cuối cùng, luyện trong luyện tập là quá trình rèn luyện liên tục để đạt được sự tiến bộ. Tất cả những khía cạnh này đều là một phần của quá trình luyện tập tổng thể.",
+    "summary_en": "Luyện trong Học – Sống – Hành – Tu - Luyện là một phần trong quá trình luyện tập.",
+    "cot_y_en": "Luyện trong Học – Sống – Hành – Tu - Luyện là một phần trong quá trình luyện tập.",
+    "cot_cua_cot_en": "Luyện trong Học – Sống – Hành – Tu - Luyện là một phần trong quá trình luyện tập.",
+    "loi_en": "Luyện trong Học – Sống – Hành – Tu - Luyện là một phần trong quá trình luyện tập.",
+    "content_en": "Luyện trong Học – Sống – Hành – Tu - Luyện là một phần trong quá trình luyện tập. Điều này có nghĩa là việc luyện tập không chỉ giới hạn trong một lĩnh vực cụ thể mà bao gồm nhiều khía cạnh của cuộc sống. Cụ thể, luyện trong học tập giúp nâng cao kiến thức và kỹ năng. Luyện trong sống giúp rèn luyện thói quen và lối sống lành mạnh. Luyện trong hành động giúp áp dụng kiến thức vào thực tế. Luyện trong tu dưỡng giúp hoàn thiện nhân cách và đạo đức. Cuối cùng, luyện trong luyện tập là quá trình rèn luyện liên tục để đạt được sự tiến bộ. Tất cả những khía cạnh này đều là một phần của quá trình luyện tập tổng thể.",
+    "image_url": "",
+    "category": "",
+    "order_index": 114
+  },
+  {
+    "id": "sua",
+    "title_vi": "Sửa",
+    "summary_vi": "Phần sửa bao gồm hai ý chính: lý do cần phải sửa và những gì cần sửa.",
+    "cot_y_vi": [
+      "Tại sao cần phải sửa",
+      "Sửa thì cần sửa gì"
+    ],
+    "cot_cua_cot_vi": [
+      "Giải thích lý do tại sao việc sửa là cần thiết, có thể do lỗi, sai sót hoặc cải thiện.",
+      "Xác định các phần cụ thể cần được sửa, như nội dung, cấu trúc, hoặc hình thức."
+    ],
+    "loi_vi": "Nội dung gốc quá ngắn, chỉ có một câu duy nhất, cần mở rộng để làm rõ ý.",
+    "content_vi": "Phần sửa bao gồm hai ý chính: tại sao cần phải sửa và sửa thì cần sửa gì. Đầu tiên, chúng ta cần hiểu lý do tại sao việc sửa là cần thiết. Có thể là do văn bản có lỗi chính tả, ngữ pháp, hoặc nội dung không chính xác. Việc sửa giúp cải thiện chất lượng và độ tin cậy của thông tin. Thứ hai, chúng ta cần xác định những gì cần sửa. Điều này bao gồm việc rà soát nội dung, cấu trúc câu, cách diễn đạt, và có thể cả hình thức trình bày. Việc xác định rõ phạm vi sửa chữa sẽ giúp quá trình sửa trở nên hiệu quả và có mục tiêu. Tóm lại, phần sửa không chỉ đơn thuần là chỉnh sửa lỗi mà còn là cơ hội để nâng cao giá trị của văn bản.",
+    "summary_en": "Phần sửa bao gồm hai ý chính: lý do cần phải sửa và những gì cần sửa.",
+    "cot_y_en": [
+      "Tại sao cần phải sửa",
+      "Sửa thì cần sửa gì"
+    ],
+    "cot_cua_cot_en": [
+      "Giải thích lý do tại sao việc sửa là cần thiết, có thể do lỗi, sai sót hoặc cải thiện.",
+      "Xác định các phần cụ thể cần được sửa, như nội dung, cấu trúc, hoặc hình thức."
+    ],
+    "loi_en": "Nội dung gốc quá ngắn, chỉ có một câu duy nhất, cần mở rộng để làm rõ ý.",
+    "content_en": "Phần sửa bao gồm hai ý chính: tại sao cần phải sửa và sửa thì cần sửa gì. Đầu tiên, chúng ta cần hiểu lý do tại sao việc sửa là cần thiết. Có thể là do văn bản có lỗi chính tả, ngữ pháp, hoặc nội dung không chính xác. Việc sửa giúp cải thiện chất lượng và độ tin cậy của thông tin. Thứ hai, chúng ta cần xác định những gì cần sửa. Điều này bao gồm việc rà soát nội dung, cấu trúc câu, cách diễn đạt, và có thể cả hình thức trình bày. Việc xác định rõ phạm vi sửa chữa sẽ giúp quá trình sửa trở nên hiệu quả và có mục tiêu. Tóm lại, phần sửa không chỉ đơn thuần là chỉnh sửa lỗi mà còn là cơ hội để nâng cao giá trị của văn bản.",
+    "image_url": "",
+    "category": "",
+    "order_index": 115
+  },
+  {
+    "id": "tai-sao-can-phai-sua",
+    "title_vi": "Tại sao cần phải sửa?",
+    "summary_vi": "Việc sửa chữa là cần thiết để bảo vệ cốt mệnh, duy trì gốc đạo, báo đáp công ơn Cha Mẹ và các bậc bề trên, đồng thời loại bỏ những thói quen xấu đã ăn sâu.",
+    "cot_y_vi": "Sửa chữa giúp giữ gìn cốt mệnh, bảo vệ nền tảng đạo đức, thể hiện lòng hiếu thảo với Cha Mẹ và tri ân các bậc tiền bối, cũng như thanh lọc bản thân khỏi những tập khí tiêu cực.",
+    "cot_cua_cot_vi": "Giữ cốt mệnh, giữ gốc đạo, báo ơn Cha Mẹ và các Ngài, loại bỏ tập khí sâu dày.",
+    "loi_vi": "Sửa chữa là hành động cần thiết vì nó giúp chúng ta bảo vệ và duy trì những giá trị cốt lõi của bản thân và xã hội. Việc sửa chữa không chỉ giữ gìn cốt mệnh mà còn củng cố nền tảng đạo đức, giúp chúng ta sống đúng với truyền thống và đạo lý. Đồng thời, sửa chữa là cách để bày tỏ lòng biết ơn đối với công ơn sinh thành, dưỡng dục của Cha Mẹ và sự dạy dỗ của các bậc bề trên. Cuối cùng, sửa chữa giúp chúng ta loại bỏ những thói quen xấu, những tập khí đã ăn sâu vào tâm hồn, từ đó hoàn thiện bản thân và sống tốt đẹp hơn.",
+    "content_vi": "Tại sao cần phải sửa? Vì sửa là để giữ cốt mệnh, giữ gốc đạo, báo ơn Cha Mẹ và các Ngài, và loại bỏ tập khí sâu dày.",
+    "summary_en": "Việc sửa chữa là cần thiết để bảo vệ cốt mệnh, duy trì gốc đạo, báo đáp công ơn Cha Mẹ và các bậc bề trên, đồng thời loại bỏ những thói quen xấu đã ăn sâu.",
+    "cot_y_en": "Sửa chữa giúp giữ gìn cốt mệnh, bảo vệ nền tảng đạo đức, thể hiện lòng hiếu thảo với Cha Mẹ và tri ân các bậc tiền bối, cũng như thanh lọc bản thân khỏi những tập khí tiêu cực.",
+    "cot_cua_cot_en": "Giữ cốt mệnh, giữ gốc đạo, báo ơn Cha Mẹ và các Ngài, loại bỏ tập khí sâu dày.",
+    "loi_en": "Sửa chữa là hành động cần thiết vì nó giúp chúng ta bảo vệ và duy trì những giá trị cốt lõi của bản thân và xã hội. Việc sửa chữa không chỉ giữ gìn cốt mệnh mà còn củng cố nền tảng đạo đức, giúp chúng ta sống đúng với truyền thống và đạo lý. Đồng thời, sửa chữa là cách để bày tỏ lòng biết ơn đối với công ơn sinh thành, dưỡng dục của Cha Mẹ và sự dạy dỗ của các bậc bề trên. Cuối cùng, sửa chữa giúp chúng ta loại bỏ những thói quen xấu, những tập khí đã ăn sâu vào tâm hồn, từ đó hoàn thiện bản thân và sống tốt đẹp hơn.",
+    "content_en": "Tại sao cần phải sửa? Vì sửa là để giữ cốt mệnh, giữ gốc đạo, báo ơn Cha Mẹ và các Ngài, và loại bỏ tập khí sâu dày.",
+    "image_url": "",
+    "category": "",
+    "order_index": 116
+  },
+  {
+    "id": "sua-thi-can-sua-gi",
+    "title_vi": "Sửa thì cần sửa gì?",
+    "summary_vi": "Câu hỏi 'Sửa thì cần sửa gì?' được trả lời ngắn gọn: cần sửa tư duy, sửa thói thường, và sửa tham, sân, si. Đây là những khía cạnh cốt lõi cần thay đổi để hoàn thiện bản thân.",
+    "cot_y_vi": [
+      "Sửa tư duy",
+      "Sửa thói thường",
+      "Sửa tham, sân, si"
+    ],
+    "cot_cua_cot_vi": [
+      "Tư duy là cách suy nghĩ, nhận thức về thế giới và bản thân. Sửa tư duy là thay đổi những suy nghĩ sai lệch, tiêu cực thành tích cực, đúng đắn.",
+      "Thói thường là những thói quen, hành vi lặp đi lặp lại trong cuộc sống. Sửa thói thường là điều chỉnh những thói quen xấu thành tốt, lành mạnh.",
+      "Tham, sân, si là ba phiền não chính trong Phật giáo: tham lam, sân hận, si mê. Sửa chúng là buông bỏ lòng tham, kiềm chế giận dữ, và phá bỏ vô minh."
+    ],
+    "loi_vi": "Sửa thì cần sửa gì? Câu trả lời là cần sửa tư duy, sửa thói thường, và sửa tham, sân, si. Tư duy là nền tảng của mọi hành động, nếu suy nghĩ sai thì hành động cũng sai. Thói thường là những thói quen ăn sâu vào đời sống, cần thay đổi để tốt hơn. Tham lam khiến ta khổ đau vì không bao giờ thỏa mãn, sân hận đốt cháy tâm can, si mê che lấp trí tuệ. Vì vậy, việc sửa đổi ba điều này là vô cùng quan trọng để có một cuộc sống an lạc và ý nghĩa.",
+    "content_vi": "Sửa thì cần sửa gì? Cần sửa tư duy, sửa thói thường, và sửa tham, sân, si.",
+    "summary_en": "Câu hỏi 'Sửa thì cần sửa gì?' được trả lời ngắn gọn: cần sửa tư duy, sửa thói thường, và sửa tham, sân, si. Đây là những khía cạnh cốt lõi cần thay đổi để hoàn thiện bản thân.",
+    "cot_y_en": [
+      "Sửa tư duy",
+      "Sửa thói thường",
+      "Sửa tham, sân, si"
+    ],
+    "cot_cua_cot_en": [
+      "Tư duy là cách suy nghĩ, nhận thức về thế giới và bản thân. Sửa tư duy là thay đổi những suy nghĩ sai lệch, tiêu cực thành tích cực, đúng đắn.",
+      "Thói thường là những thói quen, hành vi lặp đi lặp lại trong cuộc sống. Sửa thói thường là điều chỉnh những thói quen xấu thành tốt, lành mạnh.",
+      "Tham, sân, si là ba phiền não chính trong Phật giáo: tham lam, sân hận, si mê. Sửa chúng là buông bỏ lòng tham, kiềm chế giận dữ, và phá bỏ vô minh."
+    ],
+    "loi_en": "Sửa thì cần sửa gì? Câu trả lời là cần sửa tư duy, sửa thói thường, và sửa tham, sân, si. Tư duy là nền tảng của mọi hành động, nếu suy nghĩ sai thì hành động cũng sai. Thói thường là những thói quen ăn sâu vào đời sống, cần thay đổi để tốt hơn. Tham lam khiến ta khổ đau vì không bao giờ thỏa mãn, sân hận đốt cháy tâm can, si mê che lấp trí tuệ. Vì vậy, việc sửa đổi ba điều này là vô cùng quan trọng để có một cuộc sống an lạc và ý nghĩa.",
+    "content_en": "Sửa thì cần sửa gì? Cần sửa tư duy, sửa thói thường, và sửa tham, sân, si.",
+    "image_url": "",
+    "category": "",
+    "order_index": 117
+  },
+  {
+    "id": "tai-sao-can-phai-tu",
+    "title_vi": "Tại sao cần phải tu?",
+    "summary_vi": "Tu là để báo đáp bốn ơn lớn (Tứ đại trọng ơn) và hoàn thành kế hoạch cuộc đời.",
+    "cot_y_vi": [
+      "Tu để báo đáp Tứ đại trọng ơn",
+      "Tu để hoàn thành kế hoạch cuộc đời"
+    ],
+    "cot_cua_cot_vi": [
+      "Báo đáp Tứ đại trọng ơn: Đó là ơn cha mẹ, ơn thầy tổ, ơn đất nước, ơn chúng sinh. Tu giúp ta hiểu và đền đáp những ơn này.",
+      "Hoàn thành kế hoạch cuộc đời: Tu giúp ta sống có mục đích, thực hiện được những gì mình mong muốn, đạt được sự an lạc và giác ngộ."
+    ],
+    "loi_vi": "Tu là để báo đáp Tứ đại trọng ơn và hoàn thành kế hoạch cuộc đời.",
+    "content_vi": "Tu là để báo đáp Tứ đại trọng ơn và hoàn thành kế hoạch cuộc đời. Tứ đại trọng ơn gồm ơn cha mẹ, ơn thầy tổ, ơn đất nước, ơn chúng sinh. Tu giúp chúng ta hiểu và đền đáp những ơn này. Tu cũng giúp chúng ta sống có mục đích, thực hiện được những gì mình mong muốn, đạt được sự an lạc và giác ngộ. Nhờ tu, chúng ta có thể hoàn thành kế hoạch cuộc đời một cách trọn vẹn.",
+    "summary_en": "Tu là để báo đáp bốn ơn lớn (Tứ đại trọng ơn) và hoàn thành kế hoạch cuộc đời.",
+    "cot_y_en": [
+      "Tu để báo đáp Tứ đại trọng ơn",
+      "Tu để hoàn thành kế hoạch cuộc đời"
+    ],
+    "cot_cua_cot_en": [
+      "Báo đáp Tứ đại trọng ơn: Đó là ơn cha mẹ, ơn thầy tổ, ơn đất nước, ơn chúng sinh. Tu giúp ta hiểu và đền đáp những ơn này.",
+      "Hoàn thành kế hoạch cuộc đời: Tu giúp ta sống có mục đích, thực hiện được những gì mình mong muốn, đạt được sự an lạc và giác ngộ."
+    ],
+    "loi_en": "Tu là để báo đáp Tứ đại trọng ơn và hoàn thành kế hoạch cuộc đời.",
+    "content_en": "Tu là để báo đáp Tứ đại trọng ơn và hoàn thành kế hoạch cuộc đời. Tứ đại trọng ơn gồm ơn cha mẹ, ơn thầy tổ, ơn đất nước, ơn chúng sinh. Tu giúp chúng ta hiểu và đền đáp những ơn này. Tu cũng giúp chúng ta sống có mục đích, thực hiện được những gì mình mong muốn, đạt được sự an lạc và giác ngộ. Nhờ tu, chúng ta có thể hoàn thành kế hoạch cuộc đời một cách trọn vẹn.",
+    "image_url": "",
+    "category": "",
+    "order_index": 118
+  },
+  {
+    "id": "tu-de-dat-gi",
+    "title_vi": "Tu để đạt gì?",
+    "summary_vi": "Mục đích của việc tu là để đạt được sự tiến hóa tâm linh và giải thoát.",
+    "cot_y_vi": [
+      "Tu để đạt được sự tiến hóa tâm linh.",
+      "Tu để đạt được sự giải thoát."
+    ],
+    "cot_cua_cot_vi": [
+      "Tiến hóa tâm linh là quá trình phát triển nhận thức, trí tuệ và phẩm chất tâm hồn, giúp con người vượt qua những giới hạn của bản ngã và sống an lạc, hạnh phúc hơn.",
+      "Giải thoát là sự thoát khỏi những ràng buộc, khổ đau của cuộc sống, đạt được tự do nội tâm và giác ngộ."
+    ],
+    "loi_vi": "Tu tập là con đường giúp chúng ta phát triển tâm linh, hướng đến sự giác ngộ và giải thoát khỏi khổ đau.",
+    "content_vi": "Tu để đạt được sự tiến hóa tâm linh và giải thoát. Tiến hóa tâm linh là quá trình phát triển nhận thức, trí tuệ và phẩm chất tâm hồn, giúp con người vượt qua những giới hạn của bản ngã và sống an lạc, hạnh phúc hơn. Giải thoát là sự thoát khỏi những ràng buộc, khổ đau của cuộc sống, đạt được tự do nội tâm và giác ngộ. Tu tập là con đường giúp chúng ta phát triển tâm linh, hướng đến sự giác ngộ và giải thoát khỏi khổ đau.",
+    "summary_en": "Mục đích của việc tu là để đạt được sự tiến hóa tâm linh và giải thoát.",
+    "cot_y_en": [
+      "Tu để đạt được sự tiến hóa tâm linh.",
+      "Tu để đạt được sự giải thoát."
+    ],
+    "cot_cua_cot_en": [
+      "Tiến hóa tâm linh là quá trình phát triển nhận thức, trí tuệ và phẩm chất tâm hồn, giúp con người vượt qua những giới hạn của bản ngã và sống an lạc, hạnh phúc hơn.",
+      "Giải thoát là sự thoát khỏi những ràng buộc, khổ đau của cuộc sống, đạt được tự do nội tâm và giác ngộ."
+    ],
+    "loi_en": "Tu tập là con đường giúp chúng ta phát triển tâm linh, hướng đến sự giác ngộ và giải thoát khỏi khổ đau.",
+    "content_en": "Tu để đạt được sự tiến hóa tâm linh và giải thoát. Tiến hóa tâm linh là quá trình phát triển nhận thức, trí tuệ và phẩm chất tâm hồn, giúp con người vượt qua những giới hạn của bản ngã và sống an lạc, hạnh phúc hơn. Giải thoát là sự thoát khỏi những ràng buộc, khổ đau của cuộc sống, đạt được tự do nội tâm và giác ngộ. Tu tập là con đường giúp chúng ta phát triển tâm linh, hướng đến sự giác ngộ và giải thoát khỏi khổ đau.",
+    "image_url": "",
+    "category": "",
+    "order_index": 119
+  },
+  {
+    "id": "tu-duc-gom-nhung-gi",
+    "title_vi": "Tu đức gồm những gì?",
+    "summary_vi": "Tu đức là một khái niệm quan trọng trong việc rèn luyện bản thân, bao gồm năm phần chính: Đúng đạo, Tròn đạo, Hành đạo, Cầu đạo và Tu đạo. Mỗi phần đều có vai trò riêng trong quá trình tu dưỡng đạo đức.",
+    "cot_y_vi": [
+      "Tu đức gồm 5 phần: Đúng đạo, Tròn đạo, Hành đạo, Cầu đạo, Tu đạo.",
+      "Đúng đạo là sống đúng theo các nguyên tắc đạo đức.",
+      "Tròn đạo là hoàn thiện các bổn phận và trách nhiệm của mình.",
+      "Hành đạo là thực hành những điều đúng đắn trong cuộc sống.",
+      "Cầu đạo là tìm kiếm, học hỏi và hướng tới chân lý.",
+      "Tu đạo là quá trình rèn luyện, sửa mình để ngày càng hoàn thiện."
+    ],
+    "cot_cua_cot_vi": [
+      "Đúng đạo: Sống đúng theo các nguyên tắc đạo đức, không làm điều sai trái.",
+      "Tròn đạo: Hoàn thiện các bổn phận và trách nhiệm của mình đối với gia đình, xã hội.",
+      "Hành đạo: Thực hành những điều đúng đắn trong cuộc sống hàng ngày.",
+      "Cầu đạo: Tìm kiếm, học hỏi và hướng tới chân lý, sự giác ngộ.",
+      "Tu đạo: Quá trình rèn luyện, sửa mình để ngày càng hoàn thiện về đạo đức."
+    ],
+    "loi_vi": "Tu đức là một khái niệm quan trọng trong việc rèn luyện bản thân, bao gồm năm phần chính: Đúng đạo, Tròn đạo, Hành đạo, Cầu đạo và Tu đạo. Mỗi phần đều có vai trò riêng trong quá trình tu dưỡng đạo đức. Đúng đạo là sống đúng theo các nguyên tắc đạo đức, không làm điều sai trái. Tròn đạo là hoàn thiện các bổn phận và trách nhiệm của mình đối với gia đình, xã hội. Hành đạo là thực hành những điều đúng đắn trong cuộc sống hàng ngày. Cầu đạo là tìm kiếm, học hỏi và hướng tới chân lý, sự giác ngộ. Tu đạo là quá trình rèn luyện, sửa mình để ngày càng hoàn thiện về đạo đức.",
+    "content_vi": "Tu đức gồm 5 phần: Đúng đạo, Tròn đạo, Hành đạo, Cầu đạo, Tu đạo.",
+    "summary_en": "Tu đức là một khái niệm quan trọng trong việc rèn luyện bản thân, bao gồm năm phần chính: Đúng đạo, Tròn đạo, Hành đạo, Cầu đạo và Tu đạo. Mỗi phần đều có vai trò riêng trong quá trình tu dưỡng đạo đức.",
+    "cot_y_en": [
+      "Tu đức gồm 5 phần: Đúng đạo, Tròn đạo, Hành đạo, Cầu đạo, Tu đạo.",
+      "Đúng đạo là sống đúng theo các nguyên tắc đạo đức.",
+      "Tròn đạo là hoàn thiện các bổn phận và trách nhiệm của mình.",
+      "Hành đạo là thực hành những điều đúng đắn trong cuộc sống.",
+      "Cầu đạo là tìm kiếm, học hỏi và hướng tới chân lý.",
+      "Tu đạo là quá trình rèn luyện, sửa mình để ngày càng hoàn thiện."
+    ],
+    "cot_cua_cot_en": [
+      "Đúng đạo: Sống đúng theo các nguyên tắc đạo đức, không làm điều sai trái.",
+      "Tròn đạo: Hoàn thiện các bổn phận và trách nhiệm của mình đối với gia đình, xã hội.",
+      "Hành đạo: Thực hành những điều đúng đắn trong cuộc sống hàng ngày.",
+      "Cầu đạo: Tìm kiếm, học hỏi và hướng tới chân lý, sự giác ngộ.",
+      "Tu đạo: Quá trình rèn luyện, sửa mình để ngày càng hoàn thiện về đạo đức."
+    ],
+    "loi_en": "Tu đức là một khái niệm quan trọng trong việc rèn luyện bản thân, bao gồm năm phần chính: Đúng đạo, Tròn đạo, Hành đạo, Cầu đạo và Tu đạo. Mỗi phần đều có vai trò riêng trong quá trình tu dưỡng đạo đức. Đúng đạo là sống đúng theo các nguyên tắc đạo đức, không làm điều sai trái. Tròn đạo là hoàn thiện các bổn phận và trách nhiệm của mình đối với gia đình, xã hội. Hành đạo là thực hành những điều đúng đắn trong cuộc sống hàng ngày. Cầu đạo là tìm kiếm, học hỏi và hướng tới chân lý, sự giác ngộ. Tu đạo là quá trình rèn luyện, sửa mình để ngày càng hoàn thiện về đạo đức.",
+    "content_en": "Tu đức gồm 5 phần: Đúng đạo, Tròn đạo, Hành đạo, Cầu đạo, Tu đạo.",
+    "image_url": "",
+    "category": "",
+    "order_index": 120
+  },
+  {
+    "id": "dung-dao",
+    "title_vi": "Đúng đạo",
+    "summary_vi": "Đúng đạo là hành xử chuẩn mực theo các nguyên tắc đạo đức.",
+    "cot_y_vi": [
+      "Đúng đạo là hành xử chuẩn mực.",
+      "Hành xử chuẩn mực dựa trên các nguyên tắc đạo đức."
+    ],
+    "cot_cua_cot_vi": [
+      "Hành xử chuẩn mực là gì?",
+      "Các nguyên tắc đạo đức là gì?"
+    ],
+    "loi_vi": "Đúng đạo là hành xử chuẩn mực theo các nguyên tắc đạo đức. Điều này có nghĩa là mỗi người cần tuân thủ những quy tắc ứng xử được xã hội công nhận, dựa trên nền tảng đạo đức. Việc hành xử đúng đạo giúp duy trì trật tự xã hội và xây dựng mối quan hệ tốt đẹp giữa con người với nhau. Nó đòi hỏi sự tự giác và ý thức trách nhiệm của mỗi cá nhân trong mọi tình huống. Khi hành xử đúng đạo, chúng ta thể hiện sự tôn trọng đối với bản thân và người khác. Đồng thời, nó cũng góp phần tạo nên một môi trường sống lành mạnh và văn minh.",
+    "content_vi": "Đúng đạo là hành xử chuẩn mực theo các nguyên tắc đạo đức. Điều này có nghĩa là mỗi người cần tuân thủ những quy tắc ứng xử được xã hội công nhận, dựa trên nền tảng đạo đức. Việc hành xử đúng đạo giúp duy trì trật tự xã hội và xây dựng mối quan hệ tốt đẹp giữa con người với nhau. Nó đòi hỏi sự tự giác và ý thức trách nhiệm của mỗi cá nhân trong mọi tình huống. Khi hành xử đúng đạo, chúng ta thể hiện sự tôn trọng đối với bản thân và người khác. Đồng thời, nó cũng góp phần tạo nên một môi trường sống lành mạnh và văn minh.",
+    "summary_en": "Đúng đạo là hành xử chuẩn mực theo các nguyên tắc đạo đức.",
+    "cot_y_en": [
+      "Đúng đạo là hành xử chuẩn mực.",
+      "Hành xử chuẩn mực dựa trên các nguyên tắc đạo đức."
+    ],
+    "cot_cua_cot_en": [
+      "Hành xử chuẩn mực là gì?",
+      "Các nguyên tắc đạo đức là gì?"
+    ],
+    "loi_en": "Đúng đạo là hành xử chuẩn mực theo các nguyên tắc đạo đức. Điều này có nghĩa là mỗi người cần tuân thủ những quy tắc ứng xử được xã hội công nhận, dựa trên nền tảng đạo đức. Việc hành xử đúng đạo giúp duy trì trật tự xã hội và xây dựng mối quan hệ tốt đẹp giữa con người với nhau. Nó đòi hỏi sự tự giác và ý thức trách nhiệm của mỗi cá nhân trong mọi tình huống. Khi hành xử đúng đạo, chúng ta thể hiện sự tôn trọng đối với bản thân và người khác. Đồng thời, nó cũng góp phần tạo nên một môi trường sống lành mạnh và văn minh.",
+    "content_en": "Đúng đạo là hành xử chuẩn mực theo các nguyên tắc đạo đức. Điều này có nghĩa là mỗi người cần tuân thủ những quy tắc ứng xử được xã hội công nhận, dựa trên nền tảng đạo đức. Việc hành xử đúng đạo giúp duy trì trật tự xã hội và xây dựng mối quan hệ tốt đẹp giữa con người với nhau. Nó đòi hỏi sự tự giác và ý thức trách nhiệm của mỗi cá nhân trong mọi tình huống. Khi hành xử đúng đạo, chúng ta thể hiện sự tôn trọng đối với bản thân và người khác. Đồng thời, nó cũng góp phần tạo nên một môi trường sống lành mạnh và văn minh.",
+    "image_url": "",
+    "category": "",
+    "order_index": 121
+  },
+  {
+    "id": "tron-dao",
+    "title_vi": "Tròn đạo",
+    "summary_vi": "Tròn đạo là khái niệm chỉ sự hoàn thành trọn vẹn bảy đạo trong tu tập. Đây là mục tiêu tối thượng mà người tu hướng đến, đạt được khi thực hành đầy đủ và viên mãn các giai đoạn tu chứng. Việc hoàn thành trọn vẹn bảy đạo không chỉ là sự kết thúc của quá trình tu tập mà còn là sự viên mãn về mặt tâm linh, giúp con người đạt đến sự giác ngộ và giải thoát.",
+    "cot_y_vi": [
+      "Tròn đạo là hoàn thành trọn vẹn 7 đạo.",
+      "7 đạo là các giai đoạn tu tập trong Phật giáo.",
+      "Hoàn thành trọn vẹn nghĩa là thực hiện đầy đủ, không thiếu sót.",
+      "Tròn đạo là mục tiêu tối thượng của người tu.",
+      "Đạt được tròn đạo giúp con người giác ngộ và giải thoát."
+    ],
+    "cot_cua_cot_vi": [
+      "Tròn đạo là gì?",
+      "7 đạo là gì?",
+      "Hoàn thành trọn vẹn nghĩa là gì?",
+      "Ý nghĩa của tròn đạo?",
+      "Lợi ích của tròn đạo?"
+    ],
+    "loi_vi": "Tròn đạo là hoàn thành trọn vẹn bảy đạo. Bảy đạo là các giai đoạn tu tập trong Phật giáo, bao gồm từ sơ cấp đến cao cấp. Hoàn thành trọn vẹn có nghĩa là thực hiện đầy đủ, không thiếu sót bất kỳ giai đoạn nào. Tròn đạo là mục tiêu tối thượng mà người tu hướng đến, đạt được khi thực hành viên mãn các giai đoạn tu chứng. Khi đạt được tròn đạo, con người sẽ đạt đến sự giác ngộ và giải thoát khỏi luân hồi sinh tử.",
+    "content_vi": "Tròn đạo là hoàn thành trọn vẹn 7 đạo. 7 đạo là các giai đoạn tu tập trong Phật giáo, từ sơ cấp đến cao cấp. Hoàn thành trọn vẹn nghĩa là thực hiện đầy đủ, không thiếu sót. Tròn đạo là mục tiêu tối thượng của người tu. Đạt được tròn đạo giúp con người giác ngộ và giải thoát.",
+    "summary_en": "Tròn đạo là khái niệm chỉ sự hoàn thành trọn vẹn bảy đạo trong tu tập. Đây là mục tiêu tối thượng mà người tu hướng đến, đạt được khi thực hành đầy đủ và viên mãn các giai đoạn tu chứng. Việc hoàn thành trọn vẹn bảy đạo không chỉ là sự kết thúc của quá trình tu tập mà còn là sự viên mãn về mặt tâm linh, giúp con người đạt đến sự giác ngộ và giải thoát.",
+    "cot_y_en": [
+      "Tròn đạo là hoàn thành trọn vẹn 7 đạo.",
+      "7 đạo là các giai đoạn tu tập trong Phật giáo.",
+      "Hoàn thành trọn vẹn nghĩa là thực hiện đầy đủ, không thiếu sót.",
+      "Tròn đạo là mục tiêu tối thượng của người tu.",
+      "Đạt được tròn đạo giúp con người giác ngộ và giải thoát."
+    ],
+    "cot_cua_cot_en": [
+      "Tròn đạo là gì?",
+      "7 đạo là gì?",
+      "Hoàn thành trọn vẹn nghĩa là gì?",
+      "Ý nghĩa của tròn đạo?",
+      "Lợi ích của tròn đạo?"
+    ],
+    "loi_en": "Tròn đạo là hoàn thành trọn vẹn bảy đạo. Bảy đạo là các giai đoạn tu tập trong Phật giáo, bao gồm từ sơ cấp đến cao cấp. Hoàn thành trọn vẹn có nghĩa là thực hiện đầy đủ, không thiếu sót bất kỳ giai đoạn nào. Tròn đạo là mục tiêu tối thượng mà người tu hướng đến, đạt được khi thực hành viên mãn các giai đoạn tu chứng. Khi đạt được tròn đạo, con người sẽ đạt đến sự giác ngộ và giải thoát khỏi luân hồi sinh tử.",
+    "content_en": "Tròn đạo là hoàn thành trọn vẹn 7 đạo. 7 đạo là các giai đoạn tu tập trong Phật giáo, từ sơ cấp đến cao cấp. Hoàn thành trọn vẹn nghĩa là thực hiện đầy đủ, không thiếu sót. Tròn đạo là mục tiêu tối thượng của người tu. Đạt được tròn đạo giúp con người giác ngộ và giải thoát.",
+    "image_url": "",
+    "category": "",
+    "order_index": 122
+  },
+  {
+    "id": "hanh-dao-2",
+    "title_vi": "Hành đạo",
+    "summary_vi": "Hành đạo là thực hành các nguyên tắc đạo đức trong cuộc sống.",
+    "cot_y_vi": "Hành đạo là thực hành các nguyên tắc đạo đức trong cuộc sống.",
+    "cot_cua_cot_vi": "Hành đạo là thực hành các nguyên tắc đạo đức trong cuộc sống.",
+    "loi_vi": "Hành đạo là thực hành các nguyên tắc đạo đức trong cuộc sống.",
+    "content_vi": "Hành đạo là thực hành các nguyên tắc đạo đức trong cuộc sống. Điều này có nghĩa là mỗi người cần áp dụng những giá trị đạo đức vào hành động hàng ngày. Việc thực hành đạo đức giúp con người sống đúng với lương tâm và trách nhiệm. Hành đạo không chỉ là lý thuyết mà còn là việc làm cụ thể. Qua đó, mỗi cá nhân góp phần xây dựng một xã hội tốt đẹp hơn. Hành đạo cũng giúp con người hoàn thiện bản thân và sống có ý nghĩa.",
+    "summary_en": "Hành đạo là thực hành các nguyên tắc đạo đức trong cuộc sống.",
+    "cot_y_en": "Hành đạo là thực hành các nguyên tắc đạo đức trong cuộc sống.",
+    "cot_cua_cot_en": "Hành đạo là thực hành các nguyên tắc đạo đức trong cuộc sống.",
+    "loi_en": "Hành đạo là thực hành các nguyên tắc đạo đức trong cuộc sống.",
+    "content_en": "Hành đạo là thực hành các nguyên tắc đạo đức trong cuộc sống. Điều này có nghĩa là mỗi người cần áp dụng những giá trị đạo đức vào hành động hàng ngày. Việc thực hành đạo đức giúp con người sống đúng với lương tâm và trách nhiệm. Hành đạo không chỉ là lý thuyết mà còn là việc làm cụ thể. Qua đó, mỗi cá nhân góp phần xây dựng một xã hội tốt đẹp hơn. Hành đạo cũng giúp con người hoàn thiện bản thân và sống có ý nghĩa.",
+    "image_url": "",
+    "category": "",
+    "order_index": 123
+  },
+  {
+    "id": "cau-dao",
+    "title_vi": "Cầu đạo",
+    "summary_vi": "Cầu đạo là quá trình chuẩn bị tâm thế và hành động để đạt được đạo. Nó bao gồm việc rèn luyện tinh thần, trau dồi kiến thức, và thực hành các phương pháp tu tập. Mục đích là để hiểu rõ bản chất của đạo và sống hòa hợp với nó. Cầu đạo đòi hỏi sự kiên trì, quyết tâm và lòng thành. Qua đó, con người có thể vượt qua những trở ngại và tiến gần hơn đến sự giác ngộ.",
+    "cot_y_vi": "Cầu đạo là sự chuẩn bị tâm thế và hành động để đạt đạo.",
+    "cot_cua_cot_vi": "Chuẩn bị tâm thế và hành động là hai khía cạnh chính của cầu đạo.",
+    "loi_vi": "Cầu đạo là một quá trình tu tập và rèn luyện bản thân.",
+    "content_vi": "Cầu đạo là sự chuẩn bị tâm thế và hành động để đạt đạo. Điều này bao gồm việc rèn luyện tinh thần, trau dồi kiến thức, và thực hành các phương pháp tu tập. Mục đích là để hiểu rõ bản chất của đạo và sống hòa hợp với nó. Cầu đạo đòi hỏi sự kiên trì, quyết tâm và lòng thành. Qua đó, con người có thể vượt qua những trở ngại và tiến gần hơn đến sự giác ngộ.",
+    "summary_en": "Cầu đạo là quá trình chuẩn bị tâm thế và hành động để đạt được đạo. Nó bao gồm việc rèn luyện tinh thần, trau dồi kiến thức, và thực hành các phương pháp tu tập. Mục đích là để hiểu rõ bản chất của đạo và sống hòa hợp với nó. Cầu đạo đòi hỏi sự kiên trì, quyết tâm và lòng thành. Qua đó, con người có thể vượt qua những trở ngại và tiến gần hơn đến sự giác ngộ.",
+    "cot_y_en": "Cầu đạo là sự chuẩn bị tâm thế và hành động để đạt đạo.",
+    "cot_cua_cot_en": "Chuẩn bị tâm thế và hành động là hai khía cạnh chính của cầu đạo.",
+    "loi_en": "Cầu đạo là một quá trình tu tập và rèn luyện bản thân.",
+    "content_en": "Cầu đạo là sự chuẩn bị tâm thế và hành động để đạt đạo. Điều này bao gồm việc rèn luyện tinh thần, trau dồi kiến thức, và thực hành các phương pháp tu tập. Mục đích là để hiểu rõ bản chất của đạo và sống hòa hợp với nó. Cầu đạo đòi hỏi sự kiên trì, quyết tâm và lòng thành. Qua đó, con người có thể vượt qua những trở ngại và tiến gần hơn đến sự giác ngộ.",
+    "image_url": "",
+    "category": "",
+    "order_index": 124
+  },
+  {
+    "id": "tu-dao",
+    "title_vi": "Tu đạo",
+    "summary_vi": "Tu đạo là quá trình thực hành tu tập nhằm đạt được sự giải thoát.",
+    "cot_y_vi": [
+      "Tu đạo là thực hành tu tập.",
+      "Mục đích của tu đạo là đạt giải thoát."
+    ],
+    "cot_cua_cot_vi": [
+      "Tu đạo là một quá trình thực hành liên tục.",
+      "Sự giải thoát là kết quả cuối cùng của quá trình tu tập."
+    ],
+    "loi_vi": "Tu đạo là thực hành tu tập để đạt giải thoát.",
+    "content_vi": "Tu đạo là quá trình thực hành tu tập, bao gồm các phương pháp rèn luyện tâm trí và thân thể, nhằm đạt được sự giải thoát khỏi khổ đau và luân hồi. Quá trình này đòi hỏi sự kiên trì, nỗ lực và hướng tới mục tiêu giác ngộ. Giải thoát là trạng thái tự do hoàn toàn, không còn bị ràng buộc bởi nghiệp và phiền não. Tu đạo không chỉ là lý thuyết mà phải được thực hành cụ thể trong đời sống hàng ngày. Thông qua tu tập, người hành giả dần dần thanh lọc tâm hồn, phát triển trí tuệ và từ bi. Kết quả của tu đạo là sự an lạc nội tâm và cuối cùng là chứng ngộ Niết bàn. Vì vậy, tu đạo là con đường quan trọng trong Phật giáo và nhiều truyền thống tâm linh khác.",
+    "summary_en": "Tu đạo là quá trình thực hành tu tập nhằm đạt được sự giải thoát.",
+    "cot_y_en": [
+      "Tu đạo là thực hành tu tập.",
+      "Mục đích của tu đạo là đạt giải thoát."
+    ],
+    "cot_cua_cot_en": [
+      "Tu đạo là một quá trình thực hành liên tục.",
+      "Sự giải thoát là kết quả cuối cùng của quá trình tu tập."
+    ],
+    "loi_en": "Tu đạo là thực hành tu tập để đạt giải thoát.",
+    "content_en": "Tu đạo là quá trình thực hành tu tập, bao gồm các phương pháp rèn luyện tâm trí và thân thể, nhằm đạt được sự giải thoát khỏi khổ đau và luân hồi. Quá trình này đòi hỏi sự kiên trì, nỗ lực và hướng tới mục tiêu giác ngộ. Giải thoát là trạng thái tự do hoàn toàn, không còn bị ràng buộc bởi nghiệp và phiền não. Tu đạo không chỉ là lý thuyết mà phải được thực hành cụ thể trong đời sống hàng ngày. Thông qua tu tập, người hành giả dần dần thanh lọc tâm hồn, phát triển trí tuệ và từ bi. Kết quả của tu đạo là sự an lạc nội tâm và cuối cùng là chứng ngộ Niết bàn. Vì vậy, tu đạo là con đường quan trọng trong Phật giáo và nhiều truyền thống tâm linh khác.",
+    "image_url": "",
+    "category": "",
+    "order_index": 125
+  },
+  {
+    "id": "phan-11-ke-thua-cho-the-he-tuong-lai",
+    "title_vi": "XI. PHẦN 11: KẾ THỪA CHO THẾ HỆ TƯƠNG LAI",
+    "summary_vi": "Phần này trình bày 4 ý chính về việc chia sẻ trí tuệ cho con cái và mọi người trong gia đình, nhằm kế thừa cho thế hệ tương lai.",
+    "cot_y_vi": "Có 4 ý chính: tại sao bố mẹ cần chia sẻ cho con, cần định hướng cho con, phương pháp chia sẻ trí tuệ cho các con, hàng ngày chia sẻ trí tuệ với mọi người trong nhà.",
+    "cot_cua_cot_vi": "Chia sẻ trí tuệ để kế thừa cho thế hệ tương lai.",
+    "loi_vi": "Phần này gồm 4 ý chính: tại sao bố mẹ cần chia sẻ cho con, cần định hướng cho con, phương pháp chia sẻ trí tuệ cho các con, hàng ngày chia sẻ trí tuệ với mọi người trong nhà.",
+    "content_vi": "- Có 4 ý chính: Tất cả đều là ý Quy chuẩn\n  + Tại sao bố mẹ cần chia sẻ cho con\n  + Cần định hướng cho con\n  + Phương pháp chia sẻ trí tuệ cho các con\n  + Hàng ngày chia sẻ trí tuệ với mọi người trong nhà\n- Mục đích: kế thừa trí tuệ cho thế hệ tương lai.",
+    "summary_en": "Phần này trình bày 4 ý chính về việc chia sẻ trí tuệ cho con cái và mọi người trong gia đình, nhằm kế thừa cho thế hệ tương lai.",
+    "cot_y_en": "Có 4 ý chính: tại sao bố mẹ cần chia sẻ cho con, cần định hướng cho con, phương pháp chia sẻ trí tuệ cho các con, hàng ngày chia sẻ trí tuệ với mọi người trong nhà.",
+    "cot_cua_cot_en": "Chia sẻ trí tuệ để kế thừa cho thế hệ tương lai.",
+    "loi_en": "Phần này gồm 4 ý chính: tại sao bố mẹ cần chia sẻ cho con, cần định hướng cho con, phương pháp chia sẻ trí tuệ cho các con, hàng ngày chia sẻ trí tuệ với mọi người trong nhà.",
+    "content_en": "- Có 4 ý chính: Tất cả đều là ý Quy chuẩn\n  + Tại sao bố mẹ cần chia sẻ cho con\n  + Cần định hướng cho con\n  + Phương pháp chia sẻ trí tuệ cho các con\n  + Hàng ngày chia sẻ trí tuệ với mọi người trong nhà\n- Mục đích: kế thừa trí tuệ cho thế hệ tương lai.",
+    "image_url": "",
+    "category": "",
+    "order_index": 126
+  },
+  {
+    "id": "tai-sao-bo-me-can-chia-se-tri-tue-cho-con",
+    "title_vi": "1. TẠI SAO BỐ MẸ CẦN CHIA SẺ TRÍ TUỆ CHO CON",
+    "summary_vi": "Trí tuệ khác với kinh nghiệm và kiến thức; chia sẻ trí tuệ giúp hóa giải mầm ân oán trong gia đình, con đến báo ơn hoặc đòi nợ.",
+    "cot_y_vi": "Trí tuệ khác kinh nghiệm, kiến thức; hóa giải mầm ân oán trong gia đình.",
+    "cot_cua_cot_vi": "Chia sẻ trí tuệ để hóa giải ân oán, con đến báo ơn hoặc đòi nợ.",
+    "loi_vi": "Trí tuệ khác với kinh nghiệm và kiến thức; chia sẻ trí tuệ giúp hóa giải mầm ân oán trong gia đình, con đến báo ơn hoặc đòi nợ.",
+    "content_vi": "- Trí tuệ khác kinh nghiệm, kiến thức\n- Hóa giải mầm ân oán trong gia đình\n  + Con đến báo ơn\n  + Con đến đòi nợ",
+    "summary_en": "Trí tuệ khác với kinh nghiệm và kiến thức; chia sẻ trí tuệ giúp hóa giải mầm ân oán trong gia đình, con đến báo ơn hoặc đòi nợ.",
+    "cot_y_en": "Trí tuệ khác kinh nghiệm, kiến thức; hóa giải mầm ân oán trong gia đình.",
+    "cot_cua_cot_en": "Chia sẻ trí tuệ để hóa giải ân oán, con đến báo ơn hoặc đòi nợ.",
+    "loi_en": "Trí tuệ khác với kinh nghiệm và kiến thức; chia sẻ trí tuệ giúp hóa giải mầm ân oán trong gia đình, con đến báo ơn hoặc đòi nợ.",
+    "content_en": "- Trí tuệ khác kinh nghiệm, kiến thức\n- Hóa giải mầm ân oán trong gia đình\n  + Con đến báo ơn\n  + Con đến đòi nợ",
+    "image_url": "",
+    "category": "",
+    "order_index": 127
+  },
+  {
+    "id": "can-dinh-huong-cho-con",
+    "title_vi": "2. CẦN ĐỊNH HƯỚNG CHO CON",
+    "summary_vi": "Cần định hướng cho con biết gốc sinh ra từ đâu và 5 vốn; chia độ tuổi để định hướng.",
+    "cot_y_vi": [
+      "Định hướng cho con biết gốc sinh ra từ đâu.",
+      "Định hướng cho con biết 5 vốn.",
+      "Chia độ tuổi để định hướng."
+    ],
+    "cot_cua_cot_vi": [
+      "Giúp con hiểu về nguồn gốc, cội nguồn của mình.",
+      "Giúp con nắm được 5 vốn (có thể là vốn kiến thức, vốn kỹ năng, vốn sống, vốn văn hóa, vốn xã hội).",
+      "Định hướng phù hợp với từng giai đoạn phát triển của con."
+    ],
+    "loi_vi": "Cha mẹ cần định hướng cho con biết gốc sinh ra từ đâu và 5 vốn. Đồng thời, cần chia theo độ tuổi để có cách định hướng phù hợp.",
+    "content_vi": "Cần định hướng cho con biết gốc sinh ra từ đâu và 5 vốn; chia độ tuổi để định hướng.",
+    "summary_en": "Cần định hướng cho con biết gốc sinh ra từ đâu và 5 vốn; chia độ tuổi để định hướng.",
+    "cot_y_en": [
+      "Định hướng cho con biết gốc sinh ra từ đâu.",
+      "Định hướng cho con biết 5 vốn.",
+      "Chia độ tuổi để định hướng."
+    ],
+    "cot_cua_cot_en": [
+      "Giúp con hiểu về nguồn gốc, cội nguồn của mình.",
+      "Giúp con nắm được 5 vốn (có thể là vốn kiến thức, vốn kỹ năng, vốn sống, vốn văn hóa, vốn xã hội).",
+      "Định hướng phù hợp với từng giai đoạn phát triển của con."
+    ],
+    "loi_en": "Cha mẹ cần định hướng cho con biết gốc sinh ra từ đâu và 5 vốn. Đồng thời, cần chia theo độ tuổi để có cách định hướng phù hợp.",
+    "content_en": "Cần định hướng cho con biết gốc sinh ra từ đâu và 5 vốn; chia độ tuổi để định hướng.",
+    "image_url": "",
+    "category": "",
+    "order_index": 128
+  },
+  {
+    "id": "phuong-phap-chia-se-tri-tue-cho-cac-con",
+    "title_vi": "3. PHƯƠNG PHÁP CHIA SẺ TRÍ TUỆ CHO CÁC CON",
+    "summary_vi": "Phương pháp chia sẻ trí tuệ cho con cần trải qua 4 nấc và đòi hỏi sự đầu tư công phu trong việc nghiên cứu con.",
+    "cot_y_vi": [
+      "Phương pháp chia sẻ trí tuệ cho con cần qua 4 nấc.",
+      "Cần dồn công phu nghiên cứu con."
+    ],
+    "cot_cua_cot_vi": [
+      "4 nấc: (không có chi tiết cụ thể trong nội dung gốc)",
+      "Nghiên cứu con: hiểu rõ tính cách, nhu cầu, khả năng của con để áp dụng phương pháp phù hợp."
+    ],
+    "loi_vi": "Phương pháp chia sẻ trí tuệ cho con cần qua 4 nấc và dồn công phu nghiên cứu con. Điều này có nghĩa là cha mẹ cần kiên nhẫn, tìm hiểu sâu về con mình để có cách truyền đạt kiến thức và kỹ năng hiệu quả.",
+    "content_vi": "Phương pháp chia sẻ trí tuệ cho con cần qua 4 nấc và dồn công phu nghiên cứu con. Để thực hiện, cha mẹ cần dành thời gian quan sát, lắng nghe và thấu hiểu con, từ đó xây dựng phương pháp giáo dục phù hợp với từng giai đoạn phát triển của trẻ.",
+    "summary_en": "Phương pháp chia sẻ trí tuệ cho con cần trải qua 4 nấc và đòi hỏi sự đầu tư công phu trong việc nghiên cứu con.",
+    "cot_y_en": [
+      "Phương pháp chia sẻ trí tuệ cho con cần qua 4 nấc.",
+      "Cần dồn công phu nghiên cứu con."
+    ],
+    "cot_cua_cot_en": [
+      "4 nấc: (không có chi tiết cụ thể trong nội dung gốc)",
+      "Nghiên cứu con: hiểu rõ tính cách, nhu cầu, khả năng của con để áp dụng phương pháp phù hợp."
+    ],
+    "loi_en": "Phương pháp chia sẻ trí tuệ cho con cần qua 4 nấc và dồn công phu nghiên cứu con. Điều này có nghĩa là cha mẹ cần kiên nhẫn, tìm hiểu sâu về con mình để có cách truyền đạt kiến thức và kỹ năng hiệu quả.",
+    "content_en": "Phương pháp chia sẻ trí tuệ cho con cần qua 4 nấc và dồn công phu nghiên cứu con. Để thực hiện, cha mẹ cần dành thời gian quan sát, lắng nghe và thấu hiểu con, từ đó xây dựng phương pháp giáo dục phù hợp với từng giai đoạn phát triển của trẻ.",
+    "image_url": "",
+    "category": "",
+    "order_index": 129
+  },
+  {
+    "id": "hang-ngay-chia-se-tri-tue-voi-moi-nguoi-trong-nha",
+    "title_vi": "4. HÀNG NGÀY CHIA SẺ TRÍ TUỆ VỚI MỌI NGƯỜI TRONG NHÀ",
+    "summary_vi": "Hàng ngày, mỗi thành viên trong gia đình nên chia sẻ trí tuệ với nhau về mục tiêu (Đích) và thực tế hiện tại, đồng thời nhắc nhở nhau giữ gìn giới luật, hạnh lành và nuôi dưỡng tình yêu thương.",
+    "cot_y_vi": [
+      "Chia sẻ trí tuệ hàng ngày về Đích và Thực tế",
+      "Giữ giới và giữ hạnh",
+      "Nuôi dưỡng tình yêu thương"
+    ],
+    "cot_cua_cot_vi": [
+      "Đích là mục tiêu hướng tới, Thực tế là hiện trạng đang có; việc chia sẻ giúp mọi người nhận thức rõ và cùng nhau tiến bộ.",
+      "Giữ giới là tuân thủ các quy tắc đạo đức, giữ hạnh là rèn luyện phẩm hạnh tốt, tạo nền tảng vững chắc cho cuộc sống.",
+      "Tình yêu thương là sợi dây gắn kết các thành viên, giúp gia đình hòa thuận và hạnh phúc."
+    ],
+    "loi_vi": "Hãy dành thời gian mỗi ngày để cùng nhau chia sẻ, lắng nghe và động viên nhau trong gia đình.",
+    "content_vi": "Hàng ngày, mỗi thành viên trong gia đình nên dành thời gian để chia sẻ trí tuệ với nhau về Đích và Thực tế. Đích là mục tiêu, lý tưởng mà chúng ta hướng tới; Thực tế là những gì đang diễn ra trong cuộc sống hiện tại. Việc chia sẻ này giúp mọi người nhận thức rõ hơn về mục tiêu chung và thực trạng của bản thân, từ đó cùng nhau tìm cách cải thiện. Bên cạnh đó, chúng ta cần nhắc nhở nhau giữ gìn giới luật và rèn luyện hạnh lành. Giữ giới là tuân thủ các nguyên tắc đạo đức, tránh những điều xấu; giữ hạnh là trau dồi phẩm chất tốt đẹp như từ bi, hỷ xả, khiêm tốn. Cuối cùng, hãy luôn nuôi dưỡng tình yêu thương giữa các thành viên, bởi tình yêu thương là nền tảng của hạnh phúc gia đình. Khi mỗi người đều ý thức và thực hành những điều này, gia đình sẽ ngày càng gắn kết và an vui.",
+    "summary_en": "Hàng ngày, mỗi thành viên trong gia đình nên chia sẻ trí tuệ với nhau về mục tiêu (Đích) và thực tế hiện tại, đồng thời nhắc nhở nhau giữ gìn giới luật, hạnh lành và nuôi dưỡng tình yêu thương.",
+    "cot_y_en": [
+      "Chia sẻ trí tuệ hàng ngày về Đích và Thực tế",
+      "Giữ giới và giữ hạnh",
+      "Nuôi dưỡng tình yêu thương"
+    ],
+    "cot_cua_cot_en": [
+      "Đích là mục tiêu hướng tới, Thực tế là hiện trạng đang có; việc chia sẻ giúp mọi người nhận thức rõ và cùng nhau tiến bộ.",
+      "Giữ giới là tuân thủ các quy tắc đạo đức, giữ hạnh là rèn luyện phẩm hạnh tốt, tạo nền tảng vững chắc cho cuộc sống.",
+      "Tình yêu thương là sợi dây gắn kết các thành viên, giúp gia đình hòa thuận và hạnh phúc."
+    ],
+    "loi_en": "Hãy dành thời gian mỗi ngày để cùng nhau chia sẻ, lắng nghe và động viên nhau trong gia đình.",
+    "content_en": "Hàng ngày, mỗi thành viên trong gia đình nên dành thời gian để chia sẻ trí tuệ với nhau về Đích và Thực tế. Đích là mục tiêu, lý tưởng mà chúng ta hướng tới; Thực tế là những gì đang diễn ra trong cuộc sống hiện tại. Việc chia sẻ này giúp mọi người nhận thức rõ hơn về mục tiêu chung và thực trạng của bản thân, từ đó cùng nhau tìm cách cải thiện. Bên cạnh đó, chúng ta cần nhắc nhở nhau giữ gìn giới luật và rèn luyện hạnh lành. Giữ giới là tuân thủ các nguyên tắc đạo đức, tránh những điều xấu; giữ hạnh là trau dồi phẩm chất tốt đẹp như từ bi, hỷ xả, khiêm tốn. Cuối cùng, hãy luôn nuôi dưỡng tình yêu thương giữa các thành viên, bởi tình yêu thương là nền tảng của hạnh phúc gia đình. Khi mỗi người đều ý thức và thực hành những điều này, gia đình sẽ ngày càng gắn kết và an vui.",
+    "image_url": "",
+    "category": "",
+    "order_index": 130
+  },
+  {
+    "id": "6-net-van-hoa-tri-tue",
+    "title_vi": "6 NÉT VĂN HÓA TRÍ TUỆ",
+    "summary_vi": "Sáu nét văn hóa trí tuệ: Hiếu - Lễ - Nghĩa, Tạo phúc trả nợ báo ơn báo hiếu, Chia sẻ trí tuệ trong gia đình, Cống hiến, Người trí tuệ, Tu đức cá nhân.",
+    "cot_y_vi": "Hình thành 6 nét văn hóa trí tuệ.",
+    "cot_cua_cot_vi": "Sáu nét văn hóa trí tuệ để mang lại 6 giá trị.",
+    "loi_vi": "Hình thành 6 nét văn hóa trí tuệ: Hiếu - Lễ - Nghĩa, Tạo phúc trả nợ báo ơn báo hiếu, Chia sẻ trí tuệ trong gia đình, Cống hiến, Người trí tuệ, Tu đức cá nhân.",
+    "content_vi": "- VĂN HÓA HIẾU – LỄ - NGHĨA\n  + Kính lễ hoặc tu tập tại gia\n  + Báo đại hiếu cho ông bà, bố mẹ và gia tiên tiền tổ\n  + Sống chuẩn mực theo gia quy\n  + Làm chủ tất cả các khóa lễ\n- VĂN HÓA TẠO PHÚC, TRẢ NỢ, BÁO ƠN, BÁO HIẾU\n  + Hiểu ý nghĩa của tạo phúc, trả nợ, báo ơn, báo hiếu\n  + Tạo phúc mùa xuân\n  + Trả nợ mùa Vu lan báo hiếu\n  + Tạo lộ phí cho gia tiên hàng tháng\n- VĂN HÓA CHIA SẺ TRÍ TUỆ TRONG GIA ĐÌNH VÀ KẾ THỪA CHO TƯƠNG LAI\n  + Chia sẻ trí tuệ cùng gia đình và con cháu\n  + Tròn chức năng, vai trò, bổn phận, trách nhiệm với gia đình\n  + Tạo nếp nhà\n- VĂN HÓA CỐNG HIẾN\n  + Lan tỏa Trí tuệ cá nhân mọi lúc, mọi nơi\n  + Lan tỏa Trí tuệ tại gia đình\n- VĂN HÓA NGƯỜI TRÍ TUỆ: làm bất kỳ việc gì cũng luôn bám vào:\n  + 53 Máng của Trí tuệ\n  + Quy luật\n  + Biết gốc và bám gốc\n  + Nguyên tắc\n  + Khuôn pháp\n  + Công dung ngôn hạnh\n  + Hành xử và đối nhân xử thế\n  + Thấu triệt\n  + Nhân duyên và tùy duyên\n- VĂN HÓA TU ĐỨC CÁ NHÂN ĐỂ LẬP ĐỨC",
+    "summary_en": "Sáu nét văn hóa trí tuệ: Hiếu - Lễ - Nghĩa, Tạo phúc trả nợ báo ơn báo hiếu, Chia sẻ trí tuệ trong gia đình, Cống hiến, Người trí tuệ, Tu đức cá nhân.",
+    "cot_y_en": "Hình thành 6 nét văn hóa trí tuệ.",
+    "cot_cua_cot_en": "Sáu nét văn hóa trí tuệ để mang lại 6 giá trị.",
+    "loi_en": "Hình thành 6 nét văn hóa trí tuệ: Hiếu - Lễ - Nghĩa, Tạo phúc trả nợ báo ơn báo hiếu, Chia sẻ trí tuệ trong gia đình, Cống hiến, Người trí tuệ, Tu đức cá nhân.",
+    "content_en": "- VĂN HÓA HIẾU – LỄ - NGHĨA\n  + Kính lễ hoặc tu tập tại gia\n  + Báo đại hiếu cho ông bà, bố mẹ và gia tiên tiền tổ\n  + Sống chuẩn mực theo gia quy\n  + Làm chủ tất cả các khóa lễ\n- VĂN HÓA TẠO PHÚC, TRẢ NỢ, BÁO ƠN, BÁO HIẾU\n  + Hiểu ý nghĩa của tạo phúc, trả nợ, báo ơn, báo hiếu\n  + Tạo phúc mùa xuân\n  + Trả nợ mùa Vu lan báo hiếu\n  + Tạo lộ phí cho gia tiên hàng tháng\n- VĂN HÓA CHIA SẺ TRÍ TUỆ TRONG GIA ĐÌNH VÀ KẾ THỪA CHO TƯƠNG LAI\n  + Chia sẻ trí tuệ cùng gia đình và con cháu\n  + Tròn chức năng, vai trò, bổn phận, trách nhiệm với gia đình\n  + Tạo nếp nhà\n- VĂN HÓA CỐNG HIẾN\n  + Lan tỏa Trí tuệ cá nhân mọi lúc, mọi nơi\n  + Lan tỏa Trí tuệ tại gia đình\n- VĂN HÓA NGƯỜI TRÍ TUỆ: làm bất kỳ việc gì cũng luôn bám vào:\n  + 53 Máng của Trí tuệ\n  + Quy luật\n  + Biết gốc và bám gốc\n  + Nguyên tắc\n  + Khuôn pháp\n  + Công dung ngôn hạnh\n  + Hành xử và đối nhân xử thế\n  + Thấu triệt\n  + Nhân duyên và tùy duyên\n- VĂN HÓA TU ĐỨC CÁ NHÂN ĐỂ LẬP ĐỨC",
+    "image_url": "",
+    "category": "",
+    "order_index": 131
+  },
+  {
+    "id": "6-gia-tri-mang-lai",
+    "title_vi": "HÌNH THÀNH 6 NÉT VĂN HÓA TRÍ TUỆ THÌ MANG LẠI 6 GIÁ TRỊ",
+    "summary_vi": "Hình thành 6 nét văn hóa trí tuệ mang lại 6 giá trị: bản thân, gia đình, công việc, quan hệ, đất nước, cộng đồng.",
+    "cot_y_vi": [
+      "Giá trị bản thân: giúp mỗi người phát triển toàn diện, nâng cao nhận thức và kỹ năng.",
+      "Giá trị gia đình: tạo nền tảng vững chắc cho hạnh phúc và sự gắn kết trong gia đình.",
+      "Giá trị công việc: nâng cao hiệu quả lao động, thúc đẩy sáng tạo và thành công trong sự nghiệp.",
+      "Giá trị quan hệ: cải thiện các mối quan hệ xã hội, tăng cường sự tin tưởng và hợp tác.",
+      "Giá trị đất nước: góp phần xây dựng đất nước giàu mạnh, văn minh và phát triển bền vững.",
+      "Giá trị cộng đồng: tạo dựng môi trường sống tích cực, đoàn kết và hỗ trợ lẫn nhau."
+    ],
+    "cot_cua_cot_vi": [
+      "Bản thân: phát triển cá nhân",
+      "Gia đình: hạnh phúc gia đình",
+      "Công việc: hiệu quả nghề nghiệp",
+      "Quan hệ: kết nối xã hội",
+      "Đất nước: phồn vinh quốc gia",
+      "Cộng đồng: đoàn kết cộng đồng"
+    ],
+    "loi_vi": "Văn hóa trí tuệ là nền tảng để mỗi cá nhân và xã hội phát triển bền vững.",
+    "content_vi": "Hình thành 6 nét văn hóa trí tuệ mang lại 6 giá trị: bản thân, gia đình, công việc, quan hệ, đất nước, cộng đồng.",
+    "summary_en": "Hình thành 6 nét văn hóa trí tuệ mang lại 6 giá trị: bản thân, gia đình, công việc, quan hệ, đất nước, cộng đồng.",
+    "cot_y_en": [
+      "Giá trị bản thân: giúp mỗi người phát triển toàn diện, nâng cao nhận thức và kỹ năng.",
+      "Giá trị gia đình: tạo nền tảng vững chắc cho hạnh phúc và sự gắn kết trong gia đình.",
+      "Giá trị công việc: nâng cao hiệu quả lao động, thúc đẩy sáng tạo và thành công trong sự nghiệp.",
+      "Giá trị quan hệ: cải thiện các mối quan hệ xã hội, tăng cường sự tin tưởng và hợp tác.",
+      "Giá trị đất nước: góp phần xây dựng đất nước giàu mạnh, văn minh và phát triển bền vững.",
+      "Giá trị cộng đồng: tạo dựng môi trường sống tích cực, đoàn kết và hỗ trợ lẫn nhau."
+    ],
+    "cot_cua_cot_en": [
+      "Bản thân: phát triển cá nhân",
+      "Gia đình: hạnh phúc gia đình",
+      "Công việc: hiệu quả nghề nghiệp",
+      "Quan hệ: kết nối xã hội",
+      "Đất nước: phồn vinh quốc gia",
+      "Cộng đồng: đoàn kết cộng đồng"
+    ],
+    "loi_en": "Văn hóa trí tuệ là nền tảng để mỗi cá nhân và xã hội phát triển bền vững.",
+    "content_en": "Hình thành 6 nét văn hóa trí tuệ mang lại 6 giá trị: bản thân, gia đình, công việc, quan hệ, đất nước, cộng đồng.",
+    "image_url": "",
+    "category": "",
+    "order_index": 132
+  },
+  {
+    "id": "tri-tue-de-lam-gi",
+    "title_vi": "II. TRÍ TUỆ ĐỂ LÀM GÌ? ĐỂ HIỂU, ĐỂ TRÁNH, ĐỂ ỨNG DỤNG",
+    "summary_vi": "Trí tuệ có ba mục đích chính: để hiểu, để tránh họa và nhân quả, và để ứng dụng trong các lĩnh vực Học, Sống, Hành, Tu, Luyện.",
+    "cot_y_vi": [
+      "Hiểu biết sâu sắc về bản chất của sự vật, hiện tượng.",
+      "Tránh được những tai họa và hiểu rõ luật nhân quả.",
+      "Ứng dụng trí tuệ vào việc học tập, cuộc sống, hành động, tu dưỡng và rèn luyện."
+    ],
+    "cot_cua_cot_vi": [
+      {
+        "cot": "Hiểu",
+        "chi_tiet": "Trí tuệ giúp con người hiểu rõ bản chất của sự vật, hiện tượng, từ đó có nhận thức đúng đắn."
+      },
+      {
+        "cot": "Tránh họa và nhân quả",
+        "chi_tiet": "Nhờ hiểu biết, con người có thể tránh được những tai họa, đồng thời thấu hiểu luật nhân quả để sống đúng đắn."
+      },
+      {
+        "cot": "Ứng dụng trong Học - Sống - Hành - Tu - Luyện",
+        "chi_tiet": "Trí tuệ được áp dụng vào việc học tập, đời sống hàng ngày, hành động, tu dưỡng tâm tính và rèn luyện bản thân."
+      }
+    ],
+    "loi_vi": "Trí tuệ không chỉ để hiểu biết mà còn để tránh họa và nhân quả, đồng thời ứng dụng vào mọi mặt của cuộc sống, từ học tập, sinh hoạt, hành động, tu dưỡng đến rèn luyện.",
+    "content_vi": "Trí tuệ dùng để hiểu, để tránh họa và nhân quả, để ứng dụng trong Học - Sống - Hành - Tu - Luyện.",
+    "summary_en": "Trí tuệ có ba mục đích chính: để hiểu, để tránh họa và nhân quả, và để ứng dụng trong các lĩnh vực Học, Sống, Hành, Tu, Luyện.",
+    "cot_y_en": [
+      "Hiểu biết sâu sắc về bản chất của sự vật, hiện tượng.",
+      "Tránh được những tai họa và hiểu rõ luật nhân quả.",
+      "Ứng dụng trí tuệ vào việc học tập, cuộc sống, hành động, tu dưỡng và rèn luyện."
+    ],
+    "cot_cua_cot_en": [
+      {
+        "cot": "Hiểu",
+        "chi_tiet": "Trí tuệ giúp con người hiểu rõ bản chất của sự vật, hiện tượng, từ đó có nhận thức đúng đắn."
+      },
+      {
+        "cot": "Tránh họa và nhân quả",
+        "chi_tiet": "Nhờ hiểu biết, con người có thể tránh được những tai họa, đồng thời thấu hiểu luật nhân quả để sống đúng đắn."
+      },
+      {
+        "cot": "Ứng dụng trong Học - Sống - Hành - Tu - Luyện",
+        "chi_tiet": "Trí tuệ được áp dụng vào việc học tập, đời sống hàng ngày, hành động, tu dưỡng tâm tính và rèn luyện bản thân."
+      }
+    ],
+    "loi_en": "Trí tuệ không chỉ để hiểu biết mà còn để tránh họa và nhân quả, đồng thời ứng dụng vào mọi mặt của cuộc sống, từ học tập, sinh hoạt, hành động, tu dưỡng đến rèn luyện.",
+    "content_en": "Trí tuệ dùng để hiểu, để tránh họa và nhân quả, để ứng dụng trong Học - Sống - Hành - Tu - Luyện.",
+    "image_url": "",
+    "category": "",
+    "order_index": 133
+  },
+  {
+    "id": "phuong-phap-ung-dung-trien-khai-cu-the",
+    "title_vi": "IV. PHƯƠNG PHÁP ỨNG DỤNG TRIỂN KHAI CỤ THỂ TRONG HỌC - SỐNG - HÀNH - TU - LUYỆN",
+    "summary_vi": "Phương pháp ứng dụng trí tuệ là biết cách sử dụng trí tuệ, khai thác và ứng dụng cụ thể vào các lĩnh vực Học, Sống, Hành, Tu, Luyện.",
+    "cot_y_vi": [
+      "Biết cách sử dụng trí tuệ",
+      "Khai thác trí tuệ",
+      "Ứng dụng cụ thể vào Học, Sống, Hành, Tu, Luyện"
+    ],
+    "cot_cua_cot_vi": [
+      "Sử dụng trí tuệ đúng cách, hiệu quả",
+      "Khai thác tiềm năng trí tuệ",
+      "Áp dụng trí tuệ vào từng lĩnh vực cụ thể"
+    ],
+    "loi_vi": "Phương pháp ứng dụng trí tuệ giúp chúng ta biết cách sử dụng trí tuệ một cách hiệu quả, khai thác tối đa tiềm năng của trí tuệ, và ứng dụng cụ thể vào các lĩnh vực Học, Sống, Hành, Tu, Luyện để đạt kết quả tốt nhất.",
+    "content_vi": "Phương pháp ứng dụng trí tuệ là biết cách sử dụng trí tuệ, khai thác, ứng dụng cụ thể vào Học, Sống, Hành, Tu, Luyện.",
+    "summary_en": "Phương pháp ứng dụng trí tuệ là biết cách sử dụng trí tuệ, khai thác và ứng dụng cụ thể vào các lĩnh vực Học, Sống, Hành, Tu, Luyện.",
+    "cot_y_en": [
+      "Biết cách sử dụng trí tuệ",
+      "Khai thác trí tuệ",
+      "Ứng dụng cụ thể vào Học, Sống, Hành, Tu, Luyện"
+    ],
+    "cot_cua_cot_en": [
+      "Sử dụng trí tuệ đúng cách, hiệu quả",
+      "Khai thác tiềm năng trí tuệ",
+      "Áp dụng trí tuệ vào từng lĩnh vực cụ thể"
+    ],
+    "loi_en": "Phương pháp ứng dụng trí tuệ giúp chúng ta biết cách sử dụng trí tuệ một cách hiệu quả, khai thác tối đa tiềm năng của trí tuệ, và ứng dụng cụ thể vào các lĩnh vực Học, Sống, Hành, Tu, Luyện để đạt kết quả tốt nhất.",
+    "content_en": "Phương pháp ứng dụng trí tuệ là biết cách sử dụng trí tuệ, khai thác, ứng dụng cụ thể vào Học, Sống, Hành, Tu, Luyện.",
+    "image_url": "",
+    "category": "",
+    "order_index": 134
   }
-
 ];

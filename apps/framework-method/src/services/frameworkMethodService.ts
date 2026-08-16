@@ -197,7 +197,7 @@ export const saveTaskSuggestions = async (suggestions: Record<BlockId, TaskSugge
 
 const KNOWLEDGE_STORAGE_KEY = "fm_knowledge_v1";
 const KNOWLEDGE_VERSION_KEY = "fm_knowledge_version_v1";
-const KNOWLEDGE_SEED_VERSION = 6;
+const KNOWLEDGE_SEED_VERSION = 7;
 
 const mergeKnowledgeWithDefaults = (stored: KnowledgeEntry[]): KnowledgeEntry[] => {
   const storedById = new Map(stored.map((e) => [e.id, e]));

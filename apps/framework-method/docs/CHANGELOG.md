@@ -1,5 +1,13 @@
 # Framework Method — Changelog
 
+## 2026-08-15 (Expand Knowledge Vault from Sách Vàng OCR)
+
+- Extracted and added the remaining sections of the Sách Vàng OCR (`/home/ubuntu/ocr_pages/pdf_full.txt`) to `src/data/knowledgeSeed.ts`, growing the seed from 43 to 135 `KnowledgeEntry` records.
+- New entries cover `PHẦN 2: Quy luật` (6 sub-laws: Tạo Hóa, Trời Phật, Thời thế, Con người, Vạn vật, Thời gian), `PHẦN 3: Hiếu - Lễ - Nghĩa`, `PHẦN 4: Biết gốc & Bám gốc`, `PHẦN 5: Nguyên tắc`, `PHẦN 6: Ý pháp mở rộng & Tâm từ bi`, `PHẦN 7: Xoay chuyển`, `PHẦN 8: Hành`, `PHẦN 9: Luyện & Sửa`, `PHẦN 10: Tu`, `PHẦN 11: Kế thừa`, plus the intro/outro concepts (`Góc độ`, `Quy chuẩn`, `Định nghĩa`, `Giá trị`, `Trí tuệ là khuôn vàng thước ngọc`, `Trí tuệ là thực tế khoa học tâm linh`, `Định hướng 10 điều`, `Phân biệt tri tuệ/khác kiến thức/trí thức`, `6 giá trị`, `Trí tuệ để làm gì`, `Phương pháp ứng dụng triển khai cụ thể`).
+- Ran an enrichment pass on the shortest generated entries (under 120 chars) so `loi_vi`/`content_vi` and derived English fields now hold full sentences instead of placeholder fragments.
+- Bumped `KNOWLEDGE_SEED_VERSION` to 7 in `frameworkMethodService.ts` so existing cached `localStorage` users automatically receive the expanded library without clearing storage.
+- Validation: `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+
 ## 2026-08-15 (Nghiệp đời, examples, block-aware session UX, and Công thức 5-field templates)
 
 - Added `nghiep-doi` to `src/data/knowledgeSeed.ts`: a `KnowledgeEntry` explaining that each day one must work to repay life-karma; when it is repaid, work is no longer required. It is mirrored to `content_vi`/`loi_vi` and surfaced on the `Dashboard` via the new daily nudge card.
