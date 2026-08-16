@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, type ReactNode, 
 import { databaseService } from "../services/database";
 import { useAuthContext } from "@superapp/iam";
 import { normalizeTransactionType } from "../services/businessLogic/parsers";
+import { getCustomerBalanceDelta } from "../services/businessLogic/balanceMath";
 // Canonical transaction type display labels.  Maps both canonical ids and the
 // legacy/old Vietnamese names to the business labels requested by the product
 // team (Phát sinh tăng/giảm, Điều chỉnh, Hoàn tiền).
@@ -76,13 +77,14 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
   const [typesForDropdown, setTypesForDropdown] = useState<TransactionTypeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isAuthenticated, isTrial } = useAuthContext();
+  const { isAuthenticated, isTrial, user } = useAuthContext();
 
   const refetch = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await databaseService.transactionTypes.getTransactionTypes();
+      const companyId = isTrial ? "trial-company" : user?.company_id;
+      const result = await databaseService.transactionTypes.getTransactionTypes(companyId);
       if (result.error) {
         setError(result.error);
         setTypes([]);
@@ -133,7 +135,7 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isTrial, user?.company_id]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -143,7 +145,7 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
       setTypesForDropdown([]);
       setLoading(false);
     }
-  }, [refetch, isAuthenticated, isTrial]);
+  }, [refetch, isAuthenticated]);
 
   const findById = useCallback(
     (id: string) => types.find((t) => t.id === id),
@@ -178,11 +180,35 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
     (id: string) => {
       if (!id) return 1;
       const needle = id.toLowerCase().trim();
+      const standardCanonicals = new Set(["charge", "payment", "refund", "deposit", "adjustment"]);
+
+      const resolveFactor = (value: string): number | null => {
+        const canonical = normalizeTransactionType(value).toLowerCase().trim();
+        if (standardCanonicals.has(canonical)) {
+          return getCustomerBalanceDelta(canonical, 1);
+        }
+        return null;
+      };
+
+      // 1) If the input itself is a canonical id or a known alias, derive the
+      // factor from the canonical semantics. This protects the UI from rows
+      // whose stored math_factor has been accidentally inverted.
+      const fromInput = resolveFactor(id);
+      if (fromInput !== null) return fromInput;
+
+      // 2) For non-canonical inputs (usually UUID ids), resolve the row and
+      // derive the factor from its name's canonical meaning when possible.
       const found =
         types.find((t) => t.id === id) ||
         types.find((t) => t.canonical.toLowerCase() === needle) ||
         types.find((t) => t.name.toLowerCase() === needle);
-      return found?.math_factor ?? 1;
+      if (found) {
+        const fromName = resolveFactor(found.name);
+        if (fromName !== null) return fromName;
+        return found.math_factor;
+      }
+
+      return 1;
     },
     [types]
   );

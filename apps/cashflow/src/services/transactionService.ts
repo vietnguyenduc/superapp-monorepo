@@ -682,12 +682,17 @@ export class TransactionService extends BaseService {
 
         const typeLookup = new Map<string, string>();
         const validCanonicals = new Set<string>();
+        const allowedLabels: string[] = [];
         (validTypes || []).forEach((t: any) => {
           const id = String(t.id || "").toLowerCase().trim();
           const name = String(t.name || "").toLowerCase().trim();
           const canonical = normalizeTransactionType(name);
+          if (name) allowedLabels.push(String(t.name).trim());
           if (id) typeLookup.set(id, canonical);
           if (name) typeLookup.set(name, canonical);
+          // Add normalized aliases (e.g. "phat sinh giam" -> "payment")
+          const normalizedName = normalizeTransactionType(name);
+          if (normalizedName && normalizedName !== name) typeLookup.set(normalizedName, canonical);
           typeLookup.set(canonical, canonical);
           validCanonicals.add(canonical);
         });
@@ -696,8 +701,15 @@ export class TransactionService extends BaseService {
           const key = input.toLowerCase().trim();
           if (typeLookup.has(key)) return { type: typeLookup.get(key)!, valid: true };
           if (validCanonicals.has(key)) return { type: key, valid: true };
-          return { type: normalizeTransactionType(input), valid: false };
+          const normalized = normalizeTransactionType(input).toLowerCase().trim();
+          if (typeLookup.has(normalized)) return { type: typeLookup.get(normalized)!, valid: true };
+          if (validCanonicals.has(normalized)) return { type: normalized, valid: true };
+          return { type: normalized, valid: false };
         };
+
+        const allowedTypeMessage = allowedLabels.length > 0
+          ? `Các loại được hỗ trợ: ${allowedLabels.join(", ")}.`
+          : "Vui lòng kiểm tra lại danh sách loại giao dịch trong Cài đặt.";
 
         const errors: { row: number; message: string }[] = [];
         const body: Record<string, unknown>[] = [];
@@ -738,7 +750,7 @@ export class TransactionService extends BaseService {
           } else {
             const typeResult = resolveTransactionType(rawType);
             if (!typeResult.valid) {
-              rowErrors.push(`Loại giao dịch "${rawType}" không hợp lệ`);
+              rowErrors.push(`Loại giao dịch "${rawType}" không hợp lệ. ${allowedTypeMessage}`);
             } else {
               transaction_type = typeResult.type;
             }

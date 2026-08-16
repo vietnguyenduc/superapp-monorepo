@@ -92,10 +92,11 @@ All form/entity validators in `src/services/businessLogic/validation.ts` return 
 `transactionService.bulkImportTransactions()`:
 1. Requires `companyId`; returns an error if it is missing.
 2. Scopes option/lookup queries (`customers`, `bank_accounts`, `branches`, `transaction_types`) to the active `company_id`.
-3. Resolves customers by `customer_code`, bank accounts and branches by label.
-4. Normalizes each row.
-5. Bulk inserts into `transactions`.
-6. Collects the unique `customer_id`s and `bank_account_id`s from the inserted rows and recalculates each customer/bank balance once, instead of calling `_syncTransactionBalance` per row.
+3. Resolves customers by `customer_code`/`customer_id`, bank accounts and branches by label.
+4. Normalizes each row, especially `transaction_type` via `normalizeTransactionType`, and accepts id/name/canonical/Vietnamese aliases.
+5. Returns clear per-row errors such as `Loại giao dịch "..." không hợp lệ. Các loại được hỗ trợ: ...`.
+6. Bulk inserts into `transactions`.
+7. Collects the unique `customer_id`s and `bank_account_id`s from the inserted rows and recalculates each customer/bank balance once, instead of calling `_syncTransactionBalance` per row.
 
 ### Transaction edit UI (`TransactionList.tsx`)
 
@@ -111,6 +112,8 @@ All form/entity validators in `src/services/businessLogic/validation.ts` return 
 A group-by selector produces a `Tổng hợp theo nhóm` table above the transaction list:
 - Group keys: `day` (ISO date), `week` (ISO week), `month` (year-month), plus existing `branch`, `transaction_type`, `customer`.
 - Group summary per key: count, `Tổng phát sinh tăng` (sum of `abs(delta)` for non-adjustment deltas `> 0`), `Tổng phát sinh giảm` (sum of `abs(delta)` for non-adjustment deltas `< 0`), `Tổng điều chỉnh` (signed sum of adjustment deltas), and `Net` (sum of all signed deltas).
+- The transaction's canonical type is resolved from the row's display name (via `getTransactionTypeName`) so a UUID whose name is `Đặt cọc` is classified as `deposit`, not as `payment`/`refund`.
+- `getMathFactor` enforces canonical semantics for standard transaction types before trusting the stored `math_factor`, so inverted `math_factor` rows do not swap the increase/decrease totals.
 - Day/week/month groups are sorted chronologically by key; other groups are sorted by label.
 
 ### Sign-aware amount handling
@@ -149,7 +152,7 @@ applyTransactionsToCustomerBalance(opening, txs, factorMap?)
 applyTransactionsToBankAccountBalance(opening, txs)
 ```
 
-`transactionTypeService.buildFactorMap` and `getTransactionTypeFactorMap` load the per-company `math_factor` map from `transaction_types`. `transactionService`, `dashboardService.getDashboardMetrics`, and `dashboardService.getReceivableLedger` pass this map into `getCustomerBalanceDelta` / `applyTransactionsToCustomerBalance` so every balance calculation respects the configured convention. `deposit` uses the same customer-balance and bank-cash direction as `payment`.
+`transactionTypeService.buildFactorMap` and `getTransactionTypeFactorMap` load the per-company `math_factor` map from `transaction_types`. For standard canonical types, `buildFactorMap` ignores stored `math_factor` and uses the canonical semantic factor (`charge` +1, `payment`/`refund`/`deposit` -1, `adjustment` +1) so corrupted rows cannot invert balances. `transactionService`, `dashboardService.getDashboardMetrics`, and `dashboardService.getReceivableLedger` pass this map into `getCustomerBalanceDelta` / `applyTransactionsToCustomerBalance` so every balance calculation respects the configured convention. `deposit` uses the same customer-balance and bank-cash direction as `payment`.
 
 ## Backup and restore
 

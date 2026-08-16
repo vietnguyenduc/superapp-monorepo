@@ -224,16 +224,25 @@ export class TransactionTypeService extends BaseService {
 
   static buildFactorMap(types: Array<{ id?: unknown; name?: unknown; math_factor?: unknown }>): Record<string, number> {
     const map: Record<string, number> = {};
+    const standardCanonicals = new Set(["charge", "payment", "refund", "deposit", "adjustment"]);
+
     for (const t of types) {
       const idKey = String(t.id ?? "").toLowerCase().trim();
       const nameKey = String(t.name ?? "").toLowerCase().trim();
-      const factor = Number(t.math_factor ?? 1);
+
+      // Determine the canonical meaning of this row. For standard canonical
+      // ids/names we always use the semantic factor; only custom (unknown)
+      // types rely on the stored math_factor.
+      const canonicalName = normalizeTransactionType(nameKey);
+      const isStandard = standardCanonicals.has(canonicalName);
+      const factor = isStandard
+        ? getCustomerBalanceDelta(canonicalName, 1)
+        : Number(t.math_factor ?? 1);
 
       if (idKey) map[idKey] = factor;
       if (nameKey) map[nameKey] = factor;
 
       const canonicalId = normalizeTransactionType(idKey);
-      const canonicalName = normalizeTransactionType(nameKey);
       if (canonicalId && !map[canonicalId]) map[canonicalId] = factor;
       if (canonicalName && canonicalName !== canonicalId && !map[canonicalName]) map[canonicalName] = factor;
     }

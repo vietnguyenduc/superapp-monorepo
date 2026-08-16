@@ -760,8 +760,10 @@ const TransactionList: React.FC = () => {
         acc[key] = { label, count: 0, increase: 0, decrease: 0, deposit: 0, adjustment: 0, net: 0 };
       }
 
-      const delta = getCustomerBalanceDelta(tx.transaction_type, tx.amount, getMathFactor(tx.transaction_type));
-      const canonicalType = normalizeTransactionType(tx.transaction_type);
+      const mathFactor = getMathFactor(tx.transaction_type);
+      const delta = getCustomerBalanceDelta(tx.transaction_type, tx.amount, mathFactor);
+      const typeName = getTransactionTypeName(tx.transaction_type) || tx.transaction_type;
+      const canonicalType = normalizeTransactionType(typeName);
       if (canonicalType === "adjustment") {
         acc[key].adjustment += delta;
       } else if (canonicalType === "deposit") {

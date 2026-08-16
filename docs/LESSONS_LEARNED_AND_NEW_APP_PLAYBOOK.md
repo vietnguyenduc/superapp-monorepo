@@ -276,6 +276,7 @@
 - **CustomerDetail tự tính `currentBalance`** riêng, mismatch với `total_balance`. Fix: hiển thị `total_balance` làm single source of truth.
 - **Opening balance thay đổi không sync `total_balance`**. Fix: khi `opening_balance` update, `total_balance` += delta, `current_balance` cũng cập nhật.
 - **Tổng số tiền đã trả bị phình do `Math.abs`**: lấy `Math.abs(amount)` cho cả `adjustment` làm số "đã trả" cao hơn thực tế. Fix: tính `delta = amount × math_factor` qua `getCustomerBalanceDelta` và chỉ cộng phần làm giảm công nợ (`-delta` khi `delta < 0`). `refund` và `deposit` vẫn được tính vì chúng giảm công nợ, `adjustment` dương thì không.
+- **`math_factor` trong DB bị ngược hoặc cross-tenant leak**: một công ty khác có `Phát sinh tăng = -1` làm `getMathFactor` trả về sai dấu, gộp `payment` vào phát sinh tăng. Fix: `TransactionTypeContext` phải filter theo `company_id` của user; `getMathFactor`/`buildFactorMap` ưu tiên canonical factor cho standard types (`charge` +1, `payment`/`refund`/`deposit` -1, `adjustment` +1) trước khi tin `math_factor` lưu trữ; migration sửa `math_factor`/`impact_type` sai và recalc toàn bộ balance.
 
 ### 14.2. Transaction types & enum
 - **Deposit / `Đặt cọc`**: thêm type mới cần update union type, `balanceMath.ts`, validation, parser, UI labels/colors, i18n, dashboard, group summary, trial seed, migration.
@@ -285,7 +286,8 @@
 ### 14.3. Import / Export
 - **Bulk import trùng `transaction_code`**: Postgres unique constraint khó hiểu. Fix: pre-check DB + duplicate trong file, auto-generate mã khi để trống.
 - **Import không tìm thấy customer**: live path chỉ match `customer_code`, trial path match `id`/`name`. Fix: dùng chung resolver.
-- **Template có mã cứng `GC-001`**: user import 2 lần bị trùng. Fix: template để `Số chứng từ` trống và hướng dẫn.
+- **Bulk import lỗi `Loại giao dịch ... không hợp lệ`**: message chung chưa nói rõ loại nào được chấp nhận. Fix: `resolveTransactionType` normalize input qua `normalizeTransactionType`, thử id/name/canonical/aliases, và error trả về kèm `Các loại được hỗ trợ: ...`.
+- **Excel/CSV import không match cột**: user dùng tên cột khác nhau (`customer_id`, `bank_acc`, `ngày giao dịch`). Fix: mỗi `ImportField` có `aliases`, parse file normalize key lowercase rồi thử key, label, aliases.
 - **Date parser `MM/DD` âm thầm nhầm**: khi cả ngày/tháng ≤ 12. Fix: từ chối hoặc ưu tiên `DD/MM/YYYY`.
 - **Export Excel không theo filter**: xuất toàn bộ DB. Fix: gửi filter đang active.
 - **Export 0 dòng ra file trống**: file nên có tiêu đề cột.
