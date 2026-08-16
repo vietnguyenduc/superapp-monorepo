@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { FiTrash2, FiEdit2, FiBookOpen, FiSearch, FiChevronRight, FiZap } from "react-icons/fi";
+import { FiTrash2, FiEdit2, FiBookOpen, FiSearch, FiChevronRight, FiZap, FiX } from "react-icons/fi";
 import { Card, Button } from "../../components/UI";
 import { useI18n } from "../../hooks/useI18n";
 import { useSession } from "../../contexts/SessionContext";
@@ -33,6 +33,7 @@ const Knowledge = () => {
   const [form, setForm] = useState<EntryForm>(emptyEntry);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<Category>("all");
+  const [viewing, setViewing] = useState<KnowledgeEntry | null>(null);
 
   const startEdit = (entry: KnowledgeEntry) => {
     setEditing(entry);
@@ -191,38 +192,109 @@ const Knowledge = () => {
 
         {filteredEntries.length === 0 && <p className="text-sm text-gray-500">{t("knowledge.empty")}</p>}
         {filteredEntries.map((entry) => (
-          <Card key={entry.id} className="p-4 group">
-            <div className="flex items-start gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center shrink-0">
-                {entry.category === "framework" ? (
-                  <FiZap className="w-6 h-6 text-primary-600" />
-                ) : (
-                  <FiBookOpen className="w-6 h-6 text-primary-600" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-base leading-snug line-clamp-2">
-                  {language === "en" ? entry.title_en : entry.title_vi}
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">
-                  {language === "en" ? (entry.cot_cua_cot_en || entry.summary_en || entry.content_en) : (entry.cot_cua_cot_vi || entry.summary_vi || entry.content_vi)}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-2 shrink-0">
-                <FiChevronRight className="w-5 h-5 text-gray-300 group-hover:text-primary-600 transition-colors" />
-                <div className="flex gap-1">
-                  <button onClick={() => startEdit(entry)} className="p-1.5 rounded-full text-gray-400 hover:text-primary-600 hover:bg-gray-100 dark:hover:bg-gray-800">
-                    <FiEdit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button onClick={() => removeKnowledgeEntry(entry.id)} className="p-1.5 rounded-full text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800">
-                    <FiTrash2 className="w-3.5 h-3.5" />
-                  </button>
+          <div key={entry.id} onClick={() => setViewing(entry)} className="cursor-pointer">
+            <Card className="p-4 group">
+              <div className="flex items-start gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center shrink-0">
+                  {entry.category === "framework" ? (
+                    <FiZap className="w-6 h-6 text-primary-600" />
+                  ) : (
+                    <FiBookOpen className="w-6 h-6 text-primary-600" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-base leading-snug line-clamp-2">
+                    {language === "en" ? entry.title_en : entry.title_vi}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">
+                    {language === "en" ? (entry.cot_cua_cot_en || entry.summary_en || entry.content_en) : (entry.cot_cua_cot_vi || entry.summary_vi || entry.content_vi)}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <FiChevronRight className="w-5 h-5 text-gray-300 group-hover:text-primary-600 transition-colors" />
+                  <div className="flex gap-1">
+                    <button onClick={(e) => { e.stopPropagation(); startEdit(entry); }} className="p-1.5 rounded-full text-gray-400 hover:text-primary-600 hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <FiEdit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); removeKnowledgeEntry(entry.id); }} className="p-1.5 rounded-full text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <FiTrash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
         ))}
       </div>
+
+      {viewing && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          onClick={() => setViewing(null)}
+        >
+          <div
+            className="bg-white dark:bg-[#1C1C1E] rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl border border-black/[0.04] dark:border-white/[0.08] p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="text-xl font-bold">
+                {language === "en" ? viewing.title_en : viewing.title_vi}
+              </h2>
+              <button
+                onClick={() => setViewing(null)}
+                className="p-2 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+            {viewing.image_url && (
+              <img
+                src={viewing.image_url}
+                alt=""
+                className="w-full h-48 object-cover rounded-2xl border border-gray-200 dark:border-gray-700"
+              />
+            )}
+            {(language === "en" ? viewing.cot_y_en || viewing.summary_en : viewing.cot_y_vi || viewing.summary_vi) && (
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                  {t("knowledge.fieldSummary")}
+                </h3>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed mt-1">
+                  {language === "en" ? (viewing.cot_y_en || viewing.summary_en) : (viewing.cot_y_vi || viewing.summary_vi)}
+                </p>
+              </div>
+            )}
+            {(language === "en" ? viewing.cot_cua_cot_en : viewing.cot_cua_cot_vi) && (
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                  {t("knowledge.cotCuaCot")}
+                </h3>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed mt-1">
+                  {language === "en" ? viewing.cot_cua_cot_en : viewing.cot_cua_cot_vi}
+                </p>
+              </div>
+            )}
+            {(language === "en" ? viewing.loi_en || viewing.content_en : viewing.loi_vi || viewing.content_vi) && (
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                  {t("knowledge.loi")}
+                </h3>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed mt-1">
+                  {language === "en" ? (viewing.loi_en || viewing.content_en) : (viewing.loi_vi || viewing.content_vi)}
+                </p>
+              </div>
+            )}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Button onClick={() => { startEdit(viewing); setViewing(null); }}>
+                {t("knowledge.edit")}
+              </Button>
+              <Button variant="secondary" onClick={() => setViewing(null)}>
+                {t("common.cancel")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

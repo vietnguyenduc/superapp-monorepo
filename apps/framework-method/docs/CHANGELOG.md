@@ -1,5 +1,11 @@
 # Framework Method — Changelog
 
+## 2026-08-15 (Knowledge Vault detail modal)
+
+- Added a read-only detail modal to `src/pages/Knowledge/Knowledge.tsx`: clicking any knowledge card now opens a modal showing `Cốt ý`, `Cốt của Cốt`, and `Lõi` (with image preview if available).
+- Edit and delete buttons on cards now stop event propagation so the detail modal doesn't open when using those actions.
+- Validation: `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+
 ## 2026-08-15 (Session Step 2 cleanup & inline knowledge snippets)
 
 - Removed `Nguyên lý trí tuệ` and `Nguyên lý sống` checklist items from Step 2 “Nhận ra” in `src/data/templateSeed.ts`; the first section now focuses on the 8 `NLCĐ` entries and is renamed to `Nguyên lý Cuộc đời`.
