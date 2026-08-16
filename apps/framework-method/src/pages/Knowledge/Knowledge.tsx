@@ -38,7 +38,7 @@ const groupLabel = (entry: KnowledgeEntry, language: string) => {
 
 const Knowledge = () => {
   const { t, language } = useI18n();
-  const { knowledgeEntries, addKnowledgeEntry, updateKnowledgeEntry, removeKnowledgeEntry } = useSession();
+  const { knowledgeEntries, addKnowledgeEntry, updateKnowledgeEntry, removeKnowledgeEntry, isLoading } = useSession();
   const [editing, setEditing] = useState<KnowledgeEntry | null>(null);
   const [form, setForm] = useState<EntryForm>(emptyEntry);
   const [showForm, setShowForm] = useState(false);
@@ -133,9 +133,11 @@ const Knowledge = () => {
   ];
 
   const renderDetail = (entry: KnowledgeEntry) => {
+    const summaryVal = language === "en" ? entry.summary_en : entry.summary_vi;
+    const cotYVal = language === "en" ? entry.cot_y_en : entry.cot_y_vi;
     const parts = [
-      { key: "summary", label: t("knowledge.fieldSummary"), value: language === "en" ? entry.summary_en : entry.summary_vi },
-      { key: "cot_y", label: t("knowledge.cotY"), value: language === "en" ? entry.cot_y_en : entry.cot_y_vi },
+      { key: "summary", label: t("knowledge.fieldSummary"), value: summaryVal },
+      { key: "cot_y", label: t("knowledge.cotY"), value: cotYVal?.trim() && cotYVal.trim() !== summaryVal?.trim() ? cotYVal : "" },
       { key: "cot_cua_cot", label: t("knowledge.cotCuaCot"), value: language === "en" ? entry.cot_cua_cot_en : entry.cot_cua_cot_vi },
       { key: "loi", label: t("knowledge.loi"), value: language === "en" ? entry.loi_en || entry.content_en : entry.loi_vi || entry.content_vi },
     ];
@@ -271,7 +273,8 @@ const Knowledge = () => {
       )}
 
       <div className="space-y-2">
-        {grouped.length === 0 && <p className="text-sm text-gray-500">{t("knowledge.empty")}</p>}
+        {isLoading && <p className="text-sm text-gray-500">{t("common.loading")}</p>}
+        {!isLoading && grouped.length === 0 && <p className="text-sm text-gray-500">{t("knowledge.empty")}</p>}
         {grouped.map(([group, entries]) => {
           const isGroupOpen = expandedGroups.has(group);
           return (
@@ -286,7 +289,7 @@ const Knowledge = () => {
                   </div>
                   <div>
                     <h2 className="font-semibold text-base leading-snug">{group}</h2>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{entries.length} {t("knowledge.entries")}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{entries.length}{"\u00A0"}{t("knowledge.entries")}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
