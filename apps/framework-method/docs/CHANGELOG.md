@@ -1,5 +1,10 @@
 # Framework Method — Changelog
 
+## 2026-08-15 (Session Step 2 section order fix)
+
+- Aligned `SECTION_ORDER_BY_BLOCK` in `src/pages/Session/SessionPage.tsx` so all blocks show the Step 2 recognize sections as Nguyên lý → Đạo → Pháp, matching the Builder/template order.
+- Validation: `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+
 ## 2026-08-15 (Knowledge Vault UI polish)
 
 - Added `isLoading` check in `src/pages/Knowledge/Knowledge.tsx` so the "Chưa có dữ liệu nào" message is not shown while `SessionContext` is still fetching `knowledgeEntries`.
