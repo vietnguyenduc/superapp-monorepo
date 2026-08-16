@@ -18,6 +18,10 @@ export const BackupTab: FC = () => {
     handleResetData,
     resetTargets,
     setResetTargets,
+    resetTransactionDate,
+    setResetTransactionDate,
+    resetDateMode,
+    setResetDateMode,
     loadingBackupHistory,
     backupHistory,
     handleRestoreFromDatabase,
@@ -118,6 +122,8 @@ export const BackupTab: FC = () => {
                     setResetAll(checked);
                     if (checked) {
                       setResetTargets({ transactions: false, bankAccounts: false, branches: false });
+                      setResetDateMode("all");
+                      setResetTransactionDate("");
                     }
                   }}
                   className="rounded border-gray-300 text-red-600 focus:ring-red-500"
@@ -140,7 +146,7 @@ export const BackupTab: FC = () => {
                 <input
                   type="checkbox"
                   checked={resetTargets.bankAccounts}
-                  disabled={resetAll}
+                  disabled={resetAll || resetDateMode !== "all"}
                   onChange={(e) =>
                     setResetTargets((prev) => ({ ...prev, bankAccounts: e.target.checked }))
                   }
@@ -152,7 +158,7 @@ export const BackupTab: FC = () => {
                 <input
                   type="checkbox"
                   checked={resetTargets.branches}
-                  disabled={resetAll}
+                  disabled={resetAll || resetDateMode !== "all"}
                   onChange={(e) =>
                     setResetTargets((prev) => ({ ...prev, branches: e.target.checked }))
                   }
@@ -160,6 +166,45 @@ export const BackupTab: FC = () => {
                 />
                 Chi nhánh
               </label>
+            </div>
+            <div className="mb-3 p-3 bg-white/60 dark:bg-gray-800/40 rounded border border-red-100 dark:border-red-800/40">
+              <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-2">
+                Lọc giao dịch theo ngày (tùy chọn)
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                <select
+                  value={resetDateMode}
+                  onChange={(e) => {
+                    const mode = e.target.value as "all" | "before" | "after" | "on";
+                    setResetDateMode(mode);
+                    if (mode !== "all") {
+                      setResetTargets((prev) => ({
+                        transactions: true,
+                        bankAccounts: false,
+                        branches: false,
+                      }));
+                    }
+                  }}
+                  disabled={resetAll || !resetTargets.transactions}
+                  className="text-sm rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-red-500 focus:ring-red-500 disabled:opacity-50"
+                >
+                  <option value="all">Không lọc ngày</option>
+                  <option value="before">Xóa giao dịch đến ngày</option>
+                  <option value="after">Xóa giao dịch từ ngày</option>
+                  <option value="on">Xóa giao dịch đúng ngày</option>
+                </select>
+                <input
+                  type="text"
+                  value={resetTransactionDate}
+                  onChange={(e) => setResetTransactionDate(e.target.value)}
+                  placeholder="DD/MM/YYYY"
+                  disabled={resetAll || resetDateMode === "all" || !resetTargets.transactions}
+                  className="text-sm rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white placeholder-gray-400 focus:border-red-500 focus:ring-red-500 disabled:opacity-50 w-full sm:w-40"
+                />
+              </div>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
+                Chỉ áp dụng khi chọn <strong>Giao dịch</strong>. Khi bật lọc ngày, Tài khoản ngân hàng và Chi nhánh sẽ bị tắt để tránh lỗi khóa ngoại.
+              </p>
             </div>
             <Button
               variant="secondary"
