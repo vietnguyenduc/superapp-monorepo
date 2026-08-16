@@ -1,5 +1,12 @@
 # Framework Method — Changelog
 
+## 2026-08-15 (Knowledge Vault UI polish)
+
+- Added `isLoading` check in `src/pages/Knowledge/Knowledge.tsx` so the "Chưa có dữ liệu nào" message is not shown while `SessionContext` is still fetching `knowledgeEntries`.
+- Added a non-breaking space between the entry count and `knowledge.entries` label in group headers.
+- Updated `knowledge.cotY` i18n labels to "Cốt ý đầy đủ" (vi) and "Detailed core idea" (en) and skipped the `cot_y` detail block when it is identical to `summary`.
+- Validation: `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+
 ## 2026-08-15 (Knowledge Vault accordion + data cleanup + seed v8)
 
 - Added `group_vi` and `group_en` to `KnowledgeEntry` in `src/types/index.ts` and assigned every default entry to a Sách Vàng table-of-contents group (`A. Mở đầu` → `R. Ví dụ`) via `scripts/fix_knowledge_seed.py` and `scripts/patch_short_entries.py`.
