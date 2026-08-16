@@ -1,5 +1,11 @@
 # Framework Method — Changelog
 
+## 2026-08-15 (Builder ↔ Session sync for section/item order)
+
+- Updated `sortedSections` and `sortedItems` in `src/pages/Session/SessionPage.tsx` to use `order_index` from the Builder-edited template, with `SECTION_ORDER_BY_BLOCK` and `ITEM_PRIORITY_BY_BLOCK` only as fallback for ties.
+- Applied the same sort to Step 3 (Apply) and Step 4 (Track) item lists so any reorder done in Builder is reflected in the `/session` flow.
+- Validation: `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+
 ## 2026-08-15 (Session Step 2 section order fix)
 
 - Aligned `SECTION_ORDER_BY_BLOCK` in `src/pages/Session/SessionPage.tsx` so all blocks show the Step 2 recognize sections as Nguyên lý → Đạo → Pháp, matching the Builder/template order.

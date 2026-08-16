@@ -53,15 +53,27 @@ function priorityFor(blockId: BlockId, itemId: string) {
 }
 
 function sortedSections(blockId: BlockId | undefined, sections: TemplateSection[]) {
-  if (!blockId) return sections;
-  const order = SECTION_ORDER_BY_BLOCK[blockId] || [];
-  const indexOf = (group: string) => order.indexOf(group);
-  return [...sections].sort((a, b) => indexOf(a.group) - indexOf(b.group));
+  const order = blockId ? SECTION_ORDER_BY_BLOCK[blockId] || [] : [];
+  const groupIndex = (group: string) => order.indexOf(group);
+  return [...sections].sort((a, b) => {
+    const ai = a.order_index ?? 999;
+    const bi = b.order_index ?? 999;
+    if (ai !== bi) return ai - bi;
+    return groupIndex(a.group) - groupIndex(b.group);
+  });
 }
 
 function sortedItems(blockId: BlockId | undefined, items: TemplateSectionItem[]) {
-  if (!blockId) return items;
-  return [...items].sort((a, b) => priorityFor(blockId, a.id) - priorityFor(blockId, b.id));
+  return [...items].sort((a, b) => {
+    const ai = a.order_index ?? 999;
+    const bi = b.order_index ?? 999;
+    if (ai !== bi) return ai - bi;
+    if (!blockId) return (a.title_vi || "").localeCompare(b.title_vi || "");
+    const pa = priorityFor(blockId, a.id);
+    const pb = priorityFor(blockId, b.id);
+    if (pa !== pb) return pa - pb;
+    return (a.title_vi || "").localeCompare(b.title_vi || "");
+  });
 }
 
 const StepIndicator = ({ step, onChange }: { step: number; onChange?: (s: number) => void }) => {
@@ -774,16 +786,16 @@ const GenericStep = ({ stepType }: { stepType: StepType }) => {
         }}
       />
 
-      {template?.sections?.map((section) => {
+      {sortedSections(currentBlock?.id, template?.sections || []).map((section) => {
         const values: Record<string, string> = {};
-        section.items.forEach((item) => {
+        sortedItems(currentBlock?.id, section.items).forEach((item) => {
           const key = `${section.id}:${item.id}`;
           if (referenceInputs[key]) values[item.id] = referenceInputs[key].content;
         });
         return (
           <SectionAccordion
             key={section.id}
-            section={section}
+            section={{ ...section, items: sortedItems(currentBlock?.id, section.items) }}
             values={values}
             onChange={(itemId, value, enabled) => handleSave(section.id, itemId, value, enabled)}
           />
@@ -898,7 +910,7 @@ const Step3Apply = () => {
 
   const buildSuggestion = useCallback((): Record<string, string> => {
     if (!selectedTask || !template) return {};
-    const items = template.sections?.[0]?.items || [];
+    const items = sortedItems(currentBlock?.id, template.sections?.[0]?.items || []);
     const suggestion: Record<string, string> = {};
     const blockLabel = language === "en" ? currentBlock?.name_en || "" : currentBlock?.name_vi || "";
 
@@ -939,7 +951,7 @@ const Step3Apply = () => {
 
   const handleSave = async () => {
     if (!selectedTask) return;
-    const items = template?.sections?.[0]?.items || [];
+    const items = sortedItems(currentBlock?.id, template?.sections?.[0]?.items || []);
     const data: Record<string, string> = {};
     items.forEach((item) => {
       data[item.id] = draft[item.id] || "";
@@ -988,8 +1000,8 @@ const Step3Apply = () => {
       {selectedTask && (
         <Card className="p-5 rounded-2xl space-y-5">
           <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{t("session.planFor", { task: selectedTask.title })}</h3>
-          {template?.sections?.map((section) =>
-            section.items.map((item) => (
+          {sortedSections(currentBlock?.id, template?.sections || []).map((section) =>
+            sortedItems(currentBlock?.id, section.items).map((item) => (
               <PlanField
                 key={item.id}
                 item={item}
@@ -1034,7 +1046,7 @@ const Step4Track = () => {
   const track = selectedTaskId ? tracks[selectedTaskId] : undefined;
   const plan = selectedTaskId ? applyPlans[selectedTaskId] : undefined;
 
-  const trackItems = template?.sections?.[0]?.items || [];
+  const trackItems = sortedItems(currentBlock?.id, template?.sections?.[0]?.items || []);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [reflectingTask, setReflectingTask] = useState<DailyTask | null>(null);
 
@@ -1097,7 +1109,7 @@ const Step4Track = () => {
       {selectedTask && (
         <Card className="p-5 rounded-2xl space-y-5">
           <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{t("session.trackFor", { task: selectedTask.title })}</h3>
-          {template?.sections?.[0]?.items.map((item) => {
+          {trackItems.map((item) => {
             const itemContent = language === "en" ? item.content_en : item.content_vi;
             return (
               <div key={item.id} className="space-y-3 p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
