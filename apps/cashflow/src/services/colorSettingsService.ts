@@ -10,7 +10,7 @@ export class ColorSettingsService extends BaseService {
       payment: { label: "Phát sinh giảm", bg_color: "bg-green-100", text_color: "text-green-800", dark_bg_color: "dark:bg-green-900", dark_text_color: "dark:text-green-200", amount_color: "text-green-600", dark_amount_color: "dark:text-green-400" },
       charge: { label: "Phát sinh tăng", bg_color: "bg-red-100", text_color: "text-red-800", dark_bg_color: "dark:bg-red-900", dark_text_color: "dark:text-red-200", amount_color: "text-red-600", dark_amount_color: "dark:text-red-400" },
       adjustment: { label: "Điều chỉnh", bg_color: "bg-blue-100", text_color: "text-blue-800", dark_bg_color: "dark:bg-blue-900", dark_text_color: "dark:text-blue-200", amount_color: "text-blue-600", dark_amount_color: "dark:text-blue-400" },
-      refund: { label: "Hoàn tiền", bg_color: "bg-green-100", text_color: "text-green-800", dark_bg_color: "dark:bg-green-900", dark_text_color: "dark:text-green-200", amount_color: "text-green-600", dark_amount_color: "dark:text-green-400" },
+      refund: { label: "Hoàn tiền", bg_color: "bg-red-100", text_color: "text-red-800", dark_bg_color: "dark:bg-red-900", dark_text_color: "dark:text-red-200", amount_color: "text-red-600", dark_amount_color: "dark:text-red-400" },
       deposit: { label: "Đặt cọc", bg_color: "bg-purple-100", text_color: "text-purple-800", dark_bg_color: "dark:bg-purple-900", dark_text_color: "dark:text-purple-200", amount_color: "text-purple-600", dark_amount_color: "dark:text-purple-400" },
     };
   }

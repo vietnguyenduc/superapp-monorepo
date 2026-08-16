@@ -1160,97 +1160,98 @@ const TransactionList: React.FC = () => {
             )}
 
             <div className="overflow-x-visible">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+              <table className="w-full table-fixed divide-y divide-gray-200 dark:divide-gray-600">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="sticky left-0 z-30 w-32 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Ngày giao dịch</th>
-                    <th className="sticky left-32 z-20 w-48 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Khách hàng</th>
+                    <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "12%" }}>Ngày</th>
+                    <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "22%" }}>Khách hàng</th>
                     {visibleColumnKeys.includes("type") && (
-                      <th className="sticky z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Loại giao dịch</th>
+                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "14%" }}>Loại</th>
                     )}
                     {visibleColumnKeys.includes("amount") && (
-                      <th className="sticky z-10 px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Số tiền</th>
+                      <th className="sticky z-10 px-2 py-2 text-right text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "12%" }}>Số tiền</th>
                     )}
                     {visibleColumnKeys.includes("branch") && (
-                      <th className="sticky z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Văn phòng</th>
+                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "12%" }}>VP</th>
                     )}
                     {visibleColumnKeys.includes("bank") && (
-                      <th className="sticky z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Tài khoản</th>
+                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "12%" }}>TK</th>
                     )}
                     {visibleColumnKeys.includes("creator") && (
-                      <th className="sticky z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Người thực hiện</th>
+                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "14%" }}>Người tạo</th>
                     )}
                     {visibleColumnKeys.includes("code") && (
-                      <th className="sticky z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Mã GD</th>
+                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "12%" }}>Mã GD</th>
                     )}
                     {visibleColumnKeys.includes("status") && (
-                      <th className="sticky z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Trạng thái</th>
+                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "12%" }}>TT</th>
                     )}
-                    <th className="sticky z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{ top: "var(--transaction-sticky-top, 0px)" }}>Hành động</th>
+                    <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "14%" }}>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
                   {state.transactions.map((transaction) => (
                     <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="sticky left-0 z-20 w-32 px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+                      <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
                         {formatDate(transaction.transaction_date)}
                       </td>
-                      <td className="sticky left-32 z-10 w-48 px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+                      <td className="px-2 py-2 text-xs text-gray-900 dark:text-white">
                         {transaction.customer_id ? (
-                          <button
-                            type="button"
-                            className="block text-left bg-transparent p-0 border-none text-gray-900 dark:text-white hover:underline hover:text-blue-600 dark:hover:text-blue-400 transition-colors max-w-44 truncate font-medium"
-                            title={transaction.customer_name || customers.find(c => c.id === String(transaction.customer_id))?.name || `Customer #${transaction.customer_id}`}
-                            onClick={() => navigate(`/customers/${transaction.customer_id}`)}
-                          >
-                            {transaction.customer_name || (transaction.customer_id ? customers.find(c => c.id === String(transaction.customer_id))?.name : null) || `Customer #${transaction.customer_id}`}
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              className="block w-full text-left bg-transparent p-0 border-none text-gray-900 dark:text-white hover:underline hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate font-medium"
+                              title={transaction.customer_name || customers.find(c => c.id === String(transaction.customer_id))?.name || `Customer #${transaction.customer_id}`}
+                              onClick={() => navigate(`/customers/${transaction.customer_id}`)}
+                            >
+                              {transaction.customer_name || (transaction.customer_id ? customers.find(c => c.id === String(transaction.customer_id))?.name : null) || `Customer #${transaction.customer_id}`}
+                            </button>
+                            {getCustomerCode(transaction.customer_id) ? (
+                              <div className="mt-0.5 font-mono text-[10px] text-gray-500 dark:text-gray-400 truncate">{getCustomerCode(transaction.customer_id)}</div>
+                            ) : null}
+                          </>
                         ) : (
-                          <span className="text-gray-500 dark:text-gray-400">Không có khách hàng</span>
+                          <span className="text-gray-500 dark:text-gray-400">—</span>
                         )}
-                        {getCustomerCode(transaction.customer_id) ? (
-                          <div className="mt-0.5 font-mono text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{getCustomerCode(transaction.customer_id)}</div>
-                        ) : null}
                       </td>
                       {visibleColumnKeys.includes("type") && (
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <td className="px-2 py-2">
                           <span
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTransactionTypeColor(transaction.transaction_type)}`}
+                            className={`inline-block max-w-full truncate px-1.5 py-0.5 rounded-full text-[10px] font-medium ${getTransactionTypeColor(transaction.transaction_type)}`}
+                            title={getTransactionTypeName(transaction.transaction_type)}
                           >
                             {getTransactionTypeName(transaction.transaction_type)}
                           </span>
                         </td>
                       )}
                       {visibleColumnKeys.includes("amount") && (
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
+                        <td className="px-2 py-2 text-right">
                           <span
-                            className={`text-xs sm:text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type, transaction.amount)}`}
+                            className={`text-xs font-bold ${getTransactionTypeAmountColor(transaction.transaction_type, transaction.amount)}`}
                           >
                             {formatCurrency(parseAmount(transaction.amount))}
                           </span>
                         </td>
                       )}
                       {visibleColumnKeys.includes("branch") && (
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
+                        <td className="px-2 py-2 text-xs text-gray-900 dark:text-white truncate" title={transaction.branch_name || undefined}>
                           {transaction.branch_name || "—"}
                         </td>
                       )}
                       {visibleColumnKeys.includes("bank") && (
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                          {transaction.bank_account_name || transaction.bank_account_id ? `#${transaction.bank_account_id}` : "Không có tài khoản"}
+                        <td className="px-2 py-2 text-xs text-gray-900 dark:text-white truncate" title={transaction.bank_account_name || undefined}>
+                          {transaction.bank_account_name || transaction.bank_account_id ? `#${transaction.bank_account_id}` : "—"}
                         </td>
                       )}
                       {visibleColumnKeys.includes("creator") && (
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                          <span className="inline-block max-w-[140px] truncate" title={userMap.get(transaction.created_by || "") || transaction.creator_name || undefined}>
-                            {userMap.get(transaction.created_by || "") || transaction.creator_name || "—"}
-                          </span>
+                        <td className="px-2 py-2 text-xs text-gray-900 dark:text-white truncate" title={userMap.get(transaction.created_by || "") || transaction.creator_name || undefined}>
+                          {userMap.get(transaction.created_by || "") || transaction.creator_name || "—"}
                         </td>
                       )}
                       {visibleColumnKeys.includes("code") && (
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
+                        <td className="px-2 py-2 text-xs font-medium text-gray-900 dark:text-white">
                           <span
-                            className="inline-block max-w-[120px] truncate font-mono bg-gray-100 dark:bg-gray-700 px-1 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs"
+                            className="inline-block max-w-full truncate font-mono bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-[10px]"
                             title={transaction.transaction_code}
                           >
                             {transaction.transaction_code}
@@ -1258,37 +1259,37 @@ const TransactionList: React.FC = () => {
                         </td>
                       )}
                       {visibleColumnKeys.includes("status") && (
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                        <td className="px-2 py-2">
                           {transaction.status === "draft" ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">Nháp</span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">Nháp</span>
                           ) : transaction.status === "pending" ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Chờ duyệt</span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Chờ</span>
                           ) : transaction.status === "rejected" ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Từ chối</span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Từ chối</span>
                           ) : (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Hoàn thành</span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Xong</span>
                           )}
                         </td>
                       )}
-                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                        <div className="flex items-center gap-2">
+                      <td className="px-2 py-2 text-xs text-gray-900 dark:text-white">
+                        <div className="flex flex-wrap items-center gap-1">
                           {transaction.status === "draft" && (
                             <button
                               type="button"
-                              className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium"
+                              className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium text-[10px]"
                               onClick={async () => {
                                 if (!confirm("Gửi giao dịch Nháp để chờ duyệt?")) return;
                                 const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "pending" });
                                 if (error) toast.error("Lỗi khi gửi duyệt"); else fetchTransactions();
                               }}
                             >
-                              Gửi duyệt
+                              Gửi
                             </button>
                           )}
                           {canApprove && (transaction.status === "pending" || transaction.status === "rejected") && (
                             <button
                               type="button"
-                              className="px-2 py-1 rounded border border-green-300 dark:border-green-600 text-green-700 dark:text-green-200 bg-green-50 dark:bg-green-900/40 hover:bg-green-100 dark:hover:bg-green-800 font-medium"
+                              className="px-1.5 py-0.5 rounded border border-green-300 dark:border-green-600 text-green-700 dark:text-green-200 bg-green-50 dark:bg-green-900/40 hover:bg-green-100 dark:hover:bg-green-800 font-medium text-[10px]"
                               onClick={async () => {
                                 if (!confirm("Duyệt giao dịch vào công nợ?")) return;
                                 const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "completed" });
@@ -1301,7 +1302,7 @@ const TransactionList: React.FC = () => {
                           {canApprove && transaction.status === "pending" && (
                             <button
                               type="button"
-                              className="px-2 py-1 rounded border border-red-300 dark:border-red-600 text-red-700 dark:text-red-200 bg-red-50 dark:bg-red-900/40 hover:bg-red-100 dark:hover:bg-red-800 font-medium"
+                              className="px-1.5 py-0.5 rounded border border-red-300 dark:border-red-600 text-red-700 dark:text-red-200 bg-red-50 dark:bg-red-900/40 hover:bg-red-100 dark:hover:bg-red-800 font-medium text-[10px]"
                               onClick={async () => {
                                 if (!confirm("Từ chối giao dịch này?")) return;
                                 const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "rejected" });
@@ -1313,14 +1314,14 @@ const TransactionList: React.FC = () => {
                           )}
                           <button
                             type="button"
-                            className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-[10px]"
                             onClick={() => openEditModal(transaction)}
                           >
                             Sửa
                           </button>
                           <button
                             type="button"
-                            className="px-2 py-1 rounded border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-700 dark:bg-red-900/40 dark:text-red-200"
+                            className="px-1.5 py-0.5 rounded border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-700 dark:bg-red-900/40 dark:text-red-200 text-[10px]"
                             onClick={() => handleDelete(transaction.id)}
                           >
                             Xóa

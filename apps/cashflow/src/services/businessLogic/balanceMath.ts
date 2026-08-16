@@ -6,21 +6,21 @@ import type { Transaction } from "../../types";
  *
  * Convention: POSITIVE total_balance = debt / công nợ.  This matches the
  * production DB and the user's formula:
- *   Công nợ = Đầu kỳ + Phát sinh tăng - Phát sinh giảm + Điều chỉnh - Đặt cọc
+ *   Công nợ = Đầu kỳ + Phát sinh tăng - Phát sinh giảm + Hoàn tiền + Điều chỉnh - Đặt cọc
  *
  * Each transaction type has a `math_factor` (1 or -1).  The customer balance
  * delta is simply `amount * math_factor`.  When no `mathFactor` is provided we
  * fall back to the canonical factors stored in `transaction_types`:
  *   charge      -> +1  (phát sinh tăng, tăng công nợ)
  *   payment     -> -1  (phát sinh giảm, giảm công nợ)
- *   refund      -> -1  (hoàn tiền, giảm công nợ)
+ *   refund      -> +1  (hoàn tiền, tăng công nợ)
  *   deposit     -> -1  (đặt cọc, giảm công nợ)
  *   adjustment  -> +1  (use signed amount, factor +1)
  */
 const DEFAULT_CUSTOMER_FACTORS: Record<string, number> = {
   charge: 1,
   payment: -1,
-  refund: -1,
+  refund: 1,
   deposit: -1,
   adjustment: 1,
 };

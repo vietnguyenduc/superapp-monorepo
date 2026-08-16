@@ -140,7 +140,7 @@ const Manual: React.FC = () => {
               </div>
               <div className="pl-3 border-l-2 border-purple-400">
                 <strong className="block mb-1">Hoàn tiền (Refund)</strong>
-                <p>Hoàn tiền cho khách hàng. Loại này sẽ GIẢM công nợ. Sử dụng khi hoàn trả tiền đã thu.</p>
+                <p>Hoàn tiền cho khách hàng. Loại này sẽ TĂNG công nợ (khoản vay/tạm ứng cho khách). Sử dụng khi khách nhận lại tiền và nợ công ty tăng.</p>
               </div>
             </div>
           </div>

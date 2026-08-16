@@ -16,8 +16,8 @@ describe("balanceMath", () => {
       expect(getCustomerBalanceDelta("payment", 100)).toBe(-100);
     });
 
-    it("refunds reduce the customer's debt (negative delta)", () => {
-      expect(getCustomerBalanceDelta("refund", 100)).toBe(-100);
+    it("refunds increase the customer's debt (positive delta)", () => {
+      expect(getCustomerBalanceDelta("refund", 100)).toBe(100);
     });
 
     it("deposits reduce the customer's debt (negative delta)", () => {
@@ -36,7 +36,7 @@ describe("balanceMath", () => {
     it("reverses the customer effect when amount is negative", () => {
       expect(getCustomerBalanceDelta("charge", -100)).toBe(-100);
       expect(getCustomerBalanceDelta("payment", -100)).toBe(100);
-      expect(getCustomerBalanceDelta("refund", -100)).toBe(100);
+      expect(getCustomerBalanceDelta("refund", -100)).toBe(-100);
       expect(getCustomerBalanceDelta("deposit", -100)).toBe(100);
     });
 
@@ -89,8 +89,8 @@ describe("balanceMath", () => {
         { transaction_type: "deposit", amount: 15 },
         { transaction_type: "adjustment", amount: -10 },
       ] as const;
-      // opening 0 + charge 100 - payment 30 - refund 20 - deposit 15 - adjustment 10 = 25
-      expect(applyTransactionsToCustomerBalance(0, transactions as unknown as { transaction_type: string; amount: number }[])).toBe(25);
+      // opening 0 + charge 100 - payment 30 + refund 20 - deposit 15 - adjustment 10 = 65
+      expect(applyTransactionsToCustomerBalance(0, transactions as unknown as { transaction_type: string; amount: number }[])).toBe(65);
     });
 
     it("honours an optional factorMap", () => {

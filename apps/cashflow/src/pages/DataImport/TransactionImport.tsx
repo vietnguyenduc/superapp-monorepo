@@ -995,7 +995,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
       reader.onload = (evt) => {
         const data = evt.target?.result;
         if (!data) return;
-        const workbook = XLSX.read(data, { type: "array" });
+        const workbook = XLSX.read(data, { type: "array", dateNF: "dd/mm/yyyy" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, {
           defval: "",

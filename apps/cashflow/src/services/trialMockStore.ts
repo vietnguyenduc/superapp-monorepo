@@ -131,8 +131,8 @@ const seedData = {
     {
       id: "refund",
       name: "Hoàn tiền",
-      math_factor: -1,
-      impact_type: "decrease",
+      math_factor: 1,
+      impact_type: "increase",
       color: "#10b981",
       bg_color: "bg-green-100",
       text_color: "text-green-600",

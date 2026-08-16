@@ -388,7 +388,7 @@ export const getTransactionTypeColor = (
       case "adjustment":
         return "text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-900";
       case "refund":
-        return "text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900";
+        return "text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-900";
       case "deposit":
         return "text-purple-600 bg-purple-100 dark:text-purple-300 dark:bg-purple-900";
       default:
@@ -442,7 +442,7 @@ export const getTransactionTypeTextColor = (type: string): string => {
       case "adjustment":
         return "text-blue-600";
       case "refund":
-        return "text-green-600";
+        return "text-red-600";
       case "deposit":
         return "text-purple-600";
       default:

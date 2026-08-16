@@ -306,8 +306,8 @@ describe("Formatting Utils", () => {
       expect(getTransactionTypeAmountColor("charge", 1000)).toContain("text-red-600");
       // payment decreases debt -> green
       expect(getTransactionTypeAmountColor("payment", 1000)).toContain("text-green-600");
-      // refund decreases debt -> green
-      expect(getTransactionTypeAmountColor("refund", 1000)).toContain("text-green-600");
+      // refund increases debt -> red
+      expect(getTransactionTypeAmountColor("refund", 1000)).toContain("text-red-600");
       // deposit decreases debt -> green
       expect(getTransactionTypeAmountColor("deposit", 1000)).toContain("text-green-600");
     });

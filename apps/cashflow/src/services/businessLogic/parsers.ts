@@ -125,7 +125,8 @@ export function parseAmount(value: unknown): number {
 
 /**
  * Parse a date string to a Date object, preferring Vietnamese DD/MM/YYYY.
- * Also accepts ISO YYYY-MM-DD, DD-MM-YYYY, and DD.MM.YYYY.
+ * Also accepts ISO YYYY-MM-DD (with optional time), DD-MM-YYYY, and DD.MM.YYYY.
+ * Falls back to MM/DD/YYYY when the DD/MM reading is invalid (e.g. Excel-exported US dates).
  */
 export function parseDate(value: unknown): Date | null {
   const raw = String(value ?? "").trim();
@@ -141,24 +142,34 @@ export function parseDate(value: unknown): Date | null {
     return date;
   };
 
-  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const tryParseDMY = (parts: string[]): Date | null => buildDate(Number(parts[0]), Number(parts[1]), parts[2]);
+  const tryParseMDY = (parts: string[]): Date | null => buildDate(Number(parts[1]), Number(parts[0]), parts[2]);
+
+  // ISO 8601 with optional time: YYYY-MM-DD[...]
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:T|\s|$)/);
   if (isoMatch) {
     return buildDate(Number(isoMatch[3]), Number(isoMatch[2]), isoMatch[1]);
   }
 
   const slashMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
   if (slashMatch) {
-    return buildDate(Number(slashMatch[1]), Number(slashMatch[2]), slashMatch[3]);
+    const dmy = tryParseDMY([slashMatch[1], slashMatch[2], slashMatch[3]]);
+    if (dmy) return dmy;
+    return tryParseMDY([slashMatch[1], slashMatch[2], slashMatch[3]]);
   }
 
   const dashMatch = raw.match(/^(\d{1,2})-(\d{1,2})-(\d{2}|\d{4})$/);
   if (dashMatch) {
-    return buildDate(Number(dashMatch[1]), Number(dashMatch[2]), dashMatch[3]);
+    const dmy = tryParseDMY([dashMatch[1], dashMatch[2], dashMatch[3]]);
+    if (dmy) return dmy;
+    return tryParseMDY([dashMatch[1], dashMatch[2], dashMatch[3]]);
   }
 
   const dotMatch = raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
   if (dotMatch) {
-    return buildDate(Number(dotMatch[1]), Number(dotMatch[2]), dotMatch[3]);
+    const dmy = tryParseDMY([dotMatch[1], dotMatch[2], dotMatch[3]]);
+    if (dmy) return dmy;
+    return tryParseMDY([dotMatch[1], dotMatch[2], dotMatch[3]]);
   }
 
   return null;
