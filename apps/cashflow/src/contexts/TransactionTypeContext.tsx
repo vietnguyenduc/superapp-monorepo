@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from "react";
 import { databaseService } from "../services/database";
 import { useAuthContext } from "@superapp/iam";
+import { useCompanyId } from "../hooks/useCompanyId";
 import { normalizeTransactionType } from "../services/businessLogic/parsers";
+import { getCustomerBalanceDelta } from "../services/businessLogic/balanceMath";
 // Canonical transaction type display labels.  Maps both canonical ids and the
 // legacy/old Vietnamese names to the business labels requested by the product
 // team (Phát sinh tăng/giảm, Điều chỉnh, Hoàn tiền).
@@ -76,13 +78,15 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
   const [typesForDropdown, setTypesForDropdown] = useState<TransactionTypeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isAuthenticated, isTrial } = useAuthContext();
+  const { isAuthenticated, isTrial, user } = useAuthContext();
+  const activeCompanyId = useCompanyId();
 
   const refetch = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await databaseService.transactionTypes.getTransactionTypes();
+      const companyId = isTrial ? "trial-company" : activeCompanyId || user?.company_id;
+      const result = await databaseService.transactionTypes.getTransactionTypes(companyId);
       if (result.error) {
         setError(result.error);
         setTypes([]);
@@ -133,7 +137,7 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isTrial, activeCompanyId, user?.company_id]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -143,7 +147,7 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
       setTypesForDropdown([]);
       setLoading(false);
     }
-  }, [refetch, isAuthenticated, isTrial]);
+  }, [refetch, isAuthenticated]);
 
   const findById = useCallback(
     (id: string) => types.find((t) => t.id === id),
@@ -178,11 +182,25 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
     (id: string) => {
       if (!id) return 1;
       const needle = id.toLowerCase().trim();
+
+      const fallbackFactor = (value: string): number => {
+        const canonical = normalizeTransactionType(value).toLowerCase().trim();
+        return getCustomerBalanceDelta(canonical, 1);
+      };
+
+      // Resolve the row and use its stored math_factor; fall back to the
+      // canonical semantic factor only when the row is missing or has no
+      // configured factor. This lets users override standard type factors in
+      // Settings while still protecting against stale/cross-tenant rows.
       const found =
         types.find((t) => t.id === id) ||
         types.find((t) => t.canonical.toLowerCase() === needle) ||
         types.find((t) => t.name.toLowerCase() === needle);
-      return found?.math_factor ?? 1;
+      if (found) {
+        return typeof found.math_factor === "number" ? found.math_factor : fallbackFactor(found.name || id);
+      }
+
+      return fallbackFactor(id);
     },
     [types]
   );

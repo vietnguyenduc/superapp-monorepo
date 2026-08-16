@@ -25,6 +25,7 @@ interface TransactionImportProps {
 type ImportField = {
   key: string;
   label: string;
+  aliases?: string[];
   type: "text" | "number" | "date" | "select" | "datalist";
   required: boolean;
   enabled: boolean;
@@ -280,6 +281,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     {
       key: "transaction_code",
       label: "Số chứng từ",
+      aliases: ["txn_code", "ma_gd", "mã giao dịch", "mã gd"],
       type: "text",
       required: false,
       enabled: true,
@@ -287,6 +289,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     {
       key: "transaction_date",
       label: "Thời gian",
+      aliases: ["date", "ngay", "ngày giao dịch", "ngày"],
       type: "date",
       required: true,
       enabled: true,
@@ -294,6 +297,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     {
       key: "customer_code",
       label: "Mã khách hàng",
+      aliases: ["customer_id", "ma_kh", "mã khách hàng", "ma khach hang", "khach_hang", "customer_code"],
       type: "text",
       required: true,
       enabled: true,
@@ -301,6 +305,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     {
       key: "transaction_type",
       label: "Loại giao dịch",
+      aliases: ["type", "loai_gd", "loại giao dịch", "loai giao dich"],
       type: "select",
       required: true,
       enabled: true,
@@ -309,6 +314,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     {
       key: "amount",
       label: "Số tiền",
+      aliases: ["so_tien", "số tiền", "so tien", "gia_tri", "giá trị"],
       type: "number",
       required: true,
       enabled: true,
@@ -316,6 +322,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     {
       key: "description",
       label: "Nội dung",
+      aliases: ["desc", "noidung", "nội dung", "noi dung", "memo", "note", "ghi chú", "ghichu"],
       type: "text",
       required: false,
       enabled: true,
@@ -323,6 +330,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     {
       key: "bank_account",
       label: "Tài khoản ngân hàng",
+      aliases: ["bank_acc", "bank_account_id", "tai_khoan", "tài khoản", "tai khoan", "ngan_hang", "ngân hàng"],
       type: "select",
       required: false,
       enabled: true,
@@ -331,6 +339,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     {
       key: "branch",
       label: "Văn phòng",
+      aliases: ["branch_id", "van_phong", "văn phòng", "van phong", "office", "chi_nhanh", "chi nhánh"],
       type: "select",
       required: false,
       enabled: true,
@@ -1009,9 +1018,15 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
           return;
         }
         const nextRows = json.map((row) => {
+          const normalizedRow = Object.fromEntries(
+            Object.entries(row).map(([k, v]) => [String(k).toLowerCase().trim(), v])
+          );
           const base: Record<string, string> = { ...emptyRow };
           enabledFields.forEach((f: ImportField) => {
-            const value = row[f.key] ?? row[f.label] ?? "";
+            const candidates = [f.key, f.label, ...(f.aliases || [])];
+            const value = candidates
+              .map((k) => normalizedRow[k.toLowerCase().trim()])
+              .find((v) => v !== undefined && v !== null && String(v).trim() !== "") ?? "";
             base[f.key] = String(value ?? "");
           });
           if (!base["transaction_date"]) base["transaction_date"] = yesterdayFormatted;

@@ -44,6 +44,7 @@ A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management
 - `src/services/supabase.ts` — `apiClient`.
 - `src/utils/formatting.ts` — `formatCurrency`, `formatDate`, `getTransactionMathFactor`.
 - `src/pages/Transactions/TransactionList.tsx` — transaction list with server-side pagination (page-size selector), column-visibility dropdown, frozen `Ngày giao dịch` + `Khách hàng` columns, and group-by `Ngày` / `Tuần` / `Tháng` / `Văn phòng` / `Loại giao dịch` / `Khách hàng`. Group summary uses `getCustomerBalanceDelta` to separate `Tổng phát sinh tăng`, `Tổng phát sinh giảm`, `Tổng điều chỉnh`, and `Net`.
+- `src/contexts/TransactionTypeContext.tsx` — provides transaction type labels, colors, and math factors. Must load `transaction_types` scoped to the active company (via `useCompanyId()`); `getMathFactor` uses the stored `math_factor` from the resolved type row and only falls back to the canonical semantic factor when the row is missing or has no configured factor.
 - `src/pages/Settings/Settings.tsx` — provider shell + `SettingsContent`; per-tab JSX in `pages/Settings/components/tabs/*.tsx`; state in `useSettingsState.ts`; shared context in `SettingsContext.tsx`; `colorOptions`/`getColorClass` in `Settings/utils.ts`.
 - `src/types/index.ts` and `src/types/database.types.ts` — TS types.
 
@@ -57,7 +58,7 @@ Production convention: **positive `customers.total_balance` = debt / công nợ;
 Công nợ = Đầu kỳ + Phát sinh tăng - Phát sinh giảm + Điều chỉnh - Đặt cọc
 ```
 
-`getCustomerBalanceDelta` returns `amount * math_factor`. `math_factor` comes from `transaction_types.math_factor` (loaded per company) or from an explicit override. When no factor is supplied, the canonical defaults are:
+`getCustomerBalanceDelta` returns `amount * math_factor`. `math_factor` comes from the resolved `transaction_types` row (loaded per company) and is the source of truth. The canonical semantic factor is only used as a fallback when the row is missing or has no configured factor, so user overrides in Settings are respected while old inverted seed data is repaired by migration `20260804000006_fix_transaction_type_math_factors.sql`. When no factor is supplied, the canonical defaults are:
 
 | Type      | math_factor | Customer balance delta | Bank cash delta | Meaning |
 |-----------|-------------|----------------------|-----------------|---------|
@@ -67,7 +68,7 @@ Công nợ = Đầu kỳ + Phát sinh tăng - Phát sinh giảm + Điều chỉn
 | `deposit` | `-1`        | `-amount`            | `+amount`       | Customer prepays/deposits (đặt cọc) → debt decreases, cash increases. |
 | `adjustment` | `+1`     | signed amount        | signed amount   | Direct signed correction (`+amount` or `-amount`). |
 
-Transaction amount color = **red** for debt-increasing types (`charge`), **green** for debt-decreasing types (`payment`/`refund`/`deposit`), and **blue/gray** for `adjustment`. Customer running-balance text (`total_balance`) is rendered in neutral colors; do not color-code it red/green.
+Transaction amount color = **red** for debt-increasing types (`charge`), **green** for debt-decreasing types (`payment`/`refund`/`deposit`), and **blue/gray** for `adjustment`. Customer running-balance text (`total_balance`) is rendered in neutral colors; do not color-code it red/green. The Supabase migration `20260804000006_fix_transaction_type_math_factors.sql` repairs inverted `math_factor`/`impact_type` rows, updates `customer_factor_for_type` to look up stored factors first (with canonical fallback), and backfills customer balances.
 
 ### Customer balance source of truth
 
@@ -116,6 +117,7 @@ A dedicated `Công thức dư nợ` tab in Settings shows the current formula, l
 - **Dropdowns on mobile** — use `z-50` (above the fixed bottom nav `z-50`) and `max-h-[calc(100vh-12rem)]` with `overflow-y-auto` so they are not clipped by the viewport or covered by other sticky elements. Constrain width to `max-w-[calc(100vw-2rem)]`.
 - **Customer table mobile** — rows should not be too short/squat. Use `px-3 py-3`, `text-sm` cells, and a sensible `max-h` so enough rows are visible. Customer `total_balance` text stays neutral (no red/green) on both desktop and mobile cards; only transaction amounts carry the type-based color.
 - **Filter action rows** — on mobile, let utility buttons wrap (`flex-wrap`) instead of hiding them in a horizontal overflow, so users can see all options without discovering a hidden scroll.
+- **Customer list export** — combine export actions (`Xuất Excel`, `Xuất tồn đầu kỳ`) into a single `Xuất` dropdown to reduce header clutter; keep the dropdown `right-0 z-50` with a `w-56` menu and clear hover states in both light and dark modes.
 - **Cash-flow chart** — `dashboardService.ts` `aggregateCashFlow` derives the period window from the latest transaction in the selected range (not `new Date()`). Legend/tooltip labels use `Tiền vào` / `Tiền ra` in Vietnamese; inflow bars are `#10b981` and outflow bars are `#f43f5e`.
 - **Balance color rule** — customer running-balance text (`total_balance` in lists, detail, dashboard top customers) should be neutral (`text-gray-900 dark:text-white`) so users read the number without a false good/bad signal. Only transaction *amounts* use type-based colors (`getTransactionTypeAmountColor`) and status badges use their semantic colors.
 - **Dark-mode contrast** — status/filter tabs and icon-only action buttons must use `dark:text-*` variants with light enough values (e.g., `dark:text-blue-300`, `dark:text-gray-200`) and explicit `dark:bg-gray-800` / `dark:bg-gray-900` backgrounds. Replace emoji dropdown triggers with SVG icons so they render consistently and respect currentColor.
