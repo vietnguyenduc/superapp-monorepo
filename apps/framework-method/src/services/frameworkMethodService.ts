@@ -197,7 +197,7 @@ export const saveTaskSuggestions = async (suggestions: Record<BlockId, TaskSugge
 
 const KNOWLEDGE_STORAGE_KEY = "fm_knowledge_v1";
 const KNOWLEDGE_VERSION_KEY = "fm_knowledge_version_v1";
-const KNOWLEDGE_SEED_VERSION = 4;
+const KNOWLEDGE_SEED_VERSION = 5;
 
 const mergeKnowledgeWithDefaults = (stored: KnowledgeEntry[]): KnowledgeEntry[] => {
   const storedById = new Map(stored.map((e) => [e.id, e]));
@@ -514,7 +514,7 @@ export const getBlockStats = async (userId: string): Promise<Record<BlockId, Blo
 };
 
 const TEMPLATES_STORAGE_KEY = "fm_templates_v3";
-const TEMPLATES_SEED_VERSION = 2;
+const TEMPLATES_SEED_VERSION = 3;
 
 export const buildDefaultTemplates = (): Record<BlockId, Record<StepType, Template>> => {
   const result: Partial<Record<BlockId, Record<StepType, Template>>> = {};

@@ -141,7 +141,7 @@ export interface KnowledgeEntry {
   loi_vi?: string;
   loi_en?: string;
   image_url?: string;
-  category: "concept" | "framework";
+  category: "concept" | "framework" | "example";
   order_index: number;
   is_user_edited?: boolean;
   seed_version?: number;
@@ -176,6 +176,8 @@ export interface Track {
   dich: string;
   thuc_te: string;
   phuong_phap: string;
+  phoi_hop?: string;
+  ke_hoach?: string;
   created_at?: string;
   updated_at?: string;
 }

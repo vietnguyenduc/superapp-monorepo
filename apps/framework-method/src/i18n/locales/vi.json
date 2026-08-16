@@ -34,7 +34,11 @@
     "productivityTrend": "Xu hướng năng suất (7 ngày qua)",
     "beginSession": "Bắt đầu phiên",
     "frameworks": "Đưa khuôn trí tuệ vào cuộc sống",
-    "mostUsed": "Dùng nhiều nhất tuần này"
+    "mostUsed": "Dùng nhiều nhất tuần này",
+    "dailyNudge": "Nhắc nhở hôm nay",
+    "nudgeLabel": "Hôm nay hãy thực hành",
+    "nudgeDefault": "Mỗi ngày làm việc để trả Nghiệp đời; hết nghiệp đời thì không cần làm việc nữa.",
+    "nudgeCta": "Bắt đầu phiên"
   },
   "overview": {
     "activeFramework": "Khuôn đang hoạt động",
@@ -98,6 +102,10 @@
     "noExampleKnowledge": "Chưa có ví dụ minh họa — Builder có thể liên kết từ Dữ liệu Trí tuệ.",
     "detailedNotesPlaceholder": "Ghi chú chi tiết...",
     "readKnowledge": "Xem lại dữ liệu",
+    "viewExample": "Ví dụ",
+    "hideExample": "Thu gọn ví dụ",
+    "applySuggestion": "Gợi ý từ Bước 2",
+    "noStep2Input": "Chưa có quy chiếu ở Bước 2 để gợi ý.",
     "step1Title": "Bước 1: Lên việc trong Khối {{block}}",
     "emptyTasks": "Chưa có việc nào trong danh sách",
     "step2Title": "Bước 2: Nhận ra gì để làm",
@@ -211,6 +219,7 @@
     "all": "Tất cả",
     "concept": "Khái niệm",
     "framework": "Khuôn mẫu",
+    "example": "Ví dụ",
     "viewFull": "Xem lại dữ liệu"
   },
   "builder": {

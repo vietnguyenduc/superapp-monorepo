@@ -10,13 +10,23 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { useSession } from "../../contexts/SessionContext";
 import { getSessionsByDateRange, todayStr, DEFAULT_BLOCKS } from "../../services/frameworkMethodService";
 import KarmaActionModal from "../../components/KarmaActionModal";
-import type { Session, KarmaEvent, BlockId, BlockStats } from "../../types";
+import type { Session, KarmaEvent, BlockId, BlockStats, Block } from "../../types";
+
+const DAILY_FOCI: { dow: number; block: BlockId; principle: string }[] = [
+  { dow: 0, block: "family", principle: "dao-3" },
+  { dow: 1, block: "work", principle: "nlcd-2" },
+  { dow: 2, block: "finance", principle: "yphap-3" },
+  { dow: 3, block: "relationship", principle: "nlcd-5" },
+  { dow: 4, block: "work", principle: "dao-6" },
+  { dow: 5, block: "self", principle: "nlcd-7" },
+  { dow: 6, block: "family", principle: "dao-2" },
+];
 
 const Dashboard = () => {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { merit, streak, userId, karma, blockStats } = useSession();
+  const { merit, streak, userId, karma, blockStats, knowledgeEntries } = useSession();
   const [selectedEvent, setSelectedEvent] = useState<KarmaEvent | null>(null);
   const [selectedAction, setSelectedAction] = useState<"recognize" | "stop" | "resolve" | "recite" | null>(null);
 
@@ -220,6 +230,30 @@ const Dashboard = () => {
           })()}
         </div>
       </Card>
+
+      {(() => {
+        const dow = new Date().getDay();
+        const focus = DAILY_FOCI.find((d) => d.dow === dow) || DAILY_FOCI[0];
+        const block = DEFAULT_BLOCKS.find((b) => b.id === focus.block) as Block | undefined;
+        const principle = knowledgeEntries.find((e) => e.id === focus.principle);
+        return (
+          <Card className="p-5 rounded-2xl bg-gradient-to-br from-amber-50/60 to-white dark:from-amber-900/10 dark:to-gray-900 border-amber-100 dark:border-amber-900/20">
+            <div className="flex items-center gap-2 mb-2">
+              <FiSun className="w-5 h-5 text-amber-600" />
+              <h2 className="font-semibold text-lg tracking-tight">{t("dashboard.dailyNudge")}</h2>
+            </div>
+            <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
+              {t("dashboard.nudgeLabel")}: <span className="font-semibold">{language === "en" ? block?.name_en : block?.name_vi}</span>
+              {principle && <span> — {language === "en" ? (principle.summary_en || principle.title_en) : (principle.summary_vi || principle.title_vi)}</span>}
+              {t("dashboard.nudgeDefault")}
+            </p>
+            <Button className="mt-4 w-full" onClick={() => navigate("/session")}>
+              <FiPlay className="w-5 h-5 mr-2" />
+              {t("dashboard.nudgeCta")}
+            </Button>
+          </Card>
+        );
+      })()}
 
       <Card className="p-5">
         <h2 className="font-semibold text-lg tracking-tight">Ready to focus?</h2>

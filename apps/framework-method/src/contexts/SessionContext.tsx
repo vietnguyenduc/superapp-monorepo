@@ -51,7 +51,7 @@ interface SessionContextType {
   applyPlans: Record<string, ApplyPlan>;
   saveApplyPlan: (taskId: string, planData: Record<string, string>) => Promise<void>;
   tracks: Record<string, Track>;
-  saveTrack: (taskId: string, fields: { dich: string; thuc_te: string; phuong_phap: string }) => Promise<void>;
+  saveTrack: (taskId: string, fields: Record<string, string>) => Promise<void>;
   blockStats: Record<BlockId, BlockStats>;
   streak: Streak | null;
   templates: Record<BlockId, Record<StepType, Template>>;
@@ -528,14 +528,18 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const saveTrack = useCallback(
-    async (taskId: string, fields: { dich: string; thuc_te: string; phuong_phap: string }) => {
+    async (taskId: string, fields: Record<string, string>) => {
       if (!session) return;
       const existing = tracks[taskId];
       const track: Track = {
         id: existing?.id ?? service.genId(),
         daily_task_id: taskId,
         session_id: session.id,
-        ...fields,
+        dich: fields["dich"] || "",
+        thuc_te: fields["thuc_te"] || "",
+        phuong_phap: fields["phuong_phap"] || "",
+        phoi_hop: fields["phoi_hop"] || "",
+        ke_hoach: fields["ke_hoach"] || "",
       };
       const saved = await service.saveTrack(track);
       if (saved) setTracks((prev) => ({ ...prev, [taskId]: saved }));

@@ -1,5 +1,22 @@
 # Framework Method — Changelog
 
+## 2026-08-15 (Nghiệp đời, examples, block-aware session UX, and Công thức 5-field templates)
+
+- Added `nghiep-doi` to `src/data/knowledgeSeed.ts`: a `KnowledgeEntry` explaining that each day one must work to repay life-karma; when it is repaid, work is no longer required. It is mirrored to `content_vi`/`loi_vi` and surfaced on the `Dashboard` via the new daily nudge card.
+- Added `KnowledgeEntry.category = "example"` support in `src/types/index.ts`, plus 5 example entries (`vi-du-nau-com`, `vi-du-quet-nha`, `vi-du-xu-ly-email`, `vi-du-hop`, `vi-du-mua-sam`) with detailed step-by-step quy chiếu.
+- Updated `src/data/templateSeed.ts` so the Step 3 `apply` template and the Step 4 `track` template both use the 5-field Công thức đối cảnh (`apply-dich`/`dich`, `apply-thuc-te`/`thuc_te`, `apply-phuong-phap`/`phuong_phap`, `apply-phoi-hop`/`phoi_hop`, `apply-ke-hoach`/`ke_hoach`).
+- Updated `src/types/index.ts` `Track` interface and `src/contexts/SessionContext.tsx` `saveTrack` to accept a `Record<string, string>` and persist all 5 Công thức fields.
+- Made `/session` Step 2 block-aware in `src/pages/Session/SessionPage.tsx`: sections and items are reordered per `SECTION_ORDER_BY_BLOCK` and `ITEM_PRIORITY_BY_BLOCK` for `self`, `relationship`, `work`, `finance`, and `family`.
+- Added a "Ví dụ" toggle in Step 2 that lists example entries per block (e.g. `vi-du-nau-com`/`vi-du-quet-nha` for `family`, `vi-du-xu-ly-email`/`vi-du-hop` for `work`, `vi-du-mua-sam` for `finance`).
+- Prefilled Step 3 "Đưa khuôn" with suggestions derived from Step 2 reference inputs: Đích from task/block, Thực tế from notes, Phương pháp from `phap`/`dao` notes, Phối hợp from people/resources, and Kế hoạch from the task title.
+- Made Step 4 "Bám" dynamic: it renders fields keyed by track template item ids and pre-fills from the saved track or the Step 3 plan.
+- Added a daily nudge card to `src/pages/Dashboard/Dashboard.tsx` with `DAILY_FOCI` mapping day-of-week to a focus block/principle and a fallback `Nghiệp đời` message.
+- Reordered `src/pages/Knowledge/Knowledge.tsx` to make the library list primary and the add form collapsible, and added the `"example"` filter chip and category option.
+- Added i18n keys in `src/i18n/locales/vi.json` and `en.json` for `dailyNudge`, `nudgeLabel`, `nudgeDefault`, `nudgeCta`, `viewExample`, `hideExample`, `applySuggestion`, and `noStep2Input`.
+- Updated `frameworkMethodService.ts` so `saveTrack` returns the track object even if the Supabase `fm_track` insert fails, avoiding UI breakage while the DB schema may lack the new columns.
+- Bumped `KNOWLEDGE_SEED_VERSION` to 5 and `TEMPLATES_SEED_VERSION` to 3 in `frameworkMethodService.ts` so cached `localStorage` data refreshes with the new `Nghiệp đời` entry, examples, and 5-field templates.
+- Validation: `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+
 ## 2026-08-15 (Knowledge button label)
 
 - Simplified the knowledge detail button label in `src/i18n/locales/vi.json` and `src/i18n/locales/en.json` from "Xem đầy đủ trong Dữ liệu Trí tuệ" / "View full in Knowledge Library" to "Xem lại dữ liệu" / "Review data" for clarity.

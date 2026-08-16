@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiChevronLeft, FiChevronRight, FiPlus, FiTrash2, FiCheck, FiBookOpen, FiFileText, FiZap, FiClipboard, FiX, FiMapPin, FiSave, FiChevronDown, FiActivity } from "react-icons/fi";
 import { Card, Button, Input } from "../../components/UI";
@@ -13,6 +13,56 @@ const ANALYSIS_KEYS = {
   detailedNotes: "__detailed_notes__",
   confidence: "__confidence__",
 };
+
+const SECTION_ORDER_BY_BLOCK: Record<BlockId, string[]> = {
+  self: ["nguyen_ly", "phap", "dao"],
+  relationship: ["dao", "nguyen_ly", "phap"],
+  work: ["nguyen_ly", "phap", "dao"],
+  finance: ["phap", "nguyen_ly", "dao"],
+  family: ["dao", "nguyen_ly", "phap"],
+};
+
+const ITEM_PRIORITY_BY_BLOCK: Record<BlockId, Record<string, number>> = {
+  self: {
+    "nlcd-1": 1, "nlcd-2": 2, "nlcd-5": 3, "nlcd-7": 4, "yphap-1": 5, "yphap-3": 6, "dao-1": 7, "dao-2": 8,
+  },
+  relationship: {
+    "nlcd-4": 1, "nlcd-5": 2, "yphap-2": 3, "yphap-3": 4, "dao-2": 5, "dao-3": 6, "dao-5": 7, "dao-7": 8,
+  },
+  work: {
+    "nlcd-2": 1, "nlcd-3": 2, "nlcd-4": 3, "nlcd-5": 4, "yphap-1": 5, "yphap-3": 6, "yphap-14": 7, "dao-4": 8, "dao-5": 9, "dao-6": 10,
+  },
+  finance: {
+    "nlcd-5": 1, "yphap-3": 2, "yphap-8": 3, "yphap-1": 4, "dao-5": 5, "nlcd-1": 6,
+  },
+  family: {
+    "nlcd-1": 1, "nlcd-3": 2, "dao-2": 3, "dao-3": 4, "dao-7": 5, "yphap-2": 6, "yphap-3": 7,
+  },
+};
+
+const BLOCK_EXAMPLES: Record<BlockId, string[]> = {
+  self: [],
+  relationship: [],
+  work: ["vi-du-xu-ly-email", "vi-du-hop"],
+  finance: ["vi-du-mua-sam"],
+  family: ["vi-du-nau-com", "vi-du-quet-nha"],
+};
+
+function priorityFor(blockId: BlockId, itemId: string) {
+  return ITEM_PRIORITY_BY_BLOCK[blockId]?.[itemId] ?? 999;
+}
+
+function sortedSections(blockId: BlockId | undefined, sections: TemplateSection[]) {
+  if (!blockId) return sections;
+  const order = SECTION_ORDER_BY_BLOCK[blockId] || [];
+  const indexOf = (group: string) => order.indexOf(group);
+  return [...sections].sort((a, b) => indexOf(a.group) - indexOf(b.group));
+}
+
+function sortedItems(blockId: BlockId | undefined, items: TemplateSectionItem[]) {
+  if (!blockId) return items;
+  return [...items].sort((a, b) => priorityFor(blockId, a.id) - priorityFor(blockId, b.id));
+}
 
 const StepIndicator = ({ step, onChange }: { step: number; onChange?: (s: number) => void }) => {
   const { t, language } = useI18n();
@@ -590,18 +640,47 @@ const Step1TaskList = () => {
   );
 };
 
+const ExamplePanel = ({ entry, onClose }: { entry: KnowledgeEntry; onClose: () => void }) => {
+  const { t, language } = useI18n();
+  return (
+    <Card className="p-5 rounded-2xl border-l-4 border-green-500">
+      <div className="flex items-start justify-between gap-4 mb-3">
+        <h3 className="font-semibold text-gray-900 dark:text-white">{language === "en" ? entry.title_en : entry.title_vi}</h3>
+        <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500">
+          <FiX className="w-4 h-4" />
+        </button>
+      </div>
+      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+        {language === "en" ? (entry.content_en || entry.loi_en) : (entry.content_vi || entry.loi_vi)}
+      </p>
+    </Card>
+  );
+};
+
 const Step2Recognize = () => {
   const { t, language } = useI18n();
-  const { blocks, currentBlock, setCurrentBlockIndex, tasks, getTemplate, referenceInputs, saveReferenceInput, setStep, currentStepType, prevStep, nextStep } = useSession();
+  const { blocks, currentBlock, setCurrentBlockIndex, tasks, getTemplate, referenceInputs, saveReferenceInput, setStep, currentStepType, prevStep, nextStep, knowledgeEntries } = useSession();
   const template = getTemplate(currentBlock?.id || blocks[0]?.id, currentStepType || "recognize");
+  const [showExamples, setShowExamples] = useState(false);
 
   const blockTasks = useMemo(() => tasks.filter((t) => t.block_id === currentBlock?.id), [tasks, currentBlock]);
+
+  const exampleEntries = useMemo(() => {
+    const ids = BLOCK_EXAMPLES[(currentBlock?.id as BlockId) || "self"] || [];
+    return knowledgeEntries.filter((e) => ids.includes(e.id)).sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+  }, [knowledgeEntries, currentBlock?.id]);
 
   const handleSave = (sectionId: string, itemId: string, content: string, enabled: boolean) => {
     saveReferenceInput(sectionId, itemId, content, enabled);
   };
 
   const title = language === "en" ? template?.name_en || template?.name_vi || t("session.step2Title") : template?.name_vi || t("session.step2Title");
+
+  const filteredSections = useMemo(() => {
+    if (!template) return [];
+    const base = template.sections?.filter((s) => ["nguyen_ly", "dao", "phap"].includes(s.group)) || [];
+    return sortedSections(currentBlock?.id, base).map((s) => ({ ...s, items: sortedItems(currentBlock?.id, s.items) }));
+  }, [template, currentBlock?.id]);
 
   return (
     <div className="space-y-6">
@@ -622,27 +701,38 @@ const Step2Recognize = () => {
         {t("session.recognizeHint", { block: language === "en" ? currentBlock?.name_en : currentBlock?.name_vi })}
       </p>
 
-      {template?.sections
-        ?.filter((s) => ["nguyen_ly", "dao", "phap"].includes(s.group))
-        .map((section) => {
-          const values: Record<string, string> = {};
-          section.items.forEach((item) => {
-            const key = `${section.id}:${item.id}`;
-            if (referenceInputs[key]) values[item.id] = referenceInputs[key].content;
-          });
-          [ANALYSIS_KEYS.keyInsights, ANALYSIS_KEYS.detailedNotes, ANALYSIS_KEYS.confidence].forEach((k) => {
-            const key = `${section.id}:${k}`;
-            if (referenceInputs[key]) values[k] = referenceInputs[key].content;
-          });
-          return (
-            <SectionAccordion
-              key={section.id}
-              section={section}
-              values={values}
-              onChange={(itemId, value, enabled) => handleSave(section.id, itemId, value, enabled)}
-            />
-          );
-        })}
+      {exampleEntries.length > 0 && (
+        <div className="flex justify-end">
+          <Button variant="secondary" onClick={() => setShowExamples((s) => !s)}>
+            <FiBookOpen className="w-4 h-4 mr-1" />
+            {showExamples ? t("session.hideExample") : t("session.viewExample")}
+          </Button>
+        </div>
+      )}
+
+      {showExamples && exampleEntries.map((entry) => (
+        <ExamplePanel key={entry.id} entry={entry} onClose={() => setShowExamples(false)} />
+      ))}
+
+      {filteredSections.map((section) => {
+        const values: Record<string, string> = {};
+        section.items.forEach((item) => {
+          const key = `${section.id}:${item.id}`;
+          if (referenceInputs[key]) values[item.id] = referenceInputs[key].content;
+        });
+        [ANALYSIS_KEYS.keyInsights, ANALYSIS_KEYS.detailedNotes, ANALYSIS_KEYS.confidence].forEach((k) => {
+          const key = `${section.id}:${k}`;
+          if (referenceInputs[key]) values[k] = referenceInputs[key].content;
+        });
+        return (
+          <SectionAccordion
+            key={section.id}
+            section={section}
+            values={values}
+            onChange={(itemId, value, enabled) => handleSave(section.id, itemId, value, enabled)}
+          />
+        );
+      })}
 
       <div className="flex gap-3 pt-2">
         <Button variant="secondary" onClick={() => setStep(prevStep)} className="flex-1">
@@ -769,8 +859,9 @@ const PlanField = ({
 
 const Step3Apply = () => {
   const { t, language } = useI18n();
-  const { currentBlock, blocks, setCurrentBlockIndex, tasks, getTemplate, applyPlans, saveApplyPlan, setStep, setSelectedTaskId, selectedTaskId, currentStepType, prevStep, nextStep } = useSession();
+  const { currentBlock, blocks, setCurrentBlockIndex, tasks, getTemplate, applyPlans, saveApplyPlan, referenceInputs, setStep, setSelectedTaskId, selectedTaskId, currentStepType, prevStep, nextStep } = useSession();
   const template = getTemplate(currentBlock?.id || blocks[0]?.id, currentStepType || "apply");
+  const recognizeTemplate = getTemplate(currentBlock?.id || blocks[0]?.id, "recognize");
 
   const blockTasks = useMemo(() => tasks.filter((t) => t.block_id === currentBlock?.id), [tasks, currentBlock]);
 
@@ -786,9 +877,65 @@ const Step3Apply = () => {
 
   const [draft, setDraft] = useState<Record<string, string>>(initialPlan);
 
+  const step2Notes = useMemo(() => {
+    const notes: { title: string; content: string; group: string }[] = [];
+    if (!recognizeTemplate) return notes;
+    recognizeTemplate.sections?.forEach((section) => {
+      section.items.forEach((item) => {
+        const key = `${section.id}:${item.id}`;
+        const input = referenceInputs[key];
+        if (input?.content?.trim()) {
+          notes.push({
+            title: language === "en" ? item.title_en : item.title_vi,
+            content: input.content.trim(),
+            group: section.group,
+          });
+        }
+      });
+    });
+    return notes;
+  }, [recognizeTemplate, referenceInputs, language]);
+
+  const buildSuggestion = useCallback((): Record<string, string> => {
+    if (!selectedTask || !template) return {};
+    const items = template.sections?.[0]?.items || [];
+    const suggestion: Record<string, string> = {};
+    const blockLabel = language === "en" ? currentBlock?.name_en || "" : currentBlock?.name_vi || "";
+
+    const notesText = step2Notes.map((n) => `• ${n.title}: ${n.content}`).join("\n");
+    const phapNotes = step2Notes.filter((n) => n.group === "phap").map((n) => `• ${n.title}: ${n.content}`).join("\n");
+    const daoNotes = step2Notes.filter((n) => n.group === "dao").map((n) => `• ${n.title}: ${n.content}`).join("\n");
+    const nhanLuc = step2Notes.filter((n) => n.title.toLowerCase().includes("con người") || n.title.toLowerCase().includes("máy móc") || n.title.toLowerCase().includes("nguồn lực")).map((n) => n.title).join(", ");
+    const isEmpty = step2Notes.length === 0;
+
+    items.forEach((item) => {
+      const field = item.id;
+      if (field === "apply-dich") {
+        suggestion[field] = `${t("session.applySuggestion")}: ${selectedTask.title}${blockLabel ? ` - ${blockLabel}` : ""}`;
+      } else if (field === "apply-thuc-te") {
+        suggestion[field] = isEmpty ? t("session.noStep2Input") : notesText;
+      } else if (field === "apply-phuong-phap") {
+        suggestion[field] = isEmpty ? t("session.noStep2Input") : `Pháp:\n${phapNotes || notesText}\n\nĐạo:\n${daoNotes || ""}`;
+      } else if (field === "apply-phoi-hop") {
+        suggestion[field] = nhanLuc ? `Điểm tựa: ${nhanLuc}` : (isEmpty ? t("session.noStep2Input") : "Dựa trên con người, máy móc, nguồn lực sẵn có.");
+      } else if (field === "apply-ke-hoach") {
+        suggestion[field] = `Hôm nay: ${selectedTask.title}`;
+      } else {
+        suggestion[field] = isEmpty ? t("session.noStep2Input") : notesText;
+      }
+    });
+    return suggestion;
+  }, [selectedTask, template, step2Notes, language, t, currentBlock]);
+
   useEffect(() => {
-    setDraft(plan?.plan_data || {});
-  }, [selectedTaskId, plan?.plan_data]);
+    if (plan?.plan_data && Object.keys(plan.plan_data).length > 0) {
+      setDraft(plan.plan_data);
+    } else if (selectedTask) {
+      setDraft(buildSuggestion());
+    } else {
+      setDraft({});
+    }
+  }, [selectedTaskId, selectedTask, plan?.plan_data, buildSuggestion]);
 
   const handleSave = async () => {
     if (!selectedTask) return;
@@ -872,7 +1019,7 @@ const Step3Apply = () => {
 
 const Step4Track = () => {
   const { t, language } = useI18n();
-  const { currentBlock, blocks, setCurrentBlockIndex, tasks, getTemplate, tracks, saveTrack, completeSession, setStep, setSelectedTaskId, selectedTaskId, currentStepType, isLastStep, prevStep, nextStep, updateTask, setPlannedCompletionRate, session } = useSession();
+  const { currentBlock, blocks, setCurrentBlockIndex, tasks, getTemplate, tracks, saveTrack, completeSession, setStep, setSelectedTaskId, selectedTaskId, currentStepType, isLastStep, prevStep, nextStep, updateTask, setPlannedCompletionRate, session, applyPlans } = useSession();
   const template = getTemplate(currentBlock?.id || blocks[0]?.id, currentStepType || "track");
 
   const blockTasks = useMemo(() => tasks.filter((t) => t.block_id === currentBlock?.id), [tasks, currentBlock]);
@@ -885,23 +1032,26 @@ const Step4Track = () => {
 
   const selectedTask = blockTasks.find((t) => t.id === selectedTaskId);
   const track = selectedTaskId ? tracks[selectedTaskId] : undefined;
+  const plan = selectedTaskId ? applyPlans[selectedTaskId] : undefined;
 
-  const [dich, setDich] = useState(track?.dich || "");
-  const [thucTe, setThucTe] = useState(track?.thuc_te || "");
-  const [phuongPhap, setPhuongPhap] = useState(track?.phuong_phap || "");
+  const trackItems = template?.sections?.[0]?.items || [];
+  const [draft, setDraft] = useState<Record<string, string>>({});
   const [reflectingTask, setReflectingTask] = useState<DailyTask | null>(null);
 
   useEffect(() => {
-    setDich(track?.dich || "");
-    setThucTe(track?.thuc_te || "");
-    setPhuongPhap(track?.phuong_phap || "");
-  }, [track]);
+    const initial: Record<string, string> = {};
+    trackItems.forEach((item) => {
+      const key = item.id;
+      initial[key] = track?.[key as keyof Track] as string || plan?.plan_data?.[key] || "";
+    });
+    setDraft(initial);
+  }, [track, trackItems, plan?.plan_data]);
 
   const allTracked = useMemo(() => blockTasks.length > 0 && blockTasks.every((t) => tracks[t.id]), [blockTasks, tracks]);
 
   const handleSave = async () => {
     if (!selectedTask) return;
-    await saveTrack(selectedTask.id, { dich, thuc_te: thucTe, phuong_phap: phuongPhap });
+    await saveTrack(selectedTask.id, draft);
   };
 
   const title = language === "en" ? template?.name_en || template?.name_vi || t("session.step4Title") : template?.name_vi || t("session.step4Title");
@@ -948,8 +1098,6 @@ const Step4Track = () => {
         <Card className="p-5 rounded-2xl space-y-5">
           <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{t("session.trackFor", { task: selectedTask.title })}</h3>
           {template?.sections?.[0]?.items.map((item) => {
-            const value = item.id === "dich" ? dich : item.id === "thuc_te" ? thucTe : phuongPhap;
-            const setter = item.id === "dich" ? setDich : item.id === "thuc_te" ? setThucTe : setPhuongPhap;
             const itemContent = language === "en" ? item.content_en : item.content_vi;
             return (
               <div key={item.id} className="space-y-3 p-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
@@ -962,8 +1110,8 @@ const Step4Track = () => {
                   </div>
                 )}
                 <textarea
-                  value={value}
-                  onChange={(e) => setter(e.target.value)}
+                  value={draft[item.id] || ""}
+                  onChange={(e) => setDraft((prev) => ({ ...prev, [item.id]: e.target.value }))}
                   className="input h-28 resize-none"
                   placeholder={t("session.trackPlaceholder")}
                 />

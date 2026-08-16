@@ -5,7 +5,7 @@ import { useI18n } from "../../hooks/useI18n";
 import { useSession } from "../../contexts/SessionContext";
 import type { KnowledgeEntry } from "../../types";
 
-type Category = "all" | "concept" | "framework";
+type Category = "all" | "concept" | "framework" | "example";
 
 type EntryForm = Omit<KnowledgeEntry, "id" | "order_index" | "created_at" | "updated_at">;
 
@@ -26,23 +26,40 @@ const emptyEntry: EntryForm = {
   category: "concept",
 };
 
+const categoryOptions: { key: Category; label: string }[] = [
+  { key: "concept", label: "knowledge.concept" },
+  { key: "framework", label: "knowledge.framework" },
+  { key: "example", label: "knowledge.example" },
+];
+
 const Knowledge = () => {
   const { t, language } = useI18n();
   const { knowledgeEntries, addKnowledgeEntry, updateKnowledgeEntry, removeKnowledgeEntry } = useSession();
   const [editing, setEditing] = useState<KnowledgeEntry | null>(null);
   const [form, setForm] = useState<EntryForm>(emptyEntry);
+  const [showForm, setShowForm] = useState(false);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<Category>("all");
   const [viewing, setViewing] = useState<KnowledgeEntry | null>(null);
 
-  const startEdit = (entry: KnowledgeEntry) => {
-    setEditing(entry);
-    setForm(entry);
-  };
+
 
   const reset = () => {
     setEditing(null);
     setForm(emptyEntry);
+    setShowForm(false);
+  };
+
+  const startAdd = () => {
+    setEditing(null);
+    setForm(emptyEntry);
+    setShowForm(true);
+  };
+
+  const startEdit = (entry: KnowledgeEntry) => {
+    setEditing(entry);
+    setForm(entry);
+    setShowForm(true);
   };
 
   const handleSave = async () => {
@@ -73,8 +90,7 @@ const Knowledge = () => {
 
   const categoryChips: { key: Category; label: string }[] = [
     { key: "all", label: t("knowledge.all") },
-    { key: "concept", label: t("knowledge.concept") },
-    { key: "framework", label: t("knowledge.framework") },
+    ...categoryOptions.map((c) => ({ key: c.key, label: t(c.label) })),
   ];
 
   return (
@@ -84,10 +100,43 @@ const Knowledge = () => {
         <p className="text-sm text-gray-500 dark:text-gray-400">{t("knowledge.subtitle")}</p>
       </div>
 
-      <Card className="p-5 space-y-4 rounded-2xl">
-        <h2 className="text-lg font-semibold">{editing ? t("knowledge.edit") : t("knowledge.add")}</h2>
-        <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("knowledge.fieldTitle")}</label>
+      <div className="flex items-center justify-between">
+        <div className="relative flex-1">
+          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("knowledge.searchPlaceholder")}
+            className="input pl-9 w-full"
+          />
+        </div>
+        <Button onClick={startAdd} className="ml-3 shrink-0">
+          {t("knowledge.add")}
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {categoryChips.map((chip) => (
+          <button
+            key={chip.key}
+            onClick={() => setCategory(chip.key)}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              category === chip.key
+                ? "bg-primary-600 text-white"
+                : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+            }`}
+          >
+            {chip.label}
+          </button>
+        ))}
+      </div>
+
+      {showForm && (
+        <Card className="p-5 space-y-4 rounded-2xl">
+          <h2 className="text-lg font-semibold">{editing ? t("knowledge.edit") : t("knowledge.add")}</h2>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("knowledge.fieldTitle")}</label>
           <input
             type="text"
             value={form.title_vi}
@@ -129,11 +178,12 @@ const Knowledge = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("knowledge.fieldCategory")}</label>
             <select
               value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value as "concept" | "framework" })}
+              onChange={(e) => setForm({ ...form, category: e.target.value as "concept" | "framework" | "example" })}
               className="input"
             >
-              <option value="concept">{t("knowledge.concept")}</option>
-              <option value="framework">{t("knowledge.framework")}</option>
+              {categoryOptions.map((c) => (
+                <option key={c.key} value={c.key}>{t(c.label)}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -153,52 +203,32 @@ const Knowledge = () => {
         </div>
         <div className="flex flex-col sm:flex-row gap-3 pt-1">
           <Button onClick={handleSave}>{editing ? t("common.save") : t("knowledge.add")}</Button>
-          {editing && (
-            <Button variant="secondary" onClick={reset}>
-              {t("common.cancel")}
-            </Button>
-          )}
+          <Button variant="secondary" onClick={reset}>
+            {t("common.cancel")}
+          </Button>
         </div>
       </Card>
+      )}
 
       <div className="space-y-3">
-        <div className="relative">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t("knowledge.searchPlaceholder")}
-            className="input pl-9 w-full"
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {categoryChips.map((chip) => (
-            <button
-              key={chip.key}
-              onClick={() => setCategory(chip.key)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                category === chip.key
-                  ? "bg-primary-600 text-white"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-              }`}
-            >
-              {chip.label}
-            </button>
-          ))}
-        </div>
-
         {filteredEntries.length === 0 && <p className="text-sm text-gray-500">{t("knowledge.empty")}</p>}
         {filteredEntries.map((entry) => (
           <div key={entry.id} onClick={() => setViewing(entry)} className="cursor-pointer">
             <Card className="p-4 group">
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center shrink-0">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                  entry.category === "framework"
+                    ? "bg-amber-50 dark:bg-amber-900/20 text-amber-600"
+                    : entry.category === "example"
+                    ? "bg-green-50 dark:bg-green-900/20 text-green-600"
+                    : "bg-primary-50 dark:bg-primary-900/20 text-primary-600"
+                }`}>
                   {entry.category === "framework" ? (
-                    <FiZap className="w-6 h-6 text-primary-600" />
+                    <FiZap className="w-6 h-6" />
+                  ) : entry.category === "example" ? (
+                    <FiBookOpen className="w-6 h-6" />
                   ) : (
-                    <FiBookOpen className="w-6 h-6 text-primary-600" />
+                    <FiBookOpen className="w-6 h-6" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">

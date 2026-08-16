@@ -34,7 +34,11 @@
     "productivityTrend": "Productivity Trend (Last 7 Days)",
     "beginSession": "Begin Session",
     "frameworks": "Apply wisdom frameworks to life",
-    "mostUsed": "Most used this week"
+    "mostUsed": "Most used this week",
+    "dailyNudge": "Today's nudge",
+    "nudgeLabel": "Practice today",
+    "nudgeDefault": "Each day do your work to repay life-karma; once it is repaid, work is no longer needed.",
+    "nudgeCta": "Start session"
   },
   "overview": {
     "activeFramework": "Active framework",
@@ -98,6 +102,10 @@
     "noReferenceKnowledge": "No Reference data yet — Builder can link from the Knowledge Library.",
     "noExampleKnowledge": "No Examples yet — Builder can link from the Knowledge Library.",
     "readKnowledge": "Review data",
+    "viewExample": "Example",
+    "hideExample": "Hide example",
+    "applySuggestion": "Suggested from Step 2",
+    "noStep2Input": "No Step 2 reference to suggest from.",
     "step1Title": "Step 1: Plan tasks for {{block}}",
     "emptyTasks": "No tasks in the list yet",
     "step2Title": "Step 2: Recognize what to do",
@@ -211,6 +219,7 @@
     "all": "All",
     "concept": "Concept",
     "framework": "Framework",
+    "example": "Example",
     "viewFull": "Review data"
   },
   "builder": {
