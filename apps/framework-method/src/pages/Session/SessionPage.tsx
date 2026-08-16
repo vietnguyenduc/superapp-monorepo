@@ -342,7 +342,7 @@ const KnowledgeModal = ({ entry, onClose }: { entry: KnowledgeEntry; onClose: ()
             />
           )}
           <p className="text-[15px] leading-relaxed text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
-            {language === "en" ? entry.content_en : entry.content_vi}
+            {language === "en" ? (entry.loi_en || entry.content_en) : (entry.loi_vi || entry.content_vi)}
           </p>
           <div className="flex flex-col gap-2 pt-2">
             <Button onClick={() => navigate("/knowledge")}>{t("knowledge.viewFull")}</Button>
@@ -374,8 +374,8 @@ const SectionItemInput = ({
   const itemContent = language === "en" ? item.content_en : item.content_vi;
   const knowledgeSnippet =
     language === "en"
-      ? (knowledgeEntry?.cot_y_en || knowledgeEntry?.summary_en || knowledgeEntry?.content_en)
-      : (knowledgeEntry?.cot_y_vi || knowledgeEntry?.summary_vi || knowledgeEntry?.content_vi);
+      ? (knowledgeEntry?.summary_en || knowledgeEntry?.cot_y_en || knowledgeEntry?.content_en)
+      : (knowledgeEntry?.summary_vi || knowledgeEntry?.cot_y_vi || knowledgeEntry?.content_vi);
 
   const hasKnowledge = Boolean(knowledgeEntry || itemContent || knowledgeSnippet);
 
@@ -387,6 +387,8 @@ const SectionItemInput = ({
     content_en: item.content_en || "",
     summary_vi: item.content_vi || "",
     summary_en: item.content_en || "",
+    cot_y_vi: item.content_vi || "",
+    cot_y_en: item.content_en || "",
     category: "concept",
     order_index: 0,
   };
@@ -733,6 +735,8 @@ const PlanField = ({
     content_en: item.content_en || "",
     summary_vi: item.content_vi || "",
     summary_en: item.content_en || "",
+    cot_y_vi: item.content_vi || "",
+    cot_y_en: item.content_en || "",
     category: "concept",
     order_index: 0,
   };

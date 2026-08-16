@@ -97,7 +97,7 @@
     "noReferenceKnowledge": "Chưa có tài liệu tham khảo — Builder có thể liên kết từ Dữ liệu Trí tuệ.",
     "noExampleKnowledge": "Chưa có ví dụ minh họa — Builder có thể liên kết từ Dữ liệu Trí tuệ.",
     "detailedNotesPlaceholder": "Ghi chú chi tiết...",
-    "readKnowledge": "Đọc lại dữ liệu",
+    "readKnowledge": "Xem lại dữ liệu",
     "step1Title": "Bước 1: Lên việc trong Khối {{block}}",
     "emptyTasks": "Chưa có việc nào trong danh sách",
     "step2Title": "Bước 2: Nhận ra gì để làm",
@@ -211,7 +211,7 @@
     "all": "Tất cả",
     "concept": "Khái niệm",
     "framework": "Khuôn mẫu",
-    "viewFull": "Xem đầy đủ trong Vault"
+    "viewFull": "Xem lại dữ liệu"
   },
   "builder": {
     "title": "Thiết kế khuôn",

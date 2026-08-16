@@ -514,6 +514,7 @@ export const getBlockStats = async (userId: string): Promise<Record<BlockId, Blo
 };
 
 const TEMPLATES_STORAGE_KEY = "fm_templates_v3";
+const TEMPLATES_SEED_VERSION = 2;
 
 export const buildDefaultTemplates = (): Record<BlockId, Record<StepType, Template>> => {
   const result: Partial<Record<BlockId, Record<StepType, Template>>> = {};
@@ -531,7 +532,12 @@ export const buildDefaultTemplates = (): Record<BlockId, Record<StepType, Templa
         name_en: config.name_en,
         order_index: config.order_index,
         status: "published",
-        sections: sections.map((section) => ({ ...section, template_id: templateId })),
+        seed_version: TEMPLATES_SEED_VERSION,
+        sections: sections.map((section) => ({
+          ...section,
+          template_id: templateId,
+          seed_version: TEMPLATES_SEED_VERSION,
+        })),
       };
     });
     result[block.id] = byStep as Record<StepType, Template>;
@@ -547,8 +553,14 @@ export const getAllTemplates = async (): Promise<Record<BlockId, Record<StepType
   } catch {
     // ignore parse errors
   }
-  if (rawTemplates) return normalizeTemplates(rawTemplates);
-  return buildDefaultTemplates();
+  if (rawTemplates) {
+    const normalized = normalizeTemplates(rawTemplates);
+    await saveAllTemplates(normalized);
+    return normalized;
+  }
+  const defaults = buildDefaultTemplates();
+  await saveAllTemplates(defaults);
+  return defaults;
 };
 
 export const saveAllTemplates = async (templates: Record<BlockId, Record<StepType, Template>>): Promise<void> => {
@@ -574,9 +586,32 @@ export const normalizeTemplates = (
     const existing = templates[blockId] || {};
     DEFAULT_STEP_CONFIG.forEach((config) => {
       const existingTemplate = existing[config.step_type];
+      const templateId = existingTemplate?.id || genId();
+      const baseSections = config.step_type === "apply" ? makeApplySection(blockId) : config.sections;
+      const defaultSections: TemplateSection[] = baseSections.map((section) => ({
+        ...section,
+        template_id: templateId,
+        seed_version: TEMPLATES_SEED_VERSION,
+      }));
+      const existingSections = existingTemplate?.sections || [];
+      const existingById = new Map(existingSections.map((s) => [s.id, s]));
+      const mergedSections: TemplateSection[] = [];
+      defaultSections.forEach((ds) => {
+        const es = existingById.get(ds.id);
+        if (es && es.seed_version === TEMPLATES_SEED_VERSION) {
+          mergedSections.push(es);
+        } else {
+          mergedSections.push(ds);
+        }
+      });
+      const defaultIds = new Set(defaultSections.map((s) => s.id));
+      existingSections.forEach((es) => {
+        if (!defaultIds.has(es.id)) mergedSections.push(es);
+      });
+      mergedSections.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
       blockTemplates[config.step_type] = {
         ...existingTemplate,
-        id: existingTemplate?.id || genId(),
+        id: templateId,
         block_id: blockId,
         step_type: config.step_type,
         name: existingTemplate?.name_vi || config.name_vi,
@@ -584,10 +619,8 @@ export const normalizeTemplates = (
         name_en: existingTemplate?.name_en || config.name_en,
         order_index: existingTemplate?.order_index ?? config.order_index,
         status: existingTemplate?.status || "published",
-        sections:
-          existingTemplate?.sections && existingTemplate.sections.length > 0
-            ? existingTemplate.sections
-            : config.sections.map((section) => ({ ...section, template_id: existingTemplate?.id || genId() })),
+        seed_version: TEMPLATES_SEED_VERSION,
+        sections: mergedSections,
         updated_at: existingTemplate?.updated_at || new Date().toISOString(),
       } as Template;
     });
@@ -595,6 +628,7 @@ export const normalizeTemplates = (
       if (BUILT_IN_STEP_TYPES.has(template.step_type)) return;
       blockTemplates[template.step_type] = {
         ...template,
+        seed_version: template.seed_version ?? TEMPLATES_SEED_VERSION,
         name: template.name_vi || template.name || "Bước tùy chỉnh",
         name_vi: template.name_vi || template.name || "Bước tùy chỉnh",
         name_en: template.name_en || template.name || "Custom step",

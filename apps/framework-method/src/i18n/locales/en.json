@@ -94,10 +94,10 @@
     "examplesPlaceholder": "Enter examples...",
     "keyInsightsPlaceholder": "Summarize your key takeaway...",
     "detailedNotesPlaceholder": "Elaborate on your findings...",
-    "noConceptKnowledge": "No Concept data yet — Builder can link from Knowledge Vault.",
-    "noReferenceKnowledge": "No Reference data yet — Builder can link from Knowledge Vault.",
-    "noExampleKnowledge": "No Examples yet — Builder can link from Knowledge Vault.",
-    "readKnowledge": "Read knowledge",
+    "noConceptKnowledge": "No Concept data yet — Builder can link from the Knowledge Library.",
+    "noReferenceKnowledge": "No Reference data yet — Builder can link from the Knowledge Library.",
+    "noExampleKnowledge": "No Examples yet — Builder can link from the Knowledge Library.",
+    "readKnowledge": "Review data",
     "step1Title": "Step 1: Plan tasks for {{block}}",
     "emptyTasks": "No tasks in the list yet",
     "step2Title": "Step 2: Recognize what to do",
@@ -211,7 +211,7 @@
     "all": "All",
     "concept": "Concept",
     "framework": "Framework",
-    "viewFull": "View full in Vault"
+    "viewFull": "Review data"
   },
   "builder": {
     "title": "Framework Builder",
