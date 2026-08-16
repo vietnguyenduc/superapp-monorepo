@@ -10,7 +10,7 @@ import { useCompanyId } from "../../hooks/useCompanyId";
 import { useNavigate } from "react-router-dom";
 import { backupService, recoveryUtils, type BackupData } from "../../utils/backupRecovery";
 import { isAdmin, getInitialEntityStatus, canEditBankAccountSettings, canEditBranchSettings, canManageAllCustomers } from "../../utils/permissions";
-import { parseAmountOrNull } from "../../services/businessLogic";
+import { parseAmountOrNull, parseDate } from "../../services/businessLogic";
 
 
 
@@ -177,6 +177,9 @@ export function useSettingsState() {
     bankAccounts: true,
     branches: true,
   });
+
+  const [resetTransactionDate, setResetTransactionDate] = useState("");
+  const [resetDateMode, setResetDateMode] = useState<"all" | "before" | "after" | "on">("all");
 
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
 
@@ -789,7 +792,14 @@ export function useSettingsState() {
 
 
   const handleResetData = async (scope: "selected" | "all" = "all") => {
-    const actionLabel = scope === "all" ? "xóa toàn bộ dữ liệu" : "xóa dữ liệu đã chọn";
+    const dateFilter =
+      resetTransactionDate && resetDateMode !== "all"
+        ? `${resetDateMode === "before" ? "đến hết ngày" : resetDateMode === "after" ? "từ" : "đúng"} ${resetTransactionDate}`
+        : "";
+    const actionLabel =
+      scope === "all"
+        ? `xóa toàn bộ dữ liệu${dateFilter ? ` ${dateFilter}` : ""}`
+        : `xóa dữ liệu đã chọn${dateFilter ? ` ${dateFilter}` : ""}`;
     const confirmation = window.prompt(
       `Nhập CONFIRM để ${actionLabel} và đặt lại hệ thống`,
       "",
@@ -807,6 +817,29 @@ export function useSettingsState() {
     const anySelected = Object.values(targets).some(Boolean);
     if (!anySelected) {
       toast.warning("Vui lòng chọn ít nhất một loại dữ liệu để reset.");
+      return;
+    }
+
+    const parseBounds = (raw: string): { start: string; end: string } | null => {
+      const d = parseDate(raw);
+      if (!d) return null;
+      const start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const end = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+      return { start: start.toISOString(), end: end.toISOString() };
+    };
+
+    if (resetDateMode !== "all" && targets.transactions && !resetTransactionDate) {
+      toast.warning("Vui lòng nhập ngày để lọc giao dịch trước khi reset.");
+      return;
+    }
+
+    if (resetDateMode !== "all" && resetTransactionDate && !parseBounds(resetTransactionDate)) {
+      toast.warning("Ngày reset không đúng định dạng DD/MM/YYYY.");
+      return;
+    }
+
+    if (scope !== "all" && resetDateMode !== "all" && resetTransactionDate && (targets.bankAccounts || targets.branches)) {
+      toast.warning("Khi lọc giao dịch theo ngày, chỉ được chọn Giao dịch. Vui lòng bỏ chọn Tài khoản ngân hàng và Chi nhánh.");
       return;
     }
 
@@ -852,9 +885,20 @@ export function useSettingsState() {
       }
 
       // Delete transactions first (references customers and bank_accounts)
-      const txResult = targets.transactions
-        ? await supabase.from("transactions").delete().eq("company_id", companyId)
-        : { error: null };
+      let txQuery = supabase.from("transactions").delete().eq("company_id", companyId);
+      if (scope !== "all" && targets.transactions && resetDateMode !== "all" && resetTransactionDate) {
+        const bounds = parseBounds(resetTransactionDate);
+        if (bounds) {
+          if (resetDateMode === "before") {
+            txQuery = txQuery.lt("transaction_date", bounds.end);
+          } else if (resetDateMode === "after") {
+            txQuery = txQuery.gte("transaction_date", bounds.start);
+          } else if (resetDateMode === "on") {
+            txQuery = txQuery.gte("transaction_date", bounds.start).lt("transaction_date", bounds.end);
+          }
+        }
+      }
+      const txResult = targets.transactions ? await txQuery : { error: null };
 
       // Delete bank accounts
       const bankResult = targets.bankAccounts
@@ -876,9 +920,15 @@ export function useSettingsState() {
         return;
       }
 
-      logger.log("✅ Database reset successful", { scope, targets });
+      logger.log("✅ Database reset successful", { scope, targets, resetDateMode, resetTransactionDate });
 
-      toast.success(scope === "all" ? "Đã xóa toàn bộ dữ liệu thành công!" : "Đã xóa dữ liệu đã chọn thành công!");
+      const dateLabel =
+        resetDateMode !== "all" && resetTransactionDate
+          ? ` (${resetDateMode === "before" ? "đến" : resetDateMode === "after" ? "từ" : "đúng"} ${resetTransactionDate})`
+          : "";
+      toast.success(
+        scope === "all" ? `Đã xóa toàn bộ dữ liệu thành công${dateLabel}!` : `Đã xóa dữ liệu đã chọn thành công${dateLabel}!`,
+      );
 
       // Navigate to dashboard instead of reload to preserve session
       navigate('/dashboard', { replace: true });
@@ -1737,6 +1787,10 @@ export function useSettingsState() {
     handleEditBankAccount,
     resetTargets,
     setResetTargets,
+    resetTransactionDate,
+    setResetTransactionDate,
+    resetDateMode,
+    setResetDateMode,
     handleResetData,
     handleBankAccountFormChange,
     handleSaveBankAccount,

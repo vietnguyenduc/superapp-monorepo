@@ -16,6 +16,12 @@
   - `TransactionImport.tsx` file upload matches column headers against key, label, and common aliases (e.g. `customer_id`, `bank_acc`, `ngày giao dịch`) in a case-insensitive way.
 - **Supabase migration `20260804000006_fix_transaction_type_math_factors.sql`** repairs inverted `transaction_types.math_factor` / `impact_type` rows and recalculates all customer balances; `customer_factor_for_type` now looks up the stored `math_factor` first (with `tt.id` cast to `text`) and falls back to the canonical semantic factor only when the row is missing or has no configured factor.
 
+### Added
+
+- **Reset data by transaction date in Settings → Sao lưu & Khôi phục.** The `Reset dữ liệu` section now lets users choose a date mode (`before` / `after` / `on`) and enter a `DD/MM/YYYY` date. Only `transactions` are filtered by date; `bank_accounts` and `branches` remain all-or-nothing.
+  - `BackupTab.tsx` adds a date filter row with a mode dropdown and a text input.
+  - `useSettingsState.handleResetData` parses the input with `parseDate`, computes the local-day start/end bounds, and applies `lt`/`gte` filters to the `supabase` delete query.
+
 ## 2026-08-23
 
 ### Fixed
