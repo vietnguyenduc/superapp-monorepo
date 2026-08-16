@@ -18,6 +18,7 @@ vi.mock("@superapp/iam", () => ({
     isTrial: false,
     user: { id: "test-user", company_id: "tenant-1" },
   }),
+  useCompany: () => ({ selectedCompany: undefined }),
 }));
 
 import { TransactionTypeProvider, useTransactionTypes } from "../contexts/TransactionTypeContext";

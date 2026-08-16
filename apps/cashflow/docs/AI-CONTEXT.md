@@ -44,7 +44,7 @@ A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management
 - `src/services/supabase.ts` — `apiClient`.
 - `src/utils/formatting.ts` — `formatCurrency`, `formatDate`, `getTransactionMathFactor`.
 - `src/pages/Transactions/TransactionList.tsx` — transaction list with server-side pagination (page-size selector), column-visibility dropdown, frozen `Ngày giao dịch` + `Khách hàng` columns, and group-by `Ngày` / `Tuần` / `Tháng` / `Văn phòng` / `Loại giao dịch` / `Khách hàng`. Group summary uses `getCustomerBalanceDelta` to separate `Tổng phát sinh tăng`, `Tổng phát sinh giảm`, `Tổng điều chỉnh`, and `Net`.
-- `src/contexts/TransactionTypeContext.tsx` — provides transaction type labels, colors, and math factors. Must load `transaction_types` scoped to the active `company_id`; `getMathFactor` derives the canonical factor for standard types before trusting the stored `math_factor` to avoid cross-tenant leakage and inverted-factor bugs.
+- `src/contexts/TransactionTypeContext.tsx` — provides transaction type labels, colors, and math factors. Must load `transaction_types` scoped to the active company (via `useCompanyId()`); `getMathFactor` uses the stored `math_factor` from the resolved type row and only falls back to the canonical semantic factor when the row is missing or has no configured factor.
 - `src/pages/Settings/Settings.tsx` — provider shell + `SettingsContent`; per-tab JSX in `pages/Settings/components/tabs/*.tsx`; state in `useSettingsState.ts`; shared context in `SettingsContext.tsx`; `colorOptions`/`getColorClass` in `Settings/utils.ts`.
 - `src/types/index.ts` and `src/types/database.types.ts` — TS types.
 
@@ -58,7 +58,7 @@ Production convention: **positive `customers.total_balance` = debt / công nợ;
 Công nợ = Đầu kỳ + Phát sinh tăng - Phát sinh giảm + Điều chỉnh - Đặt cọc
 ```
 
-`getCustomerBalanceDelta` returns `amount * math_factor`. `math_factor` comes from `transaction_types.math_factor` (loaded per company) or from an explicit override. For standard transaction types, the canonical factor is enforced before the stored `math_factor` is used, so rows with inverted `math_factor` do not corrupt balances or group summaries. When no factor is supplied, the canonical defaults are:
+`getCustomerBalanceDelta` returns `amount * math_factor`. `math_factor` comes from the resolved `transaction_types` row (loaded per company) and is the source of truth. The canonical semantic factor is only used as a fallback when the row is missing or has no configured factor, so user overrides in Settings are respected while old inverted seed data is repaired by migration `20260804000006_fix_transaction_type_math_factors.sql`. When no factor is supplied, the canonical defaults are:
 
 | Type      | math_factor | Customer balance delta | Bank cash delta | Meaning |
 |-----------|-------------|----------------------|-----------------|---------|
@@ -68,7 +68,7 @@ Công nợ = Đầu kỳ + Phát sinh tăng - Phát sinh giảm + Điều chỉn
 | `deposit` | `-1`        | `-amount`            | `+amount`       | Customer prepays/deposits (đặt cọc) → debt decreases, cash increases. |
 | `adjustment` | `+1`     | signed amount        | signed amount   | Direct signed correction (`+amount` or `-amount`). |
 
-Transaction amount color = **red** for debt-increasing types (`charge`), **green** for debt-decreasing types (`payment`/`refund`/`deposit`), and **blue/gray** for `adjustment`. Customer running-balance text (`total_balance`) is rendered in neutral colors; do not color-code it red/green. The Supabase migration `20260804000006_fix_transaction_type_math_factors.sql` repairs inverted `math_factor`/`impact_type` rows and backfills customer balances; `customer_factor_for_type` enforces canonical semantics for known types.
+Transaction amount color = **red** for debt-increasing types (`charge`), **green** for debt-decreasing types (`payment`/`refund`/`deposit`), and **blue/gray** for `adjustment`. Customer running-balance text (`total_balance`) is rendered in neutral colors; do not color-code it red/green. The Supabase migration `20260804000006_fix_transaction_type_math_factors.sql` repairs inverted `math_factor`/`impact_type` rows, updates `customer_factor_for_type` to look up stored factors first (with canonical fallback), and backfills customer balances.
 
 ### Customer balance source of truth
 

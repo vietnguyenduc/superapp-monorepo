@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from "react";
 import { databaseService } from "../services/database";
 import { useAuthContext } from "@superapp/iam";
+import { useCompanyId } from "../hooks/useCompanyId";
 import { normalizeTransactionType } from "../services/businessLogic/parsers";
 import { getCustomerBalanceDelta } from "../services/businessLogic/balanceMath";
 // Canonical transaction type display labels.  Maps both canonical ids and the
@@ -78,12 +79,13 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated, isTrial, user } = useAuthContext();
+  const activeCompanyId = useCompanyId();
 
   const refetch = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const companyId = isTrial ? "trial-company" : user?.company_id;
+      const companyId = isTrial ? "trial-company" : activeCompanyId || user?.company_id;
       const result = await databaseService.transactionTypes.getTransactionTypes(companyId);
       if (result.error) {
         setError(result.error);
@@ -135,7 +137,7 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
     } finally {
       setLoading(false);
     }
-  }, [isTrial, user?.company_id]);
+  }, [isTrial, activeCompanyId, user?.company_id]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -180,35 +182,25 @@ export const TransactionTypeProvider: React.FC<TransactionTypeProviderProps> = (
     (id: string) => {
       if (!id) return 1;
       const needle = id.toLowerCase().trim();
-      const standardCanonicals = new Set(["charge", "payment", "refund", "deposit", "adjustment"]);
 
-      const resolveFactor = (value: string): number | null => {
+      const fallbackFactor = (value: string): number => {
         const canonical = normalizeTransactionType(value).toLowerCase().trim();
-        if (standardCanonicals.has(canonical)) {
-          return getCustomerBalanceDelta(canonical, 1);
-        }
-        return null;
+        return getCustomerBalanceDelta(canonical, 1);
       };
 
-      // 1) If the input itself is a canonical id or a known alias, derive the
-      // factor from the canonical semantics. This protects the UI from rows
-      // whose stored math_factor has been accidentally inverted.
-      const fromInput = resolveFactor(id);
-      if (fromInput !== null) return fromInput;
-
-      // 2) For non-canonical inputs (usually UUID ids), resolve the row and
-      // derive the factor from its name's canonical meaning when possible.
+      // Resolve the row and use its stored math_factor; fall back to the
+      // canonical semantic factor only when the row is missing or has no
+      // configured factor. This lets users override standard type factors in
+      // Settings while still protecting against stale/cross-tenant rows.
       const found =
         types.find((t) => t.id === id) ||
         types.find((t) => t.canonical.toLowerCase() === needle) ||
         types.find((t) => t.name.toLowerCase() === needle);
       if (found) {
-        const fromName = resolveFactor(found.name);
-        if (fromName !== null) return fromName;
-        return found.math_factor;
+        return typeof found.math_factor === "number" ? found.math_factor : fallbackFactor(found.name || id);
       }
 
-      return 1;
+      return fallbackFactor(id);
     },
     [types]
   );

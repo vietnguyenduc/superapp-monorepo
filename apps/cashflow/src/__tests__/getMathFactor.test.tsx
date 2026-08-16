@@ -12,6 +12,7 @@ vi.mock("../services/database", () => ({
 
 vi.mock("@superapp/iam", () => ({
   useAuthContext: () => ({ isAuthenticated: true, isTrial: false, user: { id: "u", company_id: "c" } }),
+  useCompany: () => ({ selectedCompany: undefined }),
 }));
 
 import { TransactionTypeProvider, useTransactionTypes } from "../contexts/TransactionTypeContext";

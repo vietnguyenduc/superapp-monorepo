@@ -25,42 +25,34 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
--- Look up the factor for a transaction type, enforcing canonical semantics for
--- known ids/names and only trusting the stored math_factor for custom types.
+-- Look up the factor for a transaction type. Stored math_factor is the source
+-- of truth; the canonical semantic factor is only used as a fallback when
+-- the row is missing or has no configured factor.
 CREATE OR REPLACE FUNCTION customer_factor_for_type(p_type TEXT, p_company_id UUID)
 RETURNS NUMERIC AS $$
 DECLARE
-  v_name TEXT;
   v_factor NUMERIC;
-  v_canonical NUMERIC;
+  v_name TEXT;
 BEGIN
-  -- If the input itself is a known canonical id/name/alias, use the semantic factor.
-  v_canonical := canonical_customer_factor(p_type);
-  IF v_canonical IS NOT NULL THEN
-    RETURN v_canonical;
-  END IF;
-
-  -- Otherwise resolve the row by id or name and apply the canonical factor if
-  -- the row's name has a canonical meaning; only for genuinely custom names do
-  -- we fall back to the stored math_factor.
-  SELECT tt.name, tt.math_factor INTO v_name, v_factor
+  -- Resolve the actual transaction type row by id, name, or canonical meaning.
+  -- Cast the UUID id to text before comparing to avoid lower(uuid) errors.
+  SELECT tt.math_factor, tt.name INTO v_factor, v_name
   FROM public.transaction_types tt
   WHERE (tt.company_id IS NULL OR tt.company_id = p_company_id)
     AND (
-      lower(tt.id) = lower(p_type)
+      lower(tt.id::text) = lower(p_type)
       OR lower(tt.name) = lower(p_type)
+      OR canonical_customer_factor(tt.name) = canonical_customer_factor(p_type)
     )
   ORDER BY (tt.company_id = p_company_id) DESC NULLS LAST, tt.updated_at DESC NULLS LAST
   LIMIT 1;
 
-  IF v_name IS NOT NULL THEN
-    v_canonical := canonical_customer_factor(v_name);
-    IF v_canonical IS NOT NULL THEN
-      RETURN v_canonical;
-    END IF;
+  IF v_factor IS NOT NULL THEN
+    RETURN v_factor;
   END IF;
 
-  RETURN COALESCE(v_factor, 1);
+  -- Fallback to the canonical semantic factor for known aliases.
+  RETURN COALESCE(canonical_customer_factor(p_type), 1);
 END;
 $$ LANGUAGE plpgsql STABLE;
 

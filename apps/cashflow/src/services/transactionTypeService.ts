@@ -224,26 +224,26 @@ export class TransactionTypeService extends BaseService {
 
   static buildFactorMap(types: Array<{ id?: unknown; name?: unknown; math_factor?: unknown }>): Record<string, number> {
     const map: Record<string, number> = {};
-    const standardCanonicals = new Set(["charge", "payment", "refund", "deposit", "adjustment"]);
 
     for (const t of types) {
       const idKey = String(t.id ?? "").toLowerCase().trim();
       const nameKey = String(t.name ?? "").toLowerCase().trim();
 
-      // Determine the canonical meaning of this row. For standard canonical
-      // ids/names we always use the semantic factor; only custom (unknown)
-      // types rely on the stored math_factor.
-      const canonicalName = normalizeTransactionType(nameKey);
-      const isStandard = standardCanonicals.has(canonicalName);
-      const factor = isStandard
-        ? getCustomerBalanceDelta(canonicalName, 1)
-        : Number(t.math_factor ?? 1);
+      // Use the stored math_factor as the source of truth. The migration in
+      // 20260804000006_fix_transaction_type_math_factors.sql repairs inverted
+      // values for standard canonical names, so stored factors are canonical
+      // unless a user deliberately overrides them in Settings. Fall back to
+      // the semantic factor only when no stored value is available.
+      const storedFactor = t.math_factor === null || t.math_factor === undefined ? null : Number(t.math_factor);
+      const semanticFactor = getCustomerBalanceDelta(nameKey, 1);
+      const factor = typeof storedFactor === "number" && !Number.isNaN(storedFactor) ? storedFactor : semanticFactor;
 
       if (idKey) map[idKey] = factor;
       if (nameKey) map[nameKey] = factor;
 
       const canonicalId = normalizeTransactionType(idKey);
       if (canonicalId && !map[canonicalId]) map[canonicalId] = factor;
+      const canonicalName = normalizeTransactionType(nameKey);
       if (canonicalName && canonicalName !== canonicalId && !map[canonicalName]) map[canonicalName] = factor;
     }
     return map;

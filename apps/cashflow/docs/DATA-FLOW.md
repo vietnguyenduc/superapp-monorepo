@@ -113,13 +113,13 @@ A group-by selector produces a `Tổng hợp theo nhóm` table above the transac
 - Group keys: `day` (ISO date), `week` (ISO week), `month` (year-month), plus existing `branch`, `transaction_type`, `customer`.
 - Group summary per key: count, `Tổng phát sinh tăng` (sum of `abs(delta)` for non-adjustment deltas `> 0`), `Tổng phát sinh giảm` (sum of `abs(delta)` for non-adjustment deltas `< 0`), `Tổng điều chỉnh` (signed sum of adjustment deltas), and `Net` (sum of all signed deltas).
 - The transaction's canonical type is resolved from the row's display name (via `getTransactionTypeName`) so a UUID whose name is `Đặt cọc` is classified as `deposit`, not as `payment`/`refund`.
-- `getMathFactor` enforces canonical semantics for standard transaction types before trusting the stored `math_factor`, so inverted `math_factor` rows do not swap the increase/decrease totals.
+- `getMathFactor` resolves the type row from `transaction_types` and uses its stored `math_factor`; if the row is missing or has no configured factor it falls back to the canonical semantic factor, so inverted `math_factor` rows are repaired by the migration while user overrides in Settings are still respected.
 - Day/week/month groups are sorted chronologically by key; other groups are sorted by label.
 
 ### Sign-aware amount handling
 
 - `balanceMath.ts` is the single source of truth.
-- `getCustomerBalanceDelta(type, amount, mathFactor)` returns `parseAmount(amount) * math_factor`. The `math_factor` is loaded per company from `transaction_types.math_factor` or falls back to canonical defaults: `charge +1`, `payment/refund/deposit -1`, `adjustment +1`.
+- `getCustomerBalanceDelta(type, amount, mathFactor)` returns `parseAmount(amount) * math_factor`. The `math_factor` is loaded per company from the resolved `transaction_types` row and is the source of truth; it falls back to canonical defaults only when the row is missing or has no configured factor: `charge +1`, `payment/refund/deposit -1`, `adjustment +1`.
 - `getBankAccountBalanceDelta` still applies cash-flow semantics: `payment`/`deposit` increase cash, `refund` decreases cash, `charge` has no cash effect, `adjustment` is signed.
 - `charge -1000` → customer balance **-1000** (debt decreases by 1000), bank cash `0`.
 - `payment -1000` → customer balance **+1000** (debt increases by 1000), bank cash **-1000** (cash out).
@@ -152,7 +152,7 @@ applyTransactionsToCustomerBalance(opening, txs, factorMap?)
 applyTransactionsToBankAccountBalance(opening, txs)
 ```
 
-`transactionTypeService.buildFactorMap` and `getTransactionTypeFactorMap` load the per-company `math_factor` map from `transaction_types`. For standard canonical types, `buildFactorMap` ignores stored `math_factor` and uses the canonical semantic factor (`charge` +1, `payment`/`refund`/`deposit` -1, `adjustment` +1) so corrupted rows cannot invert balances. `transactionService`, `dashboardService.getDashboardMetrics`, and `dashboardService.getReceivableLedger` pass this map into `getCustomerBalanceDelta` / `applyTransactionsToCustomerBalance` so every balance calculation respects the configured convention. `deposit` uses the same customer-balance and bank-cash direction as `payment`.
+`transactionTypeService.buildFactorMap` and `getTransactionTypeFactorMap` load the per-company `math_factor` map from `transaction_types`. `buildFactorMap` uses the stored `math_factor` as the source of truth and falls back to the canonical semantic factor (`charge` +1, `payment`/`refund`/`deposit` -1, `adjustment` +1) only when the row is missing or has no configured factor, so user overrides in Settings are respected while corrupted rows are repaired by migration `20260804000006_fix_transaction_type_math_factors.sql`. `transactionService`, `dashboardService.getDashboardMetrics`, and `dashboardService.getReceivableLedger` pass this map into `getCustomerBalanceDelta` / `applyTransactionsToCustomerBalance` so every balance calculation respects the configured convention. `deposit` uses the same customer-balance and bank-cash direction as `payment`.
 
 ## Backup and restore
 

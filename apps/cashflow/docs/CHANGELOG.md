@@ -8,13 +8,13 @@
   - The `Xuất Excel` and `Xuất tồn đầu kỳ` buttons are now combined into a single `Xuất` dropdown to reduce header clutter on mobile.
   - Filter card padding, spacing, and font sizes reduced so the search/filter/table group is tighter.
 - **Group-by summary totals no longer swap "Tổng phát sinh tăng" / "Tổng phát sinh giảm".**
-  - `TransactionTypeContext` now loads `transaction_types` scoped to the current user's `company_id` and `getMathFactor` derives the factor from the canonical semantics (`charge` +1, `payment/refund/deposit` -1, `adjustment` +1) before trusting the stored `math_factor`.
-  - `transactionTypeService.buildFactorMap` applies the same canonical default for standard transaction types, so balance recalculation is protected from inverted `math_factor` rows.
+  - `TransactionTypeContext` now loads `transaction_types` scoped to the active company via `useCompanyId()` (handling admin company switching) and `getMathFactor` uses the stored `math_factor` from the resolved type row, falling back to the canonical semantic factor (`charge` +1, `payment/refund/deposit` -1, `adjustment` +1) only when the row is missing or has no configured factor.
+  - `transactionTypeService.buildFactorMap` uses stored `math_factor` as the source of truth, with the canonical semantic factor as a fallback.
   - `TransactionList` group summary classifies each transaction by the resolved display-name canonical (e.g. a UUID whose name is `Đặt cọc` is bucketed as `deposit`), ensuring `Tổng đặt cọc` is reported separately from increase/decrease.
 - **Bulk transaction import now accepts Vietnamese aliases and gives clear errors.**
   - `transactionService.bulkImportTransactions` normalizes `transaction_type` input through `normalizeTransactionType`, checks id/name/canonical aliases, and returns `Loại giao dịch "..." không hợp lệ. Các loại được hỗ trợ: ...` instead of a generic message.
   - `TransactionImport.tsx` file upload matches column headers against key, label, and common aliases (e.g. `customer_id`, `bank_acc`, `ngày giao dịch`) in a case-insensitive way.
-- **Supabase migration `20260804000006_fix_transaction_type_math_factors.sql`** repairs inverted `transaction_types.math_factor` / `impact_type` rows and recalculates all customer balances, plus hardens `customer_factor_for_type` to enforce canonical factors for known types.
+- **Supabase migration `20260804000006_fix_transaction_type_math_factors.sql`** repairs inverted `transaction_types.math_factor` / `impact_type` rows and recalculates all customer balances; `customer_factor_for_type` now looks up the stored `math_factor` first (with `tt.id` cast to `text`) and falls back to the canonical semantic factor only when the row is missing or has no configured factor.
 
 ## 2026-08-23
 
