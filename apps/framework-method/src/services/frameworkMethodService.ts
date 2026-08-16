@@ -513,7 +513,7 @@ export const getBlockStats = async (userId: string): Promise<Record<BlockId, Blo
   return map as Record<BlockId, BlockStats>;
 };
 
-const TEMPLATES_STORAGE_KEY = "fm_templates_v2";
+const TEMPLATES_STORAGE_KEY = "fm_templates_v3";
 
 export const buildDefaultTemplates = (): Record<BlockId, Record<StepType, Template>> => {
   const result: Partial<Record<BlockId, Record<StepType, Template>>> = {};

@@ -1,5 +1,12 @@
 # Framework Method — Changelog
 
+## 2026-08-15 (Session Step 2 cleanup & inline knowledge snippets)
+
+- Removed `Nguyên lý trí tuệ` and `Nguyên lý sống` checklist items from Step 2 “Nhận ra” in `src/data/templateSeed.ts`; the first section now focuses on the 8 `NLCĐ` entries and is renamed to `Nguyên lý Cuộc đời`.
+- Bumped template `localStorage` key from `fm_templates_v2` to `fm_templates_v3` in `frameworkMethodService.ts` so returning users receive the updated default Step 2 template without a manual cache clear.
+- Updated `SectionItemInput` in `src/pages/Session/SessionPage.tsx` to display a short knowledge snippet (`cot_y` → `summary` → `content`) under each item title when the item has no inline `content_vi`; the full entry is still available via the `Đọc lại dữ liệu` / `Read knowledge` modal.
+- Validation: `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+
 ## 2026-08-15 (Knowledge Vault Dao overview enrichment)
 
 - Replaced placeholder `summary_vi`/`content_vi`/`cot_y_vi`/`cot_cua_cot_vi`/`loi_vi` in `src/data/knowledgeSeed.ts` for `dao-overview` with a structured summary derived from the seven `dao-1..7` detail entries.

@@ -13,20 +13,6 @@ const recognizeItem = (
   knowledge_entry_id: knowledgeEntryId,
 });
 
-const nlttItems: TemplateSectionItem[] = [
-  recognizeItem("nly-nltt-1", "Nguyên lý trí tuệ số 1", "nltt-1"),
-  recognizeItem("nly-nltt-2", "Nguyên lý trí tuệ số 2", "nltt-2"),
-  recognizeItem("nly-nltt-3", "Nguyên lý trí tuệ số 3", "nltt-3"),
-  recognizeItem("nly-nltt-4", "Nguyên lý trí tuệ số 4", "nltt-4"),
-  recognizeItem("nly-nltt-5", "Nguyên lý trí tuệ số 5", "nltt-5"),
-];
-
-const nlsItems: TemplateSectionItem[] = [
-  recognizeItem("nly-nls-1", "Nguyên lý sống 1: Làm theo nguyên lý", "nls-1"),
-  recognizeItem("nly-nls-2", "Nguyên lý sống 2: Bám vào chân lý (Trí tuệ và Từ bi) để hành động", "nls-2"),
-  recognizeItem("nly-nls-3", "Nguyên lý sống 3: Xây dựng nguyên tắc để thành công", "nls-3"),
-];
-
 const nlcdItems: TemplateSectionItem[] = [
   recognizeItem("nly-nlcd-1", "NLCĐ 1: Ta là ai? Ta có gì?", "nlcd-1"),
   recognizeItem("nly-nlcd-2", "NLCĐ 2: Ta sinh ra để làm gì?", "nlcd-2"),
@@ -74,14 +60,13 @@ export const defaultRecognizeSections = (): TemplateSection[] => [
     id: "sec-recognize-nguyen-ly",
     template_id: "",
     group: "nguyen_ly",
-    title_vi: "Nguyên lý Trí tuệ & Cuộc đời",
-    title_en: "Wisdom & Life Principles",
+    title_vi: "Nguyên lý Cuộc đời",
+    title_en: "Life Principles",
     is_toggle: true,
     is_enabled: true,
     order_index: 0,
     concept_knowledge_entry_id: "nlcd-overview",
-    reference_knowledge_entry_id: "nltt-overview",
-    items: withOrder([...nlttItems, ...nlsItems, ...nlcdItems]),
+    items: withOrder(nlcdItems),
   },
   {
     id: "sec-recognize-dao",

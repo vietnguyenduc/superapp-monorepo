@@ -372,6 +372,12 @@ const SectionItemInput = ({
   const knowledgeEntry = item.knowledge_entry_id ? knowledgeEntries.find((e) => e.id === item.knowledge_entry_id) : undefined;
 
   const itemContent = language === "en" ? item.content_en : item.content_vi;
+  const knowledgeSnippet =
+    language === "en"
+      ? (knowledgeEntry?.cot_y_en || knowledgeEntry?.summary_en || knowledgeEntry?.content_en)
+      : (knowledgeEntry?.cot_y_vi || knowledgeEntry?.summary_vi || knowledgeEntry?.content_vi);
+
+  const hasKnowledge = Boolean(knowledgeEntry || itemContent || knowledgeSnippet);
 
   const fallbackEntry: KnowledgeEntry = {
     id: item.id,
@@ -400,7 +406,7 @@ const SectionItemInput = ({
           />
           {language === "en" ? item.title_en : item.title_vi}
         </label>
-        {(knowledgeEntry || itemContent) && (
+        {hasKnowledge && (
           <button
             onClick={() => setShowKnowledge(true)}
             className="flex items-center gap-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 shrink-0 px-2 py-1 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/10"
@@ -413,12 +419,16 @@ const SectionItemInput = ({
       </div>
       {enabled && (
         <>
-          {itemContent && (
+          {itemContent ? (
             <div
               className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] prose dark:prose-invert max-w-none"
               dangerouslySetInnerHTML={{ __html: itemContent }}
             />
-          )}
+          ) : knowledgeSnippet ? (
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04]">
+              {knowledgeSnippet}
+            </p>
+          ) : null}
           <textarea
             value={value}
             onChange={(e) => onChange(item.id, e.target.value, enabled)}
