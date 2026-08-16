@@ -1,5 +1,14 @@
 # Framework Method — Changelog
 
+## 2026-08-15 (Template seed versioning + richer snippets)
+
+- Added `seed_version` to `Template` and `TemplateSection` types and to `frameworkMethodService.buildDefaultTemplates`/`normalizeTemplates`. Returning users with stale `fm_templates_v3` caches automatically receive corrected built-in Step 2/3/4 sections; custom user-added sections are preserved.
+- `normalizeTemplates` now rebuilds per-block `apply` sections via `makeApplySection(blockId)` and merges default sections by id + `seed_version`, fixing an issue where `apply` templates could default to the `self` block layout.
+- `SessionPage.SectionItemInput` now prefers `summary_vi/en` (Cốt ý) for the inline snippet under each checklist item, falling back to `cot_y` then `content`.
+- `Knowledge.tsx` card subtitle and detail view now prefer `summary` for the Cốt ý display; the list snippet uses `line-clamp-3`.
+- `SessionPage.KnowledgeModal` and `Knowledge.tsx` detail view prefer `loi` then `content` for the full body.
+- Validation: `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+
 ## 2026-08-15 (Knowledge Vault detail modal)
 
 - Added a read-only detail modal to `src/pages/Knowledge/Knowledge.tsx`: clicking any knowledge card now opens a modal showing `Cốt ý`, `Cốt của Cốt`, and `Lõi` (with image preview if available).

@@ -98,11 +98,10 @@ const Knowledge = () => {
         </div>
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t("knowledge.fieldSummary")}</label>
-          <input
-            type="text"
+          <textarea
             value={form.summary_vi}
             onChange={(e) => setForm({ ...form, summary_vi: e.target.value, summary_en: e.target.value })}
-            className="input"
+            className="input h-20 resize-none"
             placeholder={t("knowledge.summaryPlaceholder")}
           />
         </div>
@@ -206,8 +205,8 @@ const Knowledge = () => {
                   <h3 className="font-bold text-base leading-snug line-clamp-2">
                     {language === "en" ? entry.title_en : entry.title_vi}
                   </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">
-                    {language === "en" ? (entry.cot_cua_cot_en || entry.summary_en || entry.content_en) : (entry.cot_cua_cot_vi || entry.summary_vi || entry.content_vi)}
+                  <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 mt-1">
+                    {language === "en" ? (entry.summary_en || entry.cot_y_en || entry.cot_cua_cot_en || entry.content_en) : (entry.summary_vi || entry.cot_y_vi || entry.cot_cua_cot_vi || entry.content_vi)}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">
@@ -254,13 +253,13 @@ const Knowledge = () => {
                 className="w-full h-48 object-cover rounded-2xl border border-gray-200 dark:border-gray-700"
               />
             )}
-            {(language === "en" ? viewing.cot_y_en || viewing.summary_en : viewing.cot_y_vi || viewing.summary_vi) && (
+            {(language === "en" ? viewing.summary_en || viewing.cot_y_en : viewing.summary_vi || viewing.cot_y_vi) && (
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                   {t("knowledge.fieldSummary")}
                 </h3>
                 <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed mt-1">
-                  {language === "en" ? (viewing.cot_y_en || viewing.summary_en) : (viewing.cot_y_vi || viewing.summary_vi)}
+                  {language === "en" ? (viewing.summary_en || viewing.cot_y_en) : (viewing.summary_vi || viewing.cot_y_vi)}
                 </p>
               </div>
             )}

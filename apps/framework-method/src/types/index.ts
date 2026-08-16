@@ -106,6 +106,7 @@ export interface TemplateSection {
   example_content_en?: string;
   created_at?: string;
   updated_at?: string;
+  seed_version?: number;
 }
 
 export interface Template {
@@ -121,6 +122,7 @@ export interface Template {
   company_id?: string;
   created_at?: string;
   updated_at?: string;
+  seed_version?: number;
   sections?: TemplateSection[];
 }
 
