@@ -1,5 +1,14 @@
 # Changelog — Cashflow
 
+## 2026-08-22 (Cashflow)
+
+### Fixed
+
+- Unified tab/filter buttons across Cashflow to match the high-contrast, rounded-full "Duyệt dữ liệu" style.
+  - `Transactions/TransactionList.tsx` status tabs now use pill buttons (`rounded-full`, `bg-blue-600` active, `bg-white dark:bg-gray-800` inactive, `min-h-[44px]`) with a white count badge on the active tab.
+  - `Settings/Settings.tsx` setting-category tabs converted from a grid of rounded cards into inline pill chips with icon + label.
+  - `Manual/Manual.tsx` sidebar navigation converted to full-width pill buttons with the same active/inactive contrast.
+
 ## 2026-08-22
 
 ### Fixed

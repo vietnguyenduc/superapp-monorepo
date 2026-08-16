@@ -871,41 +871,29 @@ const TransactionList: React.FC = () => {
           />
 
           {/* Status Tabs */}
-          <div className="flex flex-wrap border-b border-gray-200 dark:border-gray-700 mb-4">
+          <div className="flex flex-wrap gap-2 mb-4" role="tablist" aria-label="Trạng thái giao dịch">
             {[
-              { key: "all", label: "Tất cả", color: "blue" },
-              { key: "draft", label: "Nháp", color: "gray" },
-              { key: "pending", label: "Chờ duyệt", color: "amber" },
-              { key: "completed", label: "Hoàn thành", color: "green" },
-              { key: "rejected", label: "Từ chối", color: "red" },
+              { key: "all", label: "Tất cả" },
+              { key: "draft", label: "Nháp" },
+              { key: "pending", label: "Chờ duyệt" },
+              { key: "completed", label: "Hoàn thành" },
+              { key: "rejected", label: "Từ chối" },
             ].map((tab) => {
               const active = state.statusFilter === tab.key;
-              const colorClass =
-                tab.color === "blue"
-                  ? "text-blue-600 dark:text-blue-300 border-blue-600 dark:border-blue-300"
-                  : tab.color === "gray"
-                  ? "text-gray-600 dark:text-gray-300 border-gray-600 dark:border-gray-300"
-                  : tab.color === "amber"
-                  ? "text-amber-600 dark:text-amber-300 border-amber-600 dark:border-amber-300"
-                  : tab.color === "green"
-                  ? "text-green-600 dark:text-green-300 border-green-600 dark:border-green-300"
-                  : "text-red-600 dark:text-red-300 border-red-600 dark:border-red-300";
-              const badgeClass =
-                tab.color === "amber"
-                  ? "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300"
-                  : tab.color === "red"
-                  ? "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300"
-                  : tab.color === "green"
-                  ? "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300";
               return (
                 <button
                   key={tab.key}
-                  className={`px-4 py-2 text-sm font-medium flex items-center gap-2 transition-colors ${active ? `${colorClass} border-b-2` : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"}`}
+                  role="tab"
+                  aria-selected={active}
+                  className={`inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-full text-sm border transition ${
+                    active
+                      ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                      : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  }`}
                   onClick={() => setState(prev => ({ ...prev, statusFilter: tab.key as typeof prev.statusFilter, currentPage: 1 }))}
                 >
                   {tab.label}
-                  {active && tab.key !== "all" && <span className={`py-0.5 px-2 rounded-full text-xs ${badgeClass}`}>{state.totalCount}</span>}
+                  {active && tab.key !== "all" && <span className="py-0.5 px-2 rounded-full text-xs bg-white text-blue-600 font-semibold">{state.totalCount}</span>}
                 </button>
               );
             })}

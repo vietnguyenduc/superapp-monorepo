@@ -878,21 +878,24 @@ const Manual: React.FC = () => {
         <div className="flex">
           {/* Sidebar */}
           <div className="w-64 border-r border-gray-200 dark:border-gray-700 p-4">
-            <nav className="space-y-1">
-              {Object.entries(sections).map(([key, section]) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveSection(key)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    activeSection === key
-                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
-                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  }`}
-                >
-                  <span className="text-lg">{section.icon}</span>
-                  <span>{section.title}</span>
-                </button>
-              ))}
+            <nav className="space-y-2">
+              {Object.entries(sections).map(([key, section]) => {
+                const active = activeSection === key;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setActiveSection(key)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium border transition ${
+                      active
+                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                        : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    }`}
+                  >
+                    <span className="text-lg shrink-0">{section.icon}</span>
+                    <span className="text-left leading-tight">{section.title}</span>
+                  </button>
+                );
+              })}
             </nav>
           </div>
 

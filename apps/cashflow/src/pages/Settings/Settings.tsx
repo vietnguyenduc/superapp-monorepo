@@ -89,7 +89,7 @@ const SettingsContent: FC = () => {
         )}
 
         <div className="mb-3 sm:mb-4">
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2" role="tablist" aria-label="Cài đặt hệ thống">
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Cài đặt hệ thống">
             {s.tabs.map((tab) => {
               const active = s.activeTab === tab.id;
               return (
@@ -98,14 +98,14 @@ const SettingsContent: FC = () => {
                   role="tab"
                   aria-selected={active}
                   onClick={() => s.setActiveTab(tab.id)}
-                  className={`flex flex-col items-center justify-center gap-1 min-h-[64px] p-2 rounded-lg border text-center transition ${
+                  className={`inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-full text-sm border transition ${
                     active
-                      ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200 dark:border-blue-400 shadow-sm"
-                      : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500"
+                      ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                      : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                   }`}
                 >
-                  <TabIcon id={tab.id} className={`w-4 h-4 shrink-0 ${active ? "text-blue-600 dark:text-blue-200" : "text-gray-500 dark:text-gray-300"}`} />
-                  <span className="text-[10px] sm:text-xs font-medium leading-tight line-clamp-2">{tab.name}</span>
+                  <TabIcon id={tab.id} className={`w-4 h-4 shrink-0 ${active ? "text-white" : "text-gray-500 dark:text-gray-400"}`} />
+                  <span className="font-medium whitespace-nowrap">{tab.name}</span>
                 </button>
               );
             })}
