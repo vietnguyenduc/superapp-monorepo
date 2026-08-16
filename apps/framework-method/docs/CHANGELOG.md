@@ -1,5 +1,15 @@
 # Framework Method — Changelog
 
+## 2026-08-15 (Knowledge Vault accordion + data cleanup + seed v8)
+
+- Added `group_vi` and `group_en` to `KnowledgeEntry` in `src/types/index.ts` and assigned every default entry to a Sách Vàng table-of-contents group (`A. Mở đầu` → `R. Ví dụ`) via `scripts/fix_knowledge_seed.py` and `scripts/patch_short_entries.py`.
+- Reorganized `src/pages/Knowledge/Knowledge.tsx` to render collapsible group accordions; group headers show the group title and entry count, clicking expands the group, clicking an entry expands its detail inline (`Cốt ý`, `Cốt của Cốt`, `Lõi`) without a modal. The old `viewing` modal and `Xem lại dữ liệu` flow were removed from this page.
+- Normalized all list-valued `summary/cot_y/cot_cua_cot/loi/content` fields in `src/data/knowledgeSeed.ts` to strings and backfilled short `loi_vi`/`content_vi` for `dao-4`, `dao-5`, `dao-6`, `goc-tri-tue`, `goc-do-cua-tri-tue`, `biet-goc-va-bam-goc`, `nguyen-tac-chuan-muc`, `luyen`, `6-gia-tri-mang-lai`, `tri-tue-de-lam-gi`, `phuong-phap-chia-se-tri-tue-cho-cac-con`, `phuong-phap-ung-dung-trien-khai-cu-the` directly from the Sách Vàng OCR, preserving original wording.
+- Cleaned corrupted `cot_cua_cot` entries that had been stored as Python-dict/list string literals (`tri-tue-la-thuc-te-khoa-hoc-tam-linh`, `nghia`, `tri-tue-de-lam-gi`).
+- Added `knowledge.cotY`, `knowledge.entries`, and `knowledge.ungrouped` i18n keys to `src/i18n/locales/vi.json` and `en.json`.
+- Bumped `KNOWLEDGE_SEED_VERSION` to 8 in `src/services/frameworkMethodService.ts` so returning users receive the re-grouped, cleaned, expanded seed without clearing `localStorage`.
+- Validation: `npm run type-check -w framework-method` ✅, `npm run test -w framework-method` ✅, `npm run build -w framework-method` ✅.
+
 ## 2026-08-15 (Expand Knowledge Vault from Sách Vàng OCR)
 
 - Extracted and added the remaining sections of the Sách Vàng OCR (`/home/ubuntu/ocr_pages/pdf_full.txt`) to `src/data/knowledgeSeed.ts`, growing the seed from 43 to 135 `KnowledgeEntry` records.

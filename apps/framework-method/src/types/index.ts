@@ -140,6 +140,8 @@ export interface KnowledgeEntry {
   cot_cua_cot_en?: string;
   loi_vi?: string;
   loi_en?: string;
+  group_vi?: string;
+  group_en?: string;
   image_url?: string;
   category: "concept" | "framework" | "example";
   order_index: number;

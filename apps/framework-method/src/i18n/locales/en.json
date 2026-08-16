@@ -220,7 +220,10 @@
     "concept": "Concept",
     "framework": "Framework",
     "example": "Example",
-    "viewFull": "Review data"
+    "viewFull": "Review data",
+    "cotY": "Core idea",
+    "entries": "entries",
+    "ungrouped": "Ungrouped"
   },
   "builder": {
     "title": "Framework Builder",

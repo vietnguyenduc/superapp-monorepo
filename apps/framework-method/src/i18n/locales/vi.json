@@ -220,7 +220,10 @@
     "concept": "Khái niệm",
     "framework": "Khuôn mẫu",
     "example": "Ví dụ",
-    "viewFull": "Xem lại dữ liệu"
+    "viewFull": "Xem lại dữ liệu",
+    "cotY": "Cốt ý",
+    "entries": "mục",
+    "ungrouped": "Chưa phân nhóm"
   },
   "builder": {
     "title": "Thiết kế khuôn",
