@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { toast } from "../../utils/toast";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -81,6 +81,22 @@ const CustomerList: React.FC = () => {
   const { user } = useAuth();
   const companyId = useCompanyId();
   const navigate = useNavigate();
+
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        exportMenuRef.current &&
+        !exportMenuRef.current.contains(event.target as Node)
+      ) {
+        setExportMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const [state, setState] = useState<CustomerListState>(() => {
     let savedColumns: Record<string, boolean> | null = null;
@@ -595,12 +611,12 @@ const CustomerList: React.FC = () => {
         />
 
         {/* Filters and Search */}
-        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur rounded-lg shadow mb-6 sticky top-0 z-20">
-          <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 dark:border-gray-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
+        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur rounded-lg shadow mb-3 sticky top-0 z-20">
+          <div className="px-3 py-2 sm:px-4 sm:py-3 border-b border-gray-200 dark:border-gray-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3">
+            <h3 className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
               Bộ lọc khách hàng
             </h3>
-            <div className="flex flex-wrap items-center gap-2 text-sm" title={formatCurrency(state.totalBalance)}>
+            <div className="flex flex-wrap items-center gap-1 text-xs sm:text-sm" title={formatCurrency(state.totalBalance)}>
               <span className="text-gray-500 dark:text-gray-400">
                 {t("customers.totalDebt", "Tổng công nợ")} ({state.allCustomers.length.toLocaleString("vi-VN")}{" "}{t("customers.customersCount", "khách hàng")}):
               </span>
@@ -609,13 +625,13 @@ const CustomerList: React.FC = () => {
               </span>
             </div>
           </div>
-          <div className="p-3 sm:p-6 space-y-2 sm:space-y-4">
+          <div className="p-3 space-y-2">
             <CustomerSearch
               value={state.searchTerm}
               onChange={handleSearch}
               placeholder={t("customers.searchPlaceholder")}
             />
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-2">
               <div className="flex-1 min-w-0">
                 <CustomerFilters
                   dateRange={state.dateRange}
@@ -624,7 +640,7 @@ const CustomerList: React.FC = () => {
                   onBalanceRangeChange={handleBalanceRangeChange}
                 />
               </div>
-              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:justify-end">
                 <select
                   value={state.pageSize}
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
@@ -644,26 +660,72 @@ const CustomerList: React.FC = () => {
                   variant="secondary"
                   size="sm"
                   onClick={() => setState((prev) => ({ ...prev, showBulkEditModal: true }))}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 whitespace-nowrap"
                 >
                   Chỉnh tên hàng loạt
                 </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleExportExcel}
-                  className="flex-shrink-0"
-                >
-                  Xuất Excel
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => navigate("/customers/opening-balance")}
-                  className="flex-shrink-0"
-                >
-                  {t("customers.exportOpeningBalance", "Xuất tồn đầu kỳ")}
-                </Button>
+                <div className="relative flex-shrink-0" ref={exportMenuRef}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setExportMenuOpen((prev) => !prev)}
+                    className="inline-flex items-center whitespace-nowrap"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-1.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      />
+                    </svg>
+                    Xuất
+                    <svg
+                      className={`ml-1.5 h-3.5 w-3.5 transition-transform ${exportMenuOpen ? "rotate-180" : ""}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </Button>
+                  {exportMenuOpen && (
+                    <div className="absolute right-0 z-50 mt-1 w-56 origin-top-right rounded-md shadow-lg ring-1 ring-black ring-opacity-5 bg-white dark:bg-gray-800 focus:outline-none">
+                      <div className="py-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExportMenuOpen(false);
+                            handleExportExcel();
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
+                          Xuất Excel danh sách
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExportMenuOpen(false);
+                            navigate("/customers/opening-balance");
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
+                          Xuất tồn đầu kỳ
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

@@ -4,6 +4,9 @@
 
 ### Fixed
 
+- **CustomerList export buttons merged and filter area compacted.**
+  - The `Xuất Excel` and `Xuất tồn đầu kỳ` buttons are now combined into a single `Xuất` dropdown to reduce header clutter on mobile.
+  - Filter card padding, spacing, and font sizes reduced so the search/filter/table group is tighter.
 - **Group-by summary totals no longer swap "Tổng phát sinh tăng" / "Tổng phát sinh giảm".**
   - `TransactionTypeContext` now loads `transaction_types` scoped to the current user's `company_id` and `getMathFactor` derives the factor from the canonical semantics (`charge` +1, `payment/refund/deposit` -1, `adjustment` +1) before trusting the stored `math_factor`.
   - `transactionTypeService.buildFactorMap` applies the same canonical default for standard transaction types, so balance recalculation is protected from inverted `math_factor` rows.
