@@ -15,11 +15,11 @@ const ANALYSIS_KEYS = {
 };
 
 const SECTION_ORDER_BY_BLOCK: Record<BlockId, string[]> = {
-  self: ["nguyen_ly", "phap", "dao"],
-  relationship: ["dao", "nguyen_ly", "phap"],
-  work: ["nguyen_ly", "phap", "dao"],
-  finance: ["phap", "nguyen_ly", "dao"],
-  family: ["dao", "nguyen_ly", "phap"],
+  self: ["nguyen_ly", "dao", "phap"],
+  relationship: ["nguyen_ly", "dao", "phap"],
+  work: ["nguyen_ly", "dao", "phap"],
+  finance: ["nguyen_ly", "dao", "phap"],
+  family: ["nguyen_ly", "dao", "phap"],
 };
 
 const ITEM_PRIORITY_BY_BLOCK: Record<BlockId, Record<string, number>> = {
