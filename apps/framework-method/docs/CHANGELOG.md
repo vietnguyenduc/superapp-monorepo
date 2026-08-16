@@ -1,5 +1,9 @@
 # Framework Method — Changelog
 
+## 2026-08-15 (Knowledge button label)
+
+- Simplified the knowledge detail button label in `src/i18n/locales/vi.json` and `src/i18n/locales/en.json` from "Xem đầy đủ trong Dữ liệu Trí tuệ" / "View full in Knowledge Library" to "Xem lại dữ liệu" / "Review data" for clarity.
+
 ## 2026-08-15 (Template seed versioning + richer snippets)
 
 - Added `seed_version` to `Template` and `TemplateSection` types and to `frameworkMethodService.buildDefaultTemplates`/`normalizeTemplates`. Returning users with stale `fm_templates_v3` caches automatically receive corrected built-in Step 2/3/4 sections; custom user-added sections are preserved.
