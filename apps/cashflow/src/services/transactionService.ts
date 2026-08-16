@@ -618,7 +618,7 @@ export class TransactionService extends BaseService {
         const codes = [String(c.customer_code ?? ""), String(c.id ?? "")].map((n) => n.toLowerCase().trim()).filter(Boolean);
         const names = [String(c.full_name ?? ""), String(c.name ?? "")].map((n) => n.toLowerCase().trim()).filter(Boolean);
         if (codePart && codes.includes(codePart)) return true;
-        if (namePart && names.some((n) => n.includes(namePart) || namePart.includes(n))) return true;
+        if (namePart && names.includes(namePart)) return true;
         return false;
       });
       return match
