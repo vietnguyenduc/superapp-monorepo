@@ -30,6 +30,23 @@ generated: true
 - Keep modals within viewport; verify `z-index` against top navigation.
 - Test at 390×844 and 768×1024 viewports.
 
+## Table UX rule
+
+Whenever a page shows a data table, the user must be able to scroll through rows while still seeing:
+1. **The search/filter bar** — compact and reachable (can be a single input or a collapsed chip bar; keep it sticky at the top).
+2. **The table header** — frozen/sticky so columns remain identifiable.
+
+Implementation pattern:
+- Wrap the table in a container with `overflow-auto` and `max-h-[calc(100vh - <offset>)]`.
+- Add `sticky top-0` to every `<th>`; leftmost columns also `sticky left-0` if horizontal scroll is expected.
+- Make the filter/search card `sticky top-0 z-20` with a translucent background (`bg-white/95 dark:bg-gray-800/95 backdrop-blur`) so it floats above content while scrolling.
+- Keep scrolling smooth: avoid nested `overflow` containers that fight each other; use one scrollable table container.
+
+Examples:
+- `CustomerList` filter card is sticky; `CustomerTable` already uses `sticky top-0` headers and `max-h` scroll.
+- `TransactionList` table container uses `overflow-auto max-h-[calc(100vh-260px)]` and all header cells are `sticky top-0` (date + customer columns also `sticky left-0`).
+- `OpeningBalanceTab` import preview table uses `max-h-64 overflow-auto` with `sticky top-0` headers.
+
 ## Accessibility
 
 - Use `<label>` with `htmlFor`.

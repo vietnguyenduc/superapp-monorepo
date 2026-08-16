@@ -268,7 +268,7 @@ const TransactionList: React.FC = () => {
 
   const userMap = useMemo(() => {
     const map = new Map<string, string>();
-    users.forEach((u) => map.set(u.id, u.full_name || u.email || u.id));
+    users.forEach((u) => map.set(u.id, u.full_name || u.email || ""));
     return map;
   }, [users]);
 
@@ -635,9 +635,11 @@ const TransactionList: React.FC = () => {
             case "bank":
               row[col.label] = transaction.bank_account_name || (transaction.bank_account_id ? `#${transaction.bank_account_id}` : "Không có tài khoản");
               break;
-            case "creator":
-              row[col.label] = userMap.get(transaction.created_by || "") || transaction.creator_name || transaction.created_by || "—";
+            case "creator": {
+              const creatorName = userMap.get(transaction.created_by || "") || transaction.creator_name;
+              row[col.label] = creatorName || "—";
               break;
+            }
             case "code":
               row[col.label] = transaction.transaction_code;
               break;
@@ -1189,34 +1191,34 @@ const TransactionList: React.FC = () => {
             <div className="h-4 overflow-x-auto overflow-y-hidden bg-gray-100 dark:bg-gray-800 rounded mb-2" ref={topScrollRef} onScroll={handleTopScroll}>
               <div ref={topInnerRef} className="h-1" />
             </div>
-            <div ref={tableContainerRef} className="overflow-x-auto relative" onScroll={handleTableScroll}>
+            <div ref={tableContainerRef} className="overflow-auto max-h-[calc(100vh-260px)] sm:max-h-[calc(100vh-280px)] relative" onScroll={handleTableScroll}>
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="sticky left-0 z-30 w-32 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">Ngày giao dịch</th>
-                    <th className="sticky left-32 z-20 w-48 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">Khách hàng</th>
+                    <th className="sticky top-0 left-0 z-30 w-32 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">Ngày giao dịch</th>
+                    <th className="sticky top-0 left-32 z-20 w-48 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600">Khách hàng</th>
                     {visibleColumnKeys.includes("type") && (
-                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Loại giao dịch</th>
+                      <th className="sticky top-0 z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Loại giao dịch</th>
                     )}
                     {visibleColumnKeys.includes("amount") && (
-                      <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Số tiền</th>
+                      <th className="sticky top-0 z-10 px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Số tiền</th>
                     )}
                     {visibleColumnKeys.includes("branch") && (
-                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Văn phòng</th>
+                      <th className="sticky top-0 z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Văn phòng</th>
                     )}
                     {visibleColumnKeys.includes("bank") && (
-                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tài khoản</th>
+                      <th className="sticky top-0 z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tài khoản</th>
                     )}
                     {visibleColumnKeys.includes("creator") && (
-                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Người thực hiện</th>
+                      <th className="sticky top-0 z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Người thực hiện</th>
                     )}
                     {visibleColumnKeys.includes("code") && (
-                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mã GD</th>
+                      <th className="sticky top-0 z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mã GD</th>
                     )}
                     {visibleColumnKeys.includes("status") && (
-                      <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trạng thái</th>
+                      <th className="sticky top-0 z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trạng thái</th>
                     )}
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hành động</th>
+                    <th className="sticky top-0 z-10 px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hành động</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
@@ -1272,12 +1274,17 @@ const TransactionList: React.FC = () => {
                       )}
                       {visibleColumnKeys.includes("creator") && (
                         <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-white">
-                          {userMap.get(transaction.created_by || "") || transaction.creator_name || transaction.created_by || "—"}
+                          <span className="inline-block max-w-[140px] truncate" title={userMap.get(transaction.created_by || "") || transaction.creator_name || undefined}>
+                            {userMap.get(transaction.created_by || "") || transaction.creator_name || "—"}
+                          </span>
                         </td>
                       )}
                       {visibleColumnKeys.includes("code") && (
                         <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
-                          <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs">
+                          <span
+                            className="inline-block max-w-[120px] truncate font-mono bg-gray-100 dark:bg-gray-700 px-1 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs"
+                            title={transaction.transaction_code}
+                          >
                             {transaction.transaction_code}
                           </span>
                         </td>
@@ -1503,7 +1510,10 @@ const TransactionList: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-gray-400 dark:text-gray-500">Mã GD:</span>{" "}
-                    <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-[10px]">
+                    <span
+                      className="inline-block max-w-[120px] truncate font-mono bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-[10px]"
+                      title={transaction.transaction_code}
+                    >
                       {transaction.transaction_code}
                     </span>
                   </div>
@@ -1517,7 +1527,9 @@ const TransactionList: React.FC = () => {
                   </div>
                   <div className="col-span-2">
                     <span className="text-gray-400 dark:text-gray-500">Người thực hiện:</span>{" "}
-                    {userMap.get(transaction.created_by || "") || transaction.creator_name || transaction.created_by || "—"}
+                    <span className="inline-block max-w-[180px] truncate align-bottom" title={userMap.get(transaction.created_by || "") || transaction.creator_name || undefined}>
+                      {userMap.get(transaction.created_by || "") || transaction.creator_name || "—"}
+                    </span>
                   </div>
                 </div>
 

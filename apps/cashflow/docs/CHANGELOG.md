@@ -1,5 +1,30 @@
 # Changelog — Cashflow
 
+## 2026-08-23
+
+### Fixed
+
+- **CustomerList filter UI/UX cleanup.** `CustomerFilters` now formats active-filter chips with `formatNumber` instead of `formatCompactCurrency`, removing the confusing `-1 đ -> ∞` style.
+  - Date and balance filters render as two separate removable badges on their own row (`Đang lọc: <date>` and `Dư nợ: ≥ X đ` / `≤ Y đ` / `X đ - Y đ`).
+  - Added a dedicated `Xóa lọc` button that clears all filters.
+  - Balance-range inputs use `min={0}`, `w-24 sm:w-28`, and are grouped on the same row as the date filter and clear button.
+- **TransactionList creator and transaction-code display.** The `Người thực hiện` cell now shows the user's full name/email and falls back to `—` instead of the raw `created_by` UUID; long names truncate with a `title` tooltip. The `Mã GD` cell truncates long codes and shows a `title` tooltip with the full value.
+- **Frozen/sticky table headers for TransactionList.** The desktop transaction table now uses `overflow-auto max-h-[calc(100vh-260px)]` so vertical scrolling stays inside the table container while `thead` cells stay `sticky top-0`. First two columns remain sticky left for horizontal scrolling.
+
+### Added
+
+- **Opening-balance bulk import summary cards** on Settings → Số dư đầu kỳ. When an import file is parsed, the preview step shows five summary cards:
+  - Tổng dư đầu kỳ hiện tại
+  - Số KH hiện tại
+  - Tổng dư đầu kỳ import
+  - Số KH import
+  - Chênh lệch
+- **Global table UX principle:** search/filter bar and table header are always reachable while scrolling. `CustomerList` filter card is now `sticky top-0` with a translucent background, `CustomerTable` already has sticky headers, and `TransactionList` table header is sticky inside its scroll container.
+
+### Docs
+
+- Updated `apps/cashflow/docs/UI-UX.md` with the sticky-header/sticky-search-bar rule and examples for `CustomerList` / `TransactionList`.
+
 ## 2026-08-22 (Cashflow)
 
 ### Fixed

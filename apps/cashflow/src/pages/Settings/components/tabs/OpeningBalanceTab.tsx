@@ -48,6 +48,18 @@ export const OpeningBalanceTab: FC = () => {
     );
   }, [customerBalances, customerBalanceSearch]);
 
+  const openingBalanceSummary = useMemo(() => {
+    const currentTotal = customerBalances.reduce((sum, c) => sum + (c.opening_balance || 0), 0);
+    const importTotal = openingRows.reduce((sum, r) => sum + (r.opening_balance || 0), 0);
+    return {
+      currentTotal,
+      currentCount: customerBalances.length,
+      importTotal,
+      importCount: openingRows.length,
+      diff: importTotal - currentTotal,
+    };
+  }, [customerBalances, openingRows]);
+
   const sortedRows = useMemo(() => {
     const dir = sortOrder === "asc" ? 1 : -1;
     return [...filteredRows].sort((a, b) => {
@@ -303,15 +315,39 @@ export const OpeningBalanceTab: FC = () => {
             )}
 
             {openingRows.length > 0 && (
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 text-sm font-medium text-gray-800 dark:text-gray-100">Xem trước ({openingRows.length} dòng)</div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                  <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Tổng dư đầu kỳ hiện tại</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatNumber(openingBalanceSummary.currentTotal)} đ</p>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Số KH hiện tại</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{openingBalanceSummary.currentCount}</p>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Tổng dư đầu kỳ import</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatNumber(openingBalanceSummary.importTotal)} đ</p>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Số KH import</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{openingBalanceSummary.importCount}</p>
+                  </div>
+                  <div className={`border rounded-lg p-3 ${openingBalanceSummary.diff !== 0 ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700'}`}>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Chênh lệch</p>
+                    <p className={`text-lg font-semibold ${openingBalanceSummary.diff !== 0 ? 'text-blue-700 dark:text-blue-200' : 'text-gray-900 dark:text-white'}`}>{formatNumber(openingBalanceSummary.diff)} đ</p>
+                  </div>
+                </div>
+
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 text-sm font-medium text-gray-800 dark:text-gray-100">Xem trước ({openingRows.length} dòng)</div>
                 <div className="max-h-64 overflow-auto">
                   <table className="min-w-full text-sm">
-                    <thead className="bg-gray-50 dark:bg-gray-800 text-left text-gray-700 dark:text-gray-200">
+                    <thead className="bg-gray-50 dark:bg-gray-800 text-left text-gray-700 dark:text-gray-200 sticky top-0">
                       <tr>
-                        <th className="px-3 py-2">Tên khách hàng</th>
-                        <th className="px-3 py-2">Mã khách hàng</th>
-                        <th className="px-3 py-2">Số dư đầu kỳ</th>
+                        <th className="px-3 py-2 sticky top-0">Tên khách hàng</th>
+                        <th className="px-3 py-2 sticky top-0">Mã khách hàng</th>
+                        <th className="px-3 py-2 sticky top-0">Số dư đầu kỳ</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -326,6 +362,7 @@ export const OpeningBalanceTab: FC = () => {
                   </table>
                 </div>
                 {openingRows.length > 50 && <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">Hiển thị 50 dòng đầu</div>}
+              </div>
               </div>
             )}
 

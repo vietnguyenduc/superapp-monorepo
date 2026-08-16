@@ -595,7 +595,7 @@ const CustomerList: React.FC = () => {
         />
 
         {/* Filters and Search */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
+        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur rounded-lg shadow mb-6 sticky top-0 z-20">
           <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 dark:border-gray-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
             <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
               Bộ lọc khách hàng
@@ -615,13 +615,15 @@ const CustomerList: React.FC = () => {
               onChange={handleSearch}
               placeholder={t("customers.searchPlaceholder")}
             />
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-              <CustomerFilters
-                dateRange={state.dateRange}
-                onDateRangeChange={handleDateRangeChange}
-                balanceRange={state.balanceRange}
-                onBalanceRangeChange={handleBalanceRangeChange}
-              />
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+              <div className="flex-1 min-w-0">
+                <CustomerFilters
+                  dateRange={state.dateRange}
+                  onDateRangeChange={handleDateRangeChange}
+                  balanceRange={state.balanceRange}
+                  onBalanceRangeChange={handleBalanceRangeChange}
+                />
+              </div>
               <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
                 <select
                   value={state.pageSize}
