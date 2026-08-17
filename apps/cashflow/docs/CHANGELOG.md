@@ -1,5 +1,26 @@
 # Changelog — Cashflow
 
+## 2026-08-04
+
+### Changed
+
+- **CustomerList filter and control layout aligned with TransactionList.**
+  - Search bar is now a sticky, full-width bar at the top of the page, matching TransactionList. Wrapped `CustomerSearch` in `flex-1 min-w-0` so the input expands to fill the bar.
+  - Filter card removed the `Bộ lọc khách hàng` header and the standalone total-debt banner; the debt summary is merged into the pagination line.
+  - Page size, column visibility, bulk edit, and export controls are grouped in a single row with consistent `h-10` secondary buttons, mirroring TransactionList controls.
+  - `CustomerFilters` date dropdown now uses plain hover presets and compact custom date inputs, reducing visual clutter. The `Đặt lại` / `Áp dụng` actions use the shared `Button` component (`variant="secondary"` / `variant="primary"`).
+
+### Fixed
+
+- **Production data cleanup for pre-PR-#129 `resolveCustomer` mis-assigned bulk imports.**
+  - Deleted an additional 18 transactions from batch `TXN1786864500632` that were all incorrectly assigned to a single customer.
+  - Recalculated the affected customer's `total_balance` from the remaining transactions.
+  - Verified no remaining bulk-import prefixes have all rows mapped to one customer.
+
+### Docs
+
+- Updated `apps/cashflow/docs/UI-UX.md` and `apps/cashflow/docs/AI-CONTEXT.md` to describe the new `CustomerList` sticky search bar / filter card layout and the shared `Button` convention.
+
 ## 2026-08-25
 
 ### Fixed

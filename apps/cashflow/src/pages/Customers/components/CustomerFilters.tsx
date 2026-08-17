@@ -203,7 +203,7 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
                 </h3>
 
                 {/* Quick Date Options */}
-                <div className="grid grid-cols-2 gap-2 mb-4">
+                <div className="grid grid-cols-1 gap-1 mb-3">
                   {[
                     { k: "today", l: "Hôm nay" },
                     { k: "week", l: "Tuần trước" },
@@ -211,56 +211,50 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
                     { k: "quarter", l: "Quý này" },
                     { k: "year", l: "Năm nay" },
                   ].map((o) => (
-                    <Button
+                    <button
                       key={o.k}
-                      variant="secondary"
-                      size="sm"
+                      type="button"
                       onClick={() => handleQuickDateSelect(o.k as any)}
-                      className="w-full justify-start"
+                      className="text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white transition-colors"
                     >
                       {o.l}
-                    </Button>
+                    </button>
                   ))}
                 </div>
 
                 {/* Custom Date Range */}
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Từ ngày
-                    </label>
+                <div className="space-y-2 border-t border-gray-200 dark:border-gray-700 pt-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-16 text-xs text-gray-500">Từ ngày</span>
                     <input
                       type="date"
                       value={dateRange?.start || ""}
                       onChange={(e) =>
                         handleCustomDateChange("start", e.target.value)
                       }
-                      className="block w-full h-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      className="flex-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 text-sm"
                     />
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Đến ngày
-                    </label>
+                  <div className="flex items-center gap-2">
+                    <span className="w-16 text-xs text-gray-500">Đến ngày</span>
                     <input
                       type="date"
                       value={dateRange?.end || ""}
                       onChange={(e) =>
                         handleCustomDateChange("end", e.target.value)
                       }
-                      className="block w-full h-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      className="flex-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 text-sm"
                     />
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex justify-between items-center mt-4">
-                  <Button variant="secondary" size="md" onClick={handleReset}>
-                    {t("common.reset")}
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button variant="secondary" size="sm" onClick={handleReset}>
+                    {t("common.reset", "Đặt lại")}
                   </Button>
-                  <Button variant="primary" size="md" onClick={handleApply}>
-                    {t("common.apply")}
+                  <Button variant="primary" size="sm" onClick={handleApply}>
+                    {t("common.apply", "Áp dụng")}
                   </Button>
                 </div>
               </div>

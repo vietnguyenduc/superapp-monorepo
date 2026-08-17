@@ -631,122 +631,130 @@ const CustomerList: React.FC = () => {
           }
         />
 
-        {/* Filters and Search */}
-        <div ref={setStickyFilterEl} className="bg-white/95 dark:bg-gray-800/95 backdrop-blur rounded-lg shadow mb-3 sticky top-0 z-20">
-          <div className="px-3 py-2 sm:px-4 sm:py-3 border-b border-gray-200 dark:border-gray-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Bộ lọc khách hàng
-            </h3>
-            <div className="flex flex-wrap items-center gap-1 text-xs sm:text-sm" title={formatCurrency(state.totalBalance)}>
-              <span className="text-gray-500 dark:text-gray-400">
-                {t("customers.totalDebt", "Tổng công nợ")} ({state.allCustomers.length.toLocaleString("vi-VN")}{" "}{t("customers.customersCount", "khách hàng")}):
-              </span>
-              <span className="font-semibold text-gray-900 dark:text-white">
-                {formatCurrency(state.totalBalance)}
-              </span>
-            </div>
-          </div>
-          <div className="p-3 space-y-3">
+        {/* Sticky search bar */}
+        <div
+          ref={setStickyFilterEl}
+          className="sticky top-0 z-30 bg-white/95 dark:bg-gray-800/95 backdrop-blur rounded-lg shadow mb-4 p-3 flex flex-wrap items-center gap-2"
+        >
+          <div className="flex-1 min-w-0">
             <CustomerSearch
               value={state.searchTerm}
               onChange={handleSearch}
               placeholder={t("customers.searchPlaceholder")}
             />
-            <div className="flex flex-col sm:flex-row sm:items-start gap-2">
-              <div className="flex-1 min-w-0">
-                <CustomerFilters
-                  dateRange={state.dateRange}
-                  onDateRangeChange={handleDateRangeChange}
-                  balanceRange={state.balanceRange}
-                  onBalanceRangeChange={handleBalanceRangeChange}
-                />
-              </div>
-              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:justify-end">
-                <select
-                  value={state.pageSize}
-                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                  className="h-10 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 pl-2 pr-7 flex-shrink-0"
-                  aria-label="Số dòng hiển thị"
-                >
-                  {[10, 20, 50, 100].map((size) => (
-                    <option key={size} value={size}>{size} dòng</option>
-                  ))}
-                </select>
-                <ColumnVisibilityDropdown
-                  columns={allColumnOptions}
-                  visibleColumns={state.visibleColumns}
-                  onToggle={handleToggleColumn}
-                />
+          </div>
+        </div>
+
+        {/* Filters and controls */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700 mb-4 space-y-3">
+          <CustomerFilters
+            dateRange={state.dateRange}
+            onDateRangeChange={handleDateRangeChange}
+            balanceRange={state.balanceRange}
+            onBalanceRangeChange={handleBalanceRangeChange}
+          />
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="text-sm text-gray-600 dark:text-gray-300">
+              {t("customers.showingResults", {
+                start: paginationInfo.start,
+                end: paginationInfo.end,
+                total: paginationInfo.total,
+              })}
+              {state.totalBalance !== 0 && (
+                <span className="ml-2 hidden sm:inline">
+                  · {t("customers.totalDebt", "Tổng công nợ")}:{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white" title={formatCurrency(state.totalBalance)}>
+                    {formatCurrency(state.totalBalance)}
+                  </span>
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                className="h-10 text-sm rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-2"
+                value={state.pageSize}
+                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                aria-label="Số dòng hiển thị"
+              >
+                {[10, 20, 50, 100].map((size) => (
+                  <option key={size} value={size}>{size} dòng</option>
+                ))}
+              </select>
+              <ColumnVisibilityDropdown
+                columns={allColumnOptions}
+                visibleColumns={state.visibleColumns}
+                onToggle={handleToggleColumn}
+              />
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => setState((prev) => ({ ...prev, showBulkEditModal: true }))}
+                className="h-10"
+              >
+                Chỉnh tên hàng loạt
+              </Button>
+              <div className="relative" ref={exportMenuRef}>
                 <Button
                   variant="secondary"
                   size="md"
-                  onClick={() => setState((prev) => ({ ...prev, showBulkEditModal: true }))}
-                  className="h-10 flex-shrink-0 whitespace-nowrap"
+                  onClick={() => setExportMenuOpen((prev) => !prev)}
+                  className="h-10 inline-flex items-center"
                 >
-                  Chỉnh tên hàng loạt
-                </Button>
-                <div className="relative flex-shrink-0" ref={exportMenuRef}>
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    onClick={() => setExportMenuOpen((prev) => !prev)}
-                    className="h-10 inline-flex items-center whitespace-nowrap"
+                  <svg
+                    className="w-4 h-4 mr-1.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <svg
-                      className="w-4 h-4 mr-1.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                      />
-                    </svg>
-                    Xuất
-                    <svg
-                      className={`ml-1.5 h-3.5 w-3.5 transition-transform ${exportMenuOpen ? "rotate-180" : ""}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </Button>
-                  {exportMenuOpen && (
-                    <div className="absolute right-0 z-50 mt-1 w-56 origin-top-right rounded-md shadow-lg ring-1 ring-black ring-opacity-5 bg-white dark:bg-gray-800 focus:outline-none">
-                      <div className="py-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setExportMenuOpen(false);
-                            handleExportExcel();
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          Xuất Excel danh sách
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setExportMenuOpen(false);
-                            navigate("/customers/opening-balance");
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          Xuất tồn đầu kỳ
-                        </button>
-                      </div>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                  </svg>
+                  Xuất
+                  <svg
+                    className={`ml-1.5 h-3.5 w-3.5 transition-transform ${exportMenuOpen ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </Button>
+                {exportMenuOpen && (
+                  <div className="absolute right-0 z-50 mt-1 w-56 origin-top-right rounded-md shadow-lg ring-1 ring-black ring-opacity-5 bg-white dark:bg-gray-800 focus:outline-none">
+                    <div className="py-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExportMenuOpen(false);
+                          handleExportExcel();
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        Xuất Excel danh sách
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExportMenuOpen(false);
+                          navigate("/customers/opening-balance");
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        Xuất tồn đầu kỳ
+                      </button>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -754,20 +762,6 @@ const CustomerList: React.FC = () => {
 
         {/* Customer Table */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-          <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 dark:border-gray-600">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
-                {t("customers.customerList")}
-              </h3>
-              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                {t("customers.showingResults", {
-                  start: paginationInfo.start,
-                  end: paginationInfo.end,
-                  total: paginationInfo.total,
-                })}
-              </div>
-            </div>
-          </div>
 
           <CustomerTable
             customers={sortedCustomers}

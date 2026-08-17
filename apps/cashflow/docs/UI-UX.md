@@ -43,7 +43,7 @@ Implementation pattern:
 - Keep scrolling smooth: avoid nested `overflow` containers that fight each other; use one scrollable table container.
 
 Examples:
-- `CustomerList` filter card is sticky; `CustomerTable` already uses `sticky top-0` headers and `max-h` scroll.
+- `CustomerList` has a sticky full-width search bar at the top; the filter card sits below it and the table header stays sticky as the page scrolls. The total-debt summary is merged into the pagination line.
 - `TransactionList` table container uses `overflow-auto max-h-[calc(100vh-260px)]` and all header cells are `sticky top-0` (date + customer columns also `sticky left-0`).
 - `OpeningBalanceTab` import preview table uses `max-h-64 overflow-auto` with `sticky top-0` headers.
 
