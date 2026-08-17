@@ -10,6 +10,13 @@
   - Page size, column visibility, bulk edit, and export controls are grouped in a single row with consistent `h-10` secondary buttons, mirroring TransactionList controls.
   - `CustomerFilters` date dropdown now uses plain hover presets and compact custom date inputs, reducing visual clutter.
 
+### Fixed
+
+- **Production data cleanup for pre-PR-#129 `resolveCustomer` mis-assigned bulk imports.**
+  - Deleted an additional 18 transactions from batch `TXN1786864500632` that were all incorrectly assigned to a single customer.
+  - Recalculated the affected customer's `total_balance` from the remaining transactions.
+  - Verified no remaining bulk-import prefixes have all rows mapped to one customer.
+
 ## 2026-08-25
 
 ### Fixed
