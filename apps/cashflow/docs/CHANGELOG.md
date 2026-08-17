@@ -11,6 +11,14 @@
 - **Bank account list highlights the bank name instead of the (often identical) account holder name.**
   - `BankAccountsTab` card title is now `account.bankName`; the subtitle shows `accountName • accountNumber` so accounts with the same company name remain distinguishable.
 
+### Changed
+
+- **Dashboard cash-flow chart is now a waterfall chart instead of a stacked bar + area line.**
+  - `CashFlowChart` renders each period as a floating bar: an invisible `base` segment positions the bar at the prior running total and a visible `flow` segment shows the net increase/decrease.
+  - Start and end balances are rendered as solid indigo total bars from zero.
+  - The running balance is shown as a stepped `Line` (`type="stepAfter"`) that follows the post-period balance.
+  - Legend updated to `Tăng` / `Giảm` / `Số dư đầu/cuối kỳ` / `Số dư`.
+
 ## 2026-08-24
 
 ### Fixed
