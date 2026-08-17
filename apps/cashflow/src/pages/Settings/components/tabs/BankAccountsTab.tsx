@@ -74,10 +74,10 @@ export const BankAccountsTab: FC = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {account.accountName}
+                      {account.bankName}
                     </h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {account.bankName} • {account.accountNumber}
+                      {account.accountName} • {account.accountNumber}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {account.accountType}

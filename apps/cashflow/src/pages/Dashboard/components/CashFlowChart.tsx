@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  Cell,
 } from "recharts";
 import { formatCurrency } from "../../../utils/formatting";
 import type { TimeRange } from "../Dashboard";
@@ -24,12 +25,16 @@ interface CashFlowData {
 interface ChartDataItem {
   name: string;
   type: "total" | "increase" | "decrease";
+  previousTotal: number;
   runningTotal: number;
+  base: number;
+  flow: number;
   inflow: number;
   outflow: number;
   netFlow: number;
   date: string;
   displayDate?: string;
+  color: string;
 }
 
 interface CashFlowChartProps {
@@ -253,43 +258,67 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
   const totalNetFlow = trimmedAggregatedData.reduce((sum, item) => sum + item.netFlow, 0);
   const effectiveEndBalance = typeof endBalance === "number" ? endBalance : effectiveStartBalance + totalNetFlow;
 
-  // Build chart data: inflow (positive), outflow (negative) and running total
+  // Build waterfall chart data: invisible base + visible flow segment
   const chartItems: ChartDataItem[] = [];
 
-  let runningTotal = effectiveStartBalance;
+  const green = "#10b981";
+  const red = "#f43f5e";
+  const indigo = "#4f46e5";
+
+  // Start balance total
   chartItems.push({
     name: t("dashboard.startBalance"),
     type: "total",
+    previousTotal: 0,
     runningTotal: effectiveStartBalance,
+    base: 0,
+    flow: effectiveStartBalance,
     inflow: 0,
     outflow: 0,
     netFlow: 0,
     date: "Start",
+    color: indigo,
   });
 
+  let runningTotal = effectiveStartBalance;
   trimmedAggregatedData.forEach((item) => {
+    const previousTotal = runningTotal;
     const nextTotal = runningTotal + item.netFlow;
+    const isIncrease = item.netFlow >= 0;
+    const base = Math.min(previousTotal, nextTotal);
+    const flow = Math.abs(item.netFlow);
+
     chartItems.push({
       name: item.displayDate || "",
-      type: item.netFlow >= 0 ? "increase" : "decrease",
+      type: isIncrease ? "increase" : "decrease",
+      previousTotal,
       runningTotal: nextTotal,
+      base,
+      flow,
       inflow: item.inflow,
-      outflow: -item.outflow,
+      outflow: item.outflow,
       netFlow: item.netFlow,
       date: item.date,
       displayDate: item.displayDate,
+      color: isIncrease ? green : red,
     });
+
     runningTotal = nextTotal;
   });
 
+  // End balance total
   chartItems.push({
     name: t("dashboard.endBalance"),
     type: "total",
+    previousTotal: 0,
     runningTotal: effectiveEndBalance,
+    base: 0,
+    flow: effectiveEndBalance,
     inflow: 0,
     outflow: 0,
     netFlow: 0,
     date: "End",
+    color: indigo,
   });
 
   const displayData = chartItems;
@@ -300,7 +329,9 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
   // Custom tooltip component
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload as ChartDataItem;
+      const flowPayload = payload.find((p: any) => p.dataKey === "flow");
+      if (!flowPayload) return null;
+      const data: ChartDataItem = flowPayload.payload;
 
       return (
         <div className="bg-white dark:bg-gray-800 p-3 shadow-md rounded-md border border-gray-200 dark:border-gray-600">
@@ -316,13 +347,21 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 <span className="font-medium">{t("dashboard.outflow")}</span>: {formatCurrency(Math.abs(data.outflow || 0))}
               </p>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              <p className={`text-sm font-medium ${data.netFlow >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
                 {t("dashboard.delta")}: {formatCurrency(data.netFlow || 0)}
               </p>
             </div>
           )}
 
-          {showBalance && (
+          {data.type === "total" && (
+            <div className="mt-2 space-y-1">
+              <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                {t("dashboard.balance")}: {formatCurrency(data.runningTotal)}
+              </p>
+            </div>
+          )}
+
+          {showBalance && data.type !== "total" && (
             <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
               <p className="text-sm font-medium text-gray-900 dark:text-white">
                 {t("dashboard.runningTotal")}: {formatCurrency(data.runningTotal)}
@@ -369,14 +408,21 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
           <div className="legend-item">
             <div className="legend-color bg-emerald-500 dark:bg-emerald-400"></div>
             <span className="text-gray-700 dark:text-gray-100 text-sm">
-              {t("dashboard.inflow")}
+              {t("dashboard.increase")}
             </span>
           </div>
 
           <div className="legend-item">
             <div className="legend-color bg-rose-500 dark:bg-rose-400"></div>
             <span className="text-gray-700 dark:text-gray-100 text-sm">
-              {t("dashboard.outflow")}
+              {t("dashboard.decrease")}
+            </span>
+          </div>
+
+          <div className="legend-item">
+            <div className="legend-color" style={{ background: indigo }}></div>
+            <span className="text-gray-700 dark:text-gray-100 text-sm">
+              {t("dashboard.startBalance")} / {t("dashboard.endBalance")}
             </span>
           </div>
         </div>
@@ -388,7 +434,6 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
           margin={{ top: 20, right: 20, left: 5, bottom: 40 }}
           barGap={0}
           barCategoryGap={barCategoryGap}
-          stackOffset="sign"
         >
           <CartesianGrid strokeDasharray="3 3" stroke={gridLineColor} />
           <XAxis
@@ -413,23 +458,32 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
           <ReferenceLine y={0} stroke={referenceLineColor} strokeDasharray="4 3" />
           <Tooltip content={<CustomTooltip />} />
 
+          {/* Invisible base segment so the visible segment floats at the correct running balance */}
           <Bar
-            dataKey="inflow"
-            name={t("dashboard.inflow")}
+            dataKey="base"
+            name="base"
             stackId="flow"
-            fill="#10b981"
+            fill="transparent"
+            isAnimationActive={false}
             barSize={barSize}
           />
+
+          {/* Visible waterfall segment */}
           <Bar
-            dataKey="outflow"
-            name={t("dashboard.outflow")}
+            dataKey="flow"
+            name={t("dashboard.netFlow")}
             stackId="flow"
-            fill="#f43f5e"
             barSize={barSize}
-          />
+            radius={[2, 2, 2, 2]}
+          >
+            {displayData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
+            ))}
+          </Bar>
+
           {showBalance && (
             <Line
-              type="monotone"
+              type="stepAfter"
               dataKey="runningTotal"
               name={t("dashboard.balance")}
               stroke="#4f46e5"

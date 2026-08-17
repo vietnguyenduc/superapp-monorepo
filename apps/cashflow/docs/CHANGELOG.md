@@ -1,5 +1,24 @@
 # Changelog — Cashflow
 
+## 2026-08-25
+
+### Fixed
+
+- **Transaction creator display and filter now resolve to human-readable names, not raw UUIDs.**
+  - `transactionService.getTransactions` now joins `users!transactions_created_by_fkey(full_name, email)` and falls back to `email` when `full_name` is missing.
+  - `TransactionList` builds a user lookup that includes the signed-in auth user and labels unknown creators as `Người dùng <shortId>` instead of showing the full UUID.
+  - The `Người tạo` column, mobile card, Excel export, and filter dropdown all use the same `resolveCreatorName` helper so the value is consistent everywhere.
+- **Bank account list highlights the bank name instead of the (often identical) account holder name.**
+  - `BankAccountsTab` card title is now `account.bankName`; the subtitle shows `accountName • accountNumber` so accounts with the same company name remain distinguishable.
+
+### Changed
+
+- **Dashboard cash-flow chart is now a waterfall chart instead of a stacked bar + area line.**
+  - `CashFlowChart` renders each period as a floating bar: an invisible `base` segment positions the bar at the prior running total and a visible `flow` segment shows the net increase/decrease.
+  - Start and end balances are rendered as solid indigo total bars from zero.
+  - The running balance is shown as a stepped `Line` (`type="stepAfter"`) that follows the post-period balance.
+  - Legend updated to `Tăng` / `Giảm` / `Số dư đầu/cuối kỳ` / `Số dư`.
+
 ## 2026-08-24
 
 ### Fixed

@@ -98,7 +98,7 @@ const TransactionList: React.FC = () => {
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [bankAccounts, setBankAccounts] = useState<{ id: string; name: string }[]>([]);
   const [customers, setCustomers] = useState<{ id: string; name: string; code?: string }[]>([]);
-  const [users, setUsers] = useState<{ id: string; full_name: string; email?: string; company_id?: string | null }[]>([]);
+  const [users, setUsers] = useState<{ id: string; full_name?: string; email?: string; company_id?: string | null }[]>([]);
   const [showDateMenu, setShowDateMenu] = useState(false);
   const [customStart, setCustomStart] = useState<string>("");
   const [customEnd, setCustomEnd] = useState<string>("");
@@ -267,11 +267,29 @@ const TransactionList: React.FC = () => {
     fetchGroupTransactions();
   }, [fetchGroupTransactions, state.transactions, state.groupBy]);
 
-  const userMap = useMemo(() => {
+  const formatUserLabel = (nameOrEmail: string | null | undefined, userId?: string | null) => {
+    if (nameOrEmail) return nameOrEmail;
+    if (userId) return `Người dùng ${userId.slice(0, 8)}`;
+    return "—";
+  };
+
+  const userMapForLookup = useMemo(() => {
     const map = new Map<string, string>();
-    users.forEach((u) => map.set(u.id, u.full_name || u.email || ""));
+    users.forEach((u) => {
+      const label = formatUserLabel(u.full_name || u.email, u.id);
+      if (label !== "—") map.set(u.id, label);
+    });
+    if (user?.id) {
+      const currentLabel = formatUserLabel(user.full_name || user.email, user.id);
+      if (currentLabel !== "—") map.set(user.id, currentLabel);
+    }
     return map;
-  }, [users]);
+  }, [users, user]);
+
+  const resolveCreatorName = useCallback((createdBy?: string | null, creatorName?: string | null) => {
+    if (!createdBy) return "—";
+    return userMapForLookup.get(createdBy) || creatorName || formatUserLabel(null, createdBy);
+  }, [userMapForLookup]);
 
   const [stickyFilterEl, setStickyFilterEl] = useState<HTMLDivElement | null>(null);
 
@@ -309,14 +327,14 @@ const TransactionList: React.FC = () => {
           const value = record[key];
           if (value != null) return String(value);
         }
-        return String(record.id ?? "");
+        return undefined;
       };
 
       if (branchResult?.data) {
         setBranches(
           branchResult.data.map((branch: Record<string, unknown>) => ({
             id: String(branch.id ?? ""),
-            name: getName(branch, "name", "branch_name", "code"),
+            name: getName(branch, "name", "branch_name", "code") || String(branch.id ?? ""),
           })),
         );
       }
@@ -325,7 +343,7 @@ const TransactionList: React.FC = () => {
         setBankAccounts(
           bankResult.data.map((account: Record<string, unknown>) => ({
             id: String(account.id ?? ""),
-            name: getName(account, "account_name", "bank_name"),
+            name: getName(account, "account_name", "bank_name") || String(account.id ?? ""),
           })),
         );
       }
@@ -334,19 +352,24 @@ const TransactionList: React.FC = () => {
         setCustomers(
           customerResult.data.map((customer: Record<string, unknown>) => ({
             id: String(customer.id ?? ""),
-            name: getName(customer, "full_name", "customer_name", "customer_code"),
+            name: getName(customer, "full_name", "customer_name", "customer_code") || String(customer.id ?? ""),
             code: customer.customer_code == null ? undefined : String(customer.customer_code),
           })),
         );
       }
 
       if (userResult?.data) {
-        const allUsers = userResult.data.map((u: Record<string, unknown>) => ({
-          id: String(u.id ?? ""),
-          full_name: getName(u, "full_name", "email", "name"),
-          email: u.email == null ? undefined : String(u.email),
-          company_id: u.company_id == null ? undefined : String(u.company_id),
-        }));
+        const allUsers = userResult.data.map((u: Record<string, unknown>) => {
+          const fallbackId = String(u.id ?? "");
+          const candidate = getName(u, "full_name", "email", "name");
+          const displayName = candidate && candidate !== fallbackId ? candidate : undefined;
+          return {
+            id: fallbackId,
+            full_name: displayName,
+            email: u.email == null ? undefined : String(u.email),
+            company_id: u.company_id == null ? undefined : String(u.company_id),
+          };
+        });
         setUsers(
           companyId ? allUsers.filter((u) => u.company_id === companyId || !u.company_id) : allUsers,
         );
@@ -609,8 +632,7 @@ const TransactionList: React.FC = () => {
               row[col.label] = transaction.bank_account_name || (transaction.bank_account_id ? `#${transaction.bank_account_id}` : "Không có tài khoản");
               break;
             case "creator": {
-              const creatorName = userMap.get(transaction.created_by || "") || transaction.creator_name;
-              row[col.label] = creatorName || "—";
+              row[col.label] = resolveCreatorName(transaction.created_by, transaction.creator_name);
               break;
             }
             case "code":
@@ -641,7 +663,7 @@ const TransactionList: React.FC = () => {
       logger.error("Export transactions failed:", err);
       toast.error("Xuất Excel thất bại: " + (err instanceof Error ? err.message : "Lỗi không xác định"));
     }
-  }, [debouncedSearchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, companyId, visibleColumns, getTransactionTypeName, customers, userMap, t]);
+  }, [debouncedSearchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, companyId, visibleColumns, getTransactionTypeName, customers, resolveCreatorName, t]);
 
   const hasCustomerFilter = Boolean(state.customerFilter?.id);
 
@@ -654,15 +676,19 @@ const TransactionList: React.FC = () => {
 
   const userOptions = useMemo(() => {
     const uniqueUsers = new Map<string, string>();
-    users.forEach((u) => uniqueUsers.set(u.id, userMap.get(u.id) || u.id));
+    users.forEach((u) => {
+      uniqueUsers.set(u.id, formatUserLabel(u.full_name || u.email, u.id));
+    });
+    if (user?.id) {
+      uniqueUsers.set(user.id, formatUserLabel(user.full_name || user.email, user.id));
+    }
     state.transactions.forEach((t) => {
       if (t.created_by) {
-        const displayName = userMap.get(t.created_by) || t.creator_name || t.created_by;
-        uniqueUsers.set(t.created_by, displayName);
+        uniqueUsers.set(t.created_by, resolveCreatorName(t.created_by, t.creator_name));
       }
     });
     return Array.from(uniqueUsers.entries()).sort(([, a], [, b]) => a.localeCompare(b));
-  }, [state.transactions, users, userMap]);
+  }, [state.transactions, users, user, resolveCreatorName]);
 
   const groupedData = useMemo(() => {
     if (!state.groupBy) return null;
@@ -1244,8 +1270,8 @@ const TransactionList: React.FC = () => {
                         </td>
                       )}
                       {visibleColumnKeys.includes("creator") && (
-                        <td className="px-2 py-2 text-xs text-gray-900 dark:text-white truncate" title={userMap.get(transaction.created_by || "") || transaction.creator_name || undefined}>
-                          {userMap.get(transaction.created_by || "") || transaction.creator_name || "—"}
+                        <td className="px-2 py-2 text-xs text-gray-900 dark:text-white truncate" title={resolveCreatorName(transaction.created_by, transaction.creator_name) || undefined}>
+                          {resolveCreatorName(transaction.created_by, transaction.creator_name)}
                         </td>
                       )}
                       {visibleColumnKeys.includes("code") && (
@@ -1496,8 +1522,8 @@ const TransactionList: React.FC = () => {
                   </div>
                   <div className="col-span-2">
                     <span className="text-gray-400 dark:text-gray-500">Người thực hiện:</span>{" "}
-                    <span className="inline-block max-w-[180px] truncate align-bottom" title={userMap.get(transaction.created_by || "") || transaction.creator_name || undefined}>
-                      {userMap.get(transaction.created_by || "") || transaction.creator_name || "—"}
+                    <span className="inline-block max-w-[180px] truncate align-bottom" title={resolveCreatorName(transaction.created_by, transaction.creator_name) || undefined}>
+                      {resolveCreatorName(transaction.created_by, transaction.creator_name)}
                     </span>
                   </div>
                 </div>
