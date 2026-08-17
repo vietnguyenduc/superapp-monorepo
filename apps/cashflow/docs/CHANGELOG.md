@@ -1,5 +1,15 @@
 # Changelog — Cashflow
 
+## 2026-08-04
+
+### Changed
+
+- **CustomerList filter and control layout aligned with TransactionList.**
+  - Search bar is now a sticky, full-width bar at the top of the page, matching TransactionList.
+  - Filter card removed the `Bộ lọc khách hàng` header and the standalone total-debt banner; the debt summary is merged into the pagination line.
+  - Page size, column visibility, bulk edit, and export controls are grouped in a single row with consistent `h-10` secondary buttons, mirroring TransactionList controls.
+  - `CustomerFilters` date dropdown now uses plain hover presets and compact custom date inputs, reducing visual clutter.
+
 ## 2026-08-25
 
 ### Fixed
