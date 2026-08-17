@@ -250,20 +250,12 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
 
                 {/* Action Buttons */}
                 <div className="flex justify-end gap-2 mt-4">
-                  <button
-                    type="button"
-                    onClick={handleReset}
-                    className="px-3 py-1.5 rounded-md text-sm border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
+                  <Button variant="secondary" size="sm" onClick={handleReset}>
                     {t("common.reset", "Đặt lại")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleApply}
-                    className="px-3 py-1.5 rounded-md text-sm bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                  >
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handleApply}>
                     {t("common.apply", "Áp dụng")}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

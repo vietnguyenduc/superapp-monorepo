@@ -636,11 +636,13 @@ const CustomerList: React.FC = () => {
           ref={setStickyFilterEl}
           className="sticky top-0 z-30 bg-white/95 dark:bg-gray-800/95 backdrop-blur rounded-lg shadow mb-4 p-3 flex flex-wrap items-center gap-2"
         >
-          <CustomerSearch
-            value={state.searchTerm}
-            onChange={handleSearch}
-            placeholder={t("customers.searchPlaceholder")}
-          />
+          <div className="flex-1 min-w-0">
+            <CustomerSearch
+              value={state.searchTerm}
+              onChange={handleSearch}
+              placeholder={t("customers.searchPlaceholder")}
+            />
+          </div>
         </div>
 
         {/* Filters and controls */}
