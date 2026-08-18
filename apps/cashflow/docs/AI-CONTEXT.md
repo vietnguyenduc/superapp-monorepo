@@ -43,7 +43,7 @@ A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management
 - `src/services/trialMockStore.ts` — trial-mode localStorage store.
 - `src/services/supabase.ts` — `apiClient`.
 - `src/utils/formatting.ts` — `formatCurrency`, `formatDate`, `getTransactionMathFactor`.
-- `src/pages/Transactions/TransactionList.tsx` — transaction list with server-side pagination (page-size selector), column-visibility dropdown, frozen `Ngày giao dịch` + `Khách hàng` columns, and group-by `Ngày` / `Tuần` / `Tháng` / `Văn phòng` / `Loại giao dịch` / `Khách hàng`. Group summary uses `getCustomerBalanceDelta` to separate `Tổng phát sinh tăng`, `Tổng phát sinh giảm`, `Tổng điều chỉnh`, and `Net`.
+- `src/pages/Transactions/TransactionList.tsx` — transaction list with server-side pagination (page-size selector), column-visibility dropdown, frozen `Ngày giao dịch` + `Khách hàng` columns, and group-by `Ngày` / `Tuần` / `Tháng` / `Văn phòng` / `Loại giao dịch` / `Khách hàng`. Group summary uses `getCustomerBalanceDelta` to separate `Tổng phát sinh tăng` (excludes `Hoàn tiền`), `Tổng phát sinh giảm`, `Tổng hoàn tiền`, `Tổng điều chỉnh`, and `Net`.
 - `src/contexts/TransactionTypeContext.tsx` — provides transaction type labels, colors, and math factors. Must load `transaction_types` scoped to the active company (via `useCompanyId()`); `getMathFactor` uses the stored `math_factor` from the resolved type row and only falls back to the canonical semantic factor when the row is missing or has no configured factor.
 - `src/pages/Settings/Settings.tsx` — provider shell + `SettingsContent`; per-tab JSX in `pages/Settings/components/tabs/*.tsx`; state in `useSettingsState.ts`; shared context in `SettingsContext.tsx`; `colorOptions`/`getColorClass` in `Settings/utils.ts`.
 - `src/types/index.ts` and `src/types/database.types.ts` — TS types.
@@ -55,7 +55,7 @@ All new code must use `src/services/businessLogic/balanceMath.ts`.
 Production convention: **positive `customers.total_balance` = debt / công nợ; negative = credit / overpayment**. The user-facing formula is:
 
 ```
-Công nợ = Đầu kỳ + Phát sinh tăng - Phát sinh giảm + Điều chỉnh - Đặt cọc
+Công nợ = Đầu kỳ + Phát sinh tăng - Phát sinh giảm + Hoàn tiền + Điều chỉnh - Đặt cọc
 ```
 
 `getCustomerBalanceDelta` returns `amount * math_factor`. `math_factor` comes from the resolved `transaction_types` row (loaded per company) and is the source of truth. The canonical semantic factor is only used as a fallback when the row is missing or has no configured factor, so user overrides in Settings are respected while old inverted seed data is repaired by migration `20260804000006_fix_transaction_type_math_factors.sql`. When no factor is supplied, the canonical defaults are:
@@ -64,17 +64,17 @@ Công nợ = Đầu kỳ + Phát sinh tăng - Phát sinh giảm + Điều chỉn
 |-----------|-------------|----------------------|-----------------|---------|
 | `charge`  | `+1`        | `+amount`            | `0`             | Customer owes more (debt / công nợ, phát sinh tăng). No cash moved. |
 | `payment` | `-1`        | `-amount`            | `+amount`       | Customer pays (phát sinh giảm) → debt decreases, cash increases. |
-| `refund`  | `-1`        | `-amount`            | `-amount`       | Refund to customer (hoàn tiền) → debt decreases, cash decreases. |
+| `refund`  | `+1`        | `+amount`            | `-amount`       | Customer refund received back (hoàn tiền) → debt increases, cash decreases. |
 | `deposit` | `-1`        | `-amount`            | `+amount`       | Customer prepays/deposits (đặt cọc) → debt decreases, cash increases. |
 | `adjustment` | `+1`     | signed amount        | signed amount   | Direct signed correction (`+amount` or `-amount`). |
 
-Transaction amount color = **red** for debt-increasing types (`charge`), **green** for debt-decreasing types (`payment`/`refund`/`deposit`), and **blue/gray** for `adjustment`. Customer running-balance text (`total_balance`) is rendered in neutral colors; do not color-code it red/green. The Supabase migration `20260804000006_fix_transaction_type_math_factors.sql` repairs inverted `math_factor`/`impact_type` rows, updates `customer_factor_for_type` to look up stored factors first (with canonical fallback), and backfills customer balances.
+Transaction amount color = **red** for debt-increasing types (`charge`/`refund`), **green** for debt-decreasing types (`payment`/`deposit`), and **blue/gray** for `adjustment`. Customer running-balance text (`total_balance`) is rendered in neutral colors; do not color-code it red/green. The Supabase migration `20260804000006_fix_transaction_type_math_factors.sql` repairs inverted `math_factor`/`impact_type` rows, updates `customer_factor_for_type` to look up stored factors first (with canonical fallback), and backfills customer balances.
 
 ### Customer balance source of truth
 
 `customers.total_balance` is the source of truth for the customer's current debt, but it is now recomputed from `opening_balance + Σ(amount × math_factor)` on every transaction write. `transactionService._syncTransactionBalance` recalculates the affected customer's balance from the ledger instead of adding an incremental delta, which repairs any prior drift and ensures `charge`/`payment`/`refund`/`deposit`/`adjustment` are all reflected. `CustomerDetailModal` and `CustomerDetail` display `customer.total_balance` directly. When `opening_balance` changes, `updateCustomer`, `updateCustomerOpeningBalance`, and `bulkUpdateOpeningBalances` still adjust `total_balance` by the same delta. The database trigger `trg_update_customer_balance` (`supabase/migrations/20260804000004_balance_recalc_trigger.sql`) mirrors this recalculation in Postgres and backfills all existing balances. The legacy migration `043_recalculate_customer_total_balances.sql` is superseded by `20260804000004_balance_recalc_trigger.sql`.
 
-The **displayed transaction amount** is the raw user-entered value (`parseAmount(amount)`), so `TransactionList`, `CustomerDetail`, `CustomerDetailModal`, and `RecentTransactions` show positive amounts while type-based color (charge = red, payment/refund/deposit = green, adjustment = blue) indicates the transaction direction.
+The **displayed transaction amount** is the raw user-entered value (`parseAmount(amount)`), so `TransactionList`, `CustomerDetail`, `CustomerDetailModal`, and `RecentTransactions` show positive amounts while type-based color (charge/refund = red, payment/deposit = green, adjustment = blue) indicates the transaction direction.
 
 ### Customer detail financial summary (2026-08-22)
 
@@ -84,7 +84,7 @@ The **displayed transaction amount** is the raw user-entered value (`parseAmount
 - **`Tổng số tiền đã trả`** — sum of the **debt-reducing contribution** of every transaction, computed via `getCustomerBalanceDelta`:
   - `delta = amount * math_factor`
   - if `delta < 0` (transaction reduced the customer's debt), add `-delta` to the total.
-  - This naturally includes `payment`, `deposit`, and `refund` (canonical factor `-1`), and only the debt-reducing part of a signed `adjustment` (positive `adjustment` amounts are ignored because they increase debt).
+  - This naturally includes `payment` and `deposit` (canonical factor `-1`), and only the debt-reducing part of a signed `adjustment` (positive `adjustment` amounts are ignored because they increase debt). `refund` is excluded because its canonical factor is `+1` (it increases debt).
   - The amount shown is always positive.
 
 ### Sign-aware amounts (2026-08-05)
@@ -93,11 +93,11 @@ The amount **sign** now reverses the transaction direction instead of being sile
 
 - `charge -1000` → customer balance **-1000** (debt decreases by 1000), bank cash `0`.
 - `payment -1000` → customer balance **+1000** (debt increases by 1000), bank cash **-1000** (cash out).
-- `refund -1000` → customer balance **+1000** (debt increases by 1000), bank cash **+1000** (cash in).
+- `refund -1000` → customer balance **-1000** (debt decreases by 1000), bank cash **+1000** (cash in).
 - `deposit -1000` → customer balance **+1000** (debt increases by 1000), bank cash **-1000** (cash out).
 - `adjustment -1000` / `+1000` → direct signed correction on both customer and bank.
 
-`getCustomerBalanceDelta` and `getBankAccountBalanceDelta` multiply the type's default impact by `Math.sign(amount)`. `validateTransactionData` no longer rejects negative amounts for `payment`/`charge`/`refund`/`deposit`; it only requires a non-zero value. `TransactionList` and `TransactionEditModal` no longer call `Math.abs()` before saving non-adjustment amounts. A negative amount also flips the amount color (e.g. `charge -1000` shows green because it reduces debt).
+`getCustomerBalanceDelta` returns `amount * math_factor`; the stored `math_factor` (or canonical fallback) determines direction. `getBankAccountBalanceDelta` applies the type's fixed cash impact and scales it by `Math.sign(amount)`. `validateTransactionData` no longer rejects negative amounts for `payment`/`charge`/`refund`/`deposit`; it only requires a non-zero value. `TransactionList` and `TransactionEditModal` no longer call `Math.abs()` before saving non-adjustment amounts. A negative amount also flips the amount color (e.g. `charge -1000` shows green because it reduces debt).
 
 ### Balance Formula settings (2026-08-09)
 
