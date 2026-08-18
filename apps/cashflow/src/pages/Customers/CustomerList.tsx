@@ -345,19 +345,21 @@ const CustomerList: React.FC = () => {
       return String(aValue).localeCompare(String(bValue)) * direction;
     });
 
+    const visibleCols = allColumnOptions.filter((col) => state.visibleColumns[col.key]);
+    const headers = visibleCols.map((col) => col.label);
     const exportDate = new Date().toLocaleDateString("vi-VN");
-    const rows = sorted.map((c) => {
-      const row: Record<string, unknown> = {};
-      for (const col of allColumnOptions) {
-        if (!state.visibleColumns[col.key]) continue;
-        const field = columnFieldMap[col.key];
-        const label = col.key === "balance" ? `Công nợ (tính đến ngày ${exportDate})` : col.label;
-        row[label] = field === "total_balance" ? Number(getField(c, field)) || 0 : (getField(c, field) ?? "");
-      }
-      return row;
-    });
+    const note = `Ghi chú: Công nợ được tính đến ngày ${exportDate}`;
 
-    const ws = XLSX.utils.json_to_sheet(rows);
+    const dataRows = sorted.map((c) =>
+      visibleCols.map((col) => {
+        const field = columnFieldMap[col.key];
+        return field === "total_balance" ? Number(getField(c, field)) || 0 : (getField(c, field) ?? "");
+      })
+    );
+
+    const aoa = [[note], headers, ...dataRows];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: Math.max(0, headers.length - 1) } }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Danh sách khách hàng");
     XLSX.writeFile(wb, `danh-sach-khach-hang-${exportDate.replace(/\//g, "-")}.xlsx`);

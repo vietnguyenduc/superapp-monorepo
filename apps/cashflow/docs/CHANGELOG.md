@@ -1,5 +1,24 @@
 # Changelog — Cashflow
 
+## 2026-08-27
+
+### Changed
+
+- **TransactionList group-by separates `Hoàn tiền` from `Tổng phát sinh tăng`.**
+  - `GroupSummary` now has a dedicated `refund` bucket, and `Hoàn tiền` transactions are no longer added to `Tổng phát sinh tăng`.
+  - Desktop and mobile group summary tables display an extra `Tổng hoàn tiền` / `Hoàn tiền` line, so the `Net` row still reconciles with the visible buckets.
+
+### Fixed
+
+- **Customer Excel exports now include a note showing the debt-as-of date.**
+  - `CustomerList` export (`danh-sach-khach-hang-*.xlsx`) prepends a merged header row: `Ghi chú: Công nợ được tính đến ngày {DD/MM/YYYY}`.
+  - `OpeningBalanceExport` (`ton-dau-ky-khach-hang-*.xlsx`) prepends the same style note: `Ghi chú: Công nợ hiện tại được tính đến ngày {DD/MM/YYYY}`.
+  - Both exports use Vietnamese date formatting in the filename and the worksheet.
+
+### Docs
+
+- Updated `apps/cashflow/docs/AI-CONTEXT.md` to reflect the current sign conventions: `refund` has `math_factor = +1` (increases debt), the customer formula includes `+ Hoàn tiền`, group summary lists `Hoàn tiền` separately, and `Tổng số tiền đã trả` excludes `refund`.
+
 ## 2026-08-04
 
 ### Changed

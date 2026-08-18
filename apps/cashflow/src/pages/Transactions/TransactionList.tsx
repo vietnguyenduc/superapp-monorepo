@@ -49,6 +49,7 @@ interface GroupSummary {
   count: number;
   increase: number;
   decrease: number;
+  refund: number;
   deposit: number;
   adjustment: number;
   net: number;
@@ -756,7 +757,7 @@ const TransactionList: React.FC = () => {
       }
 
       if (!acc[key]) {
-        acc[key] = { label, count: 0, increase: 0, decrease: 0, deposit: 0, adjustment: 0, net: 0 };
+        acc[key] = { label, count: 0, increase: 0, decrease: 0, refund: 0, deposit: 0, adjustment: 0, net: 0 };
       }
 
       const mathFactor = getMathFactor(tx.transaction_type);
@@ -768,7 +769,7 @@ const TransactionList: React.FC = () => {
       } else if (canonicalType === "deposit") {
         acc[key].deposit += Math.abs(delta);
       } else if (canonicalType === "refund") {
-        // Refunds affect the net balance but are not grouped under phát sinh tăng/giảm.
+        acc[key].refund += Math.abs(delta);
       } else if (delta > 0) {
         acc[key].increase += Math.abs(delta);
       } else if (delta < 0) {
@@ -1164,6 +1165,7 @@ const TransactionList: React.FC = () => {
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Số giao dịch</th>
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng phát sinh tăng</th>
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng phát sinh giảm</th>
+                        <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng hoàn tiền</th>
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng đặt cọc</th>
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tổng điều chỉnh</th>
                         <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Net</th>
@@ -1176,6 +1178,7 @@ const TransactionList: React.FC = () => {
                             <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm text-gray-700 dark:text-gray-200">{data.count}</td>
                             <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold text-red-600 dark:text-red-400">{formatCurrency(data.increase)}</td>
                             <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold text-green-600 dark:text-green-400">{formatCurrency(data.decrease)}</td>
+                            <td className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${data.refund > 0 ? "text-red-600 dark:text-red-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.refund)}</td>
                             <td className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${data.deposit > 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.deposit)}</td>
                             <td className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${data.adjustment > 0 ? "text-red-600 dark:text-red-400" : data.adjustment < 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.adjustment)}</td>
                             <td className={`px-4 sm:px-6 py-3 whitespace-nowrap text-right text-xs sm:text-sm font-semibold ${data.net > 0 ? "text-red-600 dark:text-red-400" : data.net < 0 ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.net)}</td>
@@ -1419,6 +1422,10 @@ const TransactionList: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-gray-400">Giảm</span>
                       <span className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(data.decrease)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Hoàn tiền</span>
+                      <span className={`font-semibold ${data.refund > 0 ? "text-red-600 dark:text-red-400" : "text-gray-600 dark:text-gray-300"}`}>{formatCurrency(data.refund)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-gray-400">Cọc</span>

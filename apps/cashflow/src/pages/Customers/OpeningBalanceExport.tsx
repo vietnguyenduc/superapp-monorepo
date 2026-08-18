@@ -121,16 +121,15 @@ const OpeningBalanceExport: React.FC = () => {
       return;
     }
     const exportDate = new Date().toLocaleDateString("vi-VN");
-    const exportRows = sortedRows.map((r) => ({
-      "Mã khách hàng": r.customer_code,
-      "Tên khách hàng": r.full_name,
-      "Số dư đầu kỳ": r.opening_balance,
-      [`Công nợ hiện tại (tính đến ngày ${exportDate})`]: r.total_balance,
-    }));
-    const ws = XLSX.utils.json_to_sheet(exportRows);
+    const note = `Ghi chú: Công nợ hiện tại được tính đến ngày ${exportDate}`;
+    const headers = ["Mã khách hàng", "Tên khách hàng", "Số dư đầu kỳ", "Công nợ hiện tại"];
+    const dataRows = sortedRows.map((r) => [r.customer_code, r.full_name, r.opening_balance, r.total_balance]);
+    const aoa = [[note], headers, ...dataRows];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Số dư đầu kỳ");
-    const filename = `ton-dau-ky-khach-hang-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const filename = `ton-dau-ky-khach-hang-${exportDate.replace(/\//g, "-")}.xlsx`;
     XLSX.writeFile(wb, filename);
     toast.success(t("customers.exportSuccess", "Đã xuất {{count}} khách hàng", { count: sortedRows.length }));
   }, [sortedRows, t]);
