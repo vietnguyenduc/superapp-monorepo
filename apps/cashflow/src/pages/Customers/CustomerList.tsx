@@ -345,12 +345,14 @@ const CustomerList: React.FC = () => {
       return String(aValue).localeCompare(String(bValue)) * direction;
     });
 
+    const exportDate = new Date().toLocaleDateString("vi-VN");
     const rows = sorted.map((c) => {
       const row: Record<string, unknown> = {};
       for (const col of allColumnOptions) {
         if (!state.visibleColumns[col.key]) continue;
         const field = columnFieldMap[col.key];
-        row[col.label] = field === "total_balance" ? Number(getField(c, field)) || 0 : (getField(c, field) ?? "");
+        const label = col.key === "balance" ? `Công nợ (tính đến ngày ${exportDate})` : col.label;
+        row[label] = field === "total_balance" ? Number(getField(c, field)) || 0 : (getField(c, field) ?? "");
       }
       return row;
     });
@@ -358,7 +360,7 @@ const CustomerList: React.FC = () => {
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Danh sách khách hàng");
-    XLSX.writeFile(wb, "danh-sach-khach-hang.xlsx");
+    XLSX.writeFile(wb, `danh-sach-khach-hang-${exportDate.replace(/\//g, "-")}.xlsx`);
   }, [state.allCustomers, state.visibleColumns, state.sortBy, state.sortOrder]);
 
   const toNum = (v: unknown) => {

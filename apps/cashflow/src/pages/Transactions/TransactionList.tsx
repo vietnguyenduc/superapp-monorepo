@@ -767,6 +767,8 @@ const TransactionList: React.FC = () => {
         acc[key].adjustment += delta;
       } else if (canonicalType === "deposit") {
         acc[key].deposit += Math.abs(delta);
+      } else if (canonicalType === "refund") {
+        // Refunds affect the net balance but are not grouped under phát sinh tăng/giảm.
       } else if (delta > 0) {
         acc[key].increase += Math.abs(delta);
       } else if (delta < 0) {

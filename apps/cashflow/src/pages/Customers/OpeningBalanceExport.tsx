@@ -120,11 +120,12 @@ const OpeningBalanceExport: React.FC = () => {
       toast.warning(t("customers.noDataToExport", "Không có dữ liệu để xuất"));
       return;
     }
+    const exportDate = new Date().toLocaleDateString("vi-VN");
     const exportRows = sortedRows.map((r) => ({
       "Mã khách hàng": r.customer_code,
       "Tên khách hàng": r.full_name,
       "Số dư đầu kỳ": r.opening_balance,
-      "Công nợ hiện tại": r.total_balance,
+      [`Công nợ hiện tại (tính đến ngày ${exportDate})`]: r.total_balance,
     }));
     const ws = XLSX.utils.json_to_sheet(exportRows);
     const wb = XLSX.utils.book_new();
