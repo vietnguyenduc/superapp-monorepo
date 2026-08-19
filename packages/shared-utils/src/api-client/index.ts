@@ -226,21 +226,54 @@ class QueryBuilder<T = any> {
   /**
    * .or("col1.op.val,col2.op.val") — supabase-js parity.
    * Parses the PostgREST-style OR string into a group of filters joined by OR.
+   * Values may be quoted with double quotes to contain commas; doubled double
+   * quotes ("") inside a quoted value become a single literal double quote.
    * Example: .or("full_name.ilike.%john%,phone.ilike.%john%")
    */
   or(expr: string): QueryBuilder<T> {
-    const parts = expr.split(',').map((s) => s.trim()).filter(Boolean);
+    // Split on commas that are not inside a quoted value.
+    const rawParts: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    let i = 0;
+    while (i < expr.length) {
+      const ch = expr[i];
+      if (ch === '"') {
+        if (inQuotes && expr[i + 1] === '"') {
+          // Doubled quote inside a quoted value = one literal double quote.
+          current += '""';
+          i += 2;
+          continue;
+        }
+        inQuotes = !inQuotes;
+      }
+      if (ch === ',' && !inQuotes) {
+        rawParts.push(current);
+        current = '';
+      } else {
+        current += ch;
+      }
+      i++;
+    }
+    rawParts.push(current);
+
     const filters: Filter[] = [];
-    for (const part of parts) {
-      // Match: column.op.value  (op is one of eq,neq,gt,gte,lt,lte,like,ilike,in,is,cs,cd)
-      const m = part.match(/^([a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_]+\.)(.+)$/);
+    for (const raw of rawParts) {
+      const part = raw.trim();
+      if (!part) continue;
+      // Match: column.op.value
+      const m = part.match(/^([a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_]+\.)(.*)$/);
       if (!m || !m[1]) continue;
       const prefix = m[1];
-      const rest = part.slice(prefix.length);
+      let value = part.slice(prefix.length);
+      // Strip surrounding double quotes and unescape doubled double quotes.
+      if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
+        value = value.slice(1, -1).replace(/""/g, '"');
+      }
       const [column, op] = prefix.slice(0, -1).split('.'); // remove trailing dot
       const validOps: FilterOp[] = ['eq','neq','gt','gte','lt','lte','like','ilike','in','is','cs','cd'];
       if (column === undefined || op === undefined || !validOps.includes(op as FilterOp)) continue;
-      filters.push({ column, op: op as FilterOp, value: rest });
+      filters.push({ column, op: op as FilterOp, value });
     }
     if (filters.length > 0) {
       if (!this.def.orGroups) this.def.orGroups = [];

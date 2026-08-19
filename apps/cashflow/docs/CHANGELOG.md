@@ -1,5 +1,15 @@
 # Changelog — Cashflow
 
+## 2026-08-18
+
+### Fixed
+
+- **Transaction search now returns results for transaction code, customer, description, and reference number.**
+  - `TransactionService.getTransactions` searches `transaction_code`, `description`, `reference_number`, and matches the transaction's customer by `full_name`/`customer_code`.
+  - In the API branch, a customer lookup is performed first and matching `customer_id` values are added to the PostgREST OR filter.
+  - In the trial branch, the local filter also checks `transaction_code`, `customer_name`, `customer.full_name`, and `customer.customer_code`.
+  - The shared `apiClient.or()` parser now supports double-quoted values and commas inside quoted values, so `ilike` patterns containing spaces or special characters parse correctly.
+
 ## 2026-08-27
 
 ### Changed
