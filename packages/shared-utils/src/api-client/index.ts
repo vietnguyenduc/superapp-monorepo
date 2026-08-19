@@ -229,6 +229,8 @@ class QueryBuilder<T = any> {
    * Values may be quoted with double quotes to contain commas; doubled double
    * quotes ("") inside a quoted value become a single literal double quote.
    * Example: .or("full_name.ilike.%john%,phone.ilike.%john%")
+   * For the 'in' operator, the value can be a parenthesized comma list:
+   *   .or("customer_id.in.(id1,id2,id3)")
    */
   or(expr: string): QueryBuilder<T> {
     // Split on commas that are not inside a quoted value.
@@ -265,7 +267,7 @@ class QueryBuilder<T = any> {
       const m = part.match(/^([a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_]+\.)(.*)$/);
       if (!m || !m[1]) continue;
       const prefix = m[1];
-      let value = part.slice(prefix.length);
+      let value: any = part.slice(prefix.length);
       // Strip surrounding double quotes and unescape doubled double quotes.
       if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
         value = value.slice(1, -1).replace(/""/g, '"');
@@ -273,6 +275,26 @@ class QueryBuilder<T = any> {
       const [column, op] = prefix.slice(0, -1).split('.'); // remove trailing dot
       const validOps: FilterOp[] = ['eq','neq','gt','gte','lt','lte','like','ilike','in','is','cs','cd'];
       if (column === undefined || op === undefined || !validOps.includes(op as FilterOp)) continue;
+      // For 'in' operator, parse parenthesized comma-separated list into an array.
+      if (op === 'in') {
+        const listMatch = String(value).match(/^\((.*)\)$/);
+        if (listMatch) {
+          value = listMatch[1]
+            .split(',')
+            .map((v) => v.trim())
+            .filter((v) => v !== '')
+            .map((v) => {
+              if (v.length >= 2 && v.startsWith('"') && v.endsWith('"')) {
+                return v.slice(1, -1).replace(/""/g, '"');
+              }
+              return v;
+            });
+        } else if (String(value) !== '') {
+          value = [value];
+        } else {
+          value = [];
+        }
+      }
       filters.push({ column, op: op as FilterOp, value });
     }
     if (filters.length > 0) {

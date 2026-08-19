@@ -326,16 +326,20 @@ export class TransactionService extends BaseService {
           const customerPattern = `%${safe}%`;
           let customerQuery = apiClient.from("customers").select("id");
           if (companyFilter) customerQuery = customerQuery.eq("company_id", companyFilter);
-          customerQuery = customerQuery
-            .or(`full_name.ilike."${customerPattern}",customer_code.ilike."${customerPattern}"`)
-            .limit(50);
-          const { data: matchedCustomers } = await customerQuery;
+          customerQuery = customerQuery.or(
+            `full_name.ilike."${customerPattern}",customer_code.ilike."${customerPattern}"`
+          );
+          const { data: matchedCustomers, error: customerError } = await customerQuery;
+          if (customerError) {
+            return { data: null, error: customerError, count: null };
+          }
+
           const customerIds = ((matchedCustomers || []) as { id: string }[]).map((c) => c.id).filter(Boolean);
 
           const orParts = [textOrs];
-          customerIds.forEach((id) => {
-            orParts.push(`customer_id.eq.${id}`);
-          });
+          if (customerIds.length > 0) {
+            orParts.push(`customer_id.in.(${customerIds.join(",")})`);
+          }
 
           query = query.or(orParts.join(","));
         }
