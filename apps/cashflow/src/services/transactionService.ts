@@ -316,10 +316,32 @@ export class TransactionService extends BaseService {
 
         const search = typeof filters?.search === "string" ? filters.search.trim() : "";
         if (search) {
-          // Quote the ilike value so PostgREST treats commas/parentheses as literal text.
+          // Escape double quotes for the PostgREST-style OR string so quoted values stay intact.
           const safe = search.replace(/"/g, '""');
           const s = `%${safe}%`;
-          query = query.or(`description.ilike."${s}",reference_number.ilike."${s}"`);
+          const textOrs = `transaction_code.ilike."${s}",description.ilike."${s}",reference_number.ilike."${s}"`;
+
+          // Find customers whose name or code matches the search term so we can also
+          // OR against their transactions.
+          const customerPattern = `%${safe}%`;
+          let customerQuery = apiClient.from("customers").select("id");
+          if (companyFilter) customerQuery = customerQuery.eq("company_id", companyFilter);
+          customerQuery = customerQuery.or(
+            `full_name.ilike."${customerPattern}",customer_code.ilike."${customerPattern}"`
+          );
+          const { data: matchedCustomers, error: customerError } = await customerQuery;
+          if (customerError) {
+            return { data: null, error: customerError, count: null };
+          }
+
+          const customerIds = ((matchedCustomers || []) as { id: string }[]).map((c) => c.id).filter(Boolean);
+
+          const orParts = [textOrs];
+          if (customerIds.length > 0) {
+            orParts.push(`customer_id.in.(${customerIds.join(",")})`);
+          }
+
+          query = query.or(orParts.join(","));
         }
 
         const dateRange = filters?.dateRange as { start?: string; end?: string } | undefined;
@@ -372,12 +394,23 @@ export class TransactionService extends BaseService {
         if (userFilter) transactions = transactions.filter((t) => t.created_by === userFilter);
         if (statusFilter) transactions = transactions.filter((t) => t.status === statusFilter);
 
+        // Build a customer lookup early so search can match by customer name/code.
+        const customers = (trialGet("customers") || []) as Customer[];
+        const cMap = new Map(customers.map((c) => [c.id, c]));
+
         const search = typeof filters?.search === "string" ? filters.search.toLowerCase().trim() : "";
         if (search) {
           transactions = transactions.filter((tx) => {
-            const desc = String(tx.description ?? "").toLowerCase();
-            const ref = String(tx.reference_number ?? "").toLowerCase();
-            return desc.includes(search) || ref.includes(search);
+            const customer = cMap.get(tx.customer_id || "");
+            const values = [
+              tx.transaction_code,
+              tx.description,
+              tx.reference_number,
+              tx.customer_name,
+              customer?.full_name,
+              customer?.customer_code,
+            ].map((v) => String(v ?? "").toLowerCase());
+            return values.some((v) => v.includes(search));
           });
         }
 
@@ -399,12 +432,10 @@ export class TransactionService extends BaseService {
         const from = (page - 1) * pageSize;
         transactions = transactions.slice(from, from + pageSize);
 
-        const customers = (trialGet("customers") || []) as Customer[];
         const bankAccounts = (trialGet("bank_accounts") || []) as BankAccount[];
         const branches = (trialGet("branches") || []) as Branch[];
         const users = (trialGet("users") || []) as User[];
 
-        const cMap = new Map(customers.map((c) => [c.id, c]));
         const bMap = new Map(bankAccounts.map((b) => [b.id, b]));
         const brMap = new Map(branches.map((b) => [b.id, b]));
         const uMap = new Map(users.map((u) => [u.id, u]));
