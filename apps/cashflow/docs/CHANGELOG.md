@@ -26,6 +26,8 @@
 - **`RecentTransactions` card layout simplified.**
   - Refactored to a single, more compact card list matching `TopCustomers` style.
   - Removed the separate desktop/tablet/mobile views and bulky filter toolbar.
+- **Fixed local `QueryBuilder.or()` parser for `in` lists.**
+  - `packages/shared-utils/src/api-client/index.ts` now tracks parenthesis depth while splitting OR expressions, so `customer_id.in.(id1,id2,id3)` is not torn apart on its internal commas when using the local InsForge/PostgREST query backend.
 
 ### Docs
 
