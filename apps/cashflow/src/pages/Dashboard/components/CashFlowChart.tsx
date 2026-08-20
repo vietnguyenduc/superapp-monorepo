@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import {
   ComposedChart,
   Bar,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -321,7 +320,7 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
     color: indigo,
   });
 
-  const displayData = chartItems;
+  const displayData = showBalance ? chartItems : chartItems.filter((item) => item.type !== "total");
   const barSize = Math.max(16, Math.min(40, Math.round(320 / Math.max(displayData.length, 1))));
   const barCategoryGap = 12;
   const xAxisPadding = { left: 12, right: 12 };
@@ -419,12 +418,14 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
             </span>
           </div>
 
-          <div className="legend-item">
-            <div className="legend-color" style={{ background: indigo }}></div>
-            <span className="text-gray-700 dark:text-gray-100 text-sm">
-              {t("dashboard.startBalance")} / {t("dashboard.endBalance")}
-            </span>
-          </div>
+          {showBalance && (
+            <div className="legend-item">
+              <div className="legend-color" style={{ background: indigo }}></div>
+              <span className="text-gray-700 dark:text-gray-100 text-sm">
+                {t("dashboard.startBalance")} / {t("dashboard.endBalance")}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -481,16 +482,7 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ data, timeRange, startBal
             ))}
           </Bar>
 
-          {showBalance && (
-            <Line
-              type="stepAfter"
-              dataKey="runningTotal"
-              name={t("dashboard.balance")}
-              stroke="#4f46e5"
-              strokeWidth={2}
-              dot={{ r: 3 }}
-            />
-          )}
+
         </ComposedChart>
       </ResponsiveContainer>
     </div>

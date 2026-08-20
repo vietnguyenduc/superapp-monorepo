@@ -1,5 +1,36 @@
 # Changelog — Cashflow
 
+## 2026-08-18 (UI/UX follow-up)
+
+### Changed
+
+- **Transaction filter dropdowns and table cleaned up.**
+  - User filter label now renders `Full Name (email)`, falling back to email, then a short ID.
+  - Bank-account filter label now uses `formatBankAccountLabel` with `bank_name - account_number` (with `account_name` fallback).
+  - Transaction table `Mã GD` column displays a short `TXN-<suffix>` generated display code.
+  - Status column width reduced to 6% and other column widths rebalanced.
+  - Filter control panel layout tightened with labels, consistent heights, and responsive wrapping.
+  - Customer search suggestion dropdown removed; `CustomerSearch.tsx` is now a plain input.
+
+### Added
+
+- **Sortable headers for `Ngày`, `Loại giao dịch`, and `Số tiền` columns.**
+  - Clicking a sortable header cycles `asc`/`desc` and shows ▲ / ▼ arrows.
+  - `transactionService.getTransactions` supports `sortBy` and `sortOrder` for `transaction_date`, `transaction_type`, `amount`, and `created_at` in both live and trial modes.
+
+### Fixed
+
+- **Dashboard `CashFlowChart` visual improvements.**
+  - Removed the stepped balance line from the waterfall chart.
+  - Toggling `Số dư` now also hides the start/end total balance bars (filtered from `displayData`).
+- **`RecentTransactions` card layout simplified.**
+  - Refactored to a single, more compact card list matching `TopCustomers` style.
+  - Removed the separate desktop/tablet/mobile views and bulky filter toolbar.
+
+### Docs
+
+- Updated `apps/cashflow/docs/AI-CONTEXT.md` with current dropdown formatting, sort support, and Dashboard chart behavior.
+
 ## 2026-08-18
 
 ### Fixed

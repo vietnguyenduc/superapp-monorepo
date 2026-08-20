@@ -5,6 +5,7 @@ import { validateTransactionData, validateTransactionUpdateData, transformRawTra
 import { updateWithFallback, insertWithFallback, bulkInsertWithFallback } from "./updateHelpers";
 import { transactionTypeService } from "./transactionTypeService";
 import { v4 as uuid } from "uuid";
+import { formatBankAccountLabel } from "../utils/formatting";
 import type { Transaction, Customer, BankAccount, Branch, User } from "../types";
 
 const getNowIso = () => new Date().toISOString();
@@ -292,7 +293,7 @@ export class TransactionService extends BaseService {
           .select(
             `*,
             customers(full_name),
-            bank_accounts(account_name),
+            bank_accounts(account_name, bank_name, account_number),
             branches(name),
             users!transactions_created_by_fkey(full_name, email)`,
             { count: "exact" }
@@ -305,6 +306,11 @@ export class TransactionService extends BaseService {
         const bankAccountFilter = typeof filters?.bank_account_id === "string" ? filters.bank_account_id : undefined;
         const userFilter = typeof filters?.created_by === "string" ? filters.created_by : undefined;
         const statusFilter = typeof filters?.status === "string" ? filters.status : undefined;
+
+        const sortBy = typeof filters?.sortBy === "string" ? filters.sortBy : "transaction_date";
+        const sortOrder = typeof filters?.sortOrder === "string" && ["asc", "desc"].includes(filters.sortOrder) ? filters.sortOrder : "desc";
+        const orderColumns = ["transaction_date", "transaction_type", "amount", "created_at"];
+        const orderBy = orderColumns.includes(sortBy) ? sortBy : "transaction_date";
 
         if (companyFilter) query = query.eq("company_id", companyFilter);
         if (branchFilter) query = query.eq("branch_id", branchFilter);
@@ -350,7 +356,7 @@ export class TransactionService extends BaseService {
                        .lte("transaction_date", new Date(dateRange.end).toISOString());
         }
 
-        query = query.order("transaction_date", { ascending: false });
+        query = query.order(orderBy, { ascending: sortOrder === "asc" });
 
         const hasPage = typeof filters?.page !== "undefined";
         const hasPageSize = typeof filters?.pageSize !== "undefined";
@@ -368,7 +374,11 @@ export class TransactionService extends BaseService {
         const mappedData = data.map((tx) => ({
           ...tx,
           customer_name: tx.customers?.full_name || tx.customer_name,
-          bank_account_name: tx.bank_accounts?.account_name || tx.bank_account_name,
+          bank_account_name: formatBankAccountLabel(
+            tx.bank_accounts?.bank_name,
+            tx.bank_accounts?.account_number,
+            tx.bank_accounts?.account_name,
+          ) || tx.bank_account_name,
           branch_name: tx.branches?.name,
           creator_name: tx.users?.full_name || tx.users?.email || undefined,
         }));
@@ -385,6 +395,9 @@ export class TransactionService extends BaseService {
         const bankAccountFilter = typeof filters?.bank_account_id === "string" ? filters.bank_account_id : undefined;
         const userFilter = typeof filters?.created_by === "string" ? filters.created_by : undefined;
         const statusFilter = typeof filters?.status === "string" ? filters.status : undefined;
+
+        const sortBy = typeof filters?.sortBy === "string" ? filters.sortBy : "transaction_date";
+        const sortOrder = typeof filters?.sortOrder === "string" && ["asc", "desc"].includes(filters.sortOrder) ? filters.sortOrder : "desc";
 
         if (companyFilter) transactions = transactions.filter((t) => t.company_id === companyFilter);
         if (branchFilter) transactions = transactions.filter((t) => t.branch_id === branchFilter);
@@ -424,7 +437,20 @@ export class TransactionService extends BaseService {
           });
         }
 
-        transactions.sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime());
+        transactions.sort((a, b) => {
+          const dir = sortOrder === "asc" ? 1 : -1;
+          switch (sortBy) {
+            case "amount":
+              return (Number(a.amount) - Number(b.amount)) * dir;
+            case "transaction_type":
+              return String(a.transaction_type || "").localeCompare(String(b.transaction_type || "")) * dir;
+            case "created_at":
+              return (new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()) * dir;
+            case "transaction_date":
+            default:
+              return (new Date(a.transaction_date || 0).getTime() - new Date(b.transaction_date || 0).getTime()) * dir;
+          }
+        });
         const totalCount = transactions.length;
 
         const page = typeof filters?.page === "number" ? filters.page : typeof filters?.page === "string" ? Number(filters.page) : 1;
@@ -443,7 +469,11 @@ export class TransactionService extends BaseService {
         const mappedData = transactions.map((tx) => ({
           ...tx,
           customer_name: cMap.get(tx.customer_id || "")?.full_name || tx.customer_name,
-          bank_account_name: bMap.get(tx.bank_account_id || "")?.account_name || tx.bank_account_name,
+          bank_account_name: formatBankAccountLabel(
+            bMap.get(tx.bank_account_id || "")?.bank_name,
+            bMap.get(tx.bank_account_id || "")?.account_number,
+            bMap.get(tx.bank_account_id || "")?.account_name,
+          ) || tx.bank_account_name,
           branch_name: brMap.get(tx.branch_id || "")?.name || tx.branch_name,
           creator_name: uMap.get(tx.created_by || "")?.full_name || uMap.get(tx.created_by || "")?.email || undefined,
         }));

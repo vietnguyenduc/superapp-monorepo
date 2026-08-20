@@ -2,11 +2,16 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import type { Transaction } from "../../../types";
-import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../../utils/formatting";
-import { getCustomerBalanceDelta, getBankAccountBalanceDelta, parseAmount } from "../../../services/businessLogic";
+import {
+  formatCurrency,
+  formatDate,
+  formatBankAccountLabel,
+  formatShortTransactionCode,
+  getTransactionTypeColor,
+  getTransactionTypeAmountColor,
+} from "../../../utils/formatting";
+import { parseAmount } from "../../../services/businessLogic";
 import { useTransactionTypes } from "../../../contexts/TransactionTypeContext";
-import { databaseService } from "../../../services/database";
-import { useCompanyId } from "../../../hooks/useCompanyId";
 
 interface RecentTransactionsProps {
   transactions: Transaction[];
@@ -21,123 +26,17 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const companyId = useCompanyId();
-  const { getNameById: getTransactionTypeName, getMathFactor } = useTransactionTypes();
-  const [balanceAfterMap, setBalanceAfterMap] = React.useState<Record<string, number>>({});
-  const [accountBalanceAfterMap, setAccountBalanceAfterMap] = React.useState<Record<string, number>>({});
-  const [bankAccounts, setBankAccounts] = React.useState<Array<{ id: string; name: string }>>([]);
-  const [selectedAccountId, setSelectedAccountId] = React.useState<string>("");
-  const [selectedBranchId, setSelectedBranchId] = React.useState<string>("");
-  const defaultBranchMap: Record<string, string> = {
-    "1": "Văn phòng chính",
-    "2": "Văn phòng Bắc",
-    "3": "Văn phòng Nam",
-  };
-  const [branchMap, setBranchMap] = React.useState<Record<string, string>>(defaultBranchMap);
+  const { getNameById: getTransactionTypeName } = useTransactionTypes();
 
-  React.useEffect(() => {
-    let isMounted = true;
-    const loadBranches = async () => {
-      const response = await databaseService.branches.getBranches(companyId, "active");
-      if (!response?.data || !isMounted) return;
-      const map = response.data.reduce((acc: Record<string, string>, branch: Record<string, unknown>) => {
-        const rawName = String(branch.name ?? branch.branch_name ?? branch.code ?? branch.id ?? "");
-        const normalizedName = rawName.replace(/Chi nhánh/gi, "Văn phòng");
-        acc[String(branch.id ?? "")] = normalizedName;
-        return acc;
-      }, {} as Record<string, string>);
-      if (Object.keys(map).length > 0) {
-        setBranchMap(map);
-      }
-    };
-    loadBranches();
-    return () => {
-      isMounted = false;
-    };
-  }, [companyId]);
+  if (!transactions || transactions.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500 dark:text-gray-400">{t("dashboard.noTransactions")}</p>
+      </div>
+    );
+  }
 
-  React.useEffect(() => {
-    let isMounted = true;
-    const loadBankAccounts = async () => {
-      const response = await databaseService.bankAccounts.getBankAccounts(companyId, "active");
-      if (!response?.data || !isMounted) return;
-      setBankAccounts(
-        response.data.map((account: Record<string, unknown>) => ({
-          id: String(account.id ?? ""),
-          name: String(account.account_name ?? account.bank_name ?? account.account_number ?? account.id ?? ""),
-        })),
-      );
-    };
-    loadBankAccounts();
-    return () => {
-      isMounted = false;
-    };
-  }, [companyId]);
-
-  React.useEffect(() => {
-    let isMounted = true;
-    const loadBalances = async () => {
-      const [txRes, accountRes] = await Promise.all([
-        databaseService.transactions.getTransactions({
-          page: 1,
-          pageSize: 5000,
-          company_id: companyId,
-          status: "completed",
-        }),
-        databaseService.bankAccounts.getBankAccounts(companyId, "active"),
-      ]);
-      if (!txRes?.data || !isMounted) return;
-
-      const openingByAccount = new Map<string, number>();
-      accountRes?.data?.forEach((acc: Record<string, unknown>) => {
-        const opening = acc?.opening_balance ?? acc?.balance ?? 0;
-        openingByAccount.set(String(acc.id ?? ""), Number(opening) || 0);
-      });
-
-      const all = [...txRes.data].sort(
-        (a, b) => new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime(),
-      );
-      const runningByCustomer = new Map<string, number>();
-      const runningByAccount = new Map<string, number>();
-      const nextMap: Record<string, number> = {};
-      const nextAccountMap: Record<string, number> = {};
-      all.forEach((tx) => {
-        const prev = runningByCustomer.get(tx.customer_id) || 0;
-        const prevAccount =
-          runningByAccount.get(tx.bank_account_id) ||
-          openingByAccount.get(String(tx.bank_account_id)) ||
-          0;
-        // Receivable delta (customer): positive = debt, negative = credit/overpayment
-        const deltaReceivable = getCustomerBalanceDelta(tx.transaction_type, tx.amount, getMathFactor(tx.transaction_type));
-
-        // Cash delta (bank account): use single source of truth
-        const deltaCash = getBankAccountBalanceDelta(tx.transaction_type, tx.amount);
-
-        const next = prev + deltaReceivable;
-        const nextAccount = prevAccount + deltaCash;
-        runningByCustomer.set(tx.customer_id, next);
-        runningByAccount.set(tx.bank_account_id, nextAccount);
-        nextMap[tx.id] = next;
-        nextAccountMap[tx.id] = nextAccount;
-      });
-      setBalanceAfterMap(nextMap);
-      setAccountBalanceAfterMap(nextAccountMap);
-    };
-    loadBalances();
-    return () => {
-      isMounted = false;
-    };
-  }, [companyId, getMathFactor]);
-
-  // Load color settings on mount
-  React.useEffect(() => {
-    fetchColorSettings();
-  }, []);
-
-  // Function to get office name from branch_id
-  const getBranchName = (branchId: string) => {
-    return branchMap[String(branchId)] || defaultBranchMap[String(branchId)] || "Văn phòng không xác định";
-  };
+  const displayTransactions = transactions.slice(0, maxItems);
 
   const getCustomerTransactionsUrl = (transaction: Transaction) => {
     const params = new URLSearchParams();
@@ -150,333 +49,113 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
     return `/transactions?${params.toString()}`;
   };
 
-  if (!transactions || transactions.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-500 dark:text-gray-400">{t("dashboard.noTransactions")}</p>
-      </div>
-    );
-  }
-
-  const filteredTransactions = transactions.filter((transaction) => {
-    if (selectedBranchId && String(transaction.branch_id) !== selectedBranchId) return false;
-    if (selectedAccountId && String(transaction.bank_account_id) !== selectedAccountId) return false;
-    return true;
-  });
-  const displayTransactions = filteredTransactions.slice(0, maxItems);
-
   return (
     <div>
-      {/* Filter Toolbar */}
       {onMaxItemsChange && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Hiển thị:</label>
-                <select
-                  value={maxItems}
-                  onChange={(e) => {
-                    const newValue = Number(e.target.value);
-                    onMaxItemsChange(newValue);
-                  }}
-                  className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-900 dark:text-gray-100 cursor-pointer"
-                >
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={15}>15</option>
-                  <option value={20}>20</option>
-                </select>
-              </div>
-              <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 hidden sm:block"></div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Tài khoản:</label>
-                <select
-                  value={selectedAccountId}
-                  onChange={(e) => setSelectedAccountId(e.target.value)}
-                  className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-900 dark:text-gray-100 cursor-pointer min-w-[150px]"
-                >
-                  <option value="">Tất cả</option>
-                  {bankAccounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Văn phòng:</label>
-                <select
-                  value={selectedBranchId}
-                  onChange={(e) => setSelectedBranchId(e.target.value)}
-                  className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-gray-900 dark:text-gray-100 cursor-pointer min-w-[150px]"
-                >
-                  <option value="">Tất cả</option>
-                  {Object.entries(branchMap).map(([id, name]) => (
-                    <option key={id} value={id}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-medium">{displayTransactions.length}</span>/{filteredTransactions.length}
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            Hiển thị {displayTransactions.length}/{transactions.length}
+          </span>
+          <div className="relative">
+            <select
+              value={maxItems}
+              onChange={(e) => onMaxItemsChange(Number(e.target.value))}
+              className="appearance-none text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 pr-8 text-gray-900 dark:text-gray-100 cursor-pointer"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={20}>20</option>
+            </select>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+              <svg
+                className="w-4 h-4 text-gray-400 dark:text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </div>
           </div>
         </div>
       )}
 
-      {/* Clean Table Layout */}
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {/* Desktop Table - Hidden on mobile */}
-        <div className="hidden lg:block">
-          <div className="space-y-3">
-            {displayTransactions.map((transaction) => (
-              <div
-                key={transaction.id}
-                className="p-4 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-                onClick={() => navigate(getCustomerTransactionsUrl(transaction))}
-              >
-                {/* Top row: Date, Customer, Amount, and Type */}
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex-1 min-w-0 pr-4">
-                    <div className="mb-1">
-                      <span className="block text-lg font-semibold text-gray-900 dark:text-white">
-                        {formatDate(transaction.transaction_date)}
-                      </span>
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/transactions?customer_id=${transaction.customer_id}&customer_name=${encodeURIComponent(transaction.customer_name || '')}`);
-                        }}
-                        className="block text-sm font-medium text-gray-500 dark:text-gray-400 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                      >
-                        {transaction.customer_name ||
-                          t("dashboard.customerId", { id: transaction.customer_id })}
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-1 text-sm">
-                      <div className="flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                        </svg>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {transaction.bank_account_name ||
-                            t("dashboard.accountId", { id: transaction.bank_account_id })}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {transaction.branch_id ? getBranchName(transaction.branch_id) : "Văn phòng không xác định"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex-shrink-0 text-right">
-                    <div
-                      className={`text-lg font-bold ${getTransactionTypeAmountColor(
-                        transaction.transaction_type,
-                        transaction.amount,
-                      )}`}
-                    >
-                      {formatCurrency(parseAmount(transaction.amount))}
-                    </div>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-semibold mt-1 ${getTransactionTypeColor(
-                        transaction.transaction_type,
-                      )}`}
-                    >
-                      {getTransactionTypeName(transaction.transaction_type)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Bottom row: Balances */}
-                <div className="flex flex-wrap justify-end gap-x-8 gap-y-2 text-sm text-gray-500 dark:text-gray-300 pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-2 text-right">
-                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500">
-                      Số dư TK
-                    </span>
-                    <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
-                      {formatCurrency(accountBalanceAfterMap[transaction.id] ?? 0)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-right">
-                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500">
-                      Số dư KH
-                    </span>
-                    <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
-                      {formatCurrency(balanceAfterMap[transaction.id] ?? 0)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Tablet Layout - Hidden on mobile, visible on tablet */}
-        <div className="hidden sm:block lg:hidden">
-          <table className="w-full bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-800">
-              <tr>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-700 dark:text-white uppercase tracking-wider">
-                  {t("dashboard.description")}
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-700 dark:text-white uppercase tracking-wider">
-                  {t("dashboard.customer")}
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-700 dark:text-white uppercase tracking-wider">
-                  {t("dashboard.account")}
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-gray-700 dark:text-white uppercase tracking-wider">
-                  {t("dashboard.date")}
-                </th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-gray-700 dark:text-white uppercase tracking-wider">
-                  {t("dashboard.amount")}
-                </th>
-                <th className="px-3 py-3 text-center text-xs font-medium text-gray-700 dark:text-white uppercase tracking-wider">
-                  {t("dashboard.type")}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-              {displayTransactions.map((transaction) => (
-                <tr
-                  key={transaction.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-                  onClick={() => navigate(getCustomerTransactionsUrl(transaction))}
-                >
-                  <td className="px-3 py-3">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {transaction.description ||
-                        transaction.customer_name ||
-                        t("dashboard.customerId", { id: transaction.customer_id })}
-                    </div>
-                  </td>
-                  <td className="px-3 py-3">
-                    <div className="text-sm text-gray-900 dark:text-white truncate">
-                      {transaction.customer_name ||
-                        t("dashboard.customerId", { id: transaction.customer_id })}
-                    </div>
-                  </td>
-                  <td className="px-3 py-3">
-                    <div className="text-sm text-gray-900 dark:text-white truncate">
-                      {transaction.bank_account_name ||
-                        t("dashboard.accountId", { id: transaction.bank_account_id })}
-                    </div>
-                  </td>
-                  <td className="px-3 py-3">
-                    <div className="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700/60 text-sm font-semibold text-gray-900 dark:text-white">
-                      {formatDate(transaction.transaction_date)}
-                    </div>
-                  </td>
-                  <td className="px-3 py-3 text-right">
-                    <div
-                      className={`text-sm font-bold ${getTransactionTypeAmountColor(
-                        transaction.transaction_type,
-                        transaction.amount,
-                      )}`}
-                    >
-                      {formatCurrency(parseAmount(transaction.amount))}
-                    </div>
-                  </td>
-                  <td className="px-3 py-3 text-center">
-                    <span
-                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTransactionTypeColor(
-                        transaction.transaction_type,
-                      )}`}
-                    >
-                      {getTransactionTypeName(transaction.transaction_type)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile-optimized cards for very small screens */}
-        <div className="sm:hidden bg-white dark:bg-gray-800">
-          {displayTransactions.map((transaction) => (
-            <div
-              key={transaction.id}
-              className="p-3 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors mb-3 last:mb-0 rounded-lg border border-gray-200/60 dark:border-gray-700"
-              onClick={() => navigate(getCustomerTransactionsUrl(transaction))}
-            >
-              {/* Top row: Description and Amount (Priority) */}
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex-1 min-w-0 pr-3">
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+      <div className="space-y-3">
+        {displayTransactions.map((transaction) => (
+          <div
+            key={transaction.id}
+            className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+            onClick={() => navigate(getCustomerTransactionsUrl(transaction))}
+          >
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white truncate">
+                  {transaction.customer_name ||
+                    t("dashboard.customerId", { id: transaction.customer_id })}
+                </p>
+                <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                    {formatShortTransactionCode(transaction.transaction_code || "")}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
                     {formatDate(transaction.transaction_date)}
-                  </div>
-                </div>
-                <div className="flex-shrink-0 text-right">
-                  <div
-                    className={`text-base font-bold ${getTransactionTypeAmountColor(
-                      transaction.transaction_type,
-                      transaction.amount,
-                    )}`}
-                  >
-                    {formatCurrency(parseAmount(transaction.amount))}
-                  </div>
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${getTransactionTypeColor(
-                      transaction.transaction_type,
-                    )}`}
-                  >
-                    {getTransactionTypeName(transaction.transaction_type)}
                   </span>
                 </div>
               </div>
-
-              {/* Customer and Office Info */}
-              <div className="mb-3 space-y-1">
-                <div className="text-xs text-gray-600 dark:text-white flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A7 7 0 0112 14a7 7 0 016.879 3.804M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span className="font-medium">Khách hàng:</span>
-                  <span className="min-w-0 truncate">{transaction.customer_name ||
-                    t("dashboard.customerId", { id: transaction.customer_id })}</span>
-                </div>
-                <div className="text-xs text-gray-600 dark:text-white flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  <span className="font-medium">Văn phòng:</span>
-                  <span className="min-w-0 truncate">{transaction.branch_id ? getBranchName(transaction.branch_id) : "Văn phòng không xác định"}</span>
-                </div>
-              </div>
-
-              {/* Bottom row: Bank account + Outstanding balance */}
-              <div className="flex items-center justify-between text-xs text-gray-600 dark:text-white pt-2 border-t border-gray-100 dark:border-gray-700 gap-3">
-                <div className="flex items-center gap-2 min-w-0">
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                  </svg>
-                  <span className="truncate">{transaction.bank_account_name ||
-                    t("dashboard.accountId", { id: transaction.bank_account_id || "" })}</span>
-                </div>
-                <div className="flex-shrink-0 text-right">
-                  <div className="text-[11px] text-gray-500 dark:text-gray-300">Số dư sau GD</div>
-                  <div className="text-xs font-semibold text-gray-900 dark:text-white">
-                    {formatCurrency(balanceAfterMap[transaction.id] ?? 0)}
-                  </div>
-                </div>
+              <div className="flex-shrink-0 text-right">
+                <p
+                  className={`text-base sm:text-lg font-bold ${getTransactionTypeAmountColor(
+                    transaction.transaction_type,
+                    transaction.amount,
+                  )}`}
+                >
+                  {formatCurrency(parseAmount(transaction.amount))}
+                </p>
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${getTransactionTypeColor(
+                    transaction.transaction_type,
+                  )}`}
+                >
+                  {getTransactionTypeName(transaction.transaction_type)}
+                </span>
               </div>
             </div>
-          ))}
-        </div>
+
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-300">
+              {transaction.bank_account_name || transaction.bank_accounts || transaction.bank_account_id ? (
+                <span className="inline-flex items-center gap-1 truncate">
+                  <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  {transaction.bank_account_name ||
+                    formatBankAccountLabel(
+                      transaction.bank_accounts?.bank_name,
+                      transaction.bank_accounts?.account_number,
+                      transaction.bank_accounts?.account_name,
+                    ) ||
+                    `#${transaction.bank_account_id}`}
+                </span>
+              ) : null}
+              {transaction.branch_name || transaction.branch_id ? (
+                <span className="inline-flex items-center gap-1 truncate">
+                  <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  {transaction.branch_name || transaction.branches?.name || `VP #${transaction.branch_id}`}
+                </span>
+              ) : null}
+            </div>
+          </div>
+        ))}
       </div>
 
       {transactions.length > maxItems && !onMaxItemsChange && (
-        <div className="text-center pt-4">
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+        <div className="text-center pt-3">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Hiển thị {maxItems}/{transactions.length} giao dịch
           </p>
         </div>
