@@ -1,5 +1,16 @@
 # Changelog — Cashflow
 
+<!-- VERIFICATION PENDING (PR #135):
+1. Maximize browser and start recording
+2. Enter trial mode and navigate to Transactions
+3. Verify Transactions filter dropdown labels and layout
+4. Verify short Mã GD and narrow status column
+5. Verify sortable columns for date/type/amount
+6. Verify Dashboard CashFlowChart and Số dư toggle
+7. Verify RecentTransactions card list matches TopCustomers
+8. Verify CustomerSearch has no dropdown
+-->
+
 ## 2026-08-18 (UI/UX follow-up)
 
 ### Changed

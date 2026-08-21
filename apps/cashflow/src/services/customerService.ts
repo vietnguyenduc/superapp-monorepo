@@ -380,6 +380,27 @@ export class CustomerService extends BaseService {
     );
   }
 
+  static async checkDuplicatePhone(phone: string, companyId?: string) {
+    return this.execute(
+      async () => {
+        if (!phone.trim()) return { data: [], error: null };
+        let query = apiClient.from("customers").select("id,full_name,phone,customer_code,email").eq("phone", phone.trim());
+        if (companyId) query = query.eq("company_id", companyId);
+        const { data, error } = await query;
+        if (error) return { data: null, error };
+        return { data: data || [], error: null };
+      },
+      async () => {
+        if (!phone.trim()) return { data: [], error: null };
+        const customers = (trialGet("customers") || []) as Customer[];
+        const matches = customers.filter(
+          (c) => c.phone === phone.trim() && (!companyId || c.company_id === companyId)
+        );
+        return { data: matches, error: null };
+      }
+    );
+  }
+
   static async checkDuplicateCustomers(customers: Record<string, unknown>[], companyId?: string) {
     return this.execute(
       async () => {
@@ -684,6 +705,7 @@ export const customerService = {
   createCustomer: CustomerService.createCustomer.bind(CustomerService),
   bulkCreateCustomers: CustomerService.bulkCreateCustomers.bind(CustomerService),
   checkDuplicateCustomers: CustomerService.checkDuplicateCustomers.bind(CustomerService),
+  checkDuplicatePhone: CustomerService.checkDuplicatePhone.bind(CustomerService),
   updateCustomer: CustomerService.updateCustomer.bind(CustomerService),
   deleteCustomer: CustomerService.deleteCustomer.bind(CustomerService),
   updateCustomerOpeningBalance: CustomerService.updateCustomerOpeningBalance.bind(CustomerService),
