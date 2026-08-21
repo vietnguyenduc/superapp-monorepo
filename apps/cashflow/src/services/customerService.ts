@@ -401,6 +401,28 @@ export class CustomerService extends BaseService {
     );
   }
 
+  static async generateCustomerCode(companyId?: string) {
+    return this.execute(
+      async () => {
+        let query = apiClient.from("customers").select("customer_code");
+        if (companyId) query = query.eq("company_id", companyId);
+        const { data, error } = await query;
+        if (error) return { data: null, error };
+        const count = (data || []).length;
+        const code = `KH${String(count + 1).padStart(4, "0")}`;
+        return { data: code, error: null };
+      },
+      async () => {
+        const customers = (trialGet("customers") || []) as Customer[];
+        const count = companyId
+          ? customers.filter((c) => c.company_id === companyId).length
+          : customers.length;
+        const code = `KH${String(count + 1).padStart(4, "0")}`;
+        return { data: code, error: null };
+      }
+    );
+  }
+
   static async checkDuplicateCustomers(customers: Record<string, unknown>[], companyId?: string) {
     return this.execute(
       async () => {
@@ -706,6 +728,7 @@ export const customerService = {
   bulkCreateCustomers: CustomerService.bulkCreateCustomers.bind(CustomerService),
   checkDuplicateCustomers: CustomerService.checkDuplicateCustomers.bind(CustomerService),
   checkDuplicatePhone: CustomerService.checkDuplicatePhone.bind(CustomerService),
+  generateCustomerCode: CustomerService.generateCustomerCode.bind(CustomerService),
   updateCustomer: CustomerService.updateCustomer.bind(CustomerService),
   deleteCustomer: CustomerService.deleteCustomer.bind(CustomerService),
   updateCustomerOpeningBalance: CustomerService.updateCustomerOpeningBalance.bind(CustomerService),

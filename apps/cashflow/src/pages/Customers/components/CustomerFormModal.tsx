@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { logger } from "../../../utils/logger";
 import { useTranslation } from "react-i18next";
 import { useCompanyId } from "../../../hooks/useCompanyId";
+import { useAuthContext as useAuth } from "@superapp/iam";
 import { databaseService } from "../../../services/database";
 import type { Customer } from "../../../types";
 
@@ -56,6 +57,8 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   const [confirmDuplicate, setConfirmDuplicate] = useState(false);
   const [checkingPhone, setCheckingPhone] = useState(false);
   const companyId = useCompanyId();
+  const { user } = useAuth();
+  const autoCustomerCode = user?.company?.approval_settings?.auto_customer_code !== false;
 
   useEffect(() => {
     if (customer && mode === "edit") {
@@ -72,8 +75,15 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       });
     } else if (mode === "create") {
       setFormData((prev) => ({ ...prev }));
+      if (autoCustomerCode) {
+        databaseService.customers.generateCustomerCode(companyId).then(({ data, error }) => {
+          if (!error && data) {
+            setFormData((prev) => ({ ...prev, customer_code: data as string }));
+          }
+        });
+      }
     }
-  }, [customer, mode]);
+  }, [customer, mode, autoCustomerCode, companyId]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -132,6 +142,10 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     setIsSubmitting(true);
     try {
       const { create_transactions, ...payload } = formData;
+      if (mode === "create" && autoCustomerCode && !payload.customer_code) {
+        const { data: code, error: codeErr } = await databaseService.customers.generateCustomerCode(companyId);
+        if (!codeErr && code) payload.customer_code = code as string;
+      }
       await onSubmit(payload, { createTransactions: create_transactions });
     } catch (error) {
       logger.error("Form submission error:", error);
@@ -225,15 +239,19 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     {t("customers.form.customerCode")}
+                    {mode === "create" && autoCustomerCode && (
+                      <span className="ml-2 text-xs font-normal text-indigo-500 dark:text-indigo-400">(tự động)</span>
+                    )}
                   </label>
                   <input
                     type="text"
                     id="customer_code"
-                    autoFocus={mode === "create"}
+                    autoFocus={mode === "create" && !autoCustomerCode}
                     value={formData.customer_code}
                     onChange={(e) => handleInputChange("customer_code", e.target.value)}
                     className={inputClass(errors.customer_code)}
                     placeholder={t("customers.form.customerCodePlaceholder")}
+                    readOnly={mode === "create" && autoCustomerCode}
                   />
                   <ErrorMessage message={errors.customer_code} />
                 </div>
