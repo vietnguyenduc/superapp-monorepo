@@ -27,7 +27,7 @@ A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management
 
 ## Important files
 
-- `src/services/transactionService.ts` — CRUD + bulk import + **write-time balance sync**. `getTransactions` search covers `transaction_code`, `description`, `reference_number`, and the customer's `full_name`/`customer_code` via `customer_id.in.(...)` (no arbitrary limit).
+- `src/services/transactionService.ts` — CRUD + bulk import + **write-time balance sync**. `getTransactions` search covers `transaction_code`, `description`, `reference_number`, and the customer's `full_name`/`customer_code` via `customer_id.in.(...)` (no arbitrary limit). It also supports `sortBy`/`sortOrder` for `transaction_date`, `transaction_type`, `amount`, and `created_at` in both live and trial modes.
 - `src/services/customerService.ts` — customer CRUD; defaults to `status='active'`; use `status='all'` to include pending/rejected.
 - `src/services/bankAccountService.ts` — bank account CRUD; optional `status` filter.
 - `src/services/branchService.ts` — branch CRUD; optional `status` filter.
@@ -42,8 +42,9 @@ A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management
 - `src/services/updateHelpers.ts` — `updateWithFallback`, `insertWithFallback`, `bulkInsertWithFallback` (strips missing columns resiliently).
 - `src/services/trialMockStore.ts` — trial-mode localStorage store.
 - `src/services/supabase.ts` — `apiClient`.
-- `src/utils/formatting.ts` — `formatCurrency`, `formatDate`, `getTransactionMathFactor`.
-- `src/pages/Transactions/TransactionList.tsx` — transaction list with server-side pagination (page-size selector), column-visibility dropdown, frozen `Ngày giao dịch` + `Khách hàng` columns, and group-by `Ngày` / `Tuần` / `Tháng` / `Văn phòng` / `Loại giao dịch` / `Khách hàng`. Group summary uses `getCustomerBalanceDelta` to separate `Tổng phát sinh tăng` (excludes `Hoàn tiền`), `Tổng phát sinh giảm`, `Tổng hoàn tiền`, `Tổng điều chỉnh`, and `Net`.
+- `packages/shared-utils/src/api-client/index.ts` — local `QueryBuilder.or()` parser used when the InsForge/PostgREST backend is active. It supports double-quoted values (with doubled-quote escaping) and parenthesized `in` lists (e.g., `customer_id.in.(id1,id2,id3)`) by tracking quote state and parenthesis depth.
+- `src/utils/formatting.ts` — `formatCurrency`, `formatDate`, `getTransactionMathFactor`, `formatBankAccountLabel` (`bank - account_number`), `formatUserLabel` (`Full Name (email)`), and `formatShortTransactionCode` (`TXN-<suffix>` display shortener).
+- `src/pages/Transactions/TransactionList.tsx` — transaction list with server-side pagination (page-size selector), column-visibility dropdown, frozen `Ngày giao dịch` + `Khách hàng` columns, sortable `Ngày` / `Loại giao dịch` / `Số tiền` headers with ▲/▼ indicators, and group-by `Ngày` / `Tuần` / `Tháng` / `Văn phòng` / `Loại giao dịch` / `Khách hàng`. Group summary uses `getCustomerBalanceDelta` to separate `Tổng phát sinh tăng` (excludes `Hoàn tiền`), `Tổng phát sinh giảm`, `Tổng hoàn tiền`, `Tổng điều chỉnh`, and `Net`.
 - `src/contexts/TransactionTypeContext.tsx` — provides transaction type labels, colors, and math factors. Must load `transaction_types` scoped to the active company (via `useCompanyId()`); `getMathFactor` uses the stored `math_factor` from the resolved type row and only falls back to the canonical semantic factor when the row is missing or has no configured factor.
 - `src/pages/Settings/Settings.tsx` — provider shell + `SettingsContent`; per-tab JSX in `pages/Settings/components/tabs/*.tsx`; state in `useSettingsState.ts`; shared context in `SettingsContext.tsx`; `colorOptions`/`getColorClass` in `Settings/utils.ts`.
 - `src/types/index.ts` and `src/types/database.types.ts` — TS types.
@@ -252,12 +253,14 @@ Recommended workflow to avoid the quota:
 ## 2026-08-06 hotfix round
 
 1. **Dashboard cross-tenant aggregates** — `dashboardService.ts` `isInScope` now requires an exact `company_id` match when `companyId` is provided. `Dashboard.tsx` also skips `getDashboardMetrics` until `companyId` resolves, and `useCompanyId.ts` falls back to `localStorage.selectedCompanyId` for `admin_master` so the dashboard no longer flashes all-tenant totals.
-2. **Cash-flow chart negative rect (resolved 2026-08-25)** — `CashFlowChart.tsx` now implements a proper waterfall using a transparent `base` segment + visible `flow` segment, where `base = min(previousTotal, runningTotal)` and `flow = abs(netFlow)`. This avoids invalid negative SVG `<rect>` heights because both values remain non-negative while the visible bar floats above or below the prior total as needed. A stepped `Line` shows the running balance after each period.
+2. **Cash-flow chart (resolved 2026-08-18)** — `CashFlowChart.tsx` renders a waterfall with a transparent `base` segment + visible `flow` segment; `base = min(previousTotal, runningTotal)`, `flow = abs(netFlow)`. The stepped balance `Line` was removed for a cleaner look. The `Số dư` toggle filters `type === "total"` items from `displayData`, hiding the start/end balance bars and their legend item.
 3. **Import tab blocked by default date** — `TransactionImport.tsx` `hasTableChanges` compares the row against `emptyRow` instead of an empty string, so the pre-filled default `transaction_date` no longer triggers the `window.confirm` that was silently dismissed by Playwright and blocked switching to `Nhập hàng loạt`.
 
 4. **Auth profile overwrite / role reset** — `@superapp/iam/src/hooks/useAuth.ts` used `.upsert({ role: "staff" })` on `SIGNED_IN` and `signUp`, which silently overwrote `public.users.role` (and cleared `company_id`) every time an existing user signed in. This caused `admin_master` accounts to become `staff` after login. Changed to `.insert(...)` with `23505` unique-violation ignored.
 
 5. **Admin default company selection** — `CompanyBadge.tsx` and `useCompanyId.ts` now prefer `user.company_id` for `admin_master`/`admin` before `localStorage.selectedCompanyId` and before `companies[0]`. This stops `Dashboard.tsx` from staying in `LoadingFallback` or defaulting to the wrong tenant when no company has been explicitly selected.
+
+6. **Dashboard `RecentTransactions` layout (2026-08-18)** — `RecentTransactions.tsx` was simplified to a single compact card list mirroring `TopCustomers`. Each card shows customer name, short `TXN-<suffix>` code, date, amount with type color, type badge, bank account label, and branch. A `maxItems` selector sits in the top-right.
 
 ### Still to do for production-grade
 - `Settings.tsx` is 3000+ lines with ~50 `useState` hooks and inline modal JSX; split into tab/page components.

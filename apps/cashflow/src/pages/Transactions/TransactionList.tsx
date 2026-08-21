@@ -8,7 +8,7 @@ import { databaseService } from "../../services/database";
 import type { Transaction, TransactionStatus } from "../../types";
 import { useAuthContext as useAuth } from "@superapp/iam";
 import { canApproveTransactions } from "../../utils/permissions";
-import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../utils/formatting";
+import { formatCurrency, formatDate, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor, formatBankAccountLabel, formatUserLabel, formatShortTransactionCode } from "../../utils/formatting";
 import { logger } from "../../utils/logger";
 import { getCustomerBalanceDelta, parseAmount, normalizeTransactionType } from "../../services/businessLogic";
 import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
@@ -42,6 +42,8 @@ interface TransactionListState {
   statusFilter: "all" | TransactionStatus;
   groupBy: "" | "day" | "week" | "month" | "quarter" | "year" | "branch" | "transaction_type" | "customer";
   groupTransactions: Transaction[];
+  sortBy: "transaction_date" | "transaction_type" | "amount";
+  sortOrder: "asc" | "desc";
 }
 
 interface GroupSummary {
@@ -54,6 +56,19 @@ interface GroupSummary {
   adjustment: number;
   net: number;
 }
+
+const COLUMN_OPTIONS = [
+  { key: "date", label: "Ngày giao dịch", always: true },
+  { key: "customer", label: "Khách hàng", always: true },
+  { key: "type", label: "Loại giao dịch" },
+  { key: "amount", label: "Số tiền" },
+  { key: "branch", label: "Văn phòng" },
+  { key: "bank", label: "Tài khoản" },
+  { key: "creator", label: "Người thực hiện" },
+  { key: "code", label: "Mã GD" },
+  { key: "status", label: "Trạng thái" },
+  { key: "actions", label: "Hành động", always: true },
+];
 
 function getISOWeek(date: Date): number {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -120,6 +135,8 @@ const TransactionList: React.FC = () => {
     statusFilter: "all",
     groupBy: "",
     groupTransactions: [],
+    sortBy: "transaction_date",
+    sortOrder: "desc",
   });
 
   // Debounce search term so API isn't called on every keystroke (300ms delay)
@@ -127,18 +144,7 @@ const TransactionList: React.FC = () => {
 
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
 
-  const COLUMN_OPTIONS = [
-    { key: "date", label: "Ngày giao dịch", always: true },
-    { key: "customer", label: "Khách hàng", always: true },
-    { key: "type", label: "Loại giao dịch" },
-    { key: "amount", label: "Số tiền" },
-    { key: "branch", label: "Văn phòng" },
-    { key: "bank", label: "Tài khoản" },
-    { key: "creator", label: "Người thực hiện" },
-    { key: "code", label: "Mã GD" },
-    { key: "status", label: "Trạng thái" },
-    { key: "actions", label: "Hành động", always: true },
-  ];
+
 
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() =>
     COLUMN_OPTIONS.reduce((acc, col) => {
@@ -199,6 +205,8 @@ const TransactionList: React.FC = () => {
         company_id: companyId,
         page: state.currentPage,
         pageSize: state.pageSize,
+        sortBy: state.sortBy,
+        sortOrder: state.sortOrder,
       };
 
       const response = await databaseService.transactions.getTransactions(filters);
@@ -222,7 +230,7 @@ const TransactionList: React.FC = () => {
         loading: false,
       }));
     }
-  }, [debouncedSearchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, state.currentPage, state.pageSize, companyId]);
+  }, [debouncedSearchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, state.currentPage, state.pageSize, state.sortBy, state.sortOrder, companyId]);
 
   const fetchGroupTransactions = useCallback(async () => {
     if (!state.groupBy) return;
@@ -240,6 +248,8 @@ const TransactionList: React.FC = () => {
         company_id: companyId,
         page: 1,
         pageSize: 1000,
+        sortBy: state.sortBy,
+        sortOrder: state.sortOrder,
       };
 
       const response = await databaseService.transactions.getTransactions(filters);
@@ -252,14 +262,14 @@ const TransactionList: React.FC = () => {
         ...prev,
         groupTransactions: response.data || [],
       }));
-    } catch (err) {
+    } catch {
       // Group summary is best-effort; don't block the main list on errors.
       setState((prev) => ({
         ...prev,
         groupTransactions: [],
       }));
     }
-  }, [debouncedSearchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, state.groupBy, companyId]);
+  }, [debouncedSearchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, state.groupBy, state.sortBy, state.sortOrder, companyId]);
 
   // Refetch unpaginated transactions for the group summary whenever the
   // visible transaction list changes (filters, pagination, mutations) or the
@@ -268,28 +278,22 @@ const TransactionList: React.FC = () => {
     fetchGroupTransactions();
   }, [fetchGroupTransactions, state.transactions, state.groupBy]);
 
-  const formatUserLabel = (nameOrEmail: string | null | undefined, userId?: string | null) => {
-    if (nameOrEmail) return nameOrEmail;
-    if (userId) return `Người dùng ${userId.slice(0, 8)}`;
-    return "—";
-  };
-
   const userMapForLookup = useMemo(() => {
     const map = new Map<string, string>();
     users.forEach((u) => {
-      const label = formatUserLabel(u.full_name || u.email, u.id);
+      const label = formatUserLabel(u.full_name, u.email, u.id);
       if (label !== "—") map.set(u.id, label);
     });
     if (user?.id) {
-      const currentLabel = formatUserLabel(user.full_name || user.email, user.id);
+      const currentLabel = formatUserLabel(user.full_name, user.email, user.id);
       if (currentLabel !== "—") map.set(user.id, currentLabel);
     }
     return map;
   }, [users, user]);
 
-  const resolveCreatorName = useCallback((createdBy?: string | null, creatorName?: string | null) => {
+  const resolveCreatorName = useCallback((createdBy?: string | null, creatorName?: string | null, creatorEmail?: string | null) => {
     if (!createdBy) return "—";
-    return userMapForLookup.get(createdBy) || creatorName || formatUserLabel(null, createdBy);
+    return userMapForLookup.get(createdBy) || formatUserLabel(creatorName, creatorEmail, createdBy);
   }, [userMapForLookup]);
 
   const [stickyFilterEl, setStickyFilterEl] = useState<HTMLDivElement | null>(null);
@@ -344,7 +348,11 @@ const TransactionList: React.FC = () => {
         setBankAccounts(
           bankResult.data.map((account: Record<string, unknown>) => ({
             id: String(account.id ?? ""),
-            name: getName(account, "account_name", "bank_name") || String(account.id ?? ""),
+            name: formatBankAccountLabel(
+              account.bank_name == null ? undefined : String(account.bank_name),
+              account.account_number == null ? undefined : String(account.account_number),
+              account.account_name == null ? undefined : String(account.account_name),
+            ) || String(account.id ?? ""),
           })),
         );
       }
@@ -362,12 +370,12 @@ const TransactionList: React.FC = () => {
       if (userResult?.data) {
         const allUsers = userResult.data.map((u: Record<string, unknown>) => {
           const fallbackId = String(u.id ?? "");
-          const candidate = getName(u, "full_name", "email", "name");
-          const displayName = candidate && candidate !== fallbackId ? candidate : undefined;
+          const fullName = u.full_name == null ? undefined : String(u.full_name).trim();
+          const email = u.email == null ? undefined : String(u.email).trim();
           return {
             id: fallbackId,
-            full_name: displayName,
-            email: u.email == null ? undefined : String(u.email),
+            full_name: fullName || undefined,
+            email: email || undefined,
             company_id: u.company_id == null ? undefined : String(u.company_id),
           };
         });
@@ -486,6 +494,24 @@ const TransactionList: React.FC = () => {
     setState((prev) => ({ ...prev, groupBy }));
   };
 
+  const handleSort = useCallback((column: TransactionListState["sortBy"]) => {
+    setState((prev) => ({
+      ...prev,
+      sortBy: column,
+      sortOrder: prev.sortBy === column && prev.sortOrder === "asc" ? "desc" : "asc",
+      currentPage: 1,
+    }));
+  }, []);
+
+  const SortIcon = ({ column }: { column: TransactionListState["sortBy"] }) => {
+    if (state.sortBy !== column) {
+      return <span className="ml-1 inline-flex flex-col text-[8px] leading-none text-gray-300 dark:text-gray-600">▲▼</span>;
+    }
+    return state.sortOrder === "asc"
+      ? <span className="ml-1 inline-flex text-[10px] leading-none text-blue-600">▲</span>
+      : <span className="ml-1 inline-flex text-[10px] leading-none text-blue-600">▼</span>;
+  };
+
   const handleDelete = useCallback(
     async (transactionId: string) => {
       if (!confirm("Bạn có chắc muốn xóa giao dịch này?")) return;
@@ -496,7 +522,7 @@ const TransactionList: React.FC = () => {
         } else {
           fetchTransactions();
         }
-      } catch (e) {
+      } catch {
         toast.error("Xóa giao dịch thất bại");
       }
     },
@@ -544,23 +570,23 @@ const TransactionList: React.FC = () => {
         closeEditModal();
         fetchTransactions();
       }
-    } catch (e) {
+    } catch {
       toast.error("Cập nhật giao dịch thất bại");
     }
   }, [closeEditModal, editingTx, fetchTransactions]);
 
-  const getBranchName = (branchId: string): string => {
+  const getBranchName = useCallback((branchId: string): string => {
     const match = branches.find((branch) => branch.id === String(branchId));
     return match?.name || "N/A";
-  };
+  }, [branches]);
 
-  const getCustomerCode = (customerId?: string | null) => {
+  const getCustomerCode = useCallback((customerId?: string | null) => {
     if (!customerId) return "";
     const match = customers.find((c) => c.id === String(customerId));
     return match?.code || "";
-  };
+  }, [customers]);
 
-  const getCustomerName = (transaction: Transaction) => {
+  const getCustomerName = useCallback((transaction: Transaction) => {
     return (
       transaction.customer_name ||
       (transaction.customer_id
@@ -568,9 +594,9 @@ const TransactionList: React.FC = () => {
         : null) ||
       t("transactions.noCustomer")
     );
-  };
+  }, [customers, t]);
 
-  const getStatusLabel = (status?: string) => {
+  const getStatusLabel = useCallback((status?: string) => {
     switch (status) {
       case "draft":
         return "Nháp";
@@ -583,7 +609,7 @@ const TransactionList: React.FC = () => {
       default:
         return status || "—";
     }
-  };
+  }, []);
 
   const handleExportExcel = useCallback(async () => {
     try {
@@ -599,6 +625,8 @@ const TransactionList: React.FC = () => {
         company_id: companyId,
         page: 1,
         pageSize: 1000,
+        sortBy: state.sortBy,
+        sortOrder: state.sortOrder,
       };
 
       const response = await databaseService.transactions.getTransactions(filters);
@@ -664,7 +692,7 @@ const TransactionList: React.FC = () => {
       logger.error("Export transactions failed:", err);
       toast.error("Xuất Excel thất bại: " + (err instanceof Error ? err.message : "Lỗi không xác định"));
     }
-  }, [debouncedSearchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, companyId, visibleColumns, getTransactionTypeName, customers, resolveCreatorName, t]);
+  }, [debouncedSearchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, state.sortBy, state.sortOrder, companyId, visibleColumns, getCustomerCode, getCustomerName, getStatusLabel, getTransactionTypeName, resolveCreatorName]);
 
   const hasCustomerFilter = Boolean(state.customerFilter?.id);
 
@@ -678,14 +706,14 @@ const TransactionList: React.FC = () => {
   const userOptions = useMemo(() => {
     const uniqueUsers = new Map<string, string>();
     users.forEach((u) => {
-      uniqueUsers.set(u.id, formatUserLabel(u.full_name || u.email, u.id));
+      uniqueUsers.set(u.id, formatUserLabel(u.full_name, u.email, u.id));
     });
     if (user?.id) {
-      uniqueUsers.set(user.id, formatUserLabel(user.full_name || user.email, user.id));
+      uniqueUsers.set(user.id, formatUserLabel(user.full_name, user.email, user.id));
     }
     state.transactions.forEach((t) => {
       if (t.created_by) {
-        uniqueUsers.set(t.created_by, resolveCreatorName(t.created_by, t.creator_name));
+        uniqueUsers.set(t.created_by, resolveCreatorName(t.created_by, t.creator_name, t.users?.email));
       }
     });
     return Array.from(uniqueUsers.entries()).sort(([, a], [, b]) => a.localeCompare(b));
@@ -914,13 +942,14 @@ const TransactionList: React.FC = () => {
             })}
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700 mb-4 space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="relative">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700 mb-4 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="relative space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Thời gian</label>
                 <button
                   type="button"
                   onClick={() => setShowDateMenu((v) => !v)}
-                  className={`w-full inline-flex items-center justify-between rounded-md border ${showDateMenu ? "border-blue-500 ring-2 ring-blue-100" : "border-gray-300 dark:border-gray-700"} bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-white`}
+                  className={`w-full h-10 inline-flex items-center justify-between rounded-md border ${showDateMenu ? "border-blue-500 ring-2 ring-blue-100" : "border-gray-300 dark:border-gray-700"} bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-white`}
                 >
                   <span className="inline-flex items-center gap-2">
                     <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -988,44 +1017,52 @@ const TransactionList: React.FC = () => {
                 )}
               </div>
 
-              <select
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-                value={state.branchFilter || ""}
-                onChange={(e) => handleBranchChange(e.target.value)}
-              >
-                <option value="">Tất cả văn phòng</option>
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Văn phòng</label>
+                <select
+                  className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+                  value={state.branchFilter || ""}
+                  onChange={(e) => handleBranchChange(e.target.value)}
+                >
+                  <option value="">Tất cả văn phòng</option>
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
 
-              <select
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-                value={state.bankAccountFilter || ""}
-                onChange={(e) => handleBankChange(e.target.value)}
-              >
-                <option value="">Tất cả tài khoản</option>
-                {bankAccounts.map((b) => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Tài khoản ngân hàng</label>
+                <select
+                  className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+                  value={state.bankAccountFilter || ""}
+                  onChange={(e) => handleBankChange(e.target.value)}
+                >
+                  <option value="">Tất cả tài khoản</option>
+                  {bankAccounts.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
 
-              <select
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
-                value={state.userFilter || ""}
-                onChange={(e) => handleUserChange(e.target.value)}
-              >
-                <option value="">Tất cả người thực hiện</option>
-                {userOptions.map(([userId, displayName]) => (
-                  <option key={userId} value={userId}>{displayName}</option>
-                ))}
-              </select>
-
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Người thực hiện</label>
+                <select
+                  className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm"
+                  value={state.userFilter || ""}
+                  onChange={(e) => handleUserChange(e.target.value)}
+                >
+                  <option value="">Tất cả người thực hiện</option>
+                  {userOptions.map(([userId, displayName]) => (
+                    <option key={userId} value={userId}>{displayName}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-gray-100 dark:border-gray-700">
               <div className="text-sm text-gray-600 dark:text-gray-300">
-                Hiển thị {paginationInfo.start} - {paginationInfo.end} / {paginationInfo.total} giao dịch
+                Hiển thị <span className="font-medium">{paginationInfo.start} - {paginationInfo.end}</span> / <span className="font-medium">{paginationInfo.total}</span> giao dịch
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <select
@@ -1044,7 +1081,7 @@ const TransactionList: React.FC = () => {
                   <option value="customer">Khách hàng</option>
                 </select>
                 <div className="flex items-center gap-2">
-                  <label className="text-sm text-gray-600 dark:text-gray-300">Số dòng/trang:</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Số dòng/trang</label>
                   <select
                     className="h-10 text-sm rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-2"
                     value={state.pageSize}
@@ -1194,30 +1231,42 @@ const TransactionList: React.FC = () => {
               <table className="w-full table-fixed divide-y divide-gray-200 dark:divide-gray-600">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "12%" }}>Ngày</th>
-                    <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "22%" }}>Khách hàng</th>
+                    <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "10%" }}>
+                      <button type="button" onClick={() => handleSort("transaction_date")} className="inline-flex items-center bg-transparent p-0 border-none cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none">
+                        Ngày <SortIcon column="transaction_date" />
+                      </button>
+                    </th>
+                    <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "20%" }}>Khách hàng</th>
                     {visibleColumnKeys.includes("type") && (
-                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "14%" }}>Loại</th>
+                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "12%" }}>
+                        <button type="button" onClick={() => handleSort("transaction_type")} className="inline-flex items-center bg-transparent p-0 border-none cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none">
+                          Loại <SortIcon column="transaction_type" />
+                        </button>
+                      </th>
                     )}
                     {visibleColumnKeys.includes("amount") && (
-                      <th className="sticky z-10 px-2 py-2 text-right text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "12%" }}>Số tiền</th>
+                      <th className="sticky z-10 px-2 py-2 text-right text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "12%" }}>
+                        <button type="button" onClick={() => handleSort("amount")} className="inline-flex items-center justify-end w-full bg-transparent p-0 border-none cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none">
+                          Số tiền <SortIcon column="amount" />
+                        </button>
+                      </th>
                     )}
                     {visibleColumnKeys.includes("branch") && (
-                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "12%" }}>VP</th>
+                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "8%" }}>VP</th>
                     )}
                     {visibleColumnKeys.includes("bank") && (
-                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "12%" }}>TK</th>
+                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "8%" }}>TK</th>
                     )}
                     {visibleColumnKeys.includes("creator") && (
-                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "14%" }}>Người tạo</th>
+                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "12%" }}>Người tạo</th>
                     )}
                     {visibleColumnKeys.includes("code") && (
-                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "12%" }}>Mã GD</th>
+                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "8%" }}>Mã GD</th>
                     )}
                     {visibleColumnKeys.includes("status") && (
-                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "12%" }}>TT</th>
+                      <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "6%" }}>TT</th>
                     )}
-                    <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "14%" }}>Thao tác</th>
+                    <th className="sticky z-10 px-2 py-2 text-left text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-normal leading-tight bg-gray-50 dark:bg-gray-700" style={{ top: "var(--transaction-sticky-top, 0px)", width: "10%" }}>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
@@ -1271,12 +1320,16 @@ const TransactionList: React.FC = () => {
                       )}
                       {visibleColumnKeys.includes("bank") && (
                         <td className="px-2 py-2 text-xs text-gray-900 dark:text-white truncate" title={transaction.bank_account_name || undefined}>
-                          {transaction.bank_account_name || transaction.bank_account_id ? `#${transaction.bank_account_id}` : "—"}
+                          {transaction.bank_account_name || formatBankAccountLabel(
+                            transaction.bank_accounts?.bank_name,
+                            transaction.bank_accounts?.account_number,
+                            transaction.bank_accounts?.account_name,
+                          ) || (transaction.bank_account_id ? `#${transaction.bank_account_id}` : "—")}
                         </td>
                       )}
                       {visibleColumnKeys.includes("creator") && (
-                        <td className="px-2 py-2 text-xs text-gray-900 dark:text-white truncate" title={resolveCreatorName(transaction.created_by, transaction.creator_name) || undefined}>
-                          {resolveCreatorName(transaction.created_by, transaction.creator_name)}
+                        <td className="px-2 py-2 text-xs text-gray-900 dark:text-white truncate" title={resolveCreatorName(transaction.created_by, transaction.creator_name, transaction.users?.email) || undefined}>
+                          {resolveCreatorName(transaction.created_by, transaction.creator_name, transaction.users?.email)}
                         </td>
                       )}
                       {visibleColumnKeys.includes("code") && (
@@ -1285,7 +1338,7 @@ const TransactionList: React.FC = () => {
                             className="inline-block max-w-full truncate font-mono bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-[10px]"
                             title={transaction.transaction_code}
                           >
-                            {transaction.transaction_code}
+                            {formatShortTransactionCode(transaction.transaction_code || "")}
                           </span>
                         </td>
                       )}
@@ -1518,7 +1571,7 @@ const TransactionList: React.FC = () => {
                       className="inline-block max-w-[120px] truncate font-mono bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-[10px]"
                       title={transaction.transaction_code}
                     >
-                      {transaction.transaction_code}
+                      {formatShortTransactionCode(transaction.transaction_code || "")}
                     </span>
                   </div>
                   <div className="col-span-2 sm:col-span-1">
@@ -1527,12 +1580,16 @@ const TransactionList: React.FC = () => {
                   </div>
                   <div className="col-span-2 sm:col-span-1">
                     <span className="text-gray-400 dark:text-gray-500">Tài khoản:</span>{" "}
-                    {transaction.bank_account_name || transaction.bank_accounts?.account_name || (transaction.bank_account_id ? `#${transaction.bank_account_id}` : "—")}
+                    {transaction.bank_account_name || formatBankAccountLabel(
+                      transaction.bank_accounts?.bank_name,
+                      transaction.bank_accounts?.account_number,
+                      transaction.bank_accounts?.account_name,
+                    ) || (transaction.bank_account_id ? `#${transaction.bank_account_id}` : "—")}
                   </div>
                   <div className="col-span-2">
                     <span className="text-gray-400 dark:text-gray-500">Người thực hiện:</span>{" "}
-                    <span className="inline-block max-w-[180px] truncate align-bottom" title={resolveCreatorName(transaction.created_by, transaction.creator_name) || undefined}>
-                      {resolveCreatorName(transaction.created_by, transaction.creator_name)}
+                    <span className="inline-block max-w-[180px] truncate align-bottom" title={resolveCreatorName(transaction.created_by, transaction.creator_name, transaction.users?.email) || undefined}>
+                      {resolveCreatorName(transaction.created_by, transaction.creator_name, transaction.users?.email)}
                     </span>
                   </div>
                 </div>

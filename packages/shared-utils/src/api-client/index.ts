@@ -233,10 +233,11 @@ class QueryBuilder<T = any> {
    *   .or("customer_id.in.(id1,id2,id3)")
    */
   or(expr: string): QueryBuilder<T> {
-    // Split on commas that are not inside a quoted value.
+    // Split on commas that are not inside a quoted value or a parenthesized list.
     const rawParts: string[] = [];
     let current = '';
     let inQuotes = false;
+    let parenDepth = 0;
     let i = 0;
     while (i < expr.length) {
       const ch = expr[i];
@@ -248,8 +249,14 @@ class QueryBuilder<T = any> {
           continue;
         }
         inQuotes = !inQuotes;
+      } else if (!inQuotes) {
+        if (ch === '(') {
+          parenDepth++;
+        } else if (ch === ')') {
+          parenDepth--;
+        }
       }
-      if (ch === ',' && !inQuotes) {
+      if (ch === ',' && !inQuotes && parenDepth === 0) {
         rawParts.push(current);
         current = '';
       } else {

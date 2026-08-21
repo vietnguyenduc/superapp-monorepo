@@ -135,6 +135,8 @@ export interface Transaction {
   } | null;
   bank_accounts?: {
     account_name?: string;
+    bank_name?: string;
+    account_number?: string;
   } | null;
   branches?: {
     name?: string;

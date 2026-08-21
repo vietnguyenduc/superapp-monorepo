@@ -160,6 +160,52 @@ export const truncateText = (text: string, maxLength: number): string => {
   return `${text.slice(0, maxLength)}...`;
 };
 
+// Format bank account label: "Bank Name - Account Number" with optional account name
+export const formatBankAccountLabel = (
+  bankName?: string | null,
+  accountNumber?: string | null,
+  accountName?: string | null,
+): string => {
+  const parts: string[] = [];
+  const bank = (bankName ?? "").trim();
+  const name = (accountName ?? "").trim();
+  const number = (accountNumber ?? "").trim();
+
+  if (bank) parts.push(bank);
+  else if (name) parts.push(name);
+
+  if (number) parts.push(number);
+
+  return parts.length ? parts.join(" - ") : "Không có tài khoản";
+};
+
+// Format a long generated transaction code to a shorter display string
+export const formatShortTransactionCode = (code: string): string => {
+  if (!code) return "—";
+  // If the generated code looks like TXN<timestamp>-<random>, keep only TXN-<random>
+  if (code.toUpperCase().startsWith("TXN") && code.includes("-")) {
+    const suffix = code.split("-").pop() || "";
+    return `TXN-${suffix}`;
+  }
+  if (code.length > 14) return `${code.slice(0, 10)}...`;
+  return code;
+};
+
+// Format a user label: prefer "Full Name (email)", otherwise email or a safe fallback
+export const formatUserLabel = (
+  name?: string | null,
+  email?: string | null,
+  userId?: string | null,
+): string => {
+  const n = (name ?? "").trim();
+  const e = (email ?? "").trim();
+  if (n && e) return `${n} (${e})`;
+  if (n) return n;
+  if (e) return e;
+  if (userId) return `ID: ${userId.slice(0, 8)}`;
+  return "—";
+};
+
 // Capitalize first letter
 export const capitalize = (text: string): string => {
   return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();

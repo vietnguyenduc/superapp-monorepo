@@ -1,6 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useTranslation } from "react-i18next";
-import { useDebounce } from "../../../hooks/useDebounce";
+import React, { useRef } from "react";
 
 interface CustomerSearchProps {
   value: string;
@@ -13,73 +11,15 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
   onChange,
   placeholder,
 }) => {
-  const { t } = useTranslation();
-  const [isOpen, setIsOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const debouncedValue = useDebounce(value, 300);
   const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Generate suggestions based on search term
-  useEffect(() => {
-    if (debouncedValue.length < 2) {
-      setSuggestions([]);
-      return;
-    }
-
-    // In a real app, this would come from an API
-    const mockSuggestions = [
-      `${debouncedValue} - ${t("customers.suggestions.customer")}`,
-      `${debouncedValue} - ${t("customers.suggestions.phone")}`,
-      `${debouncedValue} - ${t("customers.suggestions.email")}`,
-    ];
-    setSuggestions(mockSuggestions);
-  }, [debouncedValue, t]);
-
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    onChange(newValue);
-    setIsOpen(newValue.length >= 2);
-  };
-
-  const handleSuggestionClick = (suggestion: string) => {
-    onChange(suggestion);
-    setIsOpen(false);
-    inputRef.current?.focus();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") {
-      setIsOpen(false);
-      inputRef.current?.blur();
-    }
-  };
 
   const clearSearch = () => {
     onChange("");
-    setIsOpen(false);
     inputRef.current?.focus();
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative">
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <svg
@@ -101,9 +41,7 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
           ref={inputRef}
           type="text"
           value={value}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setIsOpen(value.length >= 2)}
+          onChange={(e) => onChange(e.target.value)}
           placeholder={
             placeholder || "Tìm kiếm theo tên, mã, email, số điện thoại..."
           }
@@ -133,43 +71,6 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
           </div>
         )}
       </div>
-
-      {/* Suggestions Dropdown */}
-      {isOpen && suggestions.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
-          {suggestions.map((suggestion, index) => (
-            <button
-              key={index}
-              onClick={() => handleSuggestionClick(suggestion)}
-              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white focus:outline-none focus:bg-gray-100 focus:text-gray-900 dark:focus:bg-gray-700 dark:focus:text-white"
-            >
-              <div className="flex items-center">
-                <svg
-                  className="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-                {suggestion}
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Search Tips */}
-      {value.length > 0 && value.length < 2 && (
-        <div className="mt-2 text-sm text-gray-500">
-          {t("customers.searchTip")}
-        </div>
-      )}
     </div>
   );
 };
