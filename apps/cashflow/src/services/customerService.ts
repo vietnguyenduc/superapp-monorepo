@@ -380,6 +380,49 @@ export class CustomerService extends BaseService {
     );
   }
 
+  static async checkDuplicatePhone(phone: string, companyId?: string) {
+    return this.execute(
+      async () => {
+        if (!phone.trim()) return { data: [], error: null };
+        let query = apiClient.from("customers").select("id,full_name,phone,customer_code,email").eq("phone", phone.trim());
+        if (companyId) query = query.eq("company_id", companyId);
+        const { data, error } = await query;
+        if (error) return { data: null, error };
+        return { data: data || [], error: null };
+      },
+      async () => {
+        if (!phone.trim()) return { data: [], error: null };
+        const customers = (trialGet("customers") || []) as Customer[];
+        const matches = customers.filter(
+          (c) => c.phone === phone.trim() && (!companyId || c.company_id === companyId)
+        );
+        return { data: matches, error: null };
+      }
+    );
+  }
+
+  static async generateCustomerCode(companyId?: string) {
+    return this.execute(
+      async () => {
+        let query = apiClient.from("customers").select("customer_code");
+        if (companyId) query = query.eq("company_id", companyId);
+        const { data, error } = await query;
+        if (error) return { data: null, error };
+        const count = (data || []).length;
+        const code = `KH${String(count + 1).padStart(4, "0")}`;
+        return { data: code, error: null };
+      },
+      async () => {
+        const customers = (trialGet("customers") || []) as Customer[];
+        const count = companyId
+          ? customers.filter((c) => c.company_id === companyId).length
+          : customers.length;
+        const code = `KH${String(count + 1).padStart(4, "0")}`;
+        return { data: code, error: null };
+      }
+    );
+  }
+
   static async checkDuplicateCustomers(customers: Record<string, unknown>[], companyId?: string) {
     return this.execute(
       async () => {
@@ -684,6 +727,8 @@ export const customerService = {
   createCustomer: CustomerService.createCustomer.bind(CustomerService),
   bulkCreateCustomers: CustomerService.bulkCreateCustomers.bind(CustomerService),
   checkDuplicateCustomers: CustomerService.checkDuplicateCustomers.bind(CustomerService),
+  checkDuplicatePhone: CustomerService.checkDuplicatePhone.bind(CustomerService),
+  generateCustomerCode: CustomerService.generateCustomerCode.bind(CustomerService),
   updateCustomer: CustomerService.updateCustomer.bind(CustomerService),
   deleteCustomer: CustomerService.deleteCustomer.bind(CustomerService),
   updateCustomerOpeningBalance: CustomerService.updateCustomerOpeningBalance.bind(CustomerService),

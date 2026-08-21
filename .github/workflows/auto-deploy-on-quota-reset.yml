@@ -1,10 +1,10 @@
 name: Auto-deploy production after Vercel quota reset
 
 on:
-  schedule:
-    # Run every 10 minutes. When Vercel Hobby rate-limit clears, this will
-    # catch any production deployment that is still behind `main` and deploy it.
-    - cron: '*/10 * * * *'
+  # schedule:
+  #   # Run every 10 minutes. When Vercel Hobby rate-limit clears, this will
+  #   # catch any production deployment that is still behind `main` and deploy it.
+  #   - cron: '*/10 * * * *'
   workflow_dispatch:
 
 concurrency:

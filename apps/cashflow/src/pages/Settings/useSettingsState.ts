@@ -197,6 +197,7 @@ export function useSettingsState() {
     customers: true,
     bank_accounts: true,
     branches: true,
+    auto_customer_code: true,
   };
 
   const [approvalSettings, setApprovalSettings] = useState<{
@@ -204,6 +205,7 @@ export function useSettingsState() {
     customers: boolean;
     bank_accounts: boolean;
     branches: boolean;
+    auto_customer_code: boolean;
   }>(defaultApprovalSettings);
 
   useEffect(() => {
@@ -214,6 +216,7 @@ export function useSettingsState() {
         customers: settings.customers ?? prev.customers,
         bank_accounts: settings.bank_accounts ?? prev.bank_accounts,
         branches: settings.branches ?? prev.branches,
+        auto_customer_code: settings.auto_customer_code ?? prev.auto_customer_code,
       }));
     }
   }, [user?.company?.approval_settings]);

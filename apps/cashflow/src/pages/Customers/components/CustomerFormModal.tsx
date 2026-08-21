@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { logger } from "../../../utils/logger";
 import { useTranslation } from "react-i18next";
+import { useCompanyId } from "../../../hooks/useCompanyId";
+import { useAuthContext as useAuth } from "@superapp/iam";
+import { databaseService } from "../../../services/database";
 import type { Customer } from "../../../types";
 
 interface CustomerFormModalProps {
@@ -49,6 +52,13 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [phoneDuplicates, setPhoneDuplicates] = useState<Customer[]>([]);
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+  const [confirmDuplicate, setConfirmDuplicate] = useState(false);
+  const [checkingPhone, setCheckingPhone] = useState(false);
+  const companyId = useCompanyId();
+  const { user } = useAuth();
+  const autoCustomerCode = user?.company?.approval_settings?.auto_customer_code !== false;
 
   useEffect(() => {
     if (customer && mode === "edit") {
@@ -65,8 +75,15 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       });
     } else if (mode === "create") {
       setFormData((prev) => ({ ...prev }));
+      if (autoCustomerCode) {
+        databaseService.customers.generateCustomerCode(companyId).then(({ data, error }) => {
+          if (!error && data) {
+            setFormData((prev) => ({ ...prev, customer_code: data as string }));
+          }
+        });
+      }
     }
-  }, [customer, mode]);
+  }, [customer, mode, autoCustomerCode, companyId]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -90,15 +107,45 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     if (errors[field as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
+    if (field === "phone") {
+      setShowDuplicateWarning(false);
+      setConfirmDuplicate(false);
+      setPhoneDuplicates([]);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
+    if (mode === "create" && formData.phone.trim() && !confirmDuplicate) {
+      setCheckingPhone(true);
+      try {
+        const { data: duplicates, error } = await databaseService.customers.checkDuplicatePhone(
+          formData.phone.trim(),
+          companyId,
+        );
+        setCheckingPhone(false);
+        if (error) {
+          logger.error("Duplicate phone check error:", error);
+        } else if (duplicates && duplicates.length > 0) {
+          setPhoneDuplicates(duplicates as Customer[]);
+          setShowDuplicateWarning(true);
+          return;
+        }
+      } catch (err) {
+        setCheckingPhone(false);
+        logger.error("Duplicate phone check error:", err);
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const { create_transactions, ...payload } = formData;
+      if (mode === "create" && autoCustomerCode && !payload.customer_code) {
+        const { data: code, error: codeErr } = await databaseService.customers.generateCustomerCode(companyId);
+        if (!codeErr && code) payload.customer_code = code as string;
+      }
       await onSubmit(payload, { createTransactions: create_transactions });
     } catch (error) {
       logger.error("Form submission error:", error);
@@ -192,15 +239,19 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     {t("customers.form.customerCode")}
+                    {mode === "create" && autoCustomerCode && (
+                      <span className="ml-2 text-xs font-normal text-indigo-500 dark:text-indigo-400">(tự động)</span>
+                    )}
                   </label>
                   <input
                     type="text"
                     id="customer_code"
-                    autoFocus={mode === "create"}
+                    autoFocus={mode === "create" && !autoCustomerCode}
                     value={formData.customer_code}
                     onChange={(e) => handleInputChange("customer_code", e.target.value)}
                     className={inputClass(errors.customer_code)}
                     placeholder={t("customers.form.customerCodePlaceholder")}
+                    readOnly={mode === "create" && autoCustomerCode}
                   />
                   <ErrorMessage message={errors.customer_code} />
                 </div>
@@ -355,6 +406,55 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
               </div>
             </div>
 
+            {showDuplicateWarning && phoneDuplicates.length > 0 && (
+              <div className="mx-6 mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/30">
+                <div className="flex items-start gap-3">
+                  <svg className="h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5 19h14a2 2 0 001.84-2.75L13.74 4a2 2 0 00-3.48 0L3.16 16.25A2 2 0 005 19z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                      Cảnh báo trùng số điện thoại
+                    </p>
+                    <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                      Số điện thoại <span className="font-semibold">{formData.phone}</span> đã được sử dụng bởi khách hàng sau:
+                    </p>
+                    <ul className="mt-2 space-y-1">
+                      {phoneDuplicates.map((dup) => (
+                        <li key={dup.id} className="text-sm text-amber-800 dark:text-amber-200">
+                          <span className="font-medium">{dup.full_name}</span>
+                          {dup.customer_code && ` (Mã: ${dup.customer_code})`}
+                          {dup.email && ` — ${dup.email}`}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
+                      Bạn có chắc muốn tạo khách hàng mới với số điện thoại này?
+                    </p>
+                    <div className="mt-3 flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDuplicate(true)}
+                        className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700"
+                      >
+                        Vẫn tạo mới
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowDuplicateWarning(false);
+                          setConfirmDuplicate(false);
+                        }}
+                        className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200"
+                      >
+                        Hủy
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-800/50">
               <button
                 type="button"
@@ -366,10 +466,10 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || checkingPhone}
                 className="inline-flex items-center rounded-lg border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-gray-900"
               >
-                {isSubmitting && (
+                {(isSubmitting || checkingPhone) && (
                   <svg
                     className="-ml-1 mr-2 h-4 w-4 animate-spin text-white"
                     fill="none"
@@ -390,11 +490,13 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     />
                   </svg>
                 )}
-                {isSubmitting
-                  ? t("common.saving")
-                  : mode === "create"
-                    ? t("customers.form.create")
-                    : t("customers.form.save")}
+                {checkingPhone
+                  ? "Đang kiểm tra..."
+                  : isSubmitting
+                    ? t("common.saving")
+                    : mode === "create"
+                      ? t("customers.form.create")
+                      : t("customers.form.save")}
               </button>
             </div>
           </form>

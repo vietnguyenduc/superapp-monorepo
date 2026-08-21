@@ -17,6 +17,7 @@ export interface ApprovalSettings {
   customers?: boolean;
   bank_accounts?: boolean;
   branches?: boolean;
+  auto_customer_code?: boolean;
 }
 
 export interface Company {
