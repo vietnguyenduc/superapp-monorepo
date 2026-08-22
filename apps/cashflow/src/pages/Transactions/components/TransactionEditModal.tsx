@@ -3,6 +3,41 @@ import { useTranslation } from "react-i18next";
 import type { Transaction } from "../../../types";
 import { parseAmount } from "../../../services/businessLogic";
 import Button from "../../../components/UI/Button";
+import { useDraftSave } from "../../../hooks/useDraftSave";
+
+const DRAFT_KEY = "tx-edit-draft";
+
+/**
+ * Normalize a pasted numeric string by removing thousand separators.
+ * '10,001' -> '10001', '1.000.000' -> '1000000', '1,234.56' -> '1234.56'
+ */
+function normalizePastedAmount(raw: string): string {
+  const text = raw.trim();
+  if (!text) return "";
+  // If both . and , present, the last one is decimal
+  const lastDot = text.lastIndexOf(".");
+  const lastComma = text.lastIndexOf(",");
+  if (lastDot !== -1 && lastComma !== -1) {
+    if (lastDot > lastComma) {
+      // dot is decimal, comma is thousand
+      return text.replace(/,/g, "");
+    } else {
+      // comma is decimal, dot is thousand
+      return text.replace(/\./g, "").replace(",", ".");
+    }
+  }
+  // Only one separator type — if followed by 1-2 digits, treat as decimal
+  const sepIdx = Math.max(lastDot, lastComma);
+  if (sepIdx !== -1) {
+    const fraction = text.slice(sepIdx + 1);
+    if (/^\d{1,2}$/.test(fraction)) {
+      // decimal separator — keep it but normalize to dot
+      return text.slice(0, sepIdx) + "." + fraction;
+    }
+  }
+  // No decimal — remove all separators
+  return text.replace(/[.,\s]/g, "");
+}
 
 interface CustomerOption {
   id: string;
@@ -67,6 +102,9 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const isCreateMode = !transaction;
+  const { loadDraft, clearDraft } = useDraftSave(DRAFT_KEY, form, isCreateMode && isOpen);
+
   // Searchable customer combobox state
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerOpen, setCustomerOpen] = useState(false);
@@ -130,10 +168,18 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       });
       setErrors({});
     } else if (!isOpen) {
-      setForm(emptyForm);
+      // Restore draft for create mode if available
+      const draft = loadDraft();
+      if (draft && !transaction) {
+        setForm(draft);
+        const c = customers.find((x) => x.id === draft.customer_id);
+        setCustomerQuery(c ? `${c.name}${c.code ? ` (${c.code})` : ""}` : "");
+      } else {
+        setForm(emptyForm);
+      }
       setErrors({});
     }
-  }, [transaction, isOpen]);
+  }, [transaction, isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const transactionTypeOptions = useMemo(
     () =>
@@ -198,6 +244,7 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
     setIsSubmitting(true);
     try {
       await onSubmit(form);
+      clearDraft();
     } finally {
       setIsSubmitting(false);
     }
@@ -442,6 +489,14 @@ const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                       inputMode="decimal"
                       value={form.amount}
                       onChange={(e) => handleChange("amount", e.target.value)}
+                      onPaste={(e) => {
+                        const pasted = e.clipboardData.getData("text");
+                        const normalized = normalizePastedAmount(pasted);
+                        if (normalized !== pasted.trim()) {
+                          e.preventDefault();
+                          handleChange("amount", normalized);
+                        }
+                      }}
                       className={`block w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-white ${
                         errors.amount
                           ? "border-red-300 focus:border-red-500 focus:ring-red-500"

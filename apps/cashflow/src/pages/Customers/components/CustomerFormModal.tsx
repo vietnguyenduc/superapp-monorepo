@@ -4,7 +4,10 @@ import { useTranslation } from "react-i18next";
 import { useCompanyId } from "../../../hooks/useCompanyId";
 import { useAuthContext as useAuth } from "@superapp/iam";
 import { databaseService } from "../../../services/database";
+import { useDraftSave } from "../../../hooks/useDraftSave";
 import type { Customer } from "../../../types";
+
+const DRAFT_KEY = "customer-form-draft";
 
 interface CustomerFormModalProps {
   mode: "create" | "edit";
@@ -60,6 +63,8 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   const { user } = useAuth();
   const autoCustomerCode = user?.company?.approval_settings?.auto_customer_code !== false;
 
+  const { loadDraft, clearDraft } = useDraftSave<FormData>(DRAFT_KEY, formData, mode === "create");
+
   useEffect(() => {
     if (customer && mode === "edit") {
       setFormData({
@@ -74,16 +79,22 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         create_transactions: false,
       });
     } else if (mode === "create") {
-      setFormData((prev) => ({ ...prev }));
-      if (autoCustomerCode) {
-        databaseService.customers.generateCustomerCode(companyId).then(({ data, error }) => {
-          if (!error && data) {
-            setFormData((prev) => ({ ...prev, customer_code: data as string }));
-          }
-        });
+      // Restore draft if available, otherwise start fresh
+      const draft = loadDraft();
+      if (draft && (draft.full_name || draft.phone || draft.email)) {
+        setFormData(draft);
+      } else {
+        setFormData((prev) => ({ ...prev }));
+        if (autoCustomerCode) {
+          databaseService.customers.generateCustomerCode(companyId).then(({ data, error }) => {
+            if (!error && data) {
+              setFormData((prev) => ({ ...prev, customer_code: data as string }));
+            }
+          });
+        }
       }
     }
-  }, [customer, mode, autoCustomerCode, companyId]);
+  }, [customer, mode, autoCustomerCode, companyId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -147,6 +158,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         if (!codeErr && code) payload.customer_code = code as string;
       }
       await onSubmit(payload, { createTransactions: create_transactions });
+      clearDraft();
     } catch (error) {
       logger.error("Form submission error:", error);
     } finally {
