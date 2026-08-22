@@ -39,7 +39,7 @@ interface NewCustomerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (customer: Partial<Customer>) => void;
-  customerName: string;
+  customerCode: string;
   isLoading?: boolean;
   customerOptions: string[];
 }
@@ -48,14 +48,15 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
   isOpen,
   onClose,
   onSave,
-  customerName,
+  customerCode,
   isLoading = false,
   customerOptions,
 }) => {
   const { t } = useTranslation();
   const { user } = useAuthContext();
   const [formData, setFormData] = useState({
-    full_name: customerName,
+    customer_code: customerCode,
+    full_name: "",
     phone: "",
     email: "",
     address: "",
@@ -76,10 +77,27 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
       <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div className="mt-3">
           <h3 className="text-lg font-medium text-gray-900 mb-4">
-            {t("import.addNewCustomer")}
+            {t("import.quickAddCustomer")}
           </h3>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                {t("customers.customerCode")} *
+              </label>
+              <input
+                type="text"
+                value={formData.customer_code}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    customer_code: e.target.value }))
+                }
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                autoFocus
+              />
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 {t("customers.fullName")} *
@@ -93,9 +111,8 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
                     full_name: e.target.value,
                   }))
                 }
-                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[260px]"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 list="customer-list"
-                autoFocus
               />
               <datalist id="customer-list">
                 {customerOptions.map((option: string) => (
@@ -154,7 +171,7 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
                 variant="primary"
                 size="md"
                 type="submit"
-                disabled={isLoading || !formData.full_name.trim()}
+                disabled={isLoading || !formData.customer_code.trim() || !formData.full_name.trim()}
               >
                 {isLoading ? t("common.saving") : t("common.save")}
               </Button>
@@ -241,7 +258,8 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
           customerResult.data.map((customer: any) => {
             const code = String(customer.customer_code || customer.id || "");
             const name = String(customer.full_name || customer.customer_name || "");
-            return [code, name].filter(Boolean).join(" - ").trim();
+            const phone = String(customer.phone || "");
+            return [code, name, phone].filter(Boolean).join(" - ").trim();
           }),
         );
       }
@@ -501,7 +519,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
           // Remove from unmatched customers
           setUnmatchedCustomers((prev) => {
             const newSet = new Set(prev);
-            newSet.delete(customerData.full_name || "");
+            newSet.delete(customerData.customer_code || "");
             return newSet;
           });
 
@@ -1565,7 +1583,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
       <NewCustomerModal
         isOpen={showNewCustomerModal}
         onClose={() => setShowNewCustomerModal(false)}
-        customerName={newCustomerName}
+        customerCode={newCustomerName}
         isLoading={isCreatingCustomer}
         onSave={(customer) => handleSaveNewCustomer(customer)}
         customerOptions={customerOptions}

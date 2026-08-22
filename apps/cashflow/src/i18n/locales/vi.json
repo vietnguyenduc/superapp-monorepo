@@ -470,7 +470,9 @@
       "item3": "Mỗi dòng là 1 khách hàng. Kiểm tra trước khi nhấn 'Kiểm tra dữ liệu'."
     },
     "downloadTemplate": "Tải file mẫu Excel",
-    "downloadTemplateHint": "Tải file mẫu để điền đúng định dạng cột trước khi nhập hàng loạt."
+    "downloadTemplateHint": "Tải file mẫu để điền đúng định dạng cột trước khi nhập hàng loạt.",
+    "quickAddCustomer": "Thêm nhanh khách hàng",
+    "addCustomer": "Thêm khách hàng"
   },
   "export": {
     "title": "Xuất dữ liệu",
