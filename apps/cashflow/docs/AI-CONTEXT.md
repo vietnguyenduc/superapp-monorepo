@@ -88,6 +88,11 @@ The **displayed transaction amount** is the raw user-entered value (`parseAmount
   - This naturally includes `payment` and `deposit` (canonical factor `-1`), and only the debt-reducing part of a signed `adjustment` (positive `adjustment` amounts are ignored because they increase debt). `refund` is excluded because its canonical factor is `+1` (it increases debt).
   - The amount shown is always positive.
 
+### Customer detail transaction navigation (2026-08-29)
+
+- Clicking any transaction row in `CustomerDetail` or `CustomerDetailModal` navigates to `/transactions?transaction_id=<id>`.
+- `TransactionList` detects `?transaction_id=...` on load, fetches the referenced transaction, and opens it in `TransactionEditModal` so the user can edit it directly.
+
 ### Sign-aware amounts (2026-08-05)
 
 The amount **sign** now reverses the transaction direction instead of being silently taken as an absolute value. This applies to bulk import, manual edits, and dashboard calculations.

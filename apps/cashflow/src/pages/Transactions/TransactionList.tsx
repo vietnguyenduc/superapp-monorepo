@@ -110,11 +110,12 @@ const TransactionList: React.FC = () => {
     getMathFactor,
     typesForDropdown,
   } = useTransactionTypes();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
   const [bankAccounts, setBankAccounts] = useState<{ id: string; name: string }[]>([]);
   const [customers, setCustomers] = useState<{ id: string; name: string; code?: string }[]>([]);
   const [users, setUsers] = useState<{ id: string; full_name?: string; email?: string; company_id?: string | null }[]>([]);
+  const [filtersReady, setFiltersReady] = useState(false);
   const [showDateMenu, setShowDateMenu] = useState(false);
   const [customStart, setCustomStart] = useState<string>("");
   const [customEnd, setCustomEnd] = useState<string>("");
@@ -384,9 +385,33 @@ const TransactionList: React.FC = () => {
         );
       }
 
+      setFiltersReady(true);
     };
     loadFilters();
   }, [companyId]);
+
+  // Open transaction edit modal from ?transaction_id=...
+  useEffect(() => {
+    const txId = searchParams.get("transaction_id");
+    if (!txId || !filtersReady) return;
+
+    const loadTransaction = async () => {
+      const result = await databaseService.transactions.getTransactionById(
+        txId,
+        companyId || undefined,
+      );
+      if (result.error || !result.data) {
+        toast.error(result.error?.message || "Không tìm thấy giao dịch");
+        const next = new URLSearchParams(searchParams);
+        next.delete("transaction_id");
+        setSearchParams(next, { replace: true });
+      } else {
+        setEditingTx(result.data as Transaction);
+      }
+    };
+
+    loadTransaction();
+  }, [searchParams, filtersReady, companyId, setSearchParams]);
 
   // Load transactions on mount and when filters change
   useEffect(() => {
@@ -535,7 +560,12 @@ const TransactionList: React.FC = () => {
 
   const closeEditModal = useCallback(() => {
     setEditingTx(null);
-  }, []);
+    if (searchParams.has("transaction_id")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("transaction_id");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleEditSubmit = useCallback(async (values: TransactionEditFormValues) => {
     if (!editingTx) return;
