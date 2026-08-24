@@ -1,5 +1,13 @@
 # Changelog — Cashflow
 
+## 2026-08-29
+
+### Added
+
+- **Clickable transaction history in customer detail.**
+  - `CustomerDetail` and `CustomerDetailModal` transaction rows/cards now navigate to `/transactions?transaction_id=<id>` when clicked.
+  - `TransactionList` reads `?transaction_id=...` on load, fetches the referenced transaction, and opens it in the edit modal.
+
 ## 2026-08-18 (UI/UX follow-up)
 
 ### Changed

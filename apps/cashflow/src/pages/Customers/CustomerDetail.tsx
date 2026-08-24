@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { logger } from "../../utils/logger";
 import { toast } from "../../utils/toast";
 import { useParams, useNavigate } from "react-router-dom";
@@ -20,6 +20,13 @@ const CustomerDetail: React.FC = () => {
   const { getNameById: getTransactionTypeName } = useTransactionTypes();
   const { user } = useAuth();
   const companyId = useCompanyId();
+
+  const handleTransactionClick = useCallback(
+    (transaction: Transaction) => {
+      navigate(`/transactions?transaction_id=${transaction.id}`);
+    },
+    [navigate],
+  );
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -330,7 +337,18 @@ const CustomerDetail: React.FC = () => {
                 <>
                   <div className="sm:hidden divide-y divide-gray-200 dark:divide-gray-700">
                     {transactions.map((transaction) => (
-                      <div key={transaction.id} className="p-4 flex flex-col gap-3">
+                      <div
+                        key={transaction.id}
+                        className="p-4 flex flex-col gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        onClick={() => handleTransactionClick(transaction)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            handleTransactionClick(transaction);
+                          }
+                        }}
+                      >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <div className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -391,7 +409,11 @@ const CustomerDetail: React.FC = () => {
                       </thead>
                       <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
                         {transactions.map((transaction) => (
-                          <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <tr
+                            key={transaction.id}
+                            className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                            onClick={() => handleTransactionClick(transaction)}
+                          >
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                               {formatDate(transaction.transaction_date)}
                             </td>
