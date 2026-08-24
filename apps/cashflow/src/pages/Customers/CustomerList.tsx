@@ -431,12 +431,6 @@ const CustomerList: React.FC = () => {
             showDetailModal: true,
           }));
           break;
-        case "transactions":
-          // Navigate to transactions page with customer filter
-          navigate(
-            `/transactions?customer_id=${customer.id}&customer_name=${encodeURIComponent(customer.full_name)}`,
-          );
-          break;
         case "edit":
           setState((prev) => ({
             ...prev,

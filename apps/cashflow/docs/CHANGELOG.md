@@ -1,5 +1,13 @@
 # Changelog — Cashflow
 
+## 2026-08-04
+
+### Removed
+
+- **Removed the "Xem giao dịch" button from `CustomerTable`.**
+  - Customer rows are now selected by clicking anywhere on the row to open the detail modal.
+  - Sticky column offsets were adjusted so `Mã`, `Tên khách hàng`, `Công nợ`, and `Giao dịch cuối` remain aligned after removing the first action column.
+
 ## 2026-08-29
 
 ### Added

@@ -92,11 +92,6 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
 
   const isVisible = (key: string) => visibleColumns[key] !== false;
 
-  const handleViewTransactions = (e: React.MouseEvent, customer: Customer) => {
-    e.stopPropagation();
-    onCustomerAction("transactions", customer);
-  };
-
   if (loading) {
     return (
       <div className="overflow-x-auto">
@@ -154,14 +149,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
           <tr>
             <th
               scope="col"
-              className="hidden sm:table-cell px-3 py-3 text-left text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide whitespace-normal w-14 sticky left-0 z-20 bg-gray-50 dark:bg-gray-700"
-              style={{ top: "var(--customer-sticky-top, 0px)" }}
-            >
-              <span className="block leading-tight">Xem giao dịch</span>
-            </th>
-            <th
-              scope="col"
-              className={`${isVisible("customerCode") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap w-16 sticky sm:left-[3.5rem] z-20 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("customerCode") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap w-16 sticky sm:left-0 z-20 bg-gray-50 dark:bg-gray-700`}
               style={{ top: "var(--customer-sticky-top, 0px)" }}
               onClick={() => handleSort("customer_code")}
             >
@@ -172,7 +160,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("fullName") ? "" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap w-full sm:w-[14rem] sticky sm:left-[7.5rem] z-20 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("fullName") ? "" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap w-full sm:w-[14rem] sticky sm:left-[4rem] z-20 bg-gray-50 dark:bg-gray-700`}
               style={{ top: "var(--customer-sticky-top, 0px)" }}
               onClick={() => handleSort("full_name")}
             >
@@ -183,7 +171,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("balance") ? "hidden md:table-cell text-right" : "hidden"} px-3 py-3 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap w-[6rem] sticky md:left-[21.5rem] z-20 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("balance") ? "hidden md:table-cell text-right" : "hidden"} px-3 py-3 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap w-[6rem] sticky md:left-[18rem] z-20 bg-gray-50 dark:bg-gray-700`}
               style={{ top: "var(--customer-sticky-top, 0px)" }}
               onClick={() => handleSort("total_balance")}
             >
@@ -194,7 +182,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </th>
             <th
               scope="col"
-              className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap leading-tight w-[9rem] sticky lg:left-[27.5rem] z-20 bg-gray-50 dark:bg-gray-700`}
+              className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 whitespace-nowrap leading-tight w-[9rem] sticky lg:left-[24rem] z-20 bg-gray-50 dark:bg-gray-700`}
               style={{ top: "var(--customer-sticky-top, 0px)" }}
               onClick={() => handleSort("last_transaction_date")}
             >
@@ -252,49 +240,12 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
               onMouseLeave={() => setHoveredRow(null)}
               onClick={() => onCustomerSelect(customer)}
             >
-              <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap w-14 sticky left-0 z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-700">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleViewTransactions(e, customer);
-                  }}
-                  className="inline-flex items-center justify-center px-2 py-1.5 border border-transparent text-[10px] sm:text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors shadow-sm"
-                  title="Xem giao dịch"
-                >
-                  <svg
-                    className="w-3 h-3"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                </button>
-              </td>
-              <td className={`${isVisible("customerCode") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 whitespace-nowrap w-16 sm:sticky sm:left-[3.5rem] z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-700`}>
+              <td className={`${isVisible("customerCode") ? "hidden sm:table-cell" : "hidden"} px-3 py-3 whitespace-nowrap w-16 sm:sticky sm:left-0 z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-700`}>
                 <div className="text-xs font-bold font-mono text-gray-900 dark:text-white">{customer.customer_code}</div>
               </td>
-              <td className={`${isVisible("fullName") ? "" : "hidden"} w-full sm:w-[14rem] px-4 py-4 sm:px-3 sm:py-3 sm:sticky sm:left-[7.5rem] z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-700`}>
+              <td className={`${isVisible("fullName") ? "" : "hidden"} w-full sm:w-[14rem] px-4 py-4 sm:px-3 sm:py-3 sm:sticky sm:left-[4rem] z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-700`}>
                 <div className={`flex flex-wrap items-center justify-between gap-2 sm:hidden mb-2 ${isVisible("customerCode") ? "" : "hidden"}`}>
                   <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewTransactions(e, customer);
-                      }}
-                      className="inline-flex items-center justify-center px-2 py-1 text-[10px] font-semibold rounded-md text-blue-700 dark:text-blue-200 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-900/70 transition-colors"
-                      title="Xem giao dịch"
-                    >
-                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <span>Xem giao dịch</span>
-                    </button>
                     <span className="text-[10px] font-mono text-gray-500 dark:text-gray-300">
                       {customer.customer_code}
                     </span>
@@ -369,12 +320,12 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                   </div>
                 </div>
               </td>
-              <td className={`${isVisible("balance") ? "hidden md:table-cell text-right" : "hidden"} px-3 py-3 whitespace-nowrap w-[6rem] md:sticky md:left-[21.5rem] z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-700`}>
+              <td className={`${isVisible("balance") ? "hidden md:table-cell text-right" : "hidden"} px-3 py-3 whitespace-nowrap w-[6rem] md:sticky md:left-[18rem] z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-700`}>
                 <div className="text-xs font-medium text-gray-900 dark:text-white">
                   {formatCurrency(customer.total_balance || 0)}
                 </div>
               </td>
-              <td className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 whitespace-nowrap w-[9rem] lg:sticky lg:left-[27.5rem] z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-700 text-sm text-gray-900 dark:text-white`}>
+              <td className={`${isVisible("lastTransaction") ? "hidden lg:table-cell" : "hidden"} px-3 py-3 whitespace-nowrap w-[9rem] lg:sticky lg:left-[24rem] z-10 bg-white dark:bg-gray-800 group-hover:bg-gray-100 dark:group-hover:bg-gray-700 text-sm text-gray-900 dark:text-white`}>
                 {customer.last_transaction_date
                   ? formatDate(customer.last_transaction_date)
                   : t("customers.noTransactions")}
