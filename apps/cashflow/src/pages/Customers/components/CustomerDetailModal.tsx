@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import type { Customer, Transaction } from "../../../types";
 import { databaseService } from "../../../services/database";
 import { useCompanyId } from "../../../hooks/useCompanyId";
@@ -20,7 +21,13 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   onEdit,
 }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const companyId = useCompanyId();
+
+  const handleTransactionClick = (transaction: Transaction) => {
+    onClose();
+    navigate(`/transactions?transaction_id=${transaction.id}`);
+  };
   const { getNameById: getTransactionTypeName } = useTransactionTypes();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -373,7 +380,11 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                     </thead>
                     <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                       {transactions.slice(0, 10).map((transaction) => (
-                        <tr key={transaction.id}>
+                        <tr
+                          key={transaction.id}
+                          className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                          onClick={() => handleTransactionClick(transaction)}
+                        >
                           <td className="px-3 sm:px-4 py-2 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-gray-100">
                             {formatDate(transaction.transaction_date)}
                           </td>
