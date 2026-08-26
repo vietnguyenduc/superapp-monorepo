@@ -202,7 +202,10 @@ export const formatUserLabel = (
   if (n && e) return `${n} (${e})`;
   if (n) return n;
   if (e) return e;
-  if (userId) return `ID: ${userId.slice(0, 8)}`;
+  if (userId) {
+    const shortId = userId.replace(/-/g, "").slice(0, 8);
+    return `Người dùng #${shortId}`;
+  }
   return "—";
 };
 
