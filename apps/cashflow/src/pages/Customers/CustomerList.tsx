@@ -587,7 +587,7 @@ const CustomerList: React.FC = () => {
                     showFormModal: true,
                   }))
                 }
-                className="inline-flex items-center"
+                className="h-10 inline-flex items-center"
               >
                 <svg
                   className="w-4 h-4 mr-2"
@@ -608,7 +608,7 @@ const CustomerList: React.FC = () => {
                 variant="secondary"
                 size="md"
                 onClick={() => navigate("/import/customers?tab=bulk")}
-                className="inline-flex items-center"
+                className="h-10 inline-flex items-center"
               >
                 <svg
                   className="w-4 h-4 mr-2"
@@ -644,7 +644,7 @@ const CustomerList: React.FC = () => {
         </div>
 
         {/* Filters and controls */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700 mb-4 space-y-3">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700 mb-4 space-y-4">
           <CustomerFilters
             dateRange={state.dateRange}
             onDateRangeChange={handleDateRangeChange}
@@ -652,7 +652,7 @@ const CustomerList: React.FC = () => {
             onBalanceRangeChange={handleBalanceRangeChange}
           />
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-gray-100 dark:border-gray-700">
             <div className="text-sm text-gray-600 dark:text-gray-300">
               {t("customers.showingResults", {
                 start: paginationInfo.start,

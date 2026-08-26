@@ -8,6 +8,18 @@
   - Customer rows are now selected by clicking anywhere on the row to open the detail modal.
   - Sticky column offsets were adjusted so `Mã`, `Tên khách hàng`, `Công nợ`, and `Giao dịch cuối` remain aligned after removing the first action column.
 
+### Changed
+
+- **`CustomerList` filters and controls now mirror `TransactionList`.**
+  - `CustomerFilters.tsx` uses a labeled `grid` layout with consistent control heights and a bordered summary/control row.
+  - `CustomerTable.tsx` uses `table-fixed w-full` and percentage widths with `text-sm` cells.
+- **`TransactionList` UI clean-up.**
+  - Header action buttons grouped into `Làm mới` (secondary), `Xuất Excel` (secondary), and `Nhập` (primary dropdown with manual/bulk options).
+  - `Loại` column narrowed to `8%`; other columns rebalanced (`Khách hàng` widened to `22%`, etc.).
+  - Table cell font increased from `text-xs`/`text-[10px]` to `text-sm`; header labels remain `text-xs` uppercase.
+- **Creator label fallback is clearer.**
+  - `formatUserLabel` now shows `Người dùng #<shortId>` instead of `ID: <shortId>`.
+
 ## 2026-08-29
 
 ### Added
