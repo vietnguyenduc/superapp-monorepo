@@ -1468,7 +1468,15 @@ function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
           });
 
           return customerData;
-        });
+        }).filter((row) =>
+          row.full_name.trim() ||
+          row.phone.trim() ||
+          row.address.trim() ||
+          row.customer_code.trim() ||
+          row.working_method.trim() ||
+          row.notes.trim() ||
+          row.nguoi_dai_dien.trim()
+        );
 
         resolve(parsedData);
       } catch (error) {
