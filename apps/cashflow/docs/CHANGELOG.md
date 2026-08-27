@@ -1,5 +1,13 @@
 # Changelog — Cashflow
 
+## 2026-08-27
+
+### Fixed
+
+- **Bulk customer import now skips blank rows.**
+  - `CustomerImport.tsx` filters out rows where `full_name`, `phone`, `address`, `customer_code`, `working_method`, `notes`, and `nguoi_dai_dien` are all empty after parsing.
+  - This prevents Excel files with empty rows inside the used range from producing hundreds of `"Mã khách hàng là bắt buộc"` / `"Tên khách hàng là bắt buộc"` validation errors.
+
 ## 2026-08-04
 
 ### Removed
