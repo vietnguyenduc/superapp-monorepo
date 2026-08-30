@@ -1,5 +1,15 @@
 # Changelog — Cashflow
 
+## 2026-08-28
+
+### Added
+
+- **User-configurable auto-generated customer code.**
+  - `Settings → Phê duyệt` lets admins set the customer-code prefix, number of digits, and whether to fill the smallest missing sequential number.
+  - `customerService.generateCustomerCode` reads `customer_code_prefix`, `customer_code_digits`, and `customer_code_fill_gaps` from `approval_settings`.
+  - When gap-filling is enabled, the next code is the smallest positive integer not already used; otherwise it is `max + 1`.
+  - `CustomerFormModal` passes the current company's `approval_settings` when generating a new customer code.
+
 ## 2026-08-27
 
 ### Fixed

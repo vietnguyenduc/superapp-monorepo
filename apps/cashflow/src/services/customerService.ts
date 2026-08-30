@@ -401,25 +401,67 @@ export class CustomerService extends BaseService {
     );
   }
 
-  static async generateCustomerCode(companyId?: string) {
+  static async generateCustomerCode(
+    companyId?: string,
+    settings?: {
+      customer_code_prefix?: string;
+      customer_code_digits?: number;
+      customer_code_fill_gaps?: boolean;
+    },
+  ) {
+    const prefix = String(settings?.customer_code_prefix || "KH")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 10) || "KH";
+    const digits = Math.min(Math.max(Number(settings?.customer_code_digits) || 4, 1), 12);
+    const fillGaps = Boolean(settings?.customer_code_fill_gaps);
+
+    const computeCode = (codes: Set<string>) => {
+      const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`^${escapedPrefix}\\d{1,${digits}}$`);
+      const numbers = [...codes]
+        .filter((code) => regex.test(code))
+        .map((code) => Number(code.slice(prefix.length)))
+        .filter((n) => Number.isFinite(n) && n > 0);
+      const existing = new Set(numbers);
+
+      let next = 1;
+      if (fillGaps) {
+        while (existing.has(next)) next++;
+      } else {
+        next = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
+      }
+
+      // Fall back to the next sequential number if the computed one is somehow taken
+      let code = `${prefix}${String(next).padStart(digits, "0")}`;
+      let attempts = 0;
+      while (codes.has(code) && attempts < 10000) {
+        next++;
+        code = `${prefix}${String(next).padStart(digits, "0")}`;
+        attempts++;
+      }
+      return code;
+    };
+
     return this.execute(
       async () => {
-        let query = apiClient.from("customers").select("customer_code");
+        let query = apiClient.from("customers").select("customer_code").limit(10000);
         if (companyId) query = query.eq("company_id", companyId);
         const { data, error } = await query;
         if (error) return { data: null, error };
-        const count = (data || []).length;
-        const code = `KH${String(count + 1).padStart(4, "0")}`;
-        return { data: code, error: null };
+        const codes = new Set((data || []).map((c: any) => String(c.customer_code || "")).filter(Boolean));
+        return { data: computeCode(codes), error: null };
       },
       async () => {
         const customers = (trialGet("customers") || []) as Customer[];
-        const count = companyId
-          ? customers.filter((c) => c.company_id === companyId).length
-          : customers.length;
-        const code = `KH${String(count + 1).padStart(4, "0")}`;
-        return { data: code, error: null };
-      }
+        const codes = new Set(
+          customers
+            .filter((c) => !companyId || c.company_id === companyId)
+            .map((c) => c.customer_code || "")
+            .filter(Boolean),
+        );
+        return { data: computeCode(codes), error: null };
+      },
     );
   }
 

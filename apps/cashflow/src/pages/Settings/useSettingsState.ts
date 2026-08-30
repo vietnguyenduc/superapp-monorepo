@@ -198,6 +198,9 @@ export function useSettingsState() {
     bank_accounts: true,
     branches: true,
     auto_customer_code: true,
+    customer_code_prefix: "KH",
+    customer_code_digits: 4,
+    customer_code_fill_gaps: false,
   };
 
   const [approvalSettings, setApprovalSettings] = useState<{
@@ -206,6 +209,9 @@ export function useSettingsState() {
     bank_accounts: boolean;
     branches: boolean;
     auto_customer_code: boolean;
+    customer_code_prefix: string;
+    customer_code_digits: number;
+    customer_code_fill_gaps: boolean;
   }>(defaultApprovalSettings);
 
   useEffect(() => {
@@ -217,12 +223,29 @@ export function useSettingsState() {
         bank_accounts: settings.bank_accounts ?? prev.bank_accounts,
         branches: settings.branches ?? prev.branches,
         auto_customer_code: settings.auto_customer_code ?? prev.auto_customer_code,
+        customer_code_prefix: settings.customer_code_prefix ?? prev.customer_code_prefix,
+        customer_code_digits: settings.customer_code_digits ?? prev.customer_code_digits,
+        customer_code_fill_gaps: settings.customer_code_fill_gaps ?? prev.customer_code_fill_gaps,
       }));
     }
   }, [user?.company?.approval_settings]);
 
   const handleApprovalSettingChange = useCallback((key: string, value: boolean) => {
     setApprovalSettings((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const handleCustomerCodePrefixChange = useCallback((value: string) => {
+    const sanitized = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
+    setApprovalSettings((prev) => ({ ...prev, customer_code_prefix: sanitized }));
+  }, []);
+
+  const handleCustomerCodeDigitsChange = useCallback((value: number) => {
+    const digits = Math.min(Math.max(Number.isFinite(value) ? value : 4, 1), 12);
+    setApprovalSettings((prev) => ({ ...prev, customer_code_digits: digits }));
+  }, []);
+
+  const handleCustomerCodeFillGapsChange = useCallback((value: boolean) => {
+    setApprovalSettings((prev) => ({ ...prev, customer_code_fill_gaps: value }));
   }, []);
 
   const saveApprovalSettings = useCallback(async () => {
@@ -1824,6 +1847,9 @@ export function useSettingsState() {
     approvalSettings,
     setApprovalSettings,
     handleApprovalSettingChange,
+    handleCustomerCodePrefixChange,
+    handleCustomerCodeDigitsChange,
+    handleCustomerCodeFillGapsChange,
     saveApprovalSettings,
     tabs
   };
