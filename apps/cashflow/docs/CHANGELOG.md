@@ -1,5 +1,16 @@
 # Changelog — Cashflow
 
+## 2026-08-04
+
+### Fixed
+
+- **Approval settings save now surfaces real feedback and empty prefix is honored.**
+  - `useSettingsState.saveApprovalSettings` uses `.single()`, validates returned `data`, and sets `successMessage`/`error` so the UI no longer silently no-ops.
+  - `ApprovalSettingsTab` disables `Lưu cấu hình` and shows `Đang lưu...` while saving.
+  - Settings load from `selectedCompany?.approval_settings` first; `CustomerFormModal` also reads `selectedCompany` instead of stale `user.company`.
+  - `generateCustomerCode` preserves an explicit empty `customer_code_prefix`, allowing digit-only codes such as `001`.
+  - Migration `20260804000008_company_settings_rls.sql` adds RLS policies so company admins can `UPDATE` `companies.approval_settings`.
+
 ## 2026-08-28
 
 ### Added
