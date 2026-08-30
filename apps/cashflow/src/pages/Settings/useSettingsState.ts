@@ -5,7 +5,7 @@ import { toast } from "../../utils/toast";
 import * as XLSX from "xlsx";
 import { databaseService } from "../../services/database";
 import { supabase } from "../../services/supabase";
-import { useAuthContext as useAuth } from "@superapp/iam";
+import { useAuthContext as useAuth, useCompany } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useNavigate } from "react-router-dom";
 import { backupService, recoveryUtils, type BackupData } from "../../utils/backupRecovery";
@@ -93,6 +93,7 @@ interface CustomerBalanceRow {
 export function useSettingsState() {
 
   const { user } = useAuth();
+  const { selectedCompany, refetchCompanies } = useCompany();
 
   const companyId = useCompanyId();
 
@@ -214,8 +215,10 @@ export function useSettingsState() {
     customer_code_fill_gaps: boolean;
   }>(defaultApprovalSettings);
 
+  const [isSavingApprovalSettings, setIsSavingApprovalSettings] = useState(false);
+
   useEffect(() => {
-    const settings = user?.company?.approval_settings;
+    const settings = selectedCompany?.approval_settings ?? user?.company?.approval_settings;
     if (settings) {
       setApprovalSettings((prev) => ({
         transactions: settings.transactions ?? prev.transactions,
@@ -228,7 +231,7 @@ export function useSettingsState() {
         customer_code_fill_gaps: settings.customer_code_fill_gaps ?? prev.customer_code_fill_gaps,
       }));
     }
-  }, [user?.company?.approval_settings]);
+  }, [selectedCompany?.approval_settings, user?.company?.approval_settings]);
 
   const handleApprovalSettingChange = useCallback((key: string, value: boolean) => {
     setApprovalSettings((prev) => ({ ...prev, [key]: value }));
@@ -253,20 +256,27 @@ export function useSettingsState() {
       setError("Không xác định được công ty");
       return;
     }
+    setIsSavingApprovalSettings(true);
+    setError(null);
+    setSuccessMessage(null);
     try {
-      const { error: saveError } = await supabase
+      const { data, error: saveError } = await supabase
         .from("companies")
         .update({ approval_settings: approvalSettings })
         .eq("id", companyId)
         .select()
-        .maybeSingle();
+        .single();
       if (saveError) throw saveError;
+      if (!data) throw new Error("Không có quyền cập nhật hoặc công ty không tồn tại");
       setSuccessMessage("Đã lưu cấu hình duyệt");
       setTimeout(() => setSuccessMessage(null), 3000);
+      await refetchCompanies();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không lưu được cấu hình duyệt");
+    } finally {
+      setIsSavingApprovalSettings(false);
     }
-  }, [companyId, approvalSettings]);
+  }, [companyId, approvalSettings, refetchCompanies]);
 
 
   // Opening balance import state
@@ -1851,6 +1861,7 @@ export function useSettingsState() {
     handleCustomerCodeDigitsChange,
     handleCustomerCodeFillGapsChange,
     saveApprovalSettings,
+    isSavingApprovalSettings,
     tabs
   };
 }

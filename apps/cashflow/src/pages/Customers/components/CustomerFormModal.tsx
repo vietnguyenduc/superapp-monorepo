@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { logger } from "../../../utils/logger";
 import { useTranslation } from "react-i18next";
 import { useCompanyId } from "../../../hooks/useCompanyId";
-import { useAuthContext as useAuth } from "@superapp/iam";
+import { useAuthContext as useAuth, useCompany } from "@superapp/iam";
 import { databaseService } from "../../../services/database";
 import { useDraftSave } from "../../../hooks/useDraftSave";
 import type { Customer } from "../../../types";
@@ -61,8 +61,9 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   const [checkingPhone, setCheckingPhone] = useState(false);
   const companyId = useCompanyId();
   const { user } = useAuth();
-  const customerCodeSettings = user?.company?.approval_settings;
-  const autoCustomerCode = user?.company?.approval_settings?.auto_customer_code !== false;
+  const { selectedCompany } = useCompany();
+  const customerCodeSettings = selectedCompany?.approval_settings ?? user?.company?.approval_settings;
+  const autoCustomerCode = (selectedCompany?.approval_settings ?? user?.company?.approval_settings)?.auto_customer_code !== false;
 
   const { loadDraft, clearDraft } = useDraftSave<FormData>(DRAFT_KEY, formData, mode === "create");
 
@@ -95,7 +96,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         }
       }
     }
-  }, [customer, mode, autoCustomerCode, companyId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [customer, mode, autoCustomerCode, companyId, customerCodeSettings]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
