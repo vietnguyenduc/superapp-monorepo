@@ -61,6 +61,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   const [checkingPhone, setCheckingPhone] = useState(false);
   const companyId = useCompanyId();
   const { user } = useAuth();
+  const customerCodeSettings = user?.company?.approval_settings;
   const autoCustomerCode = user?.company?.approval_settings?.auto_customer_code !== false;
 
   const { loadDraft, clearDraft } = useDraftSave<FormData>(DRAFT_KEY, formData, mode === "create");
@@ -86,7 +87,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       } else {
         setFormData((prev) => ({ ...prev }));
         if (autoCustomerCode) {
-          databaseService.customers.generateCustomerCode(companyId).then(({ data, error }) => {
+          databaseService.customers.generateCustomerCode(companyId, customerCodeSettings).then(({ data, error }) => {
             if (!error && data) {
               setFormData((prev) => ({ ...prev, customer_code: data as string }));
             }
@@ -154,7 +155,7 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     try {
       const { create_transactions, ...payload } = formData;
       if (mode === "create" && autoCustomerCode && !payload.customer_code) {
-        const { data: code, error: codeErr } = await databaseService.customers.generateCustomerCode(companyId);
+        const { data: code, error: codeErr } = await databaseService.customers.generateCustomerCode(companyId, customerCodeSettings);
         if (!codeErr && code) payload.customer_code = code as string;
       }
       await onSubmit(payload, { createTransactions: create_transactions });

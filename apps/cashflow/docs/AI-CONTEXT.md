@@ -28,7 +28,7 @@ A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management
 ## Important files
 
 - `src/services/transactionService.ts` — CRUD + bulk import + **write-time balance sync**. `getTransactions` search covers `transaction_code`, `description`, `reference_number`, and the customer's `full_name`/`customer_code` via `customer_id.in.(...)` (no arbitrary limit). It also supports `sortBy`/`sortOrder` for `transaction_date`, `transaction_type`, `amount`, and `created_at` in both live and trial modes.
-- `src/services/customerService.ts` — customer CRUD; defaults to `status='active'`; use `status='all'` to include pending/rejected.
+- `src/services/customerService.ts` — customer CRUD; defaults to `status='active'`; use `status='all'` to include pending/rejected. `generateCustomerCode` reads `customer_code_prefix`, `customer_code_digits`, and `customer_code_fill_gaps` from `approval_settings` (default prefix `KH`, 4 digits, no gap fill).
 - `src/services/bankAccountService.ts` — bank account CRUD; optional `status` filter.
 - `src/services/branchService.ts` — branch CRUD; optional `status` filter.
 - `src/services/approvalService.ts` — generic `updateEntityStatus(table, id, status, companyId)` used by `ApprovalsPage`.
