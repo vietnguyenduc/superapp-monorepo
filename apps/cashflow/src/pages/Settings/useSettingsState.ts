@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import type { ChangeEvent } from "react";
 import { logger } from "../../utils/logger";
 import { toast } from "../../utils/toast";
 import * as XLSX from "xlsx";
 import { databaseService } from "../../services/database";
 import { supabase } from "../../services/supabase";
-import { useAuthContext as useAuth } from "@superapp/iam";
+import { useAuthContext as useAuth, useCompany } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useNavigate } from "react-router-dom";
 import { backupService, recoveryUtils, type BackupData } from "../../utils/backupRecovery";
@@ -93,8 +93,10 @@ interface CustomerBalanceRow {
 export function useSettingsState() {
 
   const { user } = useAuth();
+  const { selectedCompany, refetchCompanies } = useCompany();
 
   const companyId = useCompanyId();
+  const approvalSettingsCompanyIdRef = useRef<string | undefined>(undefined);
 
   const navigate = useNavigate();
 
@@ -214,21 +216,28 @@ export function useSettingsState() {
     customer_code_fill_gaps: boolean;
   }>(defaultApprovalSettings);
 
+  const [isSavingApprovalSettings, setIsSavingApprovalSettings] = useState(false);
+
   useEffect(() => {
-    const settings = user?.company?.approval_settings;
-    if (settings) {
-      setApprovalSettings((prev) => ({
-        transactions: settings.transactions ?? prev.transactions,
-        customers: settings.customers ?? prev.customers,
-        bank_accounts: settings.bank_accounts ?? prev.bank_accounts,
-        branches: settings.branches ?? prev.branches,
-        auto_customer_code: settings.auto_customer_code ?? prev.auto_customer_code,
-        customer_code_prefix: settings.customer_code_prefix ?? prev.customer_code_prefix,
-        customer_code_digits: settings.customer_code_digits ?? prev.customer_code_digits,
-        customer_code_fill_gaps: settings.customer_code_fill_gaps ?? prev.customer_code_fill_gaps,
-      }));
-    }
-  }, [user?.company?.approval_settings]);
+    // Start from defaults every time the active company changes so switching
+    // companies does not leak one company's settings into another.
+    const activeCompanyId = selectedCompany?.id ?? user?.company?.id;
+    if (approvalSettingsCompanyIdRef.current === activeCompanyId) return;
+    approvalSettingsCompanyIdRef.current = activeCompanyId;
+
+    const base = { ...defaultApprovalSettings };
+    const settings = selectedCompany ? selectedCompany.approval_settings : user?.company?.approval_settings;
+    setApprovalSettings({
+      transactions: settings?.transactions ?? base.transactions,
+      customers: settings?.customers ?? base.customers,
+      bank_accounts: settings?.bank_accounts ?? base.bank_accounts,
+      branches: settings?.branches ?? base.branches,
+      auto_customer_code: settings?.auto_customer_code ?? base.auto_customer_code,
+      customer_code_prefix: settings?.customer_code_prefix ?? base.customer_code_prefix,
+      customer_code_digits: settings?.customer_code_digits ?? base.customer_code_digits,
+      customer_code_fill_gaps: settings?.customer_code_fill_gaps ?? base.customer_code_fill_gaps,
+    });
+  }, [selectedCompany?.id, user?.company?.id]);
 
   const handleApprovalSettingChange = useCallback((key: string, value: boolean) => {
     setApprovalSettings((prev) => ({ ...prev, [key]: value }));
@@ -253,20 +262,27 @@ export function useSettingsState() {
       setError("Không xác định được công ty");
       return;
     }
+    setIsSavingApprovalSettings(true);
+    setError(null);
+    setSuccessMessage(null);
     try {
-      const { error: saveError } = await supabase
+      const { data, error: saveError } = await supabase
         .from("companies")
         .update({ approval_settings: approvalSettings })
         .eq("id", companyId)
         .select()
-        .maybeSingle();
+        .single();
       if (saveError) throw saveError;
+      if (!data) throw new Error("Không có quyền cập nhật hoặc công ty không tồn tại");
       setSuccessMessage("Đã lưu cấu hình duyệt");
       setTimeout(() => setSuccessMessage(null), 3000);
+      await refetchCompanies();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không lưu được cấu hình duyệt");
+    } finally {
+      setIsSavingApprovalSettings(false);
     }
-  }, [companyId, approvalSettings]);
+  }, [companyId, approvalSettings, refetchCompanies]);
 
 
   // Opening balance import state
@@ -1851,6 +1867,7 @@ export function useSettingsState() {
     handleCustomerCodeDigitsChange,
     handleCustomerCodeFillGapsChange,
     saveApprovalSettings,
+    isSavingApprovalSettings,
     tabs
   };
 }

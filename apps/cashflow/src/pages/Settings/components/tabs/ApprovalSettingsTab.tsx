@@ -145,8 +145,8 @@ export function ApprovalSettingsTab() {
       </div>
 
       <div className="flex justify-end">
-        <Button onClick={s.saveApprovalSettings} disabled={s.loading}>
-          Lưu cấu hình
+        <Button onClick={s.saveApprovalSettings} disabled={s.isSavingApprovalSettings || s.loading}>
+          {s.isSavingApprovalSettings ? "Đang lưu..." : "Lưu cấu hình"}
         </Button>
       </div>
     </div>

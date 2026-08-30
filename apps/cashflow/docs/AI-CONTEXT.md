@@ -28,7 +28,7 @@ A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management
 ## Important files
 
 - `src/services/transactionService.ts` — CRUD + bulk import + **write-time balance sync**. `getTransactions` search covers `transaction_code`, `description`, `reference_number`, and the customer's `full_name`/`customer_code` via `customer_id.in.(...)` (no arbitrary limit). It also supports `sortBy`/`sortOrder` for `transaction_date`, `transaction_type`, `amount`, and `created_at` in both live and trial modes.
-- `src/services/customerService.ts` — customer CRUD; defaults to `status='active'`; use `status='all'` to include pending/rejected. `generateCustomerCode` reads `customer_code_prefix`, `customer_code_digits`, and `customer_code_fill_gaps` from `approval_settings` (default prefix `KH`, 4 digits, no gap fill).
+- `src/services/customerService.ts` — customer CRUD; defaults to `status='active'`; use `status='all'` to include pending/rejected. `generateCustomerCode` reads `customer_code_prefix`, `customer_code_digits`, and `customer_code_fill_gaps` from `approval_settings` (empty prefix is allowed; default prefix `KH`, 4 digits, no gap fill).
 - `src/services/bankAccountService.ts` — bank account CRUD; optional `status` filter.
 - `src/services/branchService.ts` — branch CRUD; optional `status` filter.
 - `src/services/approvalService.ts` — generic `updateEntityStatus(table, id, status, companyId)` used by `ApprovalsPage`.
@@ -47,6 +47,9 @@ A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management
 - `src/pages/Transactions/TransactionList.tsx` — transaction list with server-side pagination (page-size selector), column-visibility dropdown, frozen `Ngày giao dịch` + `Khách hàng` columns, sortable `Ngày` / `Loại giao dịch` / `Số tiền` headers with ▲/▼ indicators, and group-by `Ngày` / `Tuần` / `Tháng` / `Văn phòng` / `Loại giao dịch` / `Khách hàng`. Group summary uses `getCustomerBalanceDelta` to separate `Tổng phát sinh tăng` (excludes `Hoàn tiền`), `Tổng phát sinh giảm`, `Tổng hoàn tiền`, `Tổng điều chỉnh`, and `Net`.
 - `src/contexts/TransactionTypeContext.tsx` — provides transaction type labels, colors, and math factors. Must load `transaction_types` scoped to the active company (via `useCompanyId()`); `getMathFactor` uses the stored `math_factor` from the resolved type row and only falls back to the canonical semantic factor when the row is missing or has no configured factor.
 - `src/pages/Settings/Settings.tsx` — provider shell + `SettingsContent`; per-tab JSX in `pages/Settings/components/tabs/*.tsx`; state in `useSettingsState.ts`; shared context in `SettingsContext.tsx`; `colorOptions`/`getColorClass` in `Settings/utils.ts`.
+  - `useSettingsState` resets `approvalSettings` to `defaultApprovalSettings` whenever the active company (`selectedCompany?.id`/`user?.company?.id`) changes, then merges persisted `selectedCompany.approval_settings` to avoid leaking one company's config into another.
+  - `saveApprovalSettings` writes to `public.companies.approval_settings` (JSONB), uses `.single()` so a zero-row `UPDATE` is treated as an error, and surfaces `successMessage`/`error` to `ApprovalSettingsTab`.
+  - RLS: `public.companies` is protected by `ROW LEVEL SECURITY`. `admin` can update any company; `admin_company` can only update their assigned company; `admin_master` is unrestricted. A `BEFORE UPDATE` trigger (`trg_companies_approval_settings_only`) rejects non-`admin_master` updates that change columns other than `approval_settings` (and `updated_at`).
 - `src/types/index.ts` and `src/types/database.types.ts` — TS types.
 
 ## Money sign conventions (critical)
