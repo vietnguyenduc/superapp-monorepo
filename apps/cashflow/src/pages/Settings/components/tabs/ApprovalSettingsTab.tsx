@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useSettingsContext } from "../../SettingsContext";
 import Button from "../../../../components/UI/Button";
 
@@ -26,6 +27,11 @@ const approvalOptions: { key: string; label: string; description: string }[] = [
 
 export function ApprovalSettingsTab() {
   const s = useSettingsContext();
+  const [digitsRaw, setDigitsRaw] = useState(String(s.approvalSettings.customer_code_digits ?? 4));
+
+  useEffect(() => {
+    setDigitsRaw(String(s.approvalSettings.customer_code_digits ?? 4));
+  }, [s.approvalSettings.customer_code_digits]);
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
@@ -108,11 +114,22 @@ export function ApprovalSettingsTab() {
             </label>
             <input
               id="customer-code-digits"
-              type="number"
-              min={1}
-              max={12}
-              value={s.approvalSettings.customer_code_digits}
-              onChange={(e) => s.handleCustomerCodeDigitsChange(e.target.valueAsNumber)}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              autoComplete="off"
+              maxLength={2}
+              value={digitsRaw}
+              onChange={(e) => setDigitsRaw(e.target.value.replace(/[^0-9]/g, "").slice(0, 2))}
+              onBlur={(e) => {
+                const parsed = parseInt(e.target.value, 10);
+                if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 12) {
+                  s.handleCustomerCodeDigitsChange(parsed);
+                  setDigitsRaw(String(parsed));
+                } else {
+                  setDigitsRaw(String(s.approvalSettings.customer_code_digits ?? 4));
+                }
+              }}
               className="mt-1 block w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500"
             />
           </div>

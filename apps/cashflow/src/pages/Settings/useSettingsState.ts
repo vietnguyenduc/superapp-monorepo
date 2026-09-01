@@ -248,8 +248,10 @@ export function useSettingsState() {
     setApprovalSettings((prev) => ({ ...prev, customer_code_prefix: sanitized }));
   }, []);
 
-  const handleCustomerCodeDigitsChange = useCallback((value: number) => {
-    const digits = Math.min(Math.max(Number.isFinite(value) ? value : 4, 1), 12);
+  const handleCustomerCodeDigitsChange = useCallback((value: string | number) => {
+    const raw = typeof value === "string" ? value.trim() : String(value);
+    const parsed = raw === "" ? 4 : Number(raw);
+    const digits = Number.isFinite(parsed) ? Math.min(Math.max(parsed, 1), 12) : 4;
     setApprovalSettings((prev) => ({ ...prev, customer_code_digits: digits }));
   }, []);
 
