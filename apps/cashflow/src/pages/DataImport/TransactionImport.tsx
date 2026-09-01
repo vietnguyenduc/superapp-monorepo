@@ -2,7 +2,7 @@
 import { useTranslation } from "react-i18next";
 import { logger } from "../../utils/logger";
 import { toast } from "../../utils/toast";
-import * as XLSX from "xlsx";
+import { getXLSX } from "../../utils/xlsxLoader";
 import { useSearchParams } from "react-router-dom";
 import { useAuthContext } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
@@ -938,7 +938,8 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
 
   // Thay thế importFieldConfig và importSamples bằng các giá trị động dựa trên importFields:
   const enabledFields = normalizedFields.filter((f: ImportField) => f.enabled);
-  const handleDownloadTemplate = useCallback(() => {
+  const handleDownloadTemplate = useCallback(async () => {
+    const XLSX = await getXLSX();
     const headers = enabledFields.map((field: ImportField) => field.key);
 
     // Pick real values from loaded options so the sample passes validation
@@ -1008,7 +1009,25 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   }, [emptyRow]);
 
   const handleFileUpload = useCallback(
-    (file: File) => {
+    async (file: File) => {
+      let XLSX;
+      try {
+        XLSX = await getXLSX();
+      } catch (err) {
+        logger.error("Load xlsx for transaction import failed:", err);
+        setImportData({
+          file: null,
+          data: [],
+          errors: [{
+            row: 0,
+            column: "general",
+            message: "Không tải được thư viện Excel. Vui lòng thử lại.",
+          }],
+          isValid: false,
+        });
+        setDropInfo("Lỗi tải thư viện Excel");
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (evt) => {
         const data = evt.target?.result;

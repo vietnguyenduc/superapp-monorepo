@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import { getXLSX } from "./xlsxLoader";
 import { logger } from "../utils/logger";
 import type { Customer, Transaction, BankAccount, Branch } from "../types";
 import { databaseService } from "../services/database";
@@ -284,6 +284,7 @@ export const backupService = {
       }
 
       // Create Excel workbook
+      const XLSX = await getXLSX();
       const workbook = XLSX.utils.book_new();
 
       // Add metadata sheet
@@ -400,6 +401,7 @@ export const backupService = {
 
   // Import Excel backup
   async importExcelBackup(file: File): Promise<BackupData> {
+    const XLSX = await getXLSX();
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 

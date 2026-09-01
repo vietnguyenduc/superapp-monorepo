@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import * as XLSX from "xlsx";
+import { getXLSX } from "../../utils/xlsxLoader";
 import { databaseService } from "../../services/database";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { formatCurrency } from "../../utils/formatting";
 import { toast } from "../../utils/toast";
+import { logger } from "../../utils/logger";
 import Button from "../../components/UI/Button";
 import PageHeader from "../../components/UI/PageHeader";
 import { LoadingFallback } from "../../components/UI/FallbackUI";
@@ -32,6 +33,7 @@ const OpeningBalanceExport: React.FC = () => {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"customer_code" | "full_name" | "opening_balance" | "total_balance">("customer_code");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [exporting, setExporting] = useState(false);
 
   const fetchRows = useCallback(async () => {
     if (!companyId) {
@@ -115,23 +117,32 @@ const OpeningBalanceExport: React.FC = () => {
     );
   }, [sortedRows]);
 
-  const handleExport = useCallback(() => {
+  const handleExport = useCallback(async () => {
     if (sortedRows.length === 0) {
       toast.warning(t("customers.noDataToExport", "Không có dữ liệu để xuất"));
       return;
     }
-    const exportDate = new Date().toLocaleDateString("vi-VN");
-    const note = `Ghi chú: Công nợ hiện tại được tính đến ngày ${exportDate}`;
-    const headers = ["Mã khách hàng", "Tên khách hàng", "Số dư đầu kỳ", "Công nợ hiện tại"];
-    const dataRows = sortedRows.map((r) => [r.customer_code, r.full_name, r.opening_balance, r.total_balance]);
-    const aoa = [[note], headers, ...dataRows];
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Số dư đầu kỳ");
-    const filename = `ton-dau-ky-khach-hang-${exportDate.replace(/\//g, "-")}.xlsx`;
-    XLSX.writeFile(wb, filename);
-    toast.success(t("customers.exportSuccess", "Đã xuất {{count}} khách hàng", { count: sortedRows.length }));
+    setExporting(true);
+    try {
+      const XLSX = await getXLSX();
+      const exportDate = new Date().toLocaleDateString("vi-VN");
+      const note = `Ghi chú: Công nợ hiện tại được tính đến ngày ${exportDate}`;
+      const headers = ["Mã khách hàng", "Tên khách hàng", "Số dư đầu kỳ", "Công nợ hiện tại"];
+      const dataRows = sortedRows.map((r) => [r.customer_code, r.full_name, r.opening_balance, r.total_balance]);
+      const aoa = [[note], headers, ...dataRows];
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Số dư đầu kỳ");
+      const filename = `ton-dau-ky-khach-hang-${exportDate.replace(/\//g, "-")}.xlsx`;
+      XLSX.writeFile(wb, filename);
+      toast.success(t("customers.exportSuccess", "Đã xuất {{count}} khách hàng", { count: sortedRows.length }));
+    } catch (err) {
+      logger.error("Export opening balance failed:", err);
+      toast.error("Xuất Excel thất bại: " + (err instanceof Error ? err.message : "Lỗi không xác định"));
+    } finally {
+      setExporting(false);
+    }
   }, [sortedRows, t]);
 
   const getSortIcon = (column: typeof sortBy) => {
@@ -161,8 +172,8 @@ const OpeningBalanceExport: React.FC = () => {
             <Button variant="secondary" size="sm" onClick={() => navigate("/customers")}>
               {t("common.back", "Quay lại")}
             </Button>
-            <Button variant="primary" size="sm" onClick={handleExport} disabled={sortedRows.length === 0}>
-              {t("common.export", "Xuất Excel")}
+            <Button variant="primary" size="sm" onClick={handleExport} disabled={sortedRows.length === 0 || exporting}>
+              {exporting ? "Đang xuất..." : t("common.export", "Xuất Excel")}
             </Button>
           </div>
         }

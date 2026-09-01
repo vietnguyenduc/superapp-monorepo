@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { toast } from "../../utils/toast";
+import { logger } from "../../utils/logger";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import * as XLSX from "xlsx";
+import { getXLSX } from "../../utils/xlsxLoader";
 import { useAuthContext as useAuth } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useDebounce } from "../../hooks/useDebounce";
@@ -83,6 +84,7 @@ const CustomerList: React.FC = () => {
   const navigate = useNavigate();
 
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const [stickyFilterEl, setStickyFilterEl] = useState<HTMLDivElement | null>(null);
 
@@ -325,9 +327,12 @@ const CustomerList: React.FC = () => {
     }
   }, [companyId, debouncedSearchTerm, fetchCustomers]);
 
-  const handleExportExcel = useCallback(() => {
+  const handleExportExcel = useCallback(async () => {
     // Export the same filtered + sorted dataset the user sees, and only visible columns.
-    const direction = state.sortOrder === "asc" ? 1 : -1;
+    setExporting(true);
+    try {
+      const XLSX = await getXLSX();
+      const direction = state.sortOrder === "asc" ? 1 : -1;
     const sorted = [...state.allCustomers].sort((a, b) => {
       if (state.sortBy === "customer_code") {
         return (toNum(getField(a, "customer_code")) - toNum(getField(b, "customer_code"))) * direction;
@@ -363,6 +368,12 @@ const CustomerList: React.FC = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Danh sách khách hàng");
     XLSX.writeFile(wb, `danh-sach-khach-hang-${exportDate.replace(/\//g, "-")}.xlsx`);
+    } catch (err) {
+      logger.error("Export customers failed:", err);
+      toast.error("Xuất Excel thất bại: " + (err instanceof Error ? err.message : "Lỗi không xác định"));
+    } finally {
+      setExporting(false);
+    }
   }, [state.allCustomers, state.visibleColumns, state.sortBy, state.sortOrder]);
 
   const toNum = (v: unknown) => {
@@ -732,13 +743,14 @@ const CustomerList: React.FC = () => {
                     <div className="py-1">
                       <button
                         type="button"
+                        disabled={exporting}
                         onClick={() => {
                           setExportMenuOpen(false);
                           handleExportExcel();
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Xuất Excel danh sách
+                        {exporting ? "Đang xuất..." : "Xuất Excel danh sách"}
                       </button>
                       <button
                         type="button"
