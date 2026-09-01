@@ -49,6 +49,7 @@ A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management
 - `src/pages/Settings/Settings.tsx` — provider shell + `SettingsContent`; per-tab JSX in `pages/Settings/components/tabs/*.tsx`; state in `useSettingsState.ts`; shared context in `SettingsContext.tsx`; `colorOptions`/`getColorClass` in `Settings/utils.ts`.
   - `useSettingsState` resets `approvalSettings` to `defaultApprovalSettings` whenever the active company (`selectedCompany?.id`/`user?.company?.id`) changes, then merges persisted `selectedCompany.approval_settings` to avoid leaking one company's config into another.
   - `saveApprovalSettings` writes to `public.companies.approval_settings` (JSONB), uses `.single()` so a zero-row `UPDATE` is treated as an error, and surfaces `successMessage`/`error` to `ApprovalSettingsTab`.
+  - `ApprovalSettingsTab` uses a local raw string for the `Số chữ số` field (`inputMode="numeric"`, `maxLength={2}`) and commits the parsed/clamped value on `blur` so mobile users can clear and retype digits without the input snapping back to the default.
   - RLS: `public.companies` is protected by `ROW LEVEL SECURITY`. `admin` can update any company; `admin_company` can only update their assigned company; `admin_master` is unrestricted. A `BEFORE UPDATE` trigger (`trg_companies_approval_settings_only`) rejects non-`admin_master` updates that change columns other than `approval_settings` (and `updated_at`).
 - `src/types/index.ts` and `src/types/database.types.ts` — TS types.
 

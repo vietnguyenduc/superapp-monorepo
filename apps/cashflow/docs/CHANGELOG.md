@@ -13,6 +13,15 @@
   - Migration `20260804000008_company_settings_rls.sql` adds RLS policies so company admins can `UPDATE` `companies.approval_settings`.
   - Migration `20260804000009_company_approval_settings_rls.sql` narrows the `UPDATE` policy to `admin` (any company) / `admin_company` (own company) and adds a `BEFORE UPDATE` trigger that rejects any non-`approval_settings` column change for non-`admin_master` users.
 
+## 2026-08-04
+
+### Fixed
+
+- **`Số chữ số` input now allows clearing and retyping on mobile.**
+  - `ApprovalSettingsTab` renders the digits field as a controlled text input with `inputMode="numeric"` and a local raw string state.
+  - The value is parsed and committed to `approvalSettings.customer_code_digits` on `blur`, falling back to the previous value if out of range or empty.
+  - `useSettingsState.handleCustomerCodeDigitsChange` accepts `string | number` and clamps to `[1, 12]`.
+
 ## 2026-08-28
 
 ### Added
