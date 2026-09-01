@@ -18,20 +18,29 @@ export default defineConfig({
   build: {
     // Split heavy vendor libs into shared chunks so navigating between lazy
     // pages doesn't re-download react/recharts/date-fns for every page chunk.
+    // NOTE: Vite 8 / Rolldown requires manualChunks to be a function, not an
+    // object (the object form was supported by Rollup but throws
+    // "manualChunks is not a function" under Rolldown).
     rollupOptions: {
       output: {
-        manualChunks: {
-          // React core — shared by every page
-          "vendor-react": ["react", "react-dom", "react-router-dom"],
-          // i18n — used app-wide
-          "vendor-i18n": ["i18next", "react-i18next", "i18next-browser-languagedetector", "i18next-http-backend"],
-          // Charts — only Dashboard needs them, but isolate so other pages
-          // don't accidentally pull recharts in via a shared chunk
-          "vendor-charts": ["recharts"],
-          // Date utilities — used across many pages
-          "vendor-date": ["date-fns"],
-          // Icons — tree-shaken per icon but keep the runtime in one chunk
-          "vendor-icons": ["react-icons"],
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("/react-router") || /[\\/]react[\\/]|[\\/]react-dom[\\/]/.test(id)) {
+              return "vendor-react";
+            }
+            if (id.includes("/i18next") || id.includes("/react-i18next")) {
+              return "vendor-i18n";
+            }
+            if (id.includes("/recharts")) {
+              return "vendor-charts";
+            }
+            if (id.includes("/date-fns")) {
+              return "vendor-date";
+            }
+            if (id.includes("/react-icons")) {
+              return "vendor-icons";
+            }
+          }
         },
       },
     },
