@@ -17,7 +17,8 @@ import Pagination from "../../components/UI/Pagination";
 import PageHeader from "../../components/UI/PageHeader";
 import Button from "../../components/UI/Button";
 import TransactionEditModal, { type TransactionEditFormValues } from "./components/TransactionEditModal";
-import * as XLSX from "xlsx";
+import { TransactionRow } from "./components/TransactionRow";
+import { getXLSX } from "../../utils/xlsxLoader";
 
 interface TransactionListState {
   transactions: Transaction[];
@@ -145,6 +146,7 @@ const TransactionList: React.FC = () => {
 
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [importMenuOpen, setImportMenuOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const importMenuRef = useRef<HTMLDivElement>(null);
 
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() =>
@@ -291,6 +293,14 @@ const TransactionList: React.FC = () => {
     }
     return map;
   }, [users, user]);
+
+  // O(1) customer lookup map — replaces O(n) customers.find() per row.
+  // With 20 rows × 500 customers this saves ~10,000 find() calls per render.
+  const customerMap = useMemo(() => {
+    const m = new Map<string, { id: string; name: string; code?: string }>();
+    customers.forEach((c) => m.set(c.id, c));
+    return m;
+  }, [customers]);
 
   const resolveCreatorName = useCallback((createdBy?: string | null, creatorName?: string | null, creatorEmail?: string | null) => {
     if (!createdBy) return "—";
@@ -655,7 +665,9 @@ const TransactionList: React.FC = () => {
   }, []);
 
   const handleExportExcel = useCallback(async () => {
+    setExporting(true);
     try {
+      const XLSX = await getXLSX();
       const filters = {
         search: debouncedSearchTerm || undefined,
         dateRange: state.dateRange || undefined,
@@ -734,6 +746,8 @@ const TransactionList: React.FC = () => {
     } catch (err) {
       logger.error("Export transactions failed:", err);
       toast.error("Xuất Excel thất bại: " + (err instanceof Error ? err.message : "Lỗi không xác định"));
+    } finally {
+      setExporting(false);
     }
   }, [debouncedSearchTerm, state.dateRange, state.transactionType, state.customerFilter, state.branchFilter, state.bankAccountFilter, state.userFilter, state.statusFilter, state.sortBy, state.sortOrder, companyId, visibleColumns, getCustomerCode, getCustomerName, getStatusLabel, getTransactionTypeName, resolveCreatorName]);
 
@@ -918,9 +932,10 @@ const TransactionList: React.FC = () => {
                   variant="secondary"
                   size="md"
                   onClick={handleExportExcel}
+                  disabled={exporting}
                   className="h-10"
                 >
-                  Xuất Excel
+                  {exporting ? "Đang xuất..." : "Xuất Excel"}
                 </Button>
                 <div className="relative" ref={importMenuRef}>
                   <Button
@@ -1328,150 +1343,27 @@ const TransactionList: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
-                  {state.transactions.map((transaction) => (
-                    <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {formatDate(transaction.transaction_date)}
-                      </td>
-                      <td className="px-2 py-2 text-sm text-gray-900 dark:text-white">
-                        {transaction.customer_id ? (
-                          <>
-                            <button
-                              type="button"
-                              className="block w-full text-left bg-transparent p-0 border-none text-gray-900 dark:text-white hover:underline hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate font-medium"
-                              title={transaction.customer_name || customers.find(c => c.id === String(transaction.customer_id))?.name || `Customer #${transaction.customer_id}`}
-                              onClick={() => navigate(`/customers/${transaction.customer_id}`)}
-                            >
-                              {transaction.customer_name || (transaction.customer_id ? customers.find(c => c.id === String(transaction.customer_id))?.name : null) || `Customer #${transaction.customer_id}`}
-                            </button>
-                            {getCustomerCode(transaction.customer_id) ? (
-                              <div className="mt-0.5 font-mono text-xs text-gray-500 dark:text-gray-400 truncate">{getCustomerCode(transaction.customer_id)}</div>
-                            ) : null}
-                          </>
-                        ) : (
-                          <span className="text-gray-500 dark:text-gray-400">—</span>
-                        )}
-                      </td>
-                      {visibleColumnKeys.includes("type") && (
-                        <td className="px-2 py-2">
-                          <span
-                            className={`inline-block max-w-full truncate px-1.5 py-0.5 rounded-full text-xs font-medium ${getTransactionTypeColor(transaction.transaction_type)}`}
-                            title={getTransactionTypeName(transaction.transaction_type)}
-                          >
-                            {getTransactionTypeName(transaction.transaction_type)}
-                          </span>
-                        </td>
-                      )}
-                      {visibleColumnKeys.includes("amount") && (
-                        <td className="px-2 py-2 text-right">
-                          <span
-                            className={`text-sm font-bold ${getTransactionTypeAmountColor(transaction.transaction_type, transaction.amount)}`}
-                          >
-                            {formatCurrency(parseAmount(transaction.amount))}
-                          </span>
-                        </td>
-                      )}
-                      {visibleColumnKeys.includes("branch") && (
-                        <td className="px-2 py-2 text-sm text-gray-900 dark:text-white truncate" title={transaction.branch_name || undefined}>
-                          {transaction.branch_name || "—"}
-                        </td>
-                      )}
-                      {visibleColumnKeys.includes("bank") && (
-                        <td className="px-2 py-2 text-sm text-gray-900 dark:text-white truncate" title={transaction.bank_account_name || undefined}>
-                          {transaction.bank_account_name || formatBankAccountLabel(
-                            transaction.bank_accounts?.bank_name,
-                            transaction.bank_accounts?.account_number,
-                            transaction.bank_accounts?.account_name,
-                          ) || (transaction.bank_account_id ? `#${transaction.bank_account_id}` : "—")}
-                        </td>
-                      )}
-                      {visibleColumnKeys.includes("creator") && (
-                        <td className="px-2 py-2 text-sm text-gray-900 dark:text-white truncate" title={resolveCreatorName(transaction.created_by, transaction.creator_name, transaction.users?.email) || undefined}>
-                          {resolveCreatorName(transaction.created_by, transaction.creator_name, transaction.users?.email)}
-                        </td>
-                      )}
-                      {visibleColumnKeys.includes("code") && (
-                        <td className="px-2 py-2 text-xs font-medium text-gray-900 dark:text-white">
-                          <span
-                            className="inline-block max-w-full truncate font-mono bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-xs"
-                            title={transaction.transaction_code}
-                          >
-                            {formatShortTransactionCode(transaction.transaction_code || "")}
-                          </span>
-                        </td>
-                      )}
-                      {visibleColumnKeys.includes("status") && (
-                        <td className="px-2 py-2">
-                          {transaction.status === "draft" ? (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">Nháp</span>
-                          ) : transaction.status === "pending" ? (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Chờ</span>
-                          ) : transaction.status === "rejected" ? (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Từ chối</span>
-                          ) : (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Xong</span>
-                          )}
-                        </td>
-                      )}
-                      <td className="px-2 py-2 text-sm text-gray-900 dark:text-white">
-                        <div className="flex flex-wrap items-center gap-1">
-                          {transaction.status === "draft" && (
-                            <button
-                              type="button"
-                              className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium text-xs"
-                              onClick={async () => {
-                                if (!confirm("Gửi giao dịch Nháp để chờ duyệt?")) return;
-                                const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "pending" });
-                                if (error) toast.error("Lỗi khi gửi duyệt"); else fetchTransactions();
-                              }}
-                            >
-                              Gửi
-                            </button>
-                          )}
-                          {canApprove && (transaction.status === "pending" || transaction.status === "rejected") && (
-                            <button
-                              type="button"
-                              className="px-1.5 py-0.5 rounded border border-green-300 dark:border-green-600 text-green-700 dark:text-green-200 bg-green-50 dark:bg-green-900/40 hover:bg-green-100 dark:hover:bg-green-800 font-medium text-xs"
-                              onClick={async () => {
-                                if (!confirm("Duyệt giao dịch vào công nợ?")) return;
-                                const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "completed" });
-                                if (error) toast.error("Lỗi khi duyệt"); else fetchTransactions();
-                              }}
-                            >
-                              Duyệt
-                            </button>
-                          )}
-                          {canApprove && transaction.status === "pending" && (
-                            <button
-                              type="button"
-                              className="px-1.5 py-0.5 rounded border border-red-300 dark:border-red-600 text-red-700 dark:text-red-200 bg-red-50 dark:bg-red-900/40 hover:bg-red-100 dark:hover:bg-red-800 font-medium text-xs"
-                              onClick={async () => {
-                                if (!confirm("Từ chối giao dịch này?")) return;
-                                const { error } = await databaseService.transactions.updateTransaction(transaction.id, { status: "rejected" });
-                                if (error) toast.error("Lỗi khi từ chối"); else fetchTransactions();
-                              }}
-                            >
-                              Từ chối
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-xs"
-                            onClick={() => openEditModal(transaction)}
-                          >
-                            Sửa
-                          </button>
-                          <button
-                            type="button"
-                            className="px-1.5 py-0.5 rounded border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-700 dark:bg-red-900/40 dark:text-red-200 text-xs"
-                            onClick={() => handleDelete(transaction.id)}
-                          >
-                            Xóa
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {state.transactions.map((transaction) => {
+                    const customer = transaction.customer_id ? customerMap.get(String(transaction.customer_id)) : undefined;
+                    const customerName = transaction.customer_name || customer?.name || "";
+                    const customerCode = customer?.code || getCustomerCode(transaction.customer_id);
+                    return (
+                      <TransactionRow
+                        key={transaction.id}
+                        transaction={transaction}
+                        visibleColumnKeys={visibleColumnKeys}
+                        customerName={customerName}
+                        customerCode={customerCode}
+                        getTransactionTypeName={getTransactionTypeName}
+                        resolveCreatorName={resolveCreatorName}
+                        canApprove={canApprove}
+                        onEdit={openEditModal}
+                        onDelete={handleDelete}
+                        onRefresh={fetchTransactions}
+                        onNavigate={navigate}
+                      />
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { logger } from "../../utils/logger";
 import { toast } from "../../utils/toast";
 import { useTranslation } from "react-i18next";
-import * as XLSX from "xlsx";
+import { getXLSX } from "../../utils/xlsxLoader";
 import { useAuthContext } from "@superapp/iam";
 import { captureException } from "@superapp/shared-utils";
 import { useCompanyId } from "../../hooks/useCompanyId";
@@ -193,8 +193,10 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     setCurrentStep(1);
   }, []);
 
-  const handleDownloadSample = useCallback(() => {
-    const headers = ["full_name", "phone", "address", "customer_code", "working_method", "notes", "nguoi_dai_dien"];
+  const handleDownloadSample = useCallback(async () => {
+    try {
+      const XLSX = await getXLSX();
+      const headers = ["full_name", "phone", "address", "customer_code", "working_method", "notes", "nguoi_dai_dien"];
     const rows = [
       {
         full_name: "Công ty An Phát",
@@ -244,6 +246,10 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Customers");
     XLSX.writeFile(workbook, "customer-import-sample.xlsx");
+    } catch (err) {
+      logger.error("Download customer sample failed:", err);
+      toast.error("Tải file mẫu thất bại: " + (err instanceof Error ? err.message : "Lỗi không xác định"));
+    }
   }, []);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -1345,7 +1351,8 @@ function normalizeHeaderKey(header: unknown): string {
     .replace(/[^a-z0-9]/g, ""); // bỏ khoảng trắng, dấu câu, ký tự đặc biệt
 }
 
-function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
+async function parseCustomerFile(file: File): Promise<RawCustomerData[]> {
+  const XLSX = await getXLSX(); // caller wraps in try/catch
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 

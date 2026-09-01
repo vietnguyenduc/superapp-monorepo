@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { logger } from "../../utils/logger";
 import { toast } from "../../utils/toast";
 import { useTranslation } from "react-i18next";
-import * as XLSX from "xlsx";
+import { getXLSX } from "../../utils/xlsxLoader";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext as useAuth } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
@@ -463,6 +463,8 @@ const Dashboard: React.FC = () => {
                               r.reference_number,
                             ]);
 
+                            try {
+                            const XLSX = await getXLSX();
                             const worksheet = XLSX.utils.aoa_to_sheet([
                               ...headerRows,
                               columns,
@@ -470,7 +472,6 @@ const Dashboard: React.FC = () => {
                             ]);
                             const workbook = XLSX.utils.book_new();
                             XLSX.utils.book_append_sheet(workbook, worksheet, "Receivable Ledger");
-                            try {
                               const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
                               const blob = new Blob([excelBuffer], {
                                 type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

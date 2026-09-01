@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import type { ChangeEvent } from "react";
 import { logger } from "../../utils/logger";
 import { toast } from "../../utils/toast";
-import * as XLSX from "xlsx";
+import { getXLSX } from "../../utils/xlsxLoader";
 import { databaseService } from "../../services/database";
 import { supabase } from "../../services/supabase";
 import { useAuthContext as useAuth, useCompany } from "@superapp/iam";
@@ -1394,25 +1394,40 @@ export function useSettingsState() {
 
 
   // Opening balance helpers
-  const handleDownloadOpeningTemplate = () => {
-    const rows = [
-      { customer_code: "CUST0001", opening_balance: 1000000 },
-      { customer_code: "CUST0002", opening_balance: 2500000 },
-      { customer_code: "CUST0003", opening_balance: 500000 },
-    ];
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "OpeningBalances");
-    XLSX.writeFile(wb, "opening_balance_template.xlsx");
+  const handleDownloadOpeningTemplate = async () => {
+    try {
+      const XLSX = await getXLSX();
+      const rows = [
+        { customer_code: "CUST0001", opening_balance: 1000000 },
+        { customer_code: "CUST0002", opening_balance: 2500000 },
+        { customer_code: "CUST0003", opening_balance: 500000 },
+      ];
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "OpeningBalances");
+      XLSX.writeFile(wb, "opening_balance_template.xlsx");
+    } catch (err) {
+      logger.error("Download opening template failed:", err);
+      toast.error("Tải file mẫu thất bại: " + (err instanceof Error ? err.message : "Lỗi không xác định"));
+    }
   };
 
 
-  const handleOpeningFile = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleOpeningFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     setOpeningSuccess(null);
     if (!file) return;
     setOpeningFile(file);
 
+    let XLSX;
+    try {
+      XLSX = await getXLSX();
+    } catch (err) {
+      logger.error("Load xlsx for opening balance import failed:", err);
+      setOpeningErrors(["Không tải được thư viện Excel. Vui lòng thử lại."]);
+      setOpeningRows([]);
+      return;
+    }
     const codeHeaders = ["customer_code", "code", "Mã khách hàng", "Mã KH", "Mã"];
     const balanceHeaders = ["opening_balance", "balance", "Số dư đầu kỳ", "Số dư", "Số dư đầu"];
     const getCell = (row: any, headers: string[]) => {
