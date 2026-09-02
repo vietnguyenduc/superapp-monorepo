@@ -87,19 +87,27 @@ graph TD
 | [docs/DATA-ROUTING.md](./docs/DATA-ROUTING.md) | Supabase + InsForge local mirror |
 | [docs/LESSONS_LEARNED_AND_NEW_APP_PLAYBOOK.md](./docs/LESSONS_LEARNED_AND_NEW_APP_PLAYBOOK.md) | Lessons & new-app playbook |
 | [docs/SUPABASE_SCHEMA_HEALTH_REPORT.md](./docs/SUPABASE_SCHEMA_HEALTH_REPORT.md) | Schema health report |
+| [docs/DEV-ENVIRONMENT.md](./docs/DEV-ENVIRONMENT.md) | **Windows + WSL setup guide** — cài đặt local dev environment |
 | [AGENTS.md](./AGENTS.md) | AI agent rules & workflow |
 
-> Missing root docs (`CODING-STANDARDS.md`, `DATABASE-SCHEMA.md`, `AUTH-AND-RBAC.md`, `TRIAL-SYSTEM.md`, `DATA-MIGRATION.md`, `DEV-ENVIRONMENT.md`) will be created or merged into existing docs as part of the documentation alignment effort.
+> Missing root docs (`CODING-STANDARDS.md`, `DATABASE-SCHEMA.md`, `AUTH-AND-RBAC.md`, `TRIAL-SYSTEM.md`, `DATA-MIGRATION.md`) will be created or merged into existing docs as part of the documentation alignment effort.
 
 ## Quick Start
 
+> **Windows users:** Repo này yêu cầu WSL 2 + Ubuntu. Xem hướng dẫn đầy đủ tại [docs/DEV-ENVIRONMENT.md](./docs/DEV-ENVIRONMENT.md).
+
 ### Prerequisites
-- Node.js >= 20
+- **WSL 2 + Ubuntu** (yêu cầu trên Windows — lockfile chứa native bindings Linux-only)
+- Node.js >= 20 (cài trong WSL: `curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs`)
 - npm >= 10
-- Supabase project (shared: `peslmsctejmvkwzyohke`)
+- Supabase project (shared: `peslmsctejkwzyohke`)
 
 ### Installation
 ```bash
+# Trong WSL Ubuntu — clone vào ~/ (KHÔNG dùng /mnt/c hoặc /mnt/e)
+cd ~
+git clone https://github.com/vietnguyenduc/superapp-monorepo.git
+cd superapp-monorepo
 npm install
 ```
 
