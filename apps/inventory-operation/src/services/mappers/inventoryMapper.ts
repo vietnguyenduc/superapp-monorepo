@@ -21,7 +21,9 @@ export class InventoryMapper {
       updatedAt: parseDateOrNow(item.updated_at),
       createdBy: item.created_by,
       updatedBy: item.updated_by,
-      notes: item.notes
+      notes: item.notes,
+      sourceType: item.source_type,
+      referenceId: item.reference_id,
     };
   }
 
@@ -42,6 +44,12 @@ export class InventoryMapper {
     if (record.finishedProductUnit !== undefined) row.finished_product_unit = record.finishedProductUnit;
     if (record.branch) row.branch = record.branch;
     if (record.notes) row.notes = record.notes;
+    if (record.sourceType) row.source_type = record.sourceType;
+    if (record.referenceId) row.reference_id = record.referenceId;
+    if (record.supplierId) row.supplier_id = record.supplierId;
+    if (record.supplierName) row.supplier_name = record.supplierName;
+    if (record.unitPrice !== undefined) row.unit_price = record.unitPrice;
+    if (record.totalAmount !== undefined) row.total_amount = record.totalAmount;
 
     if (record.createdAt) row.created_at = record.createdAt instanceof Date ? record.createdAt.toISOString() : record.createdAt;
     if (record.updatedAt) row.updated_at = record.updatedAt instanceof Date ? record.updatedAt.toISOString() : record.updatedAt;

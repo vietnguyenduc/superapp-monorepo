@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { databaseService } from '../services/databaseService';
 import { ProductCategory, ProductStatus, Product } from '../types';
 import { useProducts } from '../hooks/useProducts';
+import appSettingsService from '../services/appSettingsService';
 
 // Columns strictly following the refined logic
-const DEFAULT_COLUMNS = [
+const ALL_COLUMNS = [
   { key: 'isFinishedProduct', label: 'Phân loại', type: 'dropdown', options: ['Thành phẩm', 'Nguyên liệu'], required: true, enabled: true, order: 1 },
   { key: 'productCode', label: 'Mã hàng', type: 'text', required: true, enabled: true, order: 2 },
   { key: 'productName', label: 'Tên hàng', type: 'text', required: true, enabled: true, order: 3 },
@@ -14,6 +15,14 @@ const DEFAULT_COLUMNS = [
   { key: 'linkedFinishedCode', label: 'Mã TP Liên kết', type: 'dropdown', options: [], required: false, enabled: true, order: 7 },
   { key: 'recipeRatio', label: 'Định lượng TP (1 TP = ? Sơ chế)', type: 'number', required: false, enabled: true, order: 8 },
   { key: 'price', label: 'Giá bán (Chỉ TP)', type: 'number', required: false, enabled: true, order: 9 },
+];
+
+// Columns for commercial mode — only finished products, no raw/intermediate
+const COMMERCIAL_COLUMNS = [
+  { key: 'productCode', label: 'Mã hàng', type: 'text', required: true, enabled: true, order: 1 },
+  { key: 'productName', label: 'Tên hàng', type: 'text', required: true, enabled: true, order: 2 },
+  { key: 'inputUnit', label: 'Đơn vị', type: 'text', required: true, enabled: true, order: 3 },
+  { key: 'price', label: 'Giá bán', type: 'number', required: false, enabled: true, order: 4 },
 ];
 
 interface ImportRow {
@@ -32,8 +41,11 @@ interface ImportRow {
 
 const ProductImportGrid: React.FC<{ onImportComplete?: () => void; onCancel?: () => void }> = ({ onImportComplete, onCancel }) => {
   const { products } = useProducts();
+  const isCommercial = appSettingsService.isCommercial();
+  const columns = isCommercial ? COMMERCIAL_COLUMNS : ALL_COLUMNS;
+
   const finishedProducts = useMemo(() => products.filter(p => p.isFinishedProduct), [products]);
-  
+
   const finishedProductCodes = useMemo(() => [
     '--- Liên kết ---',
     ...finishedProducts.map(p => p.businessCode)
@@ -45,11 +57,11 @@ const ProductImportGrid: React.FC<{ onImportComplete?: () => void; onCancel?: ()
   useEffect(() => {
     const emptyRows = Array.from({ length: 20 }, (_, index) => createEmptyRow(index));
     setImportData(emptyRows);
-  }, []);
+  }, [isCommercial]);
 
   const createEmptyRow = (index: number): ImportRow => ({
     id: `row-${Date.now()}-${index}`,
-    isFinishedProduct: 'Nguyên liệu',
+    isFinishedProduct: isCommercial ? 'Thành phẩm' : 'Nguyên liệu',
     productCode: '',
     productName: '',
     inputUnit: '',
@@ -123,7 +135,7 @@ const ProductImportGrid: React.FC<{ onImportComplete?: () => void; onCancel?: ()
     setIsLoading(true);
     try {
       const productsToInsert = validRows.map(row => {
-        const isTP = row.isFinishedProduct === 'Thành phẩm';
+        const isTP = isCommercial ? true : row.isFinishedProduct === 'Thành phẩm';
         const intermediateUnits = row.intermediateUnit ? [row.intermediateUnit] : [];
         const conversions = [];
         const linkedCodes = row.linkedFinishedCode !== '--- Liên kết ---' ? [row.linkedFinishedCode] : [];
@@ -190,19 +202,27 @@ const ProductImportGrid: React.FC<{ onImportComplete?: () => void; onCancel?: ()
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
         <div className="relative z-10 flex flex-col md:flex-row gap-8 justify-between">
           <div className="space-y-4">
-            <h3 className="text-2xl font-black tracking-tight dark:text-blue-100">Quy chuẩn Nhập liệu Đa tầng</h3>
-            <p className="text-blue-200/70 text-sm font-medium max-w-md dark:text-blue-300/60">Bảng này đã lược bỏ các trường thừa, tập trung vào định lượng vật lý và định lượng thành phẩm.</p>
+            <h3 className="text-2xl font-black tracking-tight dark:text-blue-100">
+              {isCommercial ? 'Nhập Danh mục Thương mại' : 'Quy chuẩn Nhập liệu Đa tầng'}
+            </h3>
+            <p className="text-blue-200/70 text-sm font-medium max-w-md dark:text-blue-300/60">
+              {isCommercial
+                ? 'Chế độ Thương mại: chỉ nhập sản phẩm thành phẩm để bán. Không có nguyên liệu hay quy đổi.'
+                : 'Bảng này đã lược bỏ các trường thừa, tập trung vào định lượng vật lý và định lượng thành phẩm.'}
+            </p>
           </div>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="bg-white/5 dark:bg-white/10 p-4 rounded-2xl border border-white/10 dark:border-white/20">
-              <div className="text-[10px] font-black text-blue-400 uppercase mb-2">Mẹo NVL</div>
-              <p className="text-xs font-bold leading-relaxed">Chọn mã Thành phẩm & nhập định lượng (1 TP = ? Sơ chế)</p>
+          {!isCommercial && (
+            <div className="grid grid-cols-2 gap-6">
+              <div className="bg-white/5 dark:bg-white/10 p-4 rounded-2xl border border-white/10 dark:border-white/20">
+                <div className="text-[10px] font-black text-blue-400 uppercase mb-2">Mẹo NVL</div>
+                <p className="text-xs font-bold leading-relaxed">Chọn mã Thành phẩm & nhập định lượng (1 TP = ? Sơ chế)</p>
+              </div>
+              <div className="bg-white/5 dark:bg-white/10 p-4 rounded-2xl border border-white/10 dark:border-white/20">
+                <div className="text-[10px] font-black text-emerald-400 uppercase mb-2">Mẹo TP</div>
+                <p className="text-xs font-bold leading-relaxed">Đơn vị gốc chính là ĐVT Xuất dùng để bán.</p>
+              </div>
             </div>
-            <div className="bg-white/5 dark:bg-white/10 p-4 rounded-2xl border border-white/10 dark:border-white/20">
-              <div className="text-[10px] font-black text-emerald-400 uppercase mb-2">Mẹo TP</div>
-              <p className="text-xs font-bold leading-relaxed">Đơn vị gốc chính là ĐVT Xuất dùng để bán.</p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -212,7 +232,7 @@ const ProductImportGrid: React.FC<{ onImportComplete?: () => void; onCancel?: ()
             <thead className="bg-gray-50/50 dark:bg-gray-800/50">
               <tr>
                 <th className="px-3 py-6 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest w-12">#</th>
-                {DEFAULT_COLUMNS.map(col => (
+                {columns.map(col => (
                   <th key={col.key} className="px-4 py-6 text-left text-[11px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest min-w-[160px]">
                     {col.label} {col.required && <span className="text-red-500">*</span>}
                   </th>
@@ -226,7 +246,7 @@ const ProductImportGrid: React.FC<{ onImportComplete?: () => void; onCancel?: ()
                   <td className="px-3 py-3 text-center text-[10px] font-black text-gray-300 dark:text-gray-600 group-hover:text-blue-400">
                     {rowIndex + 1}
                   </td>
-                  {DEFAULT_COLUMNS.map(col => (
+                  {columns.map(col => (
                     <td key={col.key} className="px-2 py-2">
                       {col.key === 'isFinishedProduct' ? (
                         <select

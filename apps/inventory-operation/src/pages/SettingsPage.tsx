@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
 import { useAuthContext } from '@superapp/iam';
+import { ProductService } from '../services/productService';
 import { 
   appSettingsService, 
   IntermediateConversionMode, 
@@ -20,8 +21,8 @@ interface OpeningBalanceRow {
 
 const SettingsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user } = useAuthContext();
-  const role = (user as any)?.role || user?.app_metadata?.role || 'staff';
+  const { user, isTrial } = useAuthContext();
+  const role = isTrial ? 'admin_master' : ((user as any)?.role || user?.app_metadata?.role || 'staff');
   const isAdmin = role === 'admin_master' || role === 'admin_company';
   const isManager = role === 'branch_manager' || isAdmin;
 
@@ -56,7 +57,7 @@ const SettingsPage: React.FC = () => {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<any>(null);
-  const { products } = useProducts();
+  const { products, fetchProducts } = useProducts();
 
   // Persist local lists to localStorage
   useEffect(() => {
@@ -68,7 +69,31 @@ const SettingsPage: React.FC = () => {
     appSettingsService.saveSettings({ intermediateConversionMode: mode });
   };
 
-  const handleToggleBusinessModel = (model: BusinessModel) => {
+  const handleToggleBusinessModel = async (model: BusinessModel) => {
+    // When switching TO commercial, confirm and delete non-finished products
+    if (model === 'commercial' && businessModel !== 'commercial') {
+      const nonFinishedCount = products.filter(p => !p.isFinishedProduct).length;
+      if (nonFinishedCount > 0) {
+        const confirmed = confirm(
+          `⚠️ Chuyển sang Thương mại sẽ XÓA ${nonFinishedCount} sản phẩm Nguyên liệu/Sơ chế (không phải Thành phẩm).\n` +
+          `Dữ liệu quy đổi và loại giao dịch sơ chế sẽ bị ẩn.\n\n` +
+          `Hành động này KHÔNG THỂ KHÔI PHỤC. Bạn có chắc chắn?`
+        );
+        if (!confirmed) return; // User cancelled — don't switch
+
+        // Delete all non-finished products
+        const nonFinishedProducts = products.filter(p => !p.isFinishedProduct);
+        for (const product of nonFinishedProducts) {
+          try {
+            await ProductService.deleteProduct(product.id);
+          } catch (e) {
+            console.error(`Failed to delete product ${product.id}:`, e);
+          }
+        }
+        // Refresh products list
+        await fetchProducts();
+      }
+    }
     setBusinessModel(model);
     appSettingsService.saveSettings({ businessModel: model });
   };
@@ -155,7 +180,7 @@ const SettingsPage: React.FC = () => {
     { key: 'conversion-settings', label: 'Cấu hình Quy đổi', description: 'Thiết lập cách quy đổi nguyên liệu (chỉ cho F&B/Sản xuất).' },
     { key: 'display-settings', label: 'Giao diện & Hệ thống', description: 'Dark Mode và quản lý dữ liệu toàn cục.' },
     { key: 'permissions', label: 'Phân quyền & Tài khoản', description: 'Quản lý quyền hạn và ma trận truy cập của thành viên.' },
-  ];
+  ].filter(tab => !(businessModel === 'commercial' && tab.key === 'conversion-settings'));
 
   const activeTab = searchParams.get('tab') || 'business-model';
   const activeTabContent = tabs.find((tab) => tab.key === activeTab) || tabs[0];
@@ -531,7 +556,9 @@ const SettingsPage: React.FC = () => {
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  {transactionTypes.map(type => (
+                  {transactionTypes
+                    .filter(type => !(businessModel === 'commercial' && (type.code?.includes('PROCESS') && type.code !== 'IMPORT_PURCHASE')))
+                    .map(type => (
                     <div key={type.id} className={`p-4 sm:p-5 rounded-2xl border group relative transition-all ${isDarkMode ? 'bg-gray-700/20 border-gray-700 hover:border-gray-600' : 'bg-white border-gray-100 hover:border-gray-200'}`}>
                       <div className="flex items-start justify-between mb-2 sm:mb-3">
                         <div className={`text-[8px] sm:text-[10px] font-black uppercase tracking-tighter ${type.impact === 'increase' ? 'text-emerald-500' : (type.impact === 'decrease' ? 'text-orange-500' : 'text-blue-500')}`}>

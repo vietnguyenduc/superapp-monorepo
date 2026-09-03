@@ -18,7 +18,6 @@
     "outDir": "dist",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
     "paths": {
       "@superapp/shared-utils": ["../../packages/shared-utils/src"]
     },

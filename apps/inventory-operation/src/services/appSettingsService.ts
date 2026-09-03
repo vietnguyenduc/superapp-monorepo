@@ -86,6 +86,10 @@ class AppSettingsService {
   getBusinessModel(): BusinessModel {
     return this.getSettings().businessModel;
   }
+
+  isCommercial(): boolean {
+    return this.getBusinessModel() === 'commercial';
+  }
 }
 
 export const appSettingsService = new AppSettingsService();

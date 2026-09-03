@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { excelImportService } from '../services/excelImportService';
 import { databaseService } from '../services/databaseService';
 import { ProductCategory, ProductStatus, Product } from '../types';
+import appSettingsService from '../services/appSettingsService';
 
 interface RawProductData {
   businessCode: string;
@@ -31,6 +32,7 @@ interface ProductBulkImportProps {
 }
 
 const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete, onCancel }) => {
+  const isCommercial = appSettingsService.isCommercial();
   const [importData, setImportData] = useState<ImportData>({
     file: null,
     data: [],
@@ -126,19 +128,19 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
       const productsToInsert = importData.data.map(row => ({
         businessCode: row.businessCode,
         name: row.name,
-        category: mapCategory(row.category),
+        category: isCommercial ? ProductCategory.FINISHED : mapCategory(row.category),
         inputUnit: row.inputUnit,
-        outputUnit: row.outputUnit,
-        intermediateUnits: row.intermediateUnits || [],
-        conversionRatioRawToProcessed: row.conversionRatioRawToProcessed || 0,
-        conversionRatioProcessedToFinished: row.conversionRatioProcessedToFinished || 0,
+        outputUnit: isCommercial ? row.inputUnit : row.outputUnit,
+        intermediateUnits: isCommercial ? [] : (row.intermediateUnits || []),
+        conversionRatioRawToProcessed: isCommercial ? 0 : (row.conversionRatioRawToProcessed || 0),
+        conversionRatioProcessedToFinished: isCommercial ? 0 : (row.conversionRatioProcessedToFinished || 0),
         status: row.status === 'ACTIVE' ? ProductStatus.ACTIVE : ProductStatus.INACTIVE,
         businessStatus: (row.status === 'ACTIVE' ? 'active' : 'inactive') as 'active' | 'inactive',
         createdBy: 'system',
         updatedBy: 'system',
         updatedAt: new Date(),
         createdAt: new Date(),
-        isFinishedProduct: !!row.outputUnit,
+        isFinishedProduct: isCommercial ? true : !!row.outputUnit,
         inputQuantity: 1,
         outputQuantity: 1,
       }));
@@ -182,12 +184,24 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
           <div className="flex items-start gap-4">
             <span className="text-2xl">📋</span>
             <div className="text-sm text-blue-800 dark:text-blue-200">
-              <p className="font-bold text-base mb-2">Hướng dẫn nhập danh mục (Mới):</p>
+              <p className="font-bold text-base mb-2">
+                {isCommercial ? 'Hướng dẫn nhập danh mục (Thương mại):' : 'Hướng dẫn nhập danh mục (Mới):'}
+              </p>
               <ul className="list-disc list-inside space-y-1 font-medium opacity-80">
-                <li>Tải file mẫu để biết các cột ĐVT Trung gian và Tỷ lệ quy đổi.</li>
-                <li>ĐVT Trung gian nhập cách nhau bằng dấu phẩy (VD: Miếng, Gram).</li>
-                <li>Tỷ lệ quy đổi: `1 Đơn vị Nhập` = `X Đơn vị Trung gian`.</li>
-                <li>Tối đa {MAX_BULK_ROWS} dòng mỗi lần nhập.</li>
+                {isCommercial ? (
+                  <>
+                    <li>Chế độ Thương mại: chỉ nhập sản phẩm thành phẩm (Mã, Tên, Đơn vị, Giá bán).</li>
+                    <li>Không cần ĐVT trung gian hay tỷ lệ quy đổi.</li>
+                    <li>Tối đa {MAX_BULK_ROWS} dòng mỗi lần nhập.</li>
+                  </>
+                ) : (
+                  <>
+                    <li>Tải file mẫu để biết các cột ĐVT Trung gian và Tỷ lệ quy đổi.</li>
+                    <li>ĐVT Trung gian nhập cách nhau bằng dấu phẩy (VD: Miếng, Gram).</li>
+                    <li>Tỷ lệ quy đổi: `1 Đơn vị Nhập` = `X Đơn vị Trung gian`.</li>
+                    <li>Tối đa {MAX_BULK_ROWS} dòng mỗi lần nhập.</li>
+                  </>
+                )}
               </ul>
             </div>
           </div>
@@ -195,7 +209,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
 
         <div className="flex justify-end">
           <button
-            onClick={() => excelImportService.generateTemplate('products')}
+            onClick={() => excelImportService.generateTemplate('products', isCommercial)}
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 dark:bg-emerald-700 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-sm transition-all"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,9 +287,9 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
               <tr>
                 <th className="px-4 py-3 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase">Mã / Tên</th>
                 <th className="px-4 py-3 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase">Loại / ĐVT</th>
-                <th className="px-4 py-3 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase">Trung gian</th>
-                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase">Tỷ lệ sơ chế</th>
-                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase">Định mức TP</th>
+                {!isCommercial && <th className="px-4 py-3 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase">Trung gian</th>}
+                {!isCommercial && <th className="px-4 py-3 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase">Tỷ lệ sơ chế</th>}
+                {!isCommercial && <th className="px-4 py-3 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase">Định mức TP</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
@@ -287,19 +301,21 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-xs font-bold text-blue-600 dark:text-blue-400">{row.category}</div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400">{row.inputUnit} → {row.outputUnit}</div>
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400">{row.inputUnit}{!isCommercial && ` → ${row.outputUnit}`}</div>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
-                      {row.intermediateUnits?.map(u => (
-                        <span key={u} className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase">
-                          {u}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-center font-black text-gray-900 dark:text-gray-100 text-sm">{row.conversionRatioRawToProcessed}</td>
-                  <td className="px-4 py-3 text-center font-black text-gray-900 dark:text-gray-100 text-sm">{row.conversionRatioProcessedToFinished}</td>
+                  {!isCommercial && (
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {row.intermediateUnits?.map(u => (
+                          <span key={u} className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase">
+                            {u}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                  )}
+                  {!isCommercial && <td className="px-4 py-3 text-center font-black text-gray-900 dark:text-gray-100 text-sm">{row.conversionRatioRawToProcessed}</td>}
+                  {!isCommercial && <td className="px-4 py-3 text-center font-black text-gray-900 dark:text-gray-100 text-sm">{row.conversionRatioProcessedToFinished}</td>}
                 </tr>
               ))}
             </tbody>

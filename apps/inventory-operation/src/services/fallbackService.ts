@@ -395,6 +395,16 @@ class FallbackService {
     }
   }
 
+  async deleteInventoryRecord(id: string): Promise<FallbackResponse<boolean>> {
+    try {
+      mockInventoryRecords = mockInventoryRecords.filter(r => r.id !== id);
+      this.persistData();
+      return { data: true, error: null };
+    } catch {
+      return { data: false, error: 'Lỗi khi xóa bản ghi tồn kho' };
+    }
+  }
+
   // ============ SALES RECORDS ============
   
   async getSalesRecords(filters?: {
@@ -557,6 +567,90 @@ class FallbackService {
         data: null,
         error: 'Lỗi khi tạo sản phẩm mới'
       };
+    }
+  }
+
+  // ============ SUPPLIERS ============
+
+  async getSuppliers(filters?: {
+    search?: string;
+    isActive?: boolean;
+  }): Promise<FallbackListResponse<any>> {
+    try {
+      const stored = localStorage.getItem('trial_suppliers');
+      let suppliers: any[] = stored
+        ? JSON.parse(stored)
+        : [
+            { id: 'sup-001', customer_code: 'NCC01', full_name: 'Công ty TNHH Bao Bì Xanh', partner_type: 'supplier', phone: '0901234567', is_active: true },
+            { id: 'sup-002', customer_code: 'NCC02', full_name: 'Nhà phân phối Hàng Gia Dụng ABC', partner_type: 'supplier', phone: '0912345678', is_active: true },
+            { id: 'sup-003', customer_code: 'NCC03', full_name: 'Công ty Cổ phần Thực phẩm Toàn Cầu', partner_type: 'supplier', phone: '0923456789', is_active: true },
+          ];
+
+      if (filters?.search) {
+        suppliers = suppliers.filter(
+          (s) =>
+            s.full_name?.toLowerCase().includes(filters.search!.toLowerCase()) ||
+            s.customer_code?.toLowerCase().includes(filters.search!.toLowerCase())
+        );
+      }
+      if (filters?.isActive !== undefined) {
+        suppliers = suppliers.filter((s) => s.is_active === filters.isActive);
+      }
+
+      return { data: suppliers, error: null, count: suppliers.length };
+    } catch {
+      return { data: [], error: 'Lỗi khi tải danh sách nhà cung cấp', count: 0 };
+    }
+  }
+
+  async getSupplierById(id: string): Promise<FallbackResponse<any>> {
+    const { data } = await this.getSuppliers();
+    const supplier = data?.find((s) => s.id === id);
+    return { data: supplier || null, error: supplier ? null : 'Không tìm thấy NCC' };
+  }
+
+  async createSupplier(supplier: any): Promise<FallbackResponse<any>> {
+    try {
+      const stored = localStorage.getItem('trial_suppliers');
+      const list: any[] = stored ? JSON.parse(stored) : [];
+      const newItem = {
+        ...supplier,
+        id: `sup-${Date.now()}`,
+        partner_type: supplier.partner_type || 'supplier',
+        is_active: true,
+        created_at: new Date().toISOString(),
+      };
+      list.push(newItem);
+      localStorage.setItem('trial_suppliers', JSON.stringify(list));
+      return { data: newItem, error: null };
+    } catch {
+      return { data: null, error: 'Lỗi khi tạo nhà cung cấp' };
+    }
+  }
+
+  async updateSupplier(id: string, updates: any): Promise<FallbackResponse<any>> {
+    try {
+      const stored = localStorage.getItem('trial_suppliers');
+      const list: any[] = stored ? JSON.parse(stored) : [];
+      const idx = list.findIndex((s) => s.id === id);
+      if (idx === -1) return { data: null, error: 'Không tìm thấy NCC' };
+      list[idx] = { ...list[idx], ...updates, updated_at: new Date().toISOString() };
+      localStorage.setItem('trial_suppliers', JSON.stringify(list));
+      return { data: list[idx], error: null };
+    } catch {
+      return { data: null, error: 'Lỗi khi cập nhật NCC' };
+    }
+  }
+
+  async deleteSupplier(id: string): Promise<FallbackResponse<boolean>> {
+    try {
+      const stored = localStorage.getItem('trial_suppliers');
+      const list: any[] = stored ? JSON.parse(stored) : [];
+      const filtered = list.filter((s) => s.id !== id);
+      localStorage.setItem('trial_suppliers', JSON.stringify(filtered));
+      return { data: true, error: null };
+    } catch {
+      return { data: false, error: 'Lỗi khi xóa NCC' };
     }
   }
 

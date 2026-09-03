@@ -8,6 +8,7 @@ import { useProducts } from '../hooks/useProducts';
 import { useAuthContext } from '@superapp/iam';
 import { UserRole } from '../types/UserRole';
 import { ConversionEngine } from '../utils/conversionLogic';
+import appSettingsService from '../services/appSettingsService';
 
 const InventoryRecordsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -25,6 +26,7 @@ const InventoryRecordsPage: React.FC = () => {
   const [targetReportUnitMode, setTargetReportUnitMode] = useState<'purchase' | 'intermediate' | 'output'>('purchase');
   const [timeFilter, setTimeFilter] = useState('all');
   const [reports, setReports] = useState<any[]>([]);
+  const isCommercial = appSettingsService.isCommercial();
 
   const { products } = useProducts();
   const categories = useMemo(() => {
@@ -253,8 +255,8 @@ const InventoryRecordsPage: React.FC = () => {
                 className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Tất cả</option>
-                <option value="raw">Nguyên vật liệu</option>
-                <option value="processed">Sơ chế</option>
+                {!isCommercial && <option value="raw">Nguyên vật liệu</option>}
+                {!isCommercial && <option value="processed">Sơ chế</option>}
                 <option value="finished">Thành phẩm</option>
               </select>
             </div>
@@ -269,6 +271,7 @@ const InventoryRecordsPage: React.FC = () => {
                 >
                   Chi tiết
                 </button>
+                {!isCommercial && (
                 <button
                   onClick={() => setViewMode('equivalent')}
                   className={`flex-1 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium rounded-lg transition-all ${
@@ -277,10 +280,11 @@ const InventoryRecordsPage: React.FC = () => {
                 >
                   Quy đổi
                 </button>
+                )}
               </div>
             </div>
 
-            {viewMode === 'equivalent' && (
+            {viewMode === 'equivalent' && !isCommercial && (
               <div className="animate-in fade-in slide-in-from-left-2 duration-300 sm:col-span-2">
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Đơn vị quy đổi</label>
                 <div className="flex bg-blue-50 dark:bg-blue-900/20 p-1 rounded-xl border border-blue-100 dark:border-blue-900/30">
@@ -425,9 +429,13 @@ const InventoryRecordsPage: React.FC = () => {
                     <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">Sản phẩm</th>
                     {viewMode === 'standard' ? (
                       <>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Tồn NVL</th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Tồn Sơ chế</th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Tồn TP</th>
+                        {!isCommercial && (
+                          <>
+                            <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Tồn NVL</th>
+                            <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Tồn Sơ chế</th>
+                          </>
+                        )}
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">{isCommercial ? 'Tồn kho' : 'Tồn TP'}</th>
                       </>
                     ) : (
                       <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider text-right">
@@ -460,20 +468,24 @@ const InventoryRecordsPage: React.FC = () => {
                         
                         {viewMode === 'standard' ? (
                           <>
-                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm text-right whitespace-nowrap">
-                              {allowedForms.includes('raw') ? (
-                                <span className="font-medium text-gray-900 dark:text-gray-100">{rawStock ?? 0} <span className="text-[9px] sm:text-xs text-gray-400">{record.rawMaterialUnit}</span></span>
-                              ) : (
-                                <span className="text-gray-300 dark:text-gray-600 italic text-[10px] sm:text-xs">N/A</span>
-                              )}
-                            </td>
-                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm text-right whitespace-nowrap">
-                              {allowedForms.includes('processed') ? (
-                                <span className="font-medium text-gray-900 dark:text-gray-100">{processedStock ?? 0} <span className="text-[9px] sm:text-xs text-gray-400">{record.processedUnit}</span></span>
-                              ) : (
-                                <span className="text-gray-300 dark:text-gray-600 italic text-[10px] sm:text-xs">N/A</span>
-                              )}
-                            </td>
+                            {!isCommercial && (
+                              <>
+                                <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm text-right whitespace-nowrap">
+                                  {allowedForms.includes('raw') ? (
+                                    <span className="font-medium text-gray-900 dark:text-gray-100">{rawStock ?? 0} <span className="text-[9px] sm:text-xs text-gray-400">{record.rawMaterialUnit}</span></span>
+                                  ) : (
+                                    <span className="text-gray-300 dark:text-gray-600 italic text-[10px] sm:text-xs">N/A</span>
+                                  )}
+                                </td>
+                                <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm text-right whitespace-nowrap">
+                                  {allowedForms.includes('processed') ? (
+                                    <span className="font-medium text-gray-900 dark:text-gray-100">{processedStock ?? 0} <span className="text-[9px] sm:text-xs text-gray-400">{record.processedUnit}</span></span>
+                                  ) : (
+                                    <span className="text-gray-300 dark:text-gray-600 italic text-[10px] sm:text-xs">N/A</span>
+                                  )}
+                                </td>
+                              </>
+                            )}
                             <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm text-right whitespace-nowrap">
                               {allowedForms.includes('finished') ? (
                                 <span className="font-medium text-gray-900 dark:text-gray-100">{finishedStock ?? 0} <span className="text-[9px] sm:text-xs text-gray-400">{record.finishedProductUnit}</span></span>

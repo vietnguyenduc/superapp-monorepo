@@ -14,29 +14,25 @@ const Login = lazyWithRetry(() => import('./pages/Auth/Login'));
 const SignUp = lazyWithRetry(() => import('./pages/Auth/SignUp'));
 const CompanySelector = lazyWithRetry(() => import('./pages/CompanySelector/CompanySelector'));
 const DashboardPageEnhanced = lazyWithRetry(() => import('./pages/DashboardPageEnhanced'));
-const InventoryInputPage = lazyWithRetry(() => import('./pages/InventoryInputPage'));
 const ImportExportPage = lazyWithRetry(() => import('./components/ImportExport/ImportExportPage'));
 const InventoryRecordsPage = lazyWithRetry(() => import('./pages/InventoryRecordsPage'));
 const ProductCatalogPageEnhanced = lazyWithRetry(() => import('./pages/ProductCatalogPageEnhanced'));
 const SupplierManagement = lazyWithRetry(() => import('./pages/SupplierManagement'));
-const PurchaseOrderPage = lazyWithRetry(() => import('./pages/PurchaseOrderPage'));
-const GoodsReceiptPage = lazyWithRetry(() => import('./pages/GoodsReceiptPage'));
-const SupplierReturnPage = lazyWithRetry(() => import('./pages/SupplierReturnPage'));
+const GoodsReceiptImportPage = lazyWithRetry(() => import('./pages/GoodsReceiptImportPage'));
+const GoodsIssueImportPage = lazyWithRetry(() => import('./pages/GoodsIssueImportPage'));
+const SupplierImportPage = lazyWithRetry(() => import('./pages/SupplierImportPage'));
 const InventoryMRPPage = lazyWithRetry(() => import('./pages/InventoryMRPPage'));
 const SpecialOutboundPage = lazyWithRetry(() => import('./pages/SpecialOutboundPage'));
 const PermissionDemoPage = lazyWithRetry(() => import('./pages/PermissionDemoPage'));
 const EditableGridDemoPage = lazyWithRetry(() => import('./pages/EditableGridDemoPage'));
 const ProductCatalogDemoPage = lazyWithRetry(() => import('./pages/ProductCatalogDemoPage'));
 const ExcelDataDemoPage = lazyWithRetry(() => import('./pages/ExcelDataDemoPage'));
-const ProductBulkImportComplete = lazyWithRetry(() => import('./pages/ProductBulkImportComplete'));
 const ImportSettingsPage = lazyWithRetry(() => import('./pages/ImportSettingsPage'));
 const ProductCatalogSettingsPage = lazyWithRetry(() => import('./pages/ProductCatalogSettingsPage'));
 const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage'));
 const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage'));
 const TestPage = lazyWithRetry(() => import('./pages/TestPage'));
 const HelpPage = lazyWithRetry(() => import('./pages/HelpPage'));
-const WarehouseKeeperImportPage = lazyWithRetry(() => import('./pages/WarehouseKeeperImportPage'));
-const WarehouseAccountantImportPage = lazyWithRetry(() => import('./pages/WarehouseAccountantImportPage'));
 const ProductCatalogImportPage = lazyWithRetry(() => import('./pages/ProductCatalogImportPage'));
 const InventoryTransactionImportPage = lazyWithRetry(() => import('./pages/InventoryTransactionImportPage'));
 
@@ -95,17 +91,20 @@ const App: FC = () => {
               <Route path="dashboard" element={<DashboardPageEnhanced />} />
               <Route path="product-management" element={<ProductCatalogPageEnhanced />} />
               <Route path="supplier-management" element={<SupplierManagement />} />
-              <Route path="purchase-orders" element={<PurchaseOrderPage />} />
-              <Route path="goods-receipts" element={<GoodsReceiptPage />} />
-              <Route path="supplier-returns" element={<SupplierReturnPage />} />
+              <Route path="supplier-import" element={<SupplierImportPage />} />
+              <Route path="goods-receipts" element={<GoodsReceiptImportPage />} />
+              <Route path="goods-issues" element={<GoodsIssueImportPage />} />
+              {/* Redirect old routes to new unified pages */}
+              <Route path="purchase-orders" element={<Navigate to="/goods-receipts?subTab=po" replace />} />
+              <Route path="supplier-returns" element={<Navigate to="/goods-receipts?subTab=return" replace />} />
               <Route path="inventory-records" element={<InventoryRecordsPage />} />
               <Route path="inventory-mrp" element={<InventoryMRPPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="product-catalog-settings" element={<ProductCatalogSettingsPage />} />
               <Route path="special-outbound" element={<SpecialOutboundPage />} />
-              <Route path="inventory" element={<InventoryInputPage />} />
+              <Route path="inventory" element={<Navigate to="/inventory-records" replace />} />
               <Route path="import-export" element={<ImportExportPage />} />
-              <Route path="product-import" element={<ProductBulkImportComplete />} />
+              <Route path="product-import" element={<Navigate to="/product-catalog-import?tab=bulk" replace />} />
               <Route path="import-settings" element={<ImportSettingsPage />} />
               <Route path="permission-demo" element={<PermissionDemoPage />} />
               <Route path="editable-grid-demo" element={<EditableGridDemoPage />} />
@@ -121,10 +120,10 @@ const App: FC = () => {
               <Route path="variance-report" element={<Navigate to="/dashboard?tab=variance" replace />} />
               <Route path="export-reports" element={<Navigate to="/dashboard?tab=export" replace />} />
               <Route path="help" element={<HelpPage />} />
-              
-              {/* Role-based import pages */}
-              <Route path="warehouse-keeper-import" element={<WarehouseKeeperImportPage />} />
-              <Route path="warehouse-accountant-import" element={<WarehouseAccountantImportPage />} />
+
+              {/* Old role-based import pages → redirect to unified import */}
+              <Route path="warehouse-keeper-import" element={<Navigate to="/inventory-transaction-import?tab=single" replace />} />
+              <Route path="warehouse-accountant-import" element={<Navigate to="/inventory-transaction-import?tab=single" replace />} />
               {/* Unified import pages */}
               <Route path="product-catalog-import" element={<ProductCatalogImportPage />} />
               <Route path="inventory-transaction-import" element={<InventoryTransactionImportPage />} />

@@ -13,6 +13,7 @@ import { formatNumber } from "../utils/formatting";
 import LoadingFallback from "../components/UI/LoadingFallback";
 import ErrorFallback from "../components/UI/ErrorFallback";
 import Button from "../components/UI/Button";
+import appSettingsService from "../services/appSettingsService";
 import InventoryMetricsCard from "../components/InventoryMetricsCard";
 import InventoryTimeRangeSelector, { InventoryTimeRange } from "../components/InventoryTimeRangeSelector";
 import InventoryVarianceReportPage from "./InventoryVarianceReportPage";
@@ -40,6 +41,7 @@ const DashboardPageEnhanced: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<string>("all");
   const [topStockSort, setTopStockSort] = useState<"desc" | "asc">("desc");
   const [topStockType, setTopStockType] = useState<"all" | "rawMaterial" | "processed" | "finished">("all");
+  const isCommercial = appSettingsService.isCommercial();
   
   const { products, loading: productsLoading } = useProducts();
   const { records: rawInventoryRecords, isLoading: inventoryLoading } = useInventory();
@@ -636,8 +638,8 @@ const DashboardPageEnhanced: React.FC = () => {
                         onChange={(e) => setTopStockType(e.target.value as any)}
                       >
                         <option value="all">Tất cả</option>
-                        <option value="rawMaterial">Nguyên liệu</option>
-                        <option value="processed">Bán thành phẩm</option>
+                        {!isCommercial && <option value="rawMaterial">Nguyên liệu</option>}
+                        {!isCommercial && <option value="processed">Bán thành phẩm</option>}
                         <option value="finished">Thành phẩm</option>
                       </select>
                       <select 
@@ -678,8 +680,8 @@ const DashboardPageEnhanced: React.FC = () => {
                             />
                           </div>
                           <div className="flex gap-3 mt-1 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter">
-                            <span>NVL: {product.rawMaterial}</span>
-                            <span>SC: {product.processed}</span>
+                            {!isCommercial && <span>NVL: {product.rawMaterial}</span>}
+                            {!isCommercial && <span>SC: {product.processed}</span>}
                             <span>TP: {product.finished}</span>
                           </div>
                         </div>
