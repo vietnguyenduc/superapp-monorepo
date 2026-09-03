@@ -292,52 +292,88 @@ class ExcelImportService {
   /**
    * Generate Excel template for import
    */
-  generateTemplate(type: 'products' | 'inventory' | 'sales'): void {
+  generateTemplate(type: 'products' | 'inventory' | 'sales', isCommercial: boolean = false): void {
     let headers: string[] = [];
     let sampleData: any[] = [];
     let filename = '';
 
     switch (type) {
       case 'products':
-        headers = Object.keys(DEFAULT_PRODUCT_MAPPING);
-        sampleData = [
-          {
-            'Mã sản phẩm': 'SP001',
-            'Tên sản phẩm': 'Xoài cát Hòa Lộc',
-            'Danh mục': 'RAW',
-            'Đơn vị nhập': 'Quả',
-            'Đơn vị xuất': 'Dĩa',
-            'Đơn vị trung gian': 'Miếng, Gram',
-            'Tỷ lệ quy đổi sơ chế': 10,
-            'Định mức thành phẩm': 20,
-            'Trạng thái': 'ACTIVE',
-            'Ghi chú': 'Hàng loại 1'
-          }
-        ];
-        filename = 'template-san-pham';
+        if (isCommercial) {
+          // Commercial mode: only finished products — no raw/intermediate/conversion columns
+          headers = ['Mã sản phẩm', 'Tên sản phẩm', 'Đơn vị', 'Giá bán', 'Trạng thái', 'Ghi chú'];
+          sampleData = [
+            {
+              'Mã sản phẩm': 'SP001',
+              'Tên sản phẩm': 'Sting dâu 330ml',
+              'Đơn vị': 'Lon',
+              'Giá bán': 10000,
+              'Trạng thái': 'ACTIVE',
+              'Ghi chú': 'Hàng bán'
+            }
+          ];
+          filename = 'template-san-pham-thuong-mai';
+        } else {
+          headers = Object.keys(DEFAULT_PRODUCT_MAPPING);
+          sampleData = [
+            {
+              'Mã sản phẩm': 'SP001',
+              'Tên sản phẩm': 'Xoài cát Hòa Lộc',
+              'Danh mục': 'RAW',
+              'Đơn vị nhập': 'Quả',
+              'Đơn vị xuất': 'Dĩa',
+              'Đơn vị trung gian': 'Miếng, Gram',
+              'Tỷ lệ quy đổi sơ chế': 10,
+              'Định mức thành phẩm': 20,
+              'Trạng thái': 'ACTIVE',
+              'Ghi chú': 'Hàng loại 1'
+            }
+          ];
+          filename = 'template-san-pham';
+        }
         break;
         
       case 'inventory':
-        headers = Object.keys(DEFAULT_INVENTORY_MAPPING);
-        sampleData = [
-          {
-            'Ngày': '01/01/2024',
-            'Mã sản phẩm': 'SP001',
-            'Tên sản phẩm': 'Xoài cát Hòa Lộc',
-            'Nhà cung cấp': 'Hộ KD Trái Cây',
-            'Đơn giá nhập': 50000,
-            'Số lượng nhập kho': 10,
-            'Thành tiền': 500000,
-            'Tồn Nguyên liệu (Gốc)': 5,
-            'Đơn vị Nguyên liệu': 'Quả',
-            'Tồn Sơ chế (Trung gian)': 20,
-            'Đơn vị Sơ chế': 'Miếng',
-            'Tồn Thành phẩm (Món)': 2,
-            'Đơn vị Thành phẩm': 'Dĩa',
-            'Ghi chú': 'Nhập kho đầu ca'
-          }
-        ];
-        filename = 'template-ton-kho';
+        if (isCommercial) {
+          // Commercial mode: only finished product stock, no raw/intermediate
+          headers = ['Ngày', 'Mã sản phẩm', 'Tên sản phẩm', 'Nhà cung cấp', 'Đơn giá nhập', 'Số lượng nhập kho', 'Thành tiền', 'Tồn kho', 'Đơn vị', 'Ghi chú'];
+          sampleData = [
+            {
+              'Ngày': '01/01/2024',
+              'Mã sản phẩm': 'SP001',
+              'Tên sản phẩm': 'Sting dâu 330ml',
+              'Nhà cung cấp': 'Đại lý ABC',
+              'Đơn giá nhập': 8000,
+              'Số lượng nhập kho': 24,
+              'Thành tiền': 192000,
+              'Tồn kho': 20,
+              'Đơn vị': 'Lon',
+              'Ghi chú': 'Nhập lô mới'
+            }
+          ];
+          filename = 'template-ton-kho-thuong-mai';
+        } else {
+          headers = Object.keys(DEFAULT_INVENTORY_MAPPING);
+          sampleData = [
+            {
+              'Ngày': '01/01/2024',
+              'Mã sản phẩm': 'SP001',
+              'Tên sản phẩm': 'Xoài cát Hòa Lộc',
+              'Nhà cung cấp': 'Hộ KD Trái Cây',
+              'Đơn giá nhập': 50000,
+              'Số lượng nhập kho': 10,
+              'Thành tiền': 500000,
+              'Tồn Nguyên liệu (Gốc)': 5,
+              'Đơn vị Nguyên liệu': 'Quả',
+              'Tồn Sơ chế (Trung gian)': 20,
+              'Đơn vị Sơ chế': 'Miếng',
+              'Tồn Thành phẩm (Món)': 2,
+              'Đơn vị Thành phẩm': 'Dĩa',
+              'Ghi chú': 'Nhập kho đầu ca'
+            }
+          ];
+          filename = 'template-ton-kho';
+        }
         break;
         
       case 'sales':

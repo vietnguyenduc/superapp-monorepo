@@ -36,6 +36,19 @@ export interface InventoryRecord {
   createdBy: string;
   updatedBy: string;
   notes?: string;
+
+  // Source tracking (for Nhập hàng / Xuất hàng / Sales sync)
+  sourceType?: InventorySourceType; // Where this record came from
+  referenceId?: string; // Reference to source record (e.g. sales_record.id, PO code)
+}
+
+export enum InventorySourceType {
+  MANUAL = 'manual',
+  PURCHASE_ORDER = 'po',
+  GOODS_RECEIPT = 'gr',
+  SUPPLIER_RETURN = 'supplier_return',
+  SALES_SYNC = 'sales_sync',
+  STOCK_COUNT = 'stock_count',
 }
 
 // Aggregated inventory data for reports

@@ -91,6 +91,10 @@ class AppSettingsService {
     return this.getSettings().businessModel;
   }
 
+  isCommercial(): boolean {
+    return this.getBusinessModel() === 'commercial';
+  }
+
   getSalesMode(): SalesMode {
     return this.getSettings().salesMode;
   }

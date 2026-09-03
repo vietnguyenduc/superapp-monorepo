@@ -98,6 +98,13 @@ const ProductCatalogForm: React.FC<ProductCatalogFormProps> = ({
     }
   }, [formData.intermediateUnits, formData.inputUnit, formData.outputUnit]);
 
+  // Force isFinishedProduct=true in commercial mode (no raw materials allowed)
+  useEffect(() => {
+    if (businessModel === 'commercial' && !formData.isFinishedProduct) {
+      setFormData(prev => ({ ...prev, isFinishedProduct: true }));
+    }
+  }, [businessModel]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -280,6 +287,7 @@ const ProductCatalogForm: React.FC<ProductCatalogFormProps> = ({
                 <p className="text-[10px] text-gray-400 mt-1 italic">Dùng để kiểm soát biến động giá nhập kho của kế toán.</p>
               </div>
 
+              {businessModel !== 'commercial' && (
               <div className="flex items-center p-4 bg-blue-50 border border-blue-100 rounded-xl">
                 <input
                   type="checkbox"
@@ -292,6 +300,7 @@ const ProductCatalogForm: React.FC<ProductCatalogFormProps> = ({
                   Đây là Thành phẩm (Dùng để bán)
                 </label>
               </div>
+              )}
             </div>
           </div>
 

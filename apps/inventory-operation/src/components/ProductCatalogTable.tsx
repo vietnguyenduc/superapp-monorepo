@@ -101,10 +101,12 @@ const ProductCatalogTable: React.FC<ProductCatalogTableProps> = ({
   };
 
   const getProductTypeDisplayName = (isFinishedProduct: boolean) => {
+    if (businessModel === 'commercial') return 'Thành phẩm';
     return isFinishedProduct ? 'Thành phẩm' : 'Nguyên liệu/Sơ chế';
   };
 
   const getProductTypeBadgeClass = (isFinishedProduct: boolean) => {
+    if (businessModel === 'commercial') return 'bg-blue-100 text-blue-800';
     return isFinishedProduct
       ? 'bg-blue-100 text-blue-800'
       : 'bg-emerald-100 text-emerald-800';
@@ -160,6 +162,7 @@ const ProductCatalogTable: React.FC<ProductCatalogTableProps> = ({
             <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
               Danh mục hàng hóa ({filteredProducts.length})
             </h3>
+            {businessModel !== 'commercial' && (
             <div className="flex items-center gap-1 mt-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
               <button 
                 onClick={() => setActiveFilter('ALL')}
@@ -180,6 +183,7 @@ const ProductCatalogTable: React.FC<ProductCatalogTableProps> = ({
                 Thành phẩm
               </button>
             </div>
+            )}
           </div>
           
           <div className="flex items-center gap-3 w-full md:w-auto">

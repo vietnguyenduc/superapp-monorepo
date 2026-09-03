@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import * as XLSX from 'xlsx';
+import { getXLSX } from '../utils/xlsxLoader';
 import InventoryInputForm from '../components/InventoryInputForm';
 import { useInventory } from '../hooks/useInventory';
 import { useAuthContext } from '@superapp/iam';
@@ -48,6 +48,14 @@ const KEEPER_COLS = [
   { key: 'notes', label: 'Ghi chú', type: 'text', width: 140 },
 ];
 
+// Commercial mode: only finished product stock, no raw/intermediate
+const KEEPER_COLS_COMMERCIAL = [
+  ...BASE_COLS,
+  { key: 'inputQuantity', label: 'Số nhập', type: 'number', width: 100 },
+  { key: 'finishedProductStock', label: 'Tồn kho', type: 'number', width: 100 },
+  { key: 'notes', label: 'Ghi chú', type: 'text', width: 140 },
+];
+
 const ACCOUNTANT_COLS = [
   ...BASE_COLS,
   { key: 'inputQuantity', label: 'Nhập sổ', type: 'number', width: 100 },
@@ -64,9 +72,11 @@ const emptyRow = (i: number): GridRow => ({
   processedStock: '', finishedProductStock: '', outputQuantity: '', notes: '',
 });
 
-const MultipleGrid: React.FC<{ onSave: (rows: GridRow[]) => void; onCancel: () => void; viewRole: ViewRole }> = ({ onSave, onCancel, viewRole }) => {
+const MultipleGrid: React.FC<{ onSave: (rows: GridRow[]) => void; onCancel: () => void; viewRole: ViewRole; isCommercial: boolean }> = ({ onSave, onCancel, viewRole, isCommercial }) => {
   const [rows, setRows] = useState<GridRow[]>(() => Array.from({ length: 8 }, (_, i) => emptyRow(i)));
-  const cols = viewRole === 'warehouse_keeper' ? KEEPER_COLS : ACCOUNTANT_COLS;
+  const cols = viewRole === 'warehouse_keeper'
+    ? (isCommercial ? KEEPER_COLS_COMMERCIAL : KEEPER_COLS)
+    : ACCOUNTANT_COLS;
   const tableRef = useRef<HTMLDivElement>(null);
 
   const handleChange = (ri: number, key: string, val: string) => {
@@ -84,7 +94,7 @@ const MultipleGrid: React.FC<{ onSave: (rows: GridRow[]) => void; onCancel: () =
       keys.forEach((k, ki) => { if (cells[ki] !== undefined) (row as any)[k] = cells[ki].trim(); });
       return row;
     });
-    setRows(prev => {
+    setRows(() => {
       const merged = [...newRows];
       while (merged.length < 8) merged.push(emptyRow(merged.length));
       return merged;
@@ -163,39 +173,53 @@ const MultipleGrid: React.FC<{ onSave: (rows: GridRow[]) => void; onCancel: () =
 };
 
 /* ───────── Bulk upload with template download + validation ───────── */
-const BulkUpload: React.FC<{ onImport: (rows: any[]) => Promise<{ ok: number; total: number; errors: string[] }>; onCancel: () => void; viewRole: ViewRole }> = ({ onImport, onCancel, viewRole }) => {
+const BulkUpload: React.FC<{ onImport: (rows: any[]) => Promise<{ ok: number; total: number; errors: string[] }>; onCancel: () => void; viewRole: ViewRole; isCommercial: boolean }> = ({ onImport, onCancel, viewRole, isCommercial }) => {
   const [drag, setDrag] = useState(false);
   const [preview, setPreview] = useState<any[]>([]);
   const [fileName, setFileName] = useState('');
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState<{ ok: number; total: number; errors: string[] } | null>(null);
 
-  const cols = viewRole === 'warehouse_keeper' ? KEEPER_COLS : ACCOUNTANT_COLS;
+  const cols = viewRole === 'warehouse_keeper'
+    ? (isCommercial ? KEEPER_COLS_COMMERCIAL : KEEPER_COLS)
+    : ACCOUNTANT_COLS;
   const colHeaders = cols.map(c => c.label.replace(' *', ''));
 
-  const downloadTemplate = () => {
-    const sampleData = viewRole === 'warehouse_keeper'
-      ? [
-          [new Date().toISOString().split('T')[0], 'NVL-XO01', 'Xoài cát Hòa Lộc', 20, 15, 40, 8, 'Nhập lô mới'],
-          [new Date().toISOString().split('T')[0], 'NVL-DH01', 'Dưa hấu không hạt', 10, 8, 36, 5, ''],
-        ]
-      : [
-          [new Date().toISOString().split('T')[0], 'NVL-XO01', 'Xoài cát Hòa Lộc', 20, 15, 'Nhập sổ'],
-          [new Date().toISOString().split('T')[0], 'NVL-DH01', 'Dưa hấu không hạt', 10, 8, ''],
-        ];
+  const downloadTemplate = async () => {
+    try {
+      const XLSX = await getXLSX();
+      const sampleData = viewRole === 'warehouse_keeper'
+        ? (isCommercial
+          ? [
+              [new Date().toISOString().split('T')[0], 'SP001', 'Sting dâu 330ml', 20, 8, 'Nhập lô mới'],
+              [new Date().toISOString().split('T')[0], 'SP002', 'Coca cola 330ml', 10, 5, ''],
+            ]
+          : [
+              [new Date().toISOString().split('T')[0], 'NVL-XO01', 'Xoài cát Hòa Lộc', 20, 15, 40, 8, 'Nhập lô mới'],
+              [new Date().toISOString().split('T')[0], 'NVL-DH01', 'Dưa hấu không hạt', 10, 8, 36, 5, ''],
+            ])
+        : [
+            [new Date().toISOString().split('T')[0], isCommercial ? 'SP001' : 'NVL-XO01', isCommercial ? 'Sting dâu 330ml' : 'Xoài cát Hòa Lộc', 20, 15, 'Nhập sổ'],
+            [new Date().toISOString().split('T')[0], isCommercial ? 'SP002' : 'NVL-DH01', isCommercial ? 'Coca cola 330ml' : 'Dưa hấu không hạt', 10, 8, ''],
+          ];
 
-    const ws = XLSX.utils.aoa_to_sheet([colHeaders, ...sampleData]);
-    // Set column widths
-    ws['!cols'] = colHeaders.map(() => ({ wch: 18 }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Template');
-    XLSX.writeFile(wb, `import_template_${viewRole === 'warehouse_keeper' ? 'thu_kho' : 'ke_toan'}.xlsx`);
+      const ws = XLSX.utils.aoa_to_sheet([colHeaders, ...sampleData]);
+      // Set column widths
+      ws['!cols'] = colHeaders.map(() => ({ wch: 18 }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Template');
+      XLSX.writeFile(wb, `import_template_${viewRole === 'warehouse_keeper' ? 'thu_kho' : 'ke_toan'}${isCommercial ? '_thuong_mai' : ''}.xlsx`);
+    } catch (err) {
+      console.error('Lỗi tải template:', err);
+      alert('Không thể tải template. Vui lòng thử lại.');
+    }
   };
 
   const parse = async (file: File) => {
     setProcessing(true);
     setResult(null);
     try {
+      const XLSX = await getXLSX();
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf);
       const ws = wb.Sheets[wb.SheetNames[0]];
@@ -238,8 +262,10 @@ const BulkUpload: React.FC<{ onImport: (rows: any[]) => Promise<{ ok: number; to
           </ul>
           <div className="bg-white/60 p-2 rounded text-xs">
             <strong>Lưu ý vai trò: </strong>
-            {viewRole === 'warehouse_keeper' 
-              ? 'Thủ kho nhập: Số lượng thực nhận, Tồn thực NVL, Tồn thực sơ chế, Tồn thực thành phẩm.'
+            {viewRole === 'warehouse_keeper'
+              ? (isCommercial
+                ? 'Thủ kho nhập: Số lượng thực nhận, Tồn thực kho (thành phẩm).'
+                : 'Thủ kho nhập: Số lượng thực nhận, Tồn thực NVL, Tồn thực sơ chế, Tồn thực thành phẩm.')
               : 'Kế toán nhập: Số lượng nhập sổ, Số lượng xuất sổ (Dựa theo chứng từ).'}
           </div>
         </div>
@@ -344,6 +370,7 @@ const InventoryTransactionImportPage: React.FC = () => {
   const { user, isTrial } = useAuthContext();
   const userRole = user?.role || 'staff';
   const isAdmin = isTrial || userRole === 'admin' || userRole === UserRole.ADMIN_MASTER || userRole === UserRole.ADMIN_COMPANY;
+  const isCommercial = appSettingsService.isCommercial();
 
   // Determine view role
   const [viewRole, setViewRole] = useState<ViewRole>(
@@ -402,8 +429,8 @@ const InventoryTransactionImportPage: React.FC = () => {
         productCode: row.productCode, productName: row.productName || '',
         date: parseDateOrNow(row.date), inputQuantity: Number(row.inputQuantity) || 0,
         unitPrice: Number(row.unitPrice) || 0,
-        rawMaterialStock: Number(row.rawMaterialStock) || 0, rawMaterialUnit: '',
-        processedStock: Number(row.processedStock) || 0, processedUnit: '',
+        rawMaterialStock: isCommercial ? 0 : (Number(row.rawMaterialStock) || 0), rawMaterialUnit: '',
+        processedStock: isCommercial ? 0 : (Number(row.processedStock) || 0), processedUnit: '',
         finishedProductStock: Number(row.finishedProductStock) || 0, finishedProductUnit: '',
         notes: row.notes || '', createdBy: 'system', updatedBy: 'system',
         approvalStatus: approvalStatus as any,
@@ -448,8 +475,8 @@ const InventoryTransactionImportPage: React.FC = () => {
         productCode: row.productCode, productName: row.productName || '',
         date: parseDateOrNow(row.date), inputQuantity: Number(row.inputQuantity) || 0,
         unitPrice: Number(row.unitPrice) || 0,
-        rawMaterialStock: Number(row.rawMaterialStock) || 0, rawMaterialUnit: '',
-        processedStock: Number(row.processedStock) || 0, processedUnit: '',
+        rawMaterialStock: isCommercial ? 0 : (Number(row.rawMaterialStock) || 0), rawMaterialUnit: '',
+        processedStock: isCommercial ? 0 : (Number(row.processedStock) || 0), processedUnit: '',
         finishedProductStock: Number(row.finishedProductStock) || 0, finishedProductUnit: '',
         notes: row.notes || '', createdBy: 'system', updatedBy: 'system',
         approvalStatus: approvalStatus as any,
@@ -463,7 +490,9 @@ const InventoryTransactionImportPage: React.FC = () => {
     return { ok, total: rows.length, errors };
   };
 
-  const roleInfo = ROLE_CONFIG[viewRole];
+  const roleInfo = isCommercial
+    ? { ...ROLE_CONFIG[viewRole], fields: ['finishedProductStock'] }
+    : ROLE_CONFIG[viewRole];
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
@@ -608,6 +637,7 @@ const InventoryTransactionImportPage: React.FC = () => {
               onSave={handleMultiple}
               onCancel={() => navigate('/inventory-records')}
               viewRole={viewRole}
+              isCommercial={isCommercial}
             />
           )}
           {activeTab === 'bulk' && (
@@ -615,6 +645,7 @@ const InventoryTransactionImportPage: React.FC = () => {
               onImport={handleBulkImport}
               onCancel={() => navigate('/inventory-records')}
               viewRole={viewRole}
+              isCommercial={isCommercial}
             />
           )}
         </div>

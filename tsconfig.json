@@ -1,14 +1,13 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
-      "@superapp/hooks": ["packages/hooks/src"],
-      "@superapp/ui": ["packages/ui/src"],
-      "@superapp/theme": ["packages/theme/src"]
+      "@superapp/hooks": ["./packages/hooks/src"],
+      "@superapp/ui": ["./packages/ui/src"],
+      "@superapp/theme": ["./packages/theme/src"]
     },
     "module": "esnext",
     "target": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "strict": true,
     "esModuleInterop": true,

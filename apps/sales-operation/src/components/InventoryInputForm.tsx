@@ -65,6 +65,10 @@ const InventoryInputForm: React.FC<InventoryInputFormProps> = ({
   // Helper to get all valid units for a product
   const getAvailableUnits = (product: Product | null) => {
     if (!product) return [];
+    // In commercial mode, only show output unit (finished goods only)
+    if (appSettingsService.isCommercial()) {
+      return [product.outputUnit].filter(Boolean);
+    }
     return Array.from(new Set([
       product.inputUnit,
       ...(product.intermediateUnits || []),
@@ -470,7 +474,7 @@ const InventoryInputForm: React.FC<InventoryInputFormProps> = ({
                 </div>
               )}
 
-              {selectedProduct && availableUnits.length > 1 && (
+              {selectedProduct && availableUnits.length > 1 && !appSettingsService.isCommercial() && (
                 <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
                   <p className="text-[10px] text-blue-600 font-bold italic">
                     💡 Mẹo: Bạn có thể nhập tồn kho cho cả {availableUnits.join(', ')}. Hệ thống sẽ tự động tổng hợp dựa trên tỷ lệ quy đổi.
