@@ -115,17 +115,18 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
     setIsProcessing(true);
     try {
       const productsToInsert = importData.data.map(row => ({
-        businessCode: row.businessCode,
+        businessCode: row.businessCode || '',
         name: row.name,
         category: isCommercial ? ProductCategory.FINISHED : mapCategory(row.category),
         inputUnit: row.inputUnit,
-        outputUnit: isCommercial ? row.inputUnit : row.outputUnit,
+        outputUnit: isCommercial ? row.inputUnit : (row.outputUnit || row.inputUnit),
         intermediateUnits: isCommercial ? [] : (row.intermediateUnits || []),
         conversionRatioRawToProcessed: isCommercial ? 0 : (row.conversionRatioRawToProcessed || 0),
         conversionRatioProcessedToFinished: isCommercial ? 0 : (row.conversionRatioProcessedToFinished || 0),
         standardInputPrice: row.standardInputPrice || 0,
-        status: row.status === 'ACTIVE' ? ProductStatus.ACTIVE : ProductStatus.INACTIVE,
-        businessStatus: (row.status === 'ACTIVE' ? 'active' : 'inactive') as 'active' | 'inactive',
+        // Status defaults to ACTIVE — user can deactivate manually after import.
+        status: row.status === 'INACTIVE' ? ProductStatus.INACTIVE : ProductStatus.ACTIVE,
+        businessStatus: (row.status === 'INACTIVE' ? 'inactive' : 'active') as 'active' | 'inactive',
         createdBy: 'system',
         updatedBy: 'system',
         updatedAt: new Date(),
@@ -180,16 +181,18 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
               <ul className="list-disc list-inside space-y-1 font-medium opacity-80">
                 {isCommercial ? (
                   <>
-                    <li>Chế độ Thương mại: chỉ nhập sản phẩm thành phẩm (Mã, Tên, Đơn vị, Giá nhập, Giá bán).</li>
+                    <li>Chỉ bắt buộc: <b>Tên sản phẩm</b> và <b>Đơn vị</b>. Các trường khác (Mã, Giá, Trạng thái) tùy chọn.</li>
+                    <li>Trạng thái để trống → tự động <b>Đang active</b>. Muốn tắt thì sửa thủ công sau.</li>
                     <li>Không cần ĐVT trung gian hay tỷ lệ quy đổi.</li>
                     <li>Hỗ trợ nhập số lượng lớn (tự động chia nhỏ batch khi ghi vào DB).</li>
                   </>
                 ) : (
                   <>
-                    <li>Tải file mẫu để biết các cột ĐVT Trung gian và Tỷ lệ quy đổi.</li>
+                    <li>Chỉ bắt buộc: <b>Tên sản phẩm</b> và <b>Đơn vị nhập</b>. Các trường khác (Mã, Đơn vị xuất, Danh mục...) tùy chọn.</li>
+                    <li>Để trống Đơn vị xuất → tự động lấy theo Đơn vị nhập.</li>
+                    <li>Trạng thái để trống → tự động <b>Đang active</b>. Muốn tắt thì sửa thủ công sau.</li>
                     <li>ĐVT Trung gian nhập cách nhau bằng dấu phẩy (VD: Miếng, Gram).</li>
                     <li>Tỷ lệ quy đổi: `1 Đơn vị Nhập` = `X Đơn vị Trung gian`.</li>
-                    <li>Giá nhập: đơn giá nhập tiêu chuẩn (VNĐ), dùng kiểm soát biến động giá nhập kho.</li>
                     <li>Hỗ trợ nhập số lượng lớn (tự động chia nhỏ batch khi ghi vào DB).</li>
                   </>
                 )}
@@ -293,7 +296,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-xs font-bold text-blue-600 dark:text-blue-400">{row.category}</div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400">{row.inputUnit}{!isCommercial && ` → ${row.outputUnit}`}</div>
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400">{row.inputUnit}{!isCommercial && row.outputUnit && ` → ${row.outputUnit}`}</div>
                   </td>
                   {!isCommercial && (
                     <td className="px-4 py-3">
