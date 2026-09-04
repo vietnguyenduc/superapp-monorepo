@@ -39,7 +39,7 @@ interface NewCustomerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (customer: Partial<Customer>) => void;
-  customerCode: string;
+  customerName: string;
   isLoading?: boolean;
   customerOptions: string[];
 }
@@ -48,7 +48,7 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
   isOpen,
   onClose,
   onSave,
-  customerCode,
+  customerName,
   isLoading = false,
   customerOptions,
 }) => {
@@ -60,26 +60,28 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
   const autoCustomerCode = (selectedCompany?.approval_settings ?? user?.company?.approval_settings)?.auto_customer_code !== false;
 
   const [formData, setFormData] = useState({
-    customer_code: customerCode,
-    full_name: "",
+    customer_code: "",
+    full_name: customerName,
     phone: "",
     email: "",
     address: "",
   });
   const [codeLoading, setCodeLoading] = useState(false);
 
-  // Sync customerCode prop when modal reopens + auto-generate if enabled and no code provided
+  // Sync customerName prop when modal reopens + auto-generate code
   useEffect(() => {
     if (!isOpen) return;
+    // The text the user typed in the customer field is the customer's NAME,
+    // not their code. Put it into full_name.
     setFormData({
-      customer_code: customerCode,
-      full_name: "",
+      customer_code: "",
+      full_name: customerName,
       phone: "",
       email: "",
       address: "",
     });
-    // If auto_customer_code is enabled and no explicit code was passed, generate one
-    if (autoCustomerCode && !customerCode) {
+    // Auto-generate customer code (respects auto_customer_code setting)
+    if (autoCustomerCode) {
       setCodeLoading(true);
       databaseService.customers
         .generateCustomerCode(companyId, customerCodeSettings)
@@ -90,11 +92,10 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
         })
         .finally(() => setCodeLoading(false));
     }
-  }, [isOpen, customerCode, autoCustomerCode, companyId, customerCodeSettings]);
+  }, [isOpen, customerName, autoCustomerCode, companyId, customerCodeSettings]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // If auto_customer_code is enabled and code is still loading or empty, generate before submit
     const submit = (code: string) => {
       onSave({
         ...formData,
@@ -102,6 +103,7 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
         branch_id: user?.branch_id || "",
       });
     };
+    // If auto_customer_code is enabled and code is still empty/loading, generate before submit
     if (autoCustomerCode && !formData.customer_code.trim()) {
       setCodeLoading(true);
       databaseService.customers
@@ -131,30 +133,24 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
           </h3>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Customer Code — read-only, auto-generated */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                {t("customers.customerCode")} {autoCustomerCode ? "" : "*"}
+                {t("customers.customerCode")}
               </label>
               <input
                 type="text"
                 value={codeLoading ? "Đang tạo mã..." : formData.customer_code}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    customer_code: e.target.value }))
-                }
-                readOnly={autoCustomerCode && codeLoading}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
-                autoFocus
-                placeholder={autoCustomerCode ? "Tự động sinh mã" : "Nhập mã khách hàng"}
+                readOnly
+                className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md shadow-sm bg-gray-100 text-gray-600 cursor-not-allowed"
+                placeholder={codeLoading ? "Đang tạo mã..." : "Tự động sinh mã"}
               />
-              {autoCustomerCode && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Mã khách hàng được tự động sinh theo cài đặt công ty.
-                </p>
-              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Mã khách hàng được tự động sinh theo cài đặt công ty.
+              </p>
             </div>
 
+            {/* Full Name — pre-filled from what the user typed */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 {t("customers.fullName")} *
@@ -170,6 +166,7 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
                 }
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 list="customer-list"
+                autoFocus
               />
               <datalist id="customer-list">
                 {customerOptions.map((option: string) => (
@@ -228,7 +225,7 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
                 variant="primary"
                 size="md"
                 type="submit"
-                disabled={isLoading || codeLoading || (!autoCustomerCode && !formData.customer_code.trim()) || !formData.full_name.trim()}
+                disabled={isLoading || codeLoading || !formData.full_name.trim()}
               >
                 {isLoading ? t("common.saving") : t("common.save")}
               </Button>
@@ -1659,7 +1656,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
       <NewCustomerModal
         isOpen={showNewCustomerModal}
         onClose={() => setShowNewCustomerModal(false)}
-        customerCode={newCustomerName}
+        customerName={newCustomerName}
         isLoading={isCreatingCustomer}
         onSave={(customer) => handleSaveNewCustomer(customer)}
         customerOptions={customerOptions}

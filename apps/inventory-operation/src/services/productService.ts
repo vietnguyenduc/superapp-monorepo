@@ -115,6 +115,7 @@ export class ProductService extends BaseService {
   }
 
   static async bulkInsertProducts(products: Partial<Product>[]): Promise<ServiceResponse<Product[]>> {
+    const BATCH_SIZE = 200;
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
@@ -124,9 +125,20 @@ export class ProductService extends BaseService {
           if (companyId) row.company_id = companyId;
           return row;
         });
-        const res = await apiClient.from('products').insert(rows).select('*');
-        if (res.data) res.data = res.data.map(item => ProductMapper.mapDbToProduct(item));
-        return res;
+
+        // Chunk into batches to avoid Supabase/PostgREST body size limits on large imports.
+        const allData: Product[] = [];
+        let firstError: any = null;
+        for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+          const chunk = rows.slice(i, i + BATCH_SIZE);
+          const res = await apiClient.from('products').insert(chunk).select('*');
+          if (res.error && !firstError) firstError = res.error;
+          if (res.data) {
+            for (const item of res.data) allData.push(ProductMapper.mapDbToProduct(item));
+          }
+          if (res.error) break; // stop on first error to avoid partial duplicates masking the cause
+        }
+        return { data: allData, error: firstError };
       },
       async () => {
         const results: Product[] = [];

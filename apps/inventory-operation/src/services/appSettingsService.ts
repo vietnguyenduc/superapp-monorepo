@@ -23,11 +23,16 @@ export interface AppSettings {
   industryType?: string;
   branches: Branch[];
   transactionTypes: TransactionType[];
+  units: string[];
   priceVarianceConfig: {
     allowFreePriceInput: boolean;
     tolerancePercentage: number;
   };
 }
+
+const DEFAULT_UNITS: string[] = [
+  'kg', 'g', 'quả', 'miếng', 'ly', 'đĩa', 'phần', 'thùng', 'bịch', 'lon', 'chai', 'muỗng', 'hộp', 'bát', 'tô',
+];
 
 const STORAGE_KEY = 'inventory_app_settings';
 
@@ -49,6 +54,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   businessModel: 'fnb',
   branches: DEFAULT_BRANCHES,
   transactionTypes: DEFAULT_TRANSACTION_TYPES,
+  units: DEFAULT_UNITS,
   priceVarianceConfig: {
     allowFreePriceInput: true,
     tolerancePercentage: 5,
@@ -89,6 +95,15 @@ class AppSettingsService {
 
   isCommercial(): boolean {
     return this.getBusinessModel() === 'commercial';
+  }
+
+  getUnits(): string[] {
+    const units = this.getSettings().units;
+    return units && units.length > 0 ? units : DEFAULT_UNITS;
+  }
+
+  saveUnits(units: string[]): AppSettings {
+    return this.saveSettings({ units });
   }
 }
 
