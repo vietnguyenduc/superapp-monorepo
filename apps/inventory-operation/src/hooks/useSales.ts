@@ -16,19 +16,33 @@ export const useSalesReport = () => {
     
     try {
       console.log('🔄 Loading sales records...');
-      
-      // Force fallback mode for now since Supabase is not configured
-      console.warn('🔄 Using fallback mode (Supabase not configured)');
-      const response = await fallbackService.getSalesRecords();
-      
-      console.log('📊 Sales fallback response:', response);
-      
-      if (response.data) {
+
+      const isTrial = isTrialMode();
+      if (isTrial) {
+        const response = await fallbackService.getSalesRecords();
+        console.log('🧪 Trial mode: sales records loaded:', response.data?.length || 0);
+        if (response.data) {
+          setSalesRecords(response.data);
+        } else {
+          setError(response.error || 'Không thể tải danh sách báo cáo bán hàng');
+        }
+        return;
+      }
+
+      const response = await salesService.getSalesRecords();
+      if (response.success && response.data) {
         setSalesRecords(response.data);
         console.log('✅ Sales records loaded:', response.data.length);
       } else {
-        setError(response.error || 'Không thể tải danh sách báo cáo bán hàng');
-        console.error('❌ Failed to load sales records:', response.error);
+        // Fallback if DB fails
+        console.warn('Database service failed, using fallback:', response.error);
+        const fallbackResponse = await fallbackService.getSalesRecords();
+        if (fallbackResponse.data) {
+          setSalesRecords(fallbackResponse.data);
+          console.log('📊 Fallback sales records loaded:', fallbackResponse.data.length);
+        } else {
+          setError(response.error || fallbackResponse.error || 'Không thể tải danh sách báo cáo bán hàng');
+        }
       }
     } catch (err) {
       setError('Lỗi kết nối khi tải dữ liệu');
