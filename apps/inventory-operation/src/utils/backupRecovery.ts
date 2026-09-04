@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 import { supabase } from '../config/supabase';
 import type { Product } from '../types';
 import type { InventoryMovement, InventoryBalanceSnapshot, StockCountEntry } from '../types/InventoryMovement';
+import { isTrialMode } from '@superapp/shared-utils';
 
 // Note: This service requires a database table 'inventory_backup_history' to be created
 // Migration will be added in a separate file
@@ -72,7 +73,7 @@ export const inventoryBackupService = {
     userId?: string,
   ): Promise<InventoryBackupData> {
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         // Return minimal trial backup data
         return {
@@ -257,7 +258,7 @@ export const inventoryBackupService = {
     userId: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         return { success: true };
       }
@@ -293,7 +294,7 @@ export const inventoryBackupService = {
     } = {}
   ): Promise<{ success: boolean; conflicts?: ConflictInfo; error?: string }> {
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         return { success: true };
       }
@@ -461,7 +462,7 @@ export const inventoryBackupService = {
     error?: string;
   }> {
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         return { data: [] };
       }
@@ -487,7 +488,7 @@ export const inventoryBackupService = {
   // Delete backup from database
   async deleteBackup(backupId: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         return { success: true };
       }

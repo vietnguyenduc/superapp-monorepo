@@ -6,6 +6,7 @@ import {
   InventoryVarianceAlert
 } from '../types';
 import { inventoryVarianceService } from '../services/inventoryVarianceService';
+import { isTrialMode } from '@superapp/shared-utils';
 
 export const useInventoryVarianceReports = () => {
   const [reports, setReports] = useState<InventoryVarianceReport[]>([]);
@@ -23,7 +24,7 @@ export const useInventoryVarianceReports = () => {
       setLoading(true);
       setError(null);
       
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         const { getTrialInventoryRecords, getTrialProducts } = await import('../data/trialMockData');
         const records = getTrialInventoryRecords();
@@ -95,7 +96,7 @@ export const useInventoryVarianceReports = () => {
       setLoading(true);
       setError(null);
       
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       let newReport;
       
       if (isTrial) {
@@ -209,7 +210,7 @@ export const useInventoryVarianceStats = () => {
       setLoading(true);
       setError(null);
       
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         setStats({
           total_reports: 12,
@@ -255,7 +256,7 @@ export const useInventoryVarianceAlerts = () => {
       setLoading(true);
       setError(null);
       
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         setAlerts([
           {

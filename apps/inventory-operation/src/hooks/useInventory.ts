@@ -3,6 +3,7 @@ import { InventoryRecord } from '../types';
 import { InventoryService } from '../services/inventoryService';
 import { fallbackService } from '../services/fallbackService';
 import { getTrialInventoryRecords, saveTrialInventoryRecords, seedTrialDataIfNeeded } from '../data/trialMockData';
+import { isTrialMode } from '@superapp/shared-utils';
 
 interface UseInventoryOptions {
   autoLoad?: boolean;
@@ -25,7 +26,7 @@ export const useInventory = (options: UseInventoryOptions = {}) => {
 
     try {
       // Trial mode: load from localStorage
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         seedTrialDataIfNeeded();
         const trialRecords = getTrialInventoryRecords();
@@ -70,7 +71,7 @@ export const useInventory = (options: UseInventoryOptions = {}) => {
     setError(null);
 
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       let response;
       
       if (isTrial) {
@@ -109,7 +110,7 @@ export const useInventory = (options: UseInventoryOptions = {}) => {
     setError(null);
 
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       let response;
       
       if (isTrial) {
@@ -154,7 +155,7 @@ export const useInventory = (options: UseInventoryOptions = {}) => {
     setError(null);
 
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       let response;
       
       if (isTrial) {

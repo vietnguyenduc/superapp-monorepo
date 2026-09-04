@@ -1,4 +1,4 @@
-import { createSupabaseClient as createSharedClient, createApiClient } from '@superapp/shared-utils';
+import { createSupabaseClient as createSharedClient, createApiClient, isTrialMode } from '@superapp/shared-utils';
 import { createClient } from '@supabase/supabase-js';
 
 // Environment variables for Supabase configuration
@@ -51,8 +51,8 @@ const rawSupabase = supabaseUrl && supabaseAnonKey
 export const supabase = new Proxy(rawSupabase, {
   get(target, prop, receiver) {
     // Only intercept in browser and if isTrial is true
-    const isTrial = typeof window !== 'undefined' && localStorage.getItem('isTrial') === 'true';
-    
+    const isTrial = isTrialMode();
+
     // If we're in trial mode and trying to access data-fetching methods
     if (isTrial && (prop === 'from' || prop === 'rpc' || prop === 'auth')) {
       if (prop === 'auth') {
@@ -160,7 +160,7 @@ export const getCurrentUserId = async (): Promise<string | null> => {
 
 // Helper function to get current user role (for RLS payload fields)
 export const getCurrentUserRole = async (): Promise<string | null> => {
-  const isTrial = typeof window !== 'undefined' && localStorage.getItem('isTrial') === 'true';
+  const isTrial = isTrialMode();
   if (isTrial) return 'admin';
   const user = await getCurrentUser();
   if (!user) return null;
@@ -170,7 +170,7 @@ export const getCurrentUserRole = async (): Promise<string | null> => {
 
 // Helper function to get current company ID (for tenant-scoped queries)
 export const getCurrentCompanyId = async (): Promise<string | null> => {
-  const isTrial = typeof window !== 'undefined' && localStorage.getItem('isTrial') === 'true';
+  const isTrial = isTrialMode();
   if (isTrial) return 'trial-company';
   const user = await getCurrentUser();
   if (!user) return null;
@@ -180,7 +180,7 @@ export const getCurrentCompanyId = async (): Promise<string | null> => {
 
 // Helper function to get current branch ID (for branch-scoped queries)
 export const getCurrentBranchId = async (): Promise<string | null> => {
-  const isTrial = typeof window !== 'undefined' && localStorage.getItem('isTrial') === 'true';
+  const isTrial = isTrialMode();
   if (isTrial) return 'trial-branch';
   const user = await getCurrentUser();
   if (!user) return null;
@@ -191,7 +191,7 @@ export const getCurrentBranchId = async (): Promise<string | null> => {
 // Helper function to test database connection
 export const testConnection = async (): Promise<boolean> => {
   try {
-    const isTrial = localStorage.getItem('isTrial') === 'true';
+    const isTrial = isTrialMode();
     if (isTrial) {
       return true;
     }
