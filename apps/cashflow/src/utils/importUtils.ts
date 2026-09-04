@@ -1,5 +1,5 @@
 import type { Transaction, ImportError, TransactionType } from "../types";
-import { parseFile } from "@superapp/shared-utils";
+import { parseFile, parseClipboardRow as sharedParseClipboardRow } from "@superapp/shared-utils";
 import { parseAmount, parseDate, normalizeTransactionType } from "../services/businessLogic";
 
 export interface RawTransactionData {
@@ -82,31 +82,11 @@ function normalizeTransactionTypeLabel(value: string): TransactionType | "" {
 }
 
 /**
- * Parse a clipboard row into cell values, handling tab-separated (Excel),
- * comma-separated (CSV), and numbers with comma thousand separators.
- *
- * When a row has no tabs but has commas, and every comma segment is
- * number-like (digits/dots only), the row is treated as a single value
- * (e.g. "1,000,002") instead of being split into multiple cells.
+ * Re-export the shared clipboard row parser so existing imports keep working.
+ * The implementation lives in `@superapp/shared-utils` and is shared across
+ * all Superapp apps to keep paste behavior consistent.
  */
-export function parseClipboardRow(row: string): string[] {
-  // Excel format: tab-separated
-  if (row.includes("\t")) {
-    return row.split("\t");
-  }
-  // No tabs but has commas: detect numbers with comma thousand separators
-  if (row.includes(",")) {
-    const segments = row.split(",");
-    if (
-      segments.length > 1 &&
-      segments.every((seg) => /^[\d.\s]+$/.test(seg.trim()))
-    ) {
-      return [row];
-    }
-    return row.split(",");
-  }
-  return [row];
-}
+export const parseClipboardRow = sharedParseClipboardRow;
 
 /**
  * Parse a single line of data, handling both tab and comma separators
