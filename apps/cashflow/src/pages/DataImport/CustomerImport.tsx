@@ -5,7 +5,7 @@ import { logger } from "../../utils/logger";
 import { toast } from "../../utils/toast";
 import { useTranslation } from "react-i18next";
 import { getXLSX } from "../../utils/xlsxLoader";
-import { useAuthContext } from "@superapp/iam";
+import { useAuthContext, useCompany } from "@superapp/iam";
 import { captureException } from "@superapp/shared-utils";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import type { Customer, ImportData, ImportError } from "../../types";
@@ -45,7 +45,10 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
 }) => {
   const { t } = useTranslation();
   const { user } = useAuthContext();
+  const { selectedCompany } = useCompany();
   const companyId = useCompanyId();
+  const customerCodeSettings = selectedCompany?.approval_settings ?? user?.company?.approval_settings;
+  const autoCustomerCode = (selectedCompany?.approval_settings ?? user?.company?.approval_settings)?.auto_customer_code !== false;
   const [singleCustomer, setSingleCustomer] = useState<RawCustomerData>(
     INITIAL_SINGLE_CUSTOMER,
   );
@@ -518,12 +521,33 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
 
   const handleCreateSingleCustomer = useCallback(async () => {
     const name = singleCustomer.full_name.trim();
-    const code = singleCustomer.customer_code?.trim();
+    let code = singleCustomer.customer_code?.trim();
     const phone = singleCustomer.phone?.replace(/\s+/g, "").trim();
 
     if (!name) {
       setSingleError(t("customers.form.errors.fullNameRequired"));
       return;
+    }
+    // If auto_customer_code is enabled and code is empty, auto-generate
+    if (!code && autoCustomerCode) {
+      setSingleError(null);
+      setIsCreatingSingle(true);
+      try {
+        const { data: generatedCode, error: codeErr } =
+          await databaseService.customers.generateCustomerCode(companyId, customerCodeSettings);
+        setIsCreatingSingle(false);
+        if (codeErr || !generatedCode) {
+          setSingleError("Không thể sinh mã khách hàng tự động. Vui lòng nhập thủ công.");
+          return;
+        }
+        code = generatedCode as string;
+        // Update the form so user sees the generated code
+        setSingleCustomer((prev) => ({ ...prev, customer_code: code! }));
+      } catch {
+        setIsCreatingSingle(false);
+        setSingleError("Không thể sinh mã khách hàng tự động. Vui lòng nhập thủ công.");
+        return;
+      }
     }
     if (!code) {
       setSingleError("Mã khách hàng là bắt buộc");
@@ -948,15 +972,20 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Mã khách hàng
+              Mã khách hàng {!autoCustomerCode && "*"}
             </label>
             <input
               type="text"
               value={singleCustomer.customer_code}
               onChange={(e) => handleSingleInputChange("customer_code", e.target.value)}
               className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
-              placeholder="Mã khách hàng (tự động nếu để trống)"
+              placeholder={autoCustomerCode ? "Tự động sinh mã (để trống)" : "Nhập mã khách hàng"}
             />
+            {autoCustomerCode && (
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Để trống để hệ thống tự động sinh mã theo cài đặt công ty.
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
