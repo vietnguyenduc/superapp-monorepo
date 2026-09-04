@@ -24,6 +24,7 @@ export const DEFAULT_PRODUCT_MAPPING: ExcelColumnMapping = {
   'Đơn vị trung gian': 'intermediateUnits',
   'Tỷ lệ quy đổi sơ chế': 'conversionRatioRawToProcessed',
   'Định mức thành phẩm': 'conversionRatioProcessedToFinished',
+  'Giá nhập': 'standardInputPrice',
   'Trạng thái': 'status',
   'Ghi chú': 'notes',
 };
@@ -301,12 +302,13 @@ class ExcelImportService {
       case 'products':
         if (isCommercial) {
           // Commercial mode: only finished products — no raw/intermediate/conversion columns
-          headers = ['Mã sản phẩm', 'Tên sản phẩm', 'Đơn vị', 'Giá bán', 'Trạng thái', 'Ghi chú'];
+          headers = ['Mã sản phẩm', 'Tên sản phẩm', 'Đơn vị', 'Giá nhập', 'Giá bán', 'Trạng thái', 'Ghi chú'];
           sampleData = [
             {
               'Mã sản phẩm': 'SP001',
               'Tên sản phẩm': 'Sting dâu 330ml',
               'Đơn vị': 'Lon',
+              'Giá nhập': 8000,
               'Giá bán': 10000,
               'Trạng thái': 'ACTIVE',
               'Ghi chú': 'Hàng bán'
@@ -325,6 +327,7 @@ class ExcelImportService {
               'Đơn vị trung gian': 'Miếng, Gram',
               'Tỷ lệ quy đổi sơ chế': 10,
               'Định mức thành phẩm': 20,
+              'Giá nhập': 5000,
               'Trạng thái': 'ACTIVE',
               'Ghi chú': 'Hàng loại 1'
             }
