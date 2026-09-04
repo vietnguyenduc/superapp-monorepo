@@ -24,6 +24,7 @@ const SettingsPage: React.FC = () => {
   const { user, isTrial } = useAuthContext();
   const role = isTrial ? 'admin_master' : ((user as any)?.role || user?.app_metadata?.role || 'staff');
   const isAdmin = role === 'admin_master' || role === 'admin_company';
+  const isMasterAdmin = role === 'admin_master';
   const isManager = role === 'branch_manager' || isAdmin;
 
   const settings = appSettingsService.getSettings();
@@ -254,6 +255,12 @@ const SettingsPage: React.FC = () => {
             {/* Tab: Business Model */}
             {activeTab === 'business-model' && (
               <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} rounded-2xl border shadow-sm p-4 sm:p-6`}>
+                {!isMasterAdmin && (
+                  <div className="mb-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                    <span>🔒</span>
+                    <span>Chỉ <b>Master Admin</b> mới được thay đổi Mô hình kinh doanh. Vui lòng liên hệ Master Admin nếu cần chuyển đổi.</span>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                   {[
                     { id: 'fnb', label: 'F&B (Nhà hàng/Cafe)', icon: '🍽️', desc: 'Sử dụng Recipe, quy đổi 3 lớp (NVL -> Sơ chế -> TP).' },
@@ -262,10 +269,10 @@ const SettingsPage: React.FC = () => {
                   ].map(model => (
                     <button
                       key={model.id}
-                      onClick={() => isAdmin && handleToggleBusinessModel(model.id as BusinessModel)}
-                      disabled={!isAdmin}
+                      onClick={() => isMasterAdmin && handleToggleBusinessModel(model.id as BusinessModel)}
+                      disabled={!isMasterAdmin}
                       className={`p-4 sm:p-6 rounded-2xl border-2 text-left transition-all relative ${
-                        !isAdmin ? 'opacity-60 cursor-not-allowed' : ''
+                        !isMasterAdmin ? 'opacity-60 cursor-not-allowed' : ''
                       } ${
                         businessModel === model.id
                           ? 'border-blue-500 bg-blue-500/10 shadow-lg'
@@ -278,6 +285,11 @@ const SettingsPage: React.FC = () => {
                       {businessModel === model.id && (
                         <div className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-blue-500 text-white p-1 rounded-full">
                           <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7"/></svg>
+                        </div>
+                      )}
+                      {!isMasterAdmin && (
+                        <div className="absolute top-2 right-2 text-[9px] font-bold text-gray-400 dark:text-gray-600">
+                          🔒 Master only
                         </div>
                       )}
                     </button>
@@ -699,19 +711,24 @@ const SettingsPage: React.FC = () => {
                     <span>⚠️</span> Vùng Nguy Hiểm (Danger Zone)
                   </h3>
                   <p className="text-xs text-red-500/70 mb-4 sm:mb-6 leading-relaxed">
-                    Xóa sạch toàn bộ dữ liệu (Danh mục, Tồn kho, Cài đặt). 
-                    Ứng dụng sẽ quay lại trạng thái ban đầu với dữ liệu mẫu. 
+                    Xóa sạch toàn bộ dữ liệu (Danh mục, Tồn kho). 
+                    Ứng dụng sẽ quay lại trạng thái ban đầu với dữ liệu mẫu.
+                    <span className="block mt-1 text-emerald-600 dark:text-emerald-400 font-bold">
+                      ⚙️ Mô hình kinh doanh và Cài đặt được GIỮ NGUYÊN.
+                    </span>
                     HÀNH ĐỘNG NÀY KHÔNG THỂ KHÔI PHỤC.
                   </p>
                   <button
                     onClick={() => {
                       if (!isAdmin) return;
-                      if (confirm('‼️ CẢNH BÁO: Hành động này sẽ XÓA SẠCH dữ liệu Sản phẩm, Kho và Cài đặt của bạn. Bạn có chắc chắn muốn tiếp tục?')) {
+                      if (confirm('‼️ CẢNH BÁO: Hành động này sẽ XÓA SẠCH dữ liệu Sản phẩm và Kho của bạn (Mô hình kinh doanh & Cài đặt được GIỮ NGUYÊN). Bạn có chắc chắn muốn tiếp tục?')) {
                         // Define app-specific keys to clear
+                        // NOTE: 'inventory_app_settings' is intentionally EXCLUDED to preserve
+                        // businessModel + branches + transactionTypes + priceVarianceConfig.
+                        // Business model is set once and must not be reset by data reset.
                         const keysToClear = [
                           'trial_products', 
                           'trial_inventory_records', 
-                          'inventory_app_settings',
                           'inventory_product_columns_config', 
                           'settings_opening_balances',
                           'inventory_cached_products', 
