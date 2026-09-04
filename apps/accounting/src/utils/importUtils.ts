@@ -86,6 +86,33 @@ function normalizeTransactionTypeLabel(value: string): TransactionType | "" {
 }
 
 /**
+ * Parse a clipboard row into cell values, handling tab-separated (Excel),
+ * comma-separated (CSV), and numbers with comma thousand separators.
+ *
+ * When a row has no tabs but has commas, and every comma segment is
+ * number-like (digits/dots only), the row is treated as a single value
+ * (e.g. "1,000,002") instead of being split into multiple cells.
+ */
+export function parseClipboardRow(row: string): string[] {
+  // Excel format: tab-separated
+  if (row.includes("\t")) {
+    return row.split("\t");
+  }
+  // No tabs but has commas: detect numbers with comma thousand separators
+  if (row.includes(",")) {
+    const segments = row.split(",");
+    if (
+      segments.length > 1 &&
+      segments.every((seg) => /^[\d.\s]+$/.test(seg.trim()))
+    ) {
+      return [row];
+    }
+    return row.split(",");
+  }
+  return [row];
+}
+
+/**
  * Parse a single line of data, handling both tab and comma separators
  */
 function parseLine(line: string): string[] {
