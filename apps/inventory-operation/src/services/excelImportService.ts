@@ -21,10 +21,12 @@ export const DEFAULT_PRODUCT_MAPPING: ExcelColumnMapping = {
   'Danh mục': 'category',
   'Đơn vị nhập': 'inputUnit',
   'Đơn vị xuất': 'outputUnit',
+  'Đơn vị': 'inputUnit', // Commercial template uses "Đơn vị" as the single unit column
   'Đơn vị trung gian': 'intermediateUnits',
   'Tỷ lệ quy đổi sơ chế': 'conversionRatioRawToProcessed',
   'Định mức thành phẩm': 'conversionRatioProcessedToFinished',
   'Giá nhập': 'standardInputPrice',
+  'Giá bán': 'standardOutputPrice',
   'Trạng thái': 'status',
   'Ghi chú': 'notes',
 };
@@ -218,12 +220,11 @@ class ExcelImportService {
     
     const validator = (row: any) => {
       const errors: string[] = [];
-      
-      if (!row.businessCode) errors.push('Thiếu mã sản phẩm');
+
+      // Only name and unit are required — everything else is optional with sensible defaults.
       if (!row.name) errors.push('Thiếu tên sản phẩm');
-      if (!row.inputUnit) errors.push('Thiếu đơn vị nhập');
-      if (!row.outputUnit) errors.push('Thiếu đơn vị xuất');
-      
+      if (!row.inputUnit) errors.push('Thiếu đơn vị tính');
+
       return {
         isValid: errors.length === 0,
         errors
