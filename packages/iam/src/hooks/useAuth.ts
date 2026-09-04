@@ -375,8 +375,16 @@ export const useAuth = () => {
         isTrial: false,
       });
 
-      // Explicitly disable trial mode when signing in with real credentials
+      // Explicitly disable trial mode when signing in with real credentials.
+      // Clear ALL trial flags — different apps use different localStorage keys
+      // and they share the same origin (*.appforyou.xyz), so a trial flag set
+      // by Cashflow would leak into Inventory/HR/etc and force fallback mode.
       setTrialMode(false);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("cashflow_trial_user");
+        localStorage.removeItem("cashflow_trial_mode_enabled");
+        localStorage.removeItem("isTrial");
+      }
 
       return { error: null };
     } catch (err: any) {

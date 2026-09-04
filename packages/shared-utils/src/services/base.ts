@@ -20,6 +20,16 @@ export interface ServiceResponse<T> {
  */
 export function isTrialMode(): boolean {
   if (typeof window === 'undefined') return false;
+
+  // If user has a real Supabase auth session, they are NOT in trial mode —
+  // even if stale trial flags remain in localStorage from a previous trial
+  // session in another app (all 7 apps share the same origin).
+  // Supabase stores auth tokens under `sb-<project-ref>-auth-token`.
+  const hasRealAuth = Object.keys(localStorage).some(k =>
+    k.startsWith('sb-') && k.endsWith('-auth-token')
+  );
+  if (hasRealAuth) return false;
+
   const sm = localStorage.getItem('superapp_trial_mode');
   return localStorage.getItem('isTrial') === 'true' ||
          sm === 'true' || !!sm || // superapp_trial_mode may be 'true' or a JSON object
