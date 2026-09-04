@@ -25,8 +25,6 @@ interface ImportData {
   isValid: boolean;
 }
 
-const MAX_BULK_ROWS = 500;
-
 interface ProductBulkImportProps {
   onImportComplete?: () => void;
   onCancel?: () => void;
@@ -49,17 +47,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
     setIsProcessing(true);
     try {
       const result = await excelImportService.importProducts(file);
-      
-      if (result.data.length > MAX_BULK_ROWS) {
-        setImportData({
-          file,
-          data: [],
-          errors: [`File vượt quá giới hạn ${MAX_BULK_ROWS} dòng.`],
-          isValid: false,
-        });
-        return;
-      }
-      
+
       setImportData({
         file,
         data: result.data as any[],
@@ -194,7 +182,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
                   <>
                     <li>Chế độ Thương mại: chỉ nhập sản phẩm thành phẩm (Mã, Tên, Đơn vị, Giá nhập, Giá bán).</li>
                     <li>Không cần ĐVT trung gian hay tỷ lệ quy đổi.</li>
-                    <li>Tối đa {MAX_BULK_ROWS} dòng mỗi lần nhập.</li>
+                    <li>Hỗ trợ nhập số lượng lớn (tự động chia nhỏ batch khi ghi vào DB).</li>
                   </>
                 ) : (
                   <>
@@ -202,7 +190,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
                     <li>ĐVT Trung gian nhập cách nhau bằng dấu phẩy (VD: Miếng, Gram).</li>
                     <li>Tỷ lệ quy đổi: `1 Đơn vị Nhập` = `X Đơn vị Trung gian`.</li>
                     <li>Giá nhập: đơn giá nhập tiêu chuẩn (VNĐ), dùng kiểm soát biến động giá nhập kho.</li>
-                    <li>Tối đa {MAX_BULK_ROWS} dòng mỗi lần nhập.</li>
+                    <li>Hỗ trợ nhập số lượng lớn (tự động chia nhỏ batch khi ghi vào DB).</li>
                   </>
                 )}
               </ul>

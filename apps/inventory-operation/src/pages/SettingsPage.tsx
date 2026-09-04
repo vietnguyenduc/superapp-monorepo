@@ -34,6 +34,10 @@ const SettingsPage: React.FC = () => {
   const [intermediateMode, setIntermediateMode] = useState<IntermediateConversionMode>(settings.intermediateConversionMode);
   const [branches, setBranches] = useState<Branch[]>(settings.branches);
   const [transactionTypes, setTransactionTypes] = useState<TransactionType[]>(settings.transactionTypes);
+  const [units, setUnits] = useState<string[]>(settings.units || []);
+  const [newUnit, setNewUnit] = useState('');
+  const [editingUnitIdx, setEditingUnitIdx] = useState<number | null>(null);
+  const [editUnitValue, setEditUnitValue] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('theme') === 'dark' || document.documentElement.classList.contains('dark');
   });
@@ -171,12 +175,50 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  // CRUD for Units (Đơn vị tính)
+  const persistUnits = (next: string[]) => {
+    setUnits(next);
+    appSettingsService.saveUnits(next);
+  };
+
+  const handleAddUnit = () => {
+    const value = newUnit.trim();
+    if (!value) return;
+    if (units.some(u => u.toLowerCase() === value.toLowerCase())) {
+      alert(`Đơn vị "${value}" đã tồn tại.`);
+      return;
+    }
+    persistUnits([...units, value]);
+    setNewUnit('');
+  };
+
+  const handleSaveUnit = () => {
+    if (editingUnitIdx === null) return;
+    const value = editUnitValue.trim();
+    if (!value) return;
+    if (units.some((u, i) => i !== editingUnitIdx && u.toLowerCase() === value.toLowerCase())) {
+      alert(`Đơn vị "${value}" đã tồn tại.`);
+      return;
+    }
+    const next = units.map((u, i) => (i === editingUnitIdx ? value : u));
+    persistUnits(next);
+    setEditingUnitIdx(null);
+    setEditUnitValue('');
+  };
+
+  const handleDeleteUnit = (idx: number) => {
+    if (confirm(`Bạn có chắc chắn muốn xóa đơn vị "${units[idx]}"?`)) {
+      persistUnits(units.filter((_, i) => i !== idx));
+    }
+  };
+
   const tabs = [
     { key: 'business-model', label: 'Mô hình kinh doanh', description: 'Chọn chế độ vận hành (F&B / Thương mại / Sản xuất).' },
     { key: 'costing-method', label: 'Tính giá vốn (Costing)', description: 'Thiết lập phương pháp tính giá trị xuất/nhập kho (FIFO, LIFO, MAC).' },
     { key: 'opening-balance', label: 'Số tồn đầu kỳ', description: 'Thiết lập tồn đầu kỳ để làm mốc tính toán.' },
     { key: 'branches', label: 'Văn phòng / Chi nhánh', description: 'Quản lý đơn vị vận hành và điểm kho.' },
     { key: 'transaction-types', label: 'Loại giao dịch XNT', description: 'Khai báo các loại nghiệp vụ xuất nhập tồn.' },
+    { key: 'units', label: 'Đơn vị tính', description: 'Quản lý danh mục đơn vị tính dùng khi tạo sản phẩm và nhập kho.' },
     { key: 'price-variance', label: 'Phê duyệt Giá nhập', description: 'Cài đặt dung sai và ma trận duyệt giá vốn khi nhập kho.' },
     { key: 'conversion-settings', label: 'Cấu hình Quy đổi', description: 'Thiết lập cách quy đổi nguyên liệu (chỉ cho F&B/Sản xuất).' },
     { key: 'display-settings', label: 'Giao diện & Hệ thống', description: 'Dark Mode và quản lý dữ liệu toàn cục.' },
@@ -595,6 +637,105 @@ const SettingsPage: React.FC = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Tab: Units (Đơn vị tính) */}
+            {activeTab === 'units' && (
+              <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} rounded-2xl border shadow-sm p-4 sm:p-6`}>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+                  <div>
+                    <h3 className="font-bold text-sm sm:text-base">Danh mục Đơn vị tính</h3>
+                    <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Các đơn vị này sẽ xuất hiện trong dropdown khi tạo/sửa sản phẩm và nhập kho.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Add new unit */}
+                <div className={`mb-6 p-4 rounded-2xl border ${isDarkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                  <div className="flex flex-col sm:flex-row gap-3 items-end">
+                    <div className="flex-1 w-full">
+                      <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Thêm đơn vị mới</label>
+                      <input
+                        type="text"
+                        value={newUnit}
+                        onChange={(e) => setNewUnit(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleAddUnit(); }}
+                        placeholder="VD: kg, ly, hộp, thùng..."
+                        disabled={!isManager}
+                        className={`w-full px-3 sm:px-4 py-2 rounded-xl border text-sm ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'} ${!isManager ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      />
+                    </div>
+                    <button
+                      onClick={handleAddUnit}
+                      disabled={!isManager || !newUnit.trim()}
+                      className={`w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-blue-500/20 ${
+                        !isManager || !newUnit.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+                      }`}
+                    >
+                      + Thêm
+                    </button>
+                  </div>
+                </div>
+
+                {/* Edit inline */}
+                {editingUnitIdx !== null && (
+                  <div className={`mb-6 p-4 rounded-2xl border ${isDarkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200'}`}>
+                    <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1">Sửa đơn vị</label>
+                    <div className="flex gap-3 items-end">
+                      <input
+                        type="text"
+                        value={editUnitValue}
+                        onChange={(e) => setEditUnitValue(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleSaveUnit(); }}
+                        className={`flex-1 px-3 sm:px-4 py-2 rounded-xl border text-sm ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}
+                        autoFocus
+                      />
+                      <button onClick={handleSaveUnit} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs sm:text-sm font-bold">Lưu</button>
+                      <button onClick={() => { setEditingUnitIdx(null); setEditUnitValue(''); }} className="px-4 py-2 text-xs sm:text-sm text-gray-500">Hủy</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Units list as chips */}
+                {units.length === 0 ? (
+                  <div className={`text-center py-8 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    <div className="text-3xl mb-2">📏</div>
+                    <p className="text-sm">Chưa có đơn vị tính nào. Thêm đơn vị ở trên để bắt đầu.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {units.map((unit, idx) => (
+                      <div
+                        key={`${unit}-${idx}`}
+                        className={`group flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl border transition-all ${isDarkMode ? 'bg-gray-700/30 border-gray-700 hover:border-blue-500' : 'bg-white border-gray-200 hover:border-blue-400'}`}
+                      >
+                        <span className="text-xs sm:text-sm font-bold">{unit}</span>
+                        {isManager ? (
+                          <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all">
+                            <button
+                              onClick={() => { setEditingUnitIdx(idx); setEditUnitValue(unit); }}
+                              className="text-blue-500 hover:bg-blue-500/10 rounded p-0.5 text-xs"
+                              title="Sửa"
+                            >✏️</button>
+                            <button
+                              onClick={() => handleDeleteUnit(idx)}
+                              className="text-red-500 hover:bg-red-500/10 rounded p-0.5 text-xs"
+                              title="Xóa"
+                            >✕</button>
+                          </div>
+                        ) : (
+                          <span className="text-[9px] text-gray-400">🔒</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <p className={`mt-6 text-[10px] sm:text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} italic`}>
+                  Mẹo: Đơn vị tính dùng chung cho toàn bộ sản phẩm. Đổi tên đơn vị đang được sản phẩm sử dụng có thể làm mất đồng bộ — nên xóa/sửa khi không còn sản phẩm nào dùng đơn vị đó.
+                </p>
               </div>
             )}
 
