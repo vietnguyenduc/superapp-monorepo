@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { parseClipboardRows } from '@superapp/shared-utils';
 
 interface ProductOption {
   id: string;
@@ -135,17 +136,18 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   // Handle paste event for bulk input
   const handlePaste = (e: React.ClipboardEvent) => {
     const pastedText = e.clipboardData.getData('text');
-    
-    // Check if it's bulk paste (multiple lines or comma-separated)
+
+    // Check if it's bulk paste (multiple lines or comma/tab-separated)
     if (pastedText.includes('\n') || pastedText.includes(',') || pastedText.includes('\t')) {
       e.preventDefault();
-      
-      // Parse bulk data
-      const items = pastedText
-        .split(/[\n,\t]/)
+
+      // Parse bulk data — use shared parser so numbers with comma thousand
+      // separators (e.g. 1,000,002) are not split into multiple items.
+      const items = parseClipboardRows(pastedText)
+        .flat()
         .map(item => item.trim())
         .filter(item => item.length > 0);
-      
+
       if (items.length > 1) {
         // Trigger bulk paste handler with validation modal
         if (onBulkPaste) {
