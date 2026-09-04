@@ -1,10 +1,10 @@
 import { getCurrentCompanyId } from '../lib/supabase';
 import { supabase } from '../config/supabase';
-import { mockInventoryVarianceService } from './mockService';
+import { fallbackService } from './fallbackService';
 import { isTrialMode } from '@superapp/shared-utils';
-import { 
-  InventoryVarianceReport, 
-  InventoryVarianceReportCreateInput, 
+import {
+  InventoryVarianceReport,
+  InventoryVarianceReportCreateInput,
   InventoryVarianceReportUpdateInput,
   InventoryReportStats,
   InventoryVarianceAlert
@@ -21,7 +21,7 @@ export const inventoryVarianceService = {
   }): Promise<InventoryVarianceReport[]> {
     const isTrial = isTrialMode();
     if (isTrial) {
-      return mockInventoryVarianceService.getReports(filters);
+      return fallbackService.getVarianceReports(filters);
     }
     
     try {
@@ -65,7 +65,7 @@ export const inventoryVarianceService = {
 
       if (error) {
         console.warn('Error fetching inventory variance reports, falling back to mock due to:', error);
-        return mockInventoryVarianceService.getReports(filters);
+        return fallbackService.getVarianceReports(filters);
       }
 
       return data || [];
@@ -80,7 +80,7 @@ export const inventoryVarianceService = {
     try {
       const isTrial = isTrialMode();
       if (isTrial) {
-        return mockInventoryVarianceService.getReportById(id);
+        return fallbackService.getVarianceReportById(id);
       }
 
       const companyId = await getCurrentCompanyId();
@@ -108,7 +108,7 @@ export const inventoryVarianceService = {
     try {
       const isTrial = isTrialMode();
       if (isTrial) {
-        return mockInventoryVarianceService.createReport(reportData);
+        return fallbackService.createVarianceReport(reportData);
       }
 
       const companyId = await getCurrentCompanyId();
@@ -138,7 +138,7 @@ export const inventoryVarianceService = {
     try {
       const isTrial = isTrialMode();
       if (isTrial) {
-        return mockInventoryVarianceService.updateReport(id, updates);
+        return fallbackService.updateVarianceReport(id, updates);
       }
 
       const companyId = await getCurrentCompanyId();
@@ -172,7 +172,7 @@ export const inventoryVarianceService = {
     try {
       const isTrial = isTrialMode();
       if (isTrial) {
-        return mockInventoryVarianceService.deleteReport(id);
+        return fallbackService.deleteVarianceReport(id);
       }
 
       const companyId = await getCurrentCompanyId();
@@ -202,7 +202,7 @@ export const inventoryVarianceService = {
     try {
       const isTrial = isTrialMode();
       if (isTrial) {
-        return mockInventoryVarianceService.getReportStats(filters);
+        return fallbackService.getVarianceReportStats(filters);
       }
 
       const companyId = await getCurrentCompanyId();
@@ -259,7 +259,7 @@ export const inventoryVarianceService = {
     try {
       const isTrial = isTrialMode();
       if (isTrial) {
-        return mockInventoryVarianceService.getVarianceAlerts(threshold);
+        return fallbackService.getVarianceAlerts(threshold);
       }
 
       const companyId = await getCurrentCompanyId();
