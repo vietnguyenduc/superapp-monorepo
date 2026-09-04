@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { ImportError } from "../../types";
+import { parseClipboardRow } from "../../utils/importUtils";
 
 interface EditableTableProps {
   data: any[];
@@ -187,7 +188,7 @@ const EditableTable: React.FC<EditableTableProps> = ({
       const rows = clipboardData
         .split(/\r?\n/)
         .filter(Boolean)
-        .map((row) => row.split(/\t|,/));
+        .map(parseClipboardRow);
       if (rows.length === 0) return;
       const { row: startRow, col: startCol } = editingCell;
       const colIndex = columns.findIndex((c) => c.key === startCol);
