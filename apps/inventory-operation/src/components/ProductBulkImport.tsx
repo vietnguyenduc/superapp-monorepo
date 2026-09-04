@@ -13,6 +13,7 @@ interface RawProductData {
   intermediateUnits?: string[];
   conversionRatioRawToProcessed?: number;
   conversionRatioProcessedToFinished?: number;
+  standardInputPrice?: number;
   status?: string;
   notes?: string;
 }
@@ -134,6 +135,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
         intermediateUnits: isCommercial ? [] : (row.intermediateUnits || []),
         conversionRatioRawToProcessed: isCommercial ? 0 : (row.conversionRatioRawToProcessed || 0),
         conversionRatioProcessedToFinished: isCommercial ? 0 : (row.conversionRatioProcessedToFinished || 0),
+        standardInputPrice: row.standardInputPrice || 0,
         status: row.status === 'ACTIVE' ? ProductStatus.ACTIVE : ProductStatus.INACTIVE,
         businessStatus: (row.status === 'ACTIVE' ? 'active' : 'inactive') as 'active' | 'inactive',
         createdBy: 'system',
@@ -190,7 +192,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
               <ul className="list-disc list-inside space-y-1 font-medium opacity-80">
                 {isCommercial ? (
                   <>
-                    <li>Chế độ Thương mại: chỉ nhập sản phẩm thành phẩm (Mã, Tên, Đơn vị, Giá bán).</li>
+                    <li>Chế độ Thương mại: chỉ nhập sản phẩm thành phẩm (Mã, Tên, Đơn vị, Giá nhập, Giá bán).</li>
                     <li>Không cần ĐVT trung gian hay tỷ lệ quy đổi.</li>
                     <li>Tối đa {MAX_BULK_ROWS} dòng mỗi lần nhập.</li>
                   </>
@@ -199,6 +201,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
                     <li>Tải file mẫu để biết các cột ĐVT Trung gian và Tỷ lệ quy đổi.</li>
                     <li>ĐVT Trung gian nhập cách nhau bằng dấu phẩy (VD: Miếng, Gram).</li>
                     <li>Tỷ lệ quy đổi: `1 Đơn vị Nhập` = `X Đơn vị Trung gian`.</li>
+                    <li>Giá nhập: đơn giá nhập tiêu chuẩn (VNĐ), dùng kiểm soát biến động giá nhập kho.</li>
                     <li>Tối đa {MAX_BULK_ROWS} dòng mỗi lần nhập.</li>
                   </>
                 )}
@@ -290,6 +293,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
                 {!isCommercial && <th className="px-4 py-3 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase">Trung gian</th>}
                 {!isCommercial && <th className="px-4 py-3 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase">Tỷ lệ sơ chế</th>}
                 {!isCommercial && <th className="px-4 py-3 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase">Định mức TP</th>}
+                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase">Giá nhập</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
@@ -316,6 +320,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
                   )}
                   {!isCommercial && <td className="px-4 py-3 text-center font-black text-gray-900 dark:text-gray-100 text-sm">{row.conversionRatioRawToProcessed}</td>}
                   {!isCommercial && <td className="px-4 py-3 text-center font-black text-gray-900 dark:text-gray-100 text-sm">{row.conversionRatioProcessedToFinished}</td>}
+                  <td className="px-4 py-3 text-center font-black text-gray-900 dark:text-gray-100 text-sm">{row.standardInputPrice ? Number(row.standardInputPrice).toLocaleString('vi-VN') : '-'}</td>
                 </tr>
               ))}
             </tbody>

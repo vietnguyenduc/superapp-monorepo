@@ -14,7 +14,8 @@ const ALL_COLUMNS = [
   { key: 'intermediateRatio', label: 'Định lượng Sơ chế (1 Gốc = ? Sơ chế)', type: 'number', required: false, enabled: true, order: 6 },
   { key: 'linkedFinishedCode', label: 'Mã TP Liên kết', type: 'dropdown', options: [], required: false, enabled: true, order: 7 },
   { key: 'recipeRatio', label: 'Định lượng TP (1 TP = ? Sơ chế)', type: 'number', required: false, enabled: true, order: 8 },
-  { key: 'price', label: 'Giá bán (Chỉ TP)', type: 'number', required: false, enabled: true, order: 9 },
+  { key: 'standardInputPrice', label: 'Giá nhập (VNĐ)', type: 'number', required: false, enabled: true, order: 9 },
+  { key: 'price', label: 'Giá bán (Chỉ TP)', type: 'number', required: false, enabled: true, order: 10 },
 ];
 
 // Columns for commercial mode — only finished products, no raw/intermediate
@@ -22,7 +23,8 @@ const COMMERCIAL_COLUMNS = [
   { key: 'productCode', label: 'Mã hàng', type: 'text', required: true, enabled: true, order: 1 },
   { key: 'productName', label: 'Tên hàng', type: 'text', required: true, enabled: true, order: 2 },
   { key: 'inputUnit', label: 'Đơn vị', type: 'text', required: true, enabled: true, order: 3 },
-  { key: 'price', label: 'Giá bán', type: 'number', required: false, enabled: true, order: 4 },
+  { key: 'standardInputPrice', label: 'Giá nhập (VNĐ)', type: 'number', required: false, enabled: true, order: 4 },
+  { key: 'price', label: 'Giá bán', type: 'number', required: false, enabled: true, order: 5 },
 ];
 
 interface ImportRow {
@@ -35,6 +37,7 @@ interface ImportRow {
   intermediateRatio: number | string;
   linkedFinishedCode: string;
   recipeRatio: number | string;
+  standardInputPrice: number | string;
   price: number | string;
   errors: string[];
 }
@@ -69,6 +72,7 @@ const ProductImportGrid: React.FC<{ onImportComplete?: () => void; onCancel?: ()
     intermediateRatio: '',
     linkedFinishedCode: '--- Liên kết ---',
     recipeRatio: '',
+    standardInputPrice: '',
     price: '',
     errors: []
   });
@@ -118,7 +122,8 @@ const ProductImportGrid: React.FC<{ onImportComplete?: () => void; onCancel?: ()
         intermediateRatio: cells[5] || '',
         linkedFinishedCode: cells[6] || '--- Liên kết ---',
         recipeRatio: cells[7] || '',
-        price: cells[8] || '',
+        standardInputPrice: cells[8] || '',
+        price: cells[9] || '',
       };
       newData[index].errors = validateRow(newData[index]);
     });
@@ -174,6 +179,7 @@ const ProductImportGrid: React.FC<{ onImportComplete?: () => void; onCancel?: ()
           intermediateUnits: intermediateUnits,
           linkedFinishedProductCodes: linkedCodes,
           conversions: conversions,
+          standardInputPrice: parseFloat(row.standardInputPrice.toString()) || 0,
           price: isTP ? (parseFloat(row.price.toString()) || 0) : 0,
           status: ProductStatus.ACTIVE,
           businessStatus: 'active',
