@@ -1,5 +1,6 @@
 import { supabase, getCurrentUserId, getCurrentCompanyId } from '../lib/supabase';
 import { InventoryVarianceReport, Product } from '../types';
+import { isTrialMode } from '@superapp/shared-utils';
 
 export interface ExportData {
   format: 'excel' | 'pdf';
@@ -158,7 +159,7 @@ export const exportService = {
   // Fetch reports for export based on filters
   async fetchReportsForExport(filters: ExportData['filters']): Promise<InventoryVarianceReport[]> {
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         return [];
       }
@@ -205,7 +206,7 @@ export const exportService = {
   // Fetch products for export
   async fetchProductsForExport(productIds?: string[]): Promise<Product[]> {
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         return [];
       }
@@ -240,7 +241,7 @@ export const exportService = {
   // Log export action
   async logExportAction(logData: Omit<ExportLog, 'id' | 'created_at' | 'created_by'>): Promise<string> {
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         return 'trial-log';
       }
@@ -290,7 +291,7 @@ export const exportService = {
   // Get export logs
   async getExportLogs(limit: number = 50): Promise<ExportLog[]> {
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         return [];
       }

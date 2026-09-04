@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { isTrialMode } from '@superapp/shared-utils';
 
 export interface ServiceResponse<T> {
   success: boolean;
@@ -8,7 +9,7 @@ export interface ServiceResponse<T> {
 
 export abstract class BaseService {
   protected static get isTrial(): boolean {
-    return localStorage.getItem('isTrial') === 'true';
+    return isTrialMode();
   }
 
   protected static async execute<T>(

@@ -13,6 +13,7 @@ import {
 import { ProductCatalogItem, SAMPLE_PRODUCT_CATALOG } from '../types/product-catalog';
 import { convertToSalesRecords } from '../data/realSalesData';
 import { MOCK_PRODUCTS, MOCK_INVENTORY } from '../data/trialMockData';
+import { isTrialMode } from '@superapp/shared-utils';
 
 // Mock data for fallback (Initialized from localStorage if in Trial Mode)
 // Initial data constants
@@ -108,7 +109,7 @@ class FallbackService {
   }
 
   private initializeData() {
-    const isTrial = localStorage.getItem('isTrial') === 'true';
+    const isTrial = isTrialMode();
     if (isTrial) {
       const isCleared = localStorage.getItem('trial_data_cleared') === 'true';
       
@@ -160,7 +161,7 @@ class FallbackService {
   }
 
   private persistData() {
-    const isTrial = localStorage.getItem('isTrial') === 'true';
+    const isTrial = isTrialMode();
     if (isTrial) {
       localStorage.setItem('trial_products', JSON.stringify(mockProducts));
       localStorage.setItem('trial_inventory_records', JSON.stringify(mockInventoryRecords));

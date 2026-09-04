@@ -9,6 +9,7 @@ import { useAuthContext } from '@superapp/iam';
 import { UserRole } from '../types/UserRole';
 import { ConversionEngine } from '../utils/conversionLogic';
 import appSettingsService from '../services/appSettingsService';
+import { isTrialMode } from '@superapp/shared-utils';
 
 const InventoryRecordsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -44,7 +45,7 @@ const InventoryRecordsPage: React.FC = () => {
       setError(null);
       try {
         // Trial mode: load from localStorage mock data
-        const isTrial = localStorage.getItem('isTrial') === 'true';
+        const isTrial = isTrialMode();
         if (isTrial) {
           seedTrialDataIfNeeded();
           const trialRecords = getTrialInventoryRecords();

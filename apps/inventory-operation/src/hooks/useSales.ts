@@ -3,6 +3,7 @@ import { SalesRecord, SpecialOutboundRecord, Product, ApprovalLog, ApiResponse }
 import { salesService } from '../services/salesService';
 import { specialOutboundService } from '../services/specialOutboundService';
 import { fallbackService } from '../services/fallbackService';
+import { isTrialMode } from '@superapp/shared-utils';
 
 export const useSalesReport = () => {
   const [salesRecords, setSalesRecords] = useState<SalesRecord[]>([]);
@@ -42,7 +43,7 @@ export const useSalesReport = () => {
     setError(null);
 
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       let response;
       
       if (isTrial) {

@@ -7,13 +7,29 @@ export interface ServiceResponse<T> {
   skipped?: any[];
 }
 
+/**
+ * Check if the app is running in trial mode.
+ * Trial mode can be activated by any of these localStorage flags:
+ * - `isTrial` = 'true' (legacy)
+ * - `superapp_trial_mode` = 'true' OR a JSON object (set by Admin Portal trial launcher)
+ * - `cashflow_trial_mode_enabled` = 'true'
+ * - `cashflow_trial_user` = any non-null value (set by Cashflow trial mode)
+ *
+ * Use this helper everywhere trial mode is checked, instead of hardcoding
+ * a single localStorage key — different apps/setters use different flags.
+ */
+export function isTrialMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  const sm = localStorage.getItem('superapp_trial_mode');
+  return localStorage.getItem('isTrial') === 'true' ||
+         sm === 'true' || !!sm || // superapp_trial_mode may be 'true' or a JSON object
+         localStorage.getItem('cashflow_trial_mode_enabled') === 'true' ||
+         !!localStorage.getItem('cashflow_trial_user');
+}
+
 export abstract class BaseService {
   protected static get isTrial(): boolean {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('isTrial') === 'true' ||
-           localStorage.getItem('superapp_trial_mode') === 'true' ||
-           localStorage.getItem('cashflow_trial_mode_enabled') === 'true' ||
-           !!localStorage.getItem('cashflow_trial_user');
+    return isTrialMode();
   }
 
   // Normalize error to string — fallback operations may return { message: "..." }

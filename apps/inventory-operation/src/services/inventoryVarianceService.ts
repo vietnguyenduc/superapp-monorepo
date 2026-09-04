@@ -1,6 +1,7 @@
 import { getCurrentCompanyId } from '../lib/supabase';
 import { supabase } from '../config/supabase';
 import { mockInventoryVarianceService } from './mockService';
+import { isTrialMode } from '@superapp/shared-utils';
 import { 
   InventoryVarianceReport, 
   InventoryVarianceReportCreateInput, 
@@ -18,7 +19,7 @@ export const inventoryVarianceService = {
     product_id?: string;
     variance_type?: string;
   }): Promise<InventoryVarianceReport[]> {
-    const isTrial = localStorage.getItem('isTrial') === 'true';
+    const isTrial = isTrialMode();
     if (isTrial) {
       return mockInventoryVarianceService.getReports(filters);
     }
@@ -77,7 +78,7 @@ export const inventoryVarianceService = {
   // Get single report by ID
   async getReportById(id: string): Promise<InventoryVarianceReport | null> {
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         return mockInventoryVarianceService.getReportById(id);
       }
@@ -105,7 +106,7 @@ export const inventoryVarianceService = {
   // Create new inventory variance report
   async createReport(reportData: InventoryVarianceReportCreateInput): Promise<InventoryVarianceReport> {
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         return mockInventoryVarianceService.createReport(reportData);
       }
@@ -135,7 +136,7 @@ export const inventoryVarianceService = {
   // Update existing report
   async updateReport(id: string, updates: Partial<InventoryVarianceReportCreateInput>): Promise<InventoryVarianceReport> {
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         return mockInventoryVarianceService.updateReport(id, updates);
       }
@@ -169,7 +170,7 @@ export const inventoryVarianceService = {
   // Delete report
   async deleteReport(id: string): Promise<void> {
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         return mockInventoryVarianceService.deleteReport(id);
       }
@@ -199,7 +200,7 @@ export const inventoryVarianceService = {
     product_id?: string;
   }): Promise<InventoryReportStats> {
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         return mockInventoryVarianceService.getReportStats(filters);
       }
@@ -256,7 +257,7 @@ export const inventoryVarianceService = {
   // Get variance alerts for high discrepancies
   async getVarianceAlerts(threshold: number = 10): Promise<InventoryVarianceAlert[]> {
     try {
-      const isTrial = localStorage.getItem('isTrial') === 'true';
+      const isTrial = isTrialMode();
       if (isTrial) {
         return mockInventoryVarianceService.getVarianceAlerts(threshold);
       }

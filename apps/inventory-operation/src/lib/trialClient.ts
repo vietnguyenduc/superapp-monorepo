@@ -1,3 +1,5 @@
+import { isTrialMode as sharedIsTrialMode } from '@superapp/shared-utils';
+
 export interface TrialMutations {
   inserts: any[];
   updates: Record<string, any>;
@@ -17,7 +19,7 @@ const isBrowser = typeof window !== 'undefined';
 
 export const isTrialMode = (): boolean => {
   if (!isBrowser) return false;
-  return localStorage.getItem('isTrial') === 'true';
+  return sharedIsTrialMode();
 };
 
 const SEED_KEY = 'trial_seed_cache';
