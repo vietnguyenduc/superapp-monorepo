@@ -4,7 +4,7 @@ import { logger } from "../../utils/logger";
 import { toast } from "../../utils/toast";
 import { getXLSX } from "../../utils/xlsxLoader";
 import { useSearchParams } from "react-router-dom";
-import { useAuthContext } from "@superapp/iam";
+import { useAuthContext, useCompany } from "@superapp/iam";
 import { useCompanyId } from "../../hooks/useCompanyId";
 import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import type { Transaction, ImportData, ImportError, Customer } from "../../types";
@@ -54,6 +54,11 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { user } = useAuthContext();
+  const { selectedCompany } = useCompany();
+  const companyId = useCompanyId();
+  const customerCodeSettings = selectedCompany?.approval_settings ?? user?.company?.approval_settings;
+  const autoCustomerCode = (selectedCompany?.approval_settings ?? user?.company?.approval_settings)?.auto_customer_code !== false;
+
   const [formData, setFormData] = useState({
     customer_code: customerCode,
     full_name: "",
@@ -61,13 +66,58 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
     email: "",
     address: "",
   });
+  const [codeLoading, setCodeLoading] = useState(false);
+
+  // Sync customerCode prop when modal reopens + auto-generate if enabled and no code provided
+  useEffect(() => {
+    if (!isOpen) return;
+    setFormData({
+      customer_code: customerCode,
+      full_name: "",
+      phone: "",
+      email: "",
+      address: "",
+    });
+    // If auto_customer_code is enabled and no explicit code was passed, generate one
+    if (autoCustomerCode && !customerCode) {
+      setCodeLoading(true);
+      databaseService.customers
+        .generateCustomerCode(companyId, customerCodeSettings)
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setFormData((prev) => ({ ...prev, customer_code: data as string }));
+          }
+        })
+        .finally(() => setCodeLoading(false));
+    }
+  }, [isOpen, customerCode, autoCustomerCode, companyId, customerCodeSettings]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
-      ...formData,
-      branch_id: user?.branch_id || "",
-    });
+    // If auto_customer_code is enabled and code is still loading or empty, generate before submit
+    const submit = (code: string) => {
+      onSave({
+        ...formData,
+        customer_code: code,
+        branch_id: user?.branch_id || "",
+      });
+    };
+    if (autoCustomerCode && !formData.customer_code.trim()) {
+      setCodeLoading(true);
+      databaseService.customers
+        .generateCustomerCode(companyId, customerCodeSettings)
+        .then(({ data, error }) => {
+          if (!error && data) {
+            submit(data as string);
+          } else {
+            submit(formData.customer_code);
+          }
+        })
+        .catch(() => submit(formData.customer_code))
+        .finally(() => setCodeLoading(false));
+    } else {
+      submit(formData.customer_code);
+    }
   };
 
   if (!isOpen) return null;
@@ -83,19 +133,26 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                {t("customers.customerCode")} *
+                {t("customers.customerCode")} {autoCustomerCode ? "" : "*"}
               </label>
               <input
                 type="text"
-                value={formData.customer_code}
+                value={codeLoading ? "Đang tạo mã..." : formData.customer_code}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
                     customer_code: e.target.value }))
                 }
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                readOnly={autoCustomerCode && codeLoading}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
                 autoFocus
+                placeholder={autoCustomerCode ? "Tự động sinh mã" : "Nhập mã khách hàng"}
               />
+              {autoCustomerCode && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Mã khách hàng được tự động sinh theo cài đặt công ty.
+                </p>
+              )}
             </div>
 
             <div>
@@ -171,7 +228,7 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
                 variant="primary"
                 size="md"
                 type="submit"
-                disabled={isLoading || !formData.customer_code.trim() || !formData.full_name.trim()}
+                disabled={isLoading || codeLoading || (!autoCustomerCode && !formData.customer_code.trim()) || !formData.full_name.trim()}
               >
                 {isLoading ? t("common.saving") : t("common.save")}
               </Button>
