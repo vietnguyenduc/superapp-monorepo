@@ -64,16 +64,14 @@ describe('InventoryService', () => {
       expect(supabase.from).toHaveBeenCalledWith('inventory_records');
     });
 
-    it('falls back when Supabase fails', async () => {
+    it('returns error when Supabase fails (no silent fallback)', async () => {
       mockSupabaseChain({ orderResult: { data: null, error: { message: 'DB error' } } });
-
-      const fallbackData = [{ id: 'f1', productCode: 'FB001', date: new Date() }];
-      (fallbackService.getInventoryRecords as any).mockResolvedValue({ data: fallbackData, error: null });
 
       const result = await InventoryService.getInventoryRecords();
 
-      expect(result.success).toBe(true);
-      expect(fallbackService.getInventoryRecords).toHaveBeenCalled();
+      expect(result.success).toBe(false);
+      expect(result.error).toBeTruthy();
+      expect(fallbackService.getInventoryRecords).not.toHaveBeenCalled();
     });
   });
 

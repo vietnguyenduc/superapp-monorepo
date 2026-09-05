@@ -65,16 +65,14 @@ describe('SalesService', () => {
       expect(supabase.from).toHaveBeenCalledWith('sales_records');
     });
 
-    it('falls back when Supabase fails', async () => {
+    it('returns error when Supabase fails (no silent fallback)', async () => {
       mockSupabaseChain({ orderResult: { data: null, error: { message: 'DB error' } } });
-
-      const fallbackData = [{ id: 'f1', productCode: 'FB001', outputDate: new Date(), quantitySold: 50 }];
-      (fallbackService.getSalesRecords as any).mockResolvedValue({ data: fallbackData, error: null });
 
       const result = await SalesService.getSalesRecords();
 
-      expect(result.success).toBe(true);
-      expect(fallbackService.getSalesRecords).toHaveBeenCalled();
+      expect(result.success).toBe(false);
+      expect(result.error).toBeTruthy();
+      expect(fallbackService.getSalesRecords).not.toHaveBeenCalled();
     });
   });
 
@@ -101,17 +99,15 @@ describe('SalesService', () => {
       expect(result.data).toBeDefined();
     });
 
-    it('falls back when Supabase insert fails', async () => {
+    it('returns error when Supabase insert fails (no silent fallback)', async () => {
       const record = { date: '2024-01-15', productId: 'p1', salesQuantity: 100 };
       mockSupabaseChain({ singleResult: { data: null, error: { message: 'Insert error' } } });
 
-      const fallbackData = { id: 'f1', productCode: 'FB001', outputDate: new Date(), quantitySold: 100 };
-      (fallbackService.createSalesRecord as any).mockResolvedValue({ data: fallbackData, error: null });
-
       const result = await SalesService.createSalesRecord(record as any);
 
-      expect(result.success).toBe(true);
-      expect(fallbackService.createSalesRecord).toHaveBeenCalled();
+      expect(result.success).toBe(false);
+      expect(result.error).toBeTruthy();
+      expect(fallbackService.createSalesRecord).not.toHaveBeenCalled();
     });
   });
 
@@ -141,15 +137,14 @@ describe('SalesService', () => {
       expect(result.data).toBe(true);
     });
 
-    it('falls back when Supabase delete fails', async () => {
+    it('returns error when Supabase delete fails (no silent fallback)', async () => {
       mockSupabaseChain({ eqResult: { data: null, error: { message: 'Delete error' } } });
-
-      (fallbackService.deleteSalesRecord as any).mockResolvedValue({ data: true, error: null });
 
       const result = await SalesService.deleteSalesRecord('1');
 
-      expect(result.success).toBe(true);
-      expect(fallbackService.deleteSalesRecord).toHaveBeenCalled();
+      expect(result.success).toBe(false);
+      expect(result.error).toBeTruthy();
+      expect(fallbackService.deleteSalesRecord).not.toHaveBeenCalled();
     });
   });
 
