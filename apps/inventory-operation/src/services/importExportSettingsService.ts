@@ -49,7 +49,7 @@ class ImportExportSettingsService {
         .maybeSingle();
 
       if (res.data?.import_export_config) {
-        cachedConfig = { ...DEFAULT_CONFIG, ...res.data.import_export_config };
+        cachedConfig = { ...DEFAULT_CONFIG, ...res.data.import_export_config } as ImportExportConfig;
         return cachedConfig;
       }
     } catch (err) {

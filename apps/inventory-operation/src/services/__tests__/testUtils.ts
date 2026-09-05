@@ -233,6 +233,14 @@ export function mockSupabaseChain(config: {
     finally: selectThenable.finally,
   });
 
+  // Upsert chain: upsert() returns { select: () => chain } — same as insert
+  const upsertMock = vi.fn().mockReturnValue({
+    select: vi.fn().mockReturnValue(selectOnlyChainObj),
+    then: selectThenable.then,
+    catch: selectThenable.catch,
+    finally: selectThenable.finally,
+  });
+
   // Update chain: update() returns { eq: () => { select: () => chain(selectOnlyChainObj) } }
   const updateMock = vi.fn().mockReturnValue({
     eq: vi.fn().mockReturnValue({
@@ -258,6 +266,7 @@ export function mockSupabaseChain(config: {
   vi.spyOn(supabase, 'from').mockImplementation((_name: string) => ({
     select: vi.fn().mockReturnValue(selectChain),
     insert: insertMock,
+    upsert: upsertMock,
     update: updateMock,
     delete: deleteMock,
   } as any));
@@ -269,6 +278,7 @@ export function mockSupabaseChain(config: {
     orMock: selectChain.or,
     singleMock: selectChain.single,
     insertMock,
+    upsertMock,
     updateMock,
     deleteMock,
     limitMock: selectChain.limit,

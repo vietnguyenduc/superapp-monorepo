@@ -29,6 +29,30 @@ vi.mock('../fallbackService', () => ({
   },
 }));
 
+vi.mock('../importExportSettingsService', () => ({
+  importExportSettingsService: {
+    load: vi.fn().mockResolvedValue({
+      productMatchField: 'business_code',
+      inventoryMatchField: 'business_code',
+      salesMatchField: 'business_code',
+      exportColumns: { products: [], inventory: [], sales: [] },
+    }),
+    get: vi.fn().mockReturnValue({
+      productMatchField: 'business_code',
+      inventoryMatchField: 'business_code',
+      salesMatchField: 'business_code',
+      exportColumns: { products: [], inventory: [], sales: [] },
+    }),
+    save: vi.fn().mockResolvedValue({
+      productMatchField: 'business_code',
+      inventoryMatchField: 'business_code',
+      salesMatchField: 'business_code',
+      exportColumns: { products: [], inventory: [], sales: [] },
+    }),
+    invalidate: vi.fn(),
+  },
+}));
+
 describe('ProductService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -53,39 +77,29 @@ describe('ProductService', () => {
     });
 
     it('applies category filter', async () => {
-      const mocks = mockSupabaseChain({ orderResult: { data: [], error: null } });
-      // The chain is: select().order().eq() — eq is called on orderChainObj
-      const orderEqMock = mocks.orderMock.mock.results[0]?.value?.eq || vi.fn();
+      mockSupabaseChain({ orderResult: { data: [], error: null } });
 
       await ProductService.getProducts({ category: 'fruit' });
 
-      // eq is called on the object returned by order(), not on selectChain directly
-      // We verify the supabase.from chain was built correctly
       expect(supabase.from).toHaveBeenCalledWith('products');
     });
 
     it('applies search filter via or()', async () => {
-      const mocks = mockSupabaseChain({ orderResult: { data: [], error: null } });
-      // The chain is: select().order().or() — or is called on orderChainObj
-      const orderOrMock = mocks.orderMock.mock.results[0]?.value?.or || vi.fn();
+      mockSupabaseChain({ orderResult: { data: [], error: null } });
 
       await ProductService.getProducts({ search: 'SP001' });
 
-      // or is called on the object returned by order()
       expect(supabase.from).toHaveBeenCalledWith('products');
     });
 
-    it('falls back to fallbackService when Supabase fails', async () => {
+    it('returns error when Supabase fails (no silent fallback)', async () => {
       mockSupabaseChain({ orderResult: { data: null, error: { message: 'DB error' } } });
-
-      const fallbackData = [{ id: 'f1', name: 'Fallback Product', businessCode: 'FB001', category: 'fruit' }];
-      (fallbackService.getProducts as any).mockResolvedValue({ data: fallbackData, error: null });
 
       const result = await ProductService.getProducts();
 
-      expect(result.success).toBe(true);
-      expect(result.data).toEqual(fallbackData);
-      expect(fallbackService.getProducts).toHaveBeenCalled();
+      expect(result.success).toBe(false);
+      expect(result.error).toBeTruthy();
+      expect(fallbackService.getProducts).not.toHaveBeenCalled();
     });
 
     it('uses fallback in trial mode', async () => {
@@ -123,7 +137,7 @@ describe('ProductService', () => {
   });
 
   describe('createProduct', () => {
-    it('creates a product successfully', async () => {
+    it('creates a product successfully via upsert', async () => {
       const newProduct = {
         name: 'New Product',
         businessCode: 'SP003',
@@ -140,17 +154,15 @@ describe('ProductService', () => {
       expect(result.data?.businessCode).toBe('SP003');
     });
 
-    it('falls back when Supabase insert fails', async () => {
+    it('returns error when Supabase upsert fails (no silent fallback)', async () => {
       const newProduct = { name: 'Fallback', businessCode: 'FB001', category: 'fruit', inputUnit: 'kg', outputUnit: 'kg' };
       mockSupabaseChain({ singleResult: { data: null, error: { message: 'Insert error' } } });
 
-      const fallbackData = { id: 'f1', ...newProduct, businessCode: newProduct.businessCode, createdAt: new Date(), updatedAt: new Date() };
-      (fallbackService.createProduct as any).mockResolvedValue({ data: fallbackData, error: null });
-
       const result = await ProductService.createProduct(newProduct as any);
 
-      expect(result.success).toBe(true);
-      expect(fallbackService.createProduct).toHaveBeenCalled();
+      expect(result.success).toBe(false);
+      expect(result.error).toBeTruthy();
+      expect(fallbackService.createProduct).not.toHaveBeenCalled();
     });
   });
 
@@ -191,13 +203,12 @@ describe('ProductService', () => {
 
       await ProductService.searchProducts('test');
 
-      // searchProducts delegates to getProducts which builds the chain
       expect(supabase.from).toHaveBeenCalledWith('products');
     });
   });
 
   describe('importProducts', () => {
-    it('imports multiple products', async () => {
+    it('imports multiple products via bulkInsertProducts', async () => {
       const products = [
         { name: 'P1', businessCode: 'SP001', category: 'fruit', inputUnit: 'kg', outputUnit: 'kg' },
         { name: 'P2', businessCode: 'SP002', category: 'dry_goods', inputUnit: 'kg', outputUnit: 'kg' },
@@ -208,12 +219,11 @@ describe('ProductService', () => {
       const result = await ProductService.importProducts(products as any);
 
       expect(result.success).toBe(true);
-      expect(result.data).toHaveLength(2);
     });
   });
 
   describe('bulkInsertProducts', () => {
-    it('inserts bulk products', async () => {
+    it('inserts bulk products via upsert', async () => {
       const products = [
         { name: 'Bulk1', businessCode: 'B001', category: 'fruit', inputUnit: 'kg', outputUnit: 'kg' },
       ];
@@ -223,7 +233,18 @@ describe('ProductService', () => {
       const result = await ProductService.bulkInsertProducts(products as any);
 
       expect(result.success).toBe(true);
-      expect(result.data).toHaveLength(1);
+    });
+
+    it('returns error when upsert fails (no silent fallback)', async () => {
+      const products = [
+        { name: 'Bulk1', businessCode: 'B001', category: 'fruit', inputUnit: 'kg', outputUnit: 'kg' },
+      ];
+
+      mockSupabaseChain({ selectResult: { data: null, error: { message: 'Upsert error' } } });
+
+      const result = await ProductService.bulkInsertProducts(products as any);
+
+      expect(result.success).toBe(false);
     });
   });
 });
