@@ -99,11 +99,12 @@ export class ProductService extends BaseService {
         const userId = await getCurrentUserId();
         const companyId = await getCurrentCompanyId();
 
-        // Deduplicate by business_code (same as bulkInsertProducts)
+        // Deduplicate by business_code — rows without code are kept as separate products
         const seen = new Map<string, Partial<Product>>();
         for (const p of products) {
-          const key = p.businessCode || `__no_code_${seen.size}__`;
-          seen.set(key, p);
+          const key = p.businessCode || '';
+          if (key) seen.set(key, p);
+          else seen.set(`__no_code_${seen.size}__`, p);
         }
         const deduped = Array.from(seen.values());
 

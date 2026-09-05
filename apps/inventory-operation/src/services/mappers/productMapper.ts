@@ -39,7 +39,7 @@ export class ProductMapper {
     
     if (product.name !== undefined) row.name = product.name;
     if (product.category !== undefined) row.category = product.category;
-    if (product.businessCode !== undefined) row.business_code = product.businessCode;
+    if (product.businessCode !== undefined) row.business_code = product.businessCode || null;
     if (product.promotionCode !== undefined) row.promotion_code = product.promotionCode;
     if (product.isFinishedProduct !== undefined) row.is_finished_product = product.isFinishedProduct;
     if (product.outputQuantity !== undefined) row.output_quantity = product.outputQuantity;
