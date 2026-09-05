@@ -99,7 +99,10 @@ export class ProductService extends BaseService {
           if (companyId) row.company_id = companyId;
           return row;
         });
-        const res = await apiClient.from('products').insert(rows).select('*');
+        const res = await apiClient
+          .from('products')
+          .upsert(rows, { onConflict: 'company_id,business_code' })
+          .select('*');
         if (res.data) res.data = res.data.map(item => ProductMapper.mapDbToProduct(item));
         return res;
       },
@@ -126,25 +129,38 @@ export class ProductService extends BaseService {
           return row;
         });
 
-        // Chunk into batches to avoid Supabase/PostgREST body size limits on large imports.
+        // Use upsert to handle duplicate business_code gracefully.
+        // The unique constraint is (company_id, business_code) — upsert will
+        // update existing rows instead of failing with 409 Conflict.
         const allData: Product[] = [];
         let firstError: any = null;
         for (let i = 0; i < rows.length; i += BATCH_SIZE) {
           const chunk = rows.slice(i, i + BATCH_SIZE);
-          const res = await apiClient.from('products').insert(chunk).select('*');
+          const res = await apiClient
+            .from('products')
+            .upsert(chunk, { onConflict: 'company_id,business_code' })
+            .select('*');
           if (res.error && !firstError) firstError = res.error;
           if (res.data) {
             for (const item of res.data) allData.push(ProductMapper.mapDbToProduct(item));
           }
-          if (res.error) break; // stop on first error to avoid partial duplicates masking the cause
+          if (res.error) break;
         }
         return { data: allData, error: firstError };
       },
       async () => {
         const results: Product[] = [];
         for (const p of products) {
-          const res = await fallbackService.createProduct(p as any);
-          if (res.data) results.push(res.data);
+          // In trial mode, check if product with same businessCode exists
+          const existing = await fallbackService.getProducts({ search: p.businessCode });
+          const found = existing.data?.find(prod => prod.businessCode === p.businessCode);
+          if (found) {
+            const res = await fallbackService.updateProduct(found.id, p);
+            if (res.data) results.push(res.data);
+          } else {
+            const res = await fallbackService.createProduct(p as any);
+            if (res.data) results.push(res.data);
+          }
         }
         return { data: results, error: null };
       }
