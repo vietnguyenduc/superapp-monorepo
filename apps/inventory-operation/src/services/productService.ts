@@ -98,7 +98,16 @@ export class ProductService extends BaseService {
       async () => {
         const userId = await getCurrentUserId();
         const companyId = await getCurrentCompanyId();
-        const rows = products.map(p => {
+
+        // Deduplicate by business_code (same as bulkInsertProducts)
+        const seen = new Map<string, Partial<Product>>();
+        for (const p of products) {
+          const key = p.businessCode || `__no_code_${seen.size}__`;
+          seen.set(key, p);
+        }
+        const deduped = Array.from(seen.values());
+
+        const rows = deduped.map(p => {
           const row = ProductMapper.mapProductToDb({ ...p, createdBy: userId, updatedBy: userId });
           if (companyId) row.company_id = companyId;
           return row;
@@ -127,7 +136,20 @@ export class ProductService extends BaseService {
       async () => {
         const userId = await getCurrentUserId();
         const companyId = await getCurrentCompanyId();
-        const rows = products.map(p => {
+
+        // Deduplicate by business_code — keep the LAST occurrence (later rows
+        // override earlier ones, matching user expectation when Excel has
+        // duplicate rows). Without this, Postgres throws
+        // "ON CONFLICT DO UPDATE command cannot affect row a second time".
+        const seen = new Map<string, Partial<Product>>();
+        for (const p of products) {
+          const key = p.businessCode || '';
+          if (key) seen.set(key, p);
+          else seen.set(`__no_code_${seen.size}__`, p); // keep rows without business_code
+        }
+        const deduped = Array.from(seen.values());
+
+        const rows = deduped.map(p => {
           const row = ProductMapper.mapProductToDb({ ...p, createdBy: userId, updatedBy: userId });
           if (companyId) row.company_id = companyId;
           return row;
