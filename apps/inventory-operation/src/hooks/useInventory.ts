@@ -35,25 +35,14 @@ export const useInventory = (options: UseInventoryOptions = {}) => {
 
       console.log('🔄 Loading inventory records from database...');
       
-      // Try database service first
       const dbResponse = await InventoryService.getInventoryRecords(filters);
-      
-      if (dbResponse.data) {
+
+      if (dbResponse.success && dbResponse.data) {
         setRecords(dbResponse.data);
         console.log('✅ Records loaded from database:', dbResponse.data.length);
-        return;
-      }
-      
-      // If DB fails with specific error, use fallback as temporary safety net
-      console.warn('Database service failed, using fallback service:', dbResponse.error);
-      const fallbackResponse = await fallbackService.getInventoryRecords(filters);
-      
-      if (fallbackResponse.data) {
-        setRecords(fallbackResponse.data);
-        console.log('📊 Fallback response received:', fallbackResponse.data.length);
       } else {
-        setError(dbResponse.error || fallbackResponse.error || 'Không thể tải dữ liệu tồn kho');
-        console.error('❌ Failed to load records from both sources');
+        setError(dbResponse.error || 'Không thể tải dữ liệu tồn kho');
+        console.error('❌ Failed to load records:', dbResponse.error);
       }
     } catch (err) {
       setError('Đã xảy ra lỗi khi tải dữ liệu');
@@ -76,13 +65,7 @@ export const useInventory = (options: UseInventoryOptions = {}) => {
         console.log('🧪 Trial mode: creating inventory record in localStorage');
         response = await fallbackService.createInventoryRecord(record);
       } else {
-        // Try database service first, fallback to mock data if it fails
-        try {
-          response = await InventoryService.createInventoryRecord(record);
-        } catch (dbError) {
-          console.warn('Database error, using fallback service:', dbError);
-          response = await fallbackService.createInventoryRecord(record);
-        }
+        response = await InventoryService.createInventoryRecord(record);
       }
       
       if (response.data) {
@@ -113,17 +96,9 @@ export const useInventory = (options: UseInventoryOptions = {}) => {
       
       if (isTrial) {
         console.log('🧪 Trial mode: updating inventory record in localStorage');
-        // fallbackService currently doesn't have updateRecord, we simulate it
         response = { data: { ...updates, id, updatedAt: new Date() } as InventoryRecord, error: null };
       } else {
-        // Try database service first, fallback to mock data if it fails
-        try {
-          response = await InventoryService.updateInventoryRecord(id, updates);
-        } catch (dbError) {
-          console.warn('Database error, using fallback service:', dbError);
-          // For update, we'll simulate success since fallback service doesn't have update method
-          response = { data: { ...updates, id, updatedAt: new Date() } as InventoryRecord, error: null };
-        }
+        response = await InventoryService.updateInventoryRecord(id, updates);
       }
       
       if (response.data) {
@@ -160,14 +135,7 @@ export const useInventory = (options: UseInventoryOptions = {}) => {
         console.log('🧪 Trial mode: deleting inventory record in localStorage');
         response = { data: true, error: null };
       } else {
-        // Try database service first, fallback to mock data if it fails
-        try {
-          response = await InventoryService.deleteInventoryRecord(id);
-        } catch (dbError) {
-          console.warn('Database error, using fallback service:', dbError);
-          // For delete, we'll simulate success
-          response = { data: true, error: null };
-        }
+        response = await InventoryService.deleteInventoryRecord(id);
       }
       
       if (response.data) {
