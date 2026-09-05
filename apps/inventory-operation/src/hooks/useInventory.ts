@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { InventoryRecord } from '../types';
 import { InventoryService } from '../services/inventoryService';
 import { fallbackService } from '../services/fallbackService';
-import { getTrialInventoryRecords, saveTrialInventoryRecords, seedTrialDataIfNeeded } from '../data/trialMockData';
 import { isTrialMode } from '@superapp/shared-utils';
 
 interface UseInventoryOptions {
@@ -25,13 +24,12 @@ export const useInventory = (options: UseInventoryOptions = {}) => {
     setError(null);
 
     try {
-      // Trial mode: load from localStorage
+      // Trial mode: load from localStorage via fallbackService
       const isTrial = isTrialMode();
       if (isTrial) {
-        seedTrialDataIfNeeded();
-        const trialRecords = getTrialInventoryRecords();
-        setRecords(trialRecords);
-        console.log('🧪 Trial mode: loaded', trialRecords.length, 'inventory records');
+        const res = await fallbackService.getInventoryRecords(filters);
+        setRecords(res.data || []);
+        console.log('🧪 Trial mode: loaded', res.data?.length || 0, 'inventory records');
         return;
       }
 

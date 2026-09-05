@@ -8,7 +8,7 @@ import { useProducts } from '../hooks/useProducts';
 import appSettingsService from '../services/appSettingsService';
 import { UserRole } from '../types/UserRole';
 import { InventoryRecord } from '../types';
-import { cashflowIntegrationService, Supplier } from '../services/cashflowIntegrationService';
+import { supplierService, Supplier } from '../services/supplierService';
 import { parseDateOrNow } from '@superapp/shared-utils';
 
 type ImportTab = 'single' | 'multiple' | 'bulk';
@@ -382,7 +382,7 @@ const InventoryTransactionImportPage: React.FC = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
   useEffect(() => {
-    cashflowIntegrationService.getSuppliers().then(setSuppliers);
+    supplierService.getSuppliers().then(res => setSuppliers(res.data || []));
   }, []);
 
   const { createRecord, isLoading } = useInventory({ autoLoad: false });

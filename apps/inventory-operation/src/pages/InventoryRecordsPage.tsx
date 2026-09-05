@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { inventoryVarianceService } from '../services/inventoryVarianceService';
 import { INVENTORY_VIEWS } from '../types/InventoryMovement';
-import { getTrialInventoryRecords, seedTrialDataIfNeeded } from '../data/trialMockData';
+import { fallbackService } from '../services/fallbackService';
 import InventoryMovementLedger from '../components/InventoryMovementLedger';
 import { useProducts } from '../hooks/useProducts';
 import { useAuthContext } from '@superapp/iam';
@@ -47,8 +47,8 @@ const InventoryRecordsPage: React.FC = () => {
         // Trial mode: load from localStorage mock data
         const isTrial = isTrialMode();
         if (isTrial) {
-          seedTrialDataIfNeeded();
-          const trialRecords = getTrialInventoryRecords();
+          const res = await fallbackService.getInventoryRecords();
+          const trialRecords = res.data || [];
           // Map trial inventory records to the variance report format
           const mappedRecords = trialRecords.map(r => {
             const inQty = r.inputQuantity || 0;

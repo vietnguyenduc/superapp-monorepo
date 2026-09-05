@@ -2,7 +2,21 @@
 // Sales are calculated from inventory movements and stock changes
 
 import { SalesRecord } from '../types';
-import { realInventoryTransactions, parseDate } from './realInventoryTransactions';
+
+// Inline date parser (previously imported from realInventoryTransactions.ts
+// which was removed as dead code in Phase 1 cleanup).
+function parseDate(dateStr: string): Date {
+  // Supports "d/M/yy" and "d/M/yyyy" formats
+  const parts = dateStr.split('/');
+  if (parts.length === 3) {
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    let year = parseInt(parts[2], 10);
+    if (year < 100) year += 2000;
+    return new Date(year, month, day);
+  }
+  return new Date(dateStr);
+}
 
 export interface SalesTransaction {
   date: string;

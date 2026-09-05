@@ -9,7 +9,9 @@ import {
   CloudArrowUpIcon,
 } from '@heroicons/react/24/outline';
 import { excelImportService, ImportResult } from '../../services/excelImportService';
-import { databaseService } from '../../services/databaseService';
+import { ProductService } from '../../services/productService';
+import { InventoryService } from '../../services/inventoryService';
+import { SalesService } from '../../services/salesService';
 import { Product, InventoryRecord, SalesRecord } from '../../types';
 import ClipboardPasteInput from '../ClipboardPaste/ClipboardPasteInput';
 import GoogleSheetsIntegration from '../GoogleSheets/GoogleSheetsIntegration';
@@ -72,13 +74,13 @@ const ImportExportPage: React.FC = () => {
         
         switch (selectedType) {
           case 'products':
-            dbResult = await databaseService.bulkInsertProducts(importResult.data);
+            dbResult = await ProductService.bulkInsertProducts(importResult.data);
             break;
           case 'inventory':
-            dbResult = await databaseService.bulkInsertInventoryRecords(importResult.data);
+            dbResult = await InventoryService.bulkInsertInventoryRecords(importResult.data);
             break;
           case 'sales':
-            dbResult = await databaseService.bulkInsertSalesRecords(importResult.data);
+            dbResult = await SalesService.bulkInsertSalesRecords(importResult.data);
             break;
         }
 
@@ -138,13 +140,13 @@ const ImportExportPage: React.FC = () => {
       
       switch (selectedType) {
         case 'products':
-          dbResult = await databaseService.bulkInsertProducts(data);
+          dbResult = await ProductService.bulkInsertProducts(data);
           break;
         case 'inventory':
-          dbResult = await databaseService.bulkInsertInventoryRecords(data);
+          dbResult = await InventoryService.bulkInsertInventoryRecords(data);
           break;
         case 'sales':
-          dbResult = await databaseService.bulkInsertSalesRecords(data);
+          dbResult = await SalesService.bulkInsertSalesRecords(data);
           break;
       }
 
@@ -180,21 +182,21 @@ const ImportExportPage: React.FC = () => {
 
       switch (type) {
         case 'products':
-          const productsResult = await databaseService.getProducts();
+          const productsResult = await ProductService.getProducts();
           if (productsResult.data) {
             data = productsResult.data;
             filename = 'danh-sach-san-pham';
           }
           break;
         case 'inventory':
-          const inventoryResult = await databaseService.getInventoryRecords();
+          const inventoryResult = await InventoryService.getInventoryRecords();
           if (inventoryResult.data) {
             data = inventoryResult.data;
             filename = 'bao-cao-ton-kho';
           }
           break;
         case 'sales':
-          const salesResult = await databaseService.getSalesRecords();
+          const salesResult = await SalesService.getSalesRecords();
           if (salesResult.data) {
             data = salesResult.data;
             filename = 'bao-cao-ban-hang';

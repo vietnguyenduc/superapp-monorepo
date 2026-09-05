@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { databaseService } from './databaseService';
 import { ProductService } from './productService';
 import { InventoryService } from './inventoryService';
 import { validateBulkImport, checkImportLimit } from '../utils/validation';
@@ -39,7 +38,7 @@ describe('Import/Export Integration', () => {
       error: 'Maximum 200 products allowed per batch',
     });
 
-    const result = await databaseService.bulkInsertProducts(products as any);
+    const result = await ProductService.bulkInsertProducts(products as any);
     expect(result.error).toContain('Maximum 200');
   });
 
@@ -65,7 +64,7 @@ describe('Import/Export Integration', () => {
       error: null,
     });
 
-    const result = await databaseService.bulkInsertProducts(products as any);
+    const result = await ProductService.bulkInsertProducts(products as any);
     expect(result.error).toBeNull();
     expect(result.data).toHaveLength(1);
   });
@@ -81,7 +80,7 @@ describe('Import/Export Integration', () => {
       error: 'Duplicate business codes found in batch',
     });
 
-    const result = await databaseService.bulkInsertProducts(products as any);
+    const result = await ProductService.bulkInsertProducts(products as any);
     expect(result.error).toBeTruthy();
   });
 
@@ -93,7 +92,7 @@ describe('Import/Export Integration', () => {
       error: 'Product with code UNKNOWN does not exist',
     });
 
-    const result = await databaseService.createInventoryRecord(record as any);
+    const result = await InventoryService.createInventoryRecord(record as any);
     expect(result.error).toContain('does not exist');
   });
 });

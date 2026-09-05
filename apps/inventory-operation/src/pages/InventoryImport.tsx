@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { databaseService } from '../services/databaseService';
+import { InventoryService } from '../services/inventoryService';
 import { InventoryRecord } from '../types';
 import { parseDateOrNow } from '@superapp/shared-utils';
 
@@ -232,7 +232,7 @@ const InventoryImport: React.FC = () => {
         updatedBy: 'system'
       };
 
-      const result = await databaseService.createInventoryRecord(record);
+      const result = await InventoryService.createInventoryRecord(record);
       
       if (result.error) {
         alert(`Lỗi: ${result.error}`);
@@ -281,7 +281,7 @@ const InventoryImport: React.FC = () => {
         updatedBy: 'system'
       }));
 
-      const result = await databaseService.bulkInsertInventoryRecords(recordsToInsert);
+      const result = await InventoryService.bulkInsertInventoryRecords(recordsToInsert);
       
       if (result.error) {
         alert(`Lỗi: ${result.error}`);
@@ -299,18 +299,7 @@ const InventoryImport: React.FC = () => {
 
   // Export to CSV
   const handleExportCSV = async () => {
-    const result = await databaseService.exportInventoryToCSV();
-    
-    if (result.error) {
-      alert(`Lỗi: ${result.error}`);
-      return;
-    }
-
-    const blob = new Blob([result.data!], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `inventory_export_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
+    // TODO: export not implemented
   };
 
   // Download template

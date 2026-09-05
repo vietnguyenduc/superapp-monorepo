@@ -655,6 +655,101 @@ class FallbackService {
     }
   }
 
+  // ============ INVENTORY VARIANCE REPORTS (trial mode) ============
+
+  async getVarianceReports(filters?: {
+    search?: string;
+    date_from?: string;
+    date_to?: string;
+    product_id?: string;
+    variance_type?: string;
+  }): Promise<InventoryVarianceReport[]> {
+    const stored = localStorage.getItem('trial_variance_reports');
+    let reports: InventoryVarianceReport[] = stored ? JSON.parse(stored) : [];
+
+    if (filters?.search) {
+      reports = reports.filter(r => r.notes?.toLowerCase().includes(filters.search!.toLowerCase()));
+    }
+    if (filters?.date_from) reports = reports.filter(r => r.date >= filters.date_from!);
+    if (filters?.date_to) reports = reports.filter(r => r.date <= filters.date_to!);
+    if (filters?.product_id) reports = reports.filter(r => r.product_id === filters.product_id);
+    if (filters?.variance_type) {
+      if (filters.variance_type === 'positive') reports = reports.filter(r => r.variance > 0);
+      else if (filters.variance_type === 'negative') reports = reports.filter(r => r.variance < 0);
+      else if (filters.variance_type === 'zero') reports = reports.filter(r => r.variance === 0);
+      else if (filters.variance_type === 'high') reports = reports.filter(r => Math.abs(r.variance_percentage) >= 10);
+    }
+    return reports.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }
+
+  async getVarianceReportById(id: string): Promise<InventoryVarianceReport | null> {
+    const reports = await this.getVarianceReports();
+    return reports.find(r => r.id === id) || null;
+  }
+
+  async createVarianceReport(data: any): Promise<InventoryVarianceReport> {
+    const stored = localStorage.getItem('trial_variance_reports');
+    const reports: InventoryVarianceReport[] = stored ? JSON.parse(stored) : [];
+    const newReport: InventoryVarianceReport = {
+      ...data,
+      id: `var-${Date.now()}`,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    reports.push(newReport);
+    localStorage.setItem('trial_variance_reports', JSON.stringify(reports));
+    return newReport;
+  }
+
+  async updateVarianceReport(id: string, updates: any): Promise<InventoryVarianceReport> {
+    const stored = localStorage.getItem('trial_variance_reports');
+    const reports: InventoryVarianceReport[] = stored ? JSON.parse(stored) : [];
+    const idx = reports.findIndex(r => r.id === id);
+    if (idx === -1) throw new Error('Không tìm thấy báo cáo');
+    reports[idx] = { ...reports[idx], ...updates, updated_at: new Date().toISOString() };
+    localStorage.setItem('trial_variance_reports', JSON.stringify(reports));
+    return reports[idx];
+  }
+
+  async deleteVarianceReport(id: string): Promise<void> {
+    const stored = localStorage.getItem('trial_variance_reports');
+    const reports: InventoryVarianceReport[] = stored ? JSON.parse(stored) : [];
+    localStorage.setItem('trial_variance_reports', JSON.stringify(reports.filter(r => r.id !== id)));
+  }
+
+  async getVarianceReportStats(filters?: { date_from?: string; date_to?: string; product_id?: string }): Promise<any> {
+    const reports = await this.getVarianceReports(filters);
+    return {
+      total_reports: reports.length,
+      total_book_inventory: reports.reduce((s, r) => s + r.book_inventory, 0),
+      total_actual_inventory: reports.reduce((s, r) => s + r.actual_inventory, 0),
+      total_variance: reports.reduce((s, r) => s + Math.abs(r.variance), 0),
+      positive_variance: reports.filter(r => r.variance > 0).length,
+      negative_variance: reports.filter(r => r.variance < 0).length,
+      zero_variance: reports.filter(r => r.variance === 0).length,
+      high_variance: reports.filter(r => Math.abs(r.variance_percentage) >= 10).length,
+      accuracy_percentage: reports.length > 0 ? (reports.filter(r => r.variance === 0).length / reports.length) * 100 : 0
+    };
+  }
+
+  async getVarianceAlerts(threshold: number = 10): Promise<any[]> {
+    const reports = await this.getVarianceReports();
+    return reports
+      .filter(r => Math.abs(r.variance_percentage) >= threshold)
+      .map(report => ({
+        id: `alert_${report.id}`,
+        report_id: report.id,
+        product_id: report.product_id,
+        variance_type: report.variance > 0 ? 'excess' : 'shortage',
+        variance_amount: Math.abs(report.variance),
+        variance_percentage: Math.abs(report.variance_percentage),
+        alert_level: Math.abs(report.variance_percentage) >= 20 ? 'critical' : Math.abs(report.variance_percentage) >= 15 ? 'high' : Math.abs(report.variance_percentage) >= 10 ? 'medium' : 'low',
+        suggested_action: report.variance > 0 ? 'Tạo phiếu xuất đặc biệt để điều chỉnh thừa kho' : 'Kiểm tra lại tồn kho và tìm nguyên nhân thiếu hụt',
+        is_resolved: false,
+        created_at: report.created_at
+      }));
+  }
+
   // ============ HEALTH CHECK ============
   
   async healthCheck(): Promise<{ status: 'ok' | 'error'; message: string }> {

@@ -74,6 +74,44 @@ export class InventoryService extends BaseService {
     );
   }
 
+  static async bulkInsertInventoryRecords(records: Partial<InventoryRecord>[]): Promise<ServiceResponse<InventoryRecord[]>> {
+    const BATCH_SIZE = 200;
+    return this.execute(
+      async () => {
+        const userId = await getCurrentUserId();
+        const companyId = await getCurrentCompanyId();
+        const rows: any[] = [];
+        for (const record of records) {
+          let productQuery = apiClient.from('products').select('id').eq('business_code', record.productCode);
+          if (companyId) productQuery = productQuery.eq('company_id', companyId);
+          const productRow = await productQuery.maybeSingle();
+          if (!productRow.data) continue; // skip if product not found
+          const row = InventoryMapper.mapInventoryToDb({ ...record, productId: productRow.data.id, createdBy: userId, updatedBy: userId } as any);
+          if (companyId) row.company_id = companyId;
+          rows.push(row);
+        }
+        const allData: any[] = [];
+        let firstError: any = null;
+        for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+          const chunk = rows.slice(i, i + BATCH_SIZE);
+          const res = await apiClient.from('inventory_records').insert(chunk).select('*');
+          if (res.error && !firstError) firstError = res.error;
+          if (res.data) for (const item of res.data) allData.push(InventoryMapper.mapDbToInventory(item));
+          if (res.error) break;
+        }
+        return { data: allData, error: firstError };
+      },
+      async () => {
+        const results: InventoryRecord[] = [];
+        for (const r of records) {
+          const res = await fallbackService.createInventoryRecord(r as any);
+          if (res.data) results.push(res.data);
+        }
+        return { data: results, error: null };
+      }
+    );
+  }
+
   static async updateInventoryRecord(id: string, updates: Partial<InventoryRecord>): Promise<ServiceResponse<InventoryRecord>> {
     return this.execute(
       async () => {

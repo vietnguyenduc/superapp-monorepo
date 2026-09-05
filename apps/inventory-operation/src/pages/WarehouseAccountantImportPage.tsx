@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
 import { useInventory } from '../hooks/useInventory';
 import InventoryBulkImport from '../components/InventoryBulkImport';
-import { cashflowIntegrationService, Supplier } from '../services/cashflowIntegrationService';
+import { supplierService, Supplier } from '../services/supplierService';
 import appSettingsService from '../services/appSettingsService';
 
 // Mock pending sales orders from Sales App
@@ -45,7 +45,7 @@ const WarehouseAccountantImportPage: React.FC = () => {
   });
 
   useEffect(() => {
-    cashflowIntegrationService.getSuppliers().then(setSuppliers);
+    supplierService.getSuppliers().then(res => setSuppliers(res.data || []));
   }, []);
 
   const notify = (type: 'success' | 'error', msg: string) => {

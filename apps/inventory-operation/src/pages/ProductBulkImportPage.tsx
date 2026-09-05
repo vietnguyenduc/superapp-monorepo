@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { BulkImport } from '../components/Import/BulkImport';
 import { validators } from '../utils/validation';
 import { ProductCategory } from '../types';
-import { databaseService } from '../services/databaseService';
+import { ProductService } from '../services/productService';
 import { useAuthContext } from '@superapp/iam';
 
 const productRequiredColumns = ['businessCode', 'name', 'category', 'inputQuantity', 'inputUnit'];
@@ -45,7 +45,7 @@ const ProductBulkImportPage: React.FC = () => {
       return { success: false, message: 'Bạn không có quyền import sản phẩm' };
     }
 
-    const result = await databaseService.bulkInsertProducts(data);
+    const result = await ProductService.bulkInsertProducts(data);
 
     if (result.error) {
       setMessage({ type: 'error', text: result.error });

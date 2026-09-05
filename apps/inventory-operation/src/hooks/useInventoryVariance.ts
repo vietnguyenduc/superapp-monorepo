@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  InventoryVarianceReport, 
+import {
+  InventoryVarianceReport,
   InventoryVarianceReportCreateInput,
   InventoryReportStats,
   InventoryVarianceAlert
 } from '../types';
 import { inventoryVarianceService } from '../services/inventoryVarianceService';
+import { fallbackService } from '../services/fallbackService';
+import { ProductService } from '../services/productService';
 import { isTrialMode } from '@superapp/shared-utils';
 
 export const useInventoryVarianceReports = () => {
@@ -26,9 +28,10 @@ export const useInventoryVarianceReports = () => {
       
       const isTrial = isTrialMode();
       if (isTrial) {
-        const { getTrialInventoryRecords, getTrialProducts } = await import('../data/trialMockData');
-        const records = getTrialInventoryRecords();
-        const products = getTrialProducts();
+        const invRes = await fallbackService.getInventoryRecords();
+        const prodRes = await ProductService.getProducts();
+        const records = invRes.data || [];
+        const products = prodRes.data || [];
         
         // Group by product and date to simulate variance reports
         const reportMap = new Map<string, InventoryVarianceReport>();

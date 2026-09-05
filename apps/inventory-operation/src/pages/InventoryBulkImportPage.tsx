@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BulkImport } from '../components/Import/BulkImport';
 import { validators } from '../utils/validation';
-import { databaseService } from '../services/databaseService';
+import { InventoryService } from '../services/inventoryService';
 import { useAuthContext } from '@superapp/iam';
 
 const inventoryRequiredColumns = ['productCode', 'productName', 'rawMaterialStock', 'processedStock', 'finishedProductStock'];
@@ -48,7 +48,7 @@ const InventoryBulkImportPage: React.FC = () => {
       return { success: false, message: 'Bạn không có quyền import tồn kho' };
     }
 
-    const result = await databaseService.bulkInsertInventoryRecords(data);
+    const result = await InventoryService.bulkInsertInventoryRecords(data);
 
     if (result.error) {
       setMessage({ type: 'error', text: result.error });
