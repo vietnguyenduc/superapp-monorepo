@@ -22,6 +22,14 @@ const ProductCatalogForm: React.FC<ProductCatalogFormProps> = ({
   const conversionMode = appSettingsService.getIntermediateConversionMode();
   const businessModel = appSettingsService.getBusinessModel();
   const unitOptions = appSettingsService.getUnits();
+  // Include the product's current units in the dropdown even if not in the preset list,
+  // otherwise editing a product with a custom unit shows an empty dropdown.
+  const allUnitOptions = Array.from(new Set([
+    ...unitOptions,
+    ...(initialData?.inputUnit ? [initialData.inputUnit] : []),
+    ...(initialData?.outputUnit ? [initialData.outputUnit] : []),
+    ...((initialData?.intermediateUnits || []).filter(Boolean) as string[]),
+  ]));
   
   const initialFormState = {
     category: ProductCategory.FRUIT,
@@ -319,7 +327,7 @@ const ProductCatalogForm: React.FC<ProductCatalogFormProps> = ({
                     required
                   >
                     <option value="">Chọn đơn vị...</option>
-                    {unitOptions.map(u => <option key={u} value={u}>{u}</option>)}
+                    {allUnitOptions.map(u => <option key={u} value={u}>{u}</option>)}
                   </select>
                 </div>
               )}
@@ -363,7 +371,7 @@ const ProductCatalogForm: React.FC<ProductCatalogFormProps> = ({
                               }`}
                             >
                               <option value="">Chọn đơn vị...</option>
-                              {unitOptions.map(u => <option key={u} value={u}>{u}</option>)}
+                              {allUnitOptions.map(u => <option key={u} value={u}>{u}</option>)}
                             </select>
                             {conversionMode === 'multiple' && (
                               <button
@@ -392,7 +400,7 @@ const ProductCatalogForm: React.FC<ProductCatalogFormProps> = ({
                             className="flex-1 px-3 py-2 bg-white border border-gray-200 border-dashed rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all italic text-gray-400"
                           >
                             <option value="">+ Thêm đơn vị sơ chế...</option>
-                            {unitOptions.map(u => <option key={u} value={u}>{u}</option>)}
+                            {allUnitOptions.map(u => <option key={u} value={u}>{u}</option>)}
                           </select>
                         </div>
                       </div>
@@ -411,7 +419,7 @@ const ProductCatalogForm: React.FC<ProductCatalogFormProps> = ({
                     required
                   >
                     <option value="">Chọn đơn vị...</option>
-                    {unitOptions.map(u => <option key={u} value={u}>{u}</option>)}
+                    {allUnitOptions.map(u => <option key={u} value={u}>{u}</option>)}
                   </select>
                 </div>
               )}
