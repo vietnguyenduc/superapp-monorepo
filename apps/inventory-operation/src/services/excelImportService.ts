@@ -139,10 +139,16 @@ class ExcelImportService {
     // Process each data row
     dataRows.forEach((row, index) => {
       const rowNumber = index + 2; // +2 because Excel starts at 1 and we skip header
-      
+
+      // Skip completely empty rows (common in large Excel files with trailing blank rows)
+      const hasAnyValue = row.some(cell =>
+        cell !== null && cell !== undefined && String(cell).trim() !== ''
+      );
+      if (!hasAnyValue) return;
+
       try {
         const mappedObject: any = {};
-        
+
         // Map each field
         Object.entries(fieldToColumnIndex).forEach(([fieldName, columnIndex]) => {
           const cellValue = row[columnIndex];

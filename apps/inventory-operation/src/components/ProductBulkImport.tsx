@@ -52,6 +52,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
   const [duplicateCodes, setDuplicateCodes] = useState<{ code: string; rows: number[] }[]>([]);
+  const [importProgress, setImportProgress] = useState<string | null>(null);
 
   const handleFileUpload = async (file: File) => {
     setIsProcessing(true);
@@ -148,6 +149,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
   const handleConfirmImport = async () => {
     setIsProcessing(true);
     setImportResult(null);
+    setImportProgress(`Đang chuẩn bị nhập ${importData.data.length} sản phẩm...`);
     try {
       const productsToInsert = importData.data.map(row => ({
         businessCode: row.businessCode || '',
@@ -171,6 +173,8 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
       }));
 
       const result = await ProductService.bulkInsertProducts(productsToInsert as any[]);
+
+      setImportProgress(null);
 
       if (result.error) {
         // Parse common Postgres errors into user-friendly messages
@@ -440,7 +444,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
         <div className="flex items-center justify-between pt-4">
           <button onClick={handleReset} className="px-6 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">← Quay lại tải file</button>
           <button onClick={handleConfirmImport} disabled={isProcessing} className="px-8 py-3 bg-blue-600 dark:bg-blue-700 text-white rounded-xl font-black text-sm hover:bg-blue-700 dark:hover:bg-blue-600 shadow-lg shadow-blue-200 dark:shadow-none disabled:bg-gray-300 dark:disabled:bg-gray-800 transition-all">
-            {isProcessing ? 'Đang xử lý...' : `Xác nhận Nhập ${importData.data.length} Sản phẩm`}
+            {isProcessing ? (importProgress || 'Đang xử lý...') : `Xác nhận Nhập ${importData.data.length} Sản phẩm`}
           </button>
         </div>
       </div>
