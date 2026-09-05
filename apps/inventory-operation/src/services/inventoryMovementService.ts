@@ -1,5 +1,6 @@
 import { supabase, apiClient, getCurrentCompanyId } from "../lib/supabase";
-import { getTrialInventoryRecords, seedTrialDataIfNeeded, getTrialProducts } from '../data/trialMockData';
+import { fallbackService } from './fallbackService';
+import { ProductService } from './productService';
 import { BaseService, ServiceResponse } from './baseService';
 
 // Database types matching the migration schema
@@ -108,10 +109,11 @@ export class InventoryMovementService extends BaseService {
     }
   }
 
-  static getMockMovements(filters: any): ServiceResponse<InventoryMovement[]> {
-    seedTrialDataIfNeeded();
-    const trialRecords = getTrialInventoryRecords();
-    const products = getTrialProducts();
+  static async getMockMovements(filters: any): Promise<ServiceResponse<InventoryMovement[]>> {
+    const invRes = await fallbackService.getInventoryRecords();
+    const prodRes = await ProductService.getProducts();
+    const trialRecords = invRes.data || [];
+    const products = prodRes.data || [];
     let movements: InventoryMovement[] = [];
     
     trialRecords.forEach(r => {
@@ -201,7 +203,7 @@ export class InventoryMovementService extends BaseService {
         if (filters.dateTo) query = query.lte('movement_date', filters.dateTo);
         return await query;
       },
-      () => Promise.resolve(this.getMockMovements(filters))
+      () => this.getMockMovements(filters)
     );
   }
 
@@ -253,7 +255,8 @@ export class InventoryMovementService extends BaseService {
         return { data: data ? { quantity: data.running_balance, value: data.running_value } : { quantity: 0 } };
       },
       async () => {
-        const trialRecords = getTrialInventoryRecords();
+        const invRes = await fallbackService.getInventoryRecords();
+        const trialRecords = invRes.data || [];
         const productRecords = trialRecords.filter(r => r.productCode === productId);
         if (productRecords.length > 0) {
           productRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -271,9 +274,10 @@ export class InventoryMovementService extends BaseService {
         return await apiClient.from('stock_count_entries').select('*, products(id, name, business_code)').eq('company_id', companyId).gte('count_date', dateFrom).lte('count_date', dateTo).order('count_date', { ascending: false });
       },
       async () => {
-        seedTrialDataIfNeeded();
-        const records = getTrialInventoryRecords();
-        const products = getTrialProducts();
+        const invRes = await fallbackService.getInventoryRecords();
+        const prodRes = await ProductService.getProducts();
+        const records = invRes.data || [];
+        const products = prodRes.data || [];
         const varianceRecords = records.filter(r => r.notes?.toLowerCase().includes('kiểm kê')).map(r => ({
           id: r.id, count_date: r.date, product_id: r.productCode, book_quantity: (r.rawMaterialStock || 0) + (r.processedStock || 0) + (r.finishedProductStock || 0), counted_quantity: (r.rawMaterialStock || 0) + (r.processedStock || 0) + (r.finishedProductStock || 0), variance: 0, variance_percentage: 0, reconciliation_status: 'approved', unit: r.rawMaterialUnit || 'pcs', notes: r.notes, products: { name: r.productName, business_code: r.productCode }
         }));
