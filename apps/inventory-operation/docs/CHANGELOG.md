@@ -1,5 +1,52 @@
 # inventory-operation — Changelog
 
+## 2026-09-05 — Product import fixes (5 commits)
+
+### Data layer cleanup (commits d7cb02d2..6b43288f, merged to main 111d2d4b)
+
+- Removed dead code: `DebugTestPage`, `mockData.ts`, `realProductsData.ts`,
+  `realInventoryData.ts`, `realInventoryTransactions.ts`, `simpleMockData.ts`
+- Consolidated trial mock into `fallbackService` (single trial store)
+- Removed `mockService.ts`, `cashflowIntegrationService.ts`, `databaseService.ts` facade
+- All pages/components now import specialized services directly
+  (`ProductService`, `InventoryService`, `SalesService`, `SupplierService`)
+- `trialMockData.ts` only used for seed data + explicit "Reset Trial" button
+
+### Bulk import upsert fix (commits d34c753e, d5749900, 9137c1c7)
+
+- `productService.ts`: `.insert()` → `.upsert({ onConflict: 'company_id,business_code' })`
+- Applied to `createProduct()`, `bulkInsertProducts()`, `importProducts()`
+- Deduplicate input by `business_code` before upsert
+  (fixes "ON CONFLICT DO UPDATE affect row a second time")
+
+### Silent fallback removal (commit f86a0253)
+
+- `baseService.ts`: removed auto-fallback on DB errors — only trial mode uses fallback
+- `useInventory.ts`: removed try/catch fallback in load/create/update/delete
+- DB errors now surface to user instead of being silently swallowed
+
+### User-friendly import errors (commit 80ca6147)
+
+- `ProductBulkImport.tsx`: replaced `alert()` with structured error panels
+- Duplicate `business_code` detection in file → amber warning panel
+- Postgres errors translated to user-friendly Vietnamese messages
+- 3-layer validation: format → duplicate → import result
+
+### DB schema fixes (commits a0db46dc, 76b64cd2)
+
+- Added missing `product_category` enum values: `beverage`, `tobacco`, `other`
+  (was causing 500 Internal Server Error on import)
+- `products.business_code`: dropped NOT NULL constraint
+  (user rule: only name + unit required, business_code is optional)
+- `ProductMapper`: empty `businessCode` string → `null` (Postgres NULL semantics)
+- Migration: `20260905000001_add_product_category_enum_values.sql`
+
+### Docs updated
+
+- ADR-005 (bulk import limit): marked Superseded — row limit removed
+- ADR-007 (product code uniqueness): updated — business_code now optional
+- `docs/import-templates/README.md`: rewritten to match current validation rules
+
 ## 2026-08-13 — Align special outbound payloads with DB columns and approval log fix
 
 - `src/lib/supabase.ts`: thêm `getCurrentBranchId()` để lấy `branch_id` từ bảng `users`.
