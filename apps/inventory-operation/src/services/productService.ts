@@ -48,7 +48,11 @@ export class ProductService extends BaseService {
         const companyId = await getCurrentCompanyId();
         const row = ProductMapper.mapProductToDb({ ...product, createdBy: userId, updatedBy: userId });
         if (companyId) row.company_id = companyId;
-        const res = await apiClient.from('products').insert([row]).select('*').single();
+        const res = await apiClient
+          .from('products')
+          .upsert([row], { onConflict: 'company_id,business_code' })
+          .select('*')
+          .single();
         if (res.data) res.data = ProductMapper.mapDbToProduct(res.data);
         return res;
       },
