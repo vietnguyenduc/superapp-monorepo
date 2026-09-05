@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { databaseService } from '../services/databaseService';
+import { ProductService } from '../services/productService';
 import { ProductCategory, ProductStatus } from '../types';
 
 type ImportTab = 'single-entry' | 'bulk-import' | 'bulk';
@@ -228,7 +228,7 @@ const ProductImportPage: React.FC = () => {
     return categoryMap[category] || ProductCategory.OTHER;
   };
 
-  // Save imported data using databaseService
+  // Save imported data using ProductService
   const handleSave = async () => {
     const validRows = importData.filter(row => 
       row.productCode.trim() && row.productName.trim() && row.errors.length === 0
@@ -260,7 +260,7 @@ const ProductImportPage: React.FC = () => {
       }));
 
       // Use bulk insert with server-side validation
-      const result = await databaseService.bulkInsertProducts(productsToInsert);
+      const result = await ProductService.bulkInsertProducts(productsToInsert);
       
       if (result.error) {
         alert(`Lỗi: ${result.error}`);

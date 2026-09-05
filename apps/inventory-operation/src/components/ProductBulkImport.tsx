@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { excelImportService } from '../services/excelImportService';
-import { databaseService } from '../services/databaseService';
+import { ProductService } from '../services/productService';
 import { ProductCategory, ProductStatus, Product } from '../types';
 import appSettingsService from '../services/appSettingsService';
 
@@ -136,7 +136,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
         outputQuantity: 1,
       }));
 
-      const result = await databaseService.bulkInsertProducts(productsToInsert as any[]);
+      const result = await ProductService.bulkInsertProducts(productsToInsert as any[]);
       
       if (result.error) {
         alert(`Lỗi: ${result.error}`);

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ProductEntryForm } from '../components/Form/ProductEntryForm';
 import { Product } from '../types';
-import { databaseService } from '../services/databaseService';
+import { ProductService } from '../services/productService';
 import { useAuthContext } from '@superapp/iam';
 
 const ProductEntryPage: React.FC = () => {
@@ -22,7 +22,7 @@ const ProductEntryPage: React.FC = () => {
     setMessage(null);
 
     try {
-      const result = await databaseService.createProduct(data as Omit<Product, 'id' | 'createdAt' | 'updatedAt'>);
+      const result = await ProductService.createProduct(data as Omit<Product, 'id' | 'createdAt' | 'updatedAt'>);
 
       if (result.error) {
         setMessage({ type: 'error', text: result.error });

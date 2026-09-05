@@ -53,6 +53,39 @@ export class SalesService extends BaseService {
     );
   }
 
+  static async bulkInsertSalesRecords(records: Partial<SalesRecord>[]): Promise<ServiceResponse<SalesRecord[]>> {
+    const BATCH_SIZE = 200;
+    return this.execute(
+      async () => {
+        const userId = await getCurrentUserId();
+        const companyId = await getCurrentCompanyId();
+        const rows = records.map(r => {
+          const row = SalesMapper.mapSalesToDb({ ...r, createdBy: userId, updatedBy: userId } as any);
+          if (companyId) row.company_id = companyId;
+          return row;
+        });
+        const allData: any[] = [];
+        let firstError: any = null;
+        for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+          const chunk = rows.slice(i, i + BATCH_SIZE);
+          const res = await apiClient.from('sales_records').insert(chunk).select('*');
+          if (res.error && !firstError) firstError = res.error;
+          if (res.data) for (const item of res.data) allData.push(SalesMapper.mapDbToSales(item));
+          if (res.error) break;
+        }
+        return { data: allData, error: firstError };
+      },
+      async () => {
+        const results: SalesRecord[] = [];
+        for (const r of records) {
+          const res = await fallbackService.createSalesRecord(r as any);
+          if (res.data) results.push(res.data);
+        }
+        return { data: results, error: null };
+      }
+    );
+  }
+
   static async updateSalesRecord(id: string, updates: Partial<SalesRecord>): Promise<ServiceResponse<SalesRecord>> {
     return this.execute(
       async () => {

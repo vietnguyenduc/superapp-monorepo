@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { InventoryEntryForm } from '../components/Form/InventoryEntryForm';
 import { InventoryRecord } from '../types';
-import { databaseService } from '../services/databaseService';
+import { InventoryService } from '../services/inventoryService';
 import { useAuthContext } from '@superapp/iam';
 
 const InventoryEntryPage: React.FC = () => {
@@ -22,7 +22,7 @@ const InventoryEntryPage: React.FC = () => {
     setMessage(null);
 
     try {
-      const result = await databaseService.createInventoryRecord(data as Omit<InventoryRecord, 'id' | 'createdAt' | 'updatedAt'>);
+      const result = await InventoryService.createInventoryRecord(data as Omit<InventoryRecord, 'id' | 'createdAt' | 'updatedAt'>);
 
       if (result.error) {
         setMessage({ type: 'error', text: result.error });
