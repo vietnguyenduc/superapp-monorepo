@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { inventoryMovementService } from '../services/inventoryMovementService';
+import { ProductService } from '../services/productService';
 
 interface InventoryAccountingSummaryProps {
   companyId: string;
@@ -46,8 +47,8 @@ const InventoryAccountingSummary: React.FC<InventoryAccountingSummaryProps> = ({
     });
 
     // Get product list for filtering and metadata
-    const { getTrialProducts } = await import('../data/trialMockData');
-    const products = getTrialProducts();
+    const prodRes = await ProductService.getProducts();
+    const products = prodRes.data || [];
 
     if (!movementsResult.data) {
       setLoading(false);
