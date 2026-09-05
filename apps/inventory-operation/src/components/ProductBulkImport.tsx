@@ -25,6 +25,13 @@ interface ImportData {
   isValid: boolean;
 }
 
+interface ImportResult {
+  success: boolean;
+  inserted: number;
+  updated: number;
+  errors: string[];
+}
+
 interface ProductBulkImportProps {
   onImportComplete?: () => void;
   onCancel?: () => void;
@@ -42,11 +49,38 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [dragActive, setDragActive] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
+  const [duplicateCodes, setDuplicateCodes] = useState<{ code: string; rows: number[] }[]>([]);
 
   const handleFileUpload = async (file: File) => {
     setIsProcessing(true);
+    setValidationWarnings([]);
+    setDuplicateCodes([]);
     try {
       const result = await excelImportService.importProducts(file);
+
+      // Check for duplicate business_code within the file
+      const codeToRows = new Map<string, number[]>();
+      (result.data as any[]).forEach((row, idx) => {
+        const code = row.businessCode?.trim();
+        if (code) {
+          const existing = codeToRows.get(code) || [];
+          existing.push(idx + 2); // Excel row number (header = row 1)
+          codeToRows.set(code, existing);
+        }
+      });
+      const dupes = Array.from(codeToRows.entries())
+        .filter(([, rows]) => rows.length > 1)
+        .map(([code, rows]) => ({ code, rows }));
+      setDuplicateCodes(dupes);
+
+      if (dupes.length > 0) {
+        const dupeWarnings = dupes.map(d =>
+          `Mã "${d.code}" xuất hiện ${d.rows.length} lần (dòng ${d.rows.join(', ')}). Sẽ chỉ giữ lại dòng cuối.`
+        );
+        setValidationWarnings(dupeWarnings);
+      }
 
       setImportData({
         file,
@@ -54,7 +88,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
         errors: result.errors,
         isValid: result.success && result.errors.length === 0,
       });
-      
+
       if (result.success) {
         setCurrentStep(2);
       }
@@ -84,7 +118,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileUpload(e.dataTransfer.files[0]);
     }
@@ -113,6 +147,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
 
   const handleConfirmImport = async () => {
     setIsProcessing(true);
+    setImportResult(null);
     try {
       const productsToInsert = importData.data.map(row => ({
         businessCode: row.businessCode || '',
@@ -124,7 +159,6 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
         conversionRatioRawToProcessed: isCommercial ? 0 : (row.conversionRatioRawToProcessed || 0),
         conversionRatioProcessedToFinished: isCommercial ? 0 : (row.conversionRatioProcessedToFinished || 0),
         standardInputPrice: row.standardInputPrice || 0,
-        // Status defaults to ACTIVE — user can deactivate manually after import.
         status: row.status === 'INACTIVE' ? ProductStatus.INACTIVE : ProductStatus.ACTIVE,
         businessStatus: (row.status === 'INACTIVE' ? 'inactive' : 'active') as 'active' | 'inactive',
         createdBy: 'system',
@@ -137,13 +171,46 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
       }));
 
       const result = await ProductService.bulkInsertProducts(productsToInsert as any[]);
-      
+
       if (result.error) {
-        alert(`Lỗi: ${result.error}`);
+        // Parse common Postgres errors into user-friendly messages
+        let friendlyError = result.error;
+        if (result.error.includes('ON CONFLICT DO UPDATE command cannot affect row a second time')) {
+          friendlyError = 'File có nhiều dòng trùng mã sản phẩm. Hãy kiểm tra lại file Excel và xóa các dòng trùng.';
+        } else if (result.error.includes('duplicate key value violates unique constraint')) {
+          friendlyError = 'Mã sản phẩm đã tồn tại trong hệ thống. Hãy dùng mã khác hoặc xóa sản phẩm cũ trước.';
+        } else if (result.error.includes('violates foreign key constraint')) {
+          friendlyError = 'Dữ liệu tham chiếu không hợp lệ (có thể company_id hoặc branch_id không tồn tại).';
+        } else if (result.error.includes('invalid input syntax')) {
+          friendlyError = 'Định dạng dữ liệu không hợp lệ ở một hoặc nhiều dòng. Hãy kiểm tra lại kiểu số, ngày tháng.';
+        } else if (result.error.includes('value too long')) {
+          friendlyError = 'Một trường dữ liệu quá dài. Hãy rút ngắn nội dung và thử lại.';
+        } else if (result.error.includes('network') || result.error.includes('Failed to fetch')) {
+          friendlyError = 'Mất kết nối tới máy chủ. Hãy kiểm tra internet và thử lại.';
+        }
+
+        setImportResult({
+          success: false,
+          inserted: 0,
+          updated: 0,
+          errors: [friendlyError],
+        });
       } else {
-        setSuccessMessage(`Đã nhập thành công ${productsToInsert.length} sản phẩm!`);
+        const savedCount = result.data?.length || 0;
+        const hasDupes = duplicateCodes.length > 0;
+        const msg = hasDupes
+          ? `Đã nhập thành công ${savedCount} sản phẩm (đã tự động gộp ${duplicateCodes.length} mã trùng trong file).`
+          : `Đã nhập thành công ${savedCount} sản phẩm!`;
+
+        setSuccessMessage(msg);
+        setImportResult({
+          success: true,
+          inserted: savedCount,
+          updated: 0,
+          errors: [],
+        });
         setCurrentStep(3);
-        
+
         setTimeout(() => {
           if (onImportComplete) {
             onImportComplete();
@@ -151,7 +218,13 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
         }, 2000);
       }
     } catch (error) {
-      alert('Có lỗi xảy ra khi nhập dữ liệu');
+      const errMsg = error instanceof Error ? error.message : 'Lỗi không xác định';
+      setImportResult({
+        success: false,
+        inserted: 0,
+        updated: 0,
+        errors: [`Có lỗi xảy ra khi nhập dữ liệu: ${errMsg}`],
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -166,6 +239,9 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
     });
     setCurrentStep(1);
     setSuccessMessage(null);
+    setImportResult(null);
+    setValidationWarnings([]);
+    setDuplicateCodes([]);
   };
 
   if (currentStep === 1) {
@@ -245,10 +321,22 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
 
         {importData.errors.length > 0 && (
           <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/50 rounded-2xl p-5">
-            <h4 className="font-bold text-red-800 dark:text-red-400 mb-3 flex items-center gap-2"><span>⚠️</span> Phát hiện lỗi dữ liệu:</h4>
-            <ul className="text-sm text-red-700 dark:text-red-300 space-y-2 font-medium">
+            <h4 className="font-bold text-red-800 dark:text-red-400 mb-3 flex items-center gap-2"><span>⚠️</span> Phát hiện lỗi dữ liệu ({importData.errors.length}):</h4>
+            <ul className="text-sm text-red-700 dark:text-red-300 space-y-2 font-medium max-h-60 overflow-y-auto">
               {importData.errors.map((error, idx) => <li key={idx}>{error}</li>)}
             </ul>
+          </div>
+        )}
+
+        {validationWarnings.length > 0 && (
+          <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-5">
+            <h4 className="font-bold text-amber-800 dark:text-amber-400 mb-3 flex items-center gap-2"><span>⚠️</span> Cảnh báo — mã trùng trong file ({validationWarnings.length}):</h4>
+            <ul className="text-sm text-amber-700 dark:text-amber-300 space-y-2 font-medium max-h-60 overflow-y-auto">
+              {validationWarnings.map((warning, idx) => <li key={idx}>{warning}</li>)}
+            </ul>
+            <p className="text-xs text-amber-600 dark:text-amber-500 mt-3 font-medium">
+              Hệ thống sẽ tự động gộp các dòng trùng mã — chỉ giữ lại dòng cuối cùng. Bạn có thể tiếp tục hoặc sửa file và tải lại.
+            </p>
           </div>
         )}
 
@@ -322,6 +410,32 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
             </div>
           )}
         </div>
+
+        {validationWarnings.length > 0 && (
+          <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-4">
+            <h4 className="font-bold text-amber-800 dark:text-amber-400 mb-2 flex items-center gap-2 text-sm">
+              <span>⚠️</span> {validationWarnings.length} mã sản phẩm trùng trong file — sẽ tự động gộp
+            </h4>
+            <ul className="text-xs text-amber-700 dark:text-amber-300 space-y-1 font-medium max-h-40 overflow-y-auto">
+              {validationWarnings.slice(0, 5).map((w, idx) => <li key={idx}>{w}</li>)}
+              {validationWarnings.length > 5 && <li className="italic">... và {validationWarnings.length - 5} cảnh báo khác</li>}
+            </ul>
+          </div>
+        )}
+
+        {importResult && !importResult.success && (
+          <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/50 rounded-2xl p-5">
+            <h4 className="font-bold text-red-800 dark:text-red-400 mb-3 flex items-center gap-2">
+              <span>❌</span> Không thể nhập dữ liệu — {importResult.errors.length} lỗi:
+            </h4>
+            <ul className="text-sm text-red-700 dark:text-red-300 space-y-2 font-medium">
+              {importResult.errors.map((error, idx) => <li key={idx}>{error}</li>)}
+            </ul>
+            <p className="text-xs text-red-600 dark:text-red-500 mt-3 font-medium">
+              Vui lòng sửa file Excel và tải lại, hoặc liên hệ hỗ trợ nếu lỗi vẫn tiếp tục.
+            </p>
+          </div>
+        )}
 
         <div className="flex items-center justify-between pt-4">
           <button onClick={handleReset} className="px-6 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">← Quay lại tải file</button>
