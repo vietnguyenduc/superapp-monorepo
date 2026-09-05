@@ -3,7 +3,7 @@ import { InventoryRecord, Product } from '../types';
 import { useProducts } from '../hooks/useProducts';
 import appSettingsService from '../services/appSettingsService';
 import PartnerQuickAddModal from './UI/PartnerQuickAddModal';
-import { cashflowIntegrationService, Supplier } from '../services/cashflowIntegrationService';
+import { supplierService, Supplier } from '../services/supplierService';
 
 type ViewRole = 'warehouse_keeper' | 'warehouse_accountant';
 
@@ -35,7 +35,7 @@ const InventoryInputForm: React.FC<InventoryInputFormProps> = ({
 
   useEffect(() => {
     // Fetch suppliers from Cashflow App
-    cashflowIntegrationService.getSuppliers().then(setPartners);
+    supplierService.getSuppliers().then(res => setPartners(res.data || []));
     
     // Mock fetching pending sales export requests from Sales App
     setPendingSales([
@@ -679,12 +679,15 @@ const InventoryInputForm: React.FC<InventoryInputFormProps> = ({
         defaultType="supplier"
         onAdded={async (p) => {
           // Sync with cashflow app via integration service
-          const newSupplier = await cashflowIntegrationService.createAdhocSupplier({
+          const res = await supplierService.createSupplier({
             full_name: p.full_name,
             customer_code: p.customer_code,
           });
-          setPartners(prev => [...prev, newSupplier]);
-          handleInputChange('supplier', newSupplier.customer_code);
+          if (res.success && res.data) {
+            const newSupplier = res.data;
+            setPartners(prev => [...prev, newSupplier]);
+            handleInputChange('supplier', newSupplier.customer_code);
+          }
           setIsPartnerModalOpen(false);
         }}
       />
