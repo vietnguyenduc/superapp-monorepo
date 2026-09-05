@@ -3,6 +3,7 @@ import { Product } from '../types';
 import { fallbackService } from './fallbackService';
 import { BaseService, ServiceResponse } from './baseService';
 import { ProductMapper } from './mappers/productMapper';
+import { importExportSettingsService, MatchField } from './importExportSettingsService';
 
 export class ProductService extends BaseService {
   static async getProducts(filters?: {
@@ -94,41 +95,8 @@ export class ProductService extends BaseService {
   }
 
   static async importProducts(products: Partial<Product>[]): Promise<ServiceResponse<Product[]>> {
-    return this.execute(
-      async () => {
-        const userId = await getCurrentUserId();
-        const companyId = await getCurrentCompanyId();
-
-        // Deduplicate by business_code — rows without code are kept as separate products
-        const seen = new Map<string, Partial<Product>>();
-        for (const p of products) {
-          const key = p.businessCode || '';
-          if (key) seen.set(key, p);
-          else seen.set(`__no_code_${seen.size}__`, p);
-        }
-        const deduped = Array.from(seen.values());
-
-        const rows = deduped.map(p => {
-          const row = ProductMapper.mapProductToDb({ ...p, createdBy: userId, updatedBy: userId });
-          if (companyId) row.company_id = companyId;
-          return row;
-        });
-        const res = await apiClient
-          .from('products')
-          .upsert(rows, { onConflict: 'company_id,business_code' })
-          .select('*');
-        if (res.data) res.data = res.data.map(item => ProductMapper.mapDbToProduct(item));
-        return res;
-      },
-      async () => {
-        const results: Product[] = [];
-        for (const p of products) {
-          const res = await fallbackService.createProduct(p as any);
-          if (res.data) results.push(res.data);
-        }
-        return { data: results, error: null };
-      }
-    );
+    // Delegate to bulkInsertProducts — same logic with configured match field
+    return this.bulkInsertProducts(products);
   }
 
   static async bulkInsertProducts(products: Partial<Product>[]): Promise<ServiceResponse<Product[]>> {
@@ -137,16 +105,19 @@ export class ProductService extends BaseService {
       async () => {
         const userId = await getCurrentUserId();
         const companyId = await getCurrentCompanyId();
+        const config = await importExportSettingsService.load();
+        const matchField: MatchField = config.productMatchField;
 
-        // Deduplicate by business_code — keep the LAST occurrence (later rows
-        // override earlier ones, matching user expectation when Excel has
-        // duplicate rows). Without this, Postgres throws
-        // "ON CONFLICT DO UPDATE command cannot affect row a second time".
+        // Deduplicate by configured match field — keep the LAST occurrence.
+        // Without dedup, Postgres throws "affect row a second time" on upsert.
         const seen = new Map<string, Partial<Product>>();
         for (const p of products) {
-          const key = p.businessCode || '';
+          let key = '';
+          if (matchField === 'name') key = (p.name || '').trim().toLowerCase();
+          else if (matchField === 'both') key = `${(p.businessCode || '').trim()}__${(p.name || '').trim().toLowerCase()}`;
+          else key = p.businessCode || ''; // default: business_code
           if (key) seen.set(key, p);
-          else seen.set(`__no_code_${seen.size}__`, p); // keep rows without business_code
+          else seen.set(`__no_match_${seen.size}__`, p);
         }
         const deduped = Array.from(seen.values());
 
@@ -156,23 +127,97 @@ export class ProductService extends BaseService {
           return row;
         });
 
-        // Use upsert to handle duplicate business_code gracefully.
-        // The unique constraint is (company_id, business_code) — upsert will
-        // update existing rows instead of failing with 409 Conflict.
+        // When matching by name, check for duplicate names in DB first
+        if (matchField === 'name' && companyId) {
+          const namesToCheck = deduped.map(p => p.name).filter(Boolean) as string[];
+          if (namesToCheck.length > 0) {
+            const { data: existing } = await apiClient
+              .from('products')
+              .select('id, name')
+              .eq('company_id', companyId)
+              .in('name', namesToCheck);
+            if (existing && existing.length > 0) {
+              const nameCount = new Map<string, number>();
+              existing.forEach(p => {
+                const n = (p.name || '').toLowerCase();
+                nameCount.set(n, (nameCount.get(n) || 0) + 1);
+              });
+              const dupes = Array.from(nameCount.entries()).filter(([, c]) => c > 1);
+              if (dupes.length > 0) {
+                return {
+                  data: null as any,
+                  error: `Có ${dupes.length} sản phẩm trùng tên trong hệ thống: ${dupes.slice(0, 3).map(d => d[0]).join(', ')}${dupes.length > 3 ? '...' : ''}. Vui lòng đổi tên hoặc dùng mã sản phẩm để match.`
+                };
+              }
+            }
+          }
+        }
+
+        // Use upsert — onConflict depends on match field.
+        // business_code: use DB unique constraint (company_id, business_code)
+        // name: no DB unique constraint on name, so we do insert + manual update
+        // both: same as business_code
+        const onConflict = matchField === 'name' ? undefined : 'company_id,business_code';
+
         const allData: Product[] = [];
         let firstError: any = null;
-        for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-          const chunk = rows.slice(i, i + BATCH_SIZE);
-          const res = await apiClient
-            .from('products')
-            .upsert(chunk, { onConflict: 'company_id,business_code' })
-            .select('*');
-          if (res.error && !firstError) firstError = res.error;
-          if (res.data) {
-            for (const item of res.data) allData.push(ProductMapper.mapDbToProduct(item));
+
+        if (matchField === 'name' && companyId) {
+          // Match by name: query existing products by name, update or insert
+          for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+            const chunk = rows.slice(i, i + BATCH_SIZE);
+            const chunkNames = chunk.map(r => r.name).filter(Boolean);
+            const { data: existing } = await apiClient
+              .from('products')
+              .select('id, name')
+              .eq('company_id', companyId)
+              .in('name', chunkNames);
+            const existingByName = new Map<string, string>();
+            (existing || []).forEach(p => existingByName.set((p.name || '').toLowerCase(), p.id));
+
+            const toInsert: any[] = [];
+            const toUpdate: { id: string; row: any }[] = [];
+            for (const row of chunk) {
+              const nameKey = (row.name || '').toLowerCase();
+              const existingId = existingByName.get(nameKey);
+              if (existingId) toUpdate.push({ id: existingId, row });
+              else toInsert.push(row);
+            }
+
+            // Insert new
+            if (toInsert.length > 0) {
+              const res = await apiClient.from('products').insert(toInsert).select('*');
+              if (res.error && !firstError) firstError = res.error;
+              if (res.data) for (const item of res.data) allData.push(ProductMapper.mapDbToProduct(item));
+              if (res.error) break;
+            }
+
+            // Update existing
+            for (const { id, row } of toUpdate) {
+              const { id: _id, created_at: _ca, ...updateRow } = row;
+              const res = await apiClient.from('products').update(updateRow).eq('id', id).eq('company_id', companyId).select('*');
+              if (res.error && !firstError) firstError = res.error;
+              if (res.data && res.data[0]) allData.push(ProductMapper.mapDbToProduct(res.data[0]));
+              if (res.error) break;
+            }
+            if (firstError) break;
           }
-          if (res.error) break;
+        } else {
+          // Match by business_code (or both) — use upsert
+          for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+            const chunk = rows.slice(i, i + BATCH_SIZE);
+            const res = await apiClient
+              .from('products')
+              .upsert(chunk, { onConflict: onConflict! })
+              .select('*');
+            if (res.error && !firstError) firstError = res.error;
+            if (res.data) {
+              for (const item of res.data) allData.push(ProductMapper.mapDbToProduct(item));
+            }
+            if (res.error) break;
+          }
         }
+
         return { data: allData, error: firstError };
       },
       async () => {

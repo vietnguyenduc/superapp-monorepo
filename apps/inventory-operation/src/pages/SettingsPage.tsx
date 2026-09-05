@@ -3,13 +3,14 @@ import { useSearchParams } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
 import { useAuthContext } from '@superapp/iam';
 import { ProductService } from '../services/productService';
-import { 
-  appSettingsService, 
-  IntermediateConversionMode, 
-  BusinessModel, 
-  Branch, 
-  TransactionType 
+import {
+  appSettingsService,
+  IntermediateConversionMode,
+  BusinessModel,
+  Branch,
+  TransactionType
 } from '../services/appSettingsService';
+import { importExportSettingsService, ImportExportConfig, MatchField } from '../services/importExportSettingsService';
 
 interface OpeningBalanceRow {
   id: string;
@@ -38,6 +39,8 @@ const SettingsPage: React.FC = () => {
   const [newUnit, setNewUnit] = useState('');
   const [editingUnitIdx, setEditingUnitIdx] = useState<number | null>(null);
   const [editUnitValue, setEditUnitValue] = useState('');
+  const [importExportConfig, setImportExportConfig] = useState<ImportExportConfig | null>(null);
+  const [savingImportExport, setSavingImportExport] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('theme') === 'dark' || document.documentElement.classList.contains('dark');
   });
@@ -49,6 +52,18 @@ const SettingsPage: React.FC = () => {
     const newConfig = { ...priceVarianceConfig, ...updates };
     setPriceVarianceConfig(newConfig);
     appSettingsService.saveSettings({ priceVarianceConfig: newConfig });
+  };
+
+  // Load import/export config from Supabase
+  useEffect(() => {
+    importExportSettingsService.load().then(setImportExportConfig);
+  }, []);
+
+  const handleSaveImportExport = async (updates: Partial<ImportExportConfig>) => {
+    setSavingImportExport(true);
+    const merged = await importExportSettingsService.save(updates);
+    setImportExportConfig(merged);
+    setSavingImportExport(false);
   };
 
   // Local state for lists
@@ -219,6 +234,7 @@ const SettingsPage: React.FC = () => {
     { key: 'branches', label: 'Văn phòng / Chi nhánh', description: 'Quản lý đơn vị vận hành và điểm kho.' },
     { key: 'transaction-types', label: 'Loại giao dịch XNT', description: 'Khai báo các loại nghiệp vụ xuất nhập tồn.' },
     { key: 'units', label: 'Đơn vị tính', description: 'Quản lý danh mục đơn vị tính dùng khi tạo sản phẩm và nhập kho.' },
+    { key: 'import-export', label: 'Nhập / Xuất dữ liệu', description: 'Cấu hình trường match khi import (mã/tên) và cột export.' },
     { key: 'price-variance', label: 'Phê duyệt Giá nhập', description: 'Cài đặt dung sai và ma trận duyệt giá vốn khi nhập kho.' },
     { key: 'conversion-settings', label: 'Cấu hình Quy đổi', description: 'Thiết lập cách quy đổi nguyên liệu (chỉ cho F&B/Sản xuất).' },
     { key: 'display-settings', label: 'Giao diện & Hệ thống', description: 'Dark Mode và quản lý dữ liệu toàn cục.' },
@@ -736,6 +752,54 @@ const SettingsPage: React.FC = () => {
                 <p className={`mt-6 text-[10px] sm:text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} italic`}>
                   Mẹo: Đơn vị tính dùng chung cho toàn bộ sản phẩm. Đổi tên đơn vị đang được sản phẩm sử dụng có thể làm mất đồng bộ — nên xóa/sửa khi không còn sản phẩm nào dùng đơn vị đó.
                 </p>
+              </div>
+            )}
+            {/* Tab: Import/Export Settings */}
+            {activeTab === 'import-export' && importExportConfig && (
+              <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} rounded-2xl border shadow-sm overflow-hidden`}>
+                <div className={`px-4 sm:px-6 py-3 sm:py-4 border-b ${isDarkMode ? 'border-gray-700 bg-blue-900/20' : 'border-gray-200 bg-blue-50/30'}`}>
+                  <h2 className="text-base sm:text-lg font-bold">Cấu hình Nhập / Xuất dữ liệu</h2>
+                  <p className={`text-xs sm:text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Chọn trường dùng để match sản phẩm khi import và cột hiển thị khi export.
+                  </p>
+                </div>
+                <div className="p-4 sm:p-6 space-y-6">
+                  {/* Match field selectors */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-bold uppercase text-gray-500">Trường match khi Import</h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {([
+                        { key: 'productMatchField', label: 'Nhập sản phẩm', desc: 'Dùng để nhận diện sản phẩm trùng khi nhập danh mục' },
+                        { key: 'inventoryMatchField', label: 'Nhập xuất tồn', desc: 'Dùng để tìm sản phẩm khi nhập bản ghi kho' },
+                        { key: 'salesMatchField', label: 'Nhập bán hàng', desc: 'Dùng để tìm sản phẩm khi nhập dữ liệu bán hàng' },
+                      ] as const).map(item => (
+                        <div key={item.key} className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-900/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                          <label className="block text-xs font-bold text-gray-500 uppercase mb-2">{item.label}</label>
+                          <select
+                            value={importExportConfig[item.key]}
+                            onChange={(e) => handleSaveImportExport({ [item.key]: e.target.value as MatchField } as any)}
+                            disabled={savingImportExport}
+                            className="w-full px-3 py-2 rounded-lg border text-sm font-medium bg-white border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50"
+                          >
+                            <option value="business_code">Mã sản phẩm (business_code)</option>
+                            <option value="name">Tên sản phẩm</option>
+                            <option value="both">Cả mã và tên</option>
+                          </select>
+                          <p className="text-[10px] text-gray-400 mt-2">{item.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Info banner */}
+                  <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-amber-900/20 border-amber-800' : 'bg-amber-50 border-amber-200'} border`}>
+                    <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                      <b>Lưu ý:</b> Khi match theo tên, nếu có 2+ sản phẩm trùng tên trong hệ thống, import sẽ báo lỗi và yêu cầu đổi tên hoặc dùng mã.
+                      Cài đặt này lưu theo company (Supabase), sync trên mọi thiết bị.
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
