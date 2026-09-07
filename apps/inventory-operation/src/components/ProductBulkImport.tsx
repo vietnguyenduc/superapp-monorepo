@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { excelImportService } from '../services/excelImportService';
 import { ProductService } from '../services/productService';
 import { ProductCategory, ProductStatus, Product } from '../types';
 import appSettingsService from '../services/appSettingsService';
+import { importExportSettingsService, MatchField } from '../services/importExportSettingsService';
 
 interface RawProductData {
   businessCode: string;
@@ -53,6 +54,11 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
   const [duplicateCodes, setDuplicateCodes] = useState<{ code: string; rows: number[] }[]>([]);
   const [importProgress, setImportProgress] = useState<string | null>(null);
+  const [matchField, setMatchField] = useState<MatchField>('business_code');
+
+  useEffect(() => {
+    importExportSettingsService.load().then(cfg => setMatchField(cfg.productMatchField));
+  }, []);
 
   const handleFileUpload = async (file: File) => {
     setIsProcessing(true);
@@ -61,10 +67,12 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
     try {
       const result = await excelImportService.importProducts(file);
 
-      // Check for duplicate business_code within the file
+      // Check for duplicates within the file based on configured match field
+      const matchKey = matchField === 'name' ? 'name' : 'businessCode';
+      const matchLabel = matchField === 'name' ? 'Tên' : 'Mã';
       const codeToRows = new Map<string, number[]>();
       (result.data as any[]).forEach((row, idx) => {
-        const code = row.businessCode?.trim();
+        const code = row[matchKey]?.trim();
         if (code) {
           const existing = codeToRows.get(code) || [];
           existing.push(idx + 2); // Excel row number (header = row 1)
@@ -78,7 +86,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
 
       if (dupes.length > 0) {
         const dupeWarnings = dupes.map(d =>
-          `Mã "${d.code}" xuất hiện ${d.rows.length} lần (dòng ${d.rows.join(', ')}). Sẽ chỉ giữ lại dòng cuối.`
+          `${matchLabel} "${d.code}" xuất hiện ${d.rows.length} lần (dòng ${d.rows.join(', ')}). Sẽ chỉ giữ lại dòng cuối.`
         );
         setValidationWarnings(dupeWarnings);
       }
@@ -283,7 +291,7 @@ const ProductBulkImport: React.FC<ProductBulkImportProps> = ({ onImportComplete,
 
         <div className="flex justify-end">
           <button
-            onClick={() => excelImportService.generateTemplate('products', isCommercial)}
+            onClick={() => excelImportService.generateTemplate('products', isCommercial, matchField)}
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 dark:bg-emerald-700 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-sm transition-all"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

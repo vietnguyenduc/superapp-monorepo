@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { Product, InventoryRecord, SalesRecord } from '../types';
+import { MatchField } from './importExportSettingsService';
 
 export interface ImportResult<T> {
   success: boolean;
@@ -298,94 +299,123 @@ class ExcelImportService {
   }
 
   /**
-   * Generate Excel template for import
+   * Generate Excel template for import.
+   * When matchField is 'name', the template puts "Tên sản phẩm" first and marks
+   * "Mã sản phẩm" as optional. When 'business_code' (default), "Mã sản phẩm"
+   * comes first. When 'both', both are shown as required.
    */
-  generateTemplate(type: 'products' | 'inventory' | 'sales', isCommercial: boolean = false): void {
+  generateTemplate(
+    type: 'products' | 'inventory' | 'sales',
+    isCommercial: boolean = false,
+    matchField: MatchField = 'business_code'
+  ): void {
     let headers: string[] = [];
     let sampleData: any[] = [];
     let filename = '';
+
+    // Helper: order columns so the match field comes first
+    const orderColumns = (cols: string[], match: MatchField): string[] => {
+      if (match === 'name') {
+        // Move "Tên sản phẩm" to front, keep "Mã sản phẩm" but mark optional in sample
+        return ['Tên sản phẩm', ...cols.filter(c => c !== 'Tên sản phẩm')];
+      }
+      // business_code or both: keep original order (Mã sản phẩm first)
+      return cols;
+    };
 
     switch (type) {
       case 'products':
         if (isCommercial) {
           // Commercial mode: only finished products — no raw/intermediate/conversion columns
-          headers = ['Mã sản phẩm', 'Tên sản phẩm', 'Đơn vị', 'Giá nhập', 'Giá bán', 'Trạng thái', 'Ghi chú'];
-          sampleData = [
-            {
-              'Mã sản phẩm': 'SP001',
-              'Tên sản phẩm': 'Sting dâu 330ml',
-              'Đơn vị': 'Lon',
-              'Giá nhập': 8000,
-              'Giá bán': 10000,
-              'Trạng thái': 'ACTIVE',
-              'Ghi chú': 'Hàng bán'
-            }
-          ];
+          const baseCols = ['Mã sản phẩm', 'Tên sản phẩm', 'Đơn vị', 'Giá nhập', 'Giá bán', 'Trạng thái', 'Ghi chú'];
+          headers = orderColumns(baseCols, matchField);
+          const sample: any = {
+            'Mã sản phẩm': matchField === 'name' ? '' : 'SP001',
+            'Tên sản phẩm': 'Sting dâu 330ml',
+            'Đơn vị': 'Lon',
+            'Giá nhập': 8000,
+            'Giá bán': 10000,
+            'Trạng thái': 'ACTIVE',
+            'Ghi chú': 'Hàng bán'
+          };
+          // Reorder sample object to match headers
+          const orderedSample: any = {};
+          headers.forEach(h => { orderedSample[h] = sample[h] ?? ''; });
+          sampleData = [orderedSample];
           filename = 'template-san-pham-thuong-mai';
         } else {
-          headers = Object.keys(DEFAULT_PRODUCT_MAPPING);
-          sampleData = [
-            {
-              'Mã sản phẩm': 'SP001',
-              'Tên sản phẩm': 'Xoài cát Hòa Lộc',
-              'Danh mục': 'RAW',
-              'Đơn vị nhập': 'Quả',
-              'Đơn vị xuất': 'Dĩa',
-              'Đơn vị trung gian': 'Miếng, Gram',
-              'Tỷ lệ quy đổi sơ chế': 10,
-              'Định mức thành phẩm': 20,
-              'Giá nhập': 5000,
-              'Trạng thái': 'ACTIVE',
-              'Ghi chú': 'Hàng loại 1'
-            }
-          ];
+          const baseCols = Object.keys(DEFAULT_PRODUCT_MAPPING);
+          headers = orderColumns(baseCols, matchField);
+          const sample: any = {
+            'Mã sản phẩm': matchField === 'name' ? '' : 'SP001',
+            'Tên sản phẩm': 'Xoài cát Hòa Lộc',
+            'Danh mục': 'RAW',
+            'Đơn vị nhập': 'Quả',
+            'Đơn vị xuất': 'Dĩa',
+            'Đơn vị trung gian': 'Miếng, Gram',
+            'Tỷ lệ quy đổi sơ chế': 10,
+            'Định mức thành phẩm': 20,
+            'Giá nhập': 5000,
+            'Trạng thái': 'ACTIVE',
+            'Ghi chú': 'Hàng loại 1'
+          };
+          const orderedSample: any = {};
+          headers.forEach(h => { orderedSample[h] = sample[h] ?? ''; });
+          sampleData = [orderedSample];
           filename = 'template-san-pham';
         }
         break;
-        
+
       case 'inventory':
         if (isCommercial) {
-          // Commercial mode: only finished product stock, no raw/intermediate
-          headers = ['Ngày', 'Mã sản phẩm', 'Tên sản phẩm', 'Nhà cung cấp', 'Đơn giá nhập', 'Số lượng nhập kho', 'Thành tiền', 'Tồn kho', 'Đơn vị', 'Ghi chú'];
-          sampleData = [
-            {
-              'Ngày': '01/01/2024',
-              'Mã sản phẩm': 'SP001',
-              'Tên sản phẩm': 'Sting dâu 330ml',
-              'Nhà cung cấp': 'Đại lý ABC',
-              'Đơn giá nhập': 8000,
-              'Số lượng nhập kho': 24,
-              'Thành tiền': 192000,
-              'Tồn kho': 20,
-              'Đơn vị': 'Lon',
-              'Ghi chú': 'Nhập lô mới'
-            }
-          ];
+          const baseCols = ['Ngày', 'Mã sản phẩm', 'Tên sản phẩm', 'Nhà cung cấp', 'Đơn giá nhập', 'Số lượng nhập kho', 'Thành tiền', 'Tồn kho', 'Đơn vị', 'Ghi chú'];
+          headers = matchField === 'name'
+            ? ['Ngày', 'Tên sản phẩm', 'Mã sản phẩm', ...baseCols.slice(3)]
+            : baseCols;
+          const sample: any = {
+            'Ngày': '01/01/2024',
+            'Mã sản phẩm': matchField === 'name' ? '' : 'SP001',
+            'Tên sản phẩm': 'Sting dâu 330ml',
+            'Nhà cung cấp': 'Đại lý ABC',
+            'Đơn giá nhập': 8000,
+            'Số lượng nhập kho': 24,
+            'Thành tiền': 192000,
+            'Tồn kho': 20,
+            'Đơn vị': 'Lon',
+            'Ghi chú': 'Nhập lô mới'
+          };
+          const orderedSample: any = {};
+          headers.forEach(h => { orderedSample[h] = sample[h] ?? ''; });
+          sampleData = [orderedSample];
           filename = 'template-ton-kho-thuong-mai';
         } else {
-          headers = Object.keys(DEFAULT_INVENTORY_MAPPING);
-          sampleData = [
-            {
-              'Ngày': '01/01/2024',
-              'Mã sản phẩm': 'SP001',
-              'Tên sản phẩm': 'Xoài cát Hòa Lộc',
-              'Nhà cung cấp': 'Hộ KD Trái Cây',
-              'Đơn giá nhập': 50000,
-              'Số lượng nhập kho': 10,
-              'Thành tiền': 500000,
-              'Tồn Nguyên liệu (Gốc)': 5,
-              'Đơn vị Nguyên liệu': 'Quả',
-              'Tồn Sơ chế (Trung gian)': 20,
-              'Đơn vị Sơ chế': 'Miếng',
-              'Tồn Thành phẩm (Món)': 2,
-              'Đơn vị Thành phẩm': 'Dĩa',
-              'Ghi chú': 'Nhập kho đầu ca'
-            }
-          ];
+          const baseCols = Object.keys(DEFAULT_INVENTORY_MAPPING);
+          headers = matchField === 'name'
+            ? ['Ngày', 'Tên sản phẩm', 'Mã sản phẩm', ...baseCols.slice(3)]
+            : baseCols;
+          const sample: any = {
+            'Ngày': '01/01/2024',
+            'Mã sản phẩm': matchField === 'name' ? '' : 'SP001',
+            'Tên sản phẩm': 'Xoài cát Hòa Lộc',
+            'Nhà cung cấp': 'Hộ KD Trái Cây',
+            'Đơn giá nhập': 50000,
+            'Số lượng nhập kho': 10,
+            'Thành tiền': 500000,
+            'Tồn Nguyên liệu (Gốc)': 5,
+            'Đơn vị Nguyên liệu': 'Quả',
+            'Tồn Sơ chế (Trung gian)': 20,
+            'Đơn vị Sơ chế': 'Miếng',
+            'Tồn Thành phẩm (Món)': 2,
+            'Đơn vị Thành phẩm': 'Dĩa',
+            'Ghi chú': 'Nhập kho đầu ca'
+          };
+          const orderedSample: any = {};
+          headers.forEach(h => { orderedSample[h] = sample[h] ?? ''; });
+          sampleData = [orderedSample];
           filename = 'template-ton-kho';
         }
         break;
-        
+
       case 'sales':
         headers = Object.keys(DEFAULT_SALES_MAPPING);
         sampleData = [
