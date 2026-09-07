@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { excelImportService } from '../services/excelImportService';
 import { inventoryService } from '../services/inventoryService';
 import appSettingsService from '../services/appSettingsService';
 import { useProducts } from '../hooks/useProducts';
 import { InventoryRecord } from '../types';
+import { importExportSettingsService, MatchField } from '../services/importExportSettingsService';
 
 interface InventoryBulkImportProps {
   onImportComplete?: () => void;
@@ -14,6 +15,12 @@ interface InventoryBulkImportProps {
 const MAX_BULK_ROWS = 1000;
 
 const InventoryBulkImport: React.FC<InventoryBulkImportProps> = ({ onImportComplete, onCancel, type }) => {
+  const [invMatchField, setInvMatchField] = useState<MatchField>('business_code');
+
+  useEffect(() => {
+    importExportSettingsService.load().then(cfg => setInvMatchField(cfg.inventoryMatchField));
+  }, []);
+
   const [importData, setImportData] = useState<{
     file: File | null;
     data: any[];
@@ -166,7 +173,7 @@ const InventoryBulkImport: React.FC<InventoryBulkImportProps> = ({ onImportCompl
 
         <div className="flex justify-end">
           <button
-            onClick={() => excelImportService.generateTemplate('inventory')}
+            onClick={() => excelImportService.generateTemplate('inventory', false, invMatchField)}
             className="group relative inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 text-white rounded-2xl font-black text-sm hover:shadow-lg hover:shadow-emerald-200 dark:hover:shadow-emerald-900 transition-all active:scale-95"
           >
             <span>📥 Tải file Excel mẫu chuẩn (3 tầng đơn vị)</span>
