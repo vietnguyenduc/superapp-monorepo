@@ -3,6 +3,7 @@ import { InventoryRecord, InventorySourceType } from '../types';
 import { fallbackService } from './fallbackService';
 import { BaseService, ServiceResponse } from './baseService';
 import { InventoryMapper } from './mappers/inventoryMapper';
+import { importExportSettingsService } from './importExportSettingsService';
 
 /**
  * GoodsIssueService — wraps inventory_records for "Xuất hàng" workflow.
@@ -89,18 +90,22 @@ export class GoodsIssueService extends BaseService {
         const userId = await getCurrentUserId();
         const companyId = await getCurrentCompanyId();
 
-        // Resolve product_id from business_code
-        let productQuery = apiClient
-          .from('products')
-          .select('id, name')
-          .eq('business_code', input.productCode);
+        // Resolve product_id by configured match field
+        const cfg = await importExportSettingsService.load();
+        const matchField = cfg.inventoryMatchField;
+        let productQuery = apiClient.from('products').select('id, name, business_code');
+        if (matchField === 'name') {
+          productQuery = productQuery.eq('name', input.productCode);
+        } else {
+          productQuery = productQuery.eq('business_code', input.productCode);
+        }
         if (companyId) productQuery = productQuery.eq('company_id', companyId);
-        const productRow = await productQuery.single();
+        const productRow = await productQuery.maybeSingle();
         if (!productRow.data) throw new Error('Không tìm thấy sản phẩm: ' + input.productCode);
 
         const row = InventoryMapper.mapInventoryToDb({
           date: new Date(input.date),
-          productCode: input.productCode,
+          productCode: productRow.data.business_code || input.productCode,
           productName: input.productName || productRow.data.name,
           inputQuantity: 0,
           outputQuantity: input.outputQuantity,

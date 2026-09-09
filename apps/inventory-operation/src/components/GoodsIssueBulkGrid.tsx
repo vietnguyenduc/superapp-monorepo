@@ -1,5 +1,6 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { getXLSX } from '../utils/xlsxLoader';
+import { importExportSettingsService, MatchField } from '../services/importExportSettingsService';
 
 export interface BulkGoodsIssueRow {
   date: string;
@@ -15,7 +16,7 @@ interface GoodsIssueBulkGridProps {
   isLoading?: boolean;
 }
 
-const COLS = [
+const BASE_COLS = [
   { key: 'date', label: 'Ngày', width: 130 },
   { key: 'product_code', label: 'Mã hàng *', width: 110 },
   { key: 'quantity', label: 'Số lượng', width: 100 },
@@ -36,6 +37,19 @@ const GoodsIssueBulkGrid: React.FC<GoodsIssueBulkGridProps> = ({
   onCancel,
   isLoading = false,
 }) => {
+  const [matchField, setMatchField] = useState<MatchField>('business_code');
+
+  useEffect(() => {
+    importExportSettingsService.load().then(cfg => setMatchField(cfg.inventoryMatchField));
+  }, []);
+
+  // Adjust column label based on match field
+  const COLS = BASE_COLS.map(c =>
+    c.key === 'product_code'
+      ? { ...c, label: matchField === 'name' ? 'Tên hàng *' : 'Mã hàng *' }
+      : c
+  );
+
   const [rows, setRows] = useState<BulkGoodsIssueRow[]>(() =>
     Array.from({ length: 8 }, (_, i) => emptyRow(i))
   );
@@ -71,9 +85,11 @@ const GoodsIssueBulkGrid: React.FC<GoodsIssueBulkGridProps> = ({
     try {
       const XLSX = await getXLSX();
       const headers = COLS.map((c) => c.label);
+      const productSample = matchField === 'name' ? 'Sting dâu 330ml' : 'SP001';
+      const productSample2 = matchField === 'name' ? 'Coca cola 330ml' : 'SP002';
       const sample = [
-        ['2026-01-15', 'SP001', '100', 'Xuất bán', ''],
-        ['2026-01-16', 'SP002', '50', 'Xuất sản xuất', ''],
+        ['2026-01-15', productSample, '100', 'Xuất bán', ''],
+        ['2026-01-16', productSample2, '50', 'Xuất sản xuất', ''],
       ];
       const ws = XLSX.utils.aoa_to_sheet([headers, ...sample]);
       const wb = XLSX.utils.book_new();
@@ -83,7 +99,7 @@ const GoodsIssueBulkGrid: React.FC<GoodsIssueBulkGridProps> = ({
       console.error('Lỗi tải template:', err);
       alert('Không thể tải template. Vui lòng thử lại.');
     }
-  }, []);
+  }, [matchField]);
 
   const handleFileUpload = useCallback(async (file: File) => {
     try {

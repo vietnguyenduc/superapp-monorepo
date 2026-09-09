@@ -1,5 +1,6 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { getXLSX } from '../utils/xlsxLoader';
+import { importExportSettingsService, MatchField } from '../services/importExportSettingsService';
 
 export interface BulkGoodsReceiptRow {
   date: string;
@@ -16,7 +17,7 @@ interface GoodsReceiptBulkGridProps {
   isLoading?: boolean;
 }
 
-const COLS = [
+const BASE_COLS = [
   { key: 'date', label: 'Ngày', width: 130 },
   { key: 'supplier_code', label: 'Mã NCC', width: 100 },
   { key: 'product_code', label: 'Mã hàng *', width: 110 },
@@ -39,6 +40,19 @@ const GoodsReceiptBulkGrid: React.FC<GoodsReceiptBulkGridProps> = ({
   onCancel,
   isLoading = false,
 }) => {
+  const [matchField, setMatchField] = useState<MatchField>('business_code');
+
+  useEffect(() => {
+    importExportSettingsService.load().then(cfg => setMatchField(cfg.inventoryMatchField));
+  }, []);
+
+  // Adjust column label based on match field
+  const COLS = BASE_COLS.map(c =>
+    c.key === 'product_code'
+      ? { ...c, label: matchField === 'name' ? 'Tên hàng *' : 'Mã hàng *' }
+      : c
+  );
+
   const [rows, setRows] = useState<BulkGoodsReceiptRow[]>(() =>
     Array.from({ length: 8 }, (_, i) => emptyRow(i))
   );
@@ -74,9 +88,11 @@ const GoodsReceiptBulkGrid: React.FC<GoodsReceiptBulkGridProps> = ({
     try {
       const XLSX = await getXLSX();
       const headers = COLS.map((c) => c.label);
+      const productSample = matchField === 'name' ? 'Sting dâu 330ml' : 'SP001';
+      const productSample2 = matchField === 'name' ? 'Coca cola 330ml' : 'SP002';
       const sample = [
-        ['2026-01-15', 'NCC01', 'SP001', '100', '25000', 'Nhập kho tháng 1'],
-        ['2026-01-16', 'NCC02', 'SP002', '50', '15000', ''],
+        ['2026-01-15', 'NCC01', productSample, '100', '25000', 'Nhập kho tháng 1'],
+        ['2026-01-16', 'NCC02', productSample2, '50', '15000', ''],
       ];
       const ws = XLSX.utils.aoa_to_sheet([headers, ...sample]);
       const wb = XLSX.utils.book_new();
@@ -86,7 +102,7 @@ const GoodsReceiptBulkGrid: React.FC<GoodsReceiptBulkGridProps> = ({
       console.error('Lỗi tải template:', err);
       alert('Không thể tải template. Vui lòng thử lại.');
     }
-  }, []);
+  }, [matchField]);
 
   const handleFileUpload = useCallback(async (file: File) => {
     try {
