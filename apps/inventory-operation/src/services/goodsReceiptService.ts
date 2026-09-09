@@ -2,6 +2,9 @@ import { getCurrentCompanyId, getCurrentUserId, apiClient } from '../lib/supabas
 import { BaseService, ServiceResponse } from './baseService';
 import { GoodsReceipt, GoodsReceiptInput, GRItem, GRStatus } from '../types';
 import { fallbackService } from './fallbackService';
+import { importExportSettingsService } from './importExportSettingsService';
+import { InventoryMapper } from './mappers/inventoryMapper';
+import { InventorySourceType } from '../types';
 
 /**
  * GoodsReceiptService — manages goods_receipts + goods_receipt_items tables.
@@ -340,6 +343,75 @@ export class GoodsReceiptService extends BaseService {
         created_at: i.created_at,
       })),
     };
+  }
+
+  /**
+   * Bulk create goods receipts (input inventory records) from flat rows.
+   * Resolves product by configured match field (business_code or name).
+   */
+  static async bulkCreateGoodsReceipts(
+    inputs: Array<{
+      date: string;
+      productCode: string;
+      inputQuantity: number;
+      unitPrice: number;
+      supplierId?: string;
+      supplierName?: string;
+      notes?: string;
+      sourceType?: InventorySourceType;
+    }>
+  ): Promise<ServiceResponse<{ created: number; errors: string[] }>> {
+    const errors: string[] = [];
+    let created = 0;
+
+    for (const input of inputs) {
+      try {
+        const userId = await getCurrentUserId();
+        const companyId = await getCurrentCompanyId();
+        const cfg = await importExportSettingsService.load();
+        const matchField = cfg.inventoryMatchField;
+
+        let productQuery = apiClient.from('products').select('id, name, business_code');
+        if (matchField === 'name') {
+          productQuery = productQuery.eq('name', input.productCode);
+        } else {
+          productQuery = productQuery.eq('business_code', input.productCode);
+        }
+        if (companyId) productQuery = productQuery.eq('company_id', companyId);
+        const productRow = await productQuery.maybeSingle();
+        if (!productRow.data) throw new Error('Không tìm thấy sản phẩm: ' + input.productCode);
+
+        const row = InventoryMapper.mapInventoryToDb({
+          date: new Date(input.date),
+          productCode: productRow.data.business_code || input.productCode,
+          productName: productRow.data.name,
+          inputQuantity: input.inputQuantity,
+          outputQuantity: 0,
+          rawMaterialStock: 0,
+          rawMaterialUnit: '',
+          processedStock: 0,
+          processedUnit: '',
+          finishedProductStock: 0,
+          finishedProductUnit: '',
+          unitPrice: input.unitPrice,
+          totalAmount: input.inputQuantity * input.unitPrice,
+          notes: input.notes,
+          sourceType: input.sourceType || InventorySourceType.MANUAL,
+          productId: productRow.data.id,
+          createdBy: userId || 'system',
+          updatedBy: userId || 'system',
+        } as any);
+        if (companyId) row.company_id = companyId;
+
+        const res = await apiClient.from('inventory_records').insert([row]).select().single();
+        if (res.error) throw new Error(res.error.message);
+        created++;
+      } catch (err: any) {
+        errors.push(`${input.productCode} (${input.date}): ${err.message || err}`);
+      }
+    }
+
+    return { success: true, data: { created, errors } };
   }
 }
 
