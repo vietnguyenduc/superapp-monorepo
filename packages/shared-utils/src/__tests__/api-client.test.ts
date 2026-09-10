@@ -71,6 +71,18 @@ describe('apiClient (supabase.from() drop-in replacement)', () => {
     ]);
   });
 
+  it.each([
+    ['id.in.(a,b)', ['a', 'b']],
+    ['id.in.()', []],
+  ])('parses the in-list expression %s', async (expression, values) => {
+    mockFetchOnce({ data: [], error: null });
+    await apiClient.from('customers').select('*').or(expression as string);
+    const [, opts] = (global.fetch as any).mock.calls[0];
+    expect(JSON.parse(opts.body).orGroups).toEqual([
+      { filters: [{ column: 'id', op: 'in', value: values }] },
+    ]);
+  });
+
   it('builds insert operation with values and defaults operation to "insert"', async () => {
     mockFetchOnce({ data: [{ id: 1 }], error: null });
     await apiClient.from('customers').insert({ full_name: 'New Customer' });

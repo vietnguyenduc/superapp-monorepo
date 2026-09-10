@@ -45,3 +45,10 @@ npx turbo run build --filter=sales-operation
 - Sentry captures runtime errors.
 - DB migrations: `npx supabase migration new <name>` then `npx supabase db push` after review.
 
+
+## WSL local setup (2026-09-10)
+
+Set `VITE_SUPABASE_URL` and the public `VITE_SUPABASE_ANON_KEY` in `.env.local`
+using this project's existing public configuration. Missing values prevent shared
+auth from initializing. Set `VITE_USE_LOCAL_API=false` when using Supabase cloud
+without a local API. Never commit `.env.local`. Run `npm run test:smoke` at the root.

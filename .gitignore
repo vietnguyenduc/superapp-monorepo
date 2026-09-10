@@ -119,6 +119,11 @@ bash_events/
 
 superapp-monorepo/
 *tsbuildinfo
+playwright-report/
+apps/*/playwright-report/
+apps/*/test-results/
+apps/*/.turbo/
+apps/*/.env.local
 
 # Supabase local dev generated files
 supabase/.branches/

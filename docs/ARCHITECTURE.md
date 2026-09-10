@@ -82,7 +82,7 @@ superapp-monorepo/
 | Layer | Technology |
 |-------|-----------|
 | Monorepo | Turborepo + npm workspaces |
-| Frontend | React 18 (target) + TypeScript 5.8 + Vite 8. `@repo/ui` and `operations-portal` currently on React 19 / TS 6.0.2 while transitioning. |
+| Frontend | React 18 + TypeScript 5.8.3 (pinned in workspaces) + Vite 8. |
 | Styling | Tailwind CSS + Apple-inspired design system |
 | Backend | Supabase (PostgreSQL + Auth + Realtime + RLS) — primary |
 | Local AI/test gateway | `packages/api` (InsForge) + local Postgres mirror — optional |

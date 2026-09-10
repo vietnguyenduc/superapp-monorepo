@@ -330,3 +330,11 @@ npm run lint:fix
 ## License
 
 MIT
+# Toolchain note (2026-09-10)
+
+TypeScript is pinned to 5.8.3 across the monorepo. The API query parser checks
+that the `in` expression capture exists before splitting it, satisfying strict
+indexed-access checks without changing valid query payloads.
+
+Set `VITE_USE_LOCAL_API=false` to explicitly disable local API health discovery
+in cloud-only development. Unset it to preserve automatic discovery.

@@ -80,3 +80,12 @@ After the React 18 / TypeScript 5.8 alignment and missing transitive-dependency 
 
 - `SUPABASE_DB_PASSWORD` should be stored as a Devin user/org secret for future migrations.
 - `VITE_SUPABASE_ANON_KEY` and service-role key live in Vercel env, `docker-compose.yml`, and per-app `.env` files. Do not commit them.
+
+## Development readiness (2026-09-10)
+
+TypeScript pinned to 5.8.3; Playwright/test aligned to 1.62.1. Root smoke checks
+cover the seven public app entry screens on Chromium and iPhone WebKit with
+one worker. These checks do not certify authenticated business workflows.
+See DEV-ENVIRONMENT.md for setup commands, local API opt-out, and the remaining
+InsForge memory hostname limitation. Sales/HR local public connection settings
+were missing and have been populated in ignored environment files.

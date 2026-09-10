@@ -45,3 +45,10 @@ npx turbo run build --filter=admin-portal
 - Sentry captures runtime errors.
 - DB migrations: `npx supabase migration new <name>` then `npx supabase db push` after review.
 
+
+## Toolchain recovery (2026-09-10)
+
+TypeScript is pinned to 5.8.3. Restore dependencies with `npm ci` from the
+monorepo root, then run `npm run check-types -w admin-portal`. Existing WSL
+systemd services should be reused. See `docs/DEV-ENVIRONMENT.md` for Playwright
+installation and `npm run test:smoke` for desktop/iPhone entry-screen checks.

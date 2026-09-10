@@ -6,6 +6,36 @@
 
 ## TL;DR (5 phút nếu máy chưa có gì)
 
+### Môi trường Codex trên WSL (2026-09-10)
+
+- Làm việc tại `/home/dev/projects/superapp-monorepo` trên WSL. Đường dẫn
+  `/workspace/project` trong hướng dẫn OpenHands là đường dẫn mount trong container.
+- Windows host phải bật và có mạng để dùng kết nối này từ iPhone; tắt máy hoặc
+  Sleep sẽ ngắt công việc trên WSL. Tắt màn hình không yêu cầu tắt máy.
+- TypeScript được cố định ở `5.8.3` trong các workspace; Playwright và
+  `@playwright/test` dùng cùng bản `1.62.1`. Chạy `npm ci` để khôi phục theo lockfile.
+- Sau khi cài thư viện, chạy `npm run setup:browsers` để tải Chromium, Firefox,
+  WebKit. Nếu thiếu thư viện Linux, chạy `npx playwright install-deps` với quyền
+  quản trị. WebKit mô phỏng iPhone hữu ích cho kiểm thử, không thay thế iPhone thật.
+- Máy này đã chạy 7 ứng dụng qua systemd. Không khởi động thêm `dev:apps`;
+  dùng đúng các cổng 5173–5178 và 3006.
+- `npm run test:smoke`: mở màn hình công khai của 7 app trên Chromium và WebKit
+  mô phỏng iPhone, chạy 1 worker để hạn chế RAM, lưu ảnh và báo cáo HTML.
+  Mặc định dùng `127.0.0.1`; đặt `SMOKE_HOST=http://100.83.130.115` nếu cần
+  kiểm tra qua Tailscale từ một môi trường khác.
+- `npm run test:e2e:cashflow` / `npm run test:e2e:inventory`: bộ kiểm thử tính năng
+  hiện có. Smoke test chỉ xác nhận app khởi động; không xác nhận mọi nghiệp vụ.
+- `npm run check-types -- --concurrency=1`: kiểm tra kiểu dữ liệu với mức RAM thấp.
+- Đặt `VITE_USE_LOCAL_API=false` trong `.env.local` để dùng Supabase cloud và
+  bỏ qua dò API local; bỏ biến này để giữ hành vi tự dò trước đây. Sales/HR cần
+  cùng URL và public anon key của dự án như các app còn lại. Không commit `.env.local`.
+- InsForge MCP hiện không đọc được memory từ kết nối này: hostname mặc định
+  `host.docker.internal` không phân giải được. Ghi nhận trong tài liệu thay thế;
+  không coi container đang chạy là bằng chứng MCP đã kết nối.
+- Các công cụ MCP được cấu hình cho OpenHands không tự động có mặt trong Codex.
+  Kiểm tra danh sách công cụ của phiên trước khi khẳng định InsForge được kết nối.
+
+
 ```powershell
 # 1. PowerShell as Admin — enable WSL
 wsl --install -d Ubuntu

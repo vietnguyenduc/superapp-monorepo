@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { apiClient as _rawApiClient, configureApiClient as _configureApiClient, getApiUrl } from "./";
 
 export interface ApiClientInit {
@@ -43,6 +44,8 @@ export function createApiClient(supabase: any): ApiClientInit {
   async function initializeApiClient(): Promise<void> {
     if (typeof window === "undefined") return;
     if (isProductionHost()) return;
+    // Cloud-only development can explicitly skip the optional local API probe.
+    if (import.meta.env.VITE_USE_LOCAL_API === 'false') return;
 
     const apiUrl = getApiUrl();
     if (await checkInsForgeHealth(apiUrl)) {

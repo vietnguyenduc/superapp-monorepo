@@ -285,7 +285,7 @@ class QueryBuilder<T = any> {
       // For 'in' operator, parse parenthesized comma-separated list into an array.
       if (op === 'in') {
         const listMatch = String(value).match(/^\((.*)\)$/);
-        if (listMatch) {
+        if (listMatch && listMatch[1] !== undefined) {
           value = listMatch[1]
             .split(',')
             .map((v) => v.trim())

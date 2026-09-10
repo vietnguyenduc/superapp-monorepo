@@ -9,10 +9,14 @@
     "type-check": "turbo run check-types",
     "test": "turbo run test",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
+    "check-types": "turbo run check-types",
+    "setup:browsers": "playwright install chromium firefox webkit",
+    "test:smoke": "playwright test --config playwright.smoke.config.ts",
+    "test:e2e:cashflow": "playwright test --config apps/cashflow/playwright.config.ts",
+    "test:e2e:inventory": "playwright test --config apps/inventory-operation/playwright.config.ts"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "1.62.1",
     "@rolldown/binding-linux-x64-gnu": "^1.2.4",
     "assertion-error": "^1.1.0",
     "check-error": "^1.0.3",
