@@ -366,6 +366,37 @@ export class GoodsReceiptService extends BaseService {
 
     for (const input of inputs) {
       try {
+        if (!input.date || !input.productCode.trim() || input.inputQuantity <= 0) {
+          throw new Error('Ngày, mã hàng và số lượng lớn hơn 0 là bắt buộc');
+        }
+
+        if (this.isTrial) {
+          const trialRes = await fallbackService.createInventoryRecord({
+            date: new Date(input.date),
+            productCode: input.productCode,
+            productName: input.productCode,
+            inputQuantity: input.inputQuantity,
+            outputQuantity: 0,
+            rawMaterialStock: 0,
+            rawMaterialUnit: '',
+            processedStock: 0,
+            processedUnit: '',
+            finishedProductStock: 0,
+            finishedProductUnit: '',
+            unitPrice: input.unitPrice,
+            totalAmount: input.inputQuantity * input.unitPrice,
+            supplierId: input.supplierId,
+            supplierName: input.supplierName,
+            notes: input.notes,
+            sourceType: input.sourceType || InventorySourceType.MANUAL,
+            createdBy: 'trial',
+            updatedBy: 'trial',
+          });
+          if (trialRes.error) throw new Error(trialRes.error);
+          created++;
+          continue;
+        }
+
         const userId = await getCurrentUserId();
         const companyId = await getCurrentCompanyId();
         const cfg = await importExportSettingsService.load();

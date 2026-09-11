@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { getXLSX } from '../utils/xlsxLoader';
 import { importExportSettingsService, MatchField } from '../services/importExportSettingsService';
+import { normalizeSpreadsheetDate } from '../utils/spreadsheetDate';
 
 export interface BulkGoodsReceiptRow {
   date: string;
@@ -118,7 +119,11 @@ const GoodsReceiptBulkGrid: React.FC<GoodsReceiptBulkGridProps> = ({
       const newRows: BulkGoodsReceiptRow[] = dataRows.map((cells, i) => {
         const row = emptyRow(Date.now() + i);
         keys.forEach((k, ki) => {
-          if (cells[ki] !== undefined && cells[ki] !== null) (row as any)[k] = String(cells[ki]).trim();
+          if (cells[ki] !== undefined && cells[ki] !== null) {
+            (row as any)[k] = k === 'date'
+              ? normalizeSpreadsheetDate(cells[ki])
+              : String(cells[ki]).trim();
+          }
         });
         return row;
       });

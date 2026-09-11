@@ -166,6 +166,10 @@ export class GoodsIssueService extends BaseService {
     let created = 0;
 
     for (const input of inputs) {
+      if (!input.date || !input.productCode.trim() || input.outputQuantity <= 0) {
+        errors.push(`${input.productCode} (${input.date}): Ngày, mã hàng và số lượng lớn hơn 0 là bắt buộc`);
+        continue;
+      }
       const res = await this.createGoodsIssue(input);
       if (res.success) {
         created++;

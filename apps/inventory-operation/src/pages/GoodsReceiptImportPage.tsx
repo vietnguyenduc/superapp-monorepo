@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import GoodsReceiptForm, { GoodsReceiptFormData } from '../components/Form/GoodsReceiptForm';
 import GoodsReceiptBulkGrid, { BulkGoodsReceiptRow } from '../components/GoodsReceiptBulkGrid';
 import { goodsReceiptService } from '../services/goodsReceiptService';
+import { InventoryService } from '../services/inventoryService';
 import { supplierService, Supplier } from '../services/supplierService';
 import { useProducts } from '../hooks/useProducts';
 import { InventorySourceType } from '../types';
@@ -67,9 +68,9 @@ const GoodsReceiptImportPage: React.FC = () => {
             ? InventorySourceType.GOODS_RECEIPT
             : InventorySourceType.SUPPLIER_RETURN;
 
-      const res = await goodsReceiptService.getGoodsReceipts({ sourceType });
+      const res = await InventoryService.getInventoryRecords();
       if (res.success && res.data) {
-        setRecords(res.data);
+        setRecords(res.data.filter((record) => record.sourceType === sourceType));
       }
     } catch (err) {
       console.error('Lỗi tải dữ liệu:', err);

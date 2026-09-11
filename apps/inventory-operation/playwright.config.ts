@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
@@ -18,6 +18,10 @@ export default defineConfig({
     {
       name: "chromium",
       use: { browserName: "chromium" },
+    },
+    {
+      name: "mobile-webkit",
+      use: { ...devices["iPhone 13"], browserName: "webkit" },
     },
   ],
   // Don't start a web server — we run Vite manually

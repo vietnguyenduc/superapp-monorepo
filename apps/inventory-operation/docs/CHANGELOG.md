@@ -1,5 +1,21 @@
 # inventory-operation — Changelog
 
+## 2026-09-11 — Bulk inbound/outbound regression coverage
+
+- Added browser tests that upload two-row CSV files for both Nhập hàng and
+  Xuất hàng, save them, and verify both product codes in recent records.
+- Normalized Excel serial dates and `DD/MM/YYYY` values to `YYYY-MM-DD` during
+  spreadsheet upload; CSV dates previously appeared blank in date inputs.
+- Bulk Nhập hàng now uses trial inventory storage in trial mode and the page
+  reloads recent rows from `inventory_records`, matching the table written by
+  the bulk service.
+- Bulk services reject missing dates/codes and non-positive quantities per row,
+  while preserving the existing partial-success error summary.
+- Inventory Playwright now runs Chromium plus iPhone-sized WebKit. The onboarding
+  tour is disabled in test setup so its delayed overlay cannot intercept bulk
+  actions. Verification: 149 unit tests, 23 Chromium tests, both bulk tests on
+  mobile WebKit, and production build pass.
+
 ## 2026-09-05 — Product import fixes (5 commits)
 
 ### Data layer cleanup (commits d7cb02d2..6b43288f, merged to main 111d2d4b)

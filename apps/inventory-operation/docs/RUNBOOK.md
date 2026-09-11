@@ -12,7 +12,7 @@ generated: true
 ## Local development
 
 ```bash
-cd /home/ubuntu/repos/superapp-monorepo
+cd /home/dev/projects/superapp-monorepo
 npx turbo run dev --filter=inventory-operation
 ```
 
@@ -25,7 +25,20 @@ npx turbo run check-types --filter=inventory-operation
 npx turbo run lint --filter=inventory-operation
 npx turbo run test --filter=inventory-operation
 npx turbo run build --filter=inventory-operation
+npm run test:e2e:inventory
 ```
+
+Bulk Nhập hàng/Xuất hàng regression only:
+
+```bash
+npx playwright test --config apps/inventory-operation/playwright.config.ts \
+  --grep "bulk CSV imports"
+```
+
+These tests run on Chromium and iPhone-sized WebKit. They enter trial mode,
+upload two-row CSV files, verify spreadsheet date normalization, save both rows,
+and confirm both product codes in recent records. They do not write to
+production Supabase.
 
 ## Deploy
 
@@ -44,4 +57,3 @@ npx turbo run build --filter=inventory-operation
 
 - Sentry captures runtime errors.
 - DB migrations: `npx supabase migration new <name>` then `npx supabase db push` after review.
-

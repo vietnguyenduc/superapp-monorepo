@@ -7,12 +7,17 @@ const BASE_URL = "http://localhost:5175";
  * "Dùng thử ngay" button.
  */
 async function enterTrialMode(page: Page) {
+  await page.addInitScript(() => {
+    localStorage.setItem("inventory-tour-completed", "true");
+  });
   await page.goto(`${BASE_URL}/login`, { waitUntil: "networkidle" });
   const trialButton = page.getByRole("button", { name: /dùng thử|trial/i });
   await expect(trialButton).toBeVisible({ timeout: 15000 });
   await trialButton.click();
   await page.waitForURL("**/dashboard", { timeout: 15000 });
   await page.waitForLoadState("networkidle");
+  // WebKit can finish a second dashboard navigation just after networkidle.
+  await page.waitForTimeout(500);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -95,6 +100,26 @@ test.describe("Inventory app — Nhập hàng page", () => {
     await expect(page.getByText(/📁 upload file/i)).toBeVisible();
   });
 
+  test("bulk CSV imports two inbound rows and shows them in recent records", async ({ page }) => {
+    await page.goto(`${BASE_URL}/goods-receipts?subTab=gr&tab=bulk`, { waitUntil: "networkidle" });
+    await page.locator('input[type="file"]').setInputFiles({
+      name: "bulk-inbound.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(
+        "Date,Supplier,Product,Quantity,Price,Notes\n" +
+        "2026-09-11,NCC01,NVL-XO01,10,25000,bulk-in-1\n" +
+        "2026-09-11,NCC01,NVL-DH01,5,15000,bulk-in-2\n"
+      ),
+    });
+
+    await expect(page.locator('tbody input[type="date"]').first()).toHaveValue("2026-09-11");
+    await page.getByRole("button", { name: /lưu 2 dòng/i }).click();
+    await expect(page.getByText("Đã lưu 2 dòng thành công!")).toBeVisible();
+    const recentRecords = page.locator("table").last();
+    await expect(recentRecords.getByRole("cell", { name: "NVL-XO01", exact: true }).first()).toBeVisible();
+    await expect(recentRecords.getByRole("cell", { name: "NVL-DH01", exact: true }).first()).toBeVisible();
+  });
+
   test("old /purchase-orders redirects to /goods-receipts", async ({ page }) => {
     await page.goto(`${BASE_URL}/purchase-orders`, { waitUntil: "networkidle" });
     await expect(page).toHaveURL(/goods-receipts/);
@@ -145,6 +170,26 @@ test.describe("Inventory app — Xuất hàng page", () => {
     await page.goto(`${BASE_URL}/goods-issues?mode=manual&tab=single`, { waitUntil: "networkidle" });
     await expect(page.getByText(/ngày xuất/i)).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(/số lượng xuất/i)).toBeVisible();
+  });
+
+  test("bulk CSV imports two outbound rows and shows them in recent records", async ({ page }) => {
+    await page.goto(`${BASE_URL}/goods-issues?mode=manual&tab=bulk`, { waitUntil: "networkidle" });
+    await page.locator('input[type="file"]').setInputFiles({
+      name: "bulk-outbound.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(
+        "Date,Product,Quantity,Reason,Notes\n" +
+        "2026-09-11,NVL-XO01,2,Test issue,bulk-out-1\n" +
+        "2026-09-11,NVL-DH01,1,Test issue,bulk-out-2\n"
+      ),
+    });
+
+    await expect(page.locator('tbody input[type="date"]').first()).toHaveValue("2026-09-11");
+    await page.getByRole("button", { name: /lưu 2 dòng/i }).click();
+    await expect(page.getByText("Đã lưu 2 dòng thành công!")).toBeVisible();
+    const recentRecords = page.locator("table").last();
+    await expect(recentRecords.getByRole("cell", { name: "NVL-XO01", exact: true }).first()).toBeVisible();
+    await expect(recentRecords.getByRole("cell", { name: "NVL-DH01", exact: true }).first()).toBeVisible();
   });
 });
 
