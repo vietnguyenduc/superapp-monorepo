@@ -1,6 +1,7 @@
 import {
   parseTransactionData,
   validateTransactionData,
+  getImportValidationStats,
   convertToTransactions,
   cleanTransactionData,
   parseClipboardRow,
@@ -237,6 +238,36 @@ describe("Import Utils", () => {
       expect(result.errors[0].column).toBe("customer_code");
       expect(result.errors[1].row).toBe(1);
       expect(result.errors[1].column).toBe("amount");
+    });
+  });
+
+  describe("getImportValidationStats", () => {
+    it("counts a row with multiple field errors only once", () => {
+      const result = getImportValidationStats(3, [
+        { row: 1 },
+        { row: 1 },
+        { row: 1 },
+      ]);
+
+      expect(result).toEqual({
+        totalRows: 3,
+        validRows: 2,
+        errorRows: 1,
+        totalErrors: 3,
+      });
+    });
+
+    it("never produces a negative valid-row count", () => {
+      const result = getImportValidationStats(1, [
+        { row: 0 },
+        { row: 0 },
+        { row: -1 },
+        { row: 99 },
+      ]);
+
+      expect(result.validRows).toBe(0);
+      expect(result.errorRows).toBe(1);
+      expect(result.totalErrors).toBe(4);
     });
   });
 

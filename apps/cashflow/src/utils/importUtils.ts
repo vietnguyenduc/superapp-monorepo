@@ -19,6 +19,39 @@ export interface ValidationResult {
   errors: ImportError[];
 }
 
+export interface ImportValidationStats {
+  totalRows: number;
+  validRows: number;
+  errorRows: number;
+  totalErrors: number;
+}
+
+/**
+ * Count invalid rows rather than validation messages. One row may contain
+ * several field errors, but it must only be removed from the valid count once.
+ */
+export function getImportValidationStats(
+  totalRows: number,
+  errors: Array<Pick<ImportError, "row">>,
+): ImportValidationStats {
+  const normalizedTotal = Math.max(0, Math.floor(totalRows));
+  const invalidRows = new Set(
+    errors
+      .map((error) => error.row)
+      .filter(
+        (row): row is number =>
+          Number.isInteger(row) && row >= 0 && row < normalizedTotal,
+      ),
+  );
+
+  return {
+    totalRows: normalizedTotal,
+    validRows: normalizedTotal - invalidRows.size,
+    errorRows: invalidRows.size,
+    totalErrors: errors.length,
+  };
+}
+
 /**
  * Parse raw text data from Google Sheets/Excel into structured data
  */

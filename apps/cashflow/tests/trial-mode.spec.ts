@@ -167,4 +167,28 @@ test.describe("Cashflow trial mode", () => {
     );
     expect(realErrors).toEqual([]);
   });
+
+  test("TC-014: Bulk preview counts invalid rows instead of individual errors", async ({ page }) => {
+    await enterTrialMode(page);
+    await page.goto(`${BASE_URL}/import/transactions?tab=bulk`, { waitUntil: "networkidle" });
+
+    const csv = [
+      "customer_code,transaction_type,amount,transaction_date",
+      "CUST0001,payment,100000,04/08/2026",
+      ",,0,",
+    ].join("\n");
+
+    await page.locator('input[type="file"]').setInputFiles({
+      name: "bulk-validation-count.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(csv),
+    });
+
+    await page.getByRole("button", { name: /Nhập hàng loạt/i }).last().click();
+
+    await expect(page.getByTestId("bulk-total-rows")).toContainText("2");
+    await expect(page.getByTestId("bulk-valid-rows")).toContainText("1");
+    await expect(page.getByTestId("bulk-error-rows")).toContainText("1");
+    await expect(page.getByText(/Lỗi kiểm tra \(3\)/i)).toBeVisible();
+  });
 });

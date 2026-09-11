@@ -10,6 +10,7 @@ import { useTransactionTypes } from "../../contexts/TransactionTypeContext";
 import type { Transaction, ImportData, ImportError, Customer } from "../../types";
 import {
   validateTransactionData,
+  getImportValidationStats,
   parseTransactionData,
 } from "../../utils/importUtils";
 import { canImportTransactions, getInitialTransactionStatusWithSettings } from "../../utils/permissions";
@@ -520,8 +521,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   }, [processedData]);
 
 
-  const handleValidateData = useCallback((mode: "single" | "bulk" = "single", dataToValidate?: TransactionInputRow[]) => {
-    const targetData = dataToValidate ?? tableData;
+  const validateRows = useCallback((rows: TransactionInputRow[]) => {
     const dbTypes = transactionTypeCtx.typesForDropdown.map((t) => ({
       id: t.id,
       name: t.name,
@@ -538,11 +538,16 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         return lower.trim();
       }).filter(Boolean)
     );
-    const validation = validateTransactionData(
-      targetData as any,
+    return validateTransactionData(
+      rows as any,
       dbTypes.length > 0 ? dbTypes : undefined,
       validCustomerCodes.size > 0 ? validCustomerCodes : undefined,
     );
+  }, [transactionTypeCtx.typesForDropdown, customerOptions]);
+
+  const handleValidateData = useCallback((mode: "single" | "bulk" = "single", dataToValidate?: TransactionInputRow[]) => {
+    const targetData = dataToValidate ?? tableData;
+    const validation = validateRows(targetData);
     setImportData({
       file: null,
       data: targetData,
@@ -555,7 +560,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     setCurrentStep(2); // always show preview/validation view; step 3 only after successful import
     setValidationMode(mode);
     return validation.isValid;
-  }, [tableData, transactionTypeCtx.typesForDropdown, customerOptions]);
+  }, [tableData, validateRows]);
 
   const handleAddNewCustomer = useCallback((customerCode: string) => {
     setNewCustomerName(customerCode);
@@ -611,8 +616,24 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   const handleImportData = useCallback(
     async (payload?: any[], saveAsDraft = false) => {
       const dataToImport = payload ?? importData.data;
-      const isValid = payload ? true : importData.isValid;
-      if (!isValid || dataToImport.length === 0) return;
+      if (dataToImport.length === 0) return;
+
+      // Validate the exact payload again immediately before the write. This
+      // prevents stale preview state or an edited row from bypassing validation.
+      const validation = validateRows(dataToImport as TransactionInputRow[]);
+      if (!validation.isValid) {
+        setImportData({
+          file: null,
+          data: dataToImport,
+          errors: validation.errors,
+          isValid: false,
+        });
+        setImportError("Dữ liệu đã thay đổi hoặc còn lỗi. Vui lòng kiểm tra lại trước khi nhập.");
+        setImportSuccess(null);
+        setShowPreview(true);
+        setCurrentStep(2);
+        return;
+      }
       if (!companyId) {
         setImportError("Vui lòng chọn công ty trước khi nhập liệu.");
         setImportSuccess(null);
@@ -687,7 +708,12 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         setIsProcessing(false);
       }
     },
-    [importData.data, importData.isValid, onImportComplete, user, companyId],
+    [importData.data, onImportComplete, user, companyId, validateRows],
+  );
+
+  const validationStats = useMemo(
+    () => getImportValidationStats(importData.data.length, importData.errors),
+    [importData.data.length, importData.errors],
   );
 
   const handleValidateAndImportInline = useCallback(async () => {
@@ -1583,16 +1609,16 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
                     {validationMode === "bulk" && showPreview ? (
                       <div className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          <div className="text-center">
-                            <div className="text-xl font-bold text-gray-900 dark:text-white">{importData.data.length}</div>
+                          <div className="text-center" data-testid="bulk-total-rows">
+                            <div className="text-xl font-bold text-gray-900 dark:text-white">{validationStats.totalRows}</div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">{t("import.totalRows")}</div>
                           </div>
-                          <div className="text-center">
-                            <div className="text-xl font-bold text-green-600">{importData.data.length - importData.errors.length}</div>
+                          <div className="text-center" data-testid="bulk-valid-rows">
+                            <div className="text-xl font-bold text-green-600">{validationStats.validRows}</div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">{t("import.validRows")}</div>
                           </div>
-                          <div className="text-center">
-                            <div className="text-xl font-bold text-red-600">{importData.errors.length}</div>
+                          <div className="text-center" data-testid="bulk-error-rows">
+                            <div className="text-xl font-bold text-red-600">{validationStats.errorRows}</div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">{t("import.errorRows")}</div>
                           </div>
                         </div>

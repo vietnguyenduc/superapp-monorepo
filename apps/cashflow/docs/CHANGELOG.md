@@ -1,5 +1,14 @@
 # Changelog — Cashflow
 
+## 2026-09-11
+
+### Fixed
+
+- **Bulk transaction import now reports valid and invalid row counts accurately.**
+  - Validation statistics count unique row indexes, so several field errors on one row no longer reduce the valid-row total several times.
+  - The payload is validated again immediately before the write. Stale preview state or a row edited after preview cannot bypass validation.
+  - Unit coverage includes multiple errors on one row and guards against negative valid-row counts.
+
 ## 2026-08-04
 
 ### Fixed
