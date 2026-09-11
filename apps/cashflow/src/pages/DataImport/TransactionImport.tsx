@@ -18,6 +18,7 @@ import { LoadingFallback } from "../../components/UI/FallbackUI";
 import { databaseService } from "../../services/database";
 import Button from "../../components/UI/Button";
 import EditableTable from "../../components/Import/EditableTable";
+import { parseAmount, getCustomerBalanceDelta } from "../../services/businessLogic";
 
 interface TransactionImportProps {
   onImportComplete?: (data: Transaction[]) => void;
@@ -279,6 +280,8 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   const [showGuidelines, setShowGuidelines] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [activeTab, setActiveTab] = useState<"single" | "bulk">("single");
+  const [pendingImport, setPendingImport] = useState<{ data: Record<string, unknown>[]; saveAsDraft: boolean } | null>(null);
+  const [receipt, setReceipt] = useState<{ batchId: string; createdAt: string; count: number; totalAmount: number; status: string } | null>(null);
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -303,7 +306,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         return;
       }
       const [customerResult, bankResult, branchResult] = await Promise.all([
-        databaseService.customers.getCustomers({ limit: 2000, company_id: companyId, status: "active" }),
+        databaseService.customers.getAllCustomersForLookup(companyId),
         databaseService.bankAccounts.getBankAccounts(companyId, "active"),
         databaseService.branches.getBranches(companyId, "active"),
       ]);
@@ -685,6 +688,16 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
           successCount: result.data.length,
         });
 
+        const nextReceipt = {
+          batchId: crypto.randomUUID(),
+          createdAt: new Date().toISOString(),
+          count: result.data.length,
+          totalAmount: dataToImport.reduce((sum, row) => sum + Math.abs(parseAmount(row.amount)), 0),
+          status: saveAsDraft ? "Nháp" : initialStatus === "completed" ? "Hoàn thành" : "Chờ duyệt",
+        };
+        setReceipt(nextReceipt);
+        localStorage.setItem("cashflow_last_transaction_import_receipt", JSON.stringify(nextReceipt));
+
         setCurrentStep(3);
         onImportComplete?.(result.data as any);
         setImportSuccess("Nhập giao dịch thành công");
@@ -695,7 +708,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         setRawData("");
         setImportData({ file: null, data: [], errors: [], isValid: false });
         setShowPreview(false);
-        setCurrentStep(1);
+        setCurrentStep(3);
         setUnmatchedCustomers(new Set());
         setDropInfo("");
       } catch (error) {
@@ -733,20 +746,46 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     setValidationMode("bulk");
     const isValid = handleValidateData("bulk", importData.data as any);
     if (!isValid) return;
-    await handleImportData(importData.data, false);
-  }, [handleImportData, handleValidateData, importData.data]);
+    setPendingImport({ data: importData.data, saveAsDraft: false });
+  }, [handleValidateData, importData.data]);
 
   const handleSaveDraftBulk = useCallback(async () => {
     setShowPreview(true);
     setValidationMode("bulk");
     const isValid = handleValidateData("bulk", importData.data as any);
     if (!isValid) return;
-    await handleImportData(importData.data, true);
-  }, [handleImportData, handleValidateData, importData.data]);
+    setPendingImport({ data: importData.data, saveAsDraft: true });
+  }, [handleValidateData, importData.data]);
+
+  const pendingSummary = useMemo(() => {
+    if (!pendingImport) return null;
+    return pendingImport.data.reduce((acc, row) => {
+      const amount = parseAmount(row.amount);
+      const factor = transactionTypeCtx.getMathFactor(String(row.transaction_type || ""));
+      const delta = getCustomerBalanceDelta(String(row.transaction_type || ""), amount, factor);
+      acc.total += Math.abs(amount);
+      if (delta > 0) acc.increase += delta;
+      if (delta < 0) acc.decrease += -delta;
+      return acc;
+    }, { total: 0, increase: 0, decrease: 0 });
+  }, [pendingImport, transactionTypeCtx]);
 
   const getErrorForRow = (rowIndex: number): ImportError[] => {
     return importData.errors.filter((error) => error.row === rowIndex);
   };
+
+  const downloadValidationErrors = useCallback(() => {
+    const header = "Dòng,Cột,Lỗi,Giá trị";
+    const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const rows = importData.errors.map((item) => [item.row + 1, item.column, item.message, item.value].map(escape).join(","));
+    const blob = new Blob(["\uFEFF", [header, ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `loi-import-giao-dich-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, [importData.errors]);
 
   const hasTableChanges = useMemo(() => {
     return tableData.some((row) =>
@@ -923,6 +962,10 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         <h3 className="text-lg font-medium text-red-900 mb-4">
           {t("import.validationErrors")} ({importData.errors.length})
         </h3>
+
+        <Button variant="secondary" size="sm" onClick={downloadValidationErrors} className="mb-3">
+          Tải danh sách lỗi CSV
+        </Button>
 
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <div className="max-h-60 overflow-y-auto">
@@ -1666,7 +1709,11 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
                       </div>
                       <div className="ml-3">
                         <h3 className="text-sm font-medium text-green-800">{t("import.importSuccess")}</h3>
-                        <p className="mt-1 text-sm text-green-700">{t("import.importedRows", { count: importData.data.length })}</p>
+                        {receipt && <div className="mt-2 space-y-1 text-sm text-green-800">
+                          <p><strong>Mã lô:</strong> <span className="font-mono">{receipt.batchId}</span></p>
+                          <p><strong>Kết quả:</strong> {receipt.count} dòng · {receipt.totalAmount.toLocaleString("vi-VN")} ₫ · {receipt.status}</p>
+                          <p><strong>Thời gian:</strong> {new Date(receipt.createdAt).toLocaleString("vi-VN")}</p>
+                        </div>}
                       </div>
                     </div>
                   </div>
@@ -1677,6 +1724,26 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
           </div>
         </div>
       </div>
+
+      {pendingImport && pendingSummary && (
+        <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="confirm-import-title">
+          <div className="w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl bg-white dark:bg-gray-900 p-5 shadow-2xl">
+            <h2 id="confirm-import-title" className="text-lg font-semibold text-gray-900 dark:text-white">Xác nhận nhập giao dịch</h2>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Kiểm tra tác động tài chính trước khi ghi dữ liệu.</p>
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-3"><dt className="text-gray-500">Số dòng</dt><dd className="font-semibold dark:text-white">{pendingImport.data.length}</dd></div>
+              <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-3"><dt className="text-gray-500">Tổng giá trị</dt><dd className="font-semibold dark:text-white">{pendingSummary.total.toLocaleString("vi-VN")} ₫</dd></div>
+              <div className="rounded-lg bg-red-50 dark:bg-red-950/30 p-3"><dt className="text-red-700 dark:text-red-300">Tăng công nợ</dt><dd className="font-semibold text-red-700 dark:text-red-300">{pendingSummary.increase.toLocaleString("vi-VN")} ₫</dd></div>
+              <div className="rounded-lg bg-green-50 dark:bg-green-950/30 p-3"><dt className="text-green-700 dark:text-green-300">Giảm công nợ</dt><dd className="font-semibold text-green-700 dark:text-green-300">{pendingSummary.decrease.toLocaleString("vi-VN")} ₫</dd></div>
+            </dl>
+            <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">Trạng thái sau nhập: <strong>{pendingImport.saveAsDraft ? "Nháp" : "Theo cấu hình phê duyệt của công ty"}</strong></p>
+            <div className="mt-5 flex gap-3 justify-end">
+              <Button variant="secondary" size="md" onClick={() => setPendingImport(null)}>Quay lại kiểm tra</Button>
+              <Button variant="success" size="md" onClick={() => { const pending = pendingImport; setPendingImport(null); void handleImportData(pending.data, pending.saveAsDraft); }}>Xác nhận nhập</Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Customer Modal */}
       <NewCustomerModal

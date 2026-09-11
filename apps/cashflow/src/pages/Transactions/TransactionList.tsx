@@ -145,6 +145,7 @@ const TransactionList: React.FC = () => {
   const debouncedSearchTerm = useDebounce(state.searchTerm, 300);
 
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null);
   const [importMenuOpen, setImportMenuOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const importMenuRef = useRef<HTMLDivElement>(null);
@@ -334,7 +335,7 @@ const TransactionList: React.FC = () => {
       const [branchResult, bankResult, customerResult, userResult] = await Promise.all([
         databaseService.branches.getBranches(companyId, "active"),
         databaseService.bankAccounts.getBankAccounts(companyId, "active"),
-        databaseService.customers.getCustomers({ limit: 500, company_id: companyId, status: "active" }),
+        databaseService.customers.getAllCustomersForLookup(companyId),
         databaseService.users.getUsers(),
       ]);
 
@@ -561,20 +562,30 @@ const TransactionList: React.FC = () => {
   };
 
   const handleDelete = useCallback(
-    async (transactionId: string) => {
-      if (!confirm("Bạn có chắc muốn xóa giao dịch này?")) return;
+    (transactionId: string) => {
+      const transaction = state.transactions.find((item) => item.id === transactionId);
+      if (transaction) setPendingDelete(transaction);
+    },
+    [state.transactions],
+  );
+
+  const confirmDelete = useCallback(
+    async () => {
+      if (!pendingDelete) return;
       try {
-        const result = await databaseService.transactions.deleteTransaction(transactionId);
+        const result = await databaseService.transactions.deleteTransaction(pendingDelete.id);
         if (result.error) {
           toast.error("Xóa giao dịch thất bại");
         } else {
+          toast.success("Đã xóa giao dịch và cập nhật lại công nợ");
+          setPendingDelete(null);
           fetchTransactions();
         }
       } catch {
         toast.error("Xóa giao dịch thất bại");
       }
     },
-    [fetchTransactions],
+    [fetchTransactions, pendingDelete],
   );
 
   const openEditModal = useCallback((tx: Transaction) => {
@@ -1651,6 +1662,24 @@ const TransactionList: React.FC = () => {
         onClose={closeEditModal}
         onSubmit={handleEditSubmit}
       />
+      {pendingDelete && (
+        <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/60 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="delete-transaction-title">
+          <div className="w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl bg-white dark:bg-gray-900 p-5 shadow-2xl">
+            <h2 id="delete-transaction-title" className="text-lg font-semibold text-gray-900 dark:text-white">Xóa giao dịch?</h2>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Thao tác này sẽ tính lại công nợ khách hàng.</p>
+            <dl className="mt-4 space-y-2 rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-sm">
+              <div className="flex justify-between gap-3"><dt className="text-gray-500">Mã giao dịch</dt><dd className="font-mono dark:text-white">{pendingDelete.transaction_code || pendingDelete.id.slice(0, 8)}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-gray-500">Khách hàng</dt><dd className="font-medium text-right dark:text-white">{pendingDelete.customer_name || "Chưa xác định"}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-gray-500">Số tiền</dt><dd className="font-semibold dark:text-white">{parseAmount(pendingDelete.amount).toLocaleString("vi-VN")} ₫</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-gray-500">Loại</dt><dd className="dark:text-white">{getTransactionTypeName(pendingDelete.transaction_type)}</dd></div>
+            </dl>
+            <div className="mt-5 flex justify-end gap-3">
+              <Button variant="secondary" size="md" onClick={() => setPendingDelete(null)}>Giữ lại</Button>
+              <Button variant="danger" size="md" onClick={() => void confirmDelete()}>Xóa giao dịch</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   </div>
   );

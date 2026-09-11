@@ -191,4 +191,23 @@ test.describe("Cashflow trial mode", () => {
     await expect(page.getByTestId("bulk-error-rows")).toContainText("1");
     await expect(page.getByText(/Lỗi kiểm tra \(3\)/i)).toBeVisible();
   });
+
+  test("TC-015: Bulk import requires financial confirmation and leaves a receipt", async ({ page }) => {
+    await enterTrialMode(page);
+    await page.goto(`${BASE_URL}/import/transactions?tab=bulk`, { waitUntil: "networkidle" });
+    const csv = [
+      "customer_code,transaction_type,amount,transaction_date",
+      "CUST0001,payment,100000,04/08/2026",
+    ].join("\n");
+    await page.locator('input[type="file"]').setInputFiles({ name: "bulk-confirm.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
+    await page.getByRole("button", { name: /Nhập hàng loạt/i }).last().click();
+
+    const dialog = page.getByRole("dialog", { name: /Xác nhận nhập giao dịch/i });
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText("100.000 ₫");
+    await dialog.getByRole("button", { name: "Xác nhận nhập" }).click();
+
+    await expect(page.getByText(/Mã lô:/i)).toBeVisible();
+    await expect(page.getByText(/1 dòng · 100.000 ₫/i)).toBeVisible();
+  });
 });

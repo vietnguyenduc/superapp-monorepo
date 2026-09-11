@@ -13,6 +13,7 @@ import { canImportCustomers, getInitialEntityStatus, canManageAllCustomers } fro
 import { LoadingFallback } from "../../components/UI/FallbackUI";
 import { databaseService } from "../../services/database";
 import Button from "../../components/UI/Button";
+import { getImportValidationStats } from "../../utils/importUtils";
 
 interface CustomerImportProps {
   onImportComplete?: (data: Customer[]) => void;
@@ -72,6 +73,13 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
   const [dragActive, setDragActive] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [duplicateRows, setDuplicateRows] = useState<Set<number>>(new Set());
+  const validationStats = useMemo(
+    () => getImportValidationStats(importData.data.length, [
+      ...importData.errors,
+      ...Array.from(duplicateRows, (row) => ({ row })),
+    ]),
+    [duplicateRows, importData.data.length, importData.errors],
+  );
   const [skippedCount, setSkippedCount] = useState(0);
   const [importedCount, setImportedCount] = useState(0);
   const canImport = useMemo(() => canImportCustomers(user), [user]);
@@ -1258,7 +1266,7 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                        {Math.max(0, importData.data.length - importData.errors.length - duplicateRows.size)}
+                        {validationStats.validRows}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
                         {t("import.validRows")}

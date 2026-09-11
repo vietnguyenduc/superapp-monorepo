@@ -8,6 +8,12 @@
   - Validation statistics count unique row indexes, so several field errors on one row no longer reduce the valid-row total several times.
   - The payload is validated again immediately before the write. Stale preview state or a row edited after preview cannot bypass validation.
   - Unit coverage includes multiple errors on one row and guards against negative valid-row counts.
+- **Financial summaries and bulk-import safeguards were strengthened.**
+  - Customer detail totals now traverse the complete paginated ledger; the visible history is explicitly labeled as the 50 most recent transactions.
+  - Missing debt-working instructions display `Chưa thiết lập` instead of an invented collection policy.
+  - Bulk import shows a final financial-impact confirmation and retains a receipt with batch ID, row count, amount, status, and time; validation errors can be downloaded.
+  - Customer lookup loads every active-customer page instead of silently stopping at 500/2,000 records.
+  - Transaction deletion uses a contextual confirmation sheet with code, customer, amount, type, and balance impact notice.
 
 ## 2026-08-04
 

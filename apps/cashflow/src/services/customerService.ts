@@ -10,6 +10,20 @@ import {
 import type { Customer } from "../types";
 
 export class CustomerService extends BaseService {
+  static async getAllCustomersForLookup(companyId: string) {
+    const pageSize = 500;
+    let offset = 0;
+    let all: Customer[] = [];
+    let total = 0;
+    do {
+      const result = await this.getCustomers({ limit: pageSize, offset, company_id: companyId, status: "active" });
+      if (result.error) return { data: all, error: result.error, count: total };
+      total = result.count || 0;
+      all = all.concat(result.data || []);
+      offset += pageSize;
+    } while (all.length < total);
+    return { data: all, error: null, count: total };
+  }
   static async getCustomers(filters?: Record<string, unknown>) {
     return this.execute(
       async () => {
@@ -764,6 +778,7 @@ export class CustomerService extends BaseService {
 }
 
 export const customerService = {
+  getAllCustomersForLookup: CustomerService.getAllCustomersForLookup.bind(CustomerService),
   getCustomers: CustomerService.getCustomers.bind(CustomerService),
   getCustomerById: CustomerService.getCustomerById.bind(CustomerService),
   createCustomer: CustomerService.createCustomer.bind(CustomerService),

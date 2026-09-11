@@ -1,15 +1,10 @@
 import React from "react";
 import appleTheme from "../../styles/theme";
 
-interface ButtonProps {
+interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
   variant?: "primary" | "secondary" | "success" | "danger" | "warning" | "icon";
   size?: "sm" | "md" | "lg";
   children: React.ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-  className?: string;
-  type?: "button" | "submit" | "reset";
-  title?: string;
   showShine?: boolean;
 }
 
@@ -23,6 +18,7 @@ const Button: React.FC<ButtonProps> = ({
   type = "button",
   title,
   showShine = false,
+  ...buttonProps
 }) => {
   const baseClass = appleTheme.getButtonClass(variant, size);
   const disabledClass = disabled ? appleTheme.buttons.primary.disabled : "";
@@ -34,6 +30,7 @@ const Button: React.FC<ButtonProps> = ({
       onClick={onClick}
       disabled={disabled}
       title={title}
+      {...buttonProps}
       className={`${baseClass} ${disabledClass} ${shineClass} ${className}`.trim()}
     >
       {children}

@@ -313,8 +313,7 @@ const CustomerDetail: React.FC = () => {
               Cách làm việc
             </h2>
             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {customer.working_method ||
-                "Thu nợ theo chu kỳ 7 ngày. Khách hàng xác nhận đối soát vào thứ Hai, thanh toán trước 17:00 cùng ngày. Nếu quá hạn 3 ngày sẽ chuyển nhắc nợ lần 2 và áp dụng mức chiết khấu 1% khi thanh toán trong tuần."}
+              {customer.working_method || "Chưa thiết lập cách làm việc công nợ."}
             </p>
           </div>
 

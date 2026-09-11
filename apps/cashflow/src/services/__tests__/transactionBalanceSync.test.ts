@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { setTrialMode, trialGet } from "../trialMockStore";
+import { setTrialMode, trialGet, trialInsert } from "../trialMockStore";
 import { transactionService } from "../transactionService";
 
 const baseTxn = {
@@ -42,6 +42,27 @@ describe("transaction balance sync (trial mode)", () => {
     expect(customer?.total_balance).toBe(85_000_000 - 1_000_000); // payment reduces debt
     expect(customer?.last_transaction_date).toBe("2024-02-01T10:00:00Z");
     expect(bank?.balance).toBe(150_000_000 + 1_000_000); // payment increases bank cash
+  });
+
+  it("customer summary includes more than 50 ledger rows", async () => {
+    for (let index = 0; index < 60; index += 1) {
+      trialInsert("transactions", {
+        ...baseTxn,
+        id: `summary-${index}`,
+        transaction_code: `SUMMARY-${index}`,
+        transaction_type: "charge",
+        amount: 100,
+      });
+    }
+    const ledger = (trialGet("transactions") || []).filter((tx: Record<string, unknown>) => tx.customer_id === "1");
+    const expectedPurchases = ledger.filter((tx: Record<string, unknown>) => tx.transaction_type === "charge").reduce((sum: number, tx: Record<string, unknown>) => sum + Math.abs(Number(tx.amount)), 0);
+
+    const result = await transactionService.getCustomerTransactionSummary("1", "trial-company");
+
+    expect(result.error).toBeNull();
+    expect(result.data?.totalTransactions).toBe(ledger.length);
+    expect(result.data?.totalPurchaseAmount).toBe(expectedPurchases);
+    expect(result.data?.totalTransactions).toBeGreaterThan(50);
   });
 
   it("createTransaction with charge does not change bank cash but increases customer debt", async () => {

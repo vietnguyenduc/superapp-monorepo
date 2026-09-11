@@ -5,7 +5,7 @@ import type { Customer, Transaction } from "../../../types";
 import { databaseService } from "../../../services/database";
 import { useCompanyId } from "../../../hooks/useCompanyId";
 import { formatCurrency, formatDate, formatPhoneNumber, fetchColorSettings, getTransactionTypeColor, getTransactionTypeAmountColor } from "../../../utils/formatting";
-import { parseAmount, getCustomerBalanceDelta } from "../../../services/businessLogic";
+import { parseAmount } from "../../../services/businessLogic";
 import { useTransactionTypes } from "../../../contexts/TransactionTypeContext";
 import { LoadingFallback } from "../../../components/UI/FallbackUI";
 
@@ -30,6 +30,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   };
   const { getNameById: getTransactionTypeName } = useTransactionTypes();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [summary, setSummary] = useState({ totalPurchaseAmount: 0, totalPaidAmount: 0, totalTransactions: 0, lastTransactionDate: null as string | null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,17 +38,17 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const result = await databaseService.transactions.getTransactions({
-          customer_id: customer.id,
-          company_id: companyId,
-          limit: 50,
-        });
+        const [result, summaryResult] = await Promise.all([
+          databaseService.transactions.getTransactions({ customer_id: customer.id, company_id: companyId, page: 1, pageSize: 50 }),
+          databaseService.transactions.getCustomerTransactionSummary(customer.id, companyId),
+        ]);
 
         if (result.error) {
           setError(result.error);
         } else {
           setTransactions(result.data);
         }
+        if (!summaryResult.error && summaryResult.data) setSummary(summaryResult.data);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to load transactions",
@@ -78,45 +79,23 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
   };
 
   // Tính tổng số tiền mua hàng từ các giao dịch loại 'charge'
-  const totalPurchaseAmount = transactions
-    .filter((transaction) => transaction.transaction_type === "charge")
-    .reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
-
-  // Tính tổng số tiền đã trả: chỉ cộng phần làm GIẢM công nợ của mỗi giao dịch.
-  // getCustomerBalanceDelta trả về số âm khi giao dịch làm giảm công nợ (payment,
-  // deposit, refund), nên -delta là số tiền đã trả. adjustment dùng số có dấu nên
-  // chỉ phần điều chỉnh làm giảm công nợ mới được tính (bỏ qua phần làm tăng).
-  const totalPaidAmount = transactions.reduce((sum, transaction) => {
-    const delta = getCustomerBalanceDelta(
-      transaction.transaction_type,
-      transaction.amount,
-    );
-    return delta < 0 ? sum + -delta : sum;
-  }, 0);
-
-  // Tìm giao dịch cuối từ transactions array
-  const lastTransactionDate = transactions.length > 0
-    ? transactions.reduce((latest, tx) => {
-      const txDate = new Date(tx.transaction_date);
-      const latestDate = new Date(latest.transaction_date);
-      return txDate > latestDate ? tx : latest;
-    }).transaction_date
-    : null;
+  const { totalPurchaseAmount, totalPaidAmount, totalTransactions, lastTransactionDate } = summary;
 
   return (
     <div className="fixed inset-0 z-[200] overflow-y-auto">
       <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div
+          aria-hidden="true"
           className="fixed inset-0 bg-gray-700/70 dark:bg-gray-900/80 transition-opacity"
           onClick={onClose}
         />
 
-        <div className="inline-block align-bottom bg-white dark:bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-6 sm:align-middle max-w-full sm:max-w-md md:max-w-2xl lg:max-w-4xl sm:w-full w-full mx-4 sm:mx-0">
+        <div role="dialog" aria-modal="true" aria-labelledby="customer-detail-title" className="inline-block align-bottom bg-white dark:bg-gray-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-6 sm:align-middle max-w-full sm:max-w-md md:max-w-2xl lg:max-w-4xl sm:w-full w-full mx-4 sm:mx-0">
           <div className="bg-white dark:bg-gray-900 px-3 pt-4 pb-3 sm:px-4 sm:pt-5 sm:pb-4 max-h-[calc(100vh-6rem)] overflow-y-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
+                <h3 id="customer-detail-title" className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
                   Chi tiết khách hàng
                 </h3>
                 <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
@@ -247,8 +226,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                     Cách làm việc công nợ
                   </h5>
                   <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                    {customer.working_method ||
-                      "Thu nợ theo chu kỳ 7 ngày. Khách hàng xác nhận đối soát vào thứ Hai, thanh toán trước 17:00 cùng ngày. Nếu quá hạn 3 ngày sẽ chuyển nhắc nợ lần 2 và áp dụng mức chiết khấu 1% khi thanh toán trong tuần."}
+                    {customer.working_method || "Chưa thiết lập cách làm việc công nợ."}
                   </p>
                 </div>
               </div>
@@ -330,7 +308,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
                       Tổng giao dịch
                     </dt>
                     <dd className="mt-0.5 text-xs sm:text-sm text-gray-900 dark:text-gray-100">
-                      {transactions.length}
+                      {totalTransactions}
                     </dd>
                   </div>
                 </dl>
@@ -340,7 +318,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({
             {/* Transaction History */}
             <div className="mt-6">
               <h4 className="text-base font-medium text-gray-900 dark:text-white mb-3">
-                Lịch sử giao dịch
+                50 giao dịch gần nhất
               </h4>
 
               {loading ? (

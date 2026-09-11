@@ -1,7 +1,7 @@
 import { BaseService } from "@superapp/shared-utils";
 import { apiClient } from "./supabase";
 import { trialGet, trialInsert, trialUpdate, trialDelete } from "./trialMockStore";
-import { validateTransactionData, validateTransactionUpdateData, transformRawTransaction, parseAmount, parseAmountOrNull, parseDate, normalizeTransactionType, getBankAccountBalanceDelta, applyTransactionsToCustomerBalance } from "./businessLogic";
+import { validateTransactionData, validateTransactionUpdateData, transformRawTransaction, parseAmount, parseAmountOrNull, parseDate, normalizeTransactionType, getBankAccountBalanceDelta, getCustomerBalanceDelta, applyTransactionsToCustomerBalance } from "./businessLogic";
 import { updateWithFallback, insertWithFallback, bulkInsertWithFallback } from "./updateHelpers";
 import { transactionTypeService } from "./transactionTypeService";
 import { v4 as uuid } from "uuid";
@@ -518,6 +518,37 @@ export class TransactionService extends BaseService {
         };
       }
     );
+  }
+
+  static async getCustomerTransactionSummary(customerId: string, companyId?: string) {
+    try {
+      const pageSize = 500;
+      let page = 1;
+      let all: Transaction[] = [];
+      let total = 0;
+      do {
+        const result = await this.getTransactions({ customer_id: customerId, company_id: companyId, page, pageSize });
+        if (result.error) return { data: null, error: result.error };
+        total = result.count || 0;
+        all = all.concat(result.data || []);
+        page += 1;
+      } while (all.length < total);
+
+      const factors = await this._getLiveFactorMap(companyId || null);
+      let totalPurchaseAmount = 0;
+      let totalPaidAmount = 0;
+      let lastTransactionDate: string | null = null;
+      for (const tx of all) {
+        const amount = parseAmount(tx.amount);
+        if (tx.transaction_type === "charge") totalPurchaseAmount += Math.abs(amount);
+        const delta = getCustomerBalanceDelta(tx.transaction_type, amount, factors[tx.transaction_type]);
+        if (delta < 0) totalPaidAmount += -delta;
+        if (!lastTransactionDate || tx.transaction_date > lastTransactionDate) lastTransactionDate = tx.transaction_date;
+      }
+      return { data: { totalPurchaseAmount, totalPaidAmount, totalTransactions: total, lastTransactionDate }, error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error.message : "Không thể tính tổng giao dịch" };
+    }
   }
 
   static async createTransaction(transactionData: Record<string, unknown>) {
@@ -1040,6 +1071,7 @@ export class TransactionService extends BaseService {
 export const transactionService = {
   getTransactions: TransactionService.getTransactions.bind(TransactionService),
   getTransactionById: TransactionService.getTransactionById.bind(TransactionService),
+  getCustomerTransactionSummary: TransactionService.getCustomerTransactionSummary.bind(TransactionService),
   createTransaction: TransactionService.createTransaction.bind(TransactionService),
   updateTransaction: TransactionService.updateTransaction.bind(TransactionService),
   deleteTransaction: TransactionService.deleteTransaction.bind(TransactionService),
