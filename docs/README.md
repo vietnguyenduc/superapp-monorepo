@@ -65,10 +65,11 @@ Mỗi app có 12 file docs chuẩn trong `apps/<app>/docs/`:
 # Install
 npm install
 
-# Run all apps in dev mode
-npm run dev:apps
+# Trên máy hiện tại, kiểm tra các systemd service vite-* thay vì chạy trùng Vite.
+systemctl is-active vite-admin-portal vite-cashflow vite-inventory-operation \
+  vite-sales-operation vite-hr-operation vite-accounting vite-operations-portal
 
-# Run single app
+# Chỉ chạy thủ công nếu service tương ứng đã dừng
 npx turbo run dev --filter=cashflow
 
 # Build all

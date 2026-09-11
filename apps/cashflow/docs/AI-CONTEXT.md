@@ -210,7 +210,7 @@ A dedicated `Công thức dư nợ` tab in Settings shows the current formula, l
 - Unit: `npm run test -w cashflow`
 - Type check: `npm run type-check -w cashflow`
 - Lint: `npm run lint -w cashflow` (currently 300+ pre-existing warnings; do not bulk-fix unrelated files).
-- Real-flow E2E: run `localhost:5173` (Admin) and `localhost:5174` (Cashflow) on the WSL host; credentials are in session secrets. Use `http://<TAILSCALE_IP>:5174` from the sandbox.
+- Real-flow E2E: reuse Admin on `localhost:5173` and Cashflow on `localhost:5174`; credentials must come from the active secret manager.
 - Local RLS simulation: see `apps/cashflow/docs/RUNBOOK.md` § "Local Supabase RLS simulation from a cloud dump". This lets you test Supabase RLS policies on your machine before any production deploy, avoiding Vercel quota delays.
 
 ## Branch / deploy flow
@@ -226,7 +226,7 @@ A dedicated `Công thức dư nợ` tab in Settings shows the current formula, l
 The account has 7 Vercel projects, so the default Git integration creates up to 7 deployment attempts per push and quickly exhausts the free `api-deployments-free-per-day` quota.
 
 Current mitigations (2026-08-05):
-- `scripts/vercel-ignore.sh` now skips every preview build that is **not** the `viet` branch and only builds `main` (production) or `viet` when the relevant app actually changed. This stops preview deployments on every `devin/*` PR.
+- `scripts/vercel-ignore.sh` skips feature-branch previews and only builds `main` (production) or `viet` when the relevant app changed.
 - `scripts/deploy-app.sh` and `scripts/deploy-changed-apps.sh` let you deploy a single app (or only the changed apps) on demand via the Vercel CLI:
   ```bash
   VERCEL_TOKEN=xxx scripts/deploy-app.sh cashflow preview
@@ -237,7 +237,7 @@ Current mitigations (2026-08-05):
 
 Recommended workflow to avoid the quota:
 1. Develop and verify on `http://<TAILSCALE_IP>:5174` (local Vite on WSL).
-2. Push to a `devin/*` branch for code review; no Vercel preview is created.
+2. Use a feature branch for isolated review when needed; no Vercel preview is created there.
 3. When you actually need a preview, run `scripts/deploy-app.sh cashflow preview` or trigger the GitHub Action manually.
 4. Merge to `viet` only when ready; `viet` still auto-deploys a preview.
 5. Merge `viet` → `main`; production deploys once per merge (not per app push).

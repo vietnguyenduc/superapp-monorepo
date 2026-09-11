@@ -68,7 +68,7 @@ superapp-monorepo/
 │   ├── eslint-config/             # @repo/eslint-config — Shared ESLint config
 │   ├── api/                       # superapp-api — Fastify API server (port 3001)
 │   ├── einvoice/                  # @superapp/einvoice — E-invoice integration
-│   └── insforge-mcp/              # @superapp/insforge-mcp — MCP server for OpenHands
+│   └── insforge-mcp/              # @superapp/insforge-mcp — optional local MCP server
 ├── supabase/
 │   └── migrations/                # 69+ SQL migration files
 ├── docs/                          # ← You are here

@@ -50,7 +50,7 @@ Mỗi app có `vercel.json` trong `apps/<app>/`. Build từ root monorepo qua `n
 - Với free/hobby plan, quota deploy là **100 lượt/ngày** (rolling 24h). Vì vậy:
   - `main` luôn build (production).
   - Branch `viet` chỉ build khi file của app hoặc shared packages thay đổi.
-  - Tất cả branch `devin/*` và PR preview khác tự skip.
+  - Các feature branch và PR preview khác tự skip.
 - File `scripts/vercel-ignore.sh`:
 
 ```bash
@@ -136,23 +136,12 @@ gh pr merge --admin --squash --match-head-commit
 → Wait for workflow to complete and deployment to reach `READY`
 → Verify at production URL
 
-### Scenario C: Manual Redeploy
+### Scenario C: Retry a failed deployment
 
-**KHÔNG** chạy `vercel --prod` từ trong `apps/<app>/` vì `rootDirectory` của mỗi project là `apps/<app>` nhưng build cần root monorepo để `turbo` resolve dependencies. Nếu cần deploy thủ công, dùng Vercel API từ repo root:
-
-```bash
-curl -X POST "https://api.vercel.com/v13/deployments" \
-  -H "Authorization: Bearer $VERCEL_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "gitSource": {"type": "github", "repoId": <repo-id>, "ref": "main"},
-    "name": "cashflow",
-    "project": "prj_<project-id>",
-    "target": "production"
-  }'
-```
-
-Hoặc trigger qua Vercel Dashboard → project → Deployments → Redeploy.
+Use the existing GitHub Actions workflows. Run `Deploy changed Vercel apps`
+manually for the intended branch/app, or let the quota-reset workflow retry a
+stale production deployment. Do not call the Vercel deployment API, deploy hooks,
+or run an ad-hoc production deployment from an app directory.
 
 ## CI/CD
 
@@ -179,23 +168,6 @@ Sau mỗi deployment:
 - [ ] Mobile responsive
 
 ## Environment Setup
-
-### Vercel CLI
-
-```bash
-# Install
-npm i -g vercel
-
-# Login (or use token)
-vercel login
-
-# Link project
-cd apps/cashflow
-vercel link
-
-# Deploy
-vercel --prod
-```
 
 ### GitHub CLI
 

@@ -8,8 +8,7 @@
 
 ### Môi trường Codex trên WSL (2026-09-10)
 
-- Làm việc tại `/home/dev/projects/superapp-monorepo` trên WSL. Đường dẫn
-  `/workspace/project` trong hướng dẫn OpenHands là đường dẫn mount trong container.
+- Làm việc tại `/home/dev/projects/superapp-monorepo` trên WSL.
 - Windows host phải bật và có mạng để dùng kết nối này từ iPhone; tắt máy hoặc
   Sleep sẽ ngắt công việc trên WSL. Tắt màn hình không yêu cầu tắt máy.
 - TypeScript được cố định ở `5.8.3` trong các workspace; Playwright và
@@ -32,8 +31,7 @@
 - InsForge MCP hiện không đọc được memory từ kết nối này: hostname mặc định
   `host.docker.internal` không phân giải được. Ghi nhận trong tài liệu thay thế;
   không coi container đang chạy là bằng chứng MCP đã kết nối.
-- Các công cụ MCP được cấu hình cho OpenHands không tự động có mặt trong Codex.
-  Kiểm tra danh sách công cụ của phiên trước khi khẳng định InsForge được kết nối.
+- InsForge/MCP là tùy chọn. Kiểm tra công cụ của phiên trước khi dựa vào nó.
 
 
 ```powershell
@@ -58,9 +56,8 @@ npm install
 cp apps/cashflow/.env.example apps/cashflow/.env.local
 # Edit .env.local với Supabase credentials
 
-# 6. Chạy dev server
-npx turbo run dev --filter=cashflow
-# Mở http://localhost:5174 trong browser Windows
+# 6. Trên máy hiện tại, các app được systemd khởi động tự động.
+# Mở http://localhost:5174 trong browser Windows.
 ```
 
 ---
@@ -72,7 +69,7 @@ npx turbo run dev --filter=cashflow
 | `package-lock.json` chứa `@rolldown/binding-linux-x64-gnu` (Linux-only) → `npm install` fail với `EBADPLATFORM` | Lockfile tương thích 100% |
 | Không có Node.js/npm mặc định (Windows chỉ có Node trong Playwright bundle, không có npm) | `apt-get install nodejs` cài đầy đủ node + npm + npx |
 | Vite HMR không hoạt động qua `/mnt/c` hoặc `/mnt/e` (filesystem boundary) | Repo trong `~/` (ext4 native) → HMR tức thì |
-| `--sandbox` của Devin CLI không hỗ trợ Windows native | WSL 2 hỗ trợ sandbox (cần `bwrap` + `socat`) |
+| Công cụ Linux và file watching không ổn định trên Windows native | Chạy toàn bộ toolchain trong WSL 2 |
 | Docker Desktop integration qua WSL2 backend | Docker chạy native trong WSL |
 
 ---
@@ -180,13 +177,13 @@ cd superapp-monorepo
 ```bash
 # SAI: clone vào /mnt/c hoặc /mnt/e (Windows filesystem, chậm 10-100x)
 # Vite HMR sẽ không hoạt động, file watching lag, build chậm
-# git clone ... /mnt/e/Devin\ Repo/superapp-monorepo  ← ĐỪNG
+# git clone ... /mnt/e/Projects/superapp-monorepo  ← ĐỪNG
 ```
 
-> **Nếu đã có repo trên Windows** (vd `E:\Devin Repo\superapp-monorepo`):
+> **Nếu đã có repo trên Windows** (vd `E:\Projects\superapp-monorepo`):
 > ```bash
 > # Copy vào WSL (chậm lần đầu, nhưng sau đó nhanh)
-> cp -r /mnt/e/'Devin Repo'/superapp-monorepo ~/superapp-monorepo
+> cp -r /mnt/e/Projects/superapp-monorepo ~/superapp-monorepo
 > cd ~/superapp-monorepo
 > rm -rf node_modules  # xóa node_modules Windows (nếu có)
 > ```
@@ -286,9 +283,20 @@ done
 
 ---
 
-## 6. Chạy dev server
+## 6. Chạy ứng dụng
 
-### 6.1. Một app cụ thể
+### 6.0. Máy phát triển hiện tại
+
+Bảy app đã chạy bằng các service `vite-*` của systemd. Kiểm tra trạng thái bằng:
+
+```bash
+systemctl is-active vite-admin-portal vite-cashflow vite-inventory-operation \
+  vite-sales-operation vite-hr-operation vite-accounting vite-operations-portal
+```
+
+Không chạy thêm Vite nếu service tương ứng đang `active`.
+
+### 6.1. Chạy thủ công khi service đã dừng
 
 ```bash
 # Cashflow (port 5174)
@@ -301,13 +309,16 @@ npx turbo run dev --filter=admin-portal
 npm run dev -w apps/cashflow
 ```
 
-### 6.2. Tất cả 7 apps cùng lúc
+### 6.2. Chạy tất cả khi không dùng systemd
 
 ```bash
 npm run dev:apps
 # Hoặc:
 npm run dev
 ```
+
+Chỉ dùng các lệnh trên trên một máy mới hoặc sau khi đã dừng toàn bộ service
+`vite-*`; nếu không chúng sẽ tranh cùng cổng.
 
 Ports cố định (đừng đổi — dashboard hardcode):
 
@@ -337,7 +348,7 @@ http://localhost:5173    # Admin Portal
 > # → 172.x.x.x  (dùng http://172.x.x.x:5174 trong Windows browser)
 > ```
 
-### 6.4. Chạy dev server nền (không block terminal)
+### 6.4. Chạy nền trên máy không có systemd
 
 ```bash
 # Cách 1: setsid (detach hoàn toàn)
@@ -527,7 +538,7 @@ du -sh node_modules
 | Mở repo trong VS Code | `code .` (trong WSL, tại repo) |
 | Install deps | `npm install` (trong WSL, tại repo root) |
 | Chạy Cashflow | `npx turbo run dev --filter=cashflow` |
-| Chạy tất cả apps | `npm run dev:apps` |
+| Chạy tất cả apps trên máy không có systemd | `npm run dev:apps` |
 | Build | `npm run build` |
 | Type check | `npm run check-types` |
 | Lint | `npm run lint` |

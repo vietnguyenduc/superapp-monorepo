@@ -1,4 +1,4 @@
-# Superapp Monorepo — Project Context for Devin
+# Superapp Monorepo — Project Context for Codex
 
 > Living document. Update this when architecture, deployment, or testing workflow changes.
 
@@ -26,7 +26,7 @@
 - **Backend:** Supabase cloud (`peslmsctejmvkwzyohke`) — PostgreSQL + RLS + Auth + Storage + Realtime.
 - **API:** Fastify (`packages/api`, port 3001), not Express.
 - **Shared packages:** `@superapp/iam` (auth + multi-tenant context), `@superapp/shared-utils` (BaseService, createApiClient), `@repo/ui`, `@superapp/theme`, `@repo/types`, etc.
-- **Node:** Vite 8 / Rolldown require Node `^20.19.0 || >=22.12.0`; the current sandbox uses Node 20.18.1, so builds emit a Node-version warning but succeed.
+- **Node:** Vite 8 / Rolldown require Node `^20.19.0 || >=22.12.0`; this WSL environment uses Node 20.20.2.
 
 ## 4. Static Checks
 
@@ -49,7 +49,7 @@ After the React 18 / TypeScript 5.8 alignment and missing transitive-dependency 
 - Fixed `turbo` `check-types`/`lint`/`test`/`build` configuration drift and missing transitive dependencies (`local-pkg`, `@rolldown/binding-linux-x64-gnu`, `void-elements`, `css-box-model`, `memoize-one`, `raf-schd`, `react-redux`, `redux`, `use-memo-one`, chai transitive deps, `url-parse` family, `deep-equal`, `recharts-scale` family).
 - Generated the standard 12-file doc set for the 7 Superapp apps.
 - Added `docs/NEW-APP-TEMPLATE/` and `tools/new-app-generator/` (HTML app) for scaffolding new apps.
-- Added `tools/doc-audit/generate_app_docs.py` and `tools/doc-audit/audit_docs.py` to keep app docs in sync with source.
+- Standardized the per-app documentation set so architecture, data flow, roles, and runbooks stay close to each app.
 
 ### Cashflow data integrity
 
@@ -68,7 +68,7 @@ After the React 18 / TypeScript 5.8 alignment and missing transitive-dependency 
 
 - **Unit / service:** `npx turbo run test --filter=<app>` (Vitest).
 - **E2E / UI:** Playwright headless against local `npm run dev` or production URL. Chrome automation may be blocked by reCAPTCHA; use Playwright with trial mode or pre-authenticated sessions.
-- **Doc coverage:** `python3 tools/doc-audit/audit_docs.py` reports missing / stale docs.
+- **Doc coverage:** review the relevant app docs alongside each feature change and include doc updates in the same commit.
 
 ## 7. Pending / Watch Items
 
@@ -78,7 +78,7 @@ After the React 18 / TypeScript 5.8 alignment and missing transitive-dependency 
 
 ## 8. Secrets
 
-- `SUPABASE_DB_PASSWORD` should be stored as a Devin user/org secret for future migrations.
+- Store `SUPABASE_DB_PASSWORD` in the active secret manager; never commit it.
 - `VITE_SUPABASE_ANON_KEY` and service-role key live in Vercel env, `docker-compose.yml`, and per-app `.env` files. Do not commit them.
 
 ## Development readiness (2026-09-10)

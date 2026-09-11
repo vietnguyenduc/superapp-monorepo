@@ -2,13 +2,13 @@
 
 **Target:** `https://cashflow.appforyou.xyz` (live Supabase project `peslmsctejmvkwzyohke`)  
 **Actor:** Disposable `admin_master` test user created via the session `SUPABASE_SERVICE_ROLE_KEY`  
-**Test data:** A dedicated `DEVIN-PROD-*` company, branch, customers, bank account, and transactions; all deleted at the end.
+**Test data:** A dedicated `E2E-PROD-*` company, branch, customers, bank account, and transactions; all deleted at the end.
 
 ## Preconditions (setup, not part of the recorded assertions)
 
 1. Run a service-role script to:
-   - create an auth user `devin-prod-<ts>@appforyou.xyz` / `DevinProdPass123!` with `email_confirm=true`;
-   - create a `companies` row `DEVIN-PROD-CO-<ts>` (`name`, `code`, `is_active=true`);
+   - create an auth user `e2e-prod-<ts>@appforyou.xyz` / `E2EProdPass123!` with `email_confirm=true`;
+   - create a `companies` row `E2E-PROD-CO-<ts>` (`name`, `code`, `is_active=true`);
    - create a `branches` row for that company;
    - create `public.users` row with `role='admin_master'`, `company_id` and `branch_id` pointing to the test company/branch;
    - create an active `transaction_types` row for the test company with `name='Hoàn tiền'` and `math_factor=-1` (so the canonical refund type is selectable) — this only provides a selectable label, the import path normalizes it to `transaction_type='refund'`;
@@ -20,7 +20,7 @@
 ## TC1 — Login form with invalid credentials shows translated Vietnamese error
 
 **Steps:**
-1. Enter `devin-prod-<ts>@appforyou.xyz` and a wrong password into the login form.
+1. Enter `e2e-prod-<ts>@appforyou.xyz` and a wrong password into the login form.
 2. Click `Đăng nhập`.
 
 **Pass criteria:**
@@ -50,7 +50,7 @@
 **Steps:**
 1. Navigate to `/customers`.
 2. Click `Thêm khách hàng` (primary button with `+` icon).
-3. Fill `Mã khách hàng` = `DEVIN-CUST-001`, `Họ và tên` = `Devin Prod Customer`, `Số điện thoại` = `0909000001`, `Email` = `devin.cust@example.com`, `Địa chỉ` = `123 Prod St`, `Cách làm việc công nợ` = `Test working method`, `Người đại diện` = `Devin Rep`, `is_active` checked.
+3. Fill `Mã khách hàng` = `E2E-CUST-001`, `Họ và tên` = `E2E Test Customer`, `Số điện thoại` = `0909000001`, `Email` = `e2e.customer@example.com`, `Địa chỉ` = `123 Prod St`, `Cách làm việc công nợ` = `Test working method`, `Người đại diện` = `E2E Representative`, `is_active` checked.
 4. Click `Tạo khách hàng`.
 
 **Pass criteria:**
@@ -62,12 +62,12 @@
 ## TC4 — Edit customer (rename, toggle active, duplicate-code validation, preserve immutable fields)
 
 **Steps:**
-1. Open `DEVIN-CUST-001` and click `Sửa`.
-2. Change `Họ và tên` to `Devin Prod Customer Updated`, `Địa chỉ` to `456 Updated St`, `Cách làm việc công nợ` to `Updated method`, `Người đại diện` to `Updated Rep`, toggle `is_active` off, save.
+1. Open `E2E-CUST-001` and click `Sửa`.
+2. Change `Họ và tên` to `E2E Test Customer Updated`, `Địa chỉ` to `456 Updated St`, `Cách làm việc công nợ` to `Updated method`, `Người đại diện` to `Updated Rep`, toggle `is_active` off, save.
 3. Re-open the customer: verify all changed fields persist and `is_active` is off.
-4. Change `Mã khách hàng` to `DEVIN-CUST-002-NEW`, save, refresh (F5), re-open, verify code persists.
-5. Create a second customer `DEVIN-CUST-002`.
-6. Edit `DEVIN-CUST-001` and set `Mã khách hàng` to `DEVIN-CUST-002`; attempt save.
+4. Change `Mã khách hàng` to `E2E-CUST-002-NEW`, save, refresh (F5), re-open, verify code persists.
+5. Create a second customer `E2E-CUST-002`.
+6. Edit `E2E-CUST-001` and set `Mã khách hàng` to `E2E-CUST-002`; attempt save.
 7. Edit a customer with a non-zero balance (create a charge first) and change only `Địa chỉ`; verify `total_balance` and `id` unchanged.
 
 **Pass criteria:**
@@ -86,8 +86,8 @@
 
 **Steps:**
 1. Go to `/settings`.
-2. Open the `Văn phòng` tab, click add, fill `Tên` = `Devin Prod Branch`, `Địa chỉ` = `Branch Addr`, `Số điện thoại` = `0909000002`, save.
-3. Open the `Tài khoản ngân hàng` tab, click add, fill `Tên ngân hàng` = `Devin Bank`, `Số tài khoản` = `9999999999`, `Tên tài khoản` = `Devin Prod Account`, `Số dư đầu kỳ` = `1000000`, save.
+2. Open the `Văn phòng` tab, click add, fill `Tên` = `E2E Test Branch`, `Địa chỉ` = `Branch Addr`, `Số điện thoại` = `0909000002`, save.
+3. Open the `Tài khoản ngân hàng` tab, click add, fill `Tên ngân hàng` = `E2E Test Bank`, `Số tài khoản` = `9999999999`, `Tên tài khoản` = `E2E Test Account`, `Số dư đầu kỳ` = `1000000`, save.
 
 **Pass criteria:**
 - Branch appears in the branch list and in transaction-form branch selects.
@@ -100,12 +100,12 @@
 
 **Steps:**
 1. Go to `/import/transactions` (single-entry `Nhập từng giao dịch` tab).
-2. Import one row for each canonical type using `DEVIN-CUST-001`, the test bank account, and the test branch:
+2. Import one row for each canonical type using `E2E-CUST-001`, the test bank account, and the test branch:
    - `TXN-PAY` `Phát sinh giảm` `500000`
    - `TXN-CHG` `Phát sinh tăng` `300000`
    - `TXN-ADJ` `Điều chỉnh` `-200000` (signed negative adjustment)
    - `TXN-REF` `Hoàn tiền` `100000`
-3. After each import, check `/customers` for `DEVIN-CUST-001` total balance and `/settings` bank account balance.
+3. After each import, check `/customers` for `E2E-CUST-001` total balance and `/settings` bank account balance.
 
 **Pass criteria (per `balanceMath.ts`):**
 - After `Phát sinh giảm` 500K: customer `+500.000 ₫`, bank `+500.000 ₫` (bank total `1.500.000 ₫`).
@@ -137,7 +137,7 @@
 **Steps:**
 1. Prepare a small XLSX:
    - `customers` sheet: `customer_code`, `full_name`, `phone`, `email`, `address` with two new rows `BULK-CUST-01` and `BULK-CUST-02`.
-   - `transactions` sheet: `transaction_code`, `transaction_date`, `customer_code`, `transaction_type`, `amount`, `description`, `bank_account`, `branch` with two rows using `BULK-CUST-01` and `BULK-CUST-02`, bank `9999999999 - Devin Prod Account`, branch `Devin Prod Branch`.
+   - `transactions` sheet: `transaction_code`, `transaction_date`, `customer_code`, `transaction_type`, `amount`, `description`, `bank_account`, `branch` with two rows using `BULK-CUST-01` and `BULK-CUST-02`, bank `9999999999 - E2E Test Account`, branch `E2E Test Branch`.
 2. Go to `/import/customers`, upload the file, import.
 3. Go to `/import/transactions`, switch to `Nhập hàng loạt`, upload the file, import.
 
@@ -185,4 +185,4 @@
 1. Delete all test transactions, customers, bank accounts, branches, `backup_history` rows, and the test company scoped to the test company ID.
 2. Delete the disposable auth user and `public.users` row.
 3. Delete the seeded `Hoàn tiền` transaction type for the test company.
-4. Verify no `DEVIN-PROD-*` / `BULK-*` / `TXN-*` data remains in Supabase.
+4. Verify no `E2E-PROD-*` / `BULK-*` / `TXN-*` data remains in Supabase.
