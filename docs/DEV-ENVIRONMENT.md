@@ -6,7 +6,7 @@
 
 ## TL;DR (5 phút nếu máy chưa có gì)
 
-### Môi trường Codex trên WSL (2026-09-10)
+### Môi trường Codex trên WSL (2026-09-11)
 
 - Làm việc tại `/home/dev/projects/superapp-monorepo` trên WSL.
 - Windows host phải bật và có mạng để dùng kết nối này từ iPhone; tắt máy hoặc
@@ -18,9 +18,15 @@
   quản trị. WebKit mô phỏng iPhone hữu ích cho kiểm thử, không thay thế iPhone thật.
 - Máy này đã chạy 7 ứng dụng qua systemd. Không khởi động thêm `dev:apps`;
   dùng đúng các cổng 5173–5178 và 3006.
+- Tailscale `1.102.4` chạy trực tiếp trong WSL với hostname `superapp-wsl`.
+  IP hiện tại là `100.88.242.114`; `tailscaled` được enable cùng systemd và
+  `accept-dns=false` để không tranh quyền quản lý `/etc/resolv.conf` của WSL.
+- iPhone xem bản build gọn trên cổng 4173–4178 và 4006. Các cổng dev
+  tạo nhiều request module (Cashflow đo được 130 request) nên chậm khi
+  Tailscale phải relay qua DERP; bản build Cashflow chỉ còn khoảng 20 request.
 - `npm run test:smoke`: mở màn hình công khai của 7 app trên Chromium và WebKit
   mô phỏng iPhone, chạy 1 worker để hạn chế RAM, lưu ảnh và báo cáo HTML.
-  Mặc định dùng `127.0.0.1`; đặt `SMOKE_HOST=http://100.83.130.115` nếu cần
+  Mặc định dùng `127.0.0.1`; đặt `SMOKE_HOST=http://100.88.242.114` nếu cần
   kiểm tra qua Tailscale từ một môi trường khác.
 - `npm run test:e2e:cashflow` / `npm run test:e2e:inventory`: bộ kiểm thử tính năng
   hiện có. Smoke test chỉ xác nhận app khởi động; không xác nhận mọi nghiệp vụ.
@@ -348,7 +354,56 @@ http://localhost:5173    # Admin Portal
 > # → 172.x.x.x  (dùng http://172.x.x.x:5174 trong Windows browser)
 > ```
 
-### 6.4. Chạy nền trên máy không có systemd
+### 6.4. Truy cập nhanh từ iPhone qua Tailscale
+
+Tailscale chạy trực tiếp trong WSL, không qua Windows `netsh portproxy`. Trên
+iPhone, bật Tailscale bằng cùng tailnet rồi mở các URL sau:
+
+| App | Mobile preview | Dev/HMR (chậm khi relay) |
+|---|---|---|
+| Admin Portal | `http://100.88.242.114:4173` | `http://100.88.242.114:5173` |
+| Cashflow | `http://100.88.242.114:4174` | `http://100.88.242.114:5174` |
+| Inventory | `http://100.88.242.114:4175` | `http://100.88.242.114:5175` |
+| Sales | `http://100.88.242.114:4176` | `http://100.88.242.114:5176` |
+| HR | `http://100.88.242.114:4177` | `http://100.88.242.114:5177` |
+| Accounting | `http://100.88.242.114:4178` | `http://100.88.242.114:5178` |
+| Operations | `http://100.88.242.114:4006` | `http://100.88.242.114:3006` |
+
+Mobile preview phục vụ nội dung đã build trong `dist/`; nó không có HMR.
+Sau mỗi thay đổi cần xem trên iPhone, build lại app liên quan trước khi
+xác nhận UI. Ví dụ cho Cashflow:
+
+```bash
+npm run build -w apps/cashflow
+```
+
+Các service `mobile-*` hiện là transient systemd units: chúng chạy trong phiên
+WSL hiện tại và cần tạo lại sau khi WSL/Windows khởi động lại. Kiểm tra:
+
+```bash
+systemctl is-active mobile-admin mobile-cashflow mobile-inventory mobile-sales \
+  mobile-hr mobile-accounting mobile-operations
+tailscale status
+tailscale ip -4
+```
+
+Một app preview được chạy bằng Node của user `dev`, Vite `preview`,
+`--host 0.0.0.0`, và cổng mobile trong bảng. Ví dụ khôi phục Cashflow:
+
+```bash
+sudo systemd-run --unit=mobile-cashflow --property=User=dev \
+  --property=WorkingDirectory=/home/dev/projects/superapp-monorepo/apps/cashflow \
+  /home/dev/.nvm/versions/node/v20.20.2/bin/node \
+  /home/dev/projects/superapp-monorepo/node_modules/vite/bin/vite.js \
+  preview --host 0.0.0.0 --port 4174 --strictPort
+```
+
+Nếu app local phản hồi nhanh nhưng iPhone vẫn chậm, chạy
+`tailscale ping <iphone-name>`. Dòng `via DERP(...)` và `direct connection not
+established` cho biết traffic đang qua relay. Mobile preview giảm số request để
+hạn chế độ trễ này.
+
+### 6.5. Chạy nền trên máy không có systemd
 
 ```bash
 # Cách 1: setsid (detach hoàn toàn)

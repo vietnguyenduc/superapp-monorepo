@@ -37,6 +37,10 @@ scripts, service configuration, and workflows.
   `npm run dev:apps` while those services are active.
 - Fixed ports are 5173–5178 and 3006. Do not change them.
 - Open an app from Windows at `http://localhost:<port>`.
+- For an iPhone, Tailscale runs directly inside WSL as `superapp-wsl`
+  (`100.88.242.114` as of 2026-09-11). Use optimized mobile-preview ports
+  4173–4178 and 4006; dev ports can be slow over a DERP relay. See
+  `docs/DEV-ENVIRONMENT.md` for URLs, lifecycle, and restart commands.
 - `.env.local` files are private and ignored. Never print or commit credentials.
 - Set `VITE_USE_LOCAL_API=false` to use Supabase cloud without probing the optional
   local API. Prefer trial mode for safe UI tests when it covers the feature.

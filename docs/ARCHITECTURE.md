@@ -7,7 +7,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Browser / Phone                         │
-│  (Tailscale → Windows → netsh portproxy → WSL → Vite dev)     │
+│ Windows: localhost → WSL | iPhone: Tailscale → WSL directly │
 └────────────────────────────┬────────────────────────────────────┘
                              │ HTTPS (prod) / HTTP (dev)
                              ▼
@@ -40,6 +40,11 @@ Local/AI development (optional):
      │                                                │
      └────────────────────►  local Postgres mirror  ──┘
 ```
+
+For remote mobile review, WSL is its own Tailscale node (`superapp-wsl`). The
+iPhone connects to WSL without Windows `portproxy`. Optimized Vite preview
+processes serve the latest built `dist/` output on ports 4173–4178 and 4006;
+details and lifecycle commands live in [DEV-ENVIRONMENT.md](./DEV-ENVIRONMENT.md).
 
 ## Monorepo Structure
 
