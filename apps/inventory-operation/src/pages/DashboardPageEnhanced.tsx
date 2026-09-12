@@ -281,9 +281,9 @@ const DashboardPageEnhanced: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 w-full overflow-x-hidden relative transition-colors duration-300">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 w-full overflow-x-clip relative transition-colors duration-300">
       {/* Sticky Filter Header - Higher z-index and forced top-16 */}
-      <div className="sticky top-16 z-[40] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md px-3 sm:px-6 lg:px-8 py-3 border-b border-gray-200 dark:border-gray-800 shadow-md w-full mx-0 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-5 lg:-mt-6 !max-w-none mb-6">
+      <div data-testid="dashboard-filter-header" className="sticky top-16 z-[40] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md px-3 sm:px-6 lg:px-8 py-3 border-b border-gray-200 dark:border-gray-800 shadow-md w-full mx-0 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-5 lg:-mt-6 !max-w-none mb-6">
         <div className="max-w-7xl mx-auto flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div className="grid w-full grid-cols-2 items-center gap-2 lg:flex lg:w-auto lg:gap-3">
             <div className="col-span-2 text-sm font-bold text-gray-800 dark:text-gray-200 lg:col-span-1">Dashboard Tồn Kho</div>

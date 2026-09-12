@@ -61,8 +61,10 @@ const Navigation: React.FC<NavigationProps> = ({ onMenuClick }) => {
           {/* Right side - User info and actions */}
           <div className="flex shrink-0 items-center gap-1 sm:gap-4">
             {/* Company badge - shows current company context */}
-            <div className="hidden md:block"><CompanyBadge /></div>
-            <div className="hidden sm:block"><AppSwitcher /></div>
+            <div className="max-w-[34px] overflow-visible [&>div>span]:hidden [&>div>button>span]:hidden md:max-w-none md:[&>div>span]:inline md:[&>div>button>span]:inline">
+              <CompanyBadge />
+            </div>
+            <AppSwitcher />
             {user && (
               <div className="relative">
                 <button

@@ -108,6 +108,12 @@ test.describe("Inventory app — Dashboard và MRP đối soát", () => {
       document: document.documentElement.scrollWidth,
     }));
     expect(pageWidth.document).toBeLessThanOrEqual(pageWidth.viewport);
+
+    const filterHeader = page.getByTestId("dashboard-filter-header");
+    const topBeforeScroll = await filterHeader.evaluate((element) => element.getBoundingClientRect().top);
+    await page.evaluate(() => window.scrollTo(0, 900));
+    await expect.poll(() => filterHeader.evaluate((element) => element.getBoundingClientRect().top)).toBeLessThanOrEqual(topBeforeScroll + 1);
+    await expect.poll(() => filterHeader.evaluate((element) => element.getBoundingClientRect().top)).toBeGreaterThanOrEqual(63);
   });
 
   test("MRP shows precise movement-based stock and demand units on iPhone", async ({ page }) => {
