@@ -24,6 +24,7 @@ export class InventoryMapper {
       notes: item.notes,
       sourceType: item.source_type,
       referenceId: item.reference_id,
+      status: item.status || 'active',
     };
   }
 
@@ -46,6 +47,7 @@ export class InventoryMapper {
     if (record.notes) row.notes = record.notes;
     if (record.sourceType) row.source_type = record.sourceType;
     if (record.referenceId) row.reference_id = record.referenceId;
+    if (record.status) row.status = record.status;
     if (record.supplierId) row.supplier_id = record.supplierId;
     if (record.supplierName) row.supplier_name = record.supplierName;
     if (record.unitPrice !== undefined) row.unit_price = record.unitPrice;

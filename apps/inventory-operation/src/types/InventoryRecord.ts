@@ -40,6 +40,7 @@ export interface InventoryRecord {
   // Source tracking (for Nhập hàng / Xuất hàng / Sales sync)
   sourceType?: InventorySourceType; // Where this record came from
   referenceId?: string; // Reference to source record (e.g. sales_record.id, PO code)
+  status?: 'active' | 'cancelled';
 }
 
 export enum InventorySourceType {

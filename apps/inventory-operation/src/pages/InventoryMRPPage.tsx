@@ -5,7 +5,8 @@ import { useProducts } from '../hooks/useProducts';
 import { InventoryService } from '../services/inventoryService';
 import { supplierService, Supplier } from '../services/supplierService';
 import { Product, InventoryRecord } from '../types';
-import { calculateDaysOnHand, calculateMovementStock } from '../utils/inventoryPilotMath';
+import { calculateDaysOnHand } from '../utils/inventoryPilotMath';
+import { buildProductLedgerBalances, calculateDailyOutput } from '../utils/inventoryLedger';
 
 interface MRPItem {
   product: Product;
@@ -25,6 +26,7 @@ const InventoryMRPPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [actionError, setActionError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [targetDays, setTargetDays] = useState(14);
 
   const { products } = useProducts();
@@ -43,36 +45,27 @@ const InventoryMRPPage: React.FC = () => {
       if (products.length === 0) return;
       setLoading(true);
       try {
-        // Load inventory records for last 30 days
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+        setLoadError(null);
         const res = await InventoryService.getInventoryRecords({});
         const records: InventoryRecord[] = res.data || [];
+        const asOf = new Date();
 
         // Calculate stock + sales rate per product
         const items: MRPItem[] = products.map((product) => {
           const productRecords = records.filter((r) => r.productId === product.id || r.productCode === product.businessCode);
 
           // Current stock = sum(input) - sum(output)
-          const currentStock = calculateMovementStock(productRecords);
+          const currentStock = buildProductLedgerBalances(productRecords, asOf)[0]?.quantity || 0;
 
           // Sales rate: output records in last 7/30 days
-          const now = Date.now();
-          const last7d = productRecords.filter((r) => {
-            const d = r.date instanceof Date ? r.date.getTime() : new Date(r.date).getTime();
-            return now - d <= 7 * 86400000;
-          });
-          const last30d = productRecords.filter((r) => {
-            const d = r.date instanceof Date ? r.date.getTime() : new Date(r.date).getTime();
-            return now - d <= 30 * 86400000;
-          });
-          const salesRate7d = last7d.reduce((s, r) => s + (r.outputQuantity || 0), 0) / 7;
-          const salesRate30d = last30d.reduce((s, r) => s + (r.outputQuantity || 0), 0) / 30;
+          const salesRate7d = calculateDailyOutput(productRecords, 7, asOf);
+          const salesRate30d = calculateDailyOutput(productRecords, 30, asOf);
 
           return {
             product,
             currentStock,
-            salesRate7d: Math.round(salesRate7d),
-            salesRate30d: Math.round(salesRate30d),
+            salesRate7d,
+            salesRate30d,
             supplier: suppliers.find((s) => s.id === (product as any).supplier_id),
             leadTimeDays: (product as any).lead_time_days || 3,
             unitPrice: product.price || 0,
@@ -81,6 +74,7 @@ const InventoryMRPPage: React.FC = () => {
         setMrpItems(items);
       } catch (err) {
         console.error('MRP load error:', err);
+        setLoadError(err instanceof Error ? err.message : 'Không thể đối soát dữ liệu MRP');
       } finally {
         setLoading(false);
       }
@@ -165,7 +159,7 @@ const InventoryMRPPage: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6 animate-in fade-in duration-500">
-      {actionError && <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100">{actionError}</div>}
+      {(actionError || loadError) && <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100">{actionError || loadError}</div>}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-slate-800 dark:text-white tracking-tight">Vòng quay tồn kho & MRP</h1>
@@ -289,8 +283,8 @@ const InventoryMRPPage: React.FC = () => {
                         <div className="font-bold text-slate-900 dark:text-white">{item.product.name}</div>
                         <div className="text-xs text-slate-500 mt-1">{item.supplier?.full_name || 'Chưa gán NCC'}</div>
                       </td>
-                      <td className="px-6 py-4 text-right font-medium text-slate-700 dark:text-gray-300">{item.currentStock.toLocaleString()}</td>
-                      <td className="px-6 py-4 text-right font-medium text-slate-700 dark:text-gray-300">{rate} / ngày</td>
+                      <td className="px-6 py-4 text-right font-medium text-slate-700 dark:text-gray-300">{item.currentStock.toLocaleString('vi-VN',{maximumFractionDigits:3})} {item.product.inputUnit}</td>
+                      <td className="px-6 py-4 text-right font-medium text-slate-700 dark:text-gray-300">{rate.toLocaleString('vi-VN',{maximumFractionDigits:3})} {item.product.inputUnit} / ngày</td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex flex-col items-center">
                           <span className={`font-bold text-lg ${isOutOfStock ? 'text-rose-600' : 'text-slate-800 dark:text-white'}`}>{doh === null ? '—' : doh}</span>
