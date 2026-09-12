@@ -145,6 +145,16 @@ describe('fallbackService', () => {
       expect(result.data!.rawMaterialStock).toBe(50);
       expect(result.error).toBeNull();
     });
+
+    it('fills the canonical product unit for trial movements', async () => {
+      await fallbackService.createProduct({
+        name: 'Xoài', businessCode: 'NVL-XO01', category: 'fruit', inputUnit: 'kg', outputUnit: 'kg',
+      } as any);
+      const result = await fallbackService.createInventoryRecord({
+        productCode: 'NVL-XO01', productName: 'Xoài', inputQuantity: 2, rawMaterialUnit: '', date: new Date(),
+      } as any);
+      expect(result.data?.rawMaterialUnit).toBe('kg');
+    });
   });
 
   describe('getSalesRecords', () => {

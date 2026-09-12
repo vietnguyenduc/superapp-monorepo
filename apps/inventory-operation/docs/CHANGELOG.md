@@ -1,5 +1,14 @@
 # inventory-operation — Changelog
 
+## 2026-09-12 — Dashboard, MRP and XNT reconciliation
+
+- Replaced Dashboard latest-row snapshot math with movement-ledger balances shared with MRP and XNT.
+- Removed the fictional 15,000 VND inventory valuation and synthetic sales-growth percentage.
+- Prevented quantity charts from adding different units; category distribution now counts stocked products.
+- Preserved fractional MRP demand rates and excluded future-dated movements.
+- Added golden tests for the accounting identity, stock-count adjustments, mixed units and slow-moving demand.
+- Excluded cancelled/future-dated movements and made Trial writers persist the product's canonical unit.
+
 ## 2026-09-12 — Stock-count approval and canonical units
 
 - Added a stock-count session screen with a dated book snapshot, physical counts, mandatory variance explanations, approval/rejection, and linked adjustment records.
