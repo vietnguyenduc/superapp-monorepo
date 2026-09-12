@@ -185,6 +185,8 @@ test.describe("Inventory app — Nhập hàng page", () => {
     await expect(page.getByText("Đã lưu 2 dòng thành công!")).toBeVisible();
     await expect(page.getByText("Biên nhận nhập hàng loạt")).toBeVisible();
     await expect(page.getByText(/Mã lô:/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /lịch sử lô nhập gần đây/i })).toBeVisible();
+    await expect(page.getByText("1 lô")).toBeVisible();
     const recentRecords = page.locator("table").last();
     await expect(recentRecords.getByRole("cell", { name: "NVL-XO01", exact: true }).first()).toBeVisible();
     await expect(recentRecords.getByRole("cell", { name: "NVL-DH01", exact: true }).first()).toBeVisible();
@@ -263,6 +265,8 @@ test.describe("Inventory app — Xuất hàng page", () => {
     await expect(page.getByText("Đã lưu 2 dòng thành công!")).toBeVisible();
     await expect(page.getByText("Biên nhận xuất hàng loạt")).toBeVisible();
     await expect(page.getByText(/Mã lô:/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /lịch sử lô xuất gần đây/i })).toBeVisible();
+    await expect(page.getByText("1 lô")).toBeVisible();
     const recentRecords = page.locator("table").last();
     await expect(recentRecords.getByRole("cell", { name: "NVL-XO01", exact: true }).first()).toBeVisible();
     await expect(recentRecords.getByRole("cell", { name: "NVL-DH01", exact: true }).first()).toBeVisible();

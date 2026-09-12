@@ -7,10 +7,11 @@ import { InventoryService } from '../services/inventoryService';
 import { supplierService, Supplier } from '../services/supplierService';
 import { useProducts } from '../hooks/useProducts';
 import { InventorySourceType } from '../types';
+import BulkImportHistoryPanel from '../components/BulkImportHistoryPanel';
+import { bulkImportHistoryService, BulkImportReceipt } from '../services/bulkImportHistoryService';
 
 type SubTab = 'po' | 'gr' | 'return';
 type ImportMode = 'single' | 'bulk';
-type BatchReceipt = { batchId: string; created: number; errors: number; savedAt: string };
 
 const SUB_TAB_CONFIG: { id: SubTab; label: string; icon: string; desc: string }[] = [
   { id: 'po', label: 'Đặt hàng (PO)', icon: '📋', desc: 'Lập đơn đặt hàng tới NCC' },
@@ -35,9 +36,11 @@ const GoodsReceiptImportPage: React.FC = () => {
   const [records, setRecords] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [batchReceipt, setBatchReceipt] = useState<BatchReceipt | null>(() => {
+  const [batchReceipt, setBatchReceipt] = useState<BulkImportReceipt | null>(() => {
     try { return JSON.parse(localStorage.getItem('inventory_last_input_receipt') || 'null'); } catch { return null; }
   });
+  const [batchHistory, setBatchHistory] = useState<BulkImportReceipt[]>([]);
+  const [isLoadingBatchHistory, setIsLoadingBatchHistory] = useState(true);
   const [notification, setNotification] = useState<{
     type: 'success' | 'error';
     message: string;
@@ -86,6 +89,17 @@ const GoodsReceiptImportPage: React.FC = () => {
   useEffect(() => {
     loadRecords();
   }, [loadRecords]);
+
+  const loadBatchHistory = useCallback(async () => {
+    setIsLoadingBatchHistory(true);
+    const res = await bulkImportHistoryService.getHistory('input');
+    if (res.success && res.data) setBatchHistory(res.data);
+    setIsLoadingBatchHistory(false);
+  }, []);
+
+  useEffect(() => {
+    loadBatchHistory();
+  }, [loadBatchHistory]);
 
   const handleSubTabChange = (tab: SubTab) => {
     setActiveSubTab(tab);
@@ -147,13 +161,14 @@ const GoodsReceiptImportPage: React.FC = () => {
         const { created, errors, batchId } = res.data;
         const receipt = { batchId, created, errors: errors.length, savedAt: new Date().toISOString() };
         setBatchReceipt(receipt);
-        localStorage.setItem('inventory_last_input_receipt', JSON.stringify(receipt));
+        setBatchHistory(bulkImportHistoryService.rememberReceipt('input', receipt));
         if (errors.length > 0) {
           showNotification('error', `Đã lưu ${created} dòng. Lỗi: ${errors.length} dòng.`);
         } else {
           showNotification('success', `Đã lưu ${created} dòng thành công!`);
         }
         loadRecords();
+        loadBatchHistory();
       }
     } catch (err) {
       showNotification('error', 'Lỗi kết nối, vui lòng thử lại');
@@ -275,6 +290,8 @@ const GoodsReceiptImportPage: React.FC = () => {
             />
           )}
         </div>
+
+        <BulkImportHistoryPanel directionLabel="nhập" history={batchHistory} loading={isLoadingBatchHistory} />
 
         {/* Records list */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">

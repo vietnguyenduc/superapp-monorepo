@@ -4,10 +4,11 @@ import GoodsIssueForm, { GoodsIssueFormData } from '../components/Form/GoodsIssu
 import GoodsIssueBulkGrid, { BulkGoodsIssueRow } from '../components/GoodsIssueBulkGrid';
 import { goodsIssueService, SalesSyncRecord } from '../services/goodsIssueService';
 import { useProducts } from '../hooks/useProducts';
+import BulkImportHistoryPanel from '../components/BulkImportHistoryPanel';
+import { bulkImportHistoryService, BulkImportReceipt } from '../services/bulkImportHistoryService';
 
 type MainMode = 'manual' | 'sales_sync';
 type ImportMode = 'single' | 'bulk';
-type BatchReceipt = { batchId: string; created: number; errors: number; savedAt: string };
 
 const MODE_CONFIG: { id: MainMode; label: string; icon: string; desc: string }[] = [
   { id: 'manual', label: 'Nhập thủ công', icon: '✍️', desc: 'Nhập phiếu xuất bằng form hoặc Excel' },
@@ -25,9 +26,11 @@ const GoodsIssueImportPage: React.FC = () => {
   const [records, setRecords] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [batchReceipt, setBatchReceipt] = useState<BatchReceipt | null>(() => {
+  const [batchReceipt, setBatchReceipt] = useState<BulkImportReceipt | null>(() => {
     try { return JSON.parse(localStorage.getItem('inventory_last_output_receipt') || 'null'); } catch { return null; }
   });
+  const [batchHistory, setBatchHistory] = useState<BulkImportReceipt[]>([]);
+  const [isLoadingBatchHistory, setIsLoadingBatchHistory] = useState(true);
   const [notification, setNotification] = useState<{
     type: 'success' | 'error' | 'info';
     message: string;
@@ -66,6 +69,17 @@ const GoodsIssueImportPage: React.FC = () => {
   useEffect(() => {
     loadRecords();
   }, [loadRecords]);
+
+  const loadBatchHistory = useCallback(async () => {
+    setIsLoadingBatchHistory(true);
+    const res = await bulkImportHistoryService.getHistory('output');
+    if (res.success && res.data) setBatchHistory(res.data);
+    setIsLoadingBatchHistory(false);
+  }, []);
+
+  useEffect(() => {
+    loadBatchHistory();
+  }, [loadBatchHistory]);
 
   const handleModeChange = (mode: MainMode) => {
     setActiveMode(mode);
@@ -116,13 +130,14 @@ const GoodsIssueImportPage: React.FC = () => {
         const { created, errors, batchId } = res.data;
         const receipt = { batchId, created, errors: errors.length, savedAt: new Date().toISOString() };
         setBatchReceipt(receipt);
-        localStorage.setItem('inventory_last_output_receipt', JSON.stringify(receipt));
+        setBatchHistory(bulkImportHistoryService.rememberReceipt('output', receipt));
         if (errors.length > 0) {
           showNotification('error', `Đã lưu ${created} dòng. Lỗi: ${errors.length} dòng.`);
         } else {
           showNotification('success', `Đã lưu ${created} dòng thành công!`);
         }
         loadRecords();
+        loadBatchHistory();
       }
     } catch {
       showNotification('error', 'Lỗi kết nối, vui lòng thử lại');
@@ -271,6 +286,8 @@ const GoodsIssueImportPage: React.FC = () => {
             <div className="mt-1 break-all font-mono text-xs">Mã lô: {batchReceipt.batchId}</div>
           </div>
         )}
+
+        <BulkImportHistoryPanel directionLabel="xuất" history={batchHistory} loading={isLoadingBatchHistory} />
 
         {/* Content */}
         {activeMode === 'manual' ? (
