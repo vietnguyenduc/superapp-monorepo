@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildInventoryTransactionReport } from './inventoryReport';
+import { buildInventoryTransactionReport, summarizeCurrentBalanceByUnit, summarizeReportByUnit } from './inventoryReport';
 
 describe('buildInventoryTransactionReport', () => {
   it('carries bulk inbound and outbound into opening and closing stock', () => {
@@ -11,6 +11,22 @@ describe('buildInventoryTransactionReport', () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]).toMatchObject({ id: 'out', beginning_inventory: 10, inbound_quantity: 0, sales_quantity: 3, book_inventory: 7 });
     expect(rows[1]).toMatchObject({ id: 'in', beginning_inventory: 0, inbound_quantity: 10, sales_quantity: 0, book_inventory: 10 });
+  });
+
+  it('keeps report totals separate by unit', () => {
+    const totals=summarizeReportByUnit([
+      { unit:'kg',inbound_quantity:10,sales_quantity:0,book_inventory:10 },
+      { unit:'cái',inbound_quantity:3,sales_quantity:0,book_inventory:3 },
+    ] as any,'inbound_quantity');
+    expect(totals).toEqual([{unit:'cái',quantity:3},{unit:'kg',quantity:10}]);
+  });
+
+  it('uses only the latest balance of each product for current stock totals', () => {
+    const rows = buildInventoryTransactionReport([
+      { id: 'in', date: new Date('2026-09-10'), productId: 'a', productCode: 'A', productName: 'A', inputQuantity: 10, outputQuantity: 0, rawMaterialUnit: 'kg' },
+      { id: 'out', date: new Date('2026-09-11'), productId: 'a', productCode: 'A', productName: 'A', inputQuantity: 0, outputQuantity: 3, rawMaterialUnit: 'kg' },
+    ] as any);
+    expect(summarizeCurrentBalanceByUnit(rows, 'book_inventory')).toEqual([{ unit: 'kg', quantity: 7 }]);
   });
 
   it('keeps balances separate for each product', () => {

@@ -61,6 +61,34 @@ test.describe("Inventory app — sidebar navigation", () => {
   });
 });
 
+test.describe("Inventory app — Phiên kiểm kê", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.context().clearCookies();
+    await enterTrialMode(page);
+  });
+
+  test("creates snapshot, explains variance, approves and links adjustment", async ({ page }) => {
+    await page.goto(`${BASE_URL}/stock-counts`, { waitUntil: "networkidle" });
+    await page.getByLabel("Ghi chú phiên kiểm kê").fill("Kiểm kê pilot");
+    await page.getByRole("button", { name: /tạo và chốt tồn sổ/i }).click();
+    await expect(page.getByText(/đã chốt snapshot tồn sổ/i)).toBeVisible();
+    const rows = page.locator("tbody tr");
+    const count = await rows.count();
+    for (let index = 0; index < count; index++) {
+      const row = rows.nth(index);
+      const book = Number((await row.locator("td").nth(1).innerText()).replace(/\./g, '').replace(',', '.'));
+      await row.locator('input[type="number"]').fill(String(index === 0 ? book + 1 : book));
+      if (index === 0) await row.locator("td").nth(4).locator("input").fill("Đếm thừa một đơn vị");
+    }
+    await page.getByRole("button", { name: /gửi duyệt/i }).click();
+    await expect(page.getByText(/đã gửi phiên kiểm kê để duyệt/i)).toBeVisible();
+    await page.getByLabel("Ý kiến duyệt").fill("Đã đối chiếu");
+    await page.getByRole("button", { name: /duyệt & điều chỉnh/i }).click();
+    await expect(page.getByText(/đã duyệt và sinh phiếu điều chỉnh liên kết/i)).toBeVisible();
+    await expect(page.locator("tbody tr").first().locator("td").nth(5)).toContainText(/inv-/);
+  });
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Test group: Nhập hàng page (GoodsReceiptImportPage)
 // ─────────────────────────────────────────────────────────────────────────────

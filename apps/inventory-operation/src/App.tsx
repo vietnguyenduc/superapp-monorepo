@@ -35,6 +35,7 @@ const TestPage = lazyWithRetry(() => import('./pages/TestPage'));
 const HelpPage = lazyWithRetry(() => import('./pages/HelpPage'));
 const ProductCatalogImportPage = lazyWithRetry(() => import('./pages/ProductCatalogImportPage'));
 const InventoryTransactionImportPage = lazyWithRetry(() => import('./pages/InventoryTransactionImportPage'));
+const StockCountPage = lazyWithRetry(() => import('./pages/StockCountPage'));
 
 // Loading fallback component
 const PageLoading = () => (
@@ -98,6 +99,7 @@ const App: FC = () => {
               <Route path="purchase-orders" element={<Navigate to="/goods-receipts?subTab=po" replace />} />
               <Route path="supplier-returns" element={<Navigate to="/goods-receipts?subTab=return" replace />} />
               <Route path="inventory-records" element={<InventoryRecordsPage />} />
+              <Route path="stock-counts" element={<StockCountPage />} />
               <Route path="inventory-mrp" element={<InventoryMRPPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="product-catalog-settings" element={<ProductCatalogSettingsPage />} />

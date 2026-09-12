@@ -1,5 +1,13 @@
 # inventory-operation — Changelog
 
+## 2026-09-12 — Stock-count approval and canonical units
+
+- Added a stock-count session screen with a dated book snapshot, physical counts, mandatory variance explanations, approval/rejection, and linked adjustment records.
+- Added transactional Supabase RPCs for creating, submitting, and reviewing a count session.
+- Locked product units after inventory activity and validated conversion definitions in both UI and database.
+- XNT summary totals are grouped by unit instead of adding kilograms, pieces, packages, or unknown units together.
+- Fixed conversion lookup for unknown units so it returns a clear error instead of recursive calls.
+
 ## 2026-09-11 — Single-warehouse pilot safety
 
 - Added a persistent one-warehouse pilot limitation banner.

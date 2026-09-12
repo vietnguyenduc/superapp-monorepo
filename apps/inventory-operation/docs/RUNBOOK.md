@@ -76,3 +76,5 @@ export SUPABASE_ACCESS_TOKEN="$(cat /home/dev/.supabase/access-token)"
 
 - Sentry captures runtime errors.
 - DB migrations: `npx supabase migration new <name>` then `npx supabase db push` after review.
+- Stock-count smoke test: create a session at `/stock-counts`, enter all physical counts, explain one variance, submit, approve, then confirm its adjustment ID appears and the XNT closing balance changes by the variance.
+- If a product unit edit fails with `Không thể đổi đơn vị`, keep the historical product unchanged and create a new product/unit mapping; never rewrite historical transaction units.

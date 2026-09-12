@@ -46,12 +46,6 @@ export class ConversionEngine {
       };
     }
 
-    // Try multi-step conversion using base unit as intermediary
-    const baseUnitConversion = this.convertViaBaseUnit(product, fromUnit, toUnit, quantity);
-    if (baseUnitConversion.success) {
-      return baseUnitConversion;
-    }
-
     // Try pathfinding through conversion graph
     const pathConversion = this.findConversionPath(product, fromUnit, toUnit, quantity);
     if (pathConversion.success) {
@@ -79,48 +73,6 @@ export class ConversionEngine {
     return product.conversions.find(
       conv => conv.fromUnit === fromUnit && conv.toUnit === toUnit
     ) || null;
-  }
-
-  /**
-   * Convert via base unit (inputUnit or outputUnit)
-   */
-  private static convertViaBaseUnit(
-    product: Product,
-    fromUnit: string,
-    toUnit: string,
-    quantity: number
-  ): ConversionResult {
-    const baseUnit = product.inputUnit;
-
-    // Convert from source to base unit
-    let toBaseResult: ConversionResult;
-    if (fromUnit === baseUnit) {
-      toBaseResult = { success: true, convertedValue: quantity, conversionPath: [fromUnit] };
-    } else {
-      toBaseResult = this.convert(product, fromUnit, baseUnit, quantity);
-    }
-
-    if (!toBaseResult.success) {
-      return toBaseResult;
-    }
-
-    // Convert from base unit to target
-    let fromBaseResult: ConversionResult;
-    if (toUnit === baseUnit) {
-      fromBaseResult = { success: true, convertedValue: toBaseResult.convertedValue, conversionPath: [baseUnit] };
-    } else {
-      fromBaseResult = this.convert(product, baseUnit, toUnit, toBaseResult.convertedValue);
-    }
-
-    if (!fromBaseResult.success) {
-      return fromBaseResult;
-    }
-
-    return {
-      success: true,
-      convertedValue: fromBaseResult.convertedValue,
-      conversionPath: [...toBaseResult.conversionPath, ...fromBaseResult.conversionPath.slice(1)],
-    };
   }
 
   /**
@@ -234,25 +186,29 @@ export class ConversionEngine {
       return { isValid: true, errors: [] };
     }
 
-    // Check for circular conversions that don't add up
-    const units = this.getAllUnits(product);
-    
-    for (let i = 0; i < units.length; i++) {
-      for (let j = i + 1; j < units.length; j++) {
-        const unit1 = units[i];
-        const unit2 = units[j];
-        
-        // Try converting 1 unit from unit1 to unit2 and back
-        const forward = this.convert(product, unit1, unit2, 1);
-        if (forward.success) {
-          const backward = this.convert(product, unit2, unit1, forward.convertedValue);
-          if (backward.success) {
-            const difference = Math.abs(backward.convertedValue - 1);
-            if (difference > 0.001) { // Allow small floating point errors
-              errors.push(
-                `Quy đổi không nhất quán: ${unit1} → ${unit2} → ${unit1} = ${backward.convertedValue} (mong đợi 1)`
-              );
-            }
+    const graph = new Map<string, Array<{ unit: string; rate: number }>>();
+    for (const conversion of product.conversions) {
+      if (!conversion.fromUnit || !conversion.toUnit || conversion.fromUnit === conversion.toUnit) errors.push('Đơn vị nguồn và đích phải khác nhau');
+      if (!Number.isFinite(conversion.conversionRate) || conversion.conversionRate <= 0) errors.push('Tỷ lệ quy đổi phải lớn hơn 0');
+      if (errors.length) continue;
+      if (!graph.has(conversion.fromUnit)) graph.set(conversion.fromUnit, []);
+      if (!graph.has(conversion.toUnit)) graph.set(conversion.toUnit, []);
+      graph.get(conversion.fromUnit)!.push({ unit: conversion.toUnit, rate: conversion.conversionRate });
+      graph.get(conversion.toUnit)!.push({ unit: conversion.fromUnit, rate: 1 / conversion.conversionRate });
+    }
+    const factors = new Map<string, number>();
+    for (const start of graph.keys()) {
+      if (factors.has(start)) continue;
+      factors.set(start, 1);
+      const queue = [start];
+      while (queue.length) {
+        const current = queue.shift()!;
+        for (const edge of graph.get(current) || []) {
+          const implied = factors.get(current)! * edge.rate;
+          const known = factors.get(edge.unit);
+          if (known === undefined) { factors.set(edge.unit, implied); queue.push(edge.unit); }
+          else if (Math.abs(known - implied) > Math.max(0.001, Math.abs(known) * 0.001)) {
+            errors.push(`Quy đổi không nhất quán tại ${current} → ${edge.unit}`);
           }
         }
       }
