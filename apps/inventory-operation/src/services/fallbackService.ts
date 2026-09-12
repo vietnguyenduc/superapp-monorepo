@@ -371,8 +371,10 @@ class FallbackService {
     try {
       await new Promise(resolve => setTimeout(resolve, 20)); // Reduced from 200ms
       
+      const product = mockProducts.find(item => item.id === (record as any).productId || item.businessCode === record.productCode || item.name === record.productCode);
       const newRecord: InventoryRecord = {
         ...record,
+        rawMaterialUnit: record.rawMaterialUnit || product?.inputUnit || 'chưa rõ ĐVT',
         id: `inv-${Date.now()}`,
         createdAt: new Date(),
         updatedAt: new Date()

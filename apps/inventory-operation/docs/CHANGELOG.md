@@ -7,6 +7,7 @@
 - Prevented quantity charts from adding different units; category distribution now counts stocked products.
 - Preserved fractional MRP demand rates and excluded future-dated movements.
 - Added golden tests for the accounting identity, stock-count adjustments, mixed units and slow-moving demand.
+- Excluded cancelled/future-dated movements and made Trial writers persist the product's canonical unit.
 
 ## 2026-09-12 — Stock-count approval and canonical units
 

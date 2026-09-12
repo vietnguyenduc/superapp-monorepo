@@ -48,17 +48,18 @@ const InventoryMRPPage: React.FC = () => {
         setLoadError(null);
         const res = await InventoryService.getInventoryRecords({});
         const records: InventoryRecord[] = res.data || [];
+        const asOf = new Date();
 
         // Calculate stock + sales rate per product
         const items: MRPItem[] = products.map((product) => {
           const productRecords = records.filter((r) => r.productId === product.id || r.productCode === product.businessCode);
 
           // Current stock = sum(input) - sum(output)
-          const currentStock = buildProductLedgerBalances(productRecords)[0]?.quantity || 0;
+          const currentStock = buildProductLedgerBalances(productRecords, asOf)[0]?.quantity || 0;
 
           // Sales rate: output records in last 7/30 days
-          const salesRate7d = calculateDailyOutput(productRecords, 7);
-          const salesRate30d = calculateDailyOutput(productRecords, 30);
+          const salesRate7d = calculateDailyOutput(productRecords, 7, asOf);
+          const salesRate30d = calculateDailyOutput(productRecords, 30, asOf);
 
           return {
             product,

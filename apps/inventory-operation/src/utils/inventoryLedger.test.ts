@@ -15,6 +15,14 @@ describe('inventory ledger reconciliation', () => {
     expect(buildProductLedgerBalances(records)[0]).toMatchObject({inbound:10,outbound:3,quantity:7,unit:'kg'});
   });
 
+  it('excludes cancelled and future movements from current stock', () => {
+    const extra = [
+      {...records[0],id:'cancelled',inputQuantity:100,status:'cancelled'},
+      {...records[0],id:'future',date:new Date('2026-09-20'),inputQuantity:100},
+    ] as any;
+    expect(buildProductLedgerBalances([...records,...extra],new Date('2026-09-12'))[0].quantity).toBe(7);
+  });
+
   it('rejects mixed units for one product', () => {
     expect(()=>buildProductLedgerBalances([...records,{...records[0],id:'3',rawMaterialUnit:'thùng'}])).toThrow(/lẫn đơn vị/);
   });

@@ -14,9 +14,10 @@ export interface ProductLedgerBalance {
 const quantity = (value: unknown) => Number(value) || 0;
 const recordKey = (record: InventoryRecord) => record.productId || record.productCode;
 
-export function buildProductLedgerBalances(records: InventoryRecord[]): ProductLedgerBalance[] {
+export function buildProductLedgerBalances(records: InventoryRecord[], asOf = new Date()): ProductLedgerBalance[] {
   const balances = new Map<string, ProductLedgerBalance>();
   for (const record of records) {
+    if (record.status === 'cancelled' || new Date(record.date).getTime() > asOf.getTime()) continue;
     const key = recordKey(record);
     const unit = record.rawMaterialUnit || record.finishedProductUnit || 'chưa rõ ĐVT';
     const existing = balances.get(key) || {
@@ -43,6 +44,7 @@ export function reconcileLedger(records: InventoryRecord[], from: Date, to: Date
   let inbound = 0;
   let outbound = 0;
   for (const record of records) {
+    if (record.status === 'cancelled') continue;
     const date = new Date(record.date).getTime();
     if (date < from.getTime()) opening += quantity(record.inputQuantity) - quantity(record.outputQuantity);
     else if (date <= to.getTime()) {
@@ -57,6 +59,7 @@ export function calculateDailyOutput(records: InventoryRecord[], days: number, n
   const end = now.getTime();
   const start = end - days * 86_400_000;
   const output = records.reduce((sum, record) => {
+    if (record.status === 'cancelled') return sum;
     const date = new Date(record.date).getTime();
     return date >= start && date <= end ? sum + quantity(record.outputQuantity) : sum;
   }, 0);
