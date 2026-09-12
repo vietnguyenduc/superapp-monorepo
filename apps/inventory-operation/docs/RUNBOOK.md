@@ -74,6 +74,8 @@ export SUPABASE_ACCESS_TOKEN="$(cat /home/dev/.supabase/access-token)"
 
 ## Production support
 
+- Before a real-data pilot, apply `20260912230438_inventory_tenant_branch_security.sql` with explicit approval and verify that an `admin_company` from tenant A cannot select, insert, update, or delete tenant B rows across all six protected Inventory tables.
+
 - Sentry captures runtime errors.
 - DB migrations: `npx supabase migration new <name>` then `npx supabase db push` after review.
 - Stock-count smoke test: create a session at `/stock-counts`, enter all physical counts, explain one variance, submit, approve, then confirm its adjustment ID appears and the XNT closing balance changes by the variance.
