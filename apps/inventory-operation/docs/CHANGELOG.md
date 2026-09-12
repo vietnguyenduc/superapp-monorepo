@@ -1,5 +1,17 @@
 # inventory-operation — Changelog
 
+## 2026-09-11 — Single-warehouse pilot safety
+
+- Added a persistent one-warehouse pilot limitation banner.
+- Fixed Dashboard movement math to use explicit output quantities and latest product snapshots.
+- Kept negative stock visible in MRP, removed invented 999-day DOH, and blocked multi-supplier PO creation from silently dropping suppliers.
+- Fixed the 5% variance threshold and removed totals that mixed incompatible units.
+- Trial inventory update/delete now persist through the fallback store; live variance failures no longer show mock data.
+- Added atomic Supabase RPCs for goods-receipt completion, bulk input/output with negative-stock checks, and concurrency-safe Sales sync.
+- Bulk input/output now returns a persistent receipt with batch ID, saved/error counts, and timestamp.
+- The XNT report now reads the inventory transaction ledger directly and shows opening, inbound, outbound, and closing quantities per row; CSV browser tests verify both directions reach the report.
+- Added golden math tests and pilot UI coverage.
+
 ## 2026-09-11 — Bulk inbound/outbound regression coverage
 
 - Added browser tests that upload two-row CSV files for both Nhập hàng and

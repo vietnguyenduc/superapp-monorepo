@@ -47,6 +47,25 @@ production Supabase.
 3. Use the *direct deployment URL* from `vercel ls` if the branch alias lags.
 4. After verification, merge `viet` → `main` to deploy to `inventory.appforyou.xyz`.
 
+## Supabase access token on this WSL host
+
+The Supabase personal access token is stored outside the repository at:
+
+```text
+/home/dev/.supabase/access-token
+```
+
+- Read it only at runtime; never print it, copy it into a project `.env`, or add it to Git.
+- The file must remain owned by the WSL `dev` user with mode `600`.
+- To make it available to the CLI for the current shell without displaying it:
+
+```bash
+export SUPABASE_ACCESS_TOKEN="$(cat /home/dev/.supabase/access-token)"
+```
+
+- If the token is revoked, create a replacement in the Supabase account dashboard and overwrite this file from Windows Explorer at `\\wsl$\Ubuntu\home\dev\.supabase\access-token`.
+- This repository has legacy migration-history gaps. Do not use `supabase db push --include-all`; review and apply only the intended new migration.
+
 ## Common issues
 
 - `401 Unauthorized` on Supabase → check `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` match the same project.

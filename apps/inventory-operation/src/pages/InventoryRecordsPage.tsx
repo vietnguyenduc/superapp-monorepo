@@ -1,19 +1,18 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { inventoryVarianceService } from '../services/inventoryVarianceService';
 import { INVENTORY_VIEWS } from '../types/InventoryMovement';
-import { fallbackService } from '../services/fallbackService';
+import { InventoryService } from '../services/inventoryService';
 import InventoryMovementLedger from '../components/InventoryMovementLedger';
 import { useProducts } from '../hooks/useProducts';
 import { useAuthContext } from '@superapp/iam';
 import { UserRole } from '../types/UserRole';
 import { ConversionEngine } from '../utils/conversionLogic';
 import appSettingsService from '../services/appSettingsService';
-import { isTrialMode } from '@superapp/shared-utils';
+import { buildInventoryTransactionReport } from '../utils/inventoryReport';
 
 const InventoryRecordsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = searchParams.get('tab') || 'operational_ledger';
+  const initialTab = searchParams.get('tab') || 'accounting_summary';
   const initialProductCode = searchParams.get('productCode') || '';
   const { user } = useAuthContext();
   
@@ -44,49 +43,9 @@ const InventoryRecordsPage: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Trial mode: load from localStorage mock data
-        const isTrial = isTrialMode();
-        if (isTrial) {
-          const res = await fallbackService.getInventoryRecords();
-          const trialRecords = res.data || [];
-          // Map trial inventory records to the variance report format
-          const mappedRecords = trialRecords.map(r => {
-            const inQty = r.inputQuantity || 0;
-            const outQty = r.outputQuantity || 0;
-            const bookInv = (r.rawMaterialStock || 0) + (r.processedStock || 0) + (r.finishedProductStock || 0);
-            
-            return {
-              id: r.id,
-              date: r.date instanceof Date ? r.date.toISOString().split('T')[0] : r.date,
-              productCode: r.productCode,
-              productName: r.productName,
-              beginning_inventory: bookInv + outQty - inQty,
-              inbound_quantity: inQty,
-              book_inventory: bookInv,
-              actual_inventory: bookInv,
-              sales_quantity: outQty,
-              promotion_quantity: 0,
-              special_outbound_quantity: 0,
-              variance: 0,
-              notes: r.notes || '',
-              created_at: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
-            };
-          });
-          setReports(mappedRecords);
-          console.log('🧪 Trial mode: loaded', mappedRecords.length, 'inventory records for table');
-          return;
-        }
-
-        console.log('🔄 Loading variance reports from database...');
-        const data = await inventoryVarianceService.getReports();
-        console.log('✅ Variance reports loaded:', data.length, 'records');
-        
-        if (data.length === 0) {
-          console.warn('⚠️ No variance reports found in database');
-          setReports([]);
-        } else {
-          setReports(data);
-        }
+        const result = await InventoryService.getInventoryRecords();
+        if (!result.success) throw new Error(result.error || 'Không thể tải sổ kho');
+        setReports(buildInventoryTransactionReport(result.data || []));
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         console.error('❌ Error loading variance reports:', errorMessage);
@@ -430,13 +389,10 @@ const InventoryRecordsPage: React.FC = () => {
                     <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-left">Sản phẩm</th>
                     {viewMode === 'standard' ? (
                       <>
-                        {!isCommercial && (
-                          <>
-                            <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Tồn NVL</th>
-                            <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Tồn Sơ chế</th>
-                          </>
-                        )}
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">{isCommercial ? 'Tồn kho' : 'Tồn TP'}</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Tồn đầu</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider text-right">Nhập</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-rose-600 dark:text-rose-400 uppercase tracking-wider text-right">Xuất</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider text-right">Tồn cuối</th>
                       </>
                     ) : (
                       <th className="px-3 sm:px-6 py-2 sm:py-3 text-[10px] sm:text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider text-right">
@@ -449,13 +405,9 @@ const InventoryRecordsPage: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
                   {filteredRecords.map((record: any, index: number) => {
-                    const product = products.find(p => p.id === record.productCode || p.businessCode === record.productCode);
-                    const allowedForms = product?.allowedForms || ['raw', 'processed', 'finished'];
-                    
                     const rawStock = record.raw_material_stock ?? record.rawMaterialStock;
                     const processedStock = record.processed_stock ?? record.processedStock;
                     const finishedStock = record.finished_product_stock ?? record.finishedProductStock;
-                    const equivalentStock = record.equivalent_stock ?? record.equivalentStock;
 
                     return (
                       <tr key={record.id || index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
@@ -469,31 +421,10 @@ const InventoryRecordsPage: React.FC = () => {
                         
                         {viewMode === 'standard' ? (
                           <>
-                            {!isCommercial && (
-                              <>
-                                <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm text-right whitespace-nowrap">
-                                  {allowedForms.includes('raw') ? (
-                                    <span className="font-medium text-gray-900 dark:text-gray-100">{rawStock ?? 0} <span className="text-[9px] sm:text-xs text-gray-400">{record.rawMaterialUnit}</span></span>
-                                  ) : (
-                                    <span className="text-gray-300 dark:text-gray-600 italic text-[10px] sm:text-xs">N/A</span>
-                                  )}
-                                </td>
-                                <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm text-right whitespace-nowrap">
-                                  {allowedForms.includes('processed') ? (
-                                    <span className="font-medium text-gray-900 dark:text-gray-100">{processedStock ?? 0} <span className="text-[9px] sm:text-xs text-gray-400">{record.processedUnit}</span></span>
-                                  ) : (
-                                    <span className="text-gray-300 dark:text-gray-600 italic text-[10px] sm:text-xs">N/A</span>
-                                  )}
-                                </td>
-                              </>
-                            )}
-                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm text-right whitespace-nowrap">
-                              {allowedForms.includes('finished') ? (
-                                <span className="font-medium text-gray-900 dark:text-gray-100">{finishedStock ?? 0} <span className="text-[9px] sm:text-xs text-gray-400">{record.finishedProductUnit}</span></span>
-                              ) : (
-                                <span className="text-gray-300 dark:text-gray-600 italic text-[10px] sm:text-xs">N/A</span>
-                              )}
-                            </td>
+                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-sm text-right text-gray-700 dark:text-gray-300">{Number(record.beginning_inventory || 0).toLocaleString('vi-VN')}</td>
+                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-sm text-right font-semibold text-emerald-600 dark:text-emerald-400">{Number(record.inbound_quantity || 0).toLocaleString('vi-VN')}</td>
+                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-sm text-right font-semibold text-rose-600 dark:text-rose-400">{Number(record.sales_quantity || 0).toLocaleString('vi-VN')}</td>
+                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-sm text-right font-bold text-blue-600 dark:text-blue-400">{Number(record.book_inventory || 0).toLocaleString('vi-VN')}</td>
                           </>
                         ) : (() => {
                           const product = products.find(p => p.id === record.productCode || p.businessCode === record.productCode);

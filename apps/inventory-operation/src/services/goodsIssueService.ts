@@ -115,7 +115,7 @@ export class GoodsIssueService extends BaseService {
           processedUnit: '',
           finishedProductStock: 0,
           finishedProductUnit: '',
-          notes: input.reason || input.notes,
+          notes: [input.reason, input.notes].filter(Boolean).join(' · '),
           sourceType: input.sourceType || InventorySourceType.MANUAL,
           referenceId: input.referenceId,
           branch: input.branch,
@@ -147,7 +147,7 @@ export class GoodsIssueService extends BaseService {
         processedUnit: '',
         finishedProductStock: 0,
         finishedProductUnit: '',
-        notes: input.reason || input.notes,
+        notes: [input.reason, input.notes].filter(Boolean).join(' · '),
         createdAt: new Date(),
         updatedAt: new Date(),
         createdBy: 'trial',
@@ -161,7 +161,17 @@ export class GoodsIssueService extends BaseService {
    */
   static async bulkCreateGoodsIssues(
     inputs: GoodsIssueInput[]
-  ): Promise<ServiceResponse<{ created: number; errors: string[] }>> {
+  ): Promise<ServiceResponse<{ created: number; errors: string[]; batchId: string }>> {
+    const batchId = crypto.randomUUID();
+    if (!this.isTrial) {
+      const companyId = await getCurrentCompanyId();
+      if (!companyId) return { success: false, error: 'Vui lòng chọn công ty trước khi xuất kho' };
+      const { data, error } = await apiClient.rpc('inventory_import_batch', {
+        p_company_id: companyId, p_batch_id: batchId, p_direction: 'output', p_rows: inputs,
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: true, data: { created: Number(data?.created || 0), errors: [], batchId: data?.batch_id || batchId } };
+    }
     const errors: string[] = [];
     let created = 0;
 
@@ -178,7 +188,7 @@ export class GoodsIssueService extends BaseService {
       }
     }
 
-    return { success: true, data: { created, errors } };
+    return { success: true, data: { created, errors, batchId } };
   }
 
   /**
@@ -275,6 +285,14 @@ export class GoodsIssueService extends BaseService {
 
       if (!sr.productCode) {
         errors.push(`Sales record ${sr.id}: không có mã sản phẩm`);
+        continue;
+      }
+
+      if (!this.isTrial) {
+        const { data, error } = await apiClient.rpc('inventory_sync_sales_record', { p_sales_id: sr.id });
+        if (error) errors.push(`Sales record ${sr.id}: ${error.message}`);
+        else if (data?.skipped) skipped++;
+        else if (data?.created) created++;
         continue;
       }
 

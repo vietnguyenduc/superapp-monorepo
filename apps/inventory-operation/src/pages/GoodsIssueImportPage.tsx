@@ -7,6 +7,7 @@ import { useProducts } from '../hooks/useProducts';
 
 type MainMode = 'manual' | 'sales_sync';
 type ImportMode = 'single' | 'bulk';
+type BatchReceipt = { batchId: string; created: number; errors: number; savedAt: string };
 
 const MODE_CONFIG: { id: MainMode; label: string; icon: string; desc: string }[] = [
   { id: 'manual', label: 'Nhập thủ công', icon: '✍️', desc: 'Nhập phiếu xuất bằng form hoặc Excel' },
@@ -24,6 +25,9 @@ const GoodsIssueImportPage: React.FC = () => {
   const [records, setRecords] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [batchReceipt, setBatchReceipt] = useState<BatchReceipt | null>(() => {
+    try { return JSON.parse(localStorage.getItem('inventory_last_output_receipt') || 'null'); } catch { return null; }
+  });
   const [notification, setNotification] = useState<{
     type: 'success' | 'error' | 'info';
     message: string;
@@ -109,7 +113,10 @@ const GoodsIssueImportPage: React.FC = () => {
       }));
       const res = await goodsIssueService.bulkCreateGoodsIssues(inputs);
       if (res.success && res.data) {
-        const { created, errors } = res.data;
+        const { created, errors, batchId } = res.data;
+        const receipt = { batchId, created, errors: errors.length, savedAt: new Date().toISOString() };
+        setBatchReceipt(receipt);
+        localStorage.setItem('inventory_last_output_receipt', JSON.stringify(receipt));
         if (errors.length > 0) {
           showNotification('error', `Đã lưu ${created} dòng. Lỗi: ${errors.length} dòng.`);
         } else {
@@ -254,6 +261,14 @@ const GoodsIssueImportPage: React.FC = () => {
             }`}
           >
             {notification.message}
+          </div>
+        )}
+
+        {batchReceipt && (
+          <div aria-live="polite" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100">
+            <div className="font-semibold">Biên nhận xuất hàng loạt</div>
+            <div className="mt-1">Đã ghi {batchReceipt.created} dòng · Lỗi {batchReceipt.errors} · {new Date(batchReceipt.savedAt).toLocaleString('vi-VN')}</div>
+            <div className="mt-1 break-all font-mono text-xs">Mã lô: {batchReceipt.batchId}</div>
           </div>
         )}
 
