@@ -8,7 +8,7 @@ import { useAuthContext } from '@superapp/iam';
 import { UserRole } from '../types/UserRole';
 import { ConversionEngine } from '../utils/conversionLogic';
 import appSettingsService from '../services/appSettingsService';
-import { buildInventoryTransactionReport } from '../utils/inventoryReport';
+import { buildInventoryTransactionReport, summarizeCurrentBalanceByUnit, summarizeReportByUnit } from '../utils/inventoryReport';
 
 const InventoryRecordsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -181,6 +181,15 @@ const InventoryRecordsPage: React.FC = () => {
     ...summary,
     chenhlech: summary.totalTonThat - summary.totalTonSo
   }), [summary]);
+  const groupedTotals = useMemo(() => ({
+    inbound: summarizeReportByUnit(filteredRecords, 'inbound_quantity'),
+    outbound: summarizeReportByUnit(filteredRecords, 'sales_quantity'),
+    closing: summarizeCurrentBalanceByUnit(filteredRecords, 'book_inventory'),
+    actual: summarizeCurrentBalanceByUnit(filteredRecords, 'actual_inventory'),
+  }), [filteredRecords]);
+  const formatGrouped = (items: Array<{unit:string;quantity:number}>) => items.length
+    ? items.map(item => `${item.quantity.toLocaleString('vi-VN', { maximumFractionDigits: 3 })} ${item.unit}`).join(' · ')
+    : '0';
 
   // Role-based visibility flags
   const isAccountant = user?.role === UserRole.WAREHOUSE_ACCOUNTANT;
@@ -283,20 +292,20 @@ const InventoryRecordsPage: React.FC = () => {
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-3 sm:p-5 transition-colors">
             <div className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">Xuất</div>
             <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold text-red-600 dark:text-red-400 truncate">
-              {summaryDisplay.totalXuat.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+              {formatGrouped(groupedTotals.outbound)}
             </div>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-3 sm:p-5 transition-colors">
             <div className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">Nhập</div>
             <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400 truncate">
-              {summaryDisplay.totalNhap.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+              {formatGrouped(groupedTotals.inbound)}
             </div>
           </div>
           {showBookInventory && (
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-3 sm:p-5 transition-colors">
               <div className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">Tồn sổ</div>
               <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400 truncate">
-                {summaryDisplay.totalTonSo.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                {formatGrouped(groupedTotals.actual)}
               </div>
             </div>
           )}
@@ -304,7 +313,7 @@ const InventoryRecordsPage: React.FC = () => {
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-3 sm:p-5 transition-colors">
               <div className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">Tồn thật</div>
               <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold text-amber-600 dark:text-amber-400 truncate">
-                {summaryDisplay.totalTonThat.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                {formatGrouped(groupedTotals.closing)}
               </div>
             </div>
           )}
@@ -416,7 +425,7 @@ const InventoryRecordsPage: React.FC = () => {
                         </td>
                         <td className="px-3 sm:px-6 py-2 sm:py-4 text-[11px] sm:text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
                           <div className="truncate max-w-[120px] sm:max-w-none">{record.productName || '-'}</div>
-                          <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">{record.productCode}</div>
+                          <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">{record.productCode} · {record.unit || 'chưa rõ ĐVT'}</div>
                         </td>
                         
                         {viewMode === 'standard' ? (
