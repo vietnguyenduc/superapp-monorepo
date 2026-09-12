@@ -1,5 +1,6 @@
 import { apiClient, getCurrentCompanyId } from '../lib/supabase';
 import { BaseService, ServiceResponse } from './baseService';
+import { bulkHistoryKey, legacyBulkReceiptKey, readStoredBulkHistory } from '../utils/bulkImportHistoryStorage';
 
 export type BulkImportDirection = 'input' | 'output';
 
@@ -44,31 +45,12 @@ export function groupBulkImportRows(
     .slice(0, limit);
 }
 
-function historyKey(direction: BulkImportDirection) {
-  return `inventory_${direction}_batch_history`;
-}
-
-function legacyReceiptKey(direction: BulkImportDirection) {
-  return direction === 'input' ? 'inventory_last_input_receipt' : 'inventory_last_output_receipt';
-}
-
-function readTrialHistory(direction: BulkImportDirection): BulkImportReceipt[] {
-  try {
-    const stored = JSON.parse(localStorage.getItem(historyKey(direction)) || '[]');
-    if (Array.isArray(stored) && stored.length > 0) return stored.slice(0, HISTORY_LIMIT);
-    const legacy = JSON.parse(localStorage.getItem(legacyReceiptKey(direction)) || 'null');
-    return legacy?.batchId ? [legacy] : [];
-  } catch {
-    return [];
-  }
-}
-
 export class BulkImportHistoryService extends BaseService {
   static rememberReceipt(direction: BulkImportDirection, receipt: BulkImportReceipt): BulkImportReceipt[] {
-    const history = readTrialHistory(direction).filter((item) => item.batchId !== receipt.batchId);
+    const history = readStoredBulkHistory(direction).filter((item) => item.batchId !== receipt.batchId);
     const next = [receipt, ...history].slice(0, HISTORY_LIMIT);
-    localStorage.setItem(historyKey(direction), JSON.stringify(next));
-    localStorage.setItem(legacyReceiptKey(direction), JSON.stringify(receipt));
+    localStorage.setItem(bulkHistoryKey(direction), JSON.stringify(next));
+    localStorage.setItem(legacyBulkReceiptKey(direction), JSON.stringify(receipt));
     return next;
   }
 
@@ -82,19 +64,33 @@ export class BulkImportHistoryService extends BaseService {
         if (!companyId) return { data: null, error: { message: 'Vui lòng chọn công ty trước khi xem lịch sử lô' } };
 
         const quantityColumn = direction === 'input' ? 'input_quantity' : 'output_quantity';
-        const { data, error } = await apiClient
-          .from('inventory_records')
-          .select('reference_id, created_at')
-          .eq('company_id', companyId)
-          .eq('source_type', 'bulk_import')
-          .gt(quantityColumn, 0)
-          .not('reference_id', 'is', null)
-          .order('created_at', { ascending: false })
-          .limit(5000);
+        const pageSize = 1000;
+        const rows: BulkImportRecordRow[] = [];
+        let offset = 0;
 
-        return { data: error ? null : groupBulkImportRows(data || [], limit), error };
+        while (true) {
+          const { data, error } = await apiClient
+            .from('inventory_records')
+            .select('reference_id, created_at')
+            .eq('company_id', companyId)
+            .eq('source_type', 'bulk_import')
+            .gt(quantityColumn, 0)
+            .not('reference_id', 'is', null)
+            .order('created_at', { ascending: false })
+            .order('reference_id', { ascending: true })
+            .range(offset, offset + pageSize - 1);
+
+          if (error) return { data: null, error };
+          const page = data || [];
+          rows.push(...page);
+          const distinctBatches = new Set(rows.map((row) => row.reference_id).filter(Boolean));
+          if (page.length < pageSize || distinctBatches.size > limit) break;
+          offset += pageSize;
+        }
+
+        return { data: groupBulkImportRows(rows, limit), error: null };
       },
-      async () => ({ data: readTrialHistory(direction).slice(0, limit), error: null }),
+      async () => ({ data: readStoredBulkHistory(direction, limit), error: null }),
     );
   }
 }

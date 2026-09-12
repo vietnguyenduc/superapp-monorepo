@@ -5,6 +5,7 @@
 - Added recent inbound and outbound batch history sourced from the server inventory ledger, grouped by batch reference ID.
 - Kept trial history in browser storage while live history now survives browser and device changes.
 - Added grouping tests and bulk-flow browser assertions for both directions.
+- Paginated ledger reads keep counts exact for batches larger than 5,000 rows; both Trial reset paths clear batch history.
 
 ## 2026-09-12 — Dashboard, MRP and XNT reconciliation
 

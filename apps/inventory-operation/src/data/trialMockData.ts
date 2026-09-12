@@ -4,6 +4,7 @@
  */
 import { Product, ProductCategory, ProductStatus } from '../types/Product';
 import { InventoryRecord } from '../types/InventoryRecord';
+import { clearStoredBulkHistory } from '../utils/bulkImportHistoryStorage';
 
 const LS_KEY_PRODUCTS = 'trial_products';
 const LS_KEY_INVENTORY = 'trial_inventory_records';
@@ -372,6 +373,7 @@ export const MOCK_INVENTORY: InventoryRecord[] = [
 // ──────────────────── Seed / Load helpers ────────────────────
 
 export function seedTrialDataIfNeeded(force: boolean = false): void {
+  if (force) clearStoredBulkHistory();
   const existingProducts = localStorage.getItem(LS_KEY_PRODUCTS);
   const existingInventory = localStorage.getItem(LS_KEY_INVENTORY);
   const isDataCleared = localStorage.getItem('trial_data_cleared') === 'true';

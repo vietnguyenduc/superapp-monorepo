@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { groupBulkImportRows } from './bulkImportHistoryService';
+import { BULK_IMPORT_HISTORY_KEYS, clearStoredBulkHistory } from '../utils/bulkImportHistoryStorage';
+
+beforeEach(() => localStorage.clear());
 
 describe('groupBulkImportRows', () => {
   it('groups ledger rows by server batch and sorts newest first', () => {
@@ -22,5 +25,13 @@ describe('groupBulkImportRows', () => {
       created_at: `2026-09-${String(index + 1).padStart(2, '0')}T08:00:00Z`,
     }));
     expect(groupBulkImportRows(rows, 3)).toHaveLength(3);
+  });
+});
+
+describe('clearStoredBulkHistory', () => {
+  it('removes inbound, outbound and legacy receipts during trial reset', () => {
+    BULK_IMPORT_HISTORY_KEYS.forEach((key) => localStorage.setItem(key, 'saved'));
+    clearStoredBulkHistory();
+    BULK_IMPORT_HISTORY_KEYS.forEach((key) => expect(localStorage.getItem(key)).toBeNull());
   });
 });
