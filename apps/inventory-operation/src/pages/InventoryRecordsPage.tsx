@@ -8,7 +8,7 @@ import { useAuthContext } from '@superapp/iam';
 import { UserRole } from '../types/UserRole';
 import { ConversionEngine } from '../utils/conversionLogic';
 import appSettingsService from '../services/appSettingsService';
-import { buildInventoryTransactionReport, summarizeReportByUnit } from '../utils/inventoryReport';
+import { buildInventoryTransactionReport, summarizeCurrentBalanceByUnit, summarizeReportByUnit } from '../utils/inventoryReport';
 
 const InventoryRecordsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -184,7 +184,8 @@ const InventoryRecordsPage: React.FC = () => {
   const groupedTotals = useMemo(() => ({
     inbound: summarizeReportByUnit(filteredRecords, 'inbound_quantity'),
     outbound: summarizeReportByUnit(filteredRecords, 'sales_quantity'),
-    closing: summarizeReportByUnit(filteredRecords, 'book_inventory'),
+    closing: summarizeCurrentBalanceByUnit(filteredRecords, 'book_inventory'),
+    actual: summarizeCurrentBalanceByUnit(filteredRecords, 'actual_inventory'),
   }), [filteredRecords]);
   const formatGrouped = (items: Array<{unit:string;quantity:number}>) => items.length
     ? items.map(item => `${item.quantity.toLocaleString('vi-VN', { maximumFractionDigits: 3 })} ${item.unit}`).join(' · ')
@@ -304,7 +305,7 @@ const InventoryRecordsPage: React.FC = () => {
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-3 sm:p-5 transition-colors">
               <div className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">Tồn sổ</div>
               <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400 truncate">
-                {formatGrouped(groupedTotals.closing)}
+                {formatGrouped(groupedTotals.actual)}
               </div>
             </div>
           )}

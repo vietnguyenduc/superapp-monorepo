@@ -31,7 +31,7 @@ export const stockCountService = {
   },
   async saveLines(sessionId: string, lines: StockCountLine[]): Promise<void> {
     if (isTrialMode()) { const sessions=readTrial().map(s=>s.id===sessionId?{...s,lines}:s); writeTrial(sessions); return; }
-    for (const line of lines) { const { error }=await apiClient.from('inventory_count_lines').update({ counted_quantity: line.counted_quantity, explanation: line.explanation || null }).eq('id',line.id).eq('session_id',sessionId); if(error) throw new Error(error.message); }
+    const { error }=await apiClient.rpc('inventory_save_count_lines',{p_session_id:sessionId,p_lines:lines.map(line=>({id:line.id,counted_quantity:line.counted_quantity,explanation:line.explanation||null}))}); if(error) throw new Error(error.message);
   },
   async submit(sessionId: string): Promise<void> {
     if (isTrialMode()) { const sessions=readTrial(); const session=sessions.find(s=>s.id===sessionId); if(!session) throw new Error('Không tìm thấy phiên'); if(session.lines.some(l=>l.counted_quantity===null)) throw new Error('Còn sản phẩm chưa nhập tồn thực tế'); if(session.lines.some(l=>l.counted_quantity!==l.book_quantity&&!l.explanation?.trim())) throw new Error('Chênh lệch phải có giải trình'); session.status='submitted'; writeTrial(sessions); return; }

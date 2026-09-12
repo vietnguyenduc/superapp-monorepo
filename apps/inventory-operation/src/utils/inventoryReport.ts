@@ -54,8 +54,19 @@ export function buildInventoryTransactionReport(records: InventoryRecord[]): Inv
   }).reverse();
 }
 
-export function summarizeReportByUnit(rows: InventoryTransactionReportRow[], field: 'inbound_quantity'|'sales_quantity'|'book_inventory'): Array<{unit:string;quantity:number}> {
+export type InventoryReportQuantityField = 'inbound_quantity'|'sales_quantity'|'book_inventory'|'actual_inventory';
+
+export function summarizeReportByUnit(rows: InventoryTransactionReportRow[], field: InventoryReportQuantityField): Array<{unit:string;quantity:number}> {
   const totals=new Map<string,number>();
   for(const row of rows){const unit=row.unit?.trim()||'chưa rõ ĐVT';totals.set(unit,(totals.get(unit)||0)+Number(row[field]||0));}
   return Array.from(totals,([unit,quantity])=>({unit,quantity})).filter(item=>item.quantity!==0).sort((a,b)=>a.unit.localeCompare(b.unit,'vi'));
+}
+
+export function summarizeCurrentBalanceByUnit(rows: InventoryTransactionReportRow[], field: 'book_inventory'|'actual_inventory'): Array<{unit:string;quantity:number}> {
+  const latestByProduct = new Map<string, InventoryTransactionReportRow>();
+  for (const row of rows) {
+    const key = row.productCode || row.id;
+    if (!latestByProduct.has(key)) latestByProduct.set(key, row);
+  }
+  return summarizeReportByUnit(Array.from(latestByProduct.values()), field);
 }

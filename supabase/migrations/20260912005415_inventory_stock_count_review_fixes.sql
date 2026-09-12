@@ -1,46 +1,6 @@
--- Inventory pilot phase B: stock-count workflow and canonical-unit safety.
-
-CREATE TABLE public.inventory_count_sessions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id uuid NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
-  count_date date NOT NULL,
-  status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','submitted','approved','rejected')),
-  notes text,
-  review_notes text,
-  created_by uuid DEFAULT auth.uid(),
-  submitted_by uuid,
-  submitted_at timestamptz,
-  reviewed_by uuid,
-  reviewed_at timestamptz,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE public.inventory_count_lines (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id uuid NOT NULL REFERENCES public.inventory_count_sessions(id) ON DELETE CASCADE,
-  product_id uuid NOT NULL REFERENCES public.products(id) ON DELETE RESTRICT,
-  book_quantity numeric(14,3) NOT NULL,
-  counted_quantity numeric(14,3),
-  unit text NOT NULL,
-  explanation text,
-  variance numeric(14,3) GENERATED ALWAYS AS (counted_quantity - book_quantity) STORED,
-  adjustment_record_id uuid REFERENCES public.inventory_records(id) ON DELETE SET NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(session_id, product_id),
-  CHECK (counted_quantity IS NULL OR counted_quantity >= 0)
-);
-
-CREATE INDEX idx_inventory_count_sessions_company_date ON public.inventory_count_sessions(company_id, count_date DESC);
-CREATE INDEX idx_inventory_count_lines_session ON public.inventory_count_lines(session_id);
-ALTER TABLE public.inventory_count_sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.inventory_count_lines ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "inventory count sessions company read" ON public.inventory_count_sessions
-  FOR SELECT USING (company_id = public.get_user_company_id(auth.uid()) OR public.check_user_role(auth.uid(), 'admin_master'));
-CREATE POLICY "inventory count lines company access" ON public.inventory_count_lines
-  FOR SELECT USING (EXISTS (SELECT 1 FROM public.inventory_count_sessions s WHERE s.id=session_id AND (s.company_id=public.get_user_company_id(auth.uid()) OR public.check_user_role(auth.uid(), 'admin_master'))));
+DROP POLICY IF EXISTS "inventory count sessions company write" ON public.inventory_count_sessions;
+DROP POLICY IF EXISTS "inventory count lines company access" ON public.inventory_count_lines;
+CREATE POLICY "inventory count lines company access" ON public.inventory_count_lines FOR SELECT USING (EXISTS (SELECT 1 FROM public.inventory_count_sessions s WHERE s.id=session_id AND (s.company_id=public.get_user_company_id(auth.uid()) OR public.check_user_role(auth.uid(), 'admin_master'))));
 
 CREATE OR REPLACE FUNCTION public.inventory_create_count_session(p_count_date date, p_notes text DEFAULT NULL)
 RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
@@ -123,59 +83,6 @@ BEGIN
   RETURN jsonb_build_object('approved',true,'rejected',false,'adjusted',v_adjusted);
 END; $$;
 
-CREATE OR REPLACE FUNCTION public.inventory_lock_count_line_after_submit()
-RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$
-BEGIN
-  IF EXISTS(SELECT 1 FROM public.inventory_count_sessions WHERE id=OLD.session_id AND status<>'draft') THEN RAISE EXCEPTION 'Phiên đã gửi duyệt nên không thể sửa số kiểm kê'; END IF;
-  NEW.updated_at:=now(); RETURN NEW;
-END; $$;
-CREATE TRIGGER inventory_count_line_immutable BEFORE UPDATE OF counted_quantity,explanation ON public.inventory_count_lines FOR EACH ROW EXECUTE FUNCTION public.inventory_lock_count_line_after_submit();
-
-CREATE OR REPLACE FUNCTION public.inventory_lock_product_units()
-RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$
-BEGIN
-  IF (NEW.input_unit IS DISTINCT FROM OLD.input_unit OR NEW.output_unit IS DISTINCT FROM OLD.output_unit)
-     AND EXISTS(SELECT 1 FROM public.inventory_records WHERE product_id=OLD.id LIMIT 1) THEN
-    RAISE EXCEPTION 'Không thể đổi đơn vị của sản phẩm đã có giao dịch kho';
-  END IF;
-  RETURN NEW;
-END; $$;
-CREATE TRIGGER inventory_products_unit_lock BEFORE UPDATE OF input_unit,output_unit ON public.products FOR EACH ROW EXECUTE FUNCTION public.inventory_lock_product_units();
-
-ALTER TABLE public.product_conversions ADD CONSTRAINT product_conversions_positive_rate CHECK(conversion_rate>0);
-ALTER TABLE public.product_conversions ADD CONSTRAINT product_conversions_distinct_units CHECK(from_unit<>to_unit);
-
-CREATE OR REPLACE FUNCTION public.inventory_validate_product_conversions()
-RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$
-DECLARE v_conversion jsonb;
-BEGIN
-  IF COALESCE(NEW.raw_to_processed_ratio,1)<=0 OR COALESCE(NEW.processed_to_finished_ratio,1)<=0 THEN RAISE EXCEPTION 'Tỷ lệ quy đổi phải lớn hơn 0'; END IF;
-  IF NEW.conversions IS NOT NULL THEN
-    FOR v_conversion IN SELECT value FROM jsonb_array_elements(NEW.conversions) LOOP
-      IF COALESCE((v_conversion->>'conversionRate')::numeric,0)<=0 THEN RAISE EXCEPTION 'Tỷ lệ quy đổi phải lớn hơn 0'; END IF;
-      IF COALESCE(v_conversion->>'fromUnit','')=COALESCE(v_conversion->>'toUnit','') THEN RAISE EXCEPTION 'Đơn vị nguồn và đích quy đổi không được trùng nhau'; END IF;
-    END LOOP;
-    IF EXISTS (
-      WITH RECURSIVE edges(from_unit,to_unit,rate) AS (
-        SELECT value->>'fromUnit',value->>'toUnit',(value->>'conversionRate')::numeric FROM jsonb_array_elements(NEW.conversions)
-        UNION ALL
-        SELECT value->>'toUnit',value->>'fromUnit',1/(value->>'conversionRate')::numeric FROM jsonb_array_elements(NEW.conversions)
-      ), units(unit) AS (SELECT from_unit FROM edges UNION SELECT to_unit FROM edges),
-      walk(start_unit,current_unit,factor,visited,depth) AS (
-        SELECT unit,unit,1::numeric,ARRAY[unit]::text[],0 FROM units
-        UNION ALL
-        SELECT w.start_unit,e.to_unit,w.factor*e.rate,w.visited||e.to_unit,w.depth+1
-        FROM walk w JOIN edges e ON e.from_unit=w.current_unit
-        WHERE w.depth<=jsonb_array_length(NEW.conversions)
-          AND NOT (w.current_unit=w.start_unit AND w.depth>0)
-          AND (e.to_unit=w.start_unit OR NOT e.to_unit=ANY(w.visited))
-      )
-      SELECT 1 FROM walk WHERE depth>0 AND current_unit=start_unit AND abs(factor-1)>0.001 LIMIT 1
-    ) THEN RAISE EXCEPTION 'Các đường quy đổi tạo thành vòng không nhất quán'; END IF;
-  END IF;
-  RETURN NEW;
-END; $$;
-CREATE TRIGGER inventory_products_conversion_validation BEFORE INSERT OR UPDATE OF conversions,raw_to_processed_ratio,processed_to_finished_ratio ON public.products FOR EACH ROW EXECUTE FUNCTION public.inventory_validate_product_conversions();
 
 REVOKE ALL ON FUNCTION public.inventory_create_count_session(date,text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.inventory_save_count_lines(uuid,jsonb) FROM PUBLIC;
