@@ -89,6 +89,29 @@ test.describe("Inventory app — Phiên kiểm kê", () => {
   });
 });
 
+test.describe("Inventory app — Dashboard và MRP đối soát", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.context().clearCookies();
+    await enterTrialMode(page);
+  });
+
+  test("dashboard uses ledger-safe metrics and warns before mixing units", async ({ page }) => {
+    await page.goto(`${BASE_URL}/dashboard`, { waitUntil: "networkidle" });
+    await expect(page.getByText("Sản phẩm có tồn", { exact: true })).toBeVisible();
+    await expect(page.getByText("Lượt xuất kho")).toBeVisible();
+    await expect(page.getByText(/không cộng lẫn các đơn vị khác nhau/i)).toBeVisible();
+    await expect(page.getByText("Giá trị tồn kho")).toHaveCount(0);
+  });
+
+  test("MRP shows precise movement-based stock and demand units on iPhone", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE_URL}/inventory-mrp`, { waitUntil: "networkidle" });
+    await expect(page.getByRole("heading", { name: /vòng quay tồn kho.*MRP/i })).toBeVisible();
+    await expect(page.getByText(/\/ ngày/).first()).toBeVisible();
+    await expect(page.getByText(/kg|thùng|chai|gói|cái/i).first()).toBeVisible();
+  });
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Test group: Nhập hàng page (GoodsReceiptImportPage)
 // ─────────────────────────────────────────────────────────────────────────────

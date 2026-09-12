@@ -36,3 +36,10 @@ generated: true
 - Some apps use `trialMockStore.ts` and localStorage flags (`superapp_trial_mode`).
 - Trial data is local-only and resets on cache clear.
 
+## Inventory analytics
+
+- Canonical movement ledger: `inventory_records`.
+- Product balance: `Σ input_quantity − Σ output_quantity`, including approved stock-count adjustments.
+- Period identity: opening + inbound − outbound = closing.
+- Dashboard and MRP share `src/utils/inventoryLedger.ts`; legacy snapshot fields are not a current-balance source.
+- Quantity totals are shown only within one unit. Cross-unit overview uses product counts rather than adding quantities.

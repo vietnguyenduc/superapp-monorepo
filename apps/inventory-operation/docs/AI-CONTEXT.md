@@ -40,6 +40,8 @@ Inventory management: products, categories, stock movements, purchase orders, go
 - **Bulk traceability:** both import pages persist the most recent batch receipt (batch ID, saved/error count, timestamp) in browser storage. Live retries use the batch ID as the idempotency key in `inventory_import_batch`.
 - **Stock-count workflow:** `/stock-counts` creates an immutable book snapshot in `inventory_count_sessions`/`inventory_count_lines`. Every differing physical count requires an explanation. Approval atomically creates a linked `stock_count_adjustment` record for each variance.
 - **Canonical units:** stock-count snapshots reject historical rows whose unit differs from the product `input_unit`. Product units cannot change after the first inventory transaction. Conversion rates must be positive and internally consistent; report totals stay grouped by unit.
+- **Dashboard/MRP source:** current stock, top-stock rows, MRP and recent balances must use `buildProductLedgerBalances` over `inventory_records`, never the latest row's legacy stock fields. Quantity charts stop when multiple units would be combined. Category charts count stocked products instead of summing unlike units.
+- **Demand rate:** MRP uses `calculateDailyOutput`; preserve fractional daily demand and exclude future-dated records. Do not round demand before calculating DOH or suggested purchase quantity.
 
 - `id` columns (`customers`, `transactions`, `bank_accounts`, `branches`, etc.) are `text` containing v4 UUID strings, not `uuid` type.
 - Always include `company_id` in mutations. Use `maybeSingle()` for reads that may return zero rows.
