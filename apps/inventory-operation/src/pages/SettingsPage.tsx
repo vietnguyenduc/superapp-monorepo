@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { clearStoredBulkHistory } from '../utils/bulkImportHistoryStorage';
 import { useSearchParams } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
 import { useAuthContext } from '@superapp/iam';
@@ -943,6 +944,7 @@ const SettingsPage: React.FC = () => {
                         
                         // Clear only those keys
                         keysToClear.forEach(key => localStorage.removeItem(key));
+                        clearStoredBulkHistory();
                         
                         // Set a flag to prevent re-seeding mock data automatically
                         localStorage.setItem('trial_data_cleared', 'true');

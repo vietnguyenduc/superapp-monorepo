@@ -1,5 +1,12 @@
 # inventory-operation — Changelog
 
+## 2026-09-12 — Server-backed bulk import history
+
+- Added recent inbound and outbound batch history sourced from the server inventory ledger, grouped by batch reference ID.
+- Kept trial history in browser storage while live history now survives browser and device changes.
+- Added grouping tests and bulk-flow browser assertions for both directions.
+- Paginated ledger reads keep counts exact for batches larger than 5,000 rows; both Trial reset paths clear batch history.
+
 ## 2026-09-12 — Dashboard, MRP and XNT reconciliation
 
 - Contained the Dashboard filter header at iPhone width and added a browser regression check for horizontal overflow.
