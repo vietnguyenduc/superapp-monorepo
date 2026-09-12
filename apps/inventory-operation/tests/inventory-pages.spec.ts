@@ -96,11 +96,18 @@ test.describe("Inventory app — Dashboard và MRP đối soát", () => {
   });
 
   test("dashboard uses ledger-safe metrics and warns before mixing units", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${BASE_URL}/dashboard`, { waitUntil: "networkidle" });
     await expect(page.getByText("Sản phẩm có tồn", { exact: true })).toBeVisible();
     await expect(page.getByText("Lượt xuất kho")).toBeVisible();
     await expect(page.getByText(/không cộng lẫn các đơn vị khác nhau/i)).toBeVisible();
     await expect(page.getByText("Giá trị tồn kho")).toHaveCount(0);
+
+    const pageWidth = await page.evaluate(() => ({
+      viewport: window.innerWidth,
+      document: document.documentElement.scrollWidth,
+    }));
+    expect(pageWidth.document).toBeLessThanOrEqual(pageWidth.viewport);
   });
 
   test("MRP shows precise movement-based stock and demand units on iPhone", async ({ page }) => {

@@ -24,8 +24,8 @@ const Navigation: React.FC<NavigationProps> = ({ onMenuClick }) => {
   return (
     <nav className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800 sticky top-0 z-30 transition-colors duration-300">
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
+        <div className="flex min-w-0 justify-between h-16 gap-2">
+          <div className="flex min-w-0 items-center">
             <button
               type="button"
               className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
@@ -43,10 +43,11 @@ const Navigation: React.FC<NavigationProps> = ({ onMenuClick }) => {
               </svg>
             </button>
 
-            <div className="flex items-center ml-4 lg:ml-0">
-              <div className="flex-shrink-0">
-                <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  Inventory Operation
+            <div className="flex min-w-0 items-center ml-2 sm:ml-4 lg:ml-0">
+              <div className="min-w-0">
+                <h1 className="truncate text-base sm:text-xl font-bold text-gray-900 dark:text-gray-100">
+                  <span className="sm:hidden">Inventory</span>
+                  <span className="hidden sm:inline">Inventory Operation</span>
                 </h1>
               </div>
               <div className="hidden md:block ml-4">
@@ -58,16 +59,16 @@ const Navigation: React.FC<NavigationProps> = ({ onMenuClick }) => {
           </div>
 
           {/* Right side - User info and actions */}
-          <div className="flex items-center space-x-4">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-4">
             {/* Company badge - shows current company context */}
-            <CompanyBadge />
-            <AppSwitcher />
+            <div className="hidden md:block"><CompanyBadge /></div>
+            <div className="hidden sm:block"><AppSwitcher /></div>
             {user && (
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setIsUserMenuOpen((prev) => !prev)}
-                  className="flex items-center space-x-2 rounded-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm transition-colors"
+                  className="flex items-center gap-1 sm:gap-2 rounded-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 px-2 sm:px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm transition-colors"
                 >
                   <div className="w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
                     <span className="text-gray-700 dark:text-gray-300 font-medium text-xs">

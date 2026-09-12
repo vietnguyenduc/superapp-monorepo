@@ -27,6 +27,7 @@ generated: true
 ## Responsive rules
 
 - Stack filters vertically on mobile.
+- Dashboard filters wrap within the viewport; the time-range selector scrolls inside its own container instead of widening the page.
 - Keep modals within viewport; verify `z-index` against top navigation.
 - Test at 390×844 and 768×1024 viewports.
 
@@ -39,4 +40,3 @@ generated: true
 ## See also
 
 - `apps/cashflow/docs/APPLE-HIG-UIUX-GUIDE.md`
-

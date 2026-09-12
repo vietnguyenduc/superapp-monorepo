@@ -31,12 +31,12 @@ const InventoryTimeRangeSelector: React.FC<InventoryTimeRangeSelectorProps> = ({
   };
 
   return (
-    <div className="flex flex-wrap gap-1 bg-gray-50 rounded-xl p-1 overflow-x-auto shadow-sm border border-gray-100">
+    <div className="flex min-w-max flex-nowrap gap-1 bg-gray-50 rounded-xl p-1 shadow-sm border border-gray-100">
       {timeRanges.map((range) => (
         <button
           key={range}
           onClick={() => onChange(range)}
-          className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-all duration-200 ${
+          className={`shrink-0 text-xs px-2 sm:px-3 py-1.5 rounded-lg font-medium transition-all duration-200 ${
             value === range
               ? "bg-white text-blue-600 shadow-sm border border-blue-200"
               : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
