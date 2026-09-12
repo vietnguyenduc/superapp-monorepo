@@ -33,6 +33,8 @@ Inventory management: products, categories, stock movements, purchase orders, go
 
 ## Key gotchas
 
+- **Tenant isolation migration pending application:** `20260912230438_inventory_tenant_branch_security.sql` replaces permissive legacy Inventory policies. `admin_company` must match the protected row's `company_id`; non-company admins also require a matching non-null `branch_id`. Apply and run two-tenant verification before real-data pilot.
+
 - **Single-warehouse pilot (2026-09-11):** the app displays a persistent pilot limitation banner. Multi-warehouse transfer is not certified yet; do not represent two unrelated input/output rows as a transfer.
 - **Pilot safety math:** use `src/utils/inventoryPilotMath.ts`. Stock is `Σ input - Σ output`, negative stock remains visible, zero-sales DOH is `null`, and variance thresholds use percentage points (`5`, not `0.05`).
 - **Atomic write boundary:** live goods-receipt completion calls `inventory_complete_goods_receipt`; live inbound/outbound bulk import calls `inventory_import_batch`; Sales sync calls `inventory_sync_sales_record`. These RPCs are introduced by `20260911162323_inventory_pilot_safety.sql` and must exist before deploying the matching frontend.

@@ -1,5 +1,12 @@
 # inventory-operation — Changelog
 
+## 2026-09-12 — Tenant and branch isolation hardening
+
+- Prepared a replacement for legacy Inventory RLS policies whose `admin_company` condition compared the user's company to itself.
+- The replacement covers products, inventory records, sales records, special outbound records, inventory reports and stock-check prints; all non-master access now requires the protected row to belong to the user's company.
+- Branch-scoped users also require a non-null matching branch. Production application and two-tenant verification remain mandatory before a real-data pilot.
+- Company-wide products with `branch_id IS NULL` remain visible inside the same company; operational rows stay branch-scoped. The migration aborts on unexpected production policy drift.
+
 ## 2026-09-12 — Server-backed bulk import history
 
 - Added recent inbound and outbound batch history sourced from the server inventory ledger, grouped by batch reference ID.
