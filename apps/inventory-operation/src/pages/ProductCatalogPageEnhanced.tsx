@@ -4,6 +4,7 @@ import ProductCatalogTable from '../components/ProductCatalogTable';
 import ProductCatalogForm from '../components/ProductCatalogForm';
 import { useProductCatalog } from '../hooks/useProductCatalog';
 import { Product } from '../types';
+import { ConversionEngine } from '../utils/conversionLogic';
 
 const ProductCatalogPageEnhanced: React.FC = () => {
   const navigate = useNavigate();
@@ -32,6 +33,12 @@ const ProductCatalogPageEnhanced: React.FC = () => {
 
   const handleSubmit = async (data: Partial<Product>) => {
     try {
+      const candidate = { ...(editingProduct || {}), ...data } as Product;
+      const conversionValidation = ConversionEngine.validateConversions(candidate);
+      if (!conversionValidation.isValid) {
+        showNotification('error', conversionValidation.errors[0]);
+        return;
+      }
       let result;
       
       if (editingProduct) {
@@ -56,10 +63,10 @@ const ProductCatalogPageEnhanced: React.FC = () => {
         setShowForm(false);
         setEditingProduct(null);
       } else {
-        showNotification('error', 'Có lỗi xảy ra');
+        showNotification('error', result.error || 'Có lỗi xảy ra');
       }
     } catch (error) {
-      showNotification('error', 'Lỗi kết nối, vui lòng thử lại');
+      showNotification('error', error instanceof Error ? error.message : 'Lỗi kết nối, vui lòng thử lại');
     }
   };
 

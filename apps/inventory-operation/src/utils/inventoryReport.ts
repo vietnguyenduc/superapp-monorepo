@@ -53,3 +53,9 @@ export function buildInventoryTransactionReport(records: InventoryRecord[]): Inv
     };
   }).reverse();
 }
+
+export function summarizeReportByUnit(rows: InventoryTransactionReportRow[], field: 'inbound_quantity'|'sales_quantity'|'book_inventory'): Array<{unit:string;quantity:number}> {
+  const totals=new Map<string,number>();
+  for(const row of rows){const unit=row.unit?.trim()||'chưa rõ ĐVT';totals.set(unit,(totals.get(unit)||0)+Number(row[field]||0));}
+  return Array.from(totals,([unit,quantity])=>({unit,quantity})).filter(item=>item.quantity!==0).sort((a,b)=>a.unit.localeCompare(b.unit,'vi'));
+}

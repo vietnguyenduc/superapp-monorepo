@@ -39,3 +39,9 @@ generated: true
 3. Approver with correct permission reviews and approves/rejects.
 4. `approval_logs` records the action with `record_type`, `status`, `user_role`.
 
+## Stock-count reconciliation
+
+1. Create a dated count session; the server first rejects mixed/noncanonical historical units, then snapshots book stock for every active product.
+2. Enter physical quantities. Any variance requires an explanation before submission.
+3. Submission locks counted quantities and sends the session for admin review.
+4. Approval creates one idempotent inbound/outbound adjustment per variance and links it to the count line; rejection records the review reason without changing stock.
