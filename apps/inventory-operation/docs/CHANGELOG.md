@@ -2,6 +2,7 @@
 
 ## 2026-09-12 — Dashboard, MRP and XNT reconciliation
 
+- Contained the Dashboard filter header at iPhone width and added a browser regression check for horizontal overflow.
 - Replaced Dashboard latest-row snapshot math with movement-ledger balances shared with MRP and XNT.
 - Removed the fictional 15,000 VND inventory valuation and synthetic sales-growth percentage.
 - Prevented quantity charts from adding different units; category distribution now counts stocked products.

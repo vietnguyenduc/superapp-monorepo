@@ -281,12 +281,12 @@ const DashboardPageEnhanced: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 w-full relative transition-colors duration-300">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 w-full overflow-x-clip relative transition-colors duration-300">
       {/* Sticky Filter Header - Higher z-index and forced top-16 */}
-      <div className="sticky top-16 z-[40] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md px-4 sm:px-6 lg:px-8 py-3 border-b border-gray-200 dark:border-gray-800 shadow-md w-full -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-5 lg:-mt-6 !max-w-none mb-6">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="text-sm font-bold text-gray-800 dark:text-gray-200">Dashboard Tồn Kho</div>
+      <div data-testid="dashboard-filter-header" className="sticky top-16 z-[40] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md px-3 sm:px-6 lg:px-8 py-3 border-b border-gray-200 dark:border-gray-800 shadow-md w-full mx-0 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-5 lg:-mt-6 !max-w-none mb-6">
+        <div className="max-w-7xl mx-auto flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <div className="grid w-full grid-cols-2 items-center gap-2 lg:flex lg:w-auto lg:gap-3">
+            <div className="col-span-2 text-sm font-bold text-gray-800 dark:text-gray-200 lg:col-span-1">Dashboard Tồn Kho</div>
             <select
               className="text-xs bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 py-1.5 px-2 rounded-lg border border-gray-200 dark:border-gray-700 outline-none cursor-pointer focus:ring-2 focus:ring-blue-500"
                 value={selectedCategory}
@@ -301,7 +301,7 @@ const DashboardPageEnhanced: React.FC = () => {
                 ))}
               </select>
               <select
-                className="text-xs bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 py-1.5 px-2 rounded-lg border border-gray-200 dark:border-gray-700 outline-none cursor-pointer focus:ring-2 focus:ring-blue-500 max-w-[150px]"
+              className="min-w-0 text-xs bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 py-1.5 px-2 rounded-lg border border-gray-200 dark:border-gray-700 outline-none cursor-pointer focus:ring-2 focus:ring-blue-500 lg:max-w-[150px]"
                 value={selectedProduct}
                 onChange={(e) => setSelectedProduct(e.target.value)}
               >
@@ -311,7 +311,7 @@ const DashboardPageEnhanced: React.FC = () => {
                 ))}
               </select>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-nowrap">
               <div className="flex items-center">
                 <input
                   type="number"
@@ -330,7 +330,7 @@ const DashboardPageEnhanced: React.FC = () => {
               </div>
               <div className="relative">
                 <button 
-                  className="text-xs bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-700 dark:text-red-400 py-1.5 px-3 rounded-lg border border-red-200 dark:border-red-900/50 font-bold ml-2 transition-colors"
+                  className="text-xs bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-700 dark:text-red-400 py-1.5 px-3 rounded-lg border border-red-200 dark:border-red-900/50 font-bold transition-colors"
                   onClick={() => {
                     if (window.confirm('Bạn có chắc chắn muốn reset toàn bộ dữ liệu Trial? Tất cả giao dịch tự tạo sẽ bị xóa.')) {
                       import('../data/trialMockData').then(m => {
@@ -342,7 +342,7 @@ const DashboardPageEnhanced: React.FC = () => {
                 >
                   Reset Trial
                 </button>
-                <button className="text-xs bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-400 py-1.5 px-3 rounded-lg border border-blue-200 dark:border-blue-800 font-bold ml-2 transition-colors"
+                <button className="text-xs bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-400 py-1.5 px-3 rounded-lg border border-blue-200 dark:border-blue-800 font-bold transition-colors"
                   onClick={() => setShowExportMenu(!showExportMenu)}>Export</button>
                 {showExportMenu && (
                   <div className="absolute right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-10 min-w-[140px] animate-in fade-in zoom-in-95 duration-200">
@@ -365,7 +365,7 @@ const DashboardPageEnhanced: React.FC = () => {
                   </div>
                 )}
               </div>
-              <div className="inline-flex rounded-2xl bg-white/90 dark:bg-gray-800/90 p-1 shadow-[0_4px_12px_rgba(15,23,42,0.10)] border border-gray-200/80 dark:border-gray-700/80 ring-1 ring-gray-200/60 dark:ring-gray-700/60">
+              <div className="flex w-full overflow-x-auto rounded-2xl bg-white/90 dark:bg-gray-800/90 p-1 shadow-[0_4px_12px_rgba(15,23,42,0.10)] border border-gray-200/80 dark:border-gray-700/80 ring-1 ring-gray-200/60 dark:ring-gray-700/60 lg:w-auto">
                 <InventoryTimeRangeSelector value={timeRange} onChange={setTimeRange} />
               </div>
             </div>
