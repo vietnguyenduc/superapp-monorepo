@@ -64,8 +64,7 @@ export const inventoryVarianceService = {
       const { data, error } = await query;
 
       if (error) {
-        console.warn('Error fetching inventory variance reports, falling back to mock due to:', error);
-        return fallbackService.getVarianceReports(filters);
+        throw new Error(`Lỗi tải báo cáo chênh lệch: ${error.message}`);
       }
 
       return data || [];

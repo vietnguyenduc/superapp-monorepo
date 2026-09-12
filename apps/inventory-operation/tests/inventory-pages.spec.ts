@@ -36,6 +36,10 @@ test.describe("Inventory app — sidebar navigation", () => {
     await expect(nhapHang.first()).toBeVisible({ timeout: 10000 });
   });
 
+  test("single-warehouse pilot limitation is always visible", async ({ page }) => {
+    await expect(page.getByText(/Pilot một kho: chưa dùng để điều chuyển/i)).toBeVisible();
+  });
+
   test("sidebar has 'Xuất hàng' menu (new)", async ({ page }) => {
     const xuatHang = page.getByRole("button", { name: /xuất hàng/i });
     await expect(xuatHang.first()).toBeVisible({ timeout: 10000 });
@@ -115,9 +119,15 @@ test.describe("Inventory app — Nhập hàng page", () => {
     await expect(page.locator('tbody input[type="date"]').first()).toHaveValue("2026-09-11");
     await page.getByRole("button", { name: /lưu 2 dòng/i }).click();
     await expect(page.getByText("Đã lưu 2 dòng thành công!")).toBeVisible();
+    await expect(page.getByText("Biên nhận nhập hàng loạt")).toBeVisible();
+    await expect(page.getByText(/Mã lô:/)).toBeVisible();
     const recentRecords = page.locator("table").last();
     await expect(recentRecords.getByRole("cell", { name: "NVL-XO01", exact: true }).first()).toBeVisible();
     await expect(recentRecords.getByRole("cell", { name: "NVL-DH01", exact: true }).first()).toBeVisible();
+    await page.goto(`${BASE_URL}/inventory-records?tab=accounting_summary`, { waitUntil: "networkidle" });
+    const reportRow = page.locator("tbody tr").filter({ hasText: "bulk-in-1" });
+    await expect(reportRow).toContainText("NVL-XO01");
+    await expect(reportRow.locator("td").nth(3)).toHaveText("10");
   });
 
   test("old /purchase-orders redirects to /goods-receipts", async ({ page }) => {
@@ -187,9 +197,15 @@ test.describe("Inventory app — Xuất hàng page", () => {
     await expect(page.locator('tbody input[type="date"]').first()).toHaveValue("2026-09-11");
     await page.getByRole("button", { name: /lưu 2 dòng/i }).click();
     await expect(page.getByText("Đã lưu 2 dòng thành công!")).toBeVisible();
+    await expect(page.getByText("Biên nhận xuất hàng loạt")).toBeVisible();
+    await expect(page.getByText(/Mã lô:/)).toBeVisible();
     const recentRecords = page.locator("table").last();
     await expect(recentRecords.getByRole("cell", { name: "NVL-XO01", exact: true }).first()).toBeVisible();
     await expect(recentRecords.getByRole("cell", { name: "NVL-DH01", exact: true }).first()).toBeVisible();
+    await page.goto(`${BASE_URL}/inventory-records?tab=accounting_summary`, { waitUntil: "networkidle" });
+    const reportRow = page.locator("tbody tr").filter({ hasText: "bulk-out-1" });
+    await expect(reportRow).toContainText("NVL-XO01");
+    await expect(reportRow.locator("td").nth(4)).toHaveText("2");
   });
 });
 

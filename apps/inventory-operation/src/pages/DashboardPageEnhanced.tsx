@@ -151,7 +151,7 @@ const DashboardPageEnhanced: React.FC = () => {
       if (allowedForms.includes('processed')) totalStock += (r.processedStock || 0);
       if (allowedForms.includes('finished')) totalStock += (r.finishedProductStock || 0);
 
-      const out = Math.max(0, (r.inputQuantity || 0) - totalStock);
+      const out = r.outputQuantity || 0;
 
       if (groupedData[key]) {
         groupedData[key].nhap += r.inputQuantity || 0;
@@ -178,8 +178,7 @@ const DashboardPageEnhanced: React.FC = () => {
       if (allowed.includes('processed')) currentTotal += (r.processedStock || 0);
       if (allowed.includes('finished')) currentTotal += (r.finishedProductStock || 0);
 
-      runningStock += r.inputQuantity || 0;
-      runningStock -= Math.max(0, (r.inputQuantity || 0) - currentTotal);
+      runningStock += (r.inputQuantity || 0) - (r.outputQuantity || 0);
       return {
         date: new Date(r.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
         stock: runningStock,
@@ -189,7 +188,12 @@ const DashboardPageEnhanced: React.FC = () => {
 
     // Category Distribution Pie/Bar Data
     const categoryStockMap: Record<string, number> = {};
+    const latestCategoryRecord = new Map<string, typeof inventoryRecords[number]>();
     inventoryRecords.forEach(r => {
+      const existing = latestCategoryRecord.get(r.productCode);
+      if (!existing || new Date(r.date) > new Date(existing.date)) latestCategoryRecord.set(r.productCode, r);
+    });
+    latestCategoryRecord.forEach(r => {
       const product = productMap.get(r.productCode);
       const category = product?.category || 'Khác';
       const allowed = product?.allowedForms || ['raw', 'processed', 'finished'];

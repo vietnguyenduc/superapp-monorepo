@@ -5,6 +5,7 @@ import { useProducts } from '../hooks/useProducts';
 import { InventoryService } from '../services/inventoryService';
 import { supplierService, Supplier } from '../services/supplierService';
 import { Product, InventoryRecord } from '../types';
+import { calculateDaysOnHand, calculateMovementStock } from '../utils/inventoryPilotMath';
 
 interface MRPItem {
   product: Product;
@@ -14,7 +15,6 @@ interface MRPItem {
   supplier?: Supplier;
   leadTimeDays: number;
   unitPrice: number;
-  creditDays: number;
 }
 
 const InventoryMRPPage: React.FC = () => {
@@ -24,6 +24,8 @@ const InventoryMRPPage: React.FC = () => {
   const [mrpItems, setMrpItems] = useState<MRPItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [targetDays, setTargetDays] = useState(14);
 
   const { products } = useProducts();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -51,9 +53,7 @@ const InventoryMRPPage: React.FC = () => {
           const productRecords = records.filter((r) => r.productId === product.id || r.productCode === product.businessCode);
 
           // Current stock = sum(input) - sum(output)
-          const totalInput = productRecords.reduce((s, r) => s + (r.inputQuantity || 0), 0);
-          const totalOutput = productRecords.reduce((s, r) => s + (r.outputQuantity || 0), 0);
-          const currentStock = totalInput - totalOutput;
+          const currentStock = calculateMovementStock(productRecords);
 
           // Sales rate: output records in last 7/30 days
           const now = Date.now();
@@ -70,13 +70,12 @@ const InventoryMRPPage: React.FC = () => {
 
           return {
             product,
-            currentStock: Math.max(0, currentStock),
+            currentStock,
             salesRate7d: Math.round(salesRate7d),
             salesRate30d: Math.round(salesRate30d),
             supplier: suppliers.find((s) => s.id === (product as any).supplier_id),
             leadTimeDays: (product as any).lead_time_days || 3,
             unitPrice: product.price || 0,
-            creditDays: 30, // default credit days
           };
         });
         setMrpItems(items);
@@ -89,9 +88,7 @@ const InventoryMRPPage: React.FC = () => {
     loadMRPData();
   }, [products, suppliers]);
 
-  const calculateDOH = (stock: number, rate: number) => {
-    return rate > 0 ? Math.round(stock / rate) : 999;
-  };
+  const calculateDOH = calculateDaysOnHand;
 
   const calculateSuggestedOrder = (item: MRPItem, targetDoh: number) => {
     const rate = dohView === '7days' ? item.salesRate7d : item.salesRate30d;
@@ -112,13 +109,14 @@ const InventoryMRPPage: React.FC = () => {
   }, [mrpItems, searchTerm]);
 
   const avgDOH = filtered.length > 0
-    ? Math.round(filtered.reduce((s, i) => s + calculateDOH(i.currentStock, dohView === '7days' ? i.salesRate7d : i.salesRate30d), 0) / filtered.length)
+    ? (() => { const values = filtered.map(i => calculateDOH(i.currentStock, dohView === '7days' ? i.salesRate7d : i.salesRate30d)).filter((v): v is number => v !== null); return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0; })()
     : 0;
   const outOfStockCount = filtered.filter((i) => {
     const rate = dohView === '7days' ? i.salesRate7d : i.salesRate30d;
-    return calculateDOH(i.currentStock, rate) <= i.leadTimeDays;
+    const doh = calculateDOH(i.currentStock, rate);
+    return i.currentStock < 0 || (doh !== null && doh <= i.leadTimeDays);
   }).length;
-  const suggestedPOCount = new Set(filtered.filter((i) => calculateSuggestedOrder(i, i.creditDays) > 0).map((i) => i.supplier?.id).filter(Boolean)).size;
+  const suggestedPOCount = new Set(filtered.filter((i) => calculateSuggestedOrder(i, targetDays) > 0).map((i) => i.supplier?.id).filter(Boolean)).size;
 
   const toggleSelect = (productId: string) => {
     const next = new Set(selectedIds);
@@ -130,6 +128,7 @@ const InventoryMRPPage: React.FC = () => {
   const handleCreatePO = () => {
     const selected = mrpItems.filter((i) => selectedIds.has(i.product.id));
     if (selected.length === 0) return;
+    setActionError(null);
 
     // Group by supplier
     const bySupplier = new Map<string, MRPItem[]>();
@@ -139,6 +138,11 @@ const InventoryMRPPage: React.FC = () => {
       bySupplier.get(supplierId)!.push(item);
     });
 
+    if (bySupplier.size !== 1 || bySupplier.has('unknown')) {
+      setActionError('Để tránh bỏ sót đơn hàng, mỗi lần chỉ tạo PO cho sản phẩm của một nhà cung cấp đã được gán.');
+      return;
+    }
+
     // For now, navigate with first supplier's items (most common case)
     const firstSupplierId = bySupplier.keys().next().value;
     const firstSupplierItems = bySupplier.get(firstSupplierId) || [];
@@ -147,7 +151,7 @@ const InventoryMRPPage: React.FC = () => {
       product_id: item.product.id,
       product_code: item.product.businessCode || '',
       product_name: item.product.name || '',
-      quantity: calculateSuggestedOrder(item, item.creditDays),
+      quantity: calculateSuggestedOrder(item, targetDays),
       unit_price: item.unitPrice,
     }));
 
@@ -161,12 +165,27 @@ const InventoryMRPPage: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6 animate-in fade-in duration-500">
+      {actionError && <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100">{actionError}</div>}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-slate-800 dark:text-white tracking-tight">Vòng quay tồn kho & MRP</h1>
-          <p className="text-sm text-slate-500 mt-1">Phân tích DOH và tự động đề xuất lượng nhập hàng theo chu kỳ nợ</p>
+          <p className="text-sm text-slate-500 mt-1">Phân tích DOH và đề xuất lượng nhập theo mục tiêu tồn kho của pilot</p>
         </div>
-        <div className="flex bg-slate-100 dark:bg-gray-800 p-1 rounded-lg">
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-300">
+            Mục tiêu tồn
+            <input
+              aria-label="Số ngày tồn kho mục tiêu"
+              type="number"
+              min={1}
+              max={90}
+              value={targetDays}
+              onChange={(event) => setTargetDays(Math.min(90, Math.max(1, Number(event.target.value) || 1)))}
+              className="w-20 rounded-lg border border-slate-200 bg-white px-3 py-2 text-right text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            />
+            ngày
+          </label>
+          <div className="flex bg-slate-100 dark:bg-gray-800 p-1 rounded-lg">
           <button
             onClick={() => setDohView('7days')}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${dohView === '7days' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-600 dark:text-gray-400 hover:text-slate-900'}`}
@@ -179,6 +198,7 @@ const InventoryMRPPage: React.FC = () => {
           >
             Tốc độ bán 30 ngày
           </button>
+          </div>
         </div>
       </div>
 
@@ -249,7 +269,7 @@ const InventoryMRPPage: React.FC = () => {
                   <th className="px-6 py-4 text-right">Tồn hiện tại</th>
                   <th className="px-6 py-4 text-right">Tốc độ bán<br/>({dohView === '7days' ? '7 ngày' : '30 ngày'}/ngày)</th>
                   <th className="px-6 py-4 text-center">DOH Thực tế</th>
-                  <th className="px-6 py-4 text-center">Nợ NCC / Lead Time</th>
+                  <th className="px-6 py-4 text-center">Mục tiêu / Lead Time</th>
                   <th className="px-6 py-4 bg-indigo-50/30 dark:bg-indigo-900/10 text-indigo-800 dark:text-indigo-300 border-l border-indigo-100 dark:border-indigo-900/30">Gợi ý Đặt (MRP)</th>
                 </tr>
               </thead>
@@ -257,8 +277,8 @@ const InventoryMRPPage: React.FC = () => {
                 {filtered.map((item) => {
                   const rate = dohView === '7days' ? item.salesRate7d : item.salesRate30d;
                   const doh = calculateDOH(item.currentStock, rate);
-                  const suggestedOrder = calculateSuggestedOrder(item, item.creditDays);
-                  const isOutOfStock = doh <= item.leadTimeDays;
+                  const suggestedOrder = calculateSuggestedOrder(item, targetDays);
+                  const isOutOfStock = item.currentStock < 0 || (doh !== null && doh <= item.leadTimeDays);
 
                   return (
                     <tr key={item.product.id} className="hover:bg-slate-50/80 dark:hover:bg-gray-800/50 transition-colors">
@@ -273,13 +293,13 @@ const InventoryMRPPage: React.FC = () => {
                       <td className="px-6 py-4 text-right font-medium text-slate-700 dark:text-gray-300">{rate} / ngày</td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex flex-col items-center">
-                          <span className={`font-bold text-lg ${isOutOfStock ? 'text-rose-600' : 'text-slate-800 dark:text-white'}`}>{doh}</span>
+                          <span className={`font-bold text-lg ${isOutOfStock ? 'text-rose-600' : 'text-slate-800 dark:text-white'}`}>{doh === null ? '—' : doh}</span>
                           <span className="text-[10px] text-slate-500 uppercase">ngày</span>
                           {isOutOfStock && <span className="text-[10px] font-bold text-rose-600 mt-1 bg-rose-50 dark:bg-rose-900/30 px-2 py-0.5 rounded">Rủi ro đứt hàng</span>}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <div className="font-medium text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-md inline-block">{item.creditDays} ngày nợ</div>
+                        <div className="font-medium text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-md inline-block">{targetDays} ngày tồn</div>
                         <div className="text-[10px] text-slate-500 mt-1.5 flex items-center justify-center gap-1">
                           <ArrowRight className="w-3 h-3" /> Giao: {item.leadTimeDays} ngày
                         </div>

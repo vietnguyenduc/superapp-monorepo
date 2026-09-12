@@ -155,7 +155,7 @@ export class InventoryService extends BaseService {
         const { error } = await query;
         return { data: !error, error };
       },
-      () => fallbackService.deleteProduct(id) // Note: using deleteProduct as placeholder if needed
+      () => fallbackService.deleteInventoryRecord(id)
     );
   }
 

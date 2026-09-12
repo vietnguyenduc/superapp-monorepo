@@ -175,84 +175,9 @@ export class GoodsReceiptService extends BaseService {
   static async completeGoodsReceipt(id: string): Promise<ServiceResponse<boolean>> {
     return this.execute(
       async () => {
-        const userId = await getCurrentUserId();
-        const companyId = await getCurrentCompanyId();
-
-        // 1. Fetch GR + items + product info
-        let grQuery = apiClient
-          .from('goods_receipts')
-          .select(`*, items:goods_receipt_items(*, product:products(business_code, name))`)
-          .eq('id', id);
-        if (companyId) grQuery = grQuery.eq('company_id', companyId);
-        const { data: grData, error: fetchErr } = await grQuery.maybeSingle();
-        if (fetchErr || !grData) return { error: fetchErr?.message || 'Không tìm thấy GR' };
-
-        if (grData.status === 'completed') return { error: 'GR đã hoàn thành rồi' };
-
-        // 2. Update GR status to completed
-        let updateQuery = apiClient
-          .from('goods_receipts')
-          .update({ status: 'completed', updated_at: new Date().toISOString() })
-          .eq('id', id);
-        if (companyId) updateQuery = updateQuery.eq('company_id', companyId);
-        const { error: updateErr } = await updateQuery;
-        if (updateErr) return { error: updateErr };
-
-        // 3. Create inventory_records for each item (input_quantity > 0)
-        for (const item of (grData.items || [])) {
-          if (item.received_qty <= 0) continue;
-          const recordRow: any = {
-            date: grData.receipt_date,
-            product_id: item.product_id,
-            product_code: item.product?.business_code || '',
-            product_name: item.product?.name || '',
-            input_quantity: item.received_qty,
-            output_quantity: 0,
-            unit_price: item.unit_price,
-            total_amount: item.received_qty * item.unit_price,
-            supplier_id: grData.supplier_id,
-            source_type: 'goods_receipt',
-            reference_id: id,
-            notes: `Nhập hàng - ${grData.gr_number}`,
-            created_by: userId,
-          };
-          if (companyId) recordRow.company_id = companyId;
-          await apiClient.from('inventory_records').insert([recordRow]);
-        }
-
-        // 4. If linked to PO → update po_items.received_quantity + PO status
-        if (grData.po_id) {
-          for (const item of (grData.items || [])) {
-            if (item.po_item_id) {
-              // Fetch current received_quantity
-              const { data: poItem } = await apiClient
-                .from('po_items')
-                .select('received_quantity')
-                .eq('id', item.po_item_id)
-                .maybeSingle();
-              const newReceived = (poItem?.received_quantity || 0) + item.received_qty;
-              await apiClient
-                .from('po_items')
-                .update({ received_quantity: newReceived })
-                .eq('id', item.po_item_id);
-            }
-          }
-
-          // Update PO status: check if all items fully received
-          const { data: poItems } = await apiClient
-            .from('po_items')
-            .select('quantity, received_quantity')
-            .eq('po_id', grData.po_id);
-          const allReceived = (poItems || []).every(i => i.received_quantity >= i.quantity);
-          const anyReceived = (poItems || []).some(i => i.received_quantity > 0);
-          const newPOStatus = allReceived ? 'received' : (anyReceived ? 'partial_received' : 'sent');
-          await apiClient
-            .from('purchase_orders')
-            .update({ status: newPOStatus, updated_at: new Date().toISOString() })
-            .eq('id', grData.po_id);
-        }
-
-        return { data: true };
+        const { data, error } = await apiClient.rpc('inventory_complete_goods_receipt', { p_gr_id: id });
+        if (error) return { data: null, error };
+        return { data: Boolean(data?.completed), error: null };
       },
       async () => {
         const grs = getTrialGRs();
@@ -360,7 +285,17 @@ export class GoodsReceiptService extends BaseService {
       notes?: string;
       sourceType?: InventorySourceType;
     }>
-  ): Promise<ServiceResponse<{ created: number; errors: string[] }>> {
+  ): Promise<ServiceResponse<{ created: number; errors: string[]; batchId: string }>> {
+    const batchId = crypto.randomUUID();
+    if (!this.isTrial) {
+      const companyId = await getCurrentCompanyId();
+      if (!companyId) return { success: false, error: 'Vui lòng chọn công ty trước khi nhập kho' };
+      const { data, error } = await apiClient.rpc('inventory_import_batch', {
+        p_company_id: companyId, p_batch_id: batchId, p_direction: 'input', p_rows: inputs,
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: true, data: { created: Number(data?.created || 0), errors: [], batchId: data?.batch_id || batchId } };
+    }
     const errors: string[] = [];
     let created = 0;
 
@@ -442,7 +377,7 @@ export class GoodsReceiptService extends BaseService {
       }
     }
 
-    return { success: true, data: { created, errors } };
+    return { success: true, data: { created, errors, batchId } };
   }
 }
 

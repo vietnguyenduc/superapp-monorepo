@@ -94,12 +94,7 @@ export const useInventory = (options: UseInventoryOptions = {}) => {
       const isTrial = isTrialMode();
       let response;
       
-      if (isTrial) {
-        console.log('🧪 Trial mode: updating inventory record in localStorage');
-        response = { data: { ...updates, id, updatedAt: new Date() } as InventoryRecord, error: null };
-      } else {
-        response = await InventoryService.updateInventoryRecord(id, updates);
-      }
+      response = await InventoryService.updateInventoryRecord(id, updates);
       
       if (response.data) {
         setRecords(prev => 
@@ -131,12 +126,7 @@ export const useInventory = (options: UseInventoryOptions = {}) => {
       const isTrial = isTrialMode();
       let response;
       
-      if (isTrial) {
-        console.log('🧪 Trial mode: deleting inventory record in localStorage');
-        response = { data: true, error: null };
-      } else {
-        response = await InventoryService.deleteInventoryRecord(id);
-      }
+      response = await InventoryService.deleteInventoryRecord(id);
       
       if (response.data) {
         setRecords(prev => prev.filter(record => record.id !== id));

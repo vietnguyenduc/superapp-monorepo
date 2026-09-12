@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { inventoryMovementService } from '../services/inventoryMovementService';
+import { isSignificantVariance } from '../utils/inventoryPilotMath';
 
 interface InventoryVarianceReportProps {
   companyId: string;
@@ -37,14 +38,13 @@ const InventoryVarianceReport: React.FC<InventoryVarianceReportProps> = ({
   };
 
   const getVarianceBadgeClass = (variance: number) => {
-    const threshold = 0.05; // 5% threshold
-    if (Math.abs(variance) < threshold) return 'bg-green-100 text-green-800';
-    if (Math.abs(variance) < threshold * 2) return 'bg-yellow-100 text-yellow-800';
+    const threshold = 5; // variance_percentage is stored as percentage points
+    if (Math.abs(variance) <= threshold) return 'bg-green-100 text-green-800';
+    if (Math.abs(variance) <= threshold * 2) return 'bg-yellow-100 text-yellow-800';
     return 'bg-red-100 text-red-800';
   };
 
-  const totalVariance = varianceData.reduce((sum, item) => sum + (item.variance || 0), 0);
-  const significantVarianceCount = varianceData.filter(item => Math.abs(item.variance_percentage || 0) > 5).length;
+  const significantVarianceCount = varianceData.filter(item => isSignificantVariance(item.variance_percentage || 0)).length;
 
   if (loading) {
     return (
@@ -74,11 +74,9 @@ const InventoryVarianceReport: React.FC<InventoryVarianceReportProps> = ({
               Kỳ từ {new Date(dateFrom).toLocaleDateString('vi-VN')} đến {new Date(dateTo).toLocaleDateString('vi-VN')}
             </p>
           </div>
-          <div className="text-right">
-            <div className="text-sm text-gray-500">Tổng chênh lệch</div>
-            <div className={`text-lg font-semibold ${totalVariance !== 0 ? 'text-red-600' : 'text-green-600'}`}>
-              {formatQuantity(totalVariance)}
-            </div>
+          <div className="text-right max-w-xs">
+            <div className="text-sm font-medium text-gray-700">Không cộng lẫn đơn vị</div>
+            <div className="text-xs text-gray-500">Xem chênh lệch theo từng mặt hàng và đơn vị ở bảng dưới.</div>
           </div>
         </div>
       </div>

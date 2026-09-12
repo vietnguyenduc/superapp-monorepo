@@ -33,6 +33,12 @@ Inventory management: products, categories, stock movements, purchase orders, go
 
 ## Key gotchas
 
+- **Single-warehouse pilot (2026-09-11):** the app displays a persistent pilot limitation banner. Multi-warehouse transfer is not certified yet; do not represent two unrelated input/output rows as a transfer.
+- **Pilot safety math:** use `src/utils/inventoryPilotMath.ts`. Stock is `Σ input - Σ output`, negative stock remains visible, zero-sales DOH is `null`, and variance thresholds use percentage points (`5`, not `0.05`).
+- **Atomic write boundary:** live goods-receipt completion calls `inventory_complete_goods_receipt`; live inbound/outbound bulk import calls `inventory_import_batch`; Sales sync calls `inventory_sync_sales_record`. These RPCs are introduced by `20260911162323_inventory_pilot_safety.sql` and must exist before deploying the matching frontend.
+- **Pilot XNT source:** `InventoryRecordsPage` derives opening/inbound/outbound/closing rows from `inventory_records` through `buildInventoryTransactionReport`; do not switch it back to `inventory_variance_reports`, because bulk movements are written to the transaction ledger.
+- **Bulk traceability:** both import pages persist the most recent batch receipt (batch ID, saved/error count, timestamp) in browser storage. Live retries use the batch ID as the idempotency key in `inventory_import_batch`.
+
 - `id` columns (`customers`, `transactions`, `bank_accounts`, `branches`, etc.) are `text` containing v4 UUID strings, not `uuid` type.
 - Always include `company_id` in mutations. Use `maybeSingle()` for reads that may return zero rows.
 - Do **not** use `.single()` on RLS-scoped selects unless the row is guaranteed to exist and the user has access.
@@ -96,4 +102,3 @@ Inventory management: products, categories, stock movements, purchase orders, go
 - `supplier_returns`
 - `suppliers`
 - `users`
-
