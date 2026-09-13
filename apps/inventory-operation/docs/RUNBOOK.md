@@ -61,6 +61,12 @@ Creating the first warehouse also assigns previously unassigned company users an
 unassigned inventory history to it. Operational lists and reports then follow the
 selected or assigned branch; the product catalog remains company-wide.
 
+Bulk inbound supplier matching is configured at **Cài đặt → Nhập / Xuất dữ liệu**.
+Choosing **Tên nhà cung cấp** changes the grid and downloaded template from `Mã NCC`
+to `Tên NCC`. Names are matched case-insensitively and must be unique in the company.
+Migration `20260913170000_inventory_bulk_supplier_and_product_matching.sql` makes the
+batch RPC respect product matching settings and persist the validated supplier link.
+
 ## Deploy
 
 1. Push to `origin/viet` to create a Vercel preview deployment.

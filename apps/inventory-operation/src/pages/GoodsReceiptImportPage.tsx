@@ -9,6 +9,7 @@ import { useProducts } from '../hooks/useProducts';
 import { InventorySourceType } from '../types';
 import BulkImportHistoryPanel from '../components/BulkImportHistoryPanel';
 import { bulkImportHistoryService, BulkImportReceipt } from '../services/bulkImportHistoryService';
+import { importExportSettingsService } from '../services/importExportSettingsService';
 
 type SubTab = 'po' | 'gr' | 'return';
 type ImportMode = 'single' | 'bulk';
@@ -146,16 +147,28 @@ const GoodsReceiptImportPage: React.FC = () => {
   const handleBulkSave = async (rows: BulkGoodsReceiptRow[]) => {
     setIsSaving(true);
     try {
-      const inputs = rows.map((r) => ({
+      const config = await importExportSettingsService.load();
+      const normalize = (value: string) => value.trim().toLocaleLowerCase('vi-VN');
+      const inputs = rows.map((r, index) => {
+        const supplierReference = r.supplier_code.trim();
+        const matches = supplierReference ? suppliers.filter((supplier) => normalize(
+          config.supplierMatchField === 'full_name' ? supplier.full_name : supplier.customer_code
+        ) === normalize(supplierReference)) : [];
+        if (supplierReference && matches.length !== 1) {
+          throw new Error(`Dòng ${index + 1}: ${matches.length > 1 ? 'Tên nhà cung cấp bị trùng' : 'Không tìm thấy nhà cung cấp'}: ${supplierReference}`);
+        }
+        const supplier = matches[0];
+        return ({
         date: r.date,
         productCode: r.product_code,
         inputQuantity: parseFloat(r.quantity) || 0,
         unitPrice: parseFloat(r.unit_price) || 0,
-        supplierId: suppliers.find((s) => s.customer_code === r.supplier_code)?.id,
-        supplierName: suppliers.find((s) => s.customer_code === r.supplier_code)?.full_name,
+        supplierId: supplier?.id,
+        supplierName: supplier?.full_name,
         notes: r.notes,
         sourceType: getSourceType(),
-      }));
+        });
+      });
       const res = await goodsReceiptService.bulkCreateGoodsReceipts(inputs);
       if (res.success && res.data) {
         const { created, errors, batchId } = res.data;
@@ -171,7 +184,7 @@ const GoodsReceiptImportPage: React.FC = () => {
         loadBatchHistory();
       }
     } catch (err) {
-      showNotification('error', 'Lỗi kết nối, vui lòng thử lại');
+      showNotification('error', err instanceof Error ? err.message : 'Lỗi kết nối, vui lòng thử lại');
     } finally {
       setIsSaving(false);
     }

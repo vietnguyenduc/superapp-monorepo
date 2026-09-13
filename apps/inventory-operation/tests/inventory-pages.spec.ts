@@ -1,4 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
+import * as XLSX from "xlsx";
+import { readFileSync } from "node:fs";
 
 const BASE_URL = "http://localhost:5175";
 
@@ -191,6 +193,36 @@ test.describe("Inventory app — Nhập hàng page", () => {
     await expect(page.getByText(/hướng dẫn nhập nhanh/i)).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(/tải template excel/i)).toBeVisible();
     await expect(page.getByText(/📁 upload file/i)).toBeVisible();
+  });
+
+  test("supplier name matching changes the bulk grid and template contract", async ({ page }) => {
+    await page.goto(`${BASE_URL}/settings?tab=import-export`, { waitUntil: "networkidle" });
+    await page.getByLabel("Đối chiếu nhà cung cấp khi nhập kho").selectOption("full_name");
+    await page.goto(`${BASE_URL}/goods-receipts?subTab=gr&tab=bulk`, { waitUntil: "networkidle" });
+    await expect(page.getByRole("columnheader", { name: "Tên NCC" })).toBeVisible();
+    await expect(page.getByText(/Ngày · Tên NCC · Mã hàng/)).toBeVisible();
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: /tải template excel/i }).click();
+    const download = await downloadPromise;
+    const filePath = await download.path();
+    expect(filePath).toBeTruthy();
+    const xlsx = (XLSX as any).default || XLSX;
+    const workbook = xlsx.read(readFileSync(filePath!), { type: "buffer" });
+    const templateRows = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 }) as unknown[][];
+    expect(templateRows[0]?.[1]).toBe("Tên NCC");
+    expect(templateRows[1]?.[1]).toBe("Công ty TNHH Bao Bì Xanh");
+    const uploadWorkbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(uploadWorkbook, xlsx.utils.aoa_to_sheet([
+      ["Ngày", "Tên NCC", "Mã hàng", "Số lượng", "Đơn giá", "Ghi chú"],
+      ["2026-09-13", "Công ty TNHH Bao Bì Xanh", "NVL-XO01", 2, 25000, "name-match"],
+    ]), "Nhập hàng");
+    await page.locator('input[type="file"]').setInputFiles({
+      name: "bulk-inbound-by-supplier-name.xlsx",
+      mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      buffer: xlsx.write(uploadWorkbook, { type: "buffer", bookType: "xlsx" }),
+    });
+    await page.getByRole("button", { name: /lưu 1 dòng/i }).click();
+    await expect(page.getByText("Đã lưu 1 dòng thành công!")).toBeVisible();
   });
 
   test("bulk CSV imports two inbound rows and shows them in recent records", async ({ page }) => {

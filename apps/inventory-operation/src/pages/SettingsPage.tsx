@@ -11,7 +11,7 @@ import {
   Branch,
   TransactionType
 } from '../services/appSettingsService';
-import { importExportSettingsService, ImportExportConfig, MatchField } from '../services/importExportSettingsService';
+import { importExportSettingsService, ImportExportConfig, MatchField, SupplierMatchField } from '../services/importExportSettingsService';
 
 interface OpeningBalanceRow {
   id: string;
@@ -769,7 +769,7 @@ const SettingsPage: React.FC = () => {
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold uppercase text-gray-500">Trường match khi Import</h3>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       {([
                         { key: 'productMatchField', label: 'Nhập sản phẩm', desc: 'Dùng để nhận diện sản phẩm trùng khi nhập danh mục' },
                         { key: 'inventoryMatchField', label: 'Nhập xuất tồn', desc: 'Dùng để tìm sản phẩm khi nhập bản ghi kho' },
@@ -790,13 +790,27 @@ const SettingsPage: React.FC = () => {
                           <p className="text-[10px] text-gray-400 mt-2">{item.desc}</p>
                         </div>
                       ))}
+                      <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-gray-900/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Nhà cung cấp khi nhập kho</label>
+                        <select
+                          aria-label="Đối chiếu nhà cung cấp khi nhập kho"
+                          value={importExportConfig.supplierMatchField}
+                          onChange={(e) => handleSaveImportExport({ supplierMatchField: e.target.value as SupplierMatchField })}
+                          disabled={savingImportExport}
+                          className="w-full px-3 py-2 rounded-lg border text-sm font-medium bg-white border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50"
+                        >
+                          <option value="customer_code">Mã nhà cung cấp</option>
+                          <option value="full_name">Tên nhà cung cấp</option>
+                        </select>
+                        <p className="text-[10px] text-gray-400 mt-2">Đổi cột NCC trong template và cách đối chiếu khi nhập kho hàng loạt</p>
+                      </div>
                     </div>
                   </div>
 
                   {/* Info banner */}
                   <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-amber-900/20 border-amber-800' : 'bg-amber-50 border-amber-200'} border`}>
                     <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                      <b>Lưu ý:</b> Khi match theo tên, nếu có 2+ sản phẩm trùng tên trong hệ thống, import sẽ báo lỗi và yêu cầu đổi tên hoặc dùng mã.
+                      <b>Lưu ý:</b> Khi match theo tên, nếu có 2+ sản phẩm hoặc nhà cung cấp trùng tên, import sẽ báo lỗi và yêu cầu dùng giá trị duy nhất.
                       Cài đặt này lưu theo company (Supabase), sync trên mọi thiết bị.
                     </p>
                   </div>
