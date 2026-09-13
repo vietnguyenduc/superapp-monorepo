@@ -13,13 +13,14 @@ export class InventoryService extends BaseService {
   }): Promise<ServiceResponse<InventoryRecord[]>> {
     return this.execute(
       async () => {
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         let query = apiClient.from('inventory_records').select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
         `).order('date', { ascending: false });
 
         if (companyId) query = query.eq('company_id', companyId);
+        if (branchId) query = query.eq('branch_id', branchId);
         if (filters?.date) query = query.eq('date', filters.date);
         if (filters?.productId) query = query.eq('product_id', filters.productId);
         if (filters?.limit) query = query.limit(filters.limit);
@@ -38,12 +39,13 @@ export class InventoryService extends BaseService {
   static async getInventoryRecord(id: string): Promise<ServiceResponse<InventoryRecord>> {
     return this.execute(
       async () => {
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         let query = apiClient.from('inventory_records').select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
         `).eq('id', id);
         if (companyId) query = query.eq('company_id', companyId);
+        if (branchId) query = query.eq('branch_id', branchId);
         const res = await query.single();
         if (res.data) res.data = InventoryMapper.mapDbToInventory(res.data);
         return res;
@@ -163,12 +165,13 @@ export class InventoryService extends BaseService {
 
   static async getInventorySummary(dateFrom: Date, dateTo: Date): Promise<ServiceResponse<any[]>> {
     return this.execute(async () => {
-      const companyId = await getCurrentCompanyId();
+      const { companyId, branchId } = await getCurrentInventoryScope();
       let query = apiClient.from('inventory_records')
         .select('product_code, product_name, input_quantity, raw_material_stock, processed_stock, finished_product_stock, company_id')
         .gte('date', dateFrom.toISOString())
         .lte('date', dateTo.toISOString());
       if (companyId) query = query.eq('company_id', companyId);
+      if (branchId) query = query.eq('branch_id', branchId);
       const { data, error } = await query;
 
       if (error) return { error };

@@ -1,0 +1,29 @@
+import React,{useEffect,useMemo,useState} from 'react';
+import { useWarehouseWorkspace } from '../contexts/WarehouseWorkspaceContext';
+import { ProductService } from '../services/productService';
+import { warehouseTransferService } from '../services/warehouseTransferService';
+import type { Product } from '../types';
+
+const WarehouseTransferPage:React.FC=()=>{
+  const {branches,activeBranch,role}=useWarehouseWorkspace(); const [products,setProducts]=useState<Product[]>([]); const [history,setHistory]=useState<any[]>([]);
+  const [form,setForm]=useState({sourceBranchId:activeBranch?.id||'',destinationBranchId:'',productId:'',quantity:'',date:new Date().toISOString().slice(0,10),notes:''}); const [message,setMessage]=useState(''); const [error,setError]=useState(''); const [saving,setSaving]=useState(false);
+  useEffect(()=>setForm(f=>({...f,sourceBranchId:activeBranch?.id||f.sourceBranchId,destinationBranchId:branches.find(b=>b.id!==(activeBranch?.id||f.sourceBranchId))?.id||''})),[activeBranch,branches]);
+  useEffect(()=>{void Promise.all([ProductService.getProducts({status:'active'}),warehouseTransferService.list()]).then(([p,h])=>{setProducts(p.data||[]);setHistory(h);}).catch(e=>setError(e.message));},[]);
+  const valid=useMemo(()=>role==='admin_company'&&form.sourceBranchId!==form.destinationBranchId&&!!form.destinationBranchId&&!!form.productId&&Number(form.quantity)>0,[role,form]);
+  if(branches.length<2)return <div className="mx-auto max-w-xl rounded-3xl border bg-white p-6 dark:border-gray-700 dark:bg-gray-800"><h1 className="text-2xl font-bold dark:text-white">Điều chuyển kho</h1><p className="mt-2 text-gray-600 dark:text-gray-300">Tính năng tự xuất hiện khi công ty có ít nhất hai kho hoạt động.</p></div>;
+  const field='mt-2 min-h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-gray-600 dark:bg-gray-900 dark:text-white';
+  return <div className="mx-auto max-w-5xl space-y-6"><header><h1 className="text-2xl font-bold text-gray-900 dark:text-white">Điều chuyển kho</h1><p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Một chứng từ tạo đồng thời bút toán xuất kho nguồn và nhập kho đích.</p></header>
+    <form onSubmit={async e=>{e.preventDefault();setError('');setMessage('');setSaving(true);try{const id=await warehouseTransferService.transfer({sourceBranchId:form.sourceBranchId,destinationBranchId:form.destinationBranchId,productId:form.productId,quantity:Number(form.quantity),date:form.date,notes:form.notes,transferId:crypto.randomUUID()});setMessage(`Đã điều chuyển an toàn · ${id}`);setForm(f=>({...f,productId:'',quantity:'',notes:''}));setHistory(await warehouseTransferService.list());}catch(err){setError(err instanceof Error?err.message:'Không thể điều chuyển');}finally{setSaving(false);}}} className="grid gap-4 rounded-3xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:grid-cols-2">
+      <label className="text-sm font-semibold dark:text-white">Kho nguồn<select aria-label="Kho nguồn" value={form.sourceBranchId} onChange={e=>setForm({...form,sourceBranchId:e.target.value})} className={field}>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
+      <label className="text-sm font-semibold dark:text-white">Kho đích<select aria-label="Kho đích" value={form.destinationBranchId} onChange={e=>setForm({...form,destinationBranchId:e.target.value})} className={field}>{branches.filter(b=>b.id!==form.sourceBranchId).map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
+      <label className="text-sm font-semibold dark:text-white">Sản phẩm<select aria-label="Sản phẩm điều chuyển" value={form.productId} onChange={e=>setForm({...form,productId:e.target.value})} className={field}><option value="">Chọn sản phẩm</option>{products.map(p=><option key={p.id} value={p.id}>{p.name} · {p.businessCode}</option>)}</select></label>
+      <label className="text-sm font-semibold dark:text-white">Số lượng<input aria-label="Số lượng điều chuyển" type="number" min="0.001" step="0.001" value={form.quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className={field}/></label>
+      <label className="text-sm font-semibold dark:text-white">Ngày điều chuyển<input aria-label="Ngày điều chuyển" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} className={field}/></label>
+      <label className="text-sm font-semibold dark:text-white">Ghi chú<input aria-label="Ghi chú điều chuyển" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} className={field}/></label>
+      {(error||message)&&<p role={error?'alert':'status'} className={`sm:col-span-2 text-sm ${error?'text-red-600':'text-emerald-600'}`}>{error||message}</p>}
+      <button disabled={!valid||saving} className="min-h-11 rounded-xl bg-blue-600 px-5 font-semibold text-white disabled:opacity-50 sm:col-span-2 sm:justify-self-start">{saving?'Đang điều chuyển…':'Xác nhận điều chuyển'}</button>
+    </form>
+    <section className="rounded-3xl border bg-white p-5 dark:border-gray-700 dark:bg-gray-800"><h2 className="font-bold dark:text-white">Điều chuyển gần đây</h2>{history.length?<div className="mt-4 space-y-3">{history.map(row=><div key={row.id} className="rounded-xl bg-gray-50 p-3 text-sm dark:bg-gray-900"><div className="font-semibold dark:text-white">{row.product?.name} · {Number(row.quantity).toLocaleString('vi-VN')} {row.unit}</div><div className="text-gray-600 dark:text-gray-300">{row.source?.name} → {row.destination?.name} · {new Date(row.transfer_date).toLocaleDateString('vi-VN')}</div></div>)}</div>:<p className="mt-3 text-sm text-gray-500">Chưa có điều chuyển.</p>}</section>
+  </div>;
+};
+export default WarehouseTransferPage;

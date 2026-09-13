@@ -1,5 +1,12 @@
 # inventory-operation — Changelog
 
+## 2026-09-13 — Adaptive warehouse workspace
+
+- Added first-warehouse onboarding when a company has no active branch.
+- Kept single-warehouse companies on an automatic, selector-free workflow.
+- Added a working-warehouse selector and atomic transfer page only for company admins with multiple active branches.
+- Kept staff fixed to their assigned branch and added desktop/mobile regression coverage for zero, one and many warehouse states.
+
 ## 2026-09-13 — Branch, unit and stock-count hardening
 
 - Verified production bulk inbound/outbound, idempotent retry, canonical units and XNT ledger reconciliation inside a rollback transaction.

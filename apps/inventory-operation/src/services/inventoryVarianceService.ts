@@ -25,13 +25,14 @@ export const inventoryVarianceService = {
     }
     
     try {
-      const companyId = await getCurrentCompanyId();
+      const [companyId, branchId] = await Promise.all([getCurrentCompanyId(), getCurrentBranchId()]);
       let query = supabase
         .from('inventory_variance_reports')
         .select('*')
         .order('date', { ascending: false });
 
       if (companyId) query = query.eq('company_id', companyId);
+      if (branchId) query = query.eq('branch_id', branchId);
 
       if (filters?.search) {
         query = query.or(`notes.ilike.%${filters.search}%`);
@@ -82,12 +83,13 @@ export const inventoryVarianceService = {
         return fallbackService.getVarianceReportById(id);
       }
 
-      const companyId = await getCurrentCompanyId();
+      const [companyId, branchId] = await Promise.all([getCurrentCompanyId(), getCurrentBranchId()]);
       let query = supabase
         .from('inventory_variance_reports')
         .select('*')
         .eq('id', id);
       if (companyId) query = query.eq('company_id', companyId);
+      if (branchId) query = query.eq('branch_id', branchId);
       const { data, error } = await query.maybeSingle();
 
       if (error) {
@@ -141,7 +143,7 @@ export const inventoryVarianceService = {
         return fallbackService.updateVarianceReport(id, updates);
       }
 
-      const companyId = await getCurrentCompanyId();
+      const [companyId, branchId] = await Promise.all([getCurrentCompanyId(), getCurrentBranchId()]);
       let query = supabase
         .from('inventory_variance_reports')
         .update({
@@ -150,6 +152,7 @@ export const inventoryVarianceService = {
         })
         .eq('id', id);
       if (companyId) query = query.eq('company_id', companyId);
+      if (branchId) query = query.eq('branch_id', branchId);
       const { data, error } = await query
         .select()
         .maybeSingle();
@@ -175,12 +178,13 @@ export const inventoryVarianceService = {
         return fallbackService.deleteVarianceReport(id);
       }
 
-      const companyId = await getCurrentCompanyId();
+      const [companyId, branchId] = await Promise.all([getCurrentCompanyId(), getCurrentBranchId()]);
       let query = supabase
         .from('inventory_variance_reports')
         .delete()
         .eq('id', id);
       if (companyId) query = query.eq('company_id', companyId);
+      if (branchId) query = query.eq('branch_id', branchId);
       const { error } = await query;
 
       if (error) {
