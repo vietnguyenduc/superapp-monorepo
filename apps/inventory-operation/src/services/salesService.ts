@@ -1,4 +1,4 @@
-import { getCurrentCompanyId, getCurrentUserId, apiClient } from "../lib/supabase";
+import { getCurrentCompanyId, getCurrentInventoryScope, getCurrentUserId, apiClient } from "../lib/supabase";
 import { SalesRecord } from '../types';
 import { fallbackService } from './fallbackService';
 import { BaseService, ServiceResponse } from './baseService';
@@ -39,9 +39,10 @@ export class SalesService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         const row = SalesMapper.mapSalesToDb({ ...record, createdBy: userId, updatedBy: userId });
-        if (companyId) row.company_id = companyId;
+        row.company_id = companyId;
+        row.branch_id = branchId;
         const res = await apiClient.from('sales_records').insert([row]).select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
@@ -58,10 +59,11 @@ export class SalesService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         const rows = records.map(r => {
           const row = SalesMapper.mapSalesToDb({ ...r, createdBy: userId, updatedBy: userId } as any);
-          if (companyId) row.company_id = companyId;
+          row.company_id = companyId;
+          row.branch_id = branchId;
           return row;
         });
         const allData: any[] = [];

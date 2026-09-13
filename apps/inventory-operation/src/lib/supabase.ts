@@ -188,6 +188,13 @@ export const getCurrentBranchId = async (): Promise<string | null> => {
   return data?.branch_id || null;
 };
 
+/** Resolve tenant ownership once for write payloads. */
+export const getCurrentInventoryScope = async (): Promise<{ companyId: string; branchId: string | null }> => {
+  const [companyId, branchId] = await Promise.all([getCurrentCompanyId(), getCurrentBranchId()]);
+  if (!companyId) throw new Error('Vui lòng chọn công ty trước khi ghi dữ liệu kho');
+  return { companyId, branchId };
+};
+
 // Helper function to test database connection
 export const testConnection = async (): Promise<boolean> => {
   try {
