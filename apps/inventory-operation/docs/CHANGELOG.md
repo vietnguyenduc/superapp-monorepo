@@ -1,5 +1,11 @@
 # inventory-operation — Changelog
 
+## 2026-09-13 — Supplier-name matching for bulk inbound
+
+- Added a company setting to match inbound suppliers by code or name.
+- Updated the bulk grid and downloadable template to follow the selected supplier field.
+- Added duplicate/missing-name validation and persisted the resolved supplier on imported movements.
+
 ## 2026-09-13 — Adaptive warehouse workspace
 
 - Added first-warehouse onboarding when a company has no active branch.
