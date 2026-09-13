@@ -1,5 +1,51 @@
 # inventory-operation — Changelog
 
+## 2026-09-13 — Adaptive warehouse workspace
+
+- Added first-warehouse onboarding when a company has no active branch.
+- Kept single-warehouse companies on an automatic, selector-free workflow.
+- Added a working-warehouse selector and atomic transfer page only for company admins with multiple active branches.
+- Kept staff fixed to their assigned branch and added desktop/mobile regression coverage for zero, one and many warehouse states.
+
+## 2026-09-13 — Branch, unit and stock-count hardening
+
+- Verified production bulk inbound/outbound, idempotent retry, canonical units and XNT ledger reconciliation inside a rollback transaction.
+- Added branch ownership to direct Inventory writers and a database guard for tenant, branch and canonical transaction units.
+- Made stock-count snapshots and linked adjustments branch-aware.
+- Added an atomic two-branch transfer foundation with paired inbound/outbound ledger records; multi-warehouse remains gated until real two-branch acceptance passes.
+
+## 2026-09-12 — Tenant and branch isolation hardening
+
+- Prepared a replacement for legacy Inventory RLS policies whose `admin_company` condition compared the user's company to itself.
+- The replacement covers products, inventory records, sales records, special outbound records, inventory reports and stock-check prints; all non-master access now requires the protected row to belong to the user's company.
+- Branch-scoped users also require a non-null matching branch. Production application and two-tenant verification remain mandatory before a real-data pilot.
+- Company-wide products with `branch_id IS NULL` remain visible inside the same company; operational rows stay branch-scoped. The migration aborts on unexpected production policy drift.
+
+## 2026-09-12 — Server-backed bulk import history
+
+- Added recent inbound and outbound batch history sourced from the server inventory ledger, grouped by batch reference ID.
+- Kept trial history in browser storage while live history now survives browser and device changes.
+- Added grouping tests and bulk-flow browser assertions for both directions.
+- Paginated ledger reads keep counts exact for batches larger than 5,000 rows; both Trial reset paths clear batch history.
+
+## 2026-09-12 — Dashboard, MRP and XNT reconciliation
+
+- Contained the Dashboard filter header at iPhone width and added a browser regression check for horizontal overflow.
+- Replaced Dashboard latest-row snapshot math with movement-ledger balances shared with MRP and XNT.
+- Removed the fictional 15,000 VND inventory valuation and synthetic sales-growth percentage.
+- Prevented quantity charts from adding different units; category distribution now counts stocked products.
+- Preserved fractional MRP demand rates and excluded future-dated movements.
+- Added golden tests for the accounting identity, stock-count adjustments, mixed units and slow-moving demand.
+- Excluded cancelled/future-dated movements and made Trial writers persist the product's canonical unit.
+
+## 2026-09-12 — Stock-count approval and canonical units
+
+- Added a stock-count session screen with a dated book snapshot, physical counts, mandatory variance explanations, approval/rejection, and linked adjustment records.
+- Added transactional Supabase RPCs for creating, submitting, and reviewing a count session.
+- Locked product units after inventory activity and validated conversion definitions in both UI and database.
+- XNT summary totals are grouped by unit instead of adding kilograms, pieces, packages, or unknown units together.
+- Fixed conversion lookup for unknown units so it returns a clear error instead of recursive calls.
+
 ## 2026-09-11 — Single-warehouse pilot safety
 
 - Added a persistent one-warehouse pilot limitation banner.

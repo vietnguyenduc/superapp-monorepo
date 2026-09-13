@@ -1,4 +1,4 @@
-import { getCurrentCompanyId, getCurrentUserId, apiClient } from "../lib/supabase";
+import { getCurrentCompanyId, getCurrentInventoryScope, getCurrentUserId, apiClient } from "../lib/supabase";
 import { SalesRecord } from '../types';
 import { fallbackService } from './fallbackService';
 import { BaseService, ServiceResponse } from './baseService';
@@ -12,13 +12,14 @@ export class SalesService extends BaseService {
   }): Promise<ServiceResponse<SalesRecord[]>> {
     return this.execute(
       async () => {
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         let query = apiClient.from('sales_records').select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
         `).order('date', { ascending: false });
 
         if (companyId) query = query.eq('company_id', companyId);
+        if (branchId) query = query.eq('branch_id', branchId);
         if (filters?.dateFrom) query = query.gte('date', filters.dateFrom);
         if (filters?.dateTo) query = query.lte('date', filters.dateTo);
         if (filters?.productId) query = query.eq('product_id', filters.productId);
@@ -39,9 +40,10 @@ export class SalesService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         const row = SalesMapper.mapSalesToDb({ ...record, createdBy: userId, updatedBy: userId });
-        if (companyId) row.company_id = companyId;
+        row.company_id = companyId;
+        row.branch_id = branchId;
         const res = await apiClient.from('sales_records').insert([row]).select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
@@ -58,10 +60,11 @@ export class SalesService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         const rows = records.map(r => {
           const row = SalesMapper.mapSalesToDb({ ...r, createdBy: userId, updatedBy: userId } as any);
-          if (companyId) row.company_id = companyId;
+          row.company_id = companyId;
+          row.branch_id = branchId;
           return row;
         });
         const allData: any[] = [];
@@ -90,10 +93,11 @@ export class SalesService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         const row = SalesMapper.mapSalesToDb({ ...updates, updatedBy: userId, updatedAt: new Date() });
         let query = apiClient.from('sales_records').update(row).eq('id', id);
         if (companyId) query = query.eq('company_id', companyId);
+        if (branchId) query = query.eq('branch_id', branchId);
         const res = await query.select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
@@ -108,9 +112,10 @@ export class SalesService extends BaseService {
   static async deleteSalesRecord(id: string): Promise<ServiceResponse<boolean>> {
     return this.execute(
       async () => {
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         let query = apiClient.from('sales_records').delete().eq('id', id);
         if (companyId) query = query.eq('company_id', companyId);
+        if (branchId) query = query.eq('branch_id', branchId);
         const { error } = await query;
         return { data: !error, error };
       },
@@ -121,11 +126,12 @@ export class SalesService extends BaseService {
   static async getSalesStatistics(startDate?: string, endDate?: string): Promise<ServiceResponse<any>> {
     return this.execute(
       async () => {
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         let query = apiClient.from('sales_records').select(`
           date, sales_quantity, promotion_quantity, product:products(name, category)
         `);
         if (companyId) query = query.eq('company_id', companyId);
+        if (branchId) query = query.eq('branch_id', branchId);
         if (startDate) query = query.gte('date', startDate);
         if (endDate) query = query.lte('date', endDate);
 

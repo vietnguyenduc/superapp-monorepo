@@ -40,6 +40,27 @@ upload two-row CSV files, verify spreadsheet date normalization, save both rows,
 and confirm both product codes in recent records. They do not write to
 production Supabase.
 
+Production bulk verification must run in a rollback transaction with an authenticated
+company user: import inbound, retry the same batch ID, import outbound, assert the two
+ledger rows use the product canonical unit and reconcile in XNT, then roll back. Never
+leave test movements in production.
+
+Before enabling multi-warehouse UI, apply and verify
+`20260913013000_inventory_branch_unit_count_hardening.sql`, then complete a two-branch
+acceptance run: source balance decreases, destination balance increases by the same
+canonical quantity, the shared transfer ID links both records, retry/short-stock paths
+do not create partial movements, and both branch-scoped users see only their branch.
+
+Warehouse workspace behavior depends on active branch count: no active branch prompts
+the company admin to create the first warehouse; one branch is automatic and keeps the
+UI simple; two or more branches show the working-warehouse selector and atomic transfer
+page to `admin_company`. Migration
+`20260913021000_inventory_adaptive_warehouse_workspace.sql` provides the validated
+create/select RPC used by the UI.
+Creating the first warehouse also assigns previously unassigned company users and
+unassigned inventory history to it. Operational lists and reports then follow the
+selected or assigned branch; the product catalog remains company-wide.
+
 ## Deploy
 
 1. Push to `origin/viet` to create a Vercel preview deployment.
@@ -74,5 +95,9 @@ export SUPABASE_ACCESS_TOKEN="$(cat /home/dev/.supabase/access-token)"
 
 ## Production support
 
+- Before a real-data pilot, apply `20260912230438_inventory_tenant_branch_security.sql` with explicit approval and verify that an `admin_company` from tenant A cannot select, insert, update, or delete tenant B rows across all six protected Inventory tables.
+
 - Sentry captures runtime errors.
 - DB migrations: `npx supabase migration new <name>` then `npx supabase db push` after review.
+- Stock-count smoke test: create a session at `/stock-counts`, enter all physical counts, explain one variance, submit, approve, then confirm its adjustment ID appears and the XNT closing balance changes by the variance.
+- If a product unit edit fails with `Không thể đổi đơn vị`, keep the historical product unchanged and create a new product/unit mapping; never rewrite historical transaction units.

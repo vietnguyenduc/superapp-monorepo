@@ -23,6 +23,8 @@ generated: true
 - `goods_receipt_items`
 - `goods_receipts`
 - `inventory_balance_snapshots`
+- `inventory_count_sessions`
+- `inventory_count_lines`
 - `inventory_movements`
 - `inventory_records`
 - `inventory_settings`
@@ -46,6 +48,8 @@ generated: true
 - Always include `company_id` (and `branch_id` when relevant) in `.insert()` / `.update()`.
 - Use `.maybeSingle()` for read-one queries to avoid RLS `406` errors when no row matches.
 - Bulk imports should validate `customer_code` / `product_code` uniqueness within `company_id`.
+- `inventory_count_lines.book_quantity` is the immutable snapshot used for review; approved variances link to `inventory_records` through `adjustment_record_id`.
+- Do not change `products.input_unit` or `products.output_unit` after a product has inventory transactions. Reports group totals by canonical unit.
 
 ## Product import rules (user-defined, 2026-09-05)
 
@@ -72,4 +76,3 @@ generated: true
 
 - `docs/SUPABASE_SCHEMA_HEALTH_REPORT.md`
 - `supabase/migrations/`
-

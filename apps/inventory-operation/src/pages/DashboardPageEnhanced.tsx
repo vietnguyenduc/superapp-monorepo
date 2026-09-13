@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import * as XLSX from "xlsx";
@@ -13,13 +12,13 @@ import { formatNumber } from "../utils/formatting";
 import LoadingFallback from "../components/UI/LoadingFallback";
 import ErrorFallback from "../components/UI/ErrorFallback";
 import Button from "../components/UI/Button";
-import appSettingsService from "../services/appSettingsService";
 import InventoryMetricsCard from "../components/InventoryMetricsCard";
 import InventoryTimeRangeSelector, { InventoryTimeRange } from "../components/InventoryTimeRangeSelector";
 import InventoryVarianceReportPage from "./InventoryVarianceReportPage";
 import InventoryExportPage from "./InventoryExportPage";
 import FeaturedProducts from "../components/Dashboard/FeaturedProducts";
 import InventoryWaterfallChart from "../components/Dashboard/InventoryWaterfallChart";
+import { buildProductLedgerBalances } from "../utils/inventoryLedger";
 
 const DashboardPageEnhanced: React.FC = () => {
   const navigate = useNavigate();
@@ -40,8 +39,6 @@ const DashboardPageEnhanced: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedProduct, setSelectedProduct] = useState<string>("all");
   const [topStockSort, setTopStockSort] = useState<"desc" | "asc">("desc");
-  const [topStockType, setTopStockType] = useState<"all" | "rawMaterial" | "processed" | "finished">("all");
-  const isCommercial = appSettingsService.isCommercial();
   
   const { products, loading: productsLoading } = useProducts();
   const { records: rawInventoryRecords, isLoading: inventoryLoading } = useInventory();
@@ -86,10 +83,23 @@ const DashboardPageEnhanced: React.FC = () => {
     });
   }, [rawSalesRecords, productMap, selectedCategory, selectedProduct]);
 
+  const ledgerState = useMemo(() => {
+    try { return { balances: buildProductLedgerBalances(inventoryRecords), error: null }; }
+    catch (error) { return { balances: [], error: error instanceof Error ? error.message : 'Không thể đối soát sổ kho' }; }
+  }, [inventoryRecords]);
+
 
   // ────────── Compute chart data ──────────
   const chartData = useMemo(() => {
-    if (!inventoryRecords.length) return { waterfallData: [], startBalance: 0, lineData: [], categoryData: [] };
+    const categoryCounts: Record<string, number> = {};
+    ledgerState.balances.filter(balance => balance.quantity !== 0).forEach(balance => {
+      const category = productMap.get(balance.productCode)?.category || 'Khác';
+      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+    });
+    const categoryData = Object.entries(categoryCounts).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
+    if (!inventoryRecords.length) return { waterfallData: [], startBalance: 0, lineData: [], categoryData };
+    const units = new Set(inventoryRecords.map(record => record.rawMaterialUnit || record.finishedProductUnit || 'chưa rõ ĐVT'));
+    if (units.size > 1 && selectedProduct === 'all') return { waterfallData: [], startBalance: 0, lineData: [], categoryData, mixedUnits: true };
 
     const sorted = [...inventoryRecords].sort((a, b) =>
       new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -187,72 +197,31 @@ const DashboardPageEnhanced: React.FC = () => {
     }).slice(-20);
 
     // Category Distribution Pie/Bar Data
-    const categoryStockMap: Record<string, number> = {};
-    const latestCategoryRecord = new Map<string, typeof inventoryRecords[number]>();
-    inventoryRecords.forEach(r => {
-      const existing = latestCategoryRecord.get(r.productCode);
-      if (!existing || new Date(r.date) > new Date(existing.date)) latestCategoryRecord.set(r.productCode, r);
-    });
-    latestCategoryRecord.forEach(r => {
-      const product = productMap.get(r.productCode);
-      const category = product?.category || 'Khác';
-      const allowed = product?.allowedForms || ['raw', 'processed', 'finished'];
-      
-      let totalStock = 0;
-      if (allowed.includes('raw')) totalStock += (r.rawMaterialStock || 0);
-      if (allowed.includes('processed')) totalStock += (r.processedStock || 0);
-      if (allowed.includes('finished')) totalStock += (r.finishedProductStock || 0);
-      
-      categoryStockMap[category] = (categoryStockMap[category] || 0) + totalStock;
-    });
-    const categoryData = Object.keys(categoryStockMap).map(key => ({
-      name: key,
-      value: categoryStockMap[key]
-    })).sort((a, b) => b.value - a.value);
-
     return { waterfallData, startBalance, lineData, categoryData };
-  }, [inventoryRecords, timeRange, rangeCount, productMap]);
+  }, [inventoryRecords, timeRange, rangeCount, productMap, ledgerState.balances, selectedProduct]);
 
   // ────────── Top stock table ──────────
   const topStockProducts = useMemo(() => {
     if (!inventoryRecords.length) return [];
 
-    // Aggregate latest stock by product
-    const latestByProduct: Record<string, { productName: string; code: string; rawMaterial: number; processed: number; finished: number; total: number; date: Date }> = {};
-    inventoryRecords.forEach(r => {
-      const existing = latestByProduct[r.productCode];
-      if (!existing || new Date(r.date) > new Date(existing.date)) {
-        const product = productMap.get(r.productCode);
-        const allowed = product?.allowedForms || ['raw', 'processed', 'finished'];
-        
-        let total = 0;
-        if (topStockType === 'all') {
-          if (allowed.includes('raw')) total += (r.rawMaterialStock || 0);
-          if (allowed.includes('processed')) total += (r.processedStock || 0);
-          if (allowed.includes('finished')) total += (r.finishedProductStock || 0);
-        }
-        else if (topStockType === 'rawMaterial' && allowed.includes('raw')) total = r.rawMaterialStock || 0;
-        else if (topStockType === 'processed' && allowed.includes('processed')) total = r.processedStock || 0;
-        else if (topStockType === 'finished' && allowed.includes('finished')) total = r.finishedProductStock || 0;
-
-        latestByProduct[r.productCode] = {
-          productName: r.productName, code: r.productCode,
-          rawMaterial: r.rawMaterialStock || 0, processed: r.processedStock || 0,
-          finished: r.finishedProductStock || 0, total, date: new Date(r.date),
-        };
-      }
-    });
-
-    let result = Object.values(latestByProduct);
+    let result = ledgerState.balances.map(balance => ({
+      productName: balance.productName,
+      code: balance.productCode,
+      rawMaterial: balance.quantity,
+      processed: 0,
+      finished: 0,
+      total: balance.quantity,
+      unit: balance.unit,
+    }));
     if (topStockSort === 'desc') {
       result = result.sort((a, b) => b.total - a.total);
     } else {
       result = result.sort((a, b) => a.total - b.total);
     }
     return result.slice(0, 8);
-  }, [inventoryRecords, topStockType, topStockSort, productMap]);
+  }, [inventoryRecords, topStockSort, ledgerState.balances]);
 
-  const maxStock = topStockProducts.length ? Math.max(...topStockProducts.map(p => p.total)) : 1;
+  const maxStock = topStockProducts.length ? Math.max(...topStockProducts.map(p => Math.abs(p.total)), 1) : 1;
 
   // ────────── Recent records ──────────
   const recentRecords = useMemo(() => {
@@ -269,38 +238,14 @@ const DashboardPageEnhanced: React.FC = () => {
       const totalProducts = products.length;
       const activeProducts = products.filter(p => p.status === 'active').length;
       
-      // Get the latest inventory record for each product to calculate current stock value
-      const latestRecordsMap = new Map();
-      inventoryRecords.forEach(r => {
-        const existing = latestRecordsMap.get(r.productCode);
-        if (!existing || new Date(r.date) > new Date(existing.date)) {
-          latestRecordsMap.set(r.productCode, r);
-        }
-      });
-
-      const latestRecords = Array.from(latestRecordsMap.values());
-      
-      // Calculate total inventory value from LATEST stock levels only
-      const totalInventoryValue = latestRecords.reduce((sum: number, record: any) => {
-        const totalStock = (record.rawMaterialStock || 0) + (record.processedStock || 0) + (record.finishedProductStock || 0);
-        return sum + (totalStock * 15000); // Using an average estimated unit price
-      }, 0);
-      
-      // Sales should be summed over the entire period
-      const totalSales = salesRecords.reduce((sum: number, record: any) => {
-        return sum + (record.quantitySold || 0);
-      }, 0);
-
-      // Calculate changes vs previous period (simple estimation for demo)
-      const prevTotalSales = totalSales * 0.85; 
-      const salesChange = totalSales > 0 ? ((totalSales - prevTotalSales) / prevTotalSales) * 100 : 0;
+      const stockedProducts = ledgerState.balances.filter(balance => balance.quantity !== 0).length;
+      const outboundMovements = inventoryRecords.filter(record => (record.outputQuantity || 0) > 0).length;
 
       setMetrics({
         totalProducts, 
         activeProducts, 
-        totalInventoryValue, 
-        totalSales,
-        salesChange: Math.round(salesChange),
+        stockedProducts,
+        outboundMovements,
         inventoryRecords: inventoryRecords.slice(0, 20),
         salesRecords: salesRecords.slice(0, 20),
       });
@@ -309,7 +254,7 @@ const DashboardPageEnhanced: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [products, inventoryRecords, salesRecords]);
+  }, [products, inventoryRecords, salesRecords, ledgerState.balances]);
 
   useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
   useEffect(() => {
@@ -336,12 +281,12 @@ const DashboardPageEnhanced: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 w-full relative transition-colors duration-300">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 w-full overflow-x-clip relative transition-colors duration-300">
       {/* Sticky Filter Header - Higher z-index and forced top-16 */}
-      <div className="sticky top-16 z-[40] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md px-4 sm:px-6 lg:px-8 py-3 border-b border-gray-200 dark:border-gray-800 shadow-md w-full -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-5 lg:-mt-6 !max-w-none mb-6">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="text-sm font-bold text-gray-800 dark:text-gray-200">Dashboard Tồn Kho</div>
+      <div data-testid="dashboard-filter-header" className="sticky top-16 z-[40] bg-white/95 dark:bg-gray-900/95 backdrop-blur-md px-3 sm:px-6 lg:px-8 py-3 border-b border-gray-200 dark:border-gray-800 shadow-md w-full mx-0 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-5 lg:-mt-6 !max-w-none mb-6">
+        <div className="max-w-7xl mx-auto flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <div className="grid w-full grid-cols-2 items-center gap-2 lg:flex lg:w-auto lg:gap-3">
+            <div className="col-span-2 text-sm font-bold text-gray-800 dark:text-gray-200 lg:col-span-1">Dashboard Tồn Kho</div>
             <select
               className="text-xs bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 py-1.5 px-2 rounded-lg border border-gray-200 dark:border-gray-700 outline-none cursor-pointer focus:ring-2 focus:ring-blue-500"
                 value={selectedCategory}
@@ -356,7 +301,7 @@ const DashboardPageEnhanced: React.FC = () => {
                 ))}
               </select>
               <select
-                className="text-xs bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 py-1.5 px-2 rounded-lg border border-gray-200 dark:border-gray-700 outline-none cursor-pointer focus:ring-2 focus:ring-blue-500 max-w-[150px]"
+              className="min-w-0 text-xs bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 py-1.5 px-2 rounded-lg border border-gray-200 dark:border-gray-700 outline-none cursor-pointer focus:ring-2 focus:ring-blue-500 lg:max-w-[150px]"
                 value={selectedProduct}
                 onChange={(e) => setSelectedProduct(e.target.value)}
               >
@@ -366,7 +311,7 @@ const DashboardPageEnhanced: React.FC = () => {
                 ))}
               </select>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-nowrap">
               <div className="flex items-center">
                 <input
                   type="number"
@@ -385,7 +330,7 @@ const DashboardPageEnhanced: React.FC = () => {
               </div>
               <div className="relative">
                 <button 
-                  className="text-xs bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-700 dark:text-red-400 py-1.5 px-3 rounded-lg border border-red-200 dark:border-red-900/50 font-bold ml-2 transition-colors"
+                  className="text-xs bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-700 dark:text-red-400 py-1.5 px-3 rounded-lg border border-red-200 dark:border-red-900/50 font-bold transition-colors"
                   onClick={() => {
                     if (window.confirm('Bạn có chắc chắn muốn reset toàn bộ dữ liệu Trial? Tất cả giao dịch tự tạo sẽ bị xóa.')) {
                       import('../data/trialMockData').then(m => {
@@ -397,7 +342,7 @@ const DashboardPageEnhanced: React.FC = () => {
                 >
                   Reset Trial
                 </button>
-                <button className="text-xs bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-400 py-1.5 px-3 rounded-lg border border-blue-200 dark:border-blue-800 font-bold ml-2 transition-colors"
+                <button className="text-xs bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-400 py-1.5 px-3 rounded-lg border border-blue-200 dark:border-blue-800 font-bold transition-colors"
                   onClick={() => setShowExportMenu(!showExportMenu)}>Export</button>
                 {showExportMenu && (
                   <div className="absolute right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-10 min-w-[140px] animate-in fade-in zoom-in-95 duration-200">
@@ -420,7 +365,7 @@ const DashboardPageEnhanced: React.FC = () => {
                   </div>
                 )}
               </div>
-              <div className="inline-flex rounded-2xl bg-white/90 dark:bg-gray-800/90 p-1 shadow-[0_4px_12px_rgba(15,23,42,0.10)] border border-gray-200/80 dark:border-gray-700/80 ring-1 ring-gray-200/60 dark:ring-gray-700/60">
+              <div className="flex w-full overflow-x-auto rounded-2xl bg-white/90 dark:bg-gray-800/90 p-1 shadow-[0_4px_12px_rgba(15,23,42,0.10)] border border-gray-200/80 dark:border-gray-700/80 ring-1 ring-gray-200/60 dark:ring-gray-700/60 lg:w-auto">
                 <InventoryTimeRangeSelector value={timeRange} onChange={setTimeRange} />
               </div>
             </div>
@@ -429,6 +374,8 @@ const DashboardPageEnhanced: React.FC = () => {
       
       {/* Main Content Body */}
       <div className="px-4 sm:px-6 lg:px-8 w-full max-w-7xl mx-auto py-6 space-y-6 transition-colors">
+        {ledgerState.error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{ledgerState.error}</div>}
+        {chartData.mixedUnits && <div role="status" className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">Chọn một sản phẩm để xem biểu đồ số lượng. Dashboard không cộng lẫn các đơn vị khác nhau.</div>}
         
         {/* Page Header */}
         <div className="mb-6">
@@ -463,8 +410,8 @@ const DashboardPageEnhanced: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-6 w-full min-w-0 overflow-hidden">
               <InventoryMetricsCard title="Tổng sản phẩm" value={formatNumber(metrics.totalProducts)} change={metrics.totalProducts > 0 ? 2 : 0} changeType="increase" icon="products" color="primary" />
               <InventoryMetricsCard title="Sản phẩm hoạt động" value={formatNumber(metrics.activeProducts)} change={metrics.activeProducts > 0 ? 5 : 0} changeType="increase" icon="inventory" color="success" />
-              <InventoryMetricsCard title="Giá trị tồn kho" value={formatNumber(metrics.totalInventoryValue)} change={metrics.totalInventoryValue > 0 ? 12 : 0} changeType="increase" icon="warehouse" color="warning" />
-              <InventoryMetricsCard title="Tổng bán hàng" value={formatNumber(metrics.totalSales)} change={metrics.salesChange || 0} changeType={metrics.salesChange >= 0 ? "increase" : "decrease"} icon="transactions" color="info" />
+              <InventoryMetricsCard title="Sản phẩm có tồn" value={formatNumber(metrics.stockedProducts)} change={0} changeType="increase" icon="warehouse" color="warning" />
+              <InventoryMetricsCard title="Lượt xuất kho" value={formatNumber(metrics.outboundMovements)} change={0} changeType="increase" icon="transactions" color="info" />
             </div>
 
             {/* Quick Actions */}
@@ -537,7 +484,7 @@ const DashboardPageEnhanced: React.FC = () => {
               <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 w-full overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
                   <h3 className="text-base font-bold text-gray-900 dark:text-gray-100">📦 Tồn kho theo danh mục</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Phân bổ tồn kho theo loại sản phẩm</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Số sản phẩm có tồn theo danh mục</p>
                 </div>
                 <div className="p-4" style={{ height: 300 }}>
                   {chartData.categoryData && chartData.categoryData.length > 0 ? (
@@ -589,13 +536,13 @@ const DashboardPageEnhanced: React.FC = () => {
                           <th className="px-3 py-2 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Ngày</th>
                           <th className="px-3 py-2 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Loại</th>
                           <th className="px-3 py-2 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Sản phẩm</th>
-                          <th className="px-3 py-2 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">SL Nhập</th>
+                          <th className="px-3 py-2 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Số lượng</th>
                           <th className="px-3 py-2 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Tồn kho</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
                         {recentRecords.map((record: any, index: number) => {
-                          const totalStock = (record.rawMaterialStock || 0) + (record.processedStock || 0) + (record.finishedProductStock || 0);
+                          const balance = ledgerState.balances.find(item => item.key === (record.productId || record.productCode));
                           const type = record.inputQuantity > 0 ? 'Nhập' : 'Xuất';
                           return (
                             <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
@@ -613,8 +560,8 @@ const DashboardPageEnhanced: React.FC = () => {
                               >
                                 {record.productName}
                               </td>
-                              <td className="px-3 py-2 text-sm text-gray-900 dark:text-gray-100 font-bold">{record.inputQuantity}</td>
-                              <td className="px-3 py-2 text-sm text-gray-900 dark:text-gray-100 font-bold">{totalStock}</td>
+                              <td className="px-3 py-2 text-sm text-gray-900 dark:text-gray-100 font-bold">{record.inputQuantity || record.outputQuantity} {balance?.unit}</td>
+                              <td className="px-3 py-2 text-sm text-gray-900 dark:text-gray-100 font-bold">{balance?.quantity ?? 0} {balance?.unit}</td>
                             </tr>
                           );
                         })}
@@ -636,16 +583,6 @@ const DashboardPageEnhanced: React.FC = () => {
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Top 8 sản phẩm theo tiêu chí</p>
                     </div>
                     <div className="flex gap-2">
-                      <select 
-                        className="text-[10px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500"
-                        value={topStockType}
-                        onChange={(e) => setTopStockType(e.target.value as any)}
-                      >
-                        <option value="all">Tất cả</option>
-                        {!isCommercial && <option value="rawMaterial">Nguyên liệu</option>}
-                        {!isCommercial && <option value="processed">Bán thành phẩm</option>}
-                        <option value="finished">Thành phẩm</option>
-                      </select>
                       <select 
                         className="text-[10px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500"
                         value={topStockSort}
@@ -672,22 +609,18 @@ const DashboardPageEnhanced: React.FC = () => {
                             >
                               {product.productName}
                             </span>
-                            <span className="text-sm font-bold text-gray-700 dark:text-gray-200 ml-2 whitespace-nowrap">{product.total}</span>
+                            <span className="text-sm font-bold text-gray-700 dark:text-gray-200 ml-2 whitespace-nowrap">{product.total} {product.unit}</span>
                           </div>
                           <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
                             <div
                               className="h-2 rounded-full transition-all duration-500"
                               style={{
-                                width: `${(product.total / maxStock) * 100}%`,
+                                width: `${(Math.abs(product.total) / maxStock) * 100}%`,
                                 background: i === 0 ? '#ef4444' : i < 3 ? '#f59e0b' : '#6366f1',
                               }}
                             />
                           </div>
-                          <div className="flex gap-3 mt-1 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter">
-                            {!isCommercial && <span>NVL: {product.rawMaterial}</span>}
-                            {!isCommercial && <span>SC: {product.processed}</span>}
-                            <span>TP: {product.finished}</span>
-                          </div>
+                          <div className="mt-1 text-[10px] font-bold uppercase tracking-tighter text-gray-400 dark:text-gray-500">Số dư từ sổ nhập/xuất</div>
                         </div>
                       </div>
                     ))}

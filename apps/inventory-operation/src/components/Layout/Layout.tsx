@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Outlet } from "react-router-dom";
 import Navigation from "./Navigation";
 import Sidebar from "./Sidebar";
 import BottomTabBar from "./BottomTabBar";
 import QuickAddMenu from "../QuickAddMenu";
+import { WarehouseWorkspaceProvider } from '../../contexts/WarehouseWorkspaceContext';
+import { WarehouseWorkspaceGate } from '../WarehouseWorkspaceGate';
 
 const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -19,7 +20,7 @@ const Layout: React.FC = () => {
     }
   }, []);
 
-  return (
+  return <WarehouseWorkspaceProvider>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       <Navigation onMenuClick={() => setSidebarOpen(true)} />
       {/* Mobile sidebar overlay */}
@@ -46,11 +47,8 @@ const Layout: React.FC = () => {
         </div>
         {/* Main content - full width, flush left */}
         <main className="flex-1 min-w-0 w-full pb-20 lg:pb-0">
-          <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-xs font-medium text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100" role="status">
-            Pilot một kho: chưa dùng để điều chuyển hoặc đối soát tồn giữa nhiều kho/chi nhánh.
-          </div>
           <div className="p-4 sm:p-5 lg:p-6 w-full">
-            <Outlet />
+            <WarehouseWorkspaceGate />
           </div>
         </main>
       </div>
@@ -58,7 +56,7 @@ const Layout: React.FC = () => {
       <BottomTabBar />
       <QuickAddMenu />
     </div>
-  );
+  </WarehouseWorkspaceProvider>;
 };
 
 export default Layout;

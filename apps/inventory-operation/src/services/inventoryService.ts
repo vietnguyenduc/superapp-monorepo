@@ -1,4 +1,4 @@
-import { getCurrentCompanyId, getCurrentUserId, apiClient } from "../lib/supabase";
+import { getCurrentCompanyId, getCurrentInventoryScope, getCurrentUserId, apiClient } from "../lib/supabase";
 import { InventoryRecord } from '../types';
 import { fallbackService } from './fallbackService';
 import { importExportSettingsService } from './importExportSettingsService';
@@ -13,13 +13,14 @@ export class InventoryService extends BaseService {
   }): Promise<ServiceResponse<InventoryRecord[]>> {
     return this.execute(
       async () => {
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         let query = apiClient.from('inventory_records').select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
         `).order('date', { ascending: false });
 
         if (companyId) query = query.eq('company_id', companyId);
+        if (branchId) query = query.eq('branch_id', branchId);
         if (filters?.date) query = query.eq('date', filters.date);
         if (filters?.productId) query = query.eq('product_id', filters.productId);
         if (filters?.limit) query = query.limit(filters.limit);
@@ -38,12 +39,13 @@ export class InventoryService extends BaseService {
   static async getInventoryRecord(id: string): Promise<ServiceResponse<InventoryRecord>> {
     return this.execute(
       async () => {
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         let query = apiClient.from('inventory_records').select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
         `).eq('id', id);
         if (companyId) query = query.eq('company_id', companyId);
+        if (branchId) query = query.eq('branch_id', branchId);
         const res = await query.single();
         if (res.data) res.data = InventoryMapper.mapDbToInventory(res.data);
         return res;
@@ -56,7 +58,7 @@ export class InventoryService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         const cfg = await importExportSettingsService.load();
         const matchField = cfg.inventoryMatchField;
         let productQuery = apiClient.from('products').select('id, name, business_code');
@@ -70,7 +72,8 @@ export class InventoryService extends BaseService {
         if (!productRow.data) throw new Error('Không tìm thấy sản phẩm: ' + record.productCode);
 
         const row = InventoryMapper.mapInventoryToDb({ ...record, productCode: productRow.data.business_code || record.productCode, productName: record.productName || productRow.data.name, productId: productRow.data.id, createdBy: userId, updatedBy: userId });
-        if (companyId) row.company_id = companyId;
+        row.company_id = companyId;
+        row.branch_id = branchId;
         const res = await apiClient.from('inventory_records').insert([row]).select(`
           *,
           product:products(id, name, business_code, category, input_unit, output_unit)
@@ -87,7 +90,7 @@ export class InventoryService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         const cfg = await importExportSettingsService.load();
         const matchField = cfg.inventoryMatchField;
         const rows: any[] = [];
@@ -102,7 +105,8 @@ export class InventoryService extends BaseService {
           const productRow = await productQuery.maybeSingle();
           if (!productRow.data) continue; // skip if product not found
           const row = InventoryMapper.mapInventoryToDb({ ...record, productCode: productRow.data.business_code || record.productCode, productId: productRow.data.id, createdBy: userId, updatedBy: userId } as any);
-          if (companyId) row.company_id = companyId;
+          row.company_id = companyId;
+          row.branch_id = branchId;
           rows.push(row);
         }
         const allData: any[] = [];
@@ -161,12 +165,13 @@ export class InventoryService extends BaseService {
 
   static async getInventorySummary(dateFrom: Date, dateTo: Date): Promise<ServiceResponse<any[]>> {
     return this.execute(async () => {
-      const companyId = await getCurrentCompanyId();
+      const { companyId, branchId } = await getCurrentInventoryScope();
       let query = apiClient.from('inventory_records')
         .select('product_code, product_name, input_quantity, raw_material_stock, processed_stock, finished_product_stock, company_id')
         .gte('date', dateFrom.toISOString())
         .lte('date', dateTo.toISOString());
       if (companyId) query = query.eq('company_id', companyId);
+      if (branchId) query = query.eq('branch_id', branchId);
       const { data, error } = await query;
 
       if (error) return { error };

@@ -1,4 +1,4 @@
-import { getCurrentCompanyId, getCurrentUserId, apiClient } from '../lib/supabase';
+import { getCurrentCompanyId, getCurrentInventoryScope, getCurrentUserId, apiClient } from '../lib/supabase';
 import { BaseService, ServiceResponse } from './baseService';
 import { GoodsReceipt, GoodsReceiptInput, GRItem, GRStatus } from '../types';
 import { fallbackService } from './fallbackService';
@@ -49,13 +49,14 @@ export class GoodsReceiptService extends BaseService {
   }): Promise<ServiceResponse<GoodsReceipt[]>> {
     return this.execute(
       async () => {
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         let query = apiClient
           .from('goods_receipts')
           .select(`*, supplier:suppliers(id, name, code), po:purchase_orders(id, po_number), items:goods_receipt_items(*)`)
           .order('created_at', { ascending: false });
 
         if (companyId) query = query.eq('company_id', companyId);
+        if (branchId) query = query.eq('branch_id', branchId);
         if (filters?.status) query = query.eq('status', filters.status);
         if (filters?.supplierId) query = query.eq('supplier_id', filters.supplierId);
         if (filters?.poId) query = query.eq('po_id', filters.poId);
@@ -84,7 +85,7 @@ export class GoodsReceiptService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         const grNumber = generateGRNumber();
         const totalAmount = input.items.reduce(
           (sum, i) => sum + i.received_qty * i.unit_price, 0
@@ -100,7 +101,8 @@ export class GoodsReceiptService extends BaseService {
           notes: input.notes || null,
           received_by: userId,
         };
-        if (companyId) grRow.company_id = companyId;
+        grRow.company_id = companyId;
+        grRow.branch_id = branchId;
 
         const grRes = await apiClient.from('goods_receipts').insert([grRow]).select().single();
         if (grRes.error || !grRes.data) return grRes;
@@ -333,7 +335,7 @@ export class GoodsReceiptService extends BaseService {
         }
 
         const userId = await getCurrentUserId();
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         const cfg = await importExportSettingsService.load();
         const matchField = cfg.inventoryMatchField;
 
@@ -367,7 +369,8 @@ export class GoodsReceiptService extends BaseService {
           createdBy: userId || 'system',
           updatedBy: userId || 'system',
         } as any);
-        if (companyId) row.company_id = companyId;
+        row.company_id = companyId;
+        row.branch_id = branchId;
 
         const res = await apiClient.from('inventory_records').insert([row]).select().single();
         if (res.error) throw new Error(res.error.message);

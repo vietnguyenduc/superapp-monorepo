@@ -36,8 +36,9 @@ test.describe("Inventory app — sidebar navigation", () => {
     await expect(nhapHang.first()).toBeVisible({ timeout: 10000 });
   });
 
-  test("single-warehouse pilot limitation is always visible", async ({ page }) => {
-    await expect(page.getByText(/Pilot một kho: chưa dùng để điều chuyển/i)).toBeVisible();
+  test("single warehouse stays simple without a warehouse selector or transfer menu", async ({ page }) => {
+    await expect(page.getByLabel("Kho đang thao tác")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /điều chuyển kho/i })).toHaveCount(0);
   });
 
   test("sidebar has 'Xuất hàng' menu (new)", async ({ page }) => {
@@ -58,6 +59,94 @@ test.describe("Inventory app — sidebar navigation", () => {
   test("sidebar has 'Nhà cung cấp' menu", async ({ page }) => {
     const ncc = page.getByRole("button", { name: /nhà cung cấp/i });
     await expect(ncc.first()).toBeVisible({ timeout: 10000 });
+  });
+});
+
+test.describe("Inventory app — adaptive warehouse workspace", () => {
+  test("zero warehouses guides an admin through first setup", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('inventory_trial_warehouses','[]'));
+    await enterTrialMode(page);
+    await expect(page.getByRole('heading',{name:'Thiết lập kho đầu tiên'})).toBeVisible();
+    await page.getByLabel('Tên kho đầu tiên').fill('Kho chính');
+    await page.getByRole('button',{name:'Tạo kho và bắt đầu'}).click();
+    await expect(page.getByRole('heading',{name:/dashboard tồn kho/i})).toBeVisible();
+    await expect(page.getByLabel('Kho đang thao tác')).toHaveCount(0);
+  });
+
+  test("multiple warehouses show workspace picker and transfer navigation", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('inventory_trial_warehouses',JSON.stringify([{id:'w1',name:'Kho trung tâm'},{id:'w2',name:'Kho cửa hàng'}]));
+      localStorage.setItem('inventory_trial_active_warehouse','w1');
+    });
+    await enterTrialMode(page);
+    await expect(page.getByLabel('Kho đang thao tác')).toBeVisible();
+    await expect(page.getByText('Kho trung tâm',{exact:true}).first()).toBeVisible();
+    await expect(page.getByRole('button',{name:'Điều chuyển kho'})).toBeVisible();
+  });
+});
+
+test.describe("Inventory app — Phiên kiểm kê", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.context().clearCookies();
+    await enterTrialMode(page);
+  });
+
+  test("creates snapshot, explains variance, approves and links adjustment", async ({ page }) => {
+    test.setTimeout(120000);
+    await page.goto(`${BASE_URL}/stock-counts`, { waitUntil: "networkidle" });
+    await page.getByLabel("Ghi chú phiên kiểm kê").fill("Kiểm kê pilot");
+    await page.getByRole("button", { name: /tạo và chốt tồn sổ/i }).click();
+    await expect(page.getByText(/đã chốt snapshot tồn sổ/i)).toBeVisible();
+    const rows = page.locator("tbody tr");
+    const count = await rows.count();
+    for (let index = 0; index < count; index++) {
+      const row = rows.nth(index);
+      const book = Number((await row.locator("td").nth(1).innerText()).replace(/\./g, '').replace(',', '.'));
+      await row.getByRole('spinbutton').fill(String(index === 0 ? book + 1 : book));
+      if (index === 0) await row.locator("td").nth(4).locator("input").fill("Đếm thừa một đơn vị");
+    }
+    await page.getByRole("button", { name: /gửi duyệt/i }).click();
+    await expect(page.getByText(/đã gửi phiên kiểm kê để duyệt/i)).toBeVisible();
+    await page.getByLabel("Ý kiến duyệt").fill("Đã đối chiếu");
+    await page.getByRole("button", { name: /duyệt & điều chỉnh/i }).click();
+    await expect(page.getByText(/đã duyệt và sinh phiếu điều chỉnh liên kết/i)).toBeVisible();
+    await expect(page.locator("tbody tr").first().locator("td").nth(5)).toContainText(/inv-/);
+  });
+});
+
+test.describe("Inventory app — Dashboard và MRP đối soát", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.context().clearCookies();
+    await enterTrialMode(page);
+  });
+
+  test("dashboard uses ledger-safe metrics and warns before mixing units", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE_URL}/dashboard`, { waitUntil: "networkidle" });
+    await expect(page.getByText("Sản phẩm có tồn", { exact: true })).toBeVisible();
+    await expect(page.getByText("Lượt xuất kho")).toBeVisible();
+    await expect(page.getByText(/không cộng lẫn các đơn vị khác nhau/i)).toBeVisible();
+    await expect(page.getByText("Giá trị tồn kho")).toHaveCount(0);
+
+    const pageWidth = await page.evaluate(() => ({
+      viewport: window.innerWidth,
+      document: document.documentElement.scrollWidth,
+    }));
+    expect(pageWidth.document).toBeLessThanOrEqual(pageWidth.viewport);
+
+    const filterHeader = page.getByTestId("dashboard-filter-header");
+    const topBeforeScroll = await filterHeader.evaluate((element) => element.getBoundingClientRect().top);
+    await page.evaluate(() => window.scrollTo(0, 900));
+    await expect.poll(() => filterHeader.evaluate((element) => element.getBoundingClientRect().top)).toBeLessThanOrEqual(topBeforeScroll + 1);
+    await expect.poll(() => filterHeader.evaluate((element) => element.getBoundingClientRect().top)).toBeGreaterThanOrEqual(63);
+  });
+
+  test("MRP shows precise movement-based stock and demand units on iPhone", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE_URL}/inventory-mrp`, { waitUntil: "networkidle" });
+    await expect(page.getByRole("heading", { name: /vòng quay tồn kho.*MRP/i })).toBeVisible();
+    await expect(page.getByText(/\/ ngày/).first()).toBeVisible();
+    await expect(page.getByText(/kg|thùng|chai|gói|cái/i).first()).toBeVisible();
   });
 });
 
@@ -121,6 +210,8 @@ test.describe("Inventory app — Nhập hàng page", () => {
     await expect(page.getByText("Đã lưu 2 dòng thành công!")).toBeVisible();
     await expect(page.getByText("Biên nhận nhập hàng loạt")).toBeVisible();
     await expect(page.getByText(/Mã lô:/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /lịch sử lô nhập gần đây/i })).toBeVisible();
+    await expect(page.getByText("1 lô")).toBeVisible();
     const recentRecords = page.locator("table").last();
     await expect(recentRecords.getByRole("cell", { name: "NVL-XO01", exact: true }).first()).toBeVisible();
     await expect(recentRecords.getByRole("cell", { name: "NVL-DH01", exact: true }).first()).toBeVisible();
@@ -199,6 +290,8 @@ test.describe("Inventory app — Xuất hàng page", () => {
     await expect(page.getByText("Đã lưu 2 dòng thành công!")).toBeVisible();
     await expect(page.getByText("Biên nhận xuất hàng loạt")).toBeVisible();
     await expect(page.getByText(/Mã lô:/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /lịch sử lô xuất gần đây/i })).toBeVisible();
+    await expect(page.getByText("1 lô")).toBeVisible();
     const recentRecords = page.locator("table").last();
     await expect(recentRecords.getByRole("cell", { name: "NVL-XO01", exact: true }).first()).toBeVisible();
     await expect(recentRecords.getByRole("cell", { name: "NVL-DH01", exact: true }).first()).toBeVisible();
