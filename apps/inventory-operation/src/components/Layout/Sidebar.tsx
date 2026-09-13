@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthContext as useAuth } from "@superapp/iam";
 import AddButton from "../UI/AddButton";
 import { UserRole } from "../../types/UserRole";
+import { useWarehouseWorkspace } from '../../contexts/WarehouseWorkspaceContext';
 
 interface SidebarProps {
   onClose?: () => void;
@@ -47,6 +48,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { branches, role: workspaceRole } = useWarehouseWorkspace();
 
   const userRole = user?.role || UserRole.STAFF;
 
@@ -116,6 +118,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       href: "/stock-counts",
       icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2m-6 0a2 2 0 002 2h2a2 2 0 002-2m-6 9l2 2 4-4" /></svg>,
     },
+    ...(branches.length > 1 && workspaceRole === 'admin_company' ? [{name:"Điều chuyển kho",href:"/warehouse-transfers",icon:<svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" /></svg>}] : []),
     {
       name: "Cài đặt",
       href: "/settings",

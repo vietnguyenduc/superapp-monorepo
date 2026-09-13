@@ -36,8 +36,9 @@ test.describe("Inventory app — sidebar navigation", () => {
     await expect(nhapHang.first()).toBeVisible({ timeout: 10000 });
   });
 
-  test("single-warehouse pilot limitation is always visible", async ({ page }) => {
-    await expect(page.getByText(/Pilot một kho: chưa dùng để điều chuyển/i)).toBeVisible();
+  test("single warehouse stays simple without a warehouse selector or transfer menu", async ({ page }) => {
+    await expect(page.getByLabel("Kho đang thao tác")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /điều chuyển kho/i })).toHaveCount(0);
   });
 
   test("sidebar has 'Xuất hàng' menu (new)", async ({ page }) => {
@@ -58,6 +59,29 @@ test.describe("Inventory app — sidebar navigation", () => {
   test("sidebar has 'Nhà cung cấp' menu", async ({ page }) => {
     const ncc = page.getByRole("button", { name: /nhà cung cấp/i });
     await expect(ncc.first()).toBeVisible({ timeout: 10000 });
+  });
+});
+
+test.describe("Inventory app — adaptive warehouse workspace", () => {
+  test("zero warehouses guides an admin through first setup", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('inventory_trial_warehouses','[]'));
+    await enterTrialMode(page);
+    await expect(page.getByRole('heading',{name:'Thiết lập kho đầu tiên'})).toBeVisible();
+    await page.getByLabel('Tên kho đầu tiên').fill('Kho chính');
+    await page.getByRole('button',{name:'Tạo kho và bắt đầu'}).click();
+    await expect(page.getByRole('heading',{name:/dashboard tồn kho/i})).toBeVisible();
+    await expect(page.getByLabel('Kho đang thao tác')).toHaveCount(0);
+  });
+
+  test("multiple warehouses show workspace picker and transfer navigation", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('inventory_trial_warehouses',JSON.stringify([{id:'w1',name:'Kho trung tâm'},{id:'w2',name:'Kho cửa hàng'}]));
+      localStorage.setItem('inventory_trial_active_warehouse','w1');
+    });
+    await enterTrialMode(page);
+    await expect(page.getByLabel('Kho đang thao tác')).toBeVisible();
+    await expect(page.getByText('Kho trung tâm',{exact:true}).first()).toBeVisible();
+    await expect(page.getByRole('button',{name:'Điều chuyển kho'})).toBeVisible();
   });
 });
 

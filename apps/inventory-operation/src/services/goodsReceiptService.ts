@@ -49,13 +49,14 @@ export class GoodsReceiptService extends BaseService {
   }): Promise<ServiceResponse<GoodsReceipt[]>> {
     return this.execute(
       async () => {
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         let query = apiClient
           .from('goods_receipts')
           .select(`*, supplier:suppliers(id, name, code), po:purchase_orders(id, po_number), items:goods_receipt_items(*)`)
           .order('created_at', { ascending: false });
 
         if (companyId) query = query.eq('company_id', companyId);
+        if (branchId) query = query.eq('branch_id', branchId);
         if (filters?.status) query = query.eq('status', filters.status);
         if (filters?.supplierId) query = query.eq('supplier_id', filters.supplierId);
         if (filters?.poId) query = query.eq('po_id', filters.poId);

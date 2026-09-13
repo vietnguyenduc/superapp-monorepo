@@ -1,5 +1,5 @@
 import { isTrialMode } from '@superapp/shared-utils';
-import { apiClient } from '../lib/supabase';
+import { apiClient, getCurrentInventoryScope } from '../lib/supabase';
 import { InventoryService } from './inventoryService';
 import { ProductService } from './productService';
 import { fallbackService } from './fallbackService';
@@ -15,7 +15,11 @@ const writeTrial = (sessions: StockCountSession[]) => localStorage.setItem(KEY, 
 export const stockCountService = {
   async list(): Promise<StockCountSession[]> {
     if (isTrialMode()) return readTrial();
-    const { data, error } = await apiClient.from('inventory_count_sessions').select('*, lines:inventory_count_lines(*, product:products(name,business_code))').order('created_at', { ascending: false });
+    const { companyId, branchId } = await getCurrentInventoryScope();
+    let query = apiClient.from('inventory_count_sessions').select('*, lines:inventory_count_lines(*, product:products(name,business_code))').order('created_at', { ascending: false });
+    if (companyId) query = query.eq('company_id', companyId);
+    if (branchId) query = query.eq('branch_id', branchId);
+    const { data, error } = await query;
     if (error) throw new Error(error.message);
     return (data || []) as StockCountSession[];
   },

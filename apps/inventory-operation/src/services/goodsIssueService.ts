@@ -51,13 +51,14 @@ export class GoodsIssueService extends BaseService {
   }): Promise<ServiceResponse<InventoryRecord[]>> {
     return this.execute(
       async () => {
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
         let query = apiClient
           .from('inventory_records')
           .select(`*, product:products(id, name, business_code, category, input_unit, output_unit)`)
           .order('date', { ascending: false });
 
         if (companyId) query = query.eq('company_id', companyId);
+        if (branchId) query = query.eq('branch_id', branchId);
         if (filters?.dateFrom) query = query.gte('date', filters.dateFrom);
         if (filters?.dateTo) query = query.lte('date', filters.dateTo);
         if (filters?.sourceType) {
@@ -203,7 +204,7 @@ export class GoodsIssueService extends BaseService {
   ): Promise<ServiceResponse<SalesSyncRecord[]>> {
     return this.execute(
       async () => {
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
 
         // 1. Fetch sales_records in date range
         let salesQuery = apiClient
@@ -213,6 +214,7 @@ export class GoodsIssueService extends BaseService {
           .lte('date', dateTo)
           .order('date', { ascending: false });
         if (companyId) salesQuery = salesQuery.eq('company_id', companyId);
+        if (branchId) salesQuery = salesQuery.eq('branch_id', branchId);
         const salesRes = await salesQuery;
 
         if (salesRes.error) return salesRes;
@@ -223,6 +225,7 @@ export class GoodsIssueService extends BaseService {
           .select('reference_id')
           .eq('source_type', InventorySourceType.SALES_SYNC);
         if (companyId) syncQuery = syncQuery.eq('company_id', companyId);
+        if (branchId) syncQuery = syncQuery.eq('branch_id', branchId);
         const syncRes = await syncQuery;
 
         const syncedIds = new Set(
