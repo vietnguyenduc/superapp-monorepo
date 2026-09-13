@@ -1,5 +1,12 @@
 # inventory-operation — Changelog
 
+## 2026-09-13 — Branch, unit and stock-count hardening
+
+- Verified production bulk inbound/outbound, idempotent retry, canonical units and XNT ledger reconciliation inside a rollback transaction.
+- Added branch ownership to direct Inventory writers and a database guard for tenant, branch and canonical transaction units.
+- Made stock-count snapshots and linked adjustments branch-aware.
+- Added an atomic two-branch transfer foundation with paired inbound/outbound ledger records; multi-warehouse remains gated until real two-branch acceptance passes.
+
 ## 2026-09-12 — Tenant and branch isolation hardening
 
 - Prepared a replacement for legacy Inventory RLS policies whose `admin_company` condition compared the user's company to itself.

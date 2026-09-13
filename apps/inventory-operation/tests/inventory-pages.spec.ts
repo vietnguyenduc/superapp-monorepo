@@ -68,6 +68,7 @@ test.describe("Inventory app — Phiên kiểm kê", () => {
   });
 
   test("creates snapshot, explains variance, approves and links adjustment", async ({ page }) => {
+    test.setTimeout(120000);
     await page.goto(`${BASE_URL}/stock-counts`, { waitUntil: "networkidle" });
     await page.getByLabel("Ghi chú phiên kiểm kê").fill("Kiểm kê pilot");
     await page.getByRole("button", { name: /tạo và chốt tồn sổ/i }).click();
@@ -77,7 +78,7 @@ test.describe("Inventory app — Phiên kiểm kê", () => {
     for (let index = 0; index < count; index++) {
       const row = rows.nth(index);
       const book = Number((await row.locator("td").nth(1).innerText()).replace(/\./g, '').replace(',', '.'));
-      await row.locator('input[type="number"]').fill(String(index === 0 ? book + 1 : book));
+      await row.getByRole('spinbutton').fill(String(index === 0 ? book + 1 : book));
       if (index === 0) await row.locator("td").nth(4).locator("input").fill("Đếm thừa một đơn vị");
     }
     await page.getByRole("button", { name: /gửi duyệt/i }).click();

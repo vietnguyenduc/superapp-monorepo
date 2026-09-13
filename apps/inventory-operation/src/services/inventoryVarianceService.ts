@@ -1,4 +1,4 @@
-import { getCurrentCompanyId } from '../lib/supabase';
+import { getCurrentBranchId, getCurrentCompanyId } from '../lib/supabase';
 import { supabase } from '../config/supabase';
 import { fallbackService } from './fallbackService';
 import { isTrialMode } from '@superapp/shared-utils';
@@ -110,9 +110,10 @@ export const inventoryVarianceService = {
         return fallbackService.createVarianceReport(reportData);
       }
 
-      const companyId = await getCurrentCompanyId();
+      const [companyId, branchId] = await Promise.all([getCurrentCompanyId(), getCurrentBranchId()]);
       const payload: any = { ...reportData };
       if (companyId) payload.company_id = companyId;
+      payload.branch_id = branchId;
       const { data, error } = await supabase
         .from('inventory_variance_reports')
         .insert([payload])
