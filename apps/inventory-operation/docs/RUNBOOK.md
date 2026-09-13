@@ -40,6 +40,17 @@ upload two-row CSV files, verify spreadsheet date normalization, save both rows,
 and confirm both product codes in recent records. They do not write to
 production Supabase.
 
+Production bulk verification must run in a rollback transaction with an authenticated
+company user: import inbound, retry the same batch ID, import outbound, assert the two
+ledger rows use the product canonical unit and reconcile in XNT, then roll back. Never
+leave test movements in production.
+
+Before enabling multi-warehouse UI, apply and verify
+`20260913013000_inventory_branch_unit_count_hardening.sql`, then complete a two-branch
+acceptance run: source balance decreases, destination balance increases by the same
+canonical quantity, the shared transfer ID links both records, retry/short-stock paths
+do not create partial movements, and both branch-scoped users see only their branch.
+
 ## Deploy
 
 1. Push to `origin/viet` to create a Vercel preview deployment.

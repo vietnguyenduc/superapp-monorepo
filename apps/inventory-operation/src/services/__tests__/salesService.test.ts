@@ -16,7 +16,7 @@ vi.mock('../fallbackService', () => ({
 
 vi.mock('../../lib/supabase', async (importOriginal) => {
   const mod = await importOriginal();
-  return { ...mod, getCurrentUserId: () => Promise.resolve(MOCK_USER_ID), getCurrentCompanyId: () => Promise.resolve(null) };
+  return { ...mod, getCurrentUserId: () => Promise.resolve(MOCK_USER_ID), getCurrentCompanyId: () => Promise.resolve(null), getCurrentInventoryScope: () => Promise.resolve({ companyId: 'company-1', branchId: 'branch-1' }) };
 });
 
 describe('SalesService', () => {

@@ -1,4 +1,4 @@
-import { getCurrentCompanyId, getCurrentUserId, apiClient } from '../lib/supabase';
+import { getCurrentCompanyId, getCurrentInventoryScope, getCurrentUserId, apiClient } from '../lib/supabase';
 import { InventoryRecord, InventorySourceType } from '../types';
 import { fallbackService } from './fallbackService';
 import { BaseService, ServiceResponse } from './baseService';
@@ -88,7 +88,7 @@ export class GoodsIssueService extends BaseService {
     return this.execute(
       async () => {
         const userId = await getCurrentUserId();
-        const companyId = await getCurrentCompanyId();
+        const { companyId, branchId } = await getCurrentInventoryScope();
 
         // Resolve product_id by configured match field
         const cfg = await importExportSettingsService.load();
@@ -125,7 +125,8 @@ export class GoodsIssueService extends BaseService {
           createdAt: new Date(),
           updatedAt: new Date(),
         } as any);
-        if (companyId) row.company_id = companyId;
+        row.company_id = companyId;
+        row.branch_id = branchId;
 
         const res = await apiClient
           .from('inventory_records')
