@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { getXLSX } from '../utils/xlsxLoader';
-import { importExportSettingsService, MatchField } from '../services/importExportSettingsService';
+import { importExportSettingsService, MatchField, SupplierMatchField } from '../services/importExportSettingsService';
 import { normalizeSpreadsheetDate } from '../utils/spreadsheetDate';
 
 export interface BulkGoodsReceiptRow {
@@ -42,17 +42,21 @@ const GoodsReceiptBulkGrid: React.FC<GoodsReceiptBulkGridProps> = ({
   isLoading = false,
 }) => {
   const [matchField, setMatchField] = useState<MatchField>('business_code');
+  const [supplierMatchField, setSupplierMatchField] = useState<SupplierMatchField>('customer_code');
 
   useEffect(() => {
-    importExportSettingsService.load().then(cfg => setMatchField(cfg.inventoryMatchField));
+    importExportSettingsService.load().then(cfg => {
+      setMatchField(cfg.inventoryMatchField);
+      setSupplierMatchField(cfg.supplierMatchField);
+    });
   }, []);
 
   // Adjust column label based on match field
-  const COLS = BASE_COLS.map(c =>
-    c.key === 'product_code'
-      ? { ...c, label: matchField === 'name' ? 'Tên hàng *' : 'Mã hàng *' }
-      : c
-  );
+  const COLS = BASE_COLS.map(c => {
+    if (c.key === 'product_code') return { ...c, label: matchField === 'name' ? 'Tên hàng *' : 'Mã hàng *' };
+    if (c.key === 'supplier_code') return { ...c, label: supplierMatchField === 'full_name' ? 'Tên NCC' : 'Mã NCC' };
+    return c;
+  });
 
   const [rows, setRows] = useState<BulkGoodsReceiptRow[]>(() =>
     Array.from({ length: 8 }, (_, i) => emptyRow(i))
@@ -91,9 +95,11 @@ const GoodsReceiptBulkGrid: React.FC<GoodsReceiptBulkGridProps> = ({
       const headers = COLS.map((c) => c.label);
       const productSample = matchField === 'name' ? 'Sting dâu 330ml' : 'SP001';
       const productSample2 = matchField === 'name' ? 'Coca cola 330ml' : 'SP002';
+      const supplierSample = supplierMatchField === 'full_name' ? 'Công ty TNHH Bao Bì Xanh' : 'NCC01';
+      const supplierSample2 = supplierMatchField === 'full_name' ? 'Nhà phân phối Hàng Gia Dụng ABC' : 'NCC02';
       const sample = [
-        ['2026-01-15', 'NCC01', productSample, '100', '25000', 'Nhập kho tháng 1'],
-        ['2026-01-16', 'NCC02', productSample2, '50', '15000', ''],
+        ['2026-01-15', supplierSample, productSample, '100', '25000', 'Nhập kho tháng 1'],
+        ['2026-01-16', supplierSample2, productSample2, '50', '15000', ''],
       ];
       const ws = XLSX.utils.aoa_to_sheet([headers, ...sample]);
       const wb = XLSX.utils.book_new();
@@ -103,7 +109,7 @@ const GoodsReceiptBulkGrid: React.FC<GoodsReceiptBulkGridProps> = ({
       console.error('Lỗi tải template:', err);
       alert('Không thể tải template. Vui lòng thử lại.');
     }
-  }, [matchField]);
+  }, [matchField, supplierMatchField]);
 
   const handleFileUpload = useCallback(async (file: File) => {
     try {

@@ -1,6 +1,8 @@
 import { apiClient, getCurrentCompanyId } from '../lib/supabase';
+import { isTrialMode } from '@superapp/shared-utils';
 
 export type MatchField = 'business_code' | 'name' | 'both';
+export type SupplierMatchField = 'customer_code' | 'full_name';
 
 export interface ExportColumns {
   products: string[];
@@ -12,6 +14,7 @@ export interface ImportExportConfig {
   productMatchField: MatchField;
   inventoryMatchField: MatchField;
   salesMatchField: MatchField;
+  supplierMatchField: SupplierMatchField;
   exportColumns: ExportColumns;
 }
 
@@ -19,6 +22,7 @@ const DEFAULT_CONFIG: ImportExportConfig = {
   productMatchField: 'business_code',
   inventoryMatchField: 'business_code',
   salesMatchField: 'business_code',
+  supplierMatchField: 'customer_code',
   exportColumns: {
     products: ['business_code', 'name', 'category', 'input_unit', 'output_unit', 'status'],
     inventory: ['date', 'product_code', 'product_name', 'input_quantity', 'raw_material_stock', 'processed_stock', 'finished_product_stock'],
@@ -28,6 +32,7 @@ const DEFAULT_CONFIG: ImportExportConfig = {
 
 // In-memory cache — loaded once per session, refreshed on save
 let cachedConfig: ImportExportConfig | null = null;
+const TRIAL_CONFIG_KEY = 'inventory_trial_import_export_config';
 
 class ImportExportSettingsService {
   /**
@@ -37,6 +42,15 @@ class ImportExportSettingsService {
    */
   async load(): Promise<ImportExportConfig> {
     if (cachedConfig) return cachedConfig;
+
+    if (isTrialMode()) {
+      try {
+        cachedConfig = { ...DEFAULT_CONFIG, ...JSON.parse(localStorage.getItem(TRIAL_CONFIG_KEY) || '{}') };
+        return cachedConfig;
+      } catch {
+        return DEFAULT_CONFIG;
+      }
+    }
 
     try {
       const companyId = await getCurrentCompanyId();
@@ -67,6 +81,11 @@ class ImportExportSettingsService {
     const current = await this.load();
     const merged = { ...current, ...config };
     cachedConfig = merged;
+
+    if (isTrialMode()) {
+      localStorage.setItem(TRIAL_CONFIG_KEY, JSON.stringify(merged));
+      return merged;
+    }
 
     try {
       const companyId = await getCurrentCompanyId();
