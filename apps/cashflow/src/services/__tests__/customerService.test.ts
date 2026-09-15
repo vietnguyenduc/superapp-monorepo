@@ -195,4 +195,13 @@ describe("customerService automatic customer codes", () => {
     );
     expect(generated).toHaveLength(2);
   });
+
+  it("keeps a configured prefix unchanged in trial mode", async () => {
+    const result = await customerService.createCustomer(
+      { customer_code: "mã xem trước", full_name: "Khách tiền tố", company_id: "trial-prefix-company" },
+      { autoGenerateCode: true, codeSettings: { customer_code_prefix: "kh-", customer_code_digits: 4 } },
+    );
+    expect(result.error).toBeFalsy();
+    expect((result.data as TrialCustomer).customer_code).toBe("kh-0001");
+  });
 });

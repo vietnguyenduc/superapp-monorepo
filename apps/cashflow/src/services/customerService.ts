@@ -453,9 +453,7 @@ export class CustomerService extends BaseService {
     },
   ) {
     const rawPrefix = settings?.customer_code_prefix;
-    const prefix = rawPrefix === undefined || rawPrefix === null
-      ? "KH"
-      : String(rawPrefix).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
+    const prefix = rawPrefix === undefined || rawPrefix === null ? "KH" : String(rawPrefix);
     const digits = Math.min(Math.max(Number(settings?.customer_code_digits) || 4, 1), 12);
     const fillGaps = Boolean(settings?.customer_code_fill_gaps);
 
