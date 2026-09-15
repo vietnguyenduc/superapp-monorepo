@@ -3,6 +3,7 @@ import { Product } from '../../types';
 
 export interface GoodsIssueFormData {
   date: string;
+  productId: string;
   productCode: string;
   quantity: number;
   reason: string;
@@ -26,6 +27,7 @@ const GoodsIssueForm: React.FC<GoodsIssueFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<GoodsIssueFormData>({
     date: initialData?.date || new Date().toISOString().split('T')[0],
+    productId: initialData?.productId || '',
     productCode: initialData?.productCode || '',
     quantity: initialData?.quantity || 0,
     reason: initialData?.reason || '',
@@ -45,7 +47,7 @@ const GoodsIssueForm: React.FC<GoodsIssueFormProps> = ({
   const validate = (): boolean => {
     const e: Record<string, string> = {};
     if (!formData.date) e.date = 'Ngày là bắt buộc';
-    if (!formData.productCode) e.productCode = 'Sản phẩm là bắt buộc';
+    if (!formData.productId) e.productCode = 'Hãy chọn một sản phẩm trong danh sách';
     if (formData.quantity <= 0) e.quantity = 'Số lượng phải > 0';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -94,16 +96,19 @@ const GoodsIssueForm: React.FC<GoodsIssueFormProps> = ({
 
       {/* Product */}
       <div className="relative">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label htmlFor="issue-product" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Sản phẩm <span className="text-red-500">*</span>
         </label>
         <input
+          id="issue-product"
+          role="combobox"
+          aria-expanded={showProductList}
           type="text"
           value={productSearch || formData.productCode}
           onChange={(e) => {
             setProductSearch(e.target.value);
             setShowProductList(true);
-            setFormData({ ...formData, productCode: e.target.value });
+            setFormData({ ...formData, productCode: e.target.value, productId: '' });
           }}
           onFocus={() => setShowProductList(true)}
           onBlur={() => setTimeout(() => setShowProductList(false), 200)}
@@ -114,18 +119,19 @@ const GoodsIssueForm: React.FC<GoodsIssueFormProps> = ({
         {showProductList && filteredProducts.length > 0 && (
           <div className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
             {filteredProducts.slice(0, 10).map((p) => (
-              <div
+              <button
+                type="button"
                 key={p.id}
                 onMouseDown={() => {
-                  setFormData({ ...formData, productCode: p.businessCode });
+                  setFormData({ ...formData, productCode: p.businessCode, productId: p.id });
                   setProductSearch(p.name);
                   setShowProductList(false);
                 }}
-                className="px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer text-sm"
+                className="min-h-11 w-full px-3 py-2 text-left hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer text-sm"
               >
                 <span className="font-medium text-gray-900 dark:text-white">{p.name}</span>
                 <span className="ml-2 text-xs text-gray-500">{p.businessCode}</span>
-              </div>
+              </button>
             ))}
           </div>
         )}

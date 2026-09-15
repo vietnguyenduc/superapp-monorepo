@@ -164,7 +164,7 @@ test.describe("Inventory app — Nhập hàng page", () => {
 
   test("navigating to /goods-receipts shows Nhập hàng page", async ({ page }) => {
     await page.goto(`${BASE_URL}/goods-receipts`, { waitUntil: "networkidle" });
-    await expect(page.getByText(/nhập hàng/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Nhập hàng", exact: true })).toBeVisible({ timeout: 10000 });
   });
 
   test("has 3 sub-tabs: PO / GR / Return", async ({ page }) => {
@@ -172,6 +172,8 @@ test.describe("Inventory app — Nhập hàng page", () => {
     await expect(page.getByRole("button", { name: /đặt hàng.*po/i })).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole("button", { name: /nhận hàng.*gr/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /trả hàng ncc/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /đặt hàng.*po/i })).toBeDisabled();
+    await expect(page.getByRole("button", { name: /trả hàng ncc/i })).toBeDisabled();
   });
 
   test("has 2 import modes: single + bulk", async ({ page }) => {
@@ -188,11 +190,29 @@ test.describe("Inventory app — Nhập hàng page", () => {
     await expect(page.getByText(/số lượng/i)).toBeVisible();
   });
 
+  test("single receipt requires a product selection and saves the selected item", async ({ page }) => {
+    await page.goto(`${BASE_URL}/goods-receipts?subTab=gr&tab=single`, { waitUntil: "networkidle" });
+    await page.getByLabel("Sản phẩm *").fill("Xoài cát");
+    await page.getByRole("button", { name: /Xoài cát Hòa Lộc.*NVL-XO01/i }).click();
+    await page.getByRole("spinbutton").first().fill("2");
+    await page.getByRole("button", { name: "Lưu", exact: true }).click();
+    await expect(page.getByText("Lưu phiếu thành công!")).toBeVisible();
+  });
+
   test("bulk mode shows grid with template download + upload", async ({ page }) => {
     await page.goto(`${BASE_URL}/goods-receipts?subTab=gr&tab=bulk`, { waitUntil: "networkidle" });
     await expect(page.getByText(/hướng dẫn nhập nhanh/i)).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(/tải template excel/i)).toBeVisible();
     await expect(page.getByText(/📁 upload file/i)).toBeVisible();
+  });
+
+  test("bulk mode blocks an entered row with zero quantity", async ({ page }) => {
+    await page.goto(`${BASE_URL}/goods-receipts?subTab=gr&tab=bulk`, { waitUntil: "networkidle" });
+    const firstRow = page.locator("tbody tr").first();
+    await firstRow.locator("input").nth(2).fill("NVL-XO01");
+    await firstRow.locator("input").nth(3).fill("0");
+    await expect(page.getByRole("alert")).toContainText("1 dòng chưa hợp lệ");
+    await expect(page.getByRole("button", { name: /lưu 0 dòng/i })).toBeDisabled();
   });
 
   test("supplier name matching changes the bulk grid and template contract", async ({ page }) => {
@@ -276,7 +296,7 @@ test.describe("Inventory app — Xuất hàng page", () => {
 
   test("navigating to /goods-issues shows Xuất hàng page", async ({ page }) => {
     await page.goto(`${BASE_URL}/goods-issues`, { waitUntil: "networkidle" });
-    await expect(page.getByText(/xuất hàng/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Xuất hàng", exact: true })).toBeVisible({ timeout: 10000 });
   });
 
   test("has 2 main modes: manual + sales sync", async ({ page }) => {
@@ -303,6 +323,24 @@ test.describe("Inventory app — Xuất hàng page", () => {
     await page.goto(`${BASE_URL}/goods-issues?mode=manual&tab=single`, { waitUntil: "networkidle" });
     await expect(page.getByText(/ngày xuất/i)).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(/số lượng xuất/i)).toBeVisible();
+  });
+
+  test("manual single form saves the product selected from search", async ({ page }) => {
+    await page.goto(`${BASE_URL}/goods-issues?mode=manual&tab=single`, { waitUntil: "networkidle" });
+    await page.getByLabel("Sản phẩm *").fill("Xoài cát");
+    await page.getByRole("button", { name: /Xoài cát Hòa Lộc.*NVL-XO01/i }).click();
+    await page.getByRole("spinbutton").fill("1");
+    await page.getByRole("button", { name: "Lưu", exact: true }).click();
+    await expect(page.getByText("Lưu phiếu xuất thành công!")).toBeVisible();
+  });
+
+  test("bulk mode blocks an entered row with zero quantity", async ({ page }) => {
+    await page.goto(`${BASE_URL}/goods-issues?mode=manual&tab=bulk`, { waitUntil: "networkidle" });
+    const firstRow = page.locator("tbody tr").first();
+    await firstRow.locator("input").nth(1).fill("NVL-XO01");
+    await firstRow.locator("input").nth(2).fill("0");
+    await expect(page.getByRole("alert")).toContainText("1 dòng chưa hợp lệ");
+    await expect(page.getByRole("button", { name: /lưu 0 dòng/i })).toBeDisabled();
   });
 
   test("bulk CSV imports two outbound rows and shows them in recent records", async ({ page }) => {
