@@ -87,7 +87,10 @@ const GoodsReceiptBulkGrid: React.FC<GoodsReceiptBulkGridProps> = ({
     });
   };
 
-  const validRows = rows.filter((r) => r.product_code.trim() && r.date);
+  const enteredRows = rows.filter((r) => r.product_code.trim() || r.supplier_code.trim() || r.quantity.trim() || r.unit_price.trim() || r.notes.trim());
+  const invalidRows = enteredRows.filter((r) => !r.product_code.trim() || !r.date || !(Number(r.quantity) > 0) || Number(r.unit_price || 0) < 0);
+  const validRows = enteredRows.filter((r) => r.product_code.trim() && r.date && Number(r.quantity) > 0 && Number(r.unit_price || 0) >= 0);
+  const isInvalidRow = (r: BulkGoodsReceiptRow) => enteredRows.includes(r) && !validRows.includes(r);
 
   const handleDownloadTemplate = useCallback(async () => {
     try {
@@ -181,6 +184,12 @@ const GoodsReceiptBulkGrid: React.FC<GoodsReceiptBulkGridProps> = ({
         </div>
       </div>
 
+      {invalidRows.length > 0 && (
+        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300">
+          Có {invalidRows.length} dòng chưa hợp lệ. Mỗi dòng cần ngày, sản phẩm và số lượng lớn hơn 0; đơn giá không được âm.
+        </div>
+      )}
+
       {/* Grid */}
       <div
         ref={tableRef}
@@ -205,8 +214,8 @@ const GoodsReceiptBulkGrid: React.FC<GoodsReceiptBulkGridProps> = ({
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
             {rows.map((row, ri) => (
-              <tr key={ri} className={row.product_code.trim() ? '' : 'bg-gray-50/50 dark:bg-gray-800/30'}>
-                <td className="px-3 py-1.5 text-xs text-gray-400">{ri + 1}</td>
+              <tr key={ri} className={isInvalidRow(row) ? 'bg-red-50 dark:bg-red-950/20' : row.product_code.trim() ? '' : 'bg-gray-50/50 dark:bg-gray-800/30'}>
+                <td className={`px-3 py-1.5 text-xs ${isInvalidRow(row) ? 'font-bold text-red-600' : 'text-gray-400'}`}>{ri + 1}{isInvalidRow(row) ? ' !' : ''}</td>
                 {COLS.map((col) => (
                   <td key={col.key} className="px-2 py-1">
                     <input
@@ -243,7 +252,7 @@ const GoodsReceiptBulkGrid: React.FC<GoodsReceiptBulkGridProps> = ({
           </button>
           <button
             onClick={() => onSave(validRows)}
-            disabled={validRows.length === 0 || isLoading}
+            disabled={validRows.length === 0 || invalidRows.length > 0 || isLoading}
             className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Đang lưu...' : `Lưu ${validRows.length} dòng`}

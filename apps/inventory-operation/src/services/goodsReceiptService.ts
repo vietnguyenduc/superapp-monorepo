@@ -279,6 +279,7 @@ export class GoodsReceiptService extends BaseService {
   static async bulkCreateGoodsReceipts(
     inputs: Array<{
       date: string;
+      productId?: string;
       productCode: string;
       inputQuantity: number;
       unitPrice: number;
