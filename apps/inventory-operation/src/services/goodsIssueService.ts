@@ -17,6 +17,7 @@ import { importExportSettingsService } from './importExportSettingsService';
 
 export interface GoodsIssueInput {
   date: string;
+  productId?: string;
   productCode: string;
   productName?: string;
   outputQuantity: number;
@@ -92,17 +93,18 @@ export class GoodsIssueService extends BaseService {
         const { companyId, branchId } = await getCurrentInventoryScope();
 
         // Resolve product_id by configured match field
-        const cfg = await importExportSettingsService.load();
-        const matchField = cfg.inventoryMatchField;
         let productQuery = apiClient.from('products').select('id, name, business_code');
-        if (matchField === 'name') {
+        if (input.productId) {
+          productQuery = productQuery.eq('id', input.productId);
+        } else if ((await importExportSettingsService.load()).inventoryMatchField === 'name') {
           productQuery = productQuery.eq('name', input.productCode);
         } else {
           productQuery = productQuery.eq('business_code', input.productCode);
         }
         if (companyId) productQuery = productQuery.eq('company_id', companyId);
+        productQuery = productQuery.eq('status', 'active');
         const productRow = await productQuery.maybeSingle();
-        if (!productRow.data) throw new Error('Không tìm thấy sản phẩm: ' + input.productCode);
+        if (!productRow.data) throw new Error('Sản phẩm không còn hoạt động hoặc không thuộc công ty hiện tại');
 
         const row = InventoryMapper.mapInventoryToDb({
           date: new Date(input.date),

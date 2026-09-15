@@ -1,5 +1,13 @@
 # inventory-operation — Changelog
 
+## 2026-09-15 — Inbound/outbound entry safety
+
+- Routed one-line goods receipts through the same atomic inventory batch boundary as spreadsheet imports.
+- Manual product selection now carries the canonical product ID, so it remains correct when spreadsheet matching is configured by product name.
+- Bulk inbound and outbound grids block incomplete rows and non-positive quantities before saving, and service failures are shown to the operator.
+- Temporarily disabled PO and supplier-return entry cards until their distinct approval and outbound movement workflows are implemented; they can no longer be mistaken for stock receipts.
+- Added `20260915120000_inventory_batch_canonical_product_selection.sql`; it must be applied before releasing this frontend.
+
 ## 2026-09-13 — Supplier-name matching for bulk inbound
 
 - Added a company setting to match inbound suppliers by code or name.

@@ -97,6 +97,7 @@ const GoodsIssueImportPage: React.FC = () => {
     try {
       const res = await goodsIssueService.createGoodsIssue({
         date: data.date,
+        productId: data.productId,
         productCode: data.productCode,
         outputQuantity: data.quantity,
         reason: data.reason,
@@ -108,8 +109,8 @@ const GoodsIssueImportPage: React.FC = () => {
       } else {
         showNotification('error', res.error || 'Có lỗi xảy ra');
       }
-    } catch {
-      showNotification('error', 'Lỗi kết nối, vui lòng thử lại');
+    } catch (err) {
+      showNotification('error', err instanceof Error ? err.message : 'Lỗi kết nối, vui lòng thử lại');
     } finally {
       setIsSaving(false);
     }
@@ -138,9 +139,11 @@ const GoodsIssueImportPage: React.FC = () => {
         }
         loadRecords();
         loadBatchHistory();
+      } else {
+        showNotification('error', res.error || 'Không thể lưu lô xuất kho');
       }
-    } catch {
-      showNotification('error', 'Lỗi kết nối, vui lòng thử lại');
+    } catch (err) {
+      showNotification('error', err instanceof Error ? err.message : 'Lỗi kết nối, vui lòng thử lại');
     } finally {
       setIsSaving(false);
     }

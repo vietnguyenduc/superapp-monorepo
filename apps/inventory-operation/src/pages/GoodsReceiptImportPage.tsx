@@ -28,7 +28,7 @@ const MODE_CONFIG: { id: ImportMode; label: string; icon: string }[] = [
 const GoodsReceiptImportPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialSubTab = (searchParams.get('subTab') as SubTab) || 'gr';
+  const initialSubTab: SubTab = 'gr';
   const initialMode = (searchParams.get('tab') as ImportMode) || 'single';
 
   const [activeSubTab, setActiveSubTab] = useState<SubTab>(initialSubTab);
@@ -112,25 +112,20 @@ const GoodsReceiptImportPage: React.FC = () => {
     setSearchParams({ subTab: activeSubTab, tab: mode });
   };
 
-  const getSourceType = (): InventorySourceType => {
-    if (activeSubTab === 'po') return InventorySourceType.PURCHASE_ORDER;
-    if (activeSubTab === 'gr') return InventorySourceType.GOODS_RECEIPT;
-    return InventorySourceType.SUPPLIER_RETURN;
-  };
-
   const handleSingleSubmit = async (data: GoodsReceiptFormData) => {
     setIsSaving(true);
     try {
-      const res = await goodsReceiptService.createGoodsReceipt({
+      const res = await goodsReceiptService.bulkCreateGoodsReceipts([{
         date: data.date,
+        productId: data.productId,
         productCode: data.productCode,
         inputQuantity: data.quantity,
         unitPrice: data.unitPrice,
-        supplierId: suppliers.find((s) => s.customer_code === data.supplierCode)?.id,
-        supplierName: suppliers.find((s) => s.customer_code === data.supplierCode)?.full_name,
+        supplierId: data.supplierId || undefined,
+        supplierName: suppliers.find((s) => s.id === data.supplierId)?.full_name,
         notes: data.notes,
-        sourceType: getSourceType(),
-      });
+        sourceType: InventorySourceType.GOODS_RECEIPT,
+      }]);
       if (res.success) {
         showNotification('success', 'Lưu phiếu thành công!');
         loadRecords();
@@ -138,7 +133,7 @@ const GoodsReceiptImportPage: React.FC = () => {
         showNotification('error', res.error || 'Có lỗi xảy ra');
       }
     } catch (err) {
-      showNotification('error', 'Lỗi kết nối, vui lòng thử lại');
+      showNotification('error', err instanceof Error ? err.message : 'Lỗi kết nối, vui lòng thử lại');
     } finally {
       setIsSaving(false);
     }
@@ -166,7 +161,7 @@ const GoodsReceiptImportPage: React.FC = () => {
         supplierId: supplier?.id,
         supplierName: supplier?.full_name,
         notes: r.notes,
-        sourceType: getSourceType(),
+        sourceType: InventorySourceType.GOODS_RECEIPT,
         });
       });
       const res = await goodsReceiptService.bulkCreateGoodsReceipts(inputs);
@@ -182,6 +177,8 @@ const GoodsReceiptImportPage: React.FC = () => {
         }
         loadRecords();
         loadBatchHistory();
+      } else {
+        showNotification('error', res.error || 'Không thể lưu lô nhập kho');
       }
     } catch (err) {
       showNotification('error', err instanceof Error ? err.message : 'Lỗi kết nối, vui lòng thử lại');
@@ -227,11 +224,13 @@ const GoodsReceiptImportPage: React.FC = () => {
             {SUB_TAB_CONFIG.map((tab) => (
               <button
                 key={tab.id}
+                disabled={tab.id !== 'gr'}
+                title={tab.id !== 'gr' ? 'Nghiệp vụ này đang được hoàn thiện để không ghi sai tồn kho' : undefined}
                 onClick={() => handleSubTabChange(tab.id)}
                 className={`p-4 rounded-xl border-2 transition-all text-left ${
                   activeSubTab === tab.id
                     ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                    : 'border-gray-200 dark:border-gray-700 disabled:cursor-not-allowed disabled:opacity-55 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
@@ -241,6 +240,7 @@ const GoodsReceiptImportPage: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{tab.desc}</p>
+                {tab.id !== 'gr' && <p className="mt-1 text-xs font-medium text-amber-700 dark:text-amber-300">Đang hoàn thiện</p>}
               </button>
             ))}
           </div>
