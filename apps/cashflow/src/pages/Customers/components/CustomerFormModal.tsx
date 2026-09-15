@@ -13,7 +13,20 @@ interface CustomerFormModalProps {
   mode: "create" | "edit";
   customer?: Customer | null;
   onClose: () => void;
-  onSubmit: (customerData: Partial<Customer>, options?: { createTransactions?: boolean }) => void;
+  onSubmit: (
+    customerData: Partial<Customer>,
+    options?: {
+      createTransactions?: boolean;
+      autoGenerateCode?: boolean;
+      codeSettings?: CustomerCodeSettings;
+    },
+  ) => void;
+}
+
+interface CustomerCodeSettings {
+  customer_code_prefix?: string;
+  customer_code_digits?: number;
+  customer_code_fill_gaps?: boolean;
 }
 
 interface FormData {
@@ -159,7 +172,11 @@ const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         const { data: code, error: codeErr } = await databaseService.customers.generateCustomerCode(companyId, customerCodeSettings);
         if (!codeErr && code) payload.customer_code = code as string;
       }
-      await onSubmit(payload, { createTransactions: create_transactions });
+      await onSubmit(payload, {
+        createTransactions: create_transactions,
+        autoGenerateCode: mode === "create" && autoCustomerCode,
+        codeSettings: customerCodeSettings,
+      });
       clearDraft();
     } catch (error) {
       logger.error("Form submission error:", error);

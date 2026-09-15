@@ -37,6 +37,7 @@ export function transformRawCustomer(raw: Record<string, unknown>): Record<strin
     email: strOrNull(raw.email),
     address: strOrNull(raw.address),
     nguoi_dai_dien: strOrNull(raw.nguoi_dai_dien),
+    working_method: strOrNull(raw.working_method),
     opening_balance: parseAmount(raw.opening_balance ?? 0),
     total_balance: parseAmount(raw.total_balance ?? 0),
     company_id: strOrNull(raw.company_id),
