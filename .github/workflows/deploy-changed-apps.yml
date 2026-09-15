@@ -111,6 +111,5 @@ jobs:
             alias="${alias_base}-preview.appforyou.xyz"
             echo "Aliasing preview to $alias"
             npx vercel@latest alias set "$deploy_url" "$alias" \
-              --token ${{ secrets.VERCEL_TOKEN }} \
-              --yes || echo "Alias failed; the deployment is still available at $deploy_url"
+              --token ${{ secrets.VERCEL_TOKEN }}
           fi
