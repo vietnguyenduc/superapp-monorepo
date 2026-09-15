@@ -207,7 +207,7 @@ appforyou.xyz (root domain)
   └── ops.appforyou.xyz      → Vercel operations-portal project
 ```
 
-Cloudflare is the authoritative DNS provider for `appforyou.xyz` (`cora.ns.cloudflare.com` and `rodney.ns.cloudflare.com`). Vercel serves the apps and provisions their SSL certificates. Fixed preview aliases need DNS records in Cloudflare; for Cashflow, use a DNS-only CNAME `cashflow-preview` → `cname.vercel-dns.com` (Vercel's verified recommendation on 2026-09-15). After DNS resolves, retry the `viet` preview deployment workflow to attach the alias and confirm HTTPS.
+Cloudflare is the authoritative DNS provider for `appforyou.xyz` (`cora.ns.cloudflare.com` and `rodney.ns.cloudflare.com`). Vercel serves the apps and provisions their SSL certificates. Fixed preview aliases use DNS-only CNAME records in Cloudflare, all pointing to `cname.vercel-dns.com`: `admin-preview`, `cashflow-preview`, `inventory-preview`, `sales-preview`, `hr-preview`, `accounting-preview`, `ops-preview`, and `framework-preview`. These records and Vercel aliases were verified on 2026-09-15. If a preview alias fails, inspect its DNS and certificate, then retry the `viet` preview deployment workflow and confirm HTTPS.
 
 ## See Also
 
