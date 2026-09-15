@@ -226,13 +226,34 @@ export class CustomerService extends BaseService {
     );
   }
 
-  static async createCustomer(customerData: Record<string, unknown>) {
+  static async createCustomer(
+    customerData: Record<string, unknown>,
+    options?: {
+      autoGenerateCode?: boolean;
+      codeSettings?: {
+        customer_code_prefix?: string;
+        customer_code_digits?: number;
+        customer_code_fill_gaps?: boolean;
+      };
+    },
+  ) {
     return this.execute(
       async () => {
         const validation = validateCustomerData(customerData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
 
         const transformed = transformRawCustomer(customerData) as Record<string, unknown>;
+        if (options?.autoGenerateCode) {
+          const rawPrefix = options.codeSettings?.customer_code_prefix;
+          const prefix = rawPrefix == null ? "KH" : String(rawPrefix);
+          const { data, error } = await apiClient.rpc("create_customer_with_auto_code", {
+            p_customer: transformed,
+            p_prefix: prefix,
+            p_digits: options.codeSettings?.customer_code_digits ?? 4,
+            p_fill_gaps: options.codeSettings?.customer_code_fill_gaps ?? false,
+          });
+          return { data, error };
+        }
         const proposedCode = String(transformed.customer_code ?? "").trim();
 
         if (proposedCode) {
@@ -254,6 +275,14 @@ export class CustomerService extends BaseService {
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
 
         const transformed = transformRawCustomer(customerData) as Record<string, unknown>;
+        if (options?.autoGenerateCode) {
+          const generated = await this.generateCustomerCode(
+            typeof transformed.company_id === "string" ? transformed.company_id : undefined,
+            options.codeSettings,
+          );
+          if (generated.error || !generated.data) return { data: null, error: generated.error };
+          transformed.customer_code = generated.data;
+        }
         const proposedCode = String(transformed.customer_code ?? "").trim();
 
         if (proposedCode) {
@@ -424,9 +453,7 @@ export class CustomerService extends BaseService {
     },
   ) {
     const rawPrefix = settings?.customer_code_prefix;
-    const prefix = rawPrefix === undefined || rawPrefix === null
-      ? "KH"
-      : String(rawPrefix).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
+    const prefix = rawPrefix === undefined || rawPrefix === null ? "KH" : String(rawPrefix);
     const digits = Math.min(Math.max(Number(settings?.customer_code_digits) || 4, 1), 12);
     const fillGaps = Boolean(settings?.customer_code_fill_gaps);
 

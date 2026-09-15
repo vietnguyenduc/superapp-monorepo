@@ -117,6 +117,7 @@ git push origin viet
   - `ops-preview.appforyou.xyz`
 
 → Each preview URL follows the pattern `<short-name>-preview.appforyou.xyz`.
+If Vercel cannot attach the alias, the deploy job emits a warning with the direct deployment URL. Verify that URL until the alias and DNS are available.
 → Verify at the corresponding preview URL (NOT production).
 
 ### Scenario B: Merge to `main` (Production)
@@ -206,7 +207,7 @@ appforyou.xyz (root domain)
   └── ops.appforyou.xyz      → Vercel operations-portal project
 ```
 
-DNS configured via Vercel (CNAME records). SSL auto-provisioned by Vercel.
+Cloudflare is the authoritative DNS provider for `appforyou.xyz` (`cora.ns.cloudflare.com` and `rodney.ns.cloudflare.com`). Vercel serves the apps and provisions their SSL certificates. Fixed preview aliases use DNS-only CNAME records in Cloudflare, all pointing to `cname.vercel-dns.com`: `admin-preview`, `cashflow-preview`, `inventory-preview`, `sales-preview`, `hr-preview`, `accounting-preview`, `ops-preview`, and `framework-preview`. These records and Vercel aliases were verified on 2026-09-15. If a preview alias fails, inspect its DNS and certificate, then retry the `viet` preview deployment workflow and confirm HTTPS.
 
 ## See Also
 

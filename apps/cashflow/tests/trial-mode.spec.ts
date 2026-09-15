@@ -70,6 +70,21 @@ test.describe("Cashflow trial mode", () => {
     expect(count).toBeGreaterThanOrEqual(5); // at least some customers
   });
 
+  test("TC-004b: consecutive customer creates receive different automatic codes", async ({ page }) => {
+    await enterTrialMode(page);
+    await page.goto(`${BASE_URL}/customers`, { waitUntil: "networkidle" });
+
+    for (const name of ["Khách tự động một", "Khách tự động hai"]) {
+      await page.getByRole("button", { name: "Thêm khách hàng mới" }).click();
+      await page.getByLabel("Họ và tên *").fill(name);
+      await page.getByRole("button", { name: "Tạo khách hàng" }).click();
+      await expect(page.getByLabel("Họ và tên *")).toHaveCount(0);
+    }
+
+    await expect(page.getByText("KH0001", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("KH0002", { exact: true }).first()).toBeVisible();
+  });
+
   test("TC-005: Navigate to Transactions list — shows seeded transactions", async ({ page }) => {
     await enterTrialMode(page);
     await page.goto(`${BASE_URL}/transactions`, { waitUntil: "networkidle" });

@@ -582,7 +582,10 @@ const CustomerImport: React.FC<CustomerImportProps> = ({
         company_id: companyId,
         status,
       };
-      const result = await databaseService.customers.createCustomer(payload);
+      const result = await databaseService.customers.createCustomer(payload, {
+        autoGenerateCode: autoCustomerCode,
+        codeSettings: customerCodeSettings,
+      });
       if (result.error) {
         setSingleError(typeof result.error === 'string' ? result.error : (result.error?.message || 'Lỗi không xác định'));
         return;
