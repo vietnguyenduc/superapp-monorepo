@@ -40,7 +40,17 @@ type ImportField = {
 interface NewCustomerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (customer: Partial<Customer>) => void;
+  onSave: (
+    customer: Partial<Customer>,
+    options?: {
+      autoGenerateCode?: boolean;
+      codeSettings?: {
+        customer_code_prefix?: string;
+        customer_code_digits?: number;
+        customer_code_fill_gaps?: boolean;
+      };
+    },
+  ) => void;
   customerName: string;
   isLoading?: boolean;
   customerOptions: string[];
@@ -99,11 +109,15 @@ const NewCustomerModal: React.FC<NewCustomerModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const submit = (code: string) => {
-      onSave({
-        ...formData,
-        customer_code: code,
-        branch_id: user?.branch_id || "",
-      });
+      onSave(
+        {
+          ...formData,
+          customer_code: code,
+          company_id: companyId,
+          branch_id: user?.branch_id || "",
+        },
+        { autoGenerateCode: autoCustomerCode, codeSettings: customerCodeSettings },
+      );
     };
     // If auto_customer_code is enabled and code is still empty/loading, generate before submit
     if (autoCustomerCode && !formData.customer_code.trim()) {
@@ -571,11 +585,21 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
   }, []);
 
   const handleSaveNewCustomer = useCallback(
-    async (customerData: Partial<Customer>) => {
+    async (
+      customerData: Partial<Customer>,
+      options?: {
+        autoGenerateCode?: boolean;
+        codeSettings?: {
+          customer_code_prefix?: string;
+          customer_code_digits?: number;
+          customer_code_fill_gaps?: boolean;
+        };
+      },
+    ) => {
       setIsCreatingCustomer(true);
       try {
         const result =
-          await databaseService.customers.createCustomer(customerData);
+          await databaseService.customers.createCustomer(customerData, options);
 
         if (result.data) {
           // Remove from unmatched customers
@@ -1751,7 +1775,7 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
         onClose={() => setShowNewCustomerModal(false)}
         customerName={newCustomerName}
         isLoading={isCreatingCustomer}
-        onSave={(customer) => handleSaveNewCustomer(customer)}
+        onSave={(customer, options) => handleSaveNewCustomer(customer, options)}
         customerOptions={customerOptions}
       />
     </>

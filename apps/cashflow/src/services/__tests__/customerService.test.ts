@@ -148,3 +148,51 @@ describe("customerService.updateCustomer", () => {
     });
   });
 });
+
+describe("customerService automatic customer codes", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setTrialMode(true);
+  });
+
+  afterEach(() => {
+    setTrialMode(false);
+    vi.restoreAllMocks();
+  });
+
+  it("continues a four-digit numeric sequence with 1001 then 1002 without duplicates", async () => {
+    const companyId = "trial-company";
+    const base = await customerService.createCustomer({
+      customer_code: "1000",
+      full_name: "Mốc mã 1000",
+      company_id: companyId,
+    });
+    expect(base.error).toBeFalsy();
+
+    const options = {
+      autoGenerateCode: true,
+      codeSettings: {
+        customer_code_prefix: "",
+        customer_code_digits: 4,
+        customer_code_fill_gaps: false,
+      },
+    };
+    const first = await customerService.createCustomer(
+      { customer_code: "mã xem trước", full_name: "Khách 1001", company_id: companyId },
+      options,
+    );
+    const second = await customerService.createCustomer(
+      { customer_code: "mã xem trước", full_name: "Khách 1002", company_id: companyId },
+      options,
+    );
+
+    expect(first.error).toBeFalsy();
+    expect(second.error).toBeFalsy();
+    expect((first.data as TrialCustomer).customer_code).toBe("1001");
+    expect((second.data as TrialCustomer).customer_code).toBe("1002");
+    const generated = (trialGet("customers") as TrialCustomer[]).filter(
+      (customer) => customer.company_id === companyId && ["1001", "1002"].includes(String(customer.customer_code)),
+    );
+    expect(generated).toHaveLength(2);
+  });
+});

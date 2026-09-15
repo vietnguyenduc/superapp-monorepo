@@ -1,5 +1,13 @@
 # Changelog — Cashflow
 
+## 2026-09-15
+
+### Fixed
+
+- Automatic customer-code allocation and customer creation now run in one Supabase transaction.
+- Allocation is serialized per company so simultaneous users receive different codes instead of one failing with a duplicate.
+- Prefix, digit width, gap filling and four-digit transitions such as `1000 → 1001 → 1002` are preserved across the customer list, single-customer import and transaction quick-add flows.
+
 ## 2026-09-11
 
 ### Fixed

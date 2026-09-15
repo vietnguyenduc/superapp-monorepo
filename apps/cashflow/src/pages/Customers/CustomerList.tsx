@@ -476,7 +476,18 @@ const CustomerList: React.FC = () => {
 
   // Handle form submission
   const handleFormSubmit = useCallback(
-    async (customerData: Partial<Customer>, options?: { createTransactions?: boolean }) => {
+    async (
+      customerData: Partial<Customer>,
+      options?: {
+        createTransactions?: boolean;
+        autoGenerateCode?: boolean;
+        codeSettings?: {
+          customer_code_prefix?: string;
+          customer_code_digits?: number;
+          customer_code_fill_gaps?: boolean;
+        };
+      },
+    ) => {
       try {
         let result;
 
@@ -488,12 +499,18 @@ const CustomerList: React.FC = () => {
             false,
             canManageAllCustomers(user),
           );
-          result = await databaseService.customers.createCustomer({
-            ...customerData,
-            company_id: customerData.company_id ?? companyId ?? null,
-            branch_id: customerData.branch_id ?? user?.branch_id ?? null,
-            status,
-          });
+          result = await databaseService.customers.createCustomer(
+            {
+              ...customerData,
+              company_id: customerData.company_id ?? companyId ?? null,
+              branch_id: customerData.branch_id ?? user?.branch_id ?? null,
+              status,
+            },
+            {
+              autoGenerateCode: options?.autoGenerateCode,
+              codeSettings: options?.codeSettings,
+            },
+          );
         } else {
           result = await databaseService.customers.updateCustomer(
             state.selectedCustomer!.id,
