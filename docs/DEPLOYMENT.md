@@ -117,7 +117,7 @@ git push origin viet
   - `ops-preview.appforyou.xyz`
 
 → Each preview URL follows the pattern `<short-name>-preview.appforyou.xyz`.
-The preview job fails if Vercel cannot attach the fixed alias, so a green deployment run certifies that the alias command succeeded.
+If Vercel cannot attach the alias, the deploy job emits a warning with the direct deployment URL. Verify that URL until the alias and DNS are available.
 → Verify at the corresponding preview URL (NOT production).
 
 ### Scenario B: Merge to `main` (Production)
