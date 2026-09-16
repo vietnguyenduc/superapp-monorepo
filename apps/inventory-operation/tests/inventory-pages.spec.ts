@@ -408,3 +408,82 @@ test.describe("Inventory app — Nhà cung cấp", () => {
     await expect(page.getByText(/tải template excel/i)).toBeVisible();
   });
 });
+
+test.describe("Inventory app — downloadable import templates", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.context().clearCookies();
+    await enterTrialMode(page);
+  });
+
+  test("accounting inventory template has one value for every declared column", async ({ page }) => {
+    await page.goto(`${BASE_URL}/inventory-transaction-import?tab=bulk`, { waitUntil: "domcontentloaded" });
+    await expect(page.getByText(/Kế toán kho/)).toBeVisible();
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: /tải file mẫu/i }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe("import_template_ke_toan.xlsx");
+    const filePath = await download.path();
+    expect(filePath).toBeTruthy();
+
+    const xlsx = (XLSX as any).default || XLSX;
+    const workbook = xlsx.read(readFileSync(filePath!), { type: "buffer" });
+    const rows = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {
+      header: 1,
+      defval: "",
+    }) as unknown[][];
+
+    expect(rows[0]).toEqual(["Ngày", "Mã hàng", "Tên hàng", "Nhập sổ", "Giá nhập", "Xuất sổ", "Ghi chú"]);
+    expect(rows.slice(1)).toHaveLength(2);
+    for (const row of rows.slice(1)) expect(row).toHaveLength(rows[0].length);
+    expect(rows[1]?.slice(3)).toEqual([20, 50000, 0, "Nhập sổ"]);
+    expect(rows[2]?.slice(3)).toEqual([10, 30000, 2, "Điều chỉnh chứng từ"]);
+  });
+
+  test("receipt, issue, supplier and product templates preserve their upload column order", async ({ page }) => {
+    const cases = [
+      {
+        url: "/goods-receipts?subTab=gr&tab=bulk",
+        button: /tải template excel/i,
+        filename: "template_nhap_hang.xlsx",
+        headers: ["Ngày", "Mã NCC", "Mã hàng *", "Số lượng", "Đơn giá", "Ghi chú"],
+      },
+      {
+        url: "/goods-issues?mode=manual&tab=bulk",
+        button: /tải template excel/i,
+        filename: "template_xuat_hang.xlsx",
+        headers: ["Ngày", "Mã hàng *", "Số lượng", "Lý do", "Ghi chú"],
+      },
+      {
+        url: "/supplier-import?tab=bulk",
+        button: /tải template excel/i,
+        filename: "template_nha_cung_cap.xlsx",
+        headers: ["Mã NCC *", "Tên NCC *", "Điện thoại", "Email", "Địa chỉ", "Ghi chú"],
+      },
+      {
+        url: "/product-catalog-import?tab=bulk",
+        button: /tải file mẫu chuẩn/i,
+        filename: "template-san-pham.xlsx",
+        headers: ["Mã sản phẩm", "Tên sản phẩm", "Danh mục", "Đơn vị nhập", "Đơn vị xuất", "Đơn vị trung gian", "Tỷ lệ quy đổi sơ chế", "Định mức thành phẩm", "Giá nhập", "Giá bán", "Trạng thái", "Ghi chú"],
+      },
+    ];
+
+    for (const item of cases) {
+      await page.goto(`${BASE_URL}${item.url}`, { waitUntil: "domcontentloaded" });
+      const downloadPromise = page.waitForEvent("download");
+      await page.getByRole("button", { name: item.button }).click();
+      const download = await downloadPromise;
+      expect(download.suggestedFilename()).toBe(item.filename);
+      const filePath = await download.path();
+      expect(filePath).toBeTruthy();
+      const xlsx = (XLSX as any).default || XLSX;
+      const workbook = xlsx.read(readFileSync(filePath!), { type: "buffer" });
+      const rows = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {
+        header: 1,
+        defval: "",
+      }) as unknown[][];
+      expect(rows[0]).toEqual(item.headers);
+      for (const row of rows.slice(1)) expect(row).toHaveLength(item.headers.length);
+    }
+  });
+});

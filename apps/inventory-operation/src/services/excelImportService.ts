@@ -344,7 +344,10 @@ class ExcelImportService {
           sampleData = [orderedSample];
           filename = 'template-san-pham-thuong-mai';
         } else {
-          const baseCols = Object.keys(DEFAULT_PRODUCT_MAPPING);
+          // "Đơn vị" is the commercial single-unit alias. Keeping it beside
+          // "Đơn vị nhập" in the F&B template creates two columns that map to
+          // the same field and makes the sample ambiguous.
+          const baseCols = Object.keys(DEFAULT_PRODUCT_MAPPING).filter(column => column !== 'Đơn vị');
           headers = orderColumns(baseCols, matchField);
           const sample: any = {
             'Mã sản phẩm': matchField === 'name' ? '' : 'SP001',

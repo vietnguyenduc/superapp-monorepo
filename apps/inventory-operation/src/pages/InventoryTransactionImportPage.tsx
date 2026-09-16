@@ -199,8 +199,8 @@ const BulkUpload: React.FC<{ onImport: (rows: any[]) => Promise<{ ok: number; to
               [new Date().toISOString().split('T')[0], 'NVL-DH01', 'Dưa hấu không hạt', 10, 8, 36, 5, ''],
             ])
         : [
-            [new Date().toISOString().split('T')[0], isCommercial ? 'SP001' : 'NVL-XO01', isCommercial ? 'Sting dâu 330ml' : 'Xoài cát Hòa Lộc', 20, 15, 'Nhập sổ'],
-            [new Date().toISOString().split('T')[0], isCommercial ? 'SP002' : 'NVL-DH01', isCommercial ? 'Coca cola 330ml' : 'Dưa hấu không hạt', 10, 8, ''],
+            [new Date().toISOString().split('T')[0], isCommercial ? 'SP001' : 'NVL-XO01', isCommercial ? 'Sting dâu 330ml' : 'Xoài cát Hòa Lộc', 20, 50000, 0, 'Nhập sổ'],
+            [new Date().toISOString().split('T')[0], isCommercial ? 'SP002' : 'NVL-DH01', isCommercial ? 'Coca cola 330ml' : 'Dưa hấu không hạt', 10, 30000, 2, 'Điều chỉnh chứng từ'],
           ];
 
       const ws = XLSX.utils.aoa_to_sheet([colHeaders, ...sampleData]);

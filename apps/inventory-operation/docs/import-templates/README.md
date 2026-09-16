@@ -13,34 +13,32 @@ inventory-operation system.
 
 | Column | Required? | Notes |
 |--------|-----------|-------|
-| `Name` | Yes | Product name |
-| `Input Unit` | Yes | Unit of measurement (kg, gram, lít, ml, cái, gói, hộp, ly, phần) |
-| `Business Code` | No | If provided, must be unique within company. Re-import with same code → updates existing product |
-| `Category` | No | Defaults to `other`. Valid: fruit, dry_goods, processed, finished, beverage, tobacco, other |
-| `Output Unit` | No | Defaults to `Input Unit` |
-| `Input Quantity` | No | Defaults to 1 |
-| `Output Quantity` | No | Defaults to 1 |
-| `Status` | No | Defaults to `active`. Valid: ACTIVE, INACTIVE |
-| `Business Status` | No | Defaults to `active` |
-| `Intermediate Units` | No | Comma-separated (e.g., "Miếng, Gram") |
-| `Conversion Ratio Raw→Processed` | No | Number |
-| `Conversion Ratio Processed→Finished` | No | Number |
-| `Standard Input Price` | No | Number (VND) |
+| `Tên sản phẩm` | Yes | Product name |
+| `Đơn vị nhập` | Yes | Unit of measurement (kg, gram, lít, ml, cái, gói, hộp, ly, phần) |
+| `Mã sản phẩm` | No | If provided, must be unique within company. Re-import with same code → updates existing product |
+| `Danh mục` | No | Valid examples: RAW, PROCESSED, FINISHED, DRY_GOODS, BEVERAGE, OTHER |
+| `Đơn vị xuất` | No | Defaults to `Đơn vị nhập` |
+| `Đơn vị trung gian` | No | Comma-separated (e.g., "Miếng, Gram") |
+| `Tỷ lệ quy đổi sơ chế` | No | Number |
+| `Định mức thành phẩm` | No | Number |
+| `Giá nhập` / `Giá bán` | No | Number (VND) |
+| `Trạng thái` | No | Defaults to active. Valid: ACTIVE, INACTIVE |
+| `Ghi chú` | No | Optional notes |
 
 **Validation Rules:**
 
-- `Name` and `Input Unit` are required (all other fields optional)
-- `Business Code` (if provided) must be unique within the file
+- `Tên sản phẩm` and `Đơn vị nhập` are required (all other fields optional)
+- `Mã sản phẩm` (if provided) must be unique within the file
   — duplicates are auto-merged (last row wins)
-- `Category` must be a valid enum value (see above)
+- Unknown category values fall back to `OTHER`
 - Quantities and prices must be non-negative numbers
 
 **Row Limit:** None — imports are chunked into batches of 200 internally
 
 **Behavior on re-import:**
 
-- Products with same `Business Code` → **updated** (upsert)
-- Products without `Business Code` → **new row created** (cannot deduplicate)
+- Products with same `Mã sản phẩm` → **updated** (upsert)
+- Products without `Mã sản phẩm` → matched according to the configured product match field
 
 ### Inventory Import Template (`inventory_import_template.csv`)
 
@@ -50,22 +48,21 @@ inventory-operation system.
 
 | Column | Required? | Notes |
 |--------|-----------|-------|
-| `Date` | Yes | YYYY-MM-DD format |
-| `Product Code` | Yes | Must match existing product `business_code` |
-| `Product Name` | Yes | Product name |
-| `Input Quantity` | No | Quantity of goods received |
-| `Raw Material Stock` | No | Stock of raw materials |
-| `Raw Material Unit` | No | kg, gram, lít, ml, cái, gói, hộp |
-| `Processed Stock` | No | Stock of processed goods |
-| `Processed Unit` | No | ly, phần, cái, miếng |
-| `Finished Product Stock` | No | Stock of finished products |
-| `Finished Product Unit` | No | ly, phần, cái, miếng |
-| `Notes` | No | Optional notes |
+| `Ngày` | Yes | YYYY-MM-DD format |
+| `Mã sản phẩm` | Yes in code mode | Must match existing product `business_code` |
+| `Tên sản phẩm` | Yes | Product name |
+| `Nhà cung cấp` | No | Supplier name |
+| `Đơn giá nhập` / `Thành tiền` | No | Number (VND) |
+| `Số lượng nhập kho` | No | Quantity of goods received |
+| `Tồn Nguyên liệu (Gốc)` / `Đơn vị Nguyên liệu` | No | Raw-material stock and unit |
+| `Tồn Sơ chế (Trung gian)` / `Đơn vị Sơ chế` | No | Processed stock and unit |
+| `Tồn Thành phẩm (Món)` / `Đơn vị Thành phẩm` | No | Finished-product stock and unit |
+| `Ghi chú` | No | Optional notes |
 
 **Validation Rules:**
 
-- `Date`, `Product Code`, and `Product Name` are required
-- `Product Code` must exist in product catalog
+- `Ngày`, `Mã sản phẩm`, and `Tên sản phẩm` are required for the static code-mode sample
+- `Mã sản phẩm` must exist in product catalog
 - All stock quantities must be non-negative numbers
 
 **Row Limit:** None

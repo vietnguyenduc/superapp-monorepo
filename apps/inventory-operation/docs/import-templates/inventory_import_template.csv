@@ -1,6 +1,3 @@
-Date,Product Code,Product Name,Input Quantity,Raw Material Stock,Raw Material Unit,Processed Stock,Processed Unit,Finished Product Stock,Finished Product Unit,Notes
-2024-01-15,PROD001,Cà phê đen,10,5,kg,8,ly,8,ly,Nhập kho mới
-2024-01-15,PROD002,Trà sữa trân châu,15,10,kg,12,ly,12,ly,Nhập kho mới
-2024-01-15,PROD003,Bánh mì thịt nướng,20,0,kg,0,ly,20,cái,Nhập kho mới
-2024-01-15,PROD004,Nguyên liệu cà phê,50,50,kg,0,ly,0,ly,Nhập kho nguyên liệu
-2024-01-15,PROD005,Nước cam vắt,30,25,kg,28,ly,28,ly,Nhập kho mới
+Ngày,Mã sản phẩm,Tên sản phẩm,Nhà cung cấp,Đơn giá nhập,Số lượng nhập kho,Thành tiền,Tồn Nguyên liệu (Gốc),Đơn vị Nguyên liệu,Tồn Sơ chế (Trung gian),Đơn vị Sơ chế,Tồn Thành phẩm (Món),Đơn vị Thành phẩm,Ghi chú
+2026-09-16,SP001,Xoài cát Hòa Lộc,Hộ KD Trái Cây,50000,10,500000,5,Quả,20,Miếng,2,Dĩa,Nhập kho đầu ca
+2026-09-16,SP002,Trà sữa trân châu,NCC Đồ uống,12000,24,288000,0,Ly,0,Ly,24,Ly,Nhập lô mới

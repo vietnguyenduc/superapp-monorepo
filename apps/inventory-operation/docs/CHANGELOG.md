@@ -1,5 +1,11 @@
 # inventory-operation — Changelog
 
+## 2026-09-16 — Downloadable import template audit
+
+- Audited the active receipt, issue, supplier and inventory-transaction templates against their upload column order.
+- Fixed the warehouse-accountant sample rows so unit price, outbound quantity and notes each occupy the declared column.
+- Added browser regression coverage that downloads and reads the generated workbooks on desktop and iPhone-sized WebKit.
+
 ## 2026-09-15 — Inbound/outbound entry safety
 
 - Routed one-line goods receipts through the same atomic inventory batch boundary as spreadsheet imports.
