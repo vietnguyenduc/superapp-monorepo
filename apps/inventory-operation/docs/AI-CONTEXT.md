@@ -33,7 +33,7 @@ Inventory management: products, categories, stock movements, purchase orders, go
 
 ## Key gotchas
 
-- **Tenant isolation migration pending application:** `20260912230438_inventory_tenant_branch_security.sql` replaces permissive legacy Inventory policies. `admin_company` must match the protected row's `company_id`; non-company admins also require a matching non-null `branch_id`. Apply and run two-tenant verification before real-data pilot.
+- **Migration history drift:** production already contains the RLS policies, branch columns, transfer table and Inventory RPCs introduced by migrations `20260912230438` through `20260915120000`, but those five versions are absent from `supabase_migrations.schema_migrations`. Do not rerun their SQL blindly. Verify the live definitions, then mark only those exact versions as applied with `supabase migration repair`. The five files passed an isolated InsForge PostgreSQL compile and workflow smoke test on 2026-09-17. Two-tenant authorization verification is still required before a real-data pilot.
 
 - **Warehouse scope:** operational lists and reports follow the user's selected or assigned branch. The product catalog remains company-wide.
 - **Supplier matching:** `import_export_config.supplierMatchField` chooses `customer_code` or `full_name` for bulk inbound files. The bulk grid and downloaded template follow that choice; duplicate supplier names are rejected before import.

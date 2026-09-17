@@ -1,5 +1,11 @@
 # inventory-operation — Changelog
 
+## 2026-09-17 — Production migration reconciliation
+
+- Confirmed that production already has the Inventory RLS policies, branch columns, transfer table and RPCs from the five migrations dated 2026-09-12 through 2026-09-15, while their migration-history rows are missing.
+- Compiled all five migrations in order against an isolated InsForge PostgreSQL fixture and passed bulk input/retry/output, balance, transfer, stock-count and RLS smoke checks.
+- Updated the runbook to require migration-history repair instead of rerunning already-present production SQL.
+
 ## 2026-09-16 — Downloadable import template audit
 
 - Audited the active receipt, issue, supplier and inventory-transaction templates against their upload column order.
