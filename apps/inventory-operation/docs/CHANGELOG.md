@@ -4,7 +4,7 @@
 
 - Confirmed that production already has the Inventory RLS policies, branch columns, transfer table and RPCs from the five migrations dated 2026-09-12 through 2026-09-15, while their migration-history rows are missing.
 - Compiled all five migrations in order against an isolated InsForge PostgreSQL fixture and passed bulk input/retry/output, balance, transfer, stock-count and RLS smoke checks.
-- Updated the runbook to require migration-history repair instead of rerunning already-present production SQL.
+- Repaired the five exact migration-history rows on production on 2026-09-19, without rerunning schema SQL or changing business data.
 
 ## 2026-09-16 — Downloadable import template audit
 

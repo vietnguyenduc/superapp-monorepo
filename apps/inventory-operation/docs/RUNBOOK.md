@@ -101,7 +101,7 @@ export SUPABASE_ACCESS_TOKEN="$(cat /home/dev/.supabase/access-token)"
 
 ## Production support
 
-- Production schema inspection on 2026-09-17 confirmed that the objects from Inventory migrations `20260912230438`, `20260913013000`, `20260913021000`, `20260913170000`, and `20260915120000` already exist, although the remote migration history does not list those versions. Do not apply the SQL again. After comparing live function/policy definitions, repair those exact migration-history entries with explicit approval.
+- Production schema inspection confirmed that the objects from Inventory migrations `20260912230438`, `20260913013000`, `20260913021000`, `20260913170000`, and `20260915120000` already exist. Their exact remote history entries were repaired on 2026-09-19; do not apply the SQL again.
 - The five migration files compile together and pass inbound, idempotent retry, outbound, XNT balance, two-branch transfer, stock-count approval, and RLS policy-count smoke checks in an isolated database on the local `insforge-postgres` container (verified 2026-09-17).
 - Before a real-data pilot, verify that an `admin_company` from tenant A cannot select, insert, update, or delete tenant B rows across all six protected Inventory tables.
 
