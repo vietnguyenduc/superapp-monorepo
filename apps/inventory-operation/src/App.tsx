@@ -37,6 +37,7 @@ const ProductCatalogImportPage = lazyWithRetry(() => import('./pages/ProductCata
 const InventoryTransactionImportPage = lazyWithRetry(() => import('./pages/InventoryTransactionImportPage'));
 const StockCountPage = lazyWithRetry(() => import('./pages/StockCountPage'));
 const WarehouseTransferPage = lazyWithRetry(() => import('./pages/WarehouseTransferPage'));
+const ProcurementPage = lazyWithRetry(() => import('./pages/ProcurementPage'));
 
 // Loading fallback component
 const PageLoading = () => (
@@ -97,8 +98,9 @@ const App: FC = () => {
               <Route path="goods-receipts" element={<GoodsReceiptImportPage />} />
               <Route path="goods-issues" element={<GoodsIssueImportPage />} />
               {/* Redirect old routes to new unified pages */}
-              <Route path="purchase-orders" element={<Navigate to="/goods-receipts?subTab=po" replace />} />
-              <Route path="supplier-returns" element={<Navigate to="/goods-receipts?subTab=return" replace />} />
+              <Route path="procurement" element={<ProcurementPage />} />
+              <Route path="purchase-orders" element={<Navigate to="/procurement?tab=po" replace />} />
+              <Route path="supplier-returns" element={<Navigate to="/procurement?tab=return" replace />} />
               <Route path="inventory-records" element={<InventoryRecordsPage />} />
               <Route path="stock-counts" element={<StockCountPage />} />
               <Route path="warehouse-transfers" element={<WarehouseTransferPage />} />

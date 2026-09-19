@@ -32,7 +32,7 @@ test.describe("Inventory app — sidebar navigation", () => {
     await enterTrialMode(page);
   });
 
-  test("sidebar has 'Nhập hàng' menu (merged from PO/GR/Return)", async ({ page }) => {
+  test("sidebar has 'Nhập hàng' menu", async ({ page }) => {
     // Sidebar menu items are <button> elements, not <a> links
     const nhapHang = page.getByRole("button", { name: /nhập hàng/i });
     await expect(nhapHang.first()).toBeVisible({ timeout: 10000 });
@@ -48,14 +48,8 @@ test.describe("Inventory app — sidebar navigation", () => {
     await expect(xuatHang.first()).toBeVisible({ timeout: 10000 });
   });
 
-  test("sidebar does NOT have old 'Đặt hàng (PO)' menu", async ({ page }) => {
-    const oldPo = page.getByRole("button", { name: /đặt hàng.*po/i });
-    await expect(oldPo).toHaveCount(0);
-  });
-
-  test("sidebar does NOT have old 'Trả hàng NCC' menu", async ({ page }) => {
-    const oldReturn = page.getByRole("button", { name: /trả hàng ncc/i });
-    await expect(oldReturn).toHaveCount(0);
+  test("sidebar has the procurement workspace", async ({ page }) => {
+    await expect(page.getByRole("button", { name: /mua.*trả ncc/i })).toBeVisible();
   });
 
   test("sidebar has 'Nhà cung cấp' menu", async ({ page }) => {
@@ -167,15 +161,6 @@ test.describe("Inventory app — Nhập hàng page", () => {
     await expect(page.getByRole("heading", { name: "Nhập hàng", exact: true })).toBeVisible({ timeout: 10000 });
   });
 
-  test("has 3 sub-tabs: PO / GR / Return", async ({ page }) => {
-    await page.goto(`${BASE_URL}/goods-receipts`, { waitUntil: "networkidle" });
-    await expect(page.getByRole("button", { name: /đặt hàng.*po/i })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole("button", { name: /nhận hàng.*gr/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /trả hàng ncc/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /đặt hàng.*po/i })).toBeDisabled();
-    await expect(page.getByRole("button", { name: /trả hàng ncc/i })).toBeDisabled();
-  });
-
   test("has 2 import modes: single + bulk", async ({ page }) => {
     await page.goto(`${BASE_URL}/goods-receipts?subTab=gr&tab=single`, { waitUntil: "networkidle" });
     await expect(page.getByRole("button", { name: /nhập từng dòng/i })).toBeVisible({ timeout: 10000 });
@@ -273,14 +258,29 @@ test.describe("Inventory app — Nhập hàng page", () => {
     await expect(reportRow.locator("td").nth(3)).toHaveText("10");
   });
 
-  test("old /purchase-orders redirects to /goods-receipts", async ({ page }) => {
+  test("old /purchase-orders redirects to the procurement PO tab", async ({ page }) => {
     await page.goto(`${BASE_URL}/purchase-orders`, { waitUntil: "networkidle" });
-    await expect(page).toHaveURL(/goods-receipts/);
+    await expect(page).toHaveURL(/procurement\?tab=po/);
   });
 
-  test("old /supplier-returns redirects to /goods-receipts", async ({ page }) => {
+  test("old /supplier-returns redirects to the procurement return tab", async ({ page }) => {
     await page.goto(`${BASE_URL}/supplier-returns`, { waitUntil: "networkidle" });
-    await expect(page).toHaveURL(/goods-receipts/);
+    await expect(page).toHaveURL(/procurement\?tab=return/);
+  });
+});
+
+test.describe("Inventory app — Mua & trả NCC", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.context().clearCookies();
+    await enterTrialMode(page);
+  });
+
+  test("separates PO from supplier returns and explains the stock boundary", async ({ page }) => {
+    await page.goto(`${BASE_URL}/procurement?tab=po`, { waitUntil: "networkidle" });
+    await expect(page.getByRole("heading", { name: /mua hàng.*trả nhà cung cấp/i })).toBeVisible();
+    await expect(page.getByText(/PO là kế hoạch mua/i)).toBeVisible();
+    await page.getByRole("button", { name: "Trả hàng NCC" }).click();
+    await expect(page.getByText(/cần duyệt trước khi xuất kho/i)).toBeVisible();
   });
 });
 

@@ -40,6 +40,20 @@ upload two-row CSV files, verify spreadsheet date normalization, save both rows,
 and confirm both product codes in recent records. They do not write to
 production Supabase.
 
+## Procurement acceptance
+
+`/procurement` has two distinct workflows. A PO is planning data only and must
+never change the inventory ledger. A supplier return starts as **Chờ duyệt**;
+an `admin_company` or `admin_master` approves it, then completion writes one
+outbound ledger row per return line. Before a real-data pilot, verify a PO
+leaves XNT unchanged, an unapproved return cannot complete, and retrying a
+completed return does not create another outbound row.
+
+Migration `20260919173822_inventory_procurement_workflows.sql` is applied on
+production. Do not use `db push --include-all` for this repository: its remote
+migration history contains older intentional gaps. Apply any future reviewed
+Inventory migration individually, then repair only that migration's history row.
+
 Production bulk verification must run in a rollback transaction with an authenticated
 company user: import inbound, retry the same batch ID, import outbound, assert the two
 ledger rows use the product canonical unit and reconcile in XNT, then roll back. Never

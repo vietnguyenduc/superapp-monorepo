@@ -1,5 +1,12 @@
 # inventory-operation — Changelog
 
+## 2026-09-19 — Procurement workflows ready for review
+
+- Added a dedicated **Mua & trả NCC** workspace. MRP now opens a prefilled PO there instead of a disabled card.
+- PO creation is separate from goods receipt and does not write inventory.
+- Supplier returns now have product lines, approval, canonical-unit/short-stock checks and an idempotent completion boundary that creates outbound ledger records only after approval.
+- Applied migration `20260919173822_inventory_procurement_workflows.sql` to production on 2026-09-20 after an isolated InsForge smoke test: a decimal PO did not affect stock and an approved three-unit return changed closing stock from 10 to 7 with one ledger row. Supabase confirms the return-line table and the PO/return completion RPCs exist.
+
 ## 2026-09-17 — Production migration reconciliation
 
 - Confirmed that production already has the Inventory RLS policies, branch columns, transfer table and RPCs from the five migrations dated 2026-09-12 through 2026-09-15, while their migration-history rows are missing.
