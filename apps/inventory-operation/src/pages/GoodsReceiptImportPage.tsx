@@ -11,14 +11,7 @@ import BulkImportHistoryPanel from '../components/BulkImportHistoryPanel';
 import { bulkImportHistoryService, BulkImportReceipt } from '../services/bulkImportHistoryService';
 import { importExportSettingsService } from '../services/importExportSettingsService';
 
-type SubTab = 'po' | 'gr' | 'return';
 type ImportMode = 'single' | 'bulk';
-
-const SUB_TAB_CONFIG: { id: SubTab; label: string; icon: string; desc: string }[] = [
-  { id: 'po', label: 'Đặt hàng (PO)', icon: '📋', desc: 'Lập đơn đặt hàng tới NCC' },
-  { id: 'gr', label: 'Nhận hàng (GR)', icon: '📦', desc: 'Kiểm đếm & nhập kho' },
-  { id: 'return', label: 'Trả hàng NCC', icon: '↩️', desc: 'Trả/đổi hàng lỗi với NCC' },
-];
 
 const MODE_CONFIG: { id: ImportMode; label: string; icon: string }[] = [
   { id: 'single', label: 'Nhập từng dòng', icon: '📝' },
@@ -28,10 +21,8 @@ const MODE_CONFIG: { id: ImportMode; label: string; icon: string }[] = [
 const GoodsReceiptImportPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialSubTab: SubTab = 'gr';
   const initialMode = (searchParams.get('tab') as ImportMode) || 'single';
 
-  const [activeSubTab, setActiveSubTab] = useState<SubTab>(initialSubTab);
   const [activeMode, setActiveMode] = useState<ImportMode>(initialMode);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [records, setRecords] = useState<any[]>([]);
@@ -65,27 +56,19 @@ const GoodsReceiptImportPage: React.FC = () => {
     loadSuppliers();
   }, []);
 
-  // Load records based on sub-tab
   const loadRecords = useCallback(async () => {
     setIsLoading(true);
     try {
-      const sourceType =
-        activeSubTab === 'po'
-          ? InventorySourceType.PURCHASE_ORDER
-          : activeSubTab === 'gr'
-            ? InventorySourceType.GOODS_RECEIPT
-            : InventorySourceType.SUPPLIER_RETURN;
-
       const res = await InventoryService.getInventoryRecords();
       if (res.success && res.data) {
-        setRecords(res.data.filter((record) => record.sourceType === sourceType));
+        setRecords(res.data.filter((record) => record.sourceType === InventorySourceType.GOODS_RECEIPT));
       }
     } catch (err) {
       console.error('Lỗi tải dữ liệu:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [activeSubTab]);
+  }, []);
 
   useEffect(() => {
     loadRecords();
@@ -102,14 +85,9 @@ const GoodsReceiptImportPage: React.FC = () => {
     loadBatchHistory();
   }, [loadBatchHistory]);
 
-  const handleSubTabChange = (tab: SubTab) => {
-    setActiveSubTab(tab);
-    setSearchParams({ subTab: tab, tab: activeMode });
-  };
-
   const handleModeChange = (mode: ImportMode) => {
     setActiveMode(mode);
-    setSearchParams({ subTab: activeSubTab, tab: mode });
+    setSearchParams({ tab: mode });
   };
 
   const handleSingleSubmit = async (data: GoodsReceiptFormData) => {
@@ -187,8 +165,6 @@ const GoodsReceiptImportPage: React.FC = () => {
     }
   };
 
-  const subTabConfig = SUB_TAB_CONFIG.find((t) => t.id === activeSubTab)!;
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 sm:p-6 transition-colors duration-300">
       <div className="max-w-7xl mx-auto space-y-5">
@@ -211,38 +187,10 @@ const GoodsReceiptImportPage: React.FC = () => {
               <div>
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">Nhập hàng</h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Đặt hàng · Nhận hàng · Trả hàng NCC
+                  Kiểm đếm và nhập tồn kho
                 </p>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Sub-tabs (PO / GR / Return) */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-4">
-          <div className="grid grid-cols-3 gap-3">
-            {SUB_TAB_CONFIG.map((tab) => (
-              <button
-                key={tab.id}
-                disabled={tab.id !== 'gr'}
-                title={tab.id !== 'gr' ? 'Nghiệp vụ này đang được hoàn thiện để không ghi sai tồn kho' : undefined}
-                onClick={() => handleSubTabChange(tab.id)}
-                className={`p-4 rounded-xl border-2 transition-all text-left ${
-                  activeSubTab === tab.id
-                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                    : 'border-gray-200 dark:border-gray-700 disabled:cursor-not-allowed disabled:opacity-55 hover:border-gray-300 dark:hover:border-gray-600'
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xl">{tab.icon}</span>
-                  <span className={`font-semibold text-sm ${activeSubTab === tab.id ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300'}`}>
-                    {tab.label}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{tab.desc}</p>
-                {tab.id !== 'gr' && <p className="mt-1 text-xs font-medium text-amber-700 dark:text-amber-300">Đang hoàn thiện</p>}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -310,7 +258,7 @@ const GoodsReceiptImportPage: React.FC = () => {
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
           <div className="p-4 border-b border-gray-100 dark:border-gray-800">
             <h2 className="font-semibold text-gray-900 dark:text-white">
-              {subTabConfig.icon} {subTabConfig.label} — Danh sách phiếu
+              📦 Nhận hàng (GR) — Danh sách phiếu
             </h2>
           </div>
           {isLoading ? (
