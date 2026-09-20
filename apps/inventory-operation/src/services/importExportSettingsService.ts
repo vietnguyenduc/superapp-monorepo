@@ -15,6 +15,8 @@ export interface ImportExportConfig {
   inventoryMatchField: MatchField;
   salesMatchField: MatchField;
   supplierMatchField: SupplierMatchField;
+  /** Named reasons presented in the single and bulk goods-issue workflows. */
+  outboundTypes: string[];
   exportColumns: ExportColumns;
 }
 
@@ -23,6 +25,7 @@ const DEFAULT_CONFIG: ImportExportConfig = {
   inventoryMatchField: 'business_code',
   salesMatchField: 'business_code',
   supplierMatchField: 'customer_code',
+  outboundTypes: ['Xuất bán', 'Xuất trả', 'Xuất cúng', 'Xuất sửa chữa', 'Xuất bảo trì'],
   exportColumns: {
     products: ['business_code', 'name', 'category', 'input_unit', 'output_unit', 'status'],
     inventory: ['date', 'product_code', 'product_name', 'input_quantity', 'raw_material_stock', 'processed_stock', 'finished_product_stock'],
@@ -35,6 +38,12 @@ let cachedConfig: ImportExportConfig | null = null;
 const TRIAL_CONFIG_KEY = 'inventory_trial_import_export_config';
 
 class ImportExportSettingsService {
+  private normalize(config: Partial<ImportExportConfig>): ImportExportConfig {
+    const outboundTypes = Array.isArray(config.outboundTypes)
+      ? [...new Set(config.outboundTypes.map((value) => String(value).trim()).filter(Boolean))]
+      : DEFAULT_CONFIG.outboundTypes;
+    return { ...DEFAULT_CONFIG, ...config, outboundTypes } as ImportExportConfig;
+  }
   /**
    * Load import/export config from Supabase (inventory_settings.import_export_config).
    * Falls back to DEFAULT_CONFIG if not configured or on error.
@@ -45,7 +54,7 @@ class ImportExportSettingsService {
 
     if (isTrialMode()) {
       try {
-        cachedConfig = { ...DEFAULT_CONFIG, ...JSON.parse(localStorage.getItem(TRIAL_CONFIG_KEY) || '{}') };
+        cachedConfig = this.normalize(JSON.parse(localStorage.getItem(TRIAL_CONFIG_KEY) || '{}'));
         return cachedConfig;
       } catch {
         return DEFAULT_CONFIG;
@@ -63,7 +72,7 @@ class ImportExportSettingsService {
         .maybeSingle();
 
       if (res.data?.import_export_config) {
-        cachedConfig = { ...DEFAULT_CONFIG, ...res.data.import_export_config } as ImportExportConfig;
+        cachedConfig = this.normalize(res.data.import_export_config);
         return cachedConfig;
       }
     } catch (err) {
@@ -79,7 +88,7 @@ class ImportExportSettingsService {
    */
   async save(config: Partial<ImportExportConfig>): Promise<ImportExportConfig> {
     const current = await this.load();
-    const merged = { ...current, ...config };
+    const merged = this.normalize({ ...current, ...config });
     cachedConfig = merged;
 
     if (isTrialMode()) {

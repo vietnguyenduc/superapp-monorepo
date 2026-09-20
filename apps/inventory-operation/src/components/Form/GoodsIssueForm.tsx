@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Product } from '../../types';
 
 export interface GoodsIssueFormData {
@@ -16,6 +16,7 @@ interface GoodsIssueFormProps {
   products: Product[];
   initialData?: Partial<GoodsIssueFormData>;
   isLoading?: boolean;
+  outboundTypes?: string[];
 }
 
 const GoodsIssueForm: React.FC<GoodsIssueFormProps> = ({
@@ -24,19 +25,26 @@ const GoodsIssueForm: React.FC<GoodsIssueFormProps> = ({
   products,
   initialData,
   isLoading = false,
+  outboundTypes = [],
 }) => {
   const [formData, setFormData] = useState<GoodsIssueFormData>({
     date: initialData?.date || new Date().toISOString().split('T')[0],
     productId: initialData?.productId || '',
     productCode: initialData?.productCode || '',
     quantity: initialData?.quantity || 0,
-    reason: initialData?.reason || '',
+    reason: initialData?.reason || outboundTypes[0] || '',
     notes: initialData?.notes || '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [productSearch, setProductSearch] = useState('');
   const [showProductList, setShowProductList] = useState(false);
+
+  useEffect(() => {
+    if (!formData.reason && outboundTypes[0]) {
+      setFormData((current) => ({ ...current, reason: outboundTypes[0] }));
+    }
+  }, [outboundTypes, formData.reason]);
 
   const filteredProducts = products.filter(
     (p) =>
@@ -142,13 +150,15 @@ const GoodsIssueForm: React.FC<GoodsIssueFormProps> = ({
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Lý do xuất
         </label>
-        <input
-          type="text"
+        <select
           value={formData.reason}
           onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-          placeholder="vd: Xuất bán, Xuất sản xuất, Xuất hủy..."
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        >
+          <option value="">Chọn loại xuất</option>
+          {outboundTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+        </select>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Khai báo hoặc đổi tên loại xuất tại Cài đặt → Nhập / Xuất dữ liệu.</p>
       </div>
 
       {/* Notes */}

@@ -3,7 +3,9 @@
 ## 2026-09-20 — Master-admin warehouse access and simpler operations menu
 
 - `admin_master` can now create and select the first warehouse for the company currently selected in Inventory; migration `20260920164100_inventory_master_workspace_access.sql` is applied on production.
-- Grouped the sidebar around daily work: **Nhập** (receipt, procurement, MRP), **Xuất** (standard and special outbound), and **Quản lý Xuất Nhập Tồn** (ledger, stock count, transfer). MRP is labelled as a purchase-planning task rather than a separate stock menu.
+- Grouped the sidebar around daily work: **Nhập** (receipt, procurement, MRP), **Xuất** (one standard goods-issue workflow), and **Quản lý Xuất Nhập Tồn** (ledger, stock count, transfer). MRP is labelled as a purchase-planning task rather than a separate stock menu.
+- Removed the separate **Xuất đặc biệt** menu. Company admins configure the named goods-issue types in **Cài đặt → Nhập / Xuất dữ liệu**; the single-entry form, bulk grid and its Excel template share that list. Default types are sales, returns, offerings, repair and maintenance.
+- MRP now navigates directly to **Mua hàng** with the selected supplier and its calculated suggested quantities prefilled in the PO form.
 
 ## 2026-09-19 — Procurement workflows ready for review
 

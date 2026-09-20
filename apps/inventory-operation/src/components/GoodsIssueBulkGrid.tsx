@@ -15,13 +15,14 @@ interface GoodsIssueBulkGridProps {
   onSave: (rows: BulkGoodsIssueRow[]) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  outboundTypes?: string[];
 }
 
 const BASE_COLS = [
   { key: 'date', label: 'Ngày', width: 130 },
   { key: 'product_code', label: 'Mã hàng *', width: 110 },
   { key: 'quantity', label: 'Số lượng', width: 100 },
-  { key: 'reason', label: 'Lý do', width: 140 },
+  { key: 'reason', label: 'Loại xuất', width: 140 },
   { key: 'notes', label: 'Ghi chú', width: 160 },
 ] as const;
 
@@ -37,6 +38,7 @@ const GoodsIssueBulkGrid: React.FC<GoodsIssueBulkGridProps> = ({
   onSave,
   onCancel,
   isLoading = false,
+  outboundTypes = [],
 }) => {
   const [matchField, setMatchField] = useState<MatchField>('business_code');
 
@@ -92,8 +94,8 @@ const GoodsIssueBulkGrid: React.FC<GoodsIssueBulkGridProps> = ({
       const productSample = matchField === 'name' ? 'Sting dâu 330ml' : 'SP001';
       const productSample2 = matchField === 'name' ? 'Coca cola 330ml' : 'SP002';
       const sample = [
-        ['2026-01-15', productSample, '100', 'Xuất bán', ''],
-        ['2026-01-16', productSample2, '50', 'Xuất sản xuất', ''],
+        ['2026-01-15', productSample, '100', outboundTypes[0] || 'Xuất bán', ''],
+        ['2026-01-16', productSample2, '50', outboundTypes[1] || outboundTypes[0] || 'Xuất trả', ''],
       ];
       const ws = XLSX.utils.aoa_to_sheet([headers, ...sample]);
       const wb = XLSX.utils.book_new();
@@ -103,7 +105,7 @@ const GoodsIssueBulkGrid: React.FC<GoodsIssueBulkGridProps> = ({
       console.error('Lỗi tải template:', err);
       alert('Không thể tải template. Vui lòng thử lại.');
     }
-  }, [matchField]);
+  }, [matchField, outboundTypes]);
 
   const handleFileUpload = useCallback(async (file: File) => {
     try {
@@ -204,13 +206,18 @@ const GoodsIssueBulkGrid: React.FC<GoodsIssueBulkGridProps> = ({
                 <td className={`px-3 py-1.5 text-xs ${isInvalidRow(row) ? 'font-bold text-red-600' : 'text-gray-400'}`}>{ri + 1}{isInvalidRow(row) ? ' !' : ''}</td>
                 {COLS.map((col) => (
                   <td key={col.key} className="px-2 py-1">
-                    <input
+                    {col.key === 'reason' ? <select
+                      value={row.reason}
+                      onChange={(e) => handleChange(ri, col.key, e.target.value)}
+                      className="w-full px-2 py-1 border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                      style={{ minWidth: col.width - 16 }}
+                    ><option value="">Chọn loại</option>{outboundTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select> : <input
                       type={col.key === 'date' ? 'date' : 'text'}
                       value={(row as any)[col.key] || ''}
                       onChange={(e) => handleChange(ri, col.key, e.target.value)}
                       className="w-full px-2 py-1 border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
                       style={{ minWidth: col.width - 16 }}
-                    />
+                    />}
                   </td>
                 ))}
               </tr>

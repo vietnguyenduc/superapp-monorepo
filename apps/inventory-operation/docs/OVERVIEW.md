@@ -11,7 +11,7 @@ generated: true
 
 ## Purpose
 
-Inventory management: products, categories, stock movements, purchase orders, goods receipts, special outbound, variance reporting, and stock-check printing.
+Inventory management: products, categories, stock movements, purchase orders, goods receipts, configurable goods issues, variance reporting, and stock-check printing.
 
 - **Local port:** 5175
 - **Production domain:** `inventory.appforyou.xyz`
@@ -132,4 +132,3 @@ Inventory management: products, categories, stock movements, purchase orders, go
 - `apps/inventory-operation/docs/API.md` — service / API surface
 - `apps/inventory-operation/docs/AI-CONTEXT.md` — agent gotchas & tasks
 - `apps/inventory-operation/docs/CHANGELOG.md` — recent changes
-

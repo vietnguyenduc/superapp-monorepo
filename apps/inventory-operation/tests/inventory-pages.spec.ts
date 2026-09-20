@@ -57,6 +57,7 @@ test.describe("Inventory app — sidebar navigation", () => {
     await expect(page.getByRole('heading', { name: 'Xuất', exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Quản lý Xuất Nhập Tồn' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Kế hoạch nhập (MRP)' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Xuất đặc biệt' })).toHaveCount(0);
   });
 
   test("sidebar has 'Nhà cung cấp' menu", async ({ page }) => {
@@ -316,6 +317,15 @@ test.describe("Inventory app — Xuất hàng page", () => {
     await page.goto(`${BASE_URL}/goods-issues`, { waitUntil: "networkidle" });
     await expect(page.getByRole("button", { name: /nhập thủ công/i })).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole("button", { name: /đồng bộ sales/i })).toBeVisible();
+  });
+
+  test("uses company-configured outbound types in the goods issue form", async ({ page }) => {
+    await page.goto(`${BASE_URL}/settings?tab=import-export`, { waitUntil: "networkidle" });
+    await page.getByLabel("Thêm loại xuất").fill("Xuất dùng thử");
+    await page.getByRole("button", { name: "Thêm", exact: true }).click();
+    await expect(page.getByText("Xuất dùng thử", { exact: true })).toBeVisible();
+    await page.goto(`${BASE_URL}/goods-issues?mode=manual&tab=single`, { waitUntil: "networkidle" });
+    await expect(page.locator('form select').last().locator('option', { hasText: 'Xuất dùng thử' })).toHaveCount(1);
   });
 
   test("manual mode has single + bulk sub-tabs", async ({ page }) => {
