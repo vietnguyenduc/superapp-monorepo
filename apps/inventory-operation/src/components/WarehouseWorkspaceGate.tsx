@@ -7,7 +7,7 @@ export const WarehouseWorkspaceGate: React.FC = () => {
   const [name,setName]=useState('Kho mặc định'); const [saving,setSaving]=useState(false); const [localError,setLocalError]=useState('');
   if(loading)return <div className="p-6 text-sm text-gray-500" role="status">Đang chuẩn bị không gian kho…</div>;
   if(!branches.length){
-    const canCreate=role==='admin_company';
+    const canCreate=['admin_company','admin_master'].includes(role);
     return <div className="mx-auto max-w-xl rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-8">
       <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl dark:bg-blue-950">🏬</div>
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Thiết lập kho đầu tiên</h1>
@@ -26,7 +26,7 @@ export const WarehouseWorkspaceGate: React.FC = () => {
     </div>;
   }
   return <>
-    {branches.length>1&&<div className="border-b border-blue-100 bg-blue-50 px-4 py-3 dark:border-blue-900 dark:bg-blue-950/40"><div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><div className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Kho đang thao tác</div><div className="font-semibold text-gray-900 dark:text-white">{activeBranch?.name||'Chưa chọn kho'}</div></div>{role==='admin_company'?<label className="text-sm font-medium text-gray-700 dark:text-gray-200">Đổi kho<select aria-label="Kho đang thao tác" value={activeBranch?.id||''} onChange={e=>void selectBranch(e.target.value)} className="ml-2 min-h-11 rounded-xl border border-blue-200 bg-white px-3 dark:border-blue-800 dark:bg-gray-900">{branches.map(branch=><option key={branch.id} value={branch.id}>{branch.name}</option>)}</select></label>:<span className="text-sm text-gray-600 dark:text-gray-300">Bạn được phân công cố định tại kho này</span>}</div></div>}
+    {branches.length>1&&<div className="border-b border-blue-100 bg-blue-50 px-4 py-3 dark:border-blue-900 dark:bg-blue-950/40"><div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><div className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">Kho đang thao tác</div><div className="font-semibold text-gray-900 dark:text-white">{activeBranch?.name||'Chưa chọn kho'}</div></div>{['admin_company','admin_master'].includes(role)?<label className="text-sm font-medium text-gray-700 dark:text-gray-200">Đổi kho<select aria-label="Kho đang thao tác" value={activeBranch?.id||''} onChange={e=>void selectBranch(e.target.value)} className="ml-2 min-h-11 rounded-xl border border-blue-200 bg-white px-3 dark:border-blue-800 dark:bg-gray-900">{branches.map(branch=><option key={branch.id} value={branch.id}>{branch.name}</option>)}</select></label>:<span className="text-sm text-gray-600 dark:text-gray-300">Bạn được phân công cố định tại kho này</span>}</div></div>}
     <Outlet />
   </>;
 };

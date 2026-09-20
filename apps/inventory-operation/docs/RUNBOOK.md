@@ -66,10 +66,11 @@ canonical quantity, the shared transfer ID links both records, retry/short-stock
 do not create partial movements, and both branch-scoped users see only their branch.
 
 Warehouse workspace behavior depends on active branch count: no active branch prompts
-the company admin to create the first warehouse; one branch is automatic and keeps the
+the company or system admin to create the first warehouse; one branch is automatic and keeps the
 UI simple; two or more branches show the working-warehouse selector and atomic transfer
-page to `admin_company`. Migration
-`20260913021000_inventory_adaptive_warehouse_workspace.sql` provides the validated
+page to `admin_company` or `admin_master`. Migrations
+`20260913021000_inventory_adaptive_warehouse_workspace.sql` and
+`20260920164100_inventory_master_workspace_access.sql` provide the validated
 create/select RPC used by the UI.
 Creating the first warehouse also assigns previously unassigned company users and
 unassigned inventory history to it. Operational lists and reports then follow the

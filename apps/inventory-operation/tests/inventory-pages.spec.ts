@@ -52,6 +52,13 @@ test.describe("Inventory app — sidebar navigation", () => {
     await expect(page.getByRole("button", { name: /mua.*trả ncc/i })).toBeVisible();
   });
 
+  test("groups daily work into Nhập, Xuất and Xuất Nhập Tồn", async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Nhập', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Xuất', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Quản lý Xuất Nhập Tồn' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Kế hoạch nhập (MRP)' })).toBeVisible();
+  });
+
   test("sidebar has 'Nhà cung cấp' menu", async ({ page }) => {
     const ncc = page.getByRole("button", { name: /nhà cung cấp/i });
     await expect(ncc.first()).toBeVisible({ timeout: 10000 });
@@ -67,6 +74,12 @@ test.describe("Inventory app — adaptive warehouse workspace", () => {
     await page.getByRole('button',{name:'Tạo kho và bắt đầu'}).click();
     await expect(page.getByRole('heading',{name:/dashboard tồn kho/i})).toBeVisible();
     await expect(page.getByLabel('Kho đang thao tác')).toHaveCount(0);
+  });
+
+  test("master admin can create the first warehouse", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('inventory_trial_warehouses','[]'));
+    await enterTrialMode(page);
+    await expect(page.getByLabel('Tên kho đầu tiên')).toBeVisible();
   });
 
   test("multiple warehouses show workspace picker and transfer navigation", async ({ page }) => {

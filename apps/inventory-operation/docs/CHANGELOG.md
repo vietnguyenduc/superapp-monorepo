@@ -1,5 +1,10 @@
 # inventory-operation — Changelog
 
+## 2026-09-20 — Master-admin warehouse access and simpler operations menu
+
+- `admin_master` can now create and select the first warehouse for the company currently selected in Inventory; migration `20260920164100_inventory_master_workspace_access.sql` is applied on production.
+- Grouped the sidebar around daily work: **Nhập** (receipt, procurement, MRP), **Xuất** (standard and special outbound), and **Quản lý Xuất Nhập Tồn** (ledger, stock count, transfer). MRP is labelled as a purchase-planning task rather than a separate stock menu.
+
 ## 2026-09-19 — Procurement workflows ready for review
 
 - Added a dedicated **Mua & trả NCC** workspace. MRP now opens a prefilled PO there instead of a disabled card.

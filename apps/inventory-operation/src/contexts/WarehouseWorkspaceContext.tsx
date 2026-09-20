@@ -12,7 +12,7 @@ export const WarehouseWorkspaceProvider: React.FC<React.PropsWithChildren> = ({c
     setError('');
     try {
       let next=await warehouseWorkspaceService.load();
-      if(next.branches.length===1&&!next.activeBranchId&&next.role==='admin_company'){
+      if(next.branches.length===1&&!next.activeBranchId&&['admin_company','admin_master'].includes(next.role)){
         await warehouseWorkspaceService.select(next.branches[0].id);
         next=await warehouseWorkspaceService.load();
       }

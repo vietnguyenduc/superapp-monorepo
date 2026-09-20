@@ -104,6 +104,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       },
     },
     {
+      name: "Xuất đặc biệt",
+      href: "/special-outbound",
+      icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" /></svg>,
+    },
+    {
       name: "Quản lý Xuất Nhập Tồn",
       href: "/inventory-records",
       icon: <InventoryIcon />,
@@ -114,7 +119,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       },
     },
     {
-      name: "Tồn kho & MRP (DOH)",
+      name: "Kế hoạch nhập (MRP)",
       href: "/inventory-mrp",
       icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
     },
@@ -123,7 +128,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       href: "/stock-counts",
       icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2m-6 0a2 2 0 002 2h2a2 2 0 002-2m-6 9l2 2 4-4" /></svg>,
     },
-    ...(branches.length > 1 && workspaceRole === 'admin_company' ? [{name:"Điều chuyển kho",href:"/warehouse-transfers",icon:<svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" /></svg>}] : []),
+    ...(branches.length > 1 && ['admin_company', 'admin_master'].includes(workspaceRole) ? [{name:"Điều chuyển kho",href:"/warehouse-transfers",icon:<svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" /></svg>}] : []),
     {
       name: "Cài đặt",
       href: "/settings",
@@ -153,6 +158,23 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     // Admin roles: Full access
     return true;
   });
+
+  const operations = [
+    { name: 'Nhập', paths: ['/goods-receipts', '/procurement', '/inventory-mrp'] },
+    { name: 'Xuất', paths: ['/goods-issues', '/special-outbound'] },
+    { name: 'Quản lý Xuất Nhập Tồn', paths: ['/inventory-records', '/stock-counts', '/warehouse-transfers'] },
+  ];
+  const operationPaths = new Set(operations.flatMap((group) => group.paths));
+  const topNavigation = filteredNavigation.filter((item) => ['/dashboard', '/product-management', '/supplier-management'].includes(item.href));
+  const bottomNavigation = filteredNavigation.filter((item) => !operationPaths.has(item.href) && !topNavigation.some((top) => top.href === item.href));
+  const renderItem = (item: MenuItem, compact = false) => (
+    <div key={item.href} className="flex items-center justify-between gap-2 group">
+      <button type="button" onClick={() => { navigate(item.href); onClose?.(); }} className={`flex items-center space-x-3 rounded-md text-left transition-colors flex-1 ${compact ? 'px-3 py-2 text-sm font-medium' : 'px-3 py-2.5 text-base font-semibold'} ${location.pathname === item.href ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'}`}>
+        {item.icon}<span>{item.name}</span>
+      </button>
+      {item.hasAddButton && <div className="flex-shrink-0"><AddButton onClick={() => item.addAction?.()} title="Thêm" showShine variant="default" /></div>}
+    </div>
+  );
 
   return (
     <div className="w-80 bg-white dark:bg-gray-900 shadow-sm border-r border-gray-200 dark:border-gray-800 min-h-screen flex flex-col transition-colors duration-300">
@@ -185,38 +207,15 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
 
       <div className="p-5 flex-1">
         <nav className="space-y-2">
-          {filteredNavigation.map((item) => (
-            <div
-              key={item.href}
-              className="flex items-center justify-between gap-3 group"
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  navigate(item.href);
-                  onClose?.();
-                }}
-                className={`flex items-center space-x-3 px-3 py-2.5 rounded-md text-base font-semibold transition-colors flex-1 text-left ${
-                  location.pathname === item.href
-                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
-                }`}
-              >
-                {item.icon}
-                <span>{item.name}</span>
-              </button>
-              {item.hasAddButton && (
-                <div className="ml-2 flex-shrink-0">
-                  <AddButton
-                    onClick={() => item.addAction?.()}
-                    title="Thêm"
-                    showShine
-                    variant="default"
-                  />
-                </div>
-              )}
-            </div>
-          ))}
+          {topNavigation.map((item) => renderItem(item))}
+          <div className="my-4 border-t border-gray-100 dark:border-gray-800" />
+          {operations.map((group) => {
+            const items = filteredNavigation.filter((item) => group.paths.includes(item.href));
+            if (!items.length) return null;
+            return <section key={group.name} className="rounded-xl bg-gray-50 p-2 dark:bg-gray-800/60"><h2 className="px-2 pb-1 pt-1 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">{group.name}</h2><div className="space-y-0.5">{items.map((item) => renderItem(item, true))}</div></section>;
+          })}
+          <div className="my-4 border-t border-gray-100 dark:border-gray-800" />
+          {bottomNavigation.map((item) => renderItem(item))}
         </nav>
       </div>
 
