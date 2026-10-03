@@ -1,5 +1,10 @@
 # inventory-operation — Changelog
 
+## 2026-10-03 — System-admin warehouse setup follows selected company
+
+- Fixed the first-warehouse gate for `admin_master` profiles that intentionally have no fixed `company_id`. Inventory now uses the selected company from the shared company switcher, and passes that scope to the protected workspace RPC.
+- Migration `20261003165029_inventory_master_selected_company_workspace.sql` keeps company admins bound to their own company, while accepting only an active selected company for a system admin.
+
 ## 2026-09-20 — Master-admin warehouse access and simpler operations menu
 
 - `admin_master` can now create and select the first warehouse for the company currently selected in Inventory; migration `20260920164100_inventory_master_workspace_access.sql` is applied on production.
