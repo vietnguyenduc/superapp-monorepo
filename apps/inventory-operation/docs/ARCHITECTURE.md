@@ -36,7 +36,7 @@ Inventory Operation System là ứng dụng web quản lý xuất nhập tồn c
 │  - Authentication (@superapp/iam → AuthProvider)            │
 │  - Database Client (@supabase/supabase-js)                  │
 │  - Real-time Subscriptions (optional)                       │
-│  - InsForge apiClient (from() / rpc() proxy)                │
+│  - Supabase cloud client (from() / rpc())                   │
 └────────────────────┬────────────────────────────────────────┘
                      ▼
 ┌─────────────────────────────────────────────────────────────┐

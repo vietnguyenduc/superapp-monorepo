@@ -18,4 +18,4 @@ doc_type: API
 ## Backend
 
 - Supabase REST / RPC
-- `packages/api` Fastify (port 3001) for shared utilities
+- Supabase cloud for authenticated data access and RPCs

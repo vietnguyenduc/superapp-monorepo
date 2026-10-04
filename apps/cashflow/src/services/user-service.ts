@@ -2,7 +2,7 @@ import { apiClient } from "./supabase";
 import type { TablesUpdate } from '../types/database.types';
 
 // RBAC user service for Settings
-// All data ops route through apiClient (local InsForge Postgres) — auth stays on Supabase.
+// apiClient is a compatibility alias of the Supabase cloud client.
 export const userService = {
   async getUsers(branchId?: string) {
     let query = apiClient.from('users').select('*');

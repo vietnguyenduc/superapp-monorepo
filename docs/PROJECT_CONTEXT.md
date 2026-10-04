@@ -7,8 +7,7 @@
 - **Production master:** Supabase project `peslmsctejmvkwzyohke`.
   - REST: `https://peslmsctejmvkwzyohke.supabase.co/rest/v1/`
   - DB host: `db.peslmsctejmvkwzyohke.supabase.co`
-- **Local AI/test mirror:** `packages/api` (Fastify, port 3001) + local Postgres.
-  - Apps auto-route `.from()`/`.rpc()` to the local API if `http://localhost:3001/health` returns 200; otherwise fall back to Supabase cloud.
+- **Local database tests:** full Supabase local is started from a cloud schema dump only when testing migrations/RLS. It is not a runtime backend for the apps.
 - **Trial mode:** `cashflow_trial_mode_enabled` / `isTrial` / `superapp_trial_mode` localStorage flags. Uses `trialMockStore.ts` seed data (company `trial-company`, branch `trial-branch`). Data is local-only and resets on cache clear.
 - **Id type:** `customers.id`, `transactions.id`, `bank_accounts.id`, `branches.id` and related FKs are `text` containing v4 UUID strings (`crypto.randomUUID()`), not `uuid` type. See migration `041_customers_id_text.sql`.
 
@@ -17,14 +16,13 @@
 - 7 Vercel projects connected to `apps/*` (admin-portal, cashflow, inventory-operation, sales-operation, hr-operation, accounting, operations-portal).
 - `vercel.json` in each app has `ignoreCommand` to skip builds unless the app, shared packages, or lockfile changed.
 - `framework-method` (`https://framework.appforyou.xyz`) is a separate personal project, not one of the 7 Superapp production apps.
-- `apps/insforge-infra/` is Docker infrastructure for local AI tooling, not deployed to Vercel.
 - `apps/superapp-business-bot/` is a deprecated leftover (only `config/settings.json`, no `package.json`).
 
 ## 3. Stack
 
 - **Frontend:** React 18 + TypeScript 5.8 + Vite 8 + Tailwind CSS (Apple-inspired).
 - **Backend:** Supabase cloud (`peslmsctejmvkwzyohke`) — PostgreSQL + RLS + Auth + Storage + Realtime.
-- **API:** Fastify (`packages/api`, port 3001), not Express.
+- **Data access:** browser clients call Supabase cloud directly through RLS-protected APIs.
 - **Shared packages:** `@superapp/iam` (auth + multi-tenant context), `@superapp/shared-utils` (BaseService, createApiClient), `@repo/ui`, `@superapp/theme`, `@repo/types`, etc.
 - **Node:** Vite 8 / Rolldown require Node `^20.19.0 || >=22.12.0`; this WSL environment uses Node 20.20.2.
 
@@ -86,6 +84,5 @@ After the React 18 / TypeScript 5.8 alignment and missing transitive-dependency 
 TypeScript pinned to 5.8.3; Playwright/test aligned to 1.62.1. Root smoke checks
 cover the seven public app entry screens on Chromium and iPhone WebKit with
 one worker. These checks do not certify authenticated business workflows.
-See DEV-ENVIRONMENT.md for setup commands, local API opt-out, and the remaining
-InsForge memory hostname limitation. Sales/HR local public connection settings
+See DEV-ENVIRONMENT.md for setup commands and cloud-only data routing. Sales/HR local public connection settings
 were missing and have been populated in ignored environment files.

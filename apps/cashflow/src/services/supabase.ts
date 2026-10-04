@@ -133,9 +133,6 @@ export const refreshSession = async () => {
 export type SupabaseClient = typeof supabase;
 
 // ── apiClient (drop-in for supabase.from() / supabase.rpc()) ────────────────
-// Default to Supabase cloud as the single source of truth.
-// On local/dev environments we prefer InsForge (local Postgres) when it is
-// reachable, so AI agents and local tests can query the local schema.
-// Auth (supabase.auth.*) stays on Supabase. Only .from() and .rpc() move to apiClient.
+// Compatibility alias: all data and auth operations use Supabase cloud.
 export const { apiClient, initializeApiClient } = createApiClient(supabase);
 // ── End apiClient ─────────────────────────────────────────────────────────

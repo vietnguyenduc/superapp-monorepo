@@ -23,7 +23,7 @@ doc_type: PRD
 ## Out of scope
 
 - Schema-per-tenant
-- New backend framework (use Supabase + `packages/api` Fastify)
+- New backend framework (use Supabase cloud and Edge Functions where required)
 
 ## User stories
 

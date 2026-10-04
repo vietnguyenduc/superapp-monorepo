@@ -15,7 +15,7 @@ generated: true
 2. `CompanyProvider` resolves `company_id` / `branch_id`.
 3. Components call local service modules:
    - `hrService` builds Supabase queries scoped by tenant.
-4. `createApiClient` routes to local InsForge API (`localhost:3001`) if reachable, else Supabase cloud.
+4. `apiClient` uses Supabase cloud directly; no local database routing occurs.
 5. RLS policies enforce `company_id` / `branch_id` on every query.
 6. Result is normalized and rendered; errors are logged via Sentry and shown with toast/inline messages in Vietnamese.
 
@@ -28,4 +28,3 @@ generated: true
 
 - Some apps use `trialMockStore.ts` and localStorage flags (`superapp_trial_mode`).
 - Trial data is local-only and resets on cache clear.
-

@@ -33,7 +33,7 @@
 ### 2.2. RLS policy đơn giản, không over-engineering
 - `USING` và `WITH CHECK` dựa trên `auth.jwt() ->> 'company_id'`.
 - Không dùng schema-per-tenant.
-- Test RLS bằng local Supabase mirror (`packages/api` + InsForge MCP) trước khi lên production.
+- Test RLS bằng full Supabase local dựng từ cloud schema dump trước khi lên production.
 
 ### 2.3. Tenant fields không bao giờ bị ghi đè
 - Trong mọi `update`/`upsert`, xóa `id`, `created_at`, `company_id`, `branch_id` khỏi user payload trước khi gửi DB.
@@ -195,7 +195,7 @@
 - Nếu task cross-app, đọc `docs/ARCHITECTURE.md` + `docs/AUTH-AND-RBAC.md`.
 
 ### 10.3. Ghi lại decision & error pattern
-- Dùng InsForge MCP `log_decision` cho quyết định kiến trúc.
+- Ghi quyết định kiến trúc bền vững trong ADR của repo.
 - Dùng `log_error_pattern` cho lỗi đã fix để agent sau không mắc lại.
 
 ---
@@ -322,7 +322,7 @@
 ### 14.8. Testing / Dev environment
 - **Thiếu test case duplicate `transaction_code`**: lỗi lọt sản phẩm. Fix: thêm unit test.
 - **Trial seed không sync balance**: data mẫu `total_balance` phải khớp tổng transactions.
-- **Local RLS test**: dùng `supabase-local-from-dump.sh` + `packages/api` mirror trước khi đẩy production.
+- **Local RLS test**: dùng `supabase-local-from-dump.sh` trước khi đẩy production.
 
 ### 14.9. Search / Filter / Pagination
 - **Filter balance `Dư nợ từ/đến`**: server-side `gte/lte` trên `total_balance`, tóm tắt tổng dư nợ.

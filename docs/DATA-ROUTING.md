@@ -1,100 +1,40 @@
-# Data Routing: Supabase Primary + InsForge Local Mirror
+# Data Routing: Supabase Cloud
 
-> Đọc file này khi cần biết app gọi data từ đâu, khi nào dùng InsForge, và cách đồng bộ schema giữa Supabase và local.
+> Đọc file này khi cần biết app gọi dữ liệu từ đâu và cách kiểm thử thay đổi database an toàn.
 
-## 1. Nguyên tắc
+## Nguyên tắc
 
-- **Supabase cloud là single source of truth** cho production.
-- **Auth (login/session)** luôn đi qua Supabase Auth, dù ở local hay production.
-- **Data operations (`.from()` / `.rpc()`)** mặc định đi qua Supabase.
-- **InsForge local** (`packages/api` + Postgres local) chỉ dùng để:
-  - AI agent explore schema, viết/test query.
-  - Dev test tính năng mới mà không sợ ảnh hưởng production.
-  - Benchmark/optimize indexes, RLS, triggers.
+- **Supabase cloud là source of truth** cho Auth và dữ liệu của cả bảy app.
+- `apiClient` là alias tương thích của Supabase client; không dò hoặc chuyển sang API/database local.
+- Trial mode dùng dữ liệu mock trong trình duyệt và không được dùng làm bằng chứng cho RLS.
+- Không chạy PostgreSQL mirror, InsForge, DeepWiki hoặc Cloudflare tunnel trên máy phát triển.
 
-## 2. `apiClient` hoạt động thế nào
+## Kiểm thử database cô lập
 
-Mỗi app export `apiClient` từ file `supabase.ts` thông qua `createApiClient(supabase)`:
+Docker chỉ được bật theo nhu cầu khi thay đổi migration, RLS, trigger, RPC hoặc index. Do chuỗi migration lịch sử có version trùng và lỗi thứ tự, dựng full Supabase local từ cloud schema dump:
 
-```ts
-import { createApiClient } from "@superapp/shared-utils";
-export const { apiClient, initializeApiClient } = createApiClient(supabase);
+```bash
+SUPABASE_DUMP=/tmp/supa_dump.sql scripts/supabase-local-from-dump.sh
 ```
 
-- Production (`*.appforyou.xyz`): `apiClient` = `supabase` (Supabase cloud).
-- Local dev (`localhost` / `127.0.0.1`):
-  - Nếu `http://localhost:3001/health` trả về 200 → `apiClient` chuyển sang `_rawApiClient` (InsForge API).
-  - Nếu không → `apiClient` giữ nguyên Supabase.
-- `initializeApiClient()` chạy async khi module load; các data call đầu tiên có thể đi qua Supabase trong ~3s đầu, sau đó tự động chuyển khi health-check xong.
+Sau khi kiểm thử:
 
-## 3. Khi nào dùng InsForge
+```bash
+npx supabase stop --no-backup
+```
 
-| Mục đích | Dùng InsForge? | Cách làm |
-|---|---|---|
-| AI đọc schema, viết query thử | Có | `packages/api` + Postgres local, dùng `psql` hoặc MCP/DeepWiki |
-| Dev tính năng mới | Có | Viết migration trên Supabase trước, sau đó sync về local để test |
-| Test hiệu năng index/RLS | Có | `EXPLAIN ANALYZE` trên Postgres local |
-| Production data thật | **Không** | Luôn dùng Supabase cloud |
-| Auth/login | **Không** | Luôn Supabase Auth |
+Không dùng database local làm backend thường trực cho bảy app và không expose nó qua tunnel.
 
-## 4. Workflow thêm schema / function mới
+## Workflow thay đổi schema
 
-1. **Thiết kế trên Supabase** (cloud master):
-   - Viết migration mới trong `supabase/migrations/`.
-   - Chạy `supabase db push` (hoặc apply migration trên Supabase Dashboard SQL Editor).
-   - Test query/RPC trên Supabase để đảm bảo RLS đúng.
+1. Tạo migration trong `supabase/migrations/`.
+2. Kiểm thử migration/RLS trên full Supabase local khi thay đổi có rủi ro dữ liệu hoặc phân quyền.
+3. Review RLS, tenant boundary và security advisor.
+4. Chỉ apply lên Supabase cloud sau khi có phê duyệt rõ ràng.
+5. Cập nhật `packages/types/src/database.types.ts` khi schema thay đổi.
 
-2. **Sync về InsForge local** để AI/dev test:
-   ```bash
-   # Lấy schema từ Supabase
-   supabase db dump --db-url $SUPABASE_DB_URL -f /tmp/schema.sql
-   # Apply vào local Postgres
-   psql -h localhost -U postgres -d superapp -f /tmp/schema.sql
-   ```
-   - Hoặc copy migration file vào `packages/api/migrations/` rồi restart `packages/api`.
+## See also
 
-3. **Dev/test trên InsForge**:
-   - Chạy `packages/api` (`npm run dev` hoặc `npm start`).
-   - Mở Vite dev app, `apiClient` sẽ tự động route qua InsForge.
-
-4. **Deploy lên production**:
-   - Commit cùng migration file đã test.
-   - Vercel build sẽ chạy `turbo` với app được deploy, `apiClient` trên production tự động dùng Supabase.
-
-## 5. Lưu ý quan trọng
-
-- **Không viết schema chỉ trên InsForge rồi quên apply lên Supabase.** Migration phải nằm trong `supabase/migrations/`.
-- **Không để InsForge làm master production.** Nếu server local down/tunnel lỗi, app trên web sẽ không hoạt động.
-- **Dữ liệu ghi vào Supabase trong lúc InsForge down** sẽ không tự động sync ngược về InsForge. Muốn nhất quán, phải re-sync schema + data.
-- **RLS policies** phải giống nhau trên Supabase và local. `supabase db dump` sẽ giữ lại các `CREATE POLICY`.
-
-## 6. AI giao tiếp với database hiệu quả
-
-- Supabase cloud: AI cần biết `supabase/migrations/` và `packages/types/src/database.types.ts`.
-- InsForge local: AI có thể chạy `SELECT * FROM information_schema.columns`, `EXPLAIN`, test `JOIN` trực tiếp.
-- Để AI hiểu nhanh hơn, giữ `database.types.ts` cập nhật và viết comment/triggers rõ ràng trong migration.
-
-## 7. Troubleshooting
-
-| Hiện tượng | Nguyên nhân | Cách fix |
-|---|---|---|
-| App local vẫn gọi Supabase dù InsForge đang chạy | `http://localhost:3001/health` không trả 200 | Kiểm tra `packages/api` có chạy không, CORS/allow-origin |
-| Production app gọi InsForge | `window.location.hostname` không kết thúc `.appforyou.xyz` hoặc `VITE_API_URL` trỏ sai | Kiểm tra env và domain |
-| Dữ liệu local và cloud khác nhau | Chưa sync schema hoặc seed khác nhau | `supabase db dump` + restore local |
-| `apiClient` undefined trong test | Mock `supabase.ts` chưa bao gồm `apiClient` | Thêm `apiClient: supabase` vào mock factory |
-
-## 8. Cashflow customers — duplicate import & ID alignment
-
-- `customerService.bulkCreateCustomers(rows, { skipExisting: true })` skips rows whose `customer_code` already exists for the current company and returns them in `ServiceResponse.skipped`.
-- `customerService.checkDuplicateCustomers(rows, companyId)` is called from `CustomerImport.tsx` to preview duplicates before the user confirms import.
-- The Supabase schema was aligned with the app-generated string IDs (`cust-...`, `txn-...`, `bank-...`, `backup-...`):
-  - `public.customers.id` and related `customer_id`/`supplier_id` FKs → `text` (`041_customers_id_text.sql`).
-  - `public.transactions.id`, `bank_account_id` and `public.bank_accounts.id` → `text` (`040_cashflow_text_ids.sql`).
-  - `public.backup_history.id` and `public.color_settings.id` → `text`.
-
-## 9. See Also
-
-- [ARCHITECTURE.md](./ARCHITECTURE.md) — Tổng quan kiến trúc
-- [DEPLOYMENT.md](./DEPLOYMENT.md) — Vercel deployment
-- [DEV-ENVIRONMENT.md](./DEV-ENVIRONMENT.md) — WSL/Tailscale setup
-- `packages/shared-utils/src/api-client/select-client.ts` — Implementation của `createApiClient`
+- [ARCHITECTURE.md](./ARCHITECTURE.md)
+- [DEV-ENVIRONMENT.md](./DEV-ENVIRONMENT.md)
+- [Cashflow RUNBOOK](../apps/cashflow/docs/RUNBOOK.md)

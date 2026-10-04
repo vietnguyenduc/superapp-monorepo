@@ -37,7 +37,7 @@ npx turbo run build --filter=admin-portal
 ## Common issues
 
 - `401 Unauthorized` on Supabase → check `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` match the same project.
-- Trial mode fallback → verify `http://localhost:3001/health` is not reachable from the sandbox unless intended.
+- Trial mode uses browser-local static seed data and does not require a backend.
 - `check-types` fails in `@repo/ui` → ensure `packages/ui/tsconfig.json` overrides `module` / `moduleResolution` to `ESNext` / `bundler`.
 
 ## Production support
