@@ -42,6 +42,7 @@ const SettingsPage: React.FC = () => {
   const [editUnitValue, setEditUnitValue] = useState('');
   const [importExportConfig, setImportExportConfig] = useState<ImportExportConfig | null>(null);
   const [savingImportExport, setSavingImportExport] = useState(false);
+  const [newOutboundType, setNewOutboundType] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('theme') === 'dark' || document.documentElement.classList.contains('dark');
   });
@@ -65,6 +66,14 @@ const SettingsPage: React.FC = () => {
     const merged = await importExportSettingsService.save(updates);
     setImportExportConfig(merged);
     setSavingImportExport(false);
+  };
+
+  const saveOutboundTypes = (types: string[]) => handleSaveImportExport({ outboundTypes: types });
+  const addOutboundType = () => {
+    const value = newOutboundType.trim();
+    if (!value || !importExportConfig || importExportConfig.outboundTypes.some((type) => type.toLocaleLowerCase('vi') === value.toLocaleLowerCase('vi'))) return;
+    saveOutboundTypes([...importExportConfig.outboundTypes, value]);
+    setNewOutboundType('');
   };
 
   // Local state for lists
@@ -804,6 +813,18 @@ const SettingsPage: React.FC = () => {
                         </select>
                         <p className="text-[10px] text-gray-400 mt-2">Đổi cột NCC trong template và cách đối chiếu khi nhập kho hàng loạt</p>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className={`rounded-xl border p-4 ${isDarkMode ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-gray-50'}`}>
+                    <h3 className="text-sm font-bold">Loại xuất hàng</h3>
+                    <p className="mt-1 text-xs text-gray-500">Danh sách này xuất hiện khi lập phiếu xuất từng dòng, xuất hàng loạt và trong file mẫu.</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {importExportConfig.outboundTypes.map((type) => <span key={type} className="inline-flex items-center gap-2 rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-800"><span>{type}</span><button type="button" disabled={!isAdmin || savingImportExport} onClick={() => saveOutboundTypes(importExportConfig.outboundTypes.filter((item) => item !== type))} aria-label={`Xóa loại xuất ${type}`} className="font-bold disabled:opacity-40">×</button></span>)}
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <input aria-label="Thêm loại xuất" value={newOutboundType} disabled={!isAdmin || savingImportExport} onChange={(event) => setNewOutboundType(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addOutboundType(); } }} placeholder="Ví dụ: Xuất cho sự kiện" className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 disabled:opacity-50" />
+                      <button type="button" disabled={!isAdmin || savingImportExport || !newOutboundType.trim()} onClick={addOutboundType} className="rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">Thêm</button>
                     </div>
                   </div>
 

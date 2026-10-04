@@ -149,7 +149,7 @@ const InventoryMRPPage: React.FC = () => {
       unit_price: item.unitPrice,
     }));
 
-    navigate('/purchase-orders', {
+    navigate('/procurement?tab=po', {
       state: {
         prefillItems,
         prefillSupplierId: firstSupplierId !== 'unknown' ? firstSupplierId : undefined,

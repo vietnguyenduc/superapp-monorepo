@@ -6,6 +6,7 @@ import { goodsIssueService, SalesSyncRecord } from '../services/goodsIssueServic
 import { useProducts } from '../hooks/useProducts';
 import BulkImportHistoryPanel from '../components/BulkImportHistoryPanel';
 import { bulkImportHistoryService, BulkImportReceipt } from '../services/bulkImportHistoryService';
+import { importExportSettingsService } from '../services/importExportSettingsService';
 
 type MainMode = 'manual' | 'sales_sync';
 type ImportMode = 'single' | 'bulk';
@@ -31,6 +32,7 @@ const GoodsIssueImportPage: React.FC = () => {
   });
   const [batchHistory, setBatchHistory] = useState<BulkImportReceipt[]>([]);
   const [isLoadingBatchHistory, setIsLoadingBatchHistory] = useState(true);
+  const [outboundTypes, setOutboundTypes] = useState<string[]>([]);
   const [notification, setNotification] = useState<{
     type: 'success' | 'error' | 'info';
     message: string;
@@ -80,6 +82,8 @@ const GoodsIssueImportPage: React.FC = () => {
   useEffect(() => {
     loadBatchHistory();
   }, [loadBatchHistory]);
+
+  useEffect(() => { importExportSettingsService.load().then((config) => setOutboundTypes(config.outboundTypes)); }, []);
 
   const handleModeChange = (mode: MainMode) => {
     setActiveMode(mode);
@@ -324,12 +328,14 @@ const GoodsIssueImportPage: React.FC = () => {
                 onCancel={() => navigate('/goods-issues')}
                 products={products}
                 isLoading={isSaving}
+                outboundTypes={outboundTypes}
               />
             ) : (
               <GoodsIssueBulkGrid
                 onSave={handleBulkSave}
                 onCancel={() => navigate('/goods-issues')}
                 isLoading={isSaving}
+                outboundTypes={outboundTypes}
               />
             )}
           </div>

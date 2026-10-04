@@ -168,14 +168,23 @@ export const getCurrentUserRole = async (): Promise<string | null> => {
   return data?.role || null;
 };
 
+const selectedCompanyId = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  const value = window.localStorage.getItem('selectedCompanyId');
+  return value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value) ? value : null;
+};
+
 // Helper function to get current company ID (for tenant-scoped queries)
 export const getCurrentCompanyId = async (): Promise<string | null> => {
   const isTrial = isTrialMode();
   if (isTrial) return 'trial-company';
   const user = await getCurrentUser();
   if (!user) return null;
-  const { data } = await supabase.from(TABLES.USERS).select('company_id').eq('id', user.id).maybeSingle();
-  return data?.company_id || null;
+  const { data } = await supabase.from(TABLES.USERS).select('company_id,role').eq('id', user.id).maybeSingle();
+  if (data?.company_id) return data.company_id;
+  // System admins intentionally have no fixed company. Their company switcher
+  // selection is the scope for Inventory, while RLS/RPCs enforce master access.
+  return data?.role === 'admin_master' ? selectedCompanyId() : null;
 };
 
 // Helper function to get current branch ID (for branch-scoped queries)
@@ -184,8 +193,19 @@ export const getCurrentBranchId = async (): Promise<string | null> => {
   if (isTrial) return 'trial-branch';
   const user = await getCurrentUser();
   if (!user) return null;
-  const { data } = await supabase.from(TABLES.USERS).select('branch_id').eq('id', user.id).maybeSingle();
-  return data?.branch_id || null;
+  const { data } = await supabase.from(TABLES.USERS).select('branch_id,role').eq('id', user.id).maybeSingle();
+  if (data?.role !== 'admin_master') return data?.branch_id || null;
+  const companyId = selectedCompanyId();
+  if (!companyId) return null;
+  const { data: branches } = await supabase
+    .from('branches')
+    .select('id')
+    .eq('company_id', companyId)
+    .eq('is_active', true)
+    .order('name')
+    .limit(2);
+  if (data.branch_id && branches?.some((branch) => branch.id === data.branch_id)) return data.branch_id;
+  return branches?.length === 1 ? branches[0].id : null;
 };
 
 /** Resolve tenant ownership once for write payloads. */
