@@ -1,5 +1,10 @@
 # inventory-operation — Changelog
 
+## 2026-10-04 — Accept seeded tenant IDs in master-admin company scope
+
+- Fixed the selected-company validator so UUID-shaped seeded tenant IDs such as the production TPL ID are accepted even when they do not encode RFC version/variant bits. The previous strict validator discarded TPL and made Inventory appear to have no warehouse for `admin_master`.
+- Added a regression test for the exact TPL ID shape while continuing to reject malformed company IDs.
+
 ## 2026-10-03 — System-admin warehouse setup follows selected company
 
 - Fixed the first-warehouse gate for `admin_master` profiles that intentionally have no fixed `company_id`. Inventory now uses the selected company from the shared company switcher, and passes that scope to the protected workspace RPC.
