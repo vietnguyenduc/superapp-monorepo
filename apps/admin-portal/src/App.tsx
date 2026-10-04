@@ -8,10 +8,9 @@ import DataLifecycle from './pages/DataLifecycle';
 import GlobalSettings from './pages/GlobalSettings';
 import CompanyManagement from './pages/CompanyManagement';
 import Manual from './pages/Manual';
-import TrialSeedEditor from './pages/TrialSeedEditor';
 import { supabase } from './lib/supabase';
 import { AdminProvider, useAdminContext } from './contexts/AdminContext';
-import { LayoutGrid, ExternalLink, CheckCircle2, XCircle, LayoutDashboard, Building2, FlaskConical } from 'lucide-react';
+import { LayoutGrid, ExternalLink, CheckCircle2, XCircle, LayoutDashboard, Building2 } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = React.useState('');
@@ -99,7 +98,6 @@ const navItems = [
   { id: 'data', icon: Database, label: 'Data Lifecycle', path: '/data' },
   { id: 'settings', icon: Settings, label: 'Global Settings', path: '/settings' },
   { id: 'manual', icon: BookOpen, label: 'User Manual', path: '/manual' },
-  { id: 'trial', icon: FlaskConical, label: 'Trial Seeds', path: '/trial-seeds' },
 ];
 
 const useVisibleNavItems = () => {
@@ -260,7 +258,6 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
       case '/settings': return 'Global Settings';
       case '/companies': return 'Company Management';
       case '/manual': return 'User Manual';
-      case '/trial-seeds': return 'Trial Seeds';
       default: return 'Admin Portal';
     }
   };
@@ -543,7 +540,6 @@ function App() {
             <Route path="/data" element={<ProtectedAdminRoute><DataLifecycle /></ProtectedAdminRoute>} />
             <Route path="/settings" element={<ProtectedAdminRoute><GlobalSettings /></ProtectedAdminRoute>} />
             <Route path="/manual" element={<ProtectedAdminRoute><Manual /></ProtectedAdminRoute>} />
-            <Route path="/trial-seeds" element={<ProtectedAdminRoute><TrialSeedEditor /></ProtectedAdminRoute>} />
           </Routes>
         </Router>
       </CompanyProvider>

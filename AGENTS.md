@@ -16,8 +16,8 @@ source of truth for Auth and data.
 | Accounting | 5178 | `https://accounting.appforyou.xyz` |
 | Operations Portal | 3006 | `https://ops.appforyou.xyz` |
 
-`apps/framework-method/` is a separate personal project. `apps/insforge-infra/`
-is optional local infrastructure. `apps/superapp-business-bot/` is deprecated.
+`apps/framework-method/` is a separate personal project.
+`apps/superapp-business-bot/` is deprecated.
 
 ## Start every task with context
 
@@ -42,9 +42,10 @@ scripts, service configuration, and workflows.
   4173–4178 and 4006; dev ports can be slow over a DERP relay. See
   `docs/DEV-ENVIRONMENT.md` for URLs, lifecycle, and restart commands.
 - `.env.local` files are private and ignored. Never print or commit credentials.
-- Set `VITE_USE_LOCAL_API=false` to use Supabase cloud without probing the optional
-  local API. Prefer trial mode for safe UI tests when it covers the feature.
-- Docker/InsForge are optional tools, not prerequisites for ordinary frontend work.
+- All seven apps use Supabase cloud; there is no automatic local API/database routing.
+  Prefer trial mode for safe UI tests when it covers the feature.
+- Docker is on-demand only for isolated full-Supabase database tests; do not keep a
+  local database, API proxy, or tunnel running for ordinary frontend work.
 
 Useful commands from the repository root:
 
@@ -89,7 +90,7 @@ confirms public entry screens render; it does not certify authenticated workflow
 ## Data and Supabase
 
 - Auth always uses Supabase Auth; production data uses Supabase cloud.
-- Local InsForge/API/Postgres is an optional mirror and may differ from production.
+- Full Supabase local is an on-demand test environment and may differ from production.
 - Confirm the active data source before tests that create, update, or delete records.
 - Include `company_id` in tenant mutations and preserve RLS boundaries.
 - Database changes require a migration in `supabase/migrations/`, relevant docs,

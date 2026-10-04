@@ -6,15 +6,6 @@ export interface TrialMutations {
 
 import { DEFAULT_TRIAL_SEED } from './static-seed';
 
-const getTrialApiUrl = (): string => {
-  try {
-    const env = (import.meta as any).env;
-    return env?.VITE_TRIAL_API_URL || 'http://localhost:3001';
-  } catch {
-    return 'http://localhost:3001';
-  }
-};
-
 const isBrowser = typeof window !== 'undefined';
 
 export const isTrialMode = (): boolean => {
@@ -45,36 +36,9 @@ const setMutations = (table: string, mutations: TrialMutations) => {
   memoryMutations[table] = mutations;
 };
 
-const TRIAL_TABLES = [
-  'companies', 'branches', 'users',
-  'customers', 'transaction_types', 'transactions', 'bank_accounts',
-  'departments', 'employees', 'shifts', 'employee_shifts', 'attendance_logs', 'leave_requests', 'payrolls', 'payroll_items',
-  'products', 'inventory_records', 'sales_records', 'special_outbound_records', 'approval_workflows', 'approval_logs',
-  'operation_checkins', 'operation_documents', 'operation_tickets', 'operation_assets', 'operation_consumables',
-  'operation_emergency_contacts', 'operation_training_courses', 'operation_training_materials', 'operation_training_questions',
-  'operation_training_progress', 'operation_chat_groups', 'operation_chat_members', 'operation_chat_messages',
-];
-
 export const loadTrialSeed = async (): Promise<void> => {
   if (!isBrowser) return;
-  // Start with the built-in static template so trial mode works even when
-  // the local InsForge API is not reachable. Remote seed (from the API) will
-  // override the matching table if it is available.
-  const seed: Record<string, any[]> = { ...DEFAULT_TRIAL_SEED };
-  for (const table of TRIAL_TABLES) {
-    try {
-      const res = await fetch(`${getTrialApiUrl()}/api/trial/${table}`);
-      if (!res.ok) throw new Error(`Trial API error: ${res.status}`);
-      const json = await res.json();
-      const records = json.data || [];
-      if (records.length > 0) {
-        seed[table] = records;
-      }
-    } catch (err) {
-      console.warn(`[trial-client] Could not load remote trial seed for ${table}, using static template:`, err);
-    }
-  }
-  setSeed(seed);
+  setSeed({ ...DEFAULT_TRIAL_SEED });
 };
 
 export const trialGet = (table: string): any[] => {

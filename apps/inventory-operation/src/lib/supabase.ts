@@ -1,5 +1,6 @@
 import { createSupabaseClient as createSharedClient, createApiClient, isTrialMode } from '@superapp/shared-utils';
 import { createClient } from '@supabase/supabase-js';
+import { readSelectedCompanyId } from '../utils/companyScope';
 
 // Environment variables for Supabase configuration
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -169,9 +170,7 @@ export const getCurrentUserRole = async (): Promise<string | null> => {
 };
 
 const selectedCompanyId = (): string | null => {
-  if (typeof window === 'undefined') return null;
-  const value = window.localStorage.getItem('selectedCompanyId');
-  return value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value) ? value : null;
+  return readSelectedCompanyId(typeof window === 'undefined' ? null : window.localStorage);
 };
 
 // Helper function to get current company ID (for tenant-scoped queries)
@@ -250,9 +249,6 @@ export const handleSupabaseSuccess = <T>(data: T) => {
 export default supabase;
 
 // ── apiClient (drop-in for supabase.from() / supabase.rpc()) ────────────────
-// Default to Supabase cloud as the single source of truth.
-// On local/dev environments we prefer InsForge (local Postgres) when it is
-// reachable, so AI agents and local tests can query the local schema.
-// Auth (supabase.auth.*) stays on Supabase. Only .from() and .rpc() move to apiClient.
+// Compatibility alias: all data and auth operations use Supabase cloud.
 export const { apiClient, initializeApiClient } = createApiClient(supabase);
 // ── End apiClient ─────────────────────────────────────────────────

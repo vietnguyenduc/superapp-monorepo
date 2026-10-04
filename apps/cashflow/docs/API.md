@@ -45,5 +45,4 @@ This app uses `createApiClient` / `supabase.from(...)` to read and write the tab
 
 ## Backend Fastify API
 
-Cross-app utilities (trial seeds, query proxy) live in `packages/api` (Fastify, port 3001). Not Express.
-
+Cross-app data access uses Supabase cloud and RLS-protected RPCs.

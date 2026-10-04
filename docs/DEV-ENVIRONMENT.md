@@ -31,13 +31,10 @@
 - `npm run test:e2e:cashflow` / `npm run test:e2e:inventory`: bộ kiểm thử tính năng
   hiện có. Smoke test chỉ xác nhận app khởi động; không xác nhận mọi nghiệp vụ.
 - `npm run check-types -- --concurrency=1`: kiểm tra kiểu dữ liệu với mức RAM thấp.
-- Đặt `VITE_USE_LOCAL_API=false` trong `.env.local` để dùng Supabase cloud và
-  bỏ qua dò API local; bỏ biến này để giữ hành vi tự dò trước đây. Sales/HR cần
-  cùng URL và public anon key của dự án như các app còn lại. Không commit `.env.local`.
-- InsForge MCP hiện không đọc được memory từ kết nối này: hostname mặc định
-  `host.docker.internal` không phân giải được. Ghi nhận trong tài liệu thay thế;
-  không coi container đang chạy là bằng chứng MCP đã kết nối.
-- InsForge/MCP là tùy chọn. Kiểm tra công cụ của phiên trước khi dựa vào nó.
+- Bảy app luôn dùng Supabase cloud. Sales/HR cần cùng URL và public anon key của
+  dự án như các app còn lại. Không commit `.env.local`.
+- Docker không tự chạy và chỉ được bật tạm thời cho full Supabase local khi test
+  migration/RLS; không chạy API proxy, PostgreSQL mirror hoặc Cloudflare tunnel.
 
 
 ```powershell

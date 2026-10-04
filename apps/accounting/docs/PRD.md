@@ -40,7 +40,7 @@ Accounting: chart of accounts, journal entries, invoices, fixed assets, taxes, c
 ## Out of scope
 
 - Schema-per-tenant (project uses RLS + `company_id`).
-- Backend logic outside `packages/api` / Supabase edge functions.
+- Backend logic outside Supabase RPCs / Edge Functions.
 
 ## User stories
 
@@ -53,4 +53,3 @@ Accounting: chart of accounts, journal entries, invoices, fixed assets, taxes, c
 - Vietnamese-first UI labels; English code/enum names.
 - All user-facing errors are friendly and in Vietnamese.
 - Responsive: usable on phones and tablets.
-

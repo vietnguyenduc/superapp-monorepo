@@ -1,6 +1,6 @@
 # @superapp/shared-utils
 
-Shared utilities package for all Superapp frontend applications, including the Supabase client, the InsForge-compatible `apiClient`, and the `createApiClient` factory.
+Shared utilities package for all Superapp frontend applications, including the Supabase client and the cloud-only `createApiClient` compatibility factory.
 
 ## Installation
 
@@ -290,7 +290,7 @@ if (result.success) {
 
 ## API Client (`createApiClient`)
 
-Use `createApiClient(supabase)` to get a drop-in replacement for `supabase.from()` / `supabase.rpc()` that routes data through an optional local InsForge API while keeping Supabase Auth untouched.
+`createApiClient(supabase)` is retained as a compatibility wrapper while services migrate to the direct Supabase client.
 
 ```typescript
 import { createApiClient } from "@superapp/shared-utils";
@@ -299,9 +299,9 @@ import { supabase } from "./supabase-client";
 export const { apiClient, initializeApiClient } = createApiClient(supabase);
 ```
 
-- On production (`*.appforyou.xyz`) `apiClient` is always the Supabase client.
-- On local dev it health-checks `http://localhost:3001/health`; if the InsForge API is up, `apiClient` switches to the local gateway for `.from()` / `.rpc()` calls, otherwise it stays on Supabase.
-- `initializeApiClient()` is called automatically when the module loads.
+- `apiClient` always returns the supplied Supabase cloud client.
+- `initializeApiClient()` is a no-op kept for compatibility.
+- No local API health check or database switching occurs.
 
 See [docs/DATA-ROUTING.md](../../docs/DATA-ROUTING.md) for the full workflow.
 
@@ -330,11 +330,6 @@ npm run lint:fix
 ## License
 
 MIT
-# Toolchain note (2026-09-10)
+# Toolchain note (2026-10-04)
 
-TypeScript is pinned to 5.8.3 across the monorepo. The API query parser checks
-that the `in` expression capture exists before splitting it, satisfying strict
-indexed-access checks without changing valid query payloads.
-
-Set `VITE_USE_LOCAL_API=false` to explicitly disable local API health discovery
-in cloud-only development. Unset it to preserve automatic discovery.
+TypeScript is pinned to 5.8.3 across the monorepo. All data access uses Supabase cloud.

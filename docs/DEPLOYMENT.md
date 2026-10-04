@@ -83,7 +83,6 @@ exit 0
 |----------|-------|
 | `VITE_SUPABASE_URL` | `https://<project>.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | `<anon-key>` |
-| `VITE_TRIAL_API_URL` | `https://api.appforyou.xyz` (or Supabase Edge Function URL) |
 | `SENTRY_AUTH_TOKEN` | (optional, for source maps) |
 | `SENTRY_ORG` | (optional) |
 

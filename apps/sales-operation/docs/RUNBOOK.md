@@ -37,7 +37,7 @@ npx turbo run build --filter=sales-operation
 ## Common issues
 
 - `401 Unauthorized` on Supabase → check `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` match the same project.
-- Trial mode fallback → verify `http://localhost:3001/health` is not reachable from the sandbox unless intended.
+- Trial mode uses browser-local static seed data and does not require a backend.
 - `check-types` fails in `@repo/ui` → ensure `packages/ui/tsconfig.json` overrides `module` / `moduleResolution` to `ESNext` / `bundler`.
 
 ## Production support
@@ -50,5 +50,5 @@ npx turbo run build --filter=sales-operation
 
 Set `VITE_SUPABASE_URL` and the public `VITE_SUPABASE_ANON_KEY` in `.env.local`
 using this project's existing public configuration. Missing values prevent shared
-auth from initializing. Set `VITE_USE_LOCAL_API=false` when using Supabase cloud
+auth from initializing. Verify the Supabase URL and public key belong to the same project
 without a local API. Never commit `.env.local`. Run `npm run test:smoke` at the root.
