@@ -1,5 +1,13 @@
 # Changelog — Cashflow
 
+## 2026-10-06
+
+### Fixed
+
+- Transaction upload now validates against all existing tenant customers instead of active customers only.
+- Exact customer codes remain authoritative; numeric codes whose leading zeroes were removed by Excel resolve only when the stored match is unique.
+- Transaction templates mark customer-code cells as text to preserve values such as `0630`.
+
 ## 2026-09-15
 
 ### Fixed

@@ -544,14 +544,13 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
       name: t.name,
       canonical: t.canonical,
     }));
-    // Build valid customer code set from options ("CODE - Name" -> "code")
+    // Build valid customer code set from options ("CODE - Name" -> "code").
+    // Customer codes may contain spaces, so only the explicit delimiter is removed.
     const validCustomerCodes = new Set(
       customerOptions.map((opt) => {
         const lower = opt.toLowerCase();
         const dashIndex = lower.indexOf(" - ");
         if (dashIndex > 0) return lower.substring(0, dashIndex).trim();
-        const spaceIndex = lower.indexOf(" ");
-        if (spaceIndex > 0) return lower.substring(0, spaceIndex).trim();
         return lower.trim();
       }).filter(Boolean)
     );
@@ -1140,6 +1139,16 @@ const TransactionImport = ({ onImportComplete }: TransactionImportProps) => {
     const rows = [makeRow(0), makeRow(1), makeRow(2)];
 
     const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const customerCodeColumn = headers.indexOf("customer_code");
+    if (customerCodeColumn >= 0) {
+      for (let rowIndex = 1; rowIndex <= rows.length; rowIndex += 1) {
+        const address = XLSX.utils.encode_cell({ r: rowIndex, c: customerCodeColumn });
+        if (worksheet[address]) {
+          worksheet[address].t = "s";
+          worksheet[address].z = "@";
+        }
+      }
+    }
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
     XLSX.writeFile(workbook, "transaction-import-template.xlsx");

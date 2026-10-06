@@ -129,6 +129,32 @@ describe("Import Utils", () => {
       expect(result.errors[0].message).toBe("Mã khách hàng là bắt buộc. Vui lòng nhập mã khách hàng.");
     });
 
+    it("accepts a unique stored customer code when Excel removes leading zeroes", () => {
+      const data = [{ ...validData[0], customer_code: "630" }];
+
+      const result = validateTransactionData(
+        data,
+        undefined,
+        new Set(["0630", "1001"]),
+      );
+
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("does not guess when a numeric customer code is ambiguous", () => {
+      const data = [{ ...validData[0], customer_code: "630" }];
+
+      const result = validateTransactionData(
+        data,
+        undefined,
+        new Set(["0630", "00630"]),
+      );
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors[0].message).toContain("không tồn tại");
+    });
+
     it("validates transaction type", () => {
       const invalidData = [
         { ...validData[0], transaction_type: "" },

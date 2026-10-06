@@ -16,7 +16,7 @@ export class CustomerService extends BaseService {
     let all: Customer[] = [];
     let total = 0;
     do {
-      const result = await this.getCustomers({ limit: pageSize, offset, company_id: companyId, status: "active" });
+      const result = await this.getCustomers({ limit: pageSize, offset, company_id: companyId, status: "all" });
       if (result.error) return { data: all, error: result.error, count: total };
       total = result.count || 0;
       all = all.concat(result.data || []);

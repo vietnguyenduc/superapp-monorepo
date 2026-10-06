@@ -1,6 +1,7 @@
 import type { Transaction, ImportError, TransactionType } from "../types";
 import { parseFile, parseClipboardRow as sharedParseClipboardRow } from "@superapp/shared-utils";
 import { parseAmount, parseDate, normalizeTransactionType } from "../services/businessLogic";
+import { matchCustomerCode } from "./customerCode";
 
 export interface RawTransactionData {
   transaction_code?: string;
@@ -203,18 +204,10 @@ export function validateTransactionData(
         value: row.customer_code,
       });
     } else if (validCustomerCodes && validCustomerCodes.size > 0) {
-      // Extract code before " - " or first space (handles "CODE - Name" format)
-      let parsedCode = rawCustomerCode.toLowerCase();
-      const dashIndex = parsedCode.indexOf(" - ");
-      if (dashIndex > 0) {
-        parsedCode = parsedCode.substring(0, dashIndex).trim();
-      } else {
-        const spaceIndex = parsedCode.indexOf(" ");
-        if (spaceIndex > 0) {
-          parsedCode = parsedCode.substring(0, spaceIndex).trim();
-        }
-      }
-      if (!validCustomerCodes.has(parsedCode)) {
+      const codeOnly = rawCustomerCode.includes(" - ")
+        ? rawCustomerCode.split(" - ")[0].trim()
+        : rawCustomerCode;
+      if (!matchCustomerCode(codeOnly, validCustomerCodes)) {
         errors.push({
           row: index,
           column: "customer_code",
