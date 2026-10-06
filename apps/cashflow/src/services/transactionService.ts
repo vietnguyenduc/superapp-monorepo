@@ -6,6 +6,7 @@ import { updateWithFallback, insertWithFallback, bulkInsertWithFallback } from "
 import { transactionTypeService } from "./transactionTypeService";
 import { v4 as uuid } from "uuid";
 import { formatBankAccountLabel } from "../utils/formatting";
+import { matchCustomerCode, normalizeCustomerCode } from "../utils/customerCode";
 import type { Transaction, Customer, BankAccount, Branch, User } from "../types";
 
 const getNowIso = () => new Date().toISOString();
@@ -706,13 +707,26 @@ export class TransactionService extends BaseService {
         codePart = lower;
         namePart = lower;
       }
-      const match = customers.find((c) => {
+      const directMatch = customers.find((c) => {
         const codes = [String(c.customer_code ?? ""), String(c.id ?? "")].map((n) => n.toLowerCase().trim()).filter(Boolean);
         const names = [String(c.full_name ?? ""), String(c.name ?? "")].map((n) => n.toLowerCase().trim()).filter(Boolean);
         if (codePart && codes.includes(codePart)) return true;
         if (namePart && names.includes(namePart)) return true;
         return false;
       });
+      const matchedCode = directMatch
+        ? null
+        : matchCustomerCode(
+            codePart,
+            customers.map((customer) => customer.customer_code),
+          );
+      const match = directMatch || (matchedCode
+        ? customers.find(
+            (customer) =>
+              normalizeCustomerCode(customer.customer_code) ===
+              normalizeCustomerCode(matchedCode),
+          )
+        : undefined);
       return match
         ? { id: String(match.id ?? ""), name: String(match.full_name ?? match.name ?? "").trim() || null }
         : { id: null, name: null };
