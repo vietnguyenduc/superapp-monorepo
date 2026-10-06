@@ -1,6 +1,53 @@
 -- The transaction triggers are the only production writers for derived customer
 -- and bank balances. Harden their execution context and repair historical drift.
 
+-- customer_factor_for_type previously had an empty search_path while calling
+-- canonical_customer_factor without a schema. Recreate both helpers together so
+-- the secured balance backfill works on databases that already applied the
+-- earlier hardening migration.
+CREATE OR REPLACE FUNCTION public.canonical_customer_factor(p_type text)
+RETURNS numeric
+LANGUAGE plpgsql
+IMMUTABLE
+SET search_path = ''
+AS $$
+BEGIN
+  RETURN CASE
+    WHEN lower(p_type) IN ('charge','phát sinh tăng','phat sinh tang','cho nợ','cho no','chi','điều chỉnh tăng','dieu chinh tang') THEN 1
+    WHEN lower(p_type) IN ('payment','phát sinh giảm','phat sinh giam','thanh toán','thanh toan','thu','tien vao','thu tiền','thu tien','điều chỉnh giảm','dieu chinh giam') THEN -1
+    WHEN lower(p_type) IN ('refund','hoàn tiền','hoan tien','trả lại','tra lai') THEN -1
+    WHEN lower(p_type) IN ('deposit','đặt cọc','dat coc','cọc','coc','tạm ứng','tam ung','prepayment','ứng trước','ung truoc') THEN -1
+    WHEN lower(p_type) IN ('adjustment','điều chỉnh','dieu chinh') THEN 1
+    ELSE NULL
+  END;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.customer_factor_for_type(p_type text, p_company_id uuid)
+RETURNS numeric
+LANGUAGE plpgsql
+STABLE
+SET search_path = ''
+AS $$
+DECLARE
+  v_factor numeric;
+BEGIN
+  SELECT tt.math_factor
+    INTO v_factor
+  FROM public.transaction_types tt
+  WHERE (tt.company_id IS NULL OR tt.company_id = p_company_id)
+    AND (
+      lower(tt.id::text) = lower(p_type)
+      OR lower(tt.name) = lower(p_type)
+      OR public.canonical_customer_factor(tt.name) = public.canonical_customer_factor(p_type)
+    )
+  ORDER BY (tt.company_id = p_company_id) DESC NULLS LAST, tt.updated_at DESC NULLS LAST
+  LIMIT 1;
+
+  RETURN COALESCE(v_factor, public.canonical_customer_factor(p_type), 1);
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.recalc_customer_balance(p_customer_id text, p_company_id uuid)
 RETURNS void
 LANGUAGE plpgsql
@@ -156,6 +203,8 @@ REVOKE ALL ON FUNCTION public.recalc_customer_balance(text, uuid) FROM PUBLIC, a
 REVOKE ALL ON FUNCTION public.recalc_bank_account_balance(text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.update_customer_balance() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.update_bank_account_balance() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.canonical_customer_factor(text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.customer_factor_for_type(text, uuid) FROM PUBLIC, anon, authenticated;
 
 -- Repair balances that may have been incremented by both the database trigger
 -- and the browser after earlier transaction writes.
