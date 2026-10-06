@@ -9,18 +9,36 @@ export function useCompany() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
+
     const fetchCompany = async () => {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Typically, company ID is stored in user metadata or a profile table
-        const userCompanyId = user.user_metadata?.company_id || localStorage.getItem('company_id');
-        setCompanyId(userCompanyId);
+      if (!user) {
+        if (active) {
+          setCompanyId(null);
+          setLoading(false);
+        }
+        return;
       }
-      setLoading(false);
+
+      const { data } = await supabase
+        .from('users')
+        .select('company_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (active) {
+        setCompanyId(data?.company_id ?? null);
+        setLoading(false);
+      }
     };
 
     fetchCompany();
+
+    return () => {
+      active = false;
+    };
   }, [supabase.auth]);
 
   return { companyId, loading };

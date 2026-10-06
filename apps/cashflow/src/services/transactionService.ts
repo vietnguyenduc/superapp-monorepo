@@ -12,16 +12,6 @@ import type { Transaction, Customer, BankAccount, Branch, User } from "../types"
 const getNowIso = () => new Date().toISOString();
 
 export class TransactionService extends BaseService {
-  private static async _getTransactionForBalanceSync(id: string) {
-    const { data, error } = await apiClient
-      .from("transactions")
-      .select("customer_id, bank_account_id, transaction_type, amount, transaction_date, company_id, status")
-      .eq("id", id)
-      .single();
-    if (error || !data) return null;
-    return data as Record<string, unknown>;
-  }
-
   private static _balanceFields(tx: Record<string, unknown>) {
     return {
       customer_id: tx.customer_id ? String(tx.customer_id) : null,
@@ -72,138 +62,12 @@ export class TransactionService extends BaseService {
     return status === "completed" ? delta : 0;
   }
 
-  /**
-   * Recompute a customer's total balance from the ledger.
-   *
-   * This is idempotent: it always yields `opening_balance + Σ(amount × math_factor)`
-   * for completed transactions, so it also repairs any previously drifted values.
-   */
-  private static async _recalcCustomerBalance(
-    customerId: string | null | undefined,
-    companyId?: string | null,
-    factorMap?: Record<string, number>,
-  ) {
-    if (!customerId) return;
-    let q = apiClient.from("customers").select("opening_balance, company_id").eq("id", customerId);
-    if (companyId) q = q.eq("company_id", companyId);
-    const { data: customer, error: cErr } = await q.maybeSingle();
-    if (cErr || !customer) {
-      if (cErr) console.error("Failed to fetch customer for balance recalc:", cErr);
-      return;
-    }
-
-    const c = customer as Record<string, unknown>;
-    const effectiveCompanyId = companyId || (c.company_id as string | null | undefined);
-    const liveFactorMap = factorMap || (await this._getLiveFactorMap(effectiveCompanyId));
-
-    let txQuery = apiClient
-      .from("transactions")
-      .select("transaction_type, amount, transaction_date")
-      .eq("customer_id", customerId)
-      .eq("status", "completed");
-    if (effectiveCompanyId) txQuery = txQuery.eq("company_id", effectiveCompanyId);
-    const { data: txs, error: tErr } = await txQuery;
-    if (tErr) {
-      console.error("Failed to fetch transactions for customer balance recalc:", tErr);
-      return;
-    }
-
-    const opening = parseAmount(c.opening_balance) || 0;
-    const total = applyTransactionsToCustomerBalance(
-      opening,
-      (txs || []) as Pick<Transaction, "transaction_type" | "amount">[],
-      liveFactorMap,
-    );
-    const lastDate = ((txs || []) as { transaction_date?: string }[]).reduce((max, tx) => {
-      const d = String(tx.transaction_date || "");
-      return d > max ? d : max;
-    }, "");
-
-    const update: Record<string, unknown> = { total_balance: total, current_balance: total, updated_at: getNowIso() };
-    if (lastDate) update.last_transaction_date = lastDate;
-
-    const { error: uErr } = await apiClient.from("customers").update(update).eq("id", customerId);
-    if (uErr) console.error("Failed to update customer balance:", uErr);
-  }
-
-  private static async _adjustBankAccountBalance(
-    accountId: string | null | undefined,
-    delta: number,
-    companyId?: string | null,
-  ) {
-    if (!accountId || delta === 0) return;
-    let q = apiClient.from("bank_accounts").select("balance, company_id").eq("id", accountId);
-    if (companyId) q = q.eq("company_id", companyId);
-    const { data: account, error: aErr } = await q.maybeSingle();
-    if (aErr || !account) {
-      if (aErr) console.error("Failed to fetch bank account for balance adjustment:", aErr);
-      return;
-    }
-
-    const a = account as Record<string, unknown>;
-    const currentBalance = parseAmount(a.balance) || 0;
-    const newBalance = currentBalance + delta;
-
-    const { error: uErr } = await apiClient
-      .from("bank_accounts")
-      .update({ balance: newBalance, updated_at: getNowIso() })
-      .eq("id", accountId);
-    if (uErr) console.error("Failed to update bank account balance:", uErr);
-  }
-
   private static async _getLiveFactorMap(companyId?: string | null): Promise<Record<string, number>> {
     return transactionTypeService.getTransactionTypeFactorMap(companyId || undefined);
   }
 
   private static _getTrialFactorMap(): Record<string, number> {
     return transactionTypeService.buildFactorMap(trialGet("transaction_types") || []);
-  }
-
-  /**
-   * Recompute balances for the customer(s) and bank account(s) affected by a
-   * transaction write. Recalculating from the ledger is idempotent and repairs
-   * any drift caused by previous partial updates or RLS failures.
-   */
-  private static async _syncTransactionBalance(
-    previous: Record<string, unknown> | null,
-    current: Record<string, unknown> | null,
-    companyId?: string | null,
-    factorMap?: Record<string, number>,
-  ) {
-    if (!previous && !current) return;
-
-    const oldTx = previous ? this._balanceFields(previous) : null;
-    const newTx = current ? this._balanceFields(current) : null;
-
-    const oldCustomer = oldTx?.customer_id;
-    const newCustomer = newTx?.customer_id;
-    const oldBank = oldTx?.bank_account_id;
-    const newBank = newTx?.bank_account_id;
-
-    if (oldCustomer || newCustomer) {
-      const effectiveCompanyId = companyId || newTx?.company_id || oldTx?.company_id;
-      const liveFactorMap = factorMap || (await this._getLiveFactorMap(effectiveCompanyId));
-      if (oldCustomer === newCustomer) {
-        if (newCustomer) await this._recalcCustomerBalance(newCustomer, effectiveCompanyId, liveFactorMap);
-      } else {
-        if (oldCustomer) await this._recalcCustomerBalance(oldCustomer, effectiveCompanyId, liveFactorMap);
-        if (newCustomer) await this._recalcCustomerBalance(newCustomer, effectiveCompanyId, liveFactorMap);
-      }
-    }
-
-    if (oldBank || newBank) {
-      if (!factorMap) factorMap = await this._getLiveFactorMap(companyId || newTx?.company_id || oldTx?.company_id);
-      const oldBankDelta = this._completedDelta(oldTx ? getBankAccountBalanceDelta(oldTx.transaction_type, oldTx.amount) : 0, oldTx?.status);
-      const newBankDelta = this._completedDelta(newTx ? getBankAccountBalanceDelta(newTx.transaction_type, newTx.amount) : 0, newTx?.status);
-      const effectiveCompanyId = companyId || newTx?.company_id || oldTx?.company_id;
-
-      if (oldBank === newBank) {
-        await this._adjustBankAccountBalance(newBank, newBankDelta - oldBankDelta, effectiveCompanyId);
-      } else {
-        if (oldBank) await this._adjustBankAccountBalance(oldBank, -oldBankDelta, effectiveCompanyId);
-        if (newBank) await this._adjustBankAccountBalance(newBank, newBankDelta, effectiveCompanyId);
-      }
-    }
   }
 
   // ----- trial helpers -----
@@ -560,9 +424,6 @@ export class TransactionService extends BaseService {
 
         const transformed = transformRawTransaction(transactionData) as Record<string, unknown>;
         const { data, error } = await insertWithFallback("transactions", transformed);
-        if (error) return { data, error };
-
-        await this._syncTransactionBalance(null, transformed, transformed.company_id as string | null | undefined);
         return { data, error };
       },
       async () => {
@@ -583,15 +444,9 @@ export class TransactionService extends BaseService {
         const validation = validateTransactionUpdateData(transactionData);
         if (!validation.isValid) return { data: null, error: { message: validation.errors.join(", ") } };
 
-        const oldTx = await this._getTransactionForBalanceSync(id);
-
         const updatePayload = this._normalizeTransactionPayload(transactionData);
 
         const { data, error } = await updateWithFallback("transactions", id, updatePayload);
-        if (error) return { data, error };
-
-        const newTx = oldTx ? { ...oldTx, ...updatePayload } : updatePayload;
-        await this._syncTransactionBalance(oldTx, newTx, oldTx?.company_id as string | null | undefined);
         return { data, error };
       },
       async () => {
@@ -615,11 +470,7 @@ export class TransactionService extends BaseService {
   static async deleteTransaction(id: string) {
     return this.execute(
       async () => {
-        const oldTx = await this._getTransactionForBalanceSync(id);
         const { error } = await apiClient.from("transactions").delete().eq("id", id);
-        if (!error && oldTx) {
-          await this._syncTransactionBalance(oldTx, null, oldTx.company_id as string | null | undefined);
-        }
         return { data: null, error };
       },
       async () => {
@@ -945,28 +796,6 @@ export class TransactionService extends BaseService {
           "transactions",
           body.map(pickTransactionColumns) as Record<string, unknown>[],
         );
-        if (!error) {
-          const factorMap = await this._getLiveFactorMap(companyId || null);
-          const customerIds = new Set<string>();
-          const bankDeltas = new Map<string, number>();
-          for (const row of body) {
-            if (row.customer_id) customerIds.add(String(row.customer_id));
-            if (row.bank_account_id) {
-              const accountId = String(row.bank_account_id);
-              const delta = this._completedDelta(
-                getBankAccountBalanceDelta(String(row.transaction_type), Number(row.amount) || 0),
-                String(row.status),
-              );
-              bankDeltas.set(accountId, (bankDeltas.get(accountId) || 0) + delta);
-            }
-          }
-          for (const customerId of customerIds) {
-            await this._recalcCustomerBalance(customerId, companyId || null, factorMap);
-          }
-          for (const [accountId, delta] of bankDeltas.entries()) {
-            await this._adjustBankAccountBalance(accountId, delta, companyId || null);
-          }
-        }
         return { data: data || [], error };
       },
       async () => {
