@@ -105,6 +105,29 @@ describe("update integrity (live mode)", () => {
     expect(payload.updated_at).toBeTruthy();
   });
 
+  it("does not write derived balances from the browser after a live transaction insert", async () => {
+    const tables: string[] = [];
+    (apiClient as unknown as { from: (table: string) => QueryChain }).from = vi.fn((table: string) => {
+      tables.push(table);
+      return buildChain({ data: { id: "txn-id" }, error: null }, []);
+    });
+
+    const result = await transactionService.createTransaction({
+      transaction_code: "TXN-DB-AUTHORITY",
+      customer_id: "customer-id",
+      bank_account_id: "bank-id",
+      branch_id: "branch-id",
+      company_id: "company-id",
+      transaction_type: "payment",
+      amount: 100000,
+      transaction_date: "2026-10-06",
+      status: "completed",
+    });
+
+    expect(result.error).toBeFalsy();
+    expect(tables).toEqual(["transactions"]);
+  });
+
   // Known bug: upsertBankAccount update path reuses transformRawBankAccount,
   // which sets balance to 0 and company_id/branch_id to null when not provided.
   it("bank account update payload never contains id, created_at, or defaulted balance/tenant fields", async () => {

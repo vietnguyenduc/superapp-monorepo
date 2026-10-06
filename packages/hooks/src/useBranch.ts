@@ -9,18 +9,36 @@ export function useBranch() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
+
     const fetchBranch = async () => {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Typically, branch ID is stored in user metadata or a profile table
-        const userBranchId = user.user_metadata?.branch_id || localStorage.getItem('branch_id');
-        setBranchId(userBranchId);
+      if (!user) {
+        if (active) {
+          setBranchId(null);
+          setLoading(false);
+        }
+        return;
       }
-      setLoading(false);
+
+      const { data } = await supabase
+        .from('users')
+        .select('branch_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (active) {
+        setBranchId(data?.branch_id ?? null);
+        setLoading(false);
+      }
     };
 
     fetchBranch();
+
+    return () => {
+      active = false;
+    };
   }, [supabase.auth]);
 
   return { branchId, loading };
