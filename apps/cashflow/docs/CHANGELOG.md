@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Production transaction CRUD and bulk import no longer apply a second browser-side bank balance delta after PostgreSQL has already recalculated the ledger balance.
+- Migration `20261006160100_cashflow_database_balance_authority.sql` makes the tenant-scoped trigger functions the sole production balance writers and recalculates existing customer and bank balances to repair drift.
 - Transaction upload now validates against all existing tenant customers instead of active customers only.
 - Exact customer codes remain authoritative; numeric codes whose leading zeroes were removed by Excel resolve only when the stored match is unique.
 - Transaction templates mark customer-code cells as text to preserve values such as `0630`.

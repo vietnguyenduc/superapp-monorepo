@@ -148,7 +148,8 @@ or run an ad-hoc production deployment from an app directory.
 ### GitHub Actions
 
 - On push to `viet`: `Deploy changed Vercel apps` deploys preview for changed apps and aliases to `<app>-preview.appforyou.xyz`
-- On PR to `main`: full test suite + build verification
+- `Superapp Quality` (`.github/workflows/quality.yml`) runs type-check, lint and unit tests as blocking checks on pushes to `viet` and PRs targeting `viet`/`main`. It does not include the separate `framework-method` project.
+- Root quality/build commands target the Superapp workspaces by default; use `npm run quality:all` when the separate `framework-method` project must also be checked.
 - `Deploy changed Vercel apps` (`workflow_dispatch`): deploy tay các app đã thay đổi từ `main` lên production.
 - `Auto-deploy production after Vercel quota reset` (schedule `*/10 * * * *` + `workflow_dispatch`): tự động kiểm tra production deployment của từng app so với commit `main` mới nhất; nếu lệch (do Vercel Hobby rate-limit chưa kịp deploy) thì deploy bù. Dùng Vercel API để lấy `githubCommitSha` của production deployment hiện tại và `git diff` để chỉ deploy app có thay đổi thực sự.
 
