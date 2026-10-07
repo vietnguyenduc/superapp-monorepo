@@ -7,6 +7,7 @@ import { transactionTypeService } from "./transactionTypeService";
 import { v4 as uuid } from "uuid";
 import { formatBankAccountLabel } from "../utils/formatting";
 import { matchCustomerCode, normalizeCustomerCode } from "../utils/customerCode";
+import { customerService } from "./customerService";
 import type { Transaction, Customer, BankAccount, Branch, User } from "../types";
 
 const getNowIso = () => new Date().toISOString();
@@ -599,11 +600,11 @@ export class TransactionService extends BaseService {
           .or(`company_id.eq.${companyId},company_id.is.null`);
         if (typeErr || !validTypes?.length) return { data: null, error: { message: "Không tải được danh sách loại giao dịch. Vui lòng thử lại." } };
 
-        const { data: customers } = await apiClient
-          .from("customers")
-          .select("id, customer_code, full_name")
-          .eq("company_id", companyId);
-        const customerList = (customers || []) as Record<string, unknown>[];
+        const customerResult = await customerService.getAllCustomersForLookup(companyId);
+        if (customerResult.error) {
+          return { data: null, error: { message: "Không tải được đầy đủ danh sách khách hàng. Vui lòng thử lại." } };
+        }
+        const customerList = (customerResult.data || []) as unknown as Record<string, unknown>[];
 
         const bankQuery = apiClient
           .from("bank_accounts")

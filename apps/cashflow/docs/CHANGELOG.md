@@ -1,5 +1,13 @@
 # Changelog — Cashflow
 
+## 2026-10-07
+
+### Fixed
+
+- Bulk transaction import now paginates customer lookup with the unique customer `id` instead of `created_at`. This prevents page overlap and missing customer codes when large customer imports give many rows the same creation timestamp.
+- Final bulk-write validation now uses the same complete paginated customer lookup as the preview, removing the remaining Supabase 1,000-row lookup ceiling.
+- Regression coverage verifies a 1,032-customer lookup across three stable pages without duplicate or missing customers.
+
 ## 2026-10-06
 
 ### Fixed
