@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { customerService } from "../customerService";
+import { CustomerService, customerService } from "../customerService";
 import { setTrialMode, trialGet } from "../trialMockStore";
 import { apiClient } from "../supabase";
 
@@ -146,6 +146,48 @@ describe("customerService.updateCustomer", () => {
       expect(payload.is_active).toBe(true);
       expect(payload.updated_at).toBeTruthy();
     });
+  });
+});
+
+describe("customerService.getAllCustomersForLookup", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("loads more than 1000 customers with a stable unique pagination order", async () => {
+    const allCustomers = Array.from({ length: 1032 }, (_, index) => ({
+      id: `customer-${String(index + 1).padStart(4, "0")}`,
+      customer_code: String(index + 1),
+      full_name: `Customer ${index + 1}`,
+    }));
+
+    const getCustomers = vi
+      .spyOn(CustomerService, "getCustomers")
+      .mockImplementation(async (filters) => {
+        const offset = Number(filters?.offset ?? 0);
+        const limit = Number(filters?.limit ?? 500);
+        return {
+          data: allCustomers.slice(offset, offset + limit) as never,
+          error: null,
+          count: allCustomers.length,
+        };
+      });
+
+    const result = await CustomerService.getAllCustomersForLookup("company-1");
+
+    expect(result.error).toBeNull();
+    expect(result.data).toHaveLength(1032);
+    expect(new Set(result.data.map((customer) => customer.id)).size).toBe(1032);
+    expect(getCustomers).toHaveBeenCalledTimes(3);
+    expect(getCustomers).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      company_id: "company-1",
+      offset: 0,
+      limit: 500,
+      status: "all",
+      sortBy: "id",
+      sortOrder: "asc",
+    }));
+    expect(getCustomers).toHaveBeenNthCalledWith(3, expect.objectContaining({ offset: 1000 }));
   });
 });
 

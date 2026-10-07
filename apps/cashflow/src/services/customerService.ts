@@ -13,16 +13,34 @@ export class CustomerService extends BaseService {
   static async getAllCustomersForLookup(companyId: string) {
     const pageSize = 500;
     let offset = 0;
-    let all: Customer[] = [];
+    const customersById = new Map<string, Customer>();
     let total = 0;
-    do {
-      const result = await this.getCustomers({ limit: pageSize, offset, company_id: companyId, status: "all" });
-      if (result.error) return { data: all, error: result.error, count: total };
-      total = result.count || 0;
-      all = all.concat(result.data || []);
+
+    while (true) {
+      // A unique sort key is required for offset pagination. Many imported
+      // customers share the exact same created_at value, so created_at-only
+      // ordering can repeat rows across pages and silently omit other codes.
+      const result = await this.getCustomers({
+        limit: pageSize,
+        offset,
+        company_id: companyId,
+        status: "all",
+        sortBy: "id",
+        sortOrder: "asc",
+      });
+      if (result.error) {
+        return { data: [...customersById.values()], error: result.error, count: total };
+      }
+
+      const page = result.data || [];
+      total = result.count ?? total;
+      page.forEach((customer) => customersById.set(customer.id, customer));
       offset += pageSize;
-    } while (all.length < total);
-    return { data: all, error: null, count: total };
+
+      if (page.length < pageSize || (total > 0 && offset >= total)) break;
+    }
+
+    return { data: [...customersById.values()], error: null, count: total || customersById.size };
   }
   static async getCustomers(filters?: Record<string, unknown>) {
     return this.execute(
