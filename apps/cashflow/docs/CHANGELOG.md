@@ -1,5 +1,14 @@
 # Changelog — Cashflow
 
+## 2026-10-08
+
+### Fixed
+
+- Customer-list sorting by numeric customer code now loads all matching customers in stable `id` pages before sorting, instead of silently sorting a Supabase-capped 1,000-row subset.
+- Customer summary totals and Excel export requests larger than 1,000 rows now paginate through the complete result set.
+- Stable `id` tie-break ordering prevents bulk-created customers with identical timestamps from repeating or disappearing between pages.
+- Regression coverage verifies a 1,032-customer list, continuous numeric sorting and complete summary/export loading.
+
 ## 2026-10-07
 
 ### Fixed

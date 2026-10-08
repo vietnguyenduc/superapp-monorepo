@@ -191,6 +191,125 @@ describe("customerService.getAllCustomersForLookup", () => {
   });
 });
 
+describe("customerService.getCustomers live pagination", () => {
+  type QueryResult = {
+    data: Record<string, unknown>[];
+    error: null;
+    count: number;
+  };
+
+  interface PagedQuery {
+    select: (...args: unknown[]) => PagedQuery;
+    eq: (...args: unknown[]) => PagedQuery;
+    order: (...args: unknown[]) => PagedQuery;
+    range: (from: number, to: number) => PagedQuery;
+    then: (
+      resolve: (value: QueryResult) => unknown,
+      reject?: (reason: unknown) => unknown,
+    ) => Promise<unknown>;
+  }
+
+  const buildPagedQuery = (rows: Record<string, unknown>[]) => {
+    let from = 0;
+    let to = 999;
+    const rangeCalls: Array<[number, number]> = [];
+    const chain: PagedQuery = {
+      select: vi.fn(() => chain),
+      eq: vi.fn(() => chain),
+      order: vi.fn(() => chain),
+      range: vi.fn((nextFrom: number, nextTo: number) => {
+        from = nextFrom;
+        to = nextTo;
+        rangeCalls.push([nextFrom, nextTo]);
+        return chain;
+      }),
+      then: (resolve, reject) =>
+        Promise.resolve({
+          // Mirror the hosted Supabase response cap, regardless of a larger
+          // requested range.
+          data: rows.slice(from, Math.min(to + 1, from + 1000)),
+          error: null,
+          count: rows.length,
+        }).then(resolve, reject),
+    };
+    return { chain, rangeCalls };
+  };
+
+  beforeEach(() => {
+    setTrialMode(false);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("loads every page before applying numeric customer-code sorting", async () => {
+    const rows = Array.from({ length: 1032 }, (_, index) => ({
+      id: `customer-${String(index + 1).padStart(4, "0")}`,
+      customer_code: String(index + 1),
+      full_name: `Customer ${index + 1}`,
+      company_id: "company-1",
+      status: "active",
+      total_balance: 0,
+    }));
+    const { chain, rangeCalls } = buildPagedQuery(rows);
+    vi.spyOn(apiClient, "from").mockReturnValue(chain as never);
+
+    const result = await CustomerService.getCustomers({
+      company_id: "company-1",
+      limit: 20,
+      offset: 0,
+      sortBy: "customer_code",
+      sortOrder: "asc",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.error).toBeUndefined();
+    expect(result.count).toBe(1032);
+    expect(result.data.map((customer) => customer.customer_code)).toEqual(
+      Array.from({ length: 20 }, (_, index) => String(index + 1)),
+    );
+    expect(rangeCalls).toEqual([
+      [0, 499],
+      [500, 999],
+      [1000, 1499],
+    ]);
+  });
+
+  it("loads all rows for summaries and exports requesting more than 1000", async () => {
+    const rows = Array.from({ length: 1032 }, (_, index) => ({
+      id: `customer-${String(index + 1).padStart(4, "0")}`,
+      customer_code: String(index + 1),
+      full_name: `Customer ${index + 1}`,
+      company_id: "company-1",
+      status: "active",
+      total_balance: index + 1,
+      created_at: "2026-08-12T02:22:01.865Z",
+    }));
+    const { chain, rangeCalls } = buildPagedQuery(rows);
+    vi.spyOn(apiClient, "from").mockReturnValue(chain as never);
+
+    const result = await CustomerService.getCustomers({
+      company_id: "company-1",
+      limit: 10000,
+      offset: 0,
+      sortBy: "created_at",
+      sortOrder: "desc",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.error).toBeUndefined();
+    expect(result.count).toBe(1032);
+    expect(result.data).toHaveLength(1032);
+    expect(new Set(result.data.map((customer) => customer.id)).size).toBe(1032);
+    expect(rangeCalls).toEqual([
+      [0, 499],
+      [500, 999],
+      [1000, 1499],
+    ]);
+  });
+});
+
 describe("customerService automatic customer codes", () => {
   beforeEach(() => {
     localStorage.clear();

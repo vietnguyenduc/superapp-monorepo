@@ -82,8 +82,44 @@ export class CustomerService extends BaseService {
         const offset = Number(filters.offset ?? 0);
 
         if (filters?.sortBy === "customer_code") {
-          const { data: rawData, error, count } = await query.order("created_at", { ascending: false }).range(0, 9999);
-          const data = (rawData || []) as Customer[];
+          // PostgREST/Supabase projects commonly cap a response at 1,000 rows,
+          // even when a larger range is requested. Numeric customer-code
+          // sorting has to happen client-side, so load every matching row in
+          // stable, uniquely ordered pages before sorting and slicing.
+          const serverPageSize = 500;
+          const allRows: Customer[] = [];
+          let pageOffset = 0;
+          let exactCount: number | null = null;
+          const pagedQuery = query.order("id", { ascending: true });
+
+          while (true) {
+            const pageResult = await pagedQuery.range(
+              pageOffset,
+              pageOffset + serverPageSize - 1,
+            );
+            if (pageResult.error) {
+              return {
+                data: [],
+                error: pageResult.error,
+                count: exactCount ?? allRows.length,
+              };
+            }
+
+            const page = (pageResult.data || []) as Customer[];
+            if (typeof pageResult.count === "number") exactCount = pageResult.count;
+            allRows.push(...page);
+            pageOffset += page.length;
+
+            if (
+              page.length < serverPageSize ||
+              page.length === 0 ||
+              (exactCount !== null && allRows.length >= exactCount)
+            ) {
+              break;
+            }
+          }
+
+          const data = allRows;
           let mappedData = data.map((c) => ({
             ...c,
             total_balance: c.total_balance ?? 0
@@ -97,14 +133,59 @@ export class CustomerService extends BaseService {
           if (limit !== undefined) {
             mappedData = mappedData.slice(offset, offset + limit);
           }
-          return { data: mappedData, error, count: count || mappedData.length };
+          return { data: mappedData, error: null, count: exactCount ?? data.length };
         }
 
         const sortBy = typeof filters?.sortBy === "string" ? filters.sortBy : undefined;
         const orderColumn = sortBy === "total_balance" ? "total_balance" : sortBy || "created_at";
         query = query.order(orderColumn, { ascending: filters?.sortOrder === "asc" });
 
-        if (limit !== undefined) {
+        // created_at is shared by many bulk-imported customers. Add the unique
+        // id as a tie-breaker so offset pages cannot repeat or omit rows.
+        if (orderColumn !== "id") {
+          query = query.order("id", { ascending: true });
+        }
+
+        if (limit !== undefined && limit > 1000) {
+          const serverPageSize = 500;
+          const allRows: Customer[] = [];
+          let pageOffset = offset;
+          let exactCount: number | null = null;
+
+          while (allRows.length < limit) {
+            const requestedPageSize = Math.min(serverPageSize, limit - allRows.length);
+            const pageResult = await query.range(
+              pageOffset,
+              pageOffset + requestedPageSize - 1,
+            );
+            if (pageResult.error) {
+              return {
+                data: allRows,
+                error: pageResult.error,
+                count: exactCount ?? allRows.length,
+              };
+            }
+
+            const page = (pageResult.data || []) as Customer[];
+            if (typeof pageResult.count === "number") exactCount = pageResult.count;
+            allRows.push(...page);
+            pageOffset += page.length;
+
+            if (
+              page.length < requestedPageSize ||
+              page.length === 0 ||
+              (exactCount !== null && pageOffset >= exactCount)
+            ) {
+              break;
+            }
+          }
+
+          const mappedData = allRows.map((c) => ({
+            ...c,
+            total_balance: c.total_balance ?? 0,
+          }));
+          return { data: mappedData, error: null, count: exactCount ?? mappedData.length };
+        } else if (limit !== undefined) {
           query = query.range(offset, offset + limit - 1);
         }
 
@@ -116,7 +197,7 @@ export class CustomerService extends BaseService {
           total_balance: c.total_balance ?? 0
         }));
 
-        return { data: mappedData, error, count: count || mappedData.length };
+        return { data: mappedData, error, count: count ?? mappedData.length };
       },
       async () => {
         let data = (trialGet("customers") || []) as Customer[];
