@@ -223,6 +223,9 @@ export class TransactionService extends BaseService {
         }
 
         query = query.order(orderBy, { ascending: sortOrder === "asc" });
+        // Offset pagination needs a unique tie-breaker because imported rows
+        // commonly share transaction_date and created_at timestamps.
+        query = query.order("id", { ascending: true });
 
         const hasPage = typeof filters?.page !== "undefined";
         const hasPageSize = typeof filters?.pageSize !== "undefined";
@@ -347,6 +350,51 @@ export class TransactionService extends BaseService {
         return { data: mappedData, error: null, count: totalCount };
       }
     );
+  }
+
+  static async getAllTransactionsForBackup(filters?: Record<string, unknown>) {
+    const pageSize = 500;
+    const transactionsById = new Map<string, Transaction>();
+    let page = 1;
+    let total = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const result = await this.getTransactions({
+        ...filters,
+        page,
+        pageSize,
+        sortBy: "created_at",
+        sortOrder: "asc",
+      });
+      if (result.error) {
+        return {
+          data: [...transactionsById.values()],
+          error: result.error,
+          count: total || transactionsById.size,
+        };
+      }
+
+      const batch = result.data || [];
+      total = result.count ?? total;
+      batch.forEach((transaction) => transactionsById.set(transaction.id, transaction));
+
+      if (
+        batch.length < pageSize ||
+        batch.length === 0 ||
+        (total > 0 && transactionsById.size >= total)
+      ) {
+        hasMore = false;
+      } else {
+        page += 1;
+      }
+    }
+
+    return {
+      data: [...transactionsById.values()],
+      error: null,
+      count: total || transactionsById.size,
+    };
   }
 
   static async getTransactionById(id: string, companyId?: string) {
@@ -914,6 +962,7 @@ export class TransactionService extends BaseService {
 
 export const transactionService = {
   getTransactions: TransactionService.getTransactions.bind(TransactionService),
+  getAllTransactionsForBackup: TransactionService.getAllTransactionsForBackup.bind(TransactionService),
   getTransactionById: TransactionService.getTransactionById.bind(TransactionService),
   getCustomerTransactionSummary: TransactionService.getCustomerTransactionSummary.bind(TransactionService),
   createTransaction: TransactionService.createTransaction.bind(TransactionService),

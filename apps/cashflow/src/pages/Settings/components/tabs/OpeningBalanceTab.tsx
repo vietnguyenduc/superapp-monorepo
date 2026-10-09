@@ -216,21 +216,61 @@ export const OpeningBalanceTab: FC = () => {
             )}
 
             {!isLoadingCustomerBalances && sortedRows.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
                 {
                   (() => {
+                    const totalOpening = sortedRows.reduce(
+                      (sum, c) => sum + c.opening_balance,
+                      0
+                    );
                     const totalCurrent = sortedRows.reduce((sum, c) => sum + c.current_balance, 0);
-                    const totalNew = sortedRows.reduce((sum, c) => sum + (c.new_opening_balance + (c.current_balance - c.opening_balance)), 0);
+                    const totalMovement = totalCurrent - totalOpening;
+                    const totalNew = sortedRows.reduce(
+                      (sum, c) => sum + c.new_opening_balance + (c.current_balance - c.opening_balance),
+                      0
+                    );
+                    const largeOpeningBalanceCount = sortedRows.filter(
+                      (c) => Math.abs(c.opening_balance) >= 1_000_000_000
+                    ).length;
                     return (
                       <>
-                        <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Tổng dư nợ hiện tại ({sortedRows.length} khách hàng)</p>
-                          <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatNumber(totalCurrent)} đ</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                          <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              Tổng số dư đầu kỳ ({sortedRows.length} khách hàng)
+                            </p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {formatNumber(totalOpening)} đ
+                            </p>
+                          </div>
+                          <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Phát sinh sau đầu kỳ</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {formatNumber(totalMovement)} đ
+                            </p>
+                          </div>
+                          <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Tổng dư nợ hiện tại</p>
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {formatNumber(totalCurrent)} đ
+                            </p>
+                          </div>
+                          <div
+                            className={`border rounded-lg p-3 ${totalNew !== totalCurrent ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700'}`}
+                          >
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Tổng dư nợ sau cập nhật</p>
+                            <p
+                              className={`text-lg font-semibold ${totalNew !== totalCurrent ? 'text-blue-700 dark:text-blue-200' : 'text-gray-900 dark:text-white'}`}
+                            >
+                              {formatNumber(totalNew)} đ
+                            </p>
+                          </div>
                         </div>
-                        <div className={`border rounded-lg p-3 ${totalNew !== totalCurrent ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700'}`}>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Tổng dư nợ sau cập nhật</p>
-                          <p className={`text-lg font-semibold ${totalNew !== totalCurrent ? 'text-blue-700 dark:text-blue-200' : 'text-gray-900 dark:text-white'}`}>{formatNumber(totalNew)} đ</p>
-                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Dư nợ hiện tại = số dư đầu kỳ + phát sinh giao dịch hoàn tất sau đầu kỳ.
+                          {largeOpeningBalanceCount > 0 &&
+                            ` Có ${largeOpeningBalanceCount} khách hàng có số dư đầu kỳ từ 1 tỷ đồng trở lên; hãy đối chiếu với sổ nguồn trước khi sửa.`}
+                        </p>
                       </>
                     );
                   })()

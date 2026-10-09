@@ -120,6 +120,28 @@ test.describe("Cashflow trial mode", () => {
     await expect(page.locator("body")).not.toContainText("Application error");
   });
 
+  test("TC-008b: Opening-balance reconciliation summary works on desktop and mobile", async ({ page }) => {
+    await enterTrialMode(page);
+
+    for (const viewport of [
+      { width: 1440, height: 1000 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto(`${BASE_URL}/settings`, { waitUntil: "networkidle" });
+      await page.getByRole("tab", { name: /Số dư đầu kỳ/i }).click();
+
+      await expect(page.getByText(/Tổng số dư đầu kỳ/)).toBeVisible();
+      await expect(page.getByText("Phát sinh sau đầu kỳ", { exact: true })).toBeVisible();
+      await expect(page.getByText("Tổng dư nợ hiện tại", { exact: true })).toBeVisible();
+      await expect(page.getByText("Tổng dư nợ sau cập nhật", { exact: true })).toBeVisible();
+      await expect(
+        page.getByText(/Dư nợ hiện tại = số dư đầu kỳ \+ phát sinh giao dịch hoàn tất sau đầu kỳ/)
+      ).toBeVisible();
+      await expect(page.locator("body")).not.toContainText("Application error");
+    }
+  });
+
   test("TC-009: Navigate to Reports page — loads without error", async ({ page }) => {
     await enterTrialMode(page);
     await page.goto(`${BASE_URL}/reports`, { waitUntil: "networkidle" });
