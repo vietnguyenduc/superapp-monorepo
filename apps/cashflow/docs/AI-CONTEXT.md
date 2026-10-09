@@ -38,6 +38,7 @@ A Vite/React SPA in the Superapp monorepo for cash-flow / receivables management
 - `src/services/backupHistoryService.ts` — backup history CRUD + `saveBackupToDatabase`, `loadBackupData`, `revertTableFromBackup` delegates.
 - `src/utils/backupRecovery.ts` — backup creation, import/export, and **restore with cross-table ID remapping**.
   - Customer restore preserves an explicit `opening_balance` from the backup and initializes the running balance from it before transactions are recreated. Derivation from `total_balance - transaction deltas` is only a compatibility fallback for legacy backups that lack `opening_balance`.
+  - Backup creation paginates customers and transactions in stable, unique-ID order. Never use an unpaged service request here: hosted Supabase responses stop at 1,000 rows, which would create a restorable-looking but incomplete backup.
 - `src/services/dashboardService.ts` — dashboard KPIs, balance by bank, top customers; uses shared `balanceMath.ts`.
 - `src/services/businessLogic/balanceMath.ts` — single source of truth for sign/impact math.
 - `src/services/businessLogic/parsers.ts` — `parseAmount`, `normalizeTransactionType`.

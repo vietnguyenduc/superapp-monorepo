@@ -234,14 +234,19 @@ export const backupService = {
 
       // Fetch customers
       if (options.includeCustomers) {
-        const { data: customers } =
-          await databaseService.customers.getCustomers({
-            company_id: options.company_id,
-            branch_id: options.branch_id,
-            status: "all",
-          });
-        backupData.customers = customers;
-        backupData.metadata.totalCustomers = customers.length;
+        const { data: customers, error } = await databaseService.customers.getCustomers({
+          company_id: options.company_id,
+          status: "all",
+          sortBy: "id",
+          sortOrder: "asc",
+          limit: 10000,
+        });
+        if (error) throw error;
+        const scopedCustomers = options.branch_id
+          ? customers.filter((customer) => customer.branch_id === options.branch_id)
+          : customers;
+        backupData.customers = scopedCustomers;
+        backupData.metadata.totalCustomers = scopedCustomers.length;
       }
 
       // Fetch transactions
@@ -254,8 +259,9 @@ export const backupService = {
           filters.dateRange = options.dateRange;
         }
 
-        const { data: transactions } =
-          await databaseService.transactions.getTransactions(filters);
+        const { data: transactions, error } =
+          await databaseService.transactions.getAllTransactionsForBackup(filters);
+        if (error) throw error;
         backupData.transactions = transactions;
         backupData.metadata.totalTransactions = transactions.length;
       }

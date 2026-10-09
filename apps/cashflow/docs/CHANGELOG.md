@@ -6,6 +6,7 @@
 
 - **Opening-balance reconciliation** — the Settings opening-balance screen now loads all active customers through stable pagination instead of stopping at Supabase's 1,000-row response cap. The summary separately shows opening balance, later transaction movement, current debt, and the proposed post-update debt, with a prompt to review customers whose absolute opening balance is at least 1 billion đồng.
 - **Backup restore balance safety** — customer restore now preserves `opening_balance` when it is present in the backup. It only derives an opening value from the saved running total and transactions for legacy backups that do not contain the field.
+- **Complete backups above 1,000 rows** — backup creation now loads customers and transactions through stable pagination, preventing Supabase's response cap from silently producing incomplete backups.
 
 ## 2026-10-08
 
