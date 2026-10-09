@@ -65,6 +65,28 @@ describe("transaction balance sync (trial mode)", () => {
     expect(result.data?.totalTransactions).toBeGreaterThan(50);
   });
 
+  it("loads every transaction for backup across 500-row pages", async () => {
+    for (let index = 0; index < 1_050; index += 1) {
+      trialInsert("transactions", {
+        ...baseTxn,
+        id: `backup-${index}`,
+        transaction_code: `BACKUP-${index}`,
+        created_at: "2026-08-12T02:22:01.862Z",
+      });
+    }
+    const expected = (trialGet("transactions") || []).filter(
+      (transaction: Record<string, unknown>) => transaction.company_id === "trial-company",
+    );
+
+    const result = await transactionService.getAllTransactionsForBackup({
+      company_id: "trial-company",
+    });
+
+    expect(result.error).toBeNull();
+    expect(result.data).toHaveLength(expected.length);
+    expect(new Set(result.data.map((transaction) => transaction.id)).size).toBe(expected.length);
+  });
+
   it("createTransaction with charge does not change bank cash but increases customer debt", async () => {
     const result = await transactionService.createTransaction({ ...baseTxn, transaction_code: "TXN-TEST-002", transaction_type: "charge" });
     expect(result.error).toBeFalsy();
