@@ -667,15 +667,20 @@ export function useSettingsState() {
     setIsLoadingCustomerBalances(true);
     setCustomerBalanceErrors([]);
     try {
-      const result = await databaseService.customers.getCustomers({ limit: 1000, company_id: companyId });
+      // Request above Supabase's 1,000-row response cap so customerService
+      // switches to stable, paginated loading and this financial summary is complete.
+      const result = await databaseService.customers.getCustomers({
+        limit: 10000,
+        company_id: companyId,
+      });
       if (result?.data) {
         const rows: CustomerBalanceRow[] = (result.data as any[]).map((c: any) => ({
           id: c.id,
           customer_code: c.customer_code || "",
           full_name: c.full_name || c.customer_name || c.name || "",
           opening_balance: Number(c.opening_balance || 0),
-          current_balance: Number(c.current_balance || 0),
-          total_balance: Number(c.current_balance || 0) + Number(c.opening_balance || 0),
+          current_balance: Number(c.total_balance ?? c.current_balance ?? 0),
+          total_balance: Number(c.total_balance ?? c.current_balance ?? 0),
           new_opening_balance: Number(c.opening_balance || 0),
         }));
         setCustomerBalances(rows);
@@ -748,7 +753,10 @@ export function useSettingsState() {
         setBranches(formattedBranches);
 
         // Load customers for opening balance preview
-        const customersResponse = await databaseService.customers.getCustomers({ limit: 1000, company_id: companyId });
+        const customersResponse = await databaseService.customers.getCustomers({
+          limit: 10000,
+          company_id: companyId,
+        });
         if (customersResponse?.data) {
           const map: Record<string, string> = {};
           (customersResponse.data as any[]).forEach((c: any) => {

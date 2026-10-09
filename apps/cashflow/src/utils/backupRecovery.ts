@@ -33,6 +33,25 @@ function deriveCustomerOpeningBalance(
   return totalBalance - netDelta;
 }
 
+export function resolveCustomerOpeningBalanceForRestore(
+  customer: Record<string, unknown>,
+  transactions: Record<string, unknown>[],
+): number {
+  const storedOpeningBalance = customer.opening_balance;
+  if (
+    Object.prototype.hasOwnProperty.call(customer, "opening_balance") &&
+    storedOpeningBalance !== null &&
+    storedOpeningBalance !== undefined &&
+    String(storedOpeningBalance).trim() !== ""
+  ) {
+    return parseAmount(storedOpeningBalance);
+  }
+
+  // Backups created before opening_balance was stored only have the running
+  // total, so retain the legacy derivation as a compatibility fallback.
+  return deriveCustomerOpeningBalance(customer, transactions);
+}
+
 function deriveBankAccountOpeningBalance(
   account: Record<string, unknown>,
   transactions: Record<string, unknown>[],
@@ -976,7 +995,8 @@ export const backupService = {
       try {
         const normalized = this.normalizeRestoreRecord(customer, companyId, branchMapping, CUSTOMER_KEYS);
         if (transactions) {
-          const opening = deriveCustomerOpeningBalance(customer, transactions);
+          const opening = resolveCustomerOpeningBalanceForRestore(customer, transactions);
+          normalized.opening_balance = opening;
           normalized.total_balance = opening;
           normalized.current_balance = opening;
         }

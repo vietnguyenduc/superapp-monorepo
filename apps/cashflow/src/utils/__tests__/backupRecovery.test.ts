@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom";
 import {
   defaultBackupOptions,
+  resolveCustomerOpeningBalanceForRestore,
 } from "../backupRecovery";
 import type { BackupData, BackupOptions } from "../backupRecovery";
 
@@ -352,6 +353,41 @@ describe("Backup Recovery Utils", () => {
       expect(parsedData.customers[0].full_name).toBe("John Doe");
       expect(parsedData.customers[0].total_balance).toBe(1000.5);
       expect(parsedData.metadata.totalCustomers).toBe(1);
+    });
+  });
+
+  describe("customer opening-balance restore", () => {
+    const transactions = [
+      {
+        customer_id: "customer-1",
+        transaction_type: "charge",
+        amount: 500,
+      },
+    ];
+
+    it("preserves the opening balance explicitly stored in the backup", () => {
+      const opening = resolveCustomerOpeningBalanceForRestore(
+        {
+          id: "customer-1",
+          opening_balance: 1_152_550_855,
+          total_balance: 1_152_551_355,
+        },
+        transactions,
+      );
+
+      expect(opening).toBe(1_152_550_855);
+    });
+
+    it("derives the opening balance only for a legacy backup without that field", () => {
+      const opening = resolveCustomerOpeningBalanceForRestore(
+        {
+          id: "customer-1",
+          total_balance: 1_500,
+        },
+        transactions,
+      );
+
+      expect(opening).toBe(1_000);
     });
   });
 });
