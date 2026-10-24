@@ -12,11 +12,37 @@ generated: true
 ## Local development
 
 ```bash
-cd /home/ubuntu/repos/superapp-monorepo
+cd /home/dev/projects/superapp-monorepo
 npx turbo run dev --filter=hr-operation
 ```
 
-Verify at `http://<TAILSCALE_IP>:5177`.
+The HR app normally runs as a WSL systemd service. Reuse it rather than starting a
+second Vite process. Verify from Windows at `http://localhost:5177`; use the optimized
+mobile preview URL documented in `docs/DEV-ENVIRONMENT.md` from an iPhone.
+
+### SharePoint import configuration
+
+Create a Microsoft Entra **Single-page application** registration and add these redirect
+URIs (plus any URL used for local testing):
+
+- `http://localhost:5177`
+- `https://hr-preview.appforyou.xyz`
+- `https://hr.appforyou.xyz`
+
+Add delegated Microsoft Graph permission `Files.Read`. Admin consent is normally not
+required for this delegated permission, though the tenant's own consent policy may be
+stricter. Put the public identifiers in the ignored `.env.local` for local work and in
+the matching Vercel Preview/Production environment:
+
+```text
+VITE_MICROSOFT_CLIENT_ID=<application-client-id>
+VITE_MICROSOFT_TENANT_ID=<directory-tenant-id>
+```
+
+Do not create or expose a client secret for this browser flow. Restart the HR service
+after changing local environment variables. Verify with an Excel/CSV sharing link that
+the signed-in Microsoft account can already open. The pilot reads one file through
+Microsoft Graph and does not browse sites or folders.
 
 ## Build & test
 
@@ -38,6 +64,12 @@ npx turbo run build --filter=hr-operation
 
 - `401 Unauthorized` on Supabase → check `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` match the same project.
 - Trial mode uses browser-local static seed data and does not require a backend.
+- SharePoint button says `Chưa cấu hình Microsoft` → confirm both Microsoft build
+  variables exist in the current environment, then rebuild/restart.
+- Microsoft popup returns a redirect mismatch → add the exact current origin to the
+  app registration's SPA redirect URIs.
+- Graph returns 403 → the Microsoft account cannot access the file or the delegated
+  `Files.Read` permission was not consented.
 - `check-types` fails in `@repo/ui` → ensure `packages/ui/tsconfig.json` overrides `module` / `moduleResolution` to `ESNext` / `bundler`.
 
 ## Production support

@@ -41,9 +41,14 @@ generated: true
 - Always include `company_id` (and `branch_id` when relevant) in `.insert()` / `.update()`.
 - Use `.maybeSingle()` for read-one queries to avoid RLS `406` errors when no row matches.
 - Bulk imports should validate `customer_code` / `product_code` uniqueness within `company_id`.
+- Employee SharePoint imports scope reads and writes to the company selected by
+  `CompanyProvider`. Migration `20261025003000_hr_selected_company_admin_access.sql`
+  grants `admin_master` cross-company HR access while ordinary tenant users remain
+  restricted to their profile company.
+- The planned configurable ingestion/staging models are architectural only; see
+  `SHAREPOINT-INGESTION-ARCHITECTURE.md` before adding tables.
 
 ## See also
 
 - `docs/SUPABASE_SCHEMA_HEALTH_REPORT.md`
 - `supabase/migrations/`
-

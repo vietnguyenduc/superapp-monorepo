@@ -1,5 +1,19 @@
 # hr-operation — Changelog
 
+## 2026-10-25 — Pilot nhập nhân viên từ SharePoint
+
+- Thêm đăng nhập Microsoft bằng MSAL/PKCE và quyền ủy quyền tối thiểu `Files.Read`.
+- Người dùng có thể dán link file Excel/CSV trên SharePoint, xem trước lỗi theo dòng và
+  nhập các mã nhân viên mới vào công ty hiện tại.
+- Mã đã tồn tại được bỏ qua, mã trùng trong file bị chặn, tên phòng ban không khớp được
+  cảnh báo và để trạng thái chưa xếp phòng.
+- Access token chỉ nằm trong phiên trình duyệt; không lưu mật khẩu, token hoặc client
+  secret vào Supabase.
+- Xóa dữ liệu nhân viên giả từng hiển thị khi công ty chưa có hồ sơ thực.
+- Chuẩn bị migration `20261025003000_hr_selected_company_admin_access.sql` để
+  `admin_master` thao tác hồ sơ/phòng ban của công ty đang chọn; chưa áp dụng nếu
+  chưa có phê duyệt migration.
+
 ## 2026-10-06 — Khóa RPC tạo bảng lương theo công ty
 
 - Migration `20261006160000_harden_hr_payroll_rpc.sql` yêu cầu người gọi đã đăng nhập và có vai trò quản trị.

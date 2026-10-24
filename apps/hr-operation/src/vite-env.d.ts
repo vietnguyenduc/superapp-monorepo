@@ -13,6 +13,8 @@ interface ImportMetaEnv {
   readonly VITE_ENABLE_OFFLINE_MODE: string
   readonly VITE_DEBUG_MODE: string
   readonly VITE_LOG_LEVEL: string
+  readonly VITE_MICROSOFT_CLIENT_ID?: string
+  readonly VITE_MICROSOFT_TENANT_ID?: string
 }
 
 interface ImportMeta {

@@ -36,8 +36,9 @@ export interface Shift {
 
 export const hrService = {
   // Departments
-  async getDepartments() {
-    const companyId = await getCurrentCompanyId();
+  async getDepartments(selectedCompanyId?: string) {
+    const companyId = selectedCompanyId || await getCurrentCompanyId();
+    if (!companyId) return [] as Department[];
     const { data, error } = await supabase
       .from(TABLES.DEPARTMENTS)
       .select('*')
@@ -63,8 +64,9 @@ export const hrService = {
   },
 
   // Employees
-  async getEmployees() {
-    const companyId = await getCurrentCompanyId();
+  async getEmployees(selectedCompanyId?: string) {
+    const companyId = selectedCompanyId || await getCurrentCompanyId();
+    if (!companyId) return [] as Employee[];
     const { data, error } = await supabase
       .from(TABLES.EMPLOYEES)
       .select(`
@@ -90,6 +92,23 @@ export const hrService = {
 
     if (error) throw error;
     return data as Employee;
+  },
+
+  async bulkCreateEmployees(
+    employees: Array<Omit<Employee, 'id' | 'created_at' | 'company_id' | 'department' | 'user_id'>>,
+    selectedCompanyId?: string,
+  ) {
+    const companyId = selectedCompanyId || await getCurrentCompanyId();
+    if (!companyId) throw new Error('Không tìm thấy công ty của người dùng');
+    if (!employees.length) return [] as Employee[];
+
+    const { data, error } = await supabase
+      .from(TABLES.EMPLOYEES)
+      .insert(employees.map((employee) => ({ ...employee, company_id: companyId })))
+      .select();
+
+    if (error) throw error;
+    return (data || []) as Employee[];
   },
 
   // Shifts
