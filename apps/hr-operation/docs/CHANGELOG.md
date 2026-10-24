@@ -2,6 +2,10 @@
 
 ## 2026-10-25 — Pilot nhập nhân viên từ SharePoint
 
+- Bổ sung `HR_Input_Wizard_v1.xlsx`: form Excel không macro theo luồng từng bước, có
+  danh mục chọn, kiểm tra nghiêm ngặt, cảnh báo trùng/sai dữ liệu và bảng tổng hợp chất
+  lượng trước khi gửi lên SharePoint.
+
 - Thêm đăng nhập Microsoft bằng MSAL/PKCE và quyền ủy quyền tối thiểu `Files.Read`.
 - Người dùng có thể dán link file Excel/CSV trên SharePoint, xem trước lỗi theo dòng và
   nhập các mã nhân viên mới vào công ty hiện tại.

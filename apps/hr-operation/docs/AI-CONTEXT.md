@@ -56,6 +56,10 @@ destinations on SharePoint.
   company selected in `CompanyProvider`, and remain subject to Supabase RLS. Employee
   and department reads on this page use that same selected company so `admin_master`
   does not accidentally import into its profile company.
+- The phase-A Excel form is `docs/templates/HR_Input_Wizard_v1.xlsx`; generation is
+  reproducible through `scripts/generate_hr_input_workbook.py`. The pipeline contract
+  uses the stable tables `tbl_hr_employee_profile` and
+  `tbl_hr_employment_assignment`, not worksheet coordinates.
 
 ## Key gotchas
 

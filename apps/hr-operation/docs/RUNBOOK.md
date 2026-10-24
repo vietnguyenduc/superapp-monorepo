@@ -44,6 +44,14 @@ after changing local environment variables. Verify with an Excel/CSV sharing lin
 the signed-in Microsoft account can already open. The pilot reads one file through
 Microsoft Graph and does not browse sites or folders.
 
+### Excel input wizard
+
+The macro-free phase-A template is `docs/templates/HR_Input_Wizard_v1.xlsx`. Its stable
+ingestion tables are `tbl_hr_employee_profile` and
+`tbl_hr_employment_assignment`. See `docs/templates/README.md` for the user flow,
+protection behavior, and reproducible generator command. Upload the template to a test
+SharePoint library, enter test rows, and use its sharing link in the preview app.
+
 ## Build & test
 
 ```bash
