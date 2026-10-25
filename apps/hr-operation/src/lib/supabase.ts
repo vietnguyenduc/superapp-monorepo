@@ -104,6 +104,7 @@ export const TABLES = {
   LEAVE_REQUESTS: 'leave_requests',
   PAYROLLS: 'payrolls',
   PAYROLL_ITEMS: 'payroll_items',
+  POSITIONS: 'positions',
   USERS: 'users',
   COMPANIES: 'companies'
 } as const;

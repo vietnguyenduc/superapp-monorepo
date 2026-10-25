@@ -158,6 +158,33 @@ application logs or client error tracking.
 
 ## Authentication modes
 
+### App identity versus Microsoft integration
+
+Supabase Auth remains the authority for signing into HR, company membership, and app
+roles. Microsoft sign-in is a separately managed SharePoint connection used only while
+importing or exporting data. A Microsoft account, email address, domain, tenant ID, or
+Graph token must never grant HR-company access by itself.
+
+For the pilot, each authorized HR user connects their own Microsoft account. The
+connection is scoped to both `company_id` and the app user's ID, and Graph operations
+run with that Microsoft user's delegated permissions. The UI exposes **Connect
+Microsoft**, the connected account, connection health, **Reconnect**, and **Disconnect**.
+When no valid connection exists, import/export prompts for Microsoft sign-in inline.
+
+AppForYou owns one multitenant Entra application configured for accounts in any
+organizational directory. The browser uses the Microsoft `organizations` authority,
+which resolves each user's home tenant during sign-in. Customer users never create an
+app registration, enter a Client ID, or share a password with HR. A customer tenant's
+consent policy remains authoritative; direct SharePoint access cannot bypass a policy
+that requires administrator approval. Local workbook upload/download is therefore a
+first-class route that guarantees the HR workflow remains usable without customer IT.
+
+Company administrators configure approved SharePoint sources and report destinations;
+operators can use only destinations allowed by their HR role and only when their own
+Microsoft account can access the underlying SharePoint content. Interactive tokens stay
+in the browser session during the pilot. Persistent background synchronization is a
+later server-side capability and must not reuse or share one user's browser token.
+
 ### Interactive pilot
 
 - SPA authorization code flow with PKCE through MSAL Browser.

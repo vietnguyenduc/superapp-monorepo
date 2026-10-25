@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
-import { Users, CalendarDays, Clock, FileText, Banknote, ShieldCheck } from 'lucide-react';
-import { AuthProvider, CompanyProvider, CompanyBadge } from '@superapp/iam';
+import { Users, CalendarDays, Clock, FileText, Banknote, ShieldCheck, Network, LogOut } from 'lucide-react';
+import { AuthProvider, CompanyProvider, CompanyBadge, useAuthContext } from '@superapp/iam';
 import EmployeeDirectory from './pages/EmployeeDirectory';
 import ShiftManagement from './pages/ShiftManagement';
 import AttendancePage from './pages/AttendancePage';
@@ -9,16 +9,19 @@ import LeaveManagement from './pages/LeaveManagement';
 import PayrollManagement from './pages/PayrollManagement';
 import PerformanceDashboard from './pages/PerformanceDashboard';
 import HRSettings from './pages/HRSettings';
+import OrganizationChart from './pages/OrganizationChart';
 import Manual from './pages/Manual/Manual';
 import { Target, Settings, BookOpen } from 'lucide-react';
 import AppSwitcher from './components/Layout/AppSwitcher';
 import MobileBottomNav from './components/Layout/MobileBottomNav';
+import HrAuthGate from './components/HrAuthGate';
 
 const Sidebar = () => {
   const location = useLocation();
   
   const menuItems = [
     { path: '/employees', label: 'Hồ sơ Nhân sự', icon: Users },
+    { path: '/organization', label: 'Cơ cấu tổ chức', icon: Network },
     { path: '/shifts', label: 'Xếp ca', icon: CalendarDays },
     { path: '/attendance', label: 'Chấm công', icon: Clock },
     { path: '/leaves', label: 'Đơn từ', icon: FileText },
@@ -63,24 +66,42 @@ const Sidebar = () => {
   );
 };
 
+const SessionActions = () => {
+  const { user, isTrial, signOut } = useAuthContext();
+  if (!user || isTrial) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => void signOut()}
+      title={`Đăng xuất ${user.full_name || user.email}`}
+      aria-label="Đăng xuất"
+      className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+    >
+      <LogOut className="h-5 w-5" />
+    </button>
+  );
+};
+
 const App = () => {
   return (
     <AuthProvider>
-      <CompanyProvider>
-        <BrowserRouter>
+      <HrAuthGate>
+        <CompanyProvider>
+          <BrowserRouter>
           <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
             {/* Simple Header */}
             <header className="bg-white border-b border-slate-200 h-16 fixed top-0 w-full z-10 flex items-center">
-              <div className="w-full px-4 sm:px-6 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-sm">
+              <div className="w-full min-w-0 px-3 sm:px-6 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 shrink-0 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-sm">
                     <Users className="w-4 h-4 text-white" />
                   </div>
-                  <span className="text-lg font-bold text-slate-800 tracking-tight">HR & Payroll <span className="font-medium text-slate-400 ml-2">Operation</span></span>
+                  <span className="hidden sm:block text-lg font-bold text-slate-800 tracking-tight truncate">HR & Payroll <span className="font-medium text-slate-400 ml-2">Operation</span></span>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1 sm:gap-4 shrink-0">
                   <CompanyBadge />
                   <AppSwitcher />
+                  <SessionActions />
                 </div>
               </div>
             </header>
@@ -88,11 +109,12 @@ const App = () => {
             {/* Main Layout */}
             <div className="flex pt-16 flex-1 h-full">
               <Sidebar />
-              <main className="flex-1 lg:ml-64 p-6 sm:p-8 pb-20 lg:pb-8">
+              <main className="flex-1 min-w-0 lg:ml-64 p-4 sm:p-8 pb-20 lg:pb-8">
                 <div className="max-w-6xl mx-auto">
                   <Routes>
                     <Route path="/" element={<Navigate to="/employees" replace />} />
                     <Route path="/employees" element={<EmployeeDirectory />} />
+                    <Route path="/organization" element={<OrganizationChart />} />
                     <Route path="/shifts" element={<ShiftManagement />} />
                     <Route path="/attendance" element={<AttendancePage />} />
                     <Route path="/leaves" element={<LeaveManagement />} />
@@ -108,8 +130,9 @@ const App = () => {
             {/* Mobile Bottom Navigation */}
             <MobileBottomNav />
           </div>
-        </BrowserRouter>
-      </CompanyProvider>
+          </BrowserRouter>
+        </CompanyProvider>
+      </HrAuthGate>
     </AuthProvider>
   );
 };

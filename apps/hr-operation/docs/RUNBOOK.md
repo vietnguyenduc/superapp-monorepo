@@ -20,14 +20,25 @@ The HR app normally runs as a WSL systemd service. Reuse it rather than starting
 second Vite process. Verify from Windows at `http://localhost:5177`; use the optimized
 mobile preview URL documented in `docs/DEV-ENVIRONMENT.md` from an iPhone.
 
+Provisioned HR credentials remain outside the repository. The current Midomax pilot
+credential is stored locally at
+`/home/dev/.config/appforyou/midomax-duongquach-credentials.txt` with mode `0600`.
+Never copy its password into documentation or Git. The username login is an alias for
+the managed AppForYou email; first-login password enforcement is stored in Supabase Auth
+user metadata and cleared only after a successful password update.
+
 ### SharePoint import configuration
 
-Create a Microsoft Entra **Single-page application** registration and add these redirect
-URIs (plus any URL used for local testing):
+Create one AppForYou-owned Microsoft Entra **multitenant Single-page application**
+registration with supported accounts set to **Accounts in any organizational
+directory**, then add these exact redirect URIs. Customer users do not create their
+own registration or provide configuration IDs. MSAL Browser v5 uses the dedicated
+redirect bridge page; registering only the site origin will cause a redirect mismatch
+or popup timeout.
 
-- `http://localhost:5177`
-- `https://hr-preview.appforyou.xyz`
-- `https://hr.appforyou.xyz`
+- `http://localhost:5177/redirect.html`
+- `https://hr-preview.appforyou.xyz/redirect.html`
+- `https://hr.appforyou.xyz/redirect.html`
 
 Add delegated Microsoft Graph permission `Files.Read`. Admin consent is normally not
 required for this delegated permission, though the tenant's own consent policy may be
@@ -36,11 +47,15 @@ the matching Vercel Preview/Production environment:
 
 ```text
 VITE_MICROSOFT_CLIENT_ID=<application-client-id>
-VITE_MICROSOFT_TENANT_ID=<directory-tenant-id>
 ```
 
+The client uses the Microsoft `organizations` authority so work/school accounts from
+other Entra tenants can sign in. Delegated Graph permissions do not override a customer
+tenant's consent policy: if that organization blocks third-party user consent, use the
+manual file-upload path rather than leaving the user stuck at admin approval.
+
 Do not create or expose a client secret for this browser flow. Restart the HR service
-after changing local environment variables. Verify with an Excel/CSV sharing link that
+after changing the local client ID. Verify with an Excel/CSV sharing link that
 the signed-in Microsoft account can already open. The pilot reads one file through
 Microsoft Graph and does not browse sites or folders.
 

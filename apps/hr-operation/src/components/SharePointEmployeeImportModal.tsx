@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { AccountInfo } from '@azure/msal-browser';
-import { AlertCircle, CheckCircle2, ExternalLink, FileSpreadsheet, LogIn, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ExternalLink, FileSpreadsheet, HardDriveUpload, LogIn, X } from 'lucide-react';
+import { useAuthContext } from '@superapp/iam';
 import type { Department, Employee } from '../services/hrService';
 import { hrService } from '../services/hrService';
 import {
@@ -10,7 +10,7 @@ import {
   type EmployeeSheetOption,
   type EmployeeImportRow,
 } from '../services/employeeImportService';
-import { sharePointService } from '../services/sharePointService';
+import { sharePointService, type MicrosoftConnectionState } from '../services/sharePointService';
 
 interface Props {
   departments: Department[];
@@ -21,7 +21,12 @@ interface Props {
 }
 
 const SharePointEmployeeImportModal = ({ departments, employees, companyId, onClose, onImported }: Props) => {
-  const [account, setAccount] = useState<AccountInfo | null>(null);
+  const { user } = useAuthContext();
+  const [connectionState, setConnectionState] = useState<MicrosoftConnectionState>({
+    connection: null,
+    status: 'disconnected',
+  });
+  const [sourceMode, setSourceMode] = useState<'device' | 'sharepoint'>('device');
   const [shareUrl, setShareUrl] = useState('');
   const [fileName, setFileName] = useState('');
   const [rows, setRows] = useState<EmployeeImportRow[]>([]);
@@ -31,23 +36,30 @@ const SharePointEmployeeImportModal = ({ departments, employees, companyId, onCl
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [createMissingDepartments, setCreateMissingDepartments] = useState(true);
 
   useEffect(() => {
     if (!sharePointService.isConfigured()) return;
-    sharePointService.getSignedInAccount().then(setAccount).catch(() => undefined);
-  }, []);
+    if (!user?.id) return;
+    sharePointService.getConnection(companyId, user.id).then(setConnectionState).catch(() => undefined);
+  }, [companyId, user?.id]);
 
   const importableRows = useMemo(() => rows.filter(isImportableRow), [rows]);
   const blockedCount = rows.filter((row) => row.errors.length > 0).length;
   const skippedCount = rows.filter((row) =>
     row.warnings.some((warning) => warning.startsWith('Mã đã tồn tại')),
   ).length;
+  const missingDepartmentNames = useMemo(() => [...new Set(rows
+    .filter((row) => row.departmentName && !row.departmentId)
+    .map((row) => row.departmentName.trim()))], [rows]);
 
   const signIn = async () => {
     setBusy(true);
     setError('');
     try {
-      setAccount(await sharePointService.signIn());
+      if (!user?.id) throw new Error('Không xác định được người dùng HR hiện tại.');
+      await sharePointService.connect(companyId, user.id);
+      setConnectionState(await sharePointService.getConnection(companyId, user.id));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Không thể đăng nhập Microsoft.');
     } finally {
@@ -55,23 +67,45 @@ const SharePointEmployeeImportModal = ({ departments, employees, companyId, onCl
     }
   };
 
+  const preparePreview = (name: string, content: ArrayBuffer) => {
+    const options = inspectEmployeeWorkbook(content);
+    if (!options.length) throw new Error('Không tìm thấy sheet danh sách có cả cột mã và tên nhân viên.');
+    const defaultSheet = options[0].name;
+    setFileName(name);
+    setWorkbookContent(content);
+    setSheetOptions(options);
+    setSelectedSheet(defaultSheet);
+    setRows(parseEmployeeWorkbook(content, departments, employees, defaultSheet));
+  };
+
+  const loadDeviceFile = async (file?: File) => {
+    if (!file) return;
+    setBusy(true);
+    setError('');
+    setSuccess('');
+    setRows([]);
+    try {
+      if (!/\.(xlsx|xls|csv)$/i.test(file.name)) throw new Error('Chỉ hỗ trợ file Excel (.xlsx, .xls) hoặc CSV.');
+      preparePreview(file.name, await file.arrayBuffer());
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Không thể đọc file đã chọn.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const loadPreview = async () => {
-    if (!account) return setError('Hãy đăng nhập Microsoft trước.');
+    if (!user?.id) return setError('Không xác định được người dùng HR hiện tại.');
+    if (connectionState.status !== 'connected') return setError('Hãy kết nối Microsoft trước.');
     if (!shareUrl.trim()) return setError('Hãy dán link file SharePoint.');
     setBusy(true);
     setError('');
     setSuccess('');
     setRows([]);
     try {
-      const file = await sharePointService.downloadSharedFile(shareUrl, account);
-      const options = inspectEmployeeWorkbook(file.content);
-      if (!options.length) throw new Error('Không tìm thấy sheet danh sách có cả cột mã và tên nhân viên.');
-      const defaultSheet = options[0].name;
-      setFileName(file.name);
-      setWorkbookContent(file.content);
-      setSheetOptions(options);
-      setSelectedSheet(defaultSheet);
-      setRows(parseEmployeeWorkbook(file.content, departments, employees, defaultSheet));
+      const file = await sharePointService.downloadSharedFile(shareUrl, companyId, user.id);
+      setConnectionState(await sharePointService.getConnection(companyId, user.id));
+      preparePreview(file.name, file.content);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Không thể đọc file SharePoint.');
     } finally {
@@ -96,6 +130,15 @@ const SharePointEmployeeImportModal = ({ departments, employees, companyId, onCl
     setBusy(true);
     setError('');
     try {
+      let availableDepartments = departments;
+      if (createMissingDepartments && missingDepartmentNames.length > 0) {
+        const createdDepartments = await hrService.ensureDepartments(missingDepartmentNames, companyId);
+        availableDepartments = [...departments, ...createdDepartments];
+      }
+      const departmentMap = new Map(availableDepartments.map((department) => [
+        department.name.trim().toLocaleLowerCase('vi'),
+        department.id,
+      ]));
       await hrService.bulkCreateEmployees(
         importableRows.map((row) => ({
           employee_code: row.employeeCode,
@@ -103,7 +146,8 @@ const SharePointEmployeeImportModal = ({ departments, employees, companyId, onCl
           base_salary: row.baseSalary,
           status: row.status,
           join_date: row.joinDate || new Date().toISOString().slice(0, 10),
-          department_id: row.departmentId,
+          department_id: row.departmentId || departmentMap.get(row.departmentName.trim().toLocaleLowerCase('vi')),
+          position: row.positionName || undefined,
         })),
         companyId,
       );
@@ -119,12 +163,12 @@ const SharePointEmployeeImportModal = ({ departments, employees, companyId, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-slate-950/50 p-0 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="sharepoint-title">
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-slate-950/50 p-0 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="employee-import-title">
       <div className="bg-white w-full sm:max-w-5xl max-h-[95vh] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
         <div className="flex items-start justify-between gap-4 px-5 sm:px-6 py-4 border-b border-slate-200">
           <div>
-            <h2 id="sharepoint-title" className="text-lg font-semibold text-slate-900">Nhập nhân viên từ SharePoint</h2>
-            <p className="text-sm text-slate-500 mt-1">Đăng nhập Microsoft, dán link file rồi kiểm tra dữ liệu trước khi nhập.</p>
+            <h2 id="employee-import-title" className="text-lg font-semibold text-slate-900">Nhập dữ liệu nhân sự</h2>
+            <p className="text-sm text-slate-500 mt-1">Chọn nguồn, kiểm tra từng dòng rồi mới đưa dữ liệu vào HR.</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg text-slate-500 hover:bg-slate-100" aria-label="Đóng">
             <X className="w-5 h-5" />
@@ -132,10 +176,29 @@ const SharePointEmployeeImportModal = ({ departments, employees, companyId, onCl
         </div>
 
         <div className="overflow-y-auto p-5 sm:p-6 space-y-5">
-          {!sharePointService.isConfigured() ? (
+          <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1" role="tablist" aria-label="Nguồn dữ liệu">
+            <button type="button" role="tab" aria-selected={sourceMode === 'device'} onClick={() => setSourceMode('device')} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium ${sourceMode === 'device' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>
+              <HardDriveUpload className="w-4 h-4" /> Từ máy
+            </button>
+            <button type="button" role="tab" aria-selected={sourceMode === 'sharepoint'} onClick={() => setSourceMode('sharepoint')} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium ${sourceMode === 'sharepoint' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}>
+              <FileSpreadsheet className="w-4 h-4" /> SharePoint
+            </button>
+          </div>
+
+          {sourceMode === 'device' ? (
+            <div className="rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50/40 p-6 text-center">
+              <HardDriveUpload className="mx-auto h-8 w-8 text-indigo-500" />
+              <div className="mt-3 font-medium text-slate-900">Chọn file Excel hoặc CSV</div>
+              <p className="mt-1 text-sm text-slate-500">Dữ liệu chỉ được nhập sau khi bạn xem và xác nhận kết quả kiểm tra.</p>
+              <label className="mt-4 inline-flex cursor-pointer items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">
+                {busy ? 'Đang đọc file...' : 'Chọn file từ máy'}
+                <input type="file" accept=".xlsx,.xls,.csv" className="sr-only" disabled={busy} onChange={(event) => void loadDeviceFile(event.target.files?.[0])} />
+              </label>
+            </div>
+          ) : !sharePointService.isConfigured() ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
               <div className="font-semibold flex items-center gap-2"><AlertCircle className="w-4 h-4" /> Chưa cấu hình Microsoft</div>
-              <p className="mt-1">Quản trị viên cần thêm Microsoft Client ID và Tenant ID cho ứng dụng HR trước khi sử dụng.</p>
+              <p className="mt-1">Quản trị hệ thống AppForYou cần cấu hình kết nối Microsoft cho ứng dụng HR. Người dùng không phải tạo ứng dụng hay cung cấp mã cấu hình.</p>
             </div>
           ) : (
             <div className="rounded-xl border border-slate-200 p-4">
@@ -143,19 +206,23 @@ const SharePointEmployeeImportModal = ({ departments, employees, companyId, onCl
                 <div>
                   <div className="font-medium text-slate-900">1. Tài khoản Microsoft</div>
                   <div className="text-sm text-slate-500 mt-1">
-                    {account ? `Đã đăng nhập: ${account.username}` : 'Chỉ yêu cầu quyền đọc file mà tài khoản của bạn được phép truy cập.'}
+                    {connectionState.status === 'connected'
+                      ? `Đã kết nối: ${connectionState.connection?.username}`
+                      : connectionState.status === 'reconnect_required'
+                        ? 'Phiên Microsoft đã hết. Hãy kết nối lại để tiếp tục.'
+                        : 'Chỉ yêu cầu quyền đọc file mà tài khoản của bạn được phép truy cập.'}
                   </div>
                 </div>
-                {!account && (
+                {connectionState.status !== 'connected' && (
                   <button disabled={busy} onClick={signIn} className="inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-900 text-white text-sm font-medium disabled:opacity-50">
-                    <LogIn className="w-4 h-4" /> Đăng nhập Microsoft
+                    <LogIn className="w-4 h-4" /> {connectionState.status === 'reconnect_required' ? 'Kết nối lại' : 'Kết nối Microsoft'}
                   </button>
                 )}
               </div>
             </div>
           )}
 
-          <div className="rounded-xl border border-slate-200 p-4 space-y-3">
+          {sourceMode === 'sharepoint' && <div className="rounded-xl border border-slate-200 p-4 space-y-3">
             <div>
               <div className="font-medium text-slate-900">2. Link file SharePoint</div>
               <p className="text-sm text-slate-500 mt-1">Hỗ trợ Excel hoặc CSV. File cần có cột Mã nhân viên và Họ tên.</p>
@@ -168,11 +235,11 @@ const SharePointEmployeeImportModal = ({ departments, employees, companyId, onCl
                 placeholder="https://...sharepoint.com/..."
                 className="min-w-0 flex-1 px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               />
-              <button disabled={busy || !account} onClick={loadPreview} className="inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium disabled:opacity-50">
+              <button disabled={busy || connectionState.status !== 'connected'} onClick={loadPreview} className="inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium disabled:opacity-50">
                 <ExternalLink className="w-4 h-4" /> {busy ? 'Đang tải...' : 'Đọc và xem trước'}
               </button>
             </div>
-          </div>
+          </div>}
 
           {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 flex gap-2"><AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{error}</div>}
           {success && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 flex gap-2"><CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />{success}</div>}
@@ -195,6 +262,12 @@ const SharePointEmployeeImportModal = ({ departments, employees, companyId, onCl
                   </label>
                 )}
               </div>
+              {missingDepartmentNames.length > 0 && (
+                <label className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  <input type="checkbox" checked={createMissingDepartments} onChange={(event) => setCreateMissingDepartments(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-amber-300 text-indigo-600" />
+                  <span><strong>Tạo {missingDepartmentNames.length} phòng ban còn thiếu</strong><span className="mt-0.5 block text-amber-800">Nhân viên sẽ được xếp đúng phòng ban từ file. Bạn có thể chỉnh lại cấp cha và người phụ trách trong Cơ cấu tổ chức.</span></span>
+                </label>
+              )}
               <div className="border border-slate-200 rounded-xl overflow-x-auto max-h-72">
                 <table className="w-full min-w-[760px] text-sm">
                   <thead className="sticky top-0 bg-slate-50 text-left text-xs uppercase text-slate-500">

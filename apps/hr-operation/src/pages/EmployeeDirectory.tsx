@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { Users, Building, Plus, Search, MoreVertical, Briefcase, FileSpreadsheet } from 'lucide-react';
 import { hrService, Employee, Department } from '../services/hrService';
 import SharePointEmployeeImportModal from '../components/SharePointEmployeeImportModal';
+import InlineEmployeeModal from '../components/InlineEmployeeModal';
 import { useCompany } from '@superapp/iam';
 
 const EmployeeDirectory = () => {
@@ -10,6 +12,7 @@ const EmployeeDirectory = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSharePointImport, setShowSharePointImport] = useState(false);
+  const [showInlineCreate, setShowInlineCreate] = useState(false);
   const { selectedCompany, loading: companyLoading } = useCompany();
 
   const fetchData = useCallback(async () => {
@@ -54,13 +57,13 @@ const EmployeeDirectory = () => {
         <div className="grid grid-cols-1 sm:flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <button disabled={!selectedCompany} title={!selectedCompany ? 'Hãy chọn công ty trước' : undefined} onClick={() => setShowSharePointImport(true)} className="flex justify-center items-center gap-2 px-4 py-2 bg-white border border-indigo-200 text-indigo-700 rounded-lg hover:bg-indigo-50 transition-all font-medium text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
             <FileSpreadsheet className="w-4 h-4" />
-            Nhập từ SharePoint
+            Nhập dữ liệu
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-all font-medium text-sm shadow-sm">
+          <Link to="/organization" className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-all font-medium text-sm shadow-sm">
             <Building className="w-4 h-4" />
-            Phòng ban
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-medium text-sm shadow-sm shadow-indigo-200">
+            Cơ cấu tổ chức
+          </Link>
+          <button disabled={!selectedCompany} onClick={() => setShowInlineCreate(true)} className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-medium text-sm shadow-sm shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed">
             <Plus className="w-4 h-4" />
             Thêm nhân viên
           </button>
@@ -127,10 +130,10 @@ const EmployeeDirectory = () => {
                     <div className="text-slate-700">{emp.department?.name || 'Chưa xếp phòng'}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-slate-700 font-medium">{(emp as any).position || 'Chưa thiết lập'}</div>
+                    <div className="text-slate-700 font-medium">{emp.position || 'Chưa thiết lập'}</div>
                   </td>
                   <td className="px-6 py-4 text-right text-emerald-600 font-medium">
-                    +{(emp as any).p2_allowance?.toLocaleString() || '0'} ₫
+                    +{emp.p2_allowance?.toLocaleString() || '0'} ₫
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors opacity-0 group-hover:opacity-100">
@@ -160,6 +163,15 @@ const EmployeeDirectory = () => {
           companyId={selectedCompany.id}
           onClose={() => setShowSharePointImport(false)}
           onImported={fetchData}
+        />
+      )}
+      {showInlineCreate && selectedCompany && (
+        <InlineEmployeeModal
+          companyId={selectedCompany.id}
+          departments={departments}
+          employees={employees}
+          onClose={() => setShowInlineCreate(false)}
+          onCreated={fetchData}
         />
       )}
     </div>

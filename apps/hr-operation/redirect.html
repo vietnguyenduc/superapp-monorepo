@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đang hoàn tất kết nối Microsoft</title>
+  </head>
+  <body>
+    <p>Đang hoàn tất kết nối Microsoft…</p>
+    <script type="module">
+      import { broadcastResponseToMainFrame } from '@azure/msal-browser/redirect-bridge';
+
+      broadcastResponseToMainFrame().catch((error) => {
+        console.error('Không thể hoàn tất kết nối Microsoft:', error);
+      });
+    </script>
+  </body>
+</html>
