@@ -16,6 +16,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@azure/msal-browser": "^5.26.0",
     "@heroicons/react": "^2.2.0",
     "@repo/types": "*",
     "@repo/ui": "*",

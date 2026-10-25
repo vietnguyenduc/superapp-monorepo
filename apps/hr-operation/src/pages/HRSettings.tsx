@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Save, Settings, Info } from 'lucide-react';
+import MicrosoftIntegrationCard from '../components/MicrosoftIntegrationCard';
 
 const HRSettings = () => {
   const [framework, setFramework] = useState<'okr' | 'bsc'>('okr');
@@ -18,8 +19,10 @@ const HRSettings = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Cài đặt Hệ thống HR</h1>
-        <p className="text-slate-500 mt-1">Cấu hình mô hình đánh giá hiệu suất và quỹ lương 3P</p>
+        <p className="text-slate-500 mt-1">Quản lý tích hợp dữ liệu và cấu hình nghiệp vụ HR</p>
       </div>
+
+      <MicrosoftIntegrationCard />
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-6 space-y-8">

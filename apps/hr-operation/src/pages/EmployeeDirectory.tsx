@@ -1,32 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Building, Plus, Search, MoreVertical, Briefcase, Calendar, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import { Users, Building, Plus, Search, MoreVertical, Briefcase, FileSpreadsheet } from 'lucide-react';
 import { hrService, Employee, Department } from '../services/hrService';
+import SharePointEmployeeImportModal from '../components/SharePointEmployeeImportModal';
+import InlineEmployeeModal from '../components/InlineEmployeeModal';
+import { useCompany } from '@superapp/iam';
 
 const EmployeeDirectory = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showSharePointImport, setShowSharePointImport] = useState(false);
+  const [showInlineCreate, setShowInlineCreate] = useState(false);
+  const { selectedCompany, loading: companyLoading } = useCompany();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    if (!selectedCompany?.id) {
+      setEmployees([]);
+      setDepartments([]);
+      setLoading(companyLoading);
+      return;
+    }
     try {
       setLoading(true);
-      // Mock data for development if backend is empty
-      const empData = await hrService.getEmployees();
-      setEmployees(empData.length > 0 ? empData : [
-        { id: '1', company_id: 'c1', employee_code: 'EMP001', full_name: 'Nguyễn Văn A', base_salary: 15000000, status: 'active', join_date: '2023-01-15', created_at: '', department: { name: 'Phòng Kỹ thuật' } as any, position: 'Chuyên viên Bậc 2', p2_allowance: 2000000 },
-        { id: '2', company_id: 'c1', employee_code: 'EMP002', full_name: 'Trần Thị B', base_salary: 12000000, status: 'active', join_date: '2023-03-20', created_at: '', department: { name: 'Phòng Nhân sự' } as any, position: 'Chuyên viên Bậc 1', p2_allowance: 1000000 },
-      ] as any);
+      const [empData, departmentData] = await Promise.all([
+        hrService.getEmployees(selectedCompany.id),
+        hrService.getDepartments(selectedCompany.id),
+      ]);
+      setEmployees(empData);
+      setDepartments(departmentData);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCompany?.id, companyLoading]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const filteredEmployees = employees.filter(emp => 
     emp.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -41,12 +54,16 @@ const EmployeeDirectory = () => {
           <h1 className="text-2xl font-semibold text-slate-800 tracking-tight">Hồ sơ Nhân sự</h1>
           <p className="text-sm text-slate-500 mt-1">Quản lý danh sách nhân viên, phòng ban và chức vụ</p>
         </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-all font-medium text-sm shadow-sm">
-            <Building className="w-4 h-4" />
-            Phòng ban
+        <div className="grid grid-cols-1 sm:flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          <button disabled={!selectedCompany} title={!selectedCompany ? 'Hãy chọn công ty trước' : undefined} onClick={() => setShowSharePointImport(true)} className="flex justify-center items-center gap-2 px-4 py-2 bg-white border border-indigo-200 text-indigo-700 rounded-lg hover:bg-indigo-50 transition-all font-medium text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+            <FileSpreadsheet className="w-4 h-4" />
+            Nhập dữ liệu
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-medium text-sm shadow-sm shadow-indigo-200">
+          <Link to="/organization" className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-all font-medium text-sm shadow-sm">
+            <Building className="w-4 h-4" />
+            Cơ cấu tổ chức
+          </Link>
+          <button disabled={!selectedCompany} onClick={() => setShowInlineCreate(true)} className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-medium text-sm shadow-sm shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed">
             <Plus className="w-4 h-4" />
             Thêm nhân viên
           </button>
@@ -113,10 +130,10 @@ const EmployeeDirectory = () => {
                     <div className="text-slate-700">{emp.department?.name || 'Chưa xếp phòng'}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-slate-700 font-medium">{(emp as any).position || 'Chưa thiết lập'}</div>
+                    <div className="text-slate-700 font-medium">{emp.position || 'Chưa thiết lập'}</div>
                   </td>
                   <td className="px-6 py-4 text-right text-emerald-600 font-medium">
-                    +{(emp as any).p2_allowance?.toLocaleString() || '0'} ₫
+                    +{emp.p2_allowance?.toLocaleString() || '0'} ₫
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors opacity-0 group-hover:opacity-100">
@@ -139,6 +156,24 @@ const EmployeeDirectory = () => {
           )}
         </div>
       </div>
+      {showSharePointImport && selectedCompany && (
+        <SharePointEmployeeImportModal
+          departments={departments}
+          employees={employees}
+          companyId={selectedCompany.id}
+          onClose={() => setShowSharePointImport(false)}
+          onImported={fetchData}
+        />
+      )}
+      {showInlineCreate && selectedCompany && (
+        <InlineEmployeeModal
+          companyId={selectedCompany.id}
+          departments={departments}
+          employees={employees}
+          onClose={() => setShowInlineCreate(false)}
+          onCreated={fetchData}
+        />
+      )}
     </div>
   );
 };
