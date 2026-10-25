@@ -36,6 +36,8 @@ HR & Payroll 3P (Position-Person-Performance): employees, departments, contracts
 Target architecture and sample-source findings are in
 `docs/SHAREPOINT-INGESTION-ARCHITECTURE.md`. Do not hard-code the reviewed workbook
 layouts as the long-term contract; phase B uses versioned forms and mappings.
+Current work status and remaining acceptance steps are tracked in
+`docs/SHAREPOINT-PILOT-PLAN.md`; update its checklist before reporting completion.
 HR is the system of work: approved SharePoint input feeds canonical HR modules, and
 versioned report definitions export that app data to new or managed existing XLSX
 destinations on SharePoint.
